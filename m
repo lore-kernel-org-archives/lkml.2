@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1J0XC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 19:02:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50449 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab1J0XCz (ORCPT
+	id S1754910Ab1J0XTi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 19:19:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57757 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab1J0XTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 19:02:55 -0400
-X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Oct 2011 19:02:55 EDT
-Date: Thu, 27 Oct 2011 15:53:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
-        jeremy.fitzhardinge@citrix.com, mingo@redhat.com, stable@kernel.org,
-        tglx@linutronix.de
-Subject: Re: Not really merged? Re: [merged]
- x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
- removed from -mm tree
-Message-Id: <20111027155329.0adc1358.akpm@linux-foundation.org>
-In-Reply-To: <20111025182450.GA9843@phenom.dumpdata.com>
-References: <201110141951.p9EJpn3A006989@hpaq5.eem.corp.google.com>
-	<20111025182450.GA9843@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Oct 2011 19:19:37 -0400
+Date: Fri, 28 Oct 2011 08:19:28 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, aarcange@redhat.com,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/5]thp: correct order in lru list for split huge page
+Message-ID: <20111027231928.GB29407@barrios-laptop.redhat.com>
+References: <1319511577.22361.140.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319511577.22361.140.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Oct 2011 14:24:50 -0400
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-
-> On Fri, Oct 14, 2011 at 12:51:48PM -0700, akpm@google.com wrote:
-> > 
-> > The patch titled
-> >      Subject: x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode
-> > has been removed from the -mm tree.  Its filename was
-> >      x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
-> > 
-> > This patch was dropped because it was merged into mainline or a subsystem tree
+On Tue, Oct 25, 2011 at 10:59:37AM +0800, Shaohua Li wrote:
+> If a huge page is split, all the subpages should live in lru list adjacently
+> because they should be taken as a whole.
+> In page split, with current code:
+> a. if huge page is in lru list, the order is: page, page+HPAGE_PMD_NR-1,
+> page + HPAGE_PMD_NR-2, ..., page + 1(in lru page reclaim order)
+> b. otherwise, the order is: page, ..other pages.., page + 1, page + 2, ...(in
+> lru page reclaim order). page + 1 ... page + HPAGE_PMD_NR - 1 are in the lru
+> reclaim tail.
 > 
-> Hey Andrew,
+> In case a, the order is wrong. In case b, page is isolated (to be reclaimed),
+> but other tail pages will not soon.
 > 
-> I am actually not seeing this in mainline? Was it accidently dropped out of your tree?
+> With below patch:
+> in case a, the order is: page, page + 1, ... page + HPAGE_PMD_NR-1(in lru page
+> reclaim order).
+> in case b, the order is: page + 1, ... page + HPAGE_PMD_NR-1 (in lru page reclaim
+> order). The tail pages are in the lru reclaim head.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-hm, well spotted.  I'm not sure what happened here - possibly the patch
-was merged into an x86 tree (and hence linux-next) but later got lost. 
-Or possibly not, and I just screwed up.
+In case of a, it doesn't matter ordering of subpages.
+As a huge page, age of sub pages are same.
 
-Either way, it's a pretty important patch - we marked it for -stable
-backporting.
+In case of b, what a page is located in tail and other subpages are located in head
+isn't critical problem.
 
-> If that is the case I can convience you to put it back in or can I drive it to Linus with
-> your Ack-ed by?
+Having said that, it's more consistent and simple patch.
+So I like that. Nice catch, Shaohua!
 
-I resurrected my copy and shall send it along to the x86 guys soon.
-
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+-- 
+Kind regards,
+Minchan Kim
