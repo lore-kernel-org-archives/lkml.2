@@ -1,92 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab1J0Aku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:40:50 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56893 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab1J0Akt (ORCPT
+	id S1753660Ab1J0Ask (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:48:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:62681 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753529Ab1J0Asj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:40:49 -0400
-Date: Thu, 27 Oct 2011 08:39:16 +0800
-From: wangyanqing <udknight@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] init:enable usermodehelper as soon as we have a root
- filesystem
-Message-ID: <20111027003916.GA3934@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <20111023150957.GA2937@udknight.homenetwork>
+	Wed, 26 Oct 2011 20:48:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111023150957.GA2937@udknight.homenetwork>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111026170133.GD9467@ghostprotocols.net>
+References: <1319600345-29311-1-git-send-email-furat.afram@gmail.com> <20111026170133.GD9467@ghostprotocols.net>
+From: Furat Afram <furat.afram@gmail.com>
+Date: Wed, 26 Oct 2011 17:48:19 -0700
+Message-ID: <CAH7dF3XGmFe4XCejp9gNZWusWkZbDAgKbQ8AU==s+r_AyXrVTg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] perf probe:fix sigsegv in adding nonexistent event
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 11:09:57PM +0800, wangyanqing wrote:
-> before we have a filesystem , it is useless to enable usermodehelper,
-> and it may cause bug if we enable usermodehelper too early (see commit
-> d5767c53535ac79758084773418e0ad186aba4a2 for the reason why linus mv 
-> 'usermodehelper_enable()' to the end of do_basic_setup, and commit 
-> b0f84374b6ab0dc9c47975df0b02d46165d558d4).This patch
-> enable usermodehelper as soon as we have a filesystem.
-> 
-> Signed-off-by: wang yanqing <udknight@gmail.com>
-> ---
->  init/do_mounts.c |    3 +++
->  init/initramfs.c |    2 ++
->  init/main.c      |    1 -
->  3 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/do_mounts.c b/init/do_mounts.c
-> index c0851a8..9575bdd 100644
-> --- a/init/do_mounts.c
-> +++ b/init/do_mounts.c
-> @@ -490,4 +490,7 @@ out:
->  	devtmpfs_mount("dev");
->  	sys_mount(".", "/", NULL, MS_MOVE, NULL);
->  	sys_chroot((const char __user __force *)".");
-> +#ifndef CONFIG_BLK_DEV_INITRD
-> +	usermodehelper_enable();
-> +#endif
->  }
-> diff --git a/init/initramfs.c b/init/initramfs.c
-> index 2531811..881fc4b 100644
-> --- a/init/initramfs.c
-> +++ b/init/initramfs.c
-> @@ -581,6 +581,7 @@ static int __init populate_rootfs(void)
->  		err = unpack_to_rootfs((char *)initrd_start,
->  			initrd_end - initrd_start);
->  		if (!err) {
-> +			usermodehelper_enable();
->  			free_initrd();
->  			return 0;
->  		} else {
-> @@ -603,6 +604,7 @@ static int __init populate_rootfs(void)
->  			initrd_end - initrd_start);
->  		if (err)
->  			printk(KERN_EMERG "Initramfs unpacking failed: %s\n", err);
-> +		usermodehelper_enable();
->  		free_initrd();
->  #endif
->  	}
-> diff --git a/init/main.c b/init/main.c
-> index 03b408d..2e232cb 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -730,7 +730,6 @@ static void __init do_basic_setup(void)
->  	driver_init();
->  	init_irq_proc();
->  	do_ctors();
-> -	usermodehelper_enable();
->  	do_initcalls();
->  }
->  
-> -- 
-> 1.7.3.4
-> 
-Hi,Linus.Sorry, but I just want to know whether this patch is wrong? And any suggestion is welcome, thanks!
+Program received signal SIGSEGV, Segmentation fault.
+dso__split_kallsyms (dso=0xb87ca0, map=0xb87d20, filter=0) at util/symbol.c:640
+640		struct machine *machine = kmaps->machine;
+Missing separate debuginfos, use: debuginfo-install
+elfutils-libelf-0.152-1.fc15.x86_64 glibc-2.14-5.x86_64
+libgcc-4.6.1-9.fc15.x86_64 newt-0.52.12-3.fc15.x86_64
+python-libs-2.7.1-7.fc15.x86_64 slang-2.2.3-2.fc15.x86_64
+zlib-1.2.5-3.fc15.x86_64
+(gdb) bt
+#0  dso__split_kallsyms (dso=0xb87ca0, map=0xb87d20, filter=0) at
+util/symbol.c:640
+#1  0x00000000004423d3 in dso__load_kallsyms (filter=0, map=0xb87d20,
+filename=0x5042fe "/proc/kallsyms", dso=0xb87ca0) at util/symbol.c:789
+#2  dso__load_kernel_sym (filter=0, map=0xb87d20, dso=0xb87ca0) at
+util/symbol.c:2107
+#3  dso__load (dso=0xb87ca0, map=0xb87d20, filter=0) at util/symbol.c:1574
+#4  0x000000000044aa40 in map__load (self=0xb87d20, filter=0) at util/map.c:109
+#5  0x000000000044b1d0 in map__find_symbol_by_name (filter=0,
+name=<optimized out>, self=0xb87d20) at util/map.c:162
+#6  map_groups__find_symbol_by_name (self=<optimized out>,
+type=<optimized out>, name=0x8cf8c0 "PageHug", mapp=0x0, filter=0) at
+util/map.c:314
+#7  0x0000000000462cc5 in map_groups__find_function_by_name
+(self=0x819088, filter=0, mapp=0x0, name=<optimized out>) at
+util/map.h:215
+#8  machine__find_kernel_function_by_name (filter=0, self=0x819040,
+mapp=0x0, name=<optimized out>) at util/map.h:224
+#9  __find_kernel_function_by_name (mapp=0x0, name=<optimized out>) at
+util/probe-event.c:111
+#10 convert_to_probe_trace_events (module=<optimized out>,
+tevs=<optimized out>, pev=<optimized out>, max_tevs=<optimized out>)
+    at util/probe-event.c:1866
+#11 add_perf_probe_events (pevs=<optimized out>, npevs=1,
+max_tevs=<optimized out>, module=<optimized out>, force_add=false)
+    at util/probe-event.c:1909
+#12 0x000000000042332e in cmd_probe (argc=0, argv=<optimized out>,
+prefix=<optimized out>) at builtin-probe.c:397
+#13 0x000000000040fcf9 in run_builtin (p=0x747ba0, argc=3,
+argv=0x7fffffffe5a0) at perf.c:286
+#14 0x000000000040f4dc in handle_internal_command
+(argv=0x7fffffffe5a0, argc=3) at perf.c:358
+#15 run_argv (argv=0x7fffffffe440, argcp=0x7fffffffe44c) at perf.c:402
+#16 main (argc=3, argv=0x7fffffffe5a0) at perf.c:488
+
+
+On Wed, Oct 26, 2011 at 10:01 AM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Tue, Oct 25, 2011 at 08:39:05PM -0700, furat.afram@gmail.com escreveu:
+>> From: Furat Afram <furat.afram@gmail.com>
+>>
+>> pref probe crashes when trying to add nonexistent event
+>
+> Can you provide a backtrace of such crash? I'm having difficulty to
+> figure out how the patch provided will fix perf probe.
+>
+> - Arnaldo
+>
+>> Signed-off-by: Furat Afram <furat.afram@gmail.com>
+>> ---
+>>  tools/perf/util/symbol.c |    8 ++++++--
+>>  1 files changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+>> index 40eeaf0..ad0c79b 100644
+>> --- a/tools/perf/util/symbol.c
+>> +++ b/tools/perf/util/symbol.c
+>> @@ -636,14 +636,18 @@ static int dso__load_all_kallsyms(struct dso *dso, const char *filename,
+>>  static int dso__split_kallsyms(struct dso *dso, struct map *map,
+>>                              symbol_filter_t filter)
+>>  {
+>> -     struct map_groups *kmaps = map__kmap(map)->kmaps;
+>> -     struct machine *machine = kmaps->machine;
+>> +     struct map_groups *kmaps;
+>> +     struct machine *machine;
+>>       struct map *curr_map = map;
+>>       struct symbol *pos;
+>>       int count = 0, moved = 0;
+>>       struct rb_root *root = &dso->symbols[map->type];
+>>       struct rb_node *next = rb_first(root);
+>>       int kernel_range = 0;
+>> +     kmaps = map__kmap(map)->kmaps;
+>> +     if (kmaps == NULL)
+>> +             return -1;
+>> +     machine = kmaps->machine;
+>>
+>>       while (next) {
+>>               char *module;
+>> --
+>> 1.7.6.4
+>
