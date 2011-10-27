@@ -1,32 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab1J0QBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:01:35 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:44477 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab1J0QBe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:01:34 -0400
-Message-ID: <4EA9805B.7060506@ilyx.ru>
-Date: Thu, 27 Oct 2011 20:01:31 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
+	id S1753251Ab1J0QDt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 12:03:49 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42723 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1J0QDq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 12:03:46 -0400
 MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH] TTY: pty, fix pty counting in "/proc/sys/kernel/pty/nr"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1319396024-28558-1-git-send-email-martinez.javier@gmail.com>
+References: <1319396024-28558-1-git-send-email-martinez.javier@gmail.com>
+From: Javier Martinez Canillas <martinez.javier@gmail.com>
+Date: Thu, 27 Oct 2011 18:03:26 +0200
+Message-ID: <CAAwP0s2gPpC6kar0=-Kg4WPcc34G3rOdjWqamr+R3PQ1PSJ51A@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] Input: Cypress TTSP device driver
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mohan Pallaka <mpallaka@codeaurora.org>,
+        Kevin McNeely <kev@cypress.com>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excuse me, my persistence.
+On Sun, Oct 23, 2011 at 8:53 PM, Javier Martinez Canillas
+<martinez.javier@gmail.com> wrote:
+> Cypress TrueTouch(tm) Standard Product controllers are found in a wide range of
+> embedded devices. This patch-set adds support for a variety of TTSP controllers.
+>
+> The original author of the driver is Kevin McNeely <kev@cypress.com>
+>
+> Since the hardware is capable of tracking identifiable contacts and the original
+> driver used multi-touch protocol type A (stateless), I've added multi-touch
+> protocol type B (stateful) support.
+>
+> The driver is composed of a core driver that process the data sent by the
+> contacts (fingers) and two bus specific interface modules (I2C and SPI).
+>
+> This is version 7 of the driver that fixes issues called out by Dmitry Torokhov,
+> Henrik Rydberg, Mohan Pallaka, Kevin McNeely and Shubhrajyoti Datta.
+>
+> The patchset is composed of the following patches:
+>
+> [PATCH v7 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch screen support
+> [PATCH v7 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
+> [PATCH v7 3/3] Input: cyttsp - add support for Cypress TTSP touchscreen SPI bus interface
+>
 
-But, I don't understand, 
-what for, "pty" driver, invoked tty_driver_remove_tty(), 
-only for call its own function(pty_unix98_remove). 
-In commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24.
+Hello,
 
-Thank you.
-Ilya.
+Any feedback from this patch-set?
 
+Thank you and best regards,
+
+-- 
+Javier Martínez Canillas
+(+34) 682 39 81 69
+Barcelona, Spain
