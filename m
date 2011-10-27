@@ -1,89 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755107Ab1J0SzY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 14:55:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42145 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335Ab1J0SzW convert rfc822-to-8bit (ORCPT
+	id S1755133Ab1J0S5O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:57:14 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53836 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754532Ab1J0S5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 14:55:22 -0400
+	Thu, 27 Oct 2011 14:57:13 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX18AZspjIZMAnl1aboGytA/lDsXCvhw2oicWw/+V6v
+	Y1rXQB/OoJJEhM
+Message-ID: <4EA9A96F.1030708@gmx.net>
+Date: Thu, 27 Oct 2011 20:56:47 +0200
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:6.0.2) Gecko/20110902 Thunderbird/6.0.2
 MIME-Version: 1.0
-In-Reply-To: <20111027084310.2b7da753@pyx>
-References: <1319602564-19162-1-git-send-email-paul.s.schilling@gmail.com>
-	<20111027084310.2b7da753@pyx>
-Date: Thu, 27 Oct 2011 13:55:21 -0500
-Message-ID: <CAC=G6sz9tpLnxWN7_Ts+rcNf-YQZw-4VQUNo6vKNeHOnOPOHVA@mail.gmail.com>
-Subject: Re: [PATCH 02/15] ATA : vortex86 : fix vortex86dx/sx hardware CRC bug.
-From: Paul Schilling <paul.s.schilling@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jeff Garzik <jgarzik@pobox.com>, "David S. Miller" <davem@davemloft.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+CC: linux-kernel@vger.kernel.org, len.brown@intel.com, bhelgaas@google.com
+Subject: [PATCH, resend] PNPACPI: Simplify disabled resource registration
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Vortex86dx uses RDC IDE peripheral integrated into the SOC.  The
-CRC design is
-broken in the Vortex86dx and sx.  The original reference can be found
-in the Linux kernel itself.
+The attached patch simplifies 29df8d8f8702f0f53c1375015f09f04bc8d023c1.  As 
+the "pnp_xxx" structs are not designed to cope with IORESOURCE_DISABLED, and 
+hence no code can test for this value, setting this value is actually a "no op" 
+and can be skipped altogether.  It is sufficient to remove the checks for 
+"empty" resources and continue processing. 
 
-The Vortex86sx uses the RDC D1010.
-The Vortex86dx uses the RDC D1011.
-Both of which have broken CRC hardware which breaks DMA.
+The patch is applied against 3.1.
 
-The pata_821x.c had the following code in it to handle the RDC
-hardware used in the Vortex86SX.
 
-4fca377f (Jeff Garzik               2011-02-15 01:13:24 -0500 913)
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 914)
- if (pdev->vendor == PCI_VENDOR_ID_RDC) {
-4a99d95f (Alan Cox                  2009-01-11 19:51:08 +0000 915)
-         /* Deal with Vortex86SX */
-4a99d95f (Alan Cox                  2009-01-11 19:51:08 +0000 916)
-         if (pdev->revision == 0x11)
-4a99d95f (Alan Cox                  2009-01-11 19:51:08 +0000 917)
-                 ppi[0] = &info_rdc_11;
-4a99d95f (Alan Cox                  2009-01-11 19:51:08 +0000 918)
-         else
-4a99d95f (Alan Cox                  2009-01-11 19:51:08 +0000 919)
-                 ppi[0] = &info_rdc;
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 920)      } else {
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 921)
-         /* Force the card into bypass mode if so requested */
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 922)
-         if (it8212_noraid) {
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 923)
-                 printk(KERN_INFO DRV_NAME ": forcing bypass
-mode.\n");
-963e4975 (Alan Cox                  2008-07-24 17:16:06 +0100 924)
-                 it821x_disable_raid(pdev);
+Signed-off-by: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-Thanks,
-Paul Schilling
 
-On Thu, Oct 27, 2011 at 2:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 25 Oct 2011 23:16:04 -0500
-> Paul Schilling <paul.s.schilling@gmail.com> wrote:
->
->> This fixes a DMA issue related to a CRC bug on
->> the RDC pata peripherial found on the vortex86sx and vortex86dx.
->
-> What is the RDC erratum reference for this ? Also it seems to make no
-> sense
->
->
->>       static const struct ata_port_info info_rdc_11 = {
->>               .flags = ATA_FLAG_SLAVE_POSS,
->>               .pio_mask = ATA_PIO4,
->> -             .mwdma_mask = ATA_MWDMA2,
->> +             .mwdma_mask = 0,
->> +             .udma_mask = 0,
->
-> MWDMA is not part of the CRC hardware anyway
->
-> Are you sure these newer variants are simply not using a different set of
-> timing parameters thus showing bugs on your system ?
->
+diff -u linux/drivers/pnp/pnpacpi/rsparser.c linux/drivers/pnp/pnpacpi/rsparser.c
+--- linux/drivers/pnp/pnpacpi/rsparser.c
++++ linux/drivers/pnp/pnpacpi/rsparser.c
+@@ -509,15 +509,12 @@
+ 					    struct acpi_resource_dma *p)
+ {
+ 	int i;
+-	unsigned char map = 0, flags = 0;
+-
+-	if (p->channel_count == 0)
+-		flags |= IORESOURCE_DISABLED;
++	unsigned char map = 0, flags;
+ 
+ 	for (i = 0; i < p->channel_count; i++)
+ 		map |= 1 << p->channels[i];
+ 
+-	flags |= dma_flags(dev, p->type, p->bus_master, p->transfer);
++	flags = dma_flags(dev, p->type, p->bus_master, p->transfer);
+ 	pnp_register_dma_resource(dev, option_flags, map, flags);
+ }
+ 
+@@ -527,17 +524,14 @@
+ {
+ 	int i;
+ 	pnp_irq_mask_t map;
+-	unsigned char flags = 0;
+-
+-	if (p->interrupt_count == 0)
+-		flags |= IORESOURCE_DISABLED;
++	unsigned char flags;
+ 
+ 	bitmap_zero(map.bits, PNP_IRQ_NR);
+ 	for (i = 0; i < p->interrupt_count; i++)
+ 		if (p->interrupts[i])
+ 			__set_bit(p->interrupts[i], map.bits);
+ 
+-	flags |= irq_flags(p->triggering, p->polarity, p->sharable);
++	flags = irq_flags(p->triggering, p->polarity, p->sharable);
+ 	pnp_register_irq_resource(dev, option_flags, &map, flags);
+ }
+ 
+@@ -547,10 +541,7 @@
+ {
+ 	int i;
+ 	pnp_irq_mask_t map;
+-	unsigned char flags = 0;
+-
+-	if (p->interrupt_count == 0)
+-		flags |= IORESOURCE_DISABLED;
++	unsigned char flags;
+ 
+ 	bitmap_zero(map.bits, PNP_IRQ_NR);
+ 	for (i = 0; i < p->interrupt_count; i++) {
+@@ -564,7 +555,7 @@
+ 		}
+ 	}
+ 
+-	flags |= irq_flags(p->triggering, p->polarity, p->sharable);
++	flags = irq_flags(p->triggering, p->polarity, p->sharable);
+ 	pnp_register_irq_resource(dev, option_flags, &map, flags);
+ }
+ 
+@@ -574,11 +565,8 @@
+ {
+ 	unsigned char flags = 0;
+ 
+-	if (io->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (io->io_decode == ACPI_DECODE_16)
+-		flags |= IORESOURCE_IO_16BIT_ADDR;
++		flags = IORESOURCE_IO_16BIT_ADDR;
+ 	pnp_register_port_resource(dev, option_flags, io->minimum, io->maximum,
+ 				   io->alignment, io->address_length, flags);
+ }
+@@ -587,13 +575,8 @@
+ 					unsigned int option_flags,
+ 					struct acpi_resource_fixed_io *io)
+ {
+-	unsigned char flags = 0;
+-
+-	if (io->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	pnp_register_port_resource(dev, option_flags, io->address, io->address,
+-				   0, io->address_length, flags | IORESOURCE_IO_FIXED);
++				   0, io->address_length, IORESOURCE_IO_FIXED);
+ }
+ 
+ static __init void pnpacpi_parse_mem24_option(struct pnp_dev *dev,
+@@ -602,11 +585,8 @@
+ {
+ 	unsigned char flags = 0;
+ 
+-	if (p->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (p->write_protect == ACPI_READ_WRITE_MEMORY)
+-		flags |= IORESOURCE_MEM_WRITEABLE;
++		flags = IORESOURCE_MEM_WRITEABLE;
+ 	pnp_register_mem_resource(dev, option_flags, p->minimum, p->maximum,
+ 				  p->alignment, p->address_length, flags);
+ }
+@@ -617,11 +597,8 @@
+ {
+ 	unsigned char flags = 0;
+ 
+-	if (p->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (p->write_protect == ACPI_READ_WRITE_MEMORY)
+-		flags |= IORESOURCE_MEM_WRITEABLE;
++		flags = IORESOURCE_MEM_WRITEABLE;
+ 	pnp_register_mem_resource(dev, option_flags, p->minimum, p->maximum,
+ 				  p->alignment, p->address_length, flags);
+ }
+@@ -632,11 +609,8 @@
+ {
+ 	unsigned char flags = 0;
+ 
+-	if (p->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (p->write_protect == ACPI_READ_WRITE_MEMORY)
+-		flags |= IORESOURCE_MEM_WRITEABLE;
++		flags = IORESOURCE_MEM_WRITEABLE;
+ 	pnp_register_mem_resource(dev, option_flags, p->address, p->address,
+ 				  0, p->address_length, flags);
+ }
+@@ -656,19 +630,16 @@
+ 		return;
+ 	}
+ 
+-	if (p->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (p->resource_type == ACPI_MEMORY_RANGE) {
+ 		if (p->info.mem.write_protect == ACPI_READ_WRITE_MEMORY)
+-			flags |= IORESOURCE_MEM_WRITEABLE;
++			flags = IORESOURCE_MEM_WRITEABLE;
+ 		pnp_register_mem_resource(dev, option_flags, p->minimum,
+ 					  p->minimum, 0, p->address_length,
+ 					  flags);
+ 	} else if (p->resource_type == ACPI_IO_RANGE)
+ 		pnp_register_port_resource(dev, option_flags, p->minimum,
+ 					   p->minimum, 0, p->address_length,
+-					   flags | IORESOURCE_IO_FIXED);
++					   IORESOURCE_IO_FIXED);
+ }
+ 
+ static __init void pnpacpi_parse_ext_address_option(struct pnp_dev *dev,
+@@ -678,19 +649,16 @@
+ 	struct acpi_resource_extended_address64 *p = &r->data.ext_address64;
+ 	unsigned char flags = 0;
+ 
+-	if (p->address_length == 0)
+-		flags |= IORESOURCE_DISABLED;
+-
+ 	if (p->resource_type == ACPI_MEMORY_RANGE) {
+ 		if (p->info.mem.write_protect == ACPI_READ_WRITE_MEMORY)
+-			flags |= IORESOURCE_MEM_WRITEABLE;
++			flags = IORESOURCE_MEM_WRITEABLE;
+ 		pnp_register_mem_resource(dev, option_flags, p->minimum,
+ 					  p->minimum, 0, p->address_length,
+ 					  flags);
+ 	} else if (p->resource_type == ACPI_IO_RANGE)
+ 		pnp_register_port_resource(dev, option_flags, p->minimum,
+ 					   p->minimum, 0, p->address_length,
+-					   flags | IORESOURCE_IO_FIXED);
++					   IORESOURCE_IO_FIXED);
+ }
+ 
+ struct acpipnp_parse_option_s {
