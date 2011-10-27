@@ -1,47 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab1J0Iuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:50:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:40860 "EHLO gir.skynet.ie"
+	id S1755091Ab1J0I5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:57:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25797 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754967Ab1J0Iuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:50:39 -0400
-Date: Thu, 27 Oct 2011 10:50:25 +0200
-From: Mel Gorman <mel@csn.ul.ie>
-To: Dimitri Sivanich <sivanich@sgi.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@gentwo.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] cache align vm_stat
-Message-ID: <20111027085008.GA6563@csn.ul.ie>
+	id S1755005Ab1J0I5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 04:57:47 -0400
+Subject: [RFC v3 PATCH 5/4 PATCH] virtio-net: send gratuitous packet when
+	needed
+To: aliguori@us.ibm.com, mst@redhat.com, jan.kiszka@siemens.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        blauwirbel@gmail.com, netdev@vger.kernel.org, stefanha@gmail.com
+From: Jason Wang <jasowang@redhat.com>
+Cc: qemu-devel@nongnu.org, kvm@vger.kernel.org
+Date: Thu, 27 Oct 2011 16:57:41 +0800
+Message-ID: <20111027085740.15655.37609.stgit@dhcp-8-146.nay.redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 11:10:35AM -0500, Dimitri Sivanich wrote:
-> Avoid false sharing of the vm_stat array.
-> 
-> This was found to adversely affect tmpfs I/O performance.
-> 
+As hypervior does not have the knowledge of guest network
+configuration, it's better to ask guest to send gratuitous packet when
+needed.
 
-I think this fix is overly simplistic. It is moving each counter into
-its own cache line. While I accept that this will help the preformance
-of the tmpfs-based workload, it will adversely affect workloads that
-touch a lot of counters because of the increased cache footprint.
+This make let virtio-net driver can send gratuitous packet.
 
-1. Is it possible to rearrange the vmstat array such that two hot
-   counters do not share a cache line?
-2. Has Andrew's suggestion to alter the per-cpu threshold based on the
-   value of the global counter to reduce conflicts been tried?
+Guest check VIRTIO_NET_S_ANNOUNCE during config change interrupt. When
+this bit is set, a workqueue would be scheduled to send gratuitous
+packet through NETDEV_NOTIFY_PEERS.
 
-(I'm at Linux Con at the moment so will be even slower to respond than
-usual)
+This feature is negotiated through bit VIRTIO_NET_F_GUEST_ANNOUNCE.
 
--- 
-Mel Gorman
-SUSE Labs
+Changes from v2:
+- Fix the race between unregister_dev() and workqueue
+
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c   |   32 ++++++++++++++++++++++++++++++--
+ include/linux/virtio_net.h |    2 ++
+ 2 files changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index b8225f3..19ee718 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -71,6 +71,9 @@ struct virtnet_info {
+ 	/* Work struct for refilling if we run low on memory. */
+ 	struct delayed_work refill;
+ 
++	/* Work struct for sending gratituous packet. */
++	struct work_struct announce;
++
+ 	/* Chain pages by the private ptr. */
+ 	struct page *pages;
+ 
+@@ -507,6 +510,13 @@ static void refill_work(struct work_struct *work)
+ 		schedule_delayed_work(&vi->refill, HZ/2);
+ }
+ 
++static void announce_work(struct work_struct *work)
++{
++	struct virtnet_info *vi = container_of(work, struct virtnet_info,
++					       announce);
++	netif_notify_peers(vi->dev);
++}
++
+ static int virtnet_poll(struct napi_struct *napi, int budget)
+ {
+ 	struct virtnet_info *vi = container_of(napi, struct virtnet_info, napi);
+@@ -923,11 +933,23 @@ static void virtnet_update_status(struct virtnet_info *vi)
+ 			      &v, sizeof(v));
+ 
+ 	/* Ignore unknown (future) status bits */
+-	v &= VIRTIO_NET_S_LINK_UP;
++	v &= VIRTIO_NET_S_LINK_UP | VIRTIO_NET_S_ANNOUNCE;
+ 
+ 	if (vi->status == v)
+ 		return;
+ 
++	if (v & VIRTIO_NET_S_ANNOUNCE) {
++		v &= ~VIRTIO_NET_S_ANNOUNCE;
++		vi->vdev->config->set(vi->vdev,
++				      offsetof(struct virtio_net_config,
++					       status),
++				      &v, sizeof(v));
++
++		if ((v & VIRTIO_NET_S_LINK_UP) &&
++		    virtio_has_feature(vi->vdev, VIRTIO_NET_F_GUEST_ANNOUNCE))
++			schedule_work(&vi->announce);
++	}
++
+ 	vi->status = v;
+ 
+ 	if (vi->status & VIRTIO_NET_S_LINK_UP) {
+@@ -1016,6 +1038,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		goto free;
+ 
+ 	INIT_DELAYED_WORK(&vi->refill, refill_work);
++	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ANNOUNCE))
++		INIT_WORK(&vi->announce, announce_work);
+ 	sg_init_table(vi->rx_sg, ARRAY_SIZE(vi->rx_sg));
+ 	sg_init_table(vi->tx_sg, ARRAY_SIZE(vi->tx_sg));
+ 
+@@ -1075,6 +1099,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	return 0;
+ 
+ unregister:
++	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_GUEST_ANNOUNCE))
++		cancel_work_sync(&vi->announce);
+ 	unregister_netdev(dev);
+ 	cancel_delayed_work_sync(&vi->refill);
+ free_vqs:
+@@ -1115,7 +1141,8 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
+ 	/* Stop all the virtqueues. */
+ 	vdev->config->reset(vdev);
+ 
+-
++	if(virtio_has_feature(vi->vdev, VIRTIO_NET_F_GUEST_ANNOUNCE))
++		cancel_work_sync(&vi->announce);
+ 	unregister_netdev(vi->dev);
+ 	cancel_delayed_work_sync(&vi->refill);
+ 
+@@ -1144,6 +1171,7 @@ static unsigned int features[] = {
+ 	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
+ 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
+ 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
++	VIRTIO_NET_F_GUEST_ANNOUNCE,
+ };
+ 
+ static struct virtio_driver virtio_net_driver = {
+diff --git a/include/linux/virtio_net.h b/include/linux/virtio_net.h
+index 970d5a2..44a38d6 100644
+--- a/include/linux/virtio_net.h
++++ b/include/linux/virtio_net.h
+@@ -49,8 +49,10 @@
+ #define VIRTIO_NET_F_CTRL_RX	18	/* Control channel RX mode support */
+ #define VIRTIO_NET_F_CTRL_VLAN	19	/* Control channel VLAN filtering */
+ #define VIRTIO_NET_F_CTRL_RX_EXTRA 20	/* Extra RX mode control support */
++#define VIRTIO_NET_F_GUEST_ANNOUNCE 21  /* Guest can send gratituous packet */
+ 
+ #define VIRTIO_NET_S_LINK_UP	1	/* Link is up */
++#define VIRTIO_NET_S_ANNOUNCE   2       /* Announcement is needed */
+ 
+ struct virtio_net_config {
+ 	/* The config defining mac address (if VIRTIO_NET_F_MAC) */
+
