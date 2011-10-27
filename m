@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab1J0NZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:25:44 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:49329 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088Ab1J0NZm (ORCPT
+	id S1753746Ab1J0N1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:27:36 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:34579 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753051Ab1J0N1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:25:42 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Olaf Hering <olaf@aepfle.de>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "jkosina@suse.cz" <jkosina@suse.cz>
-Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-Thread-Index: AQHMk/Yfbv94uVs6kUmFh5QHJPmlm5WQdjQA//+5GHA=
-Date: Thu, 27 Oct 2011 13:25:41 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA51C59@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1319645321-9770-1-git-send-email-kys@microsoft.com>
- <20111027103714.GA13732@aepfle.de>
-In-Reply-To: <20111027103714.GA13732@aepfle.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.19]
-Content-Type: text/plain; charset="utf-8"
+	Thu, 27 Oct 2011 09:27:34 -0400
+Message-ID: <4EA95C38.2020804@ti.com>
+Date: Thu, 27 Oct 2011 18:57:20 +0530
+From: Rajendra Nayak <rnayak@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.20) Gecko/20110805 Thunderbird/3.1.12
 MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org, shawn.guo@freescale.com
+Subject: Re: [PATCH v3 1/4] regulator: helper routine to extract regulator_init_data
+References: <1319702185-16108-1-git-send-email-rnayak@ti.com> <1319702185-16108-2-git-send-email-rnayak@ti.com> <20111027080953.GB18360@opensource.wolfsonmicro.com> <CACYZBRG+_mm1O7Qg+ENCcLBX72iEWWyJohD_9EpAaT+Pb54cEA@mail.gmail.com> <20111027114935.GA7384@opensource.wolfsonmicro.com>
+In-Reply-To: <20111027114935.GA7384@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9RDPnT8023682
 
+On Thursday 27 October 2011 05:19 PM, Mark Brown wrote:
+> On Thu, Oct 27, 2011 at 04:13:08PM +0530, Nayak, Rajendra wrote:
+>
+>> okay, here's an updated patch which does that. I also added a binding to
+>> specify a descriptive name to the regulator outputs as you suggested in
+>> the other thread.
+>
+> Looks good!  I guess we may run into issues with the status change thing
+> but I think we need to gather some experience to figure that out and
+> since it's implicit hopefully that won't have any compatibility issues
+> if it does happen.
+>
+> Acked-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+>
+> I guess it might be useful to resend without this bit at the top to make
+> it easier for Liam to apply.
 
-
-> -----Original Message-----
-> From: Olaf Hering [mailto:olaf@aepfle.de]
-> Sent: Thursday, October 27, 2011 6:37 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> dmitry.torokhov@gmail.com; jkosina@suse.cz
-> Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-> 
-> On Wed, Oct 26, K. Y. Srinivasan wrote:
-> 
-> > +static struct  hv_driver mousevsc_drv = {
-> > +	.name = "mousevsc",
-> 
-> This should be KBUILD_MODNAME.
-
-Thanks Olaf. Once I get some more comments (especially from Jiri), I will re-spin this patch
-addressing all the comments I have gotten to date.
-
-Regards,
-
-K. Y 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks Mark, just resent the patch with your Ack included.
