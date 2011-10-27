@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab1J0S2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 14:28:36 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42983 "EHLO gate.crashing.org"
+	id S1754743Ab1J0S32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:29:28 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:8233 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754348Ab1J0S2f convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 14:28:35 -0400
-Subject: Re: Fix for fsl_upm
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=US-ASCII
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <4EA9683D.8030100@dev.rtsoft.ru>
-Date: Thu, 27 Oct 2011 13:28:12 -0500
-Cc: benh@kernel.crashing.org, paulus@samba.org, Shengzhou.Liu@freescale.com,
-        Shaohui.Xie@freescale.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <4BF2BC2E-1596-42D1-A403-78A1FDBC9EAC@kernel.crashing.org>
-References: <4EA9683D.8030100@dev.rtsoft.ru>
-To: Rusev <arusev@dev.rtsoft.ru>
-X-Mailer: Apple Mail (2.1251.1)
+	id S1754364Ab1J0S31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 14:29:27 -0400
+Subject: [PATCH v3 3/3] SUNRPC: optimize net_ns dereferencing in rpcbind
+	registering calls
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Date: Thu, 27 Oct 2011 22:30:17 +0300
+Message-ID: <20111027181123.20459.37129.stgit@localhost6.localdomain6>
+In-Reply-To: <20111027180824.20459.23219.stgit@localhost6.localdomain6>
+References: <20111027180824.20459.23219.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Static rpcbind registering functions can be parametrized by network namespace
+pointer, calculated only once, instead of using init_net pointer (or taking it
+from current when virtualization will be comleted) in many places.
 
-On Oct 27, 2011, at 9:18 AM, Rusev wrote:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-> patch is vs. 2.6.39, yet it applied to 3.1
-> 
-> 
-> 
-> Fix of UPM driver for Freescale PowerPC processors
-> 
-> If Freescale LBC driver fails to initialise itself from device tree,
-> then internal structure is freed only but not NULL-fied.
-> As result functions fsl_lbc_find() after checking the structure is not NULL are
-> trying to access device registers.
-> 
-> Signed-off-by: Alexandre Rusev <arusev@dev.rtsoft.ru> 
-> --- linux-2.6.39.old/arch/powerpc/sysdev/fsl_lbc.c	2011-10-27 03:17:28.000000000 +0400
-> +++ linux-2.6.39/arch/powerpc/sysdev/fsl_lbc.c	2011-10-27 05:06:44.000000000 +0400
-> @@ -322,6 +322,7 @@ static int __devinit fsl_lbc_ctrl_probe(
-> err:
-> 	iounmap(fsl_lbc_ctrl_dev->regs);
-> 	kfree(fsl_lbc_ctrl_dev);
-> +	fsl_lbc_ctrl_dev = NULL;
-> 	return ret;
-> }
-> 
+---
+ net/sunrpc/rpcb_clnt.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Can you send this as a proper patch.
-
-- k
+diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
+index 8c873a8..cc0f402 100644
+--- a/net/sunrpc/rpcb_clnt.c
++++ b/net/sunrpc/rpcb_clnt.c
+@@ -451,14 +451,14 @@ int rpcb_register(u32 prog, u32 vers, int prot, unsigned short port)
+ /*
+  * Fill in AF_INET family-specific arguments to register
+  */
+-static int rpcb_register_inet4(const struct sockaddr *sap,
++static int rpcb_register_inet4(struct sunrpc_net *sn,
++			       const struct sockaddr *sap,
+ 			       struct rpc_message *msg)
+ {
+ 	const struct sockaddr_in *sin = (const struct sockaddr_in *)sap;
+ 	struct rpcbind_args *map = msg->rpc_argp;
+ 	unsigned short port = ntohs(sin->sin_port);
+ 	int result;
+-	struct sunrpc_net *sn = net_generic(&init_net, sunrpc_net_id);
+ 
+ 	map->r_addr = rpc_sockaddr2uaddr(sap);
+ 
+@@ -479,14 +479,14 @@ static int rpcb_register_inet4(const struct sockaddr *sap,
+ /*
+  * Fill in AF_INET6 family-specific arguments to register
+  */
+-static int rpcb_register_inet6(const struct sockaddr *sap,
++static int rpcb_register_inet6(struct sunrpc_net *sn,
++			       const struct sockaddr *sap,
+ 			       struct rpc_message *msg)
+ {
+ 	const struct sockaddr_in6 *sin6 = (const struct sockaddr_in6 *)sap;
+ 	struct rpcbind_args *map = msg->rpc_argp;
+ 	unsigned short port = ntohs(sin6->sin6_port);
+ 	int result;
+-	struct sunrpc_net *sn = net_generic(&init_net, sunrpc_net_id);
+ 
+ 	map->r_addr = rpc_sockaddr2uaddr(sap);
+ 
+@@ -504,10 +504,10 @@ static int rpcb_register_inet6(const struct sockaddr *sap,
+ 	return result;
+ }
+ 
+-static int rpcb_unregister_all_protofamilies(struct rpc_message *msg)
++static int rpcb_unregister_all_protofamilies(struct sunrpc_net *sn,
++					     struct rpc_message *msg)
+ {
+ 	struct rpcbind_args *map = msg->rpc_argp;
+-	struct sunrpc_net *sn = net_generic(&init_net, sunrpc_net_id);
+ 
+ 	dprintk("RPC:       unregistering [%u, %u, '%s'] with "
+ 		"local rpcbind\n",
+@@ -580,13 +580,13 @@ int rpcb_v4_register(const u32 program, const u32 version,
+ 		return -EPROTONOSUPPORT;
+ 
+ 	if (address == NULL)
+-		return rpcb_unregister_all_protofamilies(&msg);
++		return rpcb_unregister_all_protofamilies(sn, &msg);
+ 
+ 	switch (address->sa_family) {
+ 	case AF_INET:
+-		return rpcb_register_inet4(address, &msg);
++		return rpcb_register_inet4(sn, address, &msg);
+ 	case AF_INET6:
+-		return rpcb_register_inet6(address, &msg);
++		return rpcb_register_inet6(sn, address, &msg);
+ 	}
+ 
+ 	return -EAFNOSUPPORT;
 
