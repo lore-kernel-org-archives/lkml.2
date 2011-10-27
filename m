@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab1J0OJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 10:09:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37920 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab1J0OIz (ORCPT
+	id S1754594Ab1J0OLP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 10:11:15 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39243 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750742Ab1J0OLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 10:08:55 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/1] perf hists: Fix recalculation of total_period when sorting entries
-Date: Thu, 27 Oct 2011 12:08:46 -0200
-Message-Id: <1319724526-376-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1319724526-376-1-git-send-email-acme@infradead.org>
-References: <1319724526-376-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 27 Oct 2011 10:11:14 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EA953E8.4020004@suse.cz>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+	<CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
+	<20111027123713.GB22032@elte.hu>
+	<4EA953E8.4020004@suse.cz>
+Date: Thu, 27 Oct 2011 17:11:13 +0300
+X-Google-Sender-Auth: VFzaW2gY3ek7b7VV-g67La9DPpM
+Message-ID: <CAOJsxLHT9V-K26=Qt10sDVibRjoVgZBVULsVwYD5oqrM0bN+5Q@mail.gmail.com>
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+From: Pekka Enberg <penberg@kernel.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Thu, Oct 27, 2011 at 3:51 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> I like the feature - i hope it's expressed in the right Kbuild-ish
+>> fashion.
+>>
+>> Acked-by: Ingo Molnar <mingo@elte.hu>
+>
+> I hope we won't now also be getting make nfsconfig, make paeconfig and
+> whatnot :). Also, the lists of select statements might need updates from
+> time to time, if new dependencies appear.
 
-We were doing parts of it in hists__collapse_resort and parts of it in
-hists__output_resort, leading to a bogus total_period.
+The use case is to be able to take a .config posted in a bug report
+and easily turn that into something that the KVM tool can boot.
 
-Fix it by doing just the filtering operation when collapsing because
-there we know that the Zoom operations adds filters just  what is in
-hists->entries, not to the new batch of entries being collapsed.
+"kvmconfig" really represents a virtualized x86 architecture
+configuration. Maybe the naming is off because it's not about
+individual features like paeconfig or nfsconfig would be but rather
+about turning on all the required options for virtualized x86 for the
+KVM tool.
 
-And move all the nr_entries + total_period recalculation to
-hists__output_resort since we will traverse all entries anyway there.
+If you have better ideas how to do this, we're happy to change the
+implementation.
 
-Problem introduced when developing threaded addition of new batches
-of hist_entries, i.e. post v3.1.
-
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-8xyh165h7hmwy0696hu25en6@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/hist.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f6a9939..a36a3fa 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -365,7 +365,6 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
- 
- 	root = hists__get_rotate_entries_in(hists);
- 	next = rb_first(root);
--	hists->stats.total_period = 0;
- 
- 	while (next) {
- 		n = rb_entry(next, struct hist_entry, rb_node_in);
-@@ -379,7 +378,6 @@ static void __hists__collapse_resort(struct hists *hists, bool threaded)
- 			 * been set by, say, the hist_browser.
- 			 */
- 			hists__apply_filters(hists, n);
--			hists__inc_nr_entries(hists, n);
- 		}
- 	}
- }
-@@ -442,6 +440,7 @@ static void __hists__output_resort(struct hists *hists, bool threaded)
- 	hists->entries = RB_ROOT;
- 
- 	hists->nr_entries = 0;
-+	hists->stats.total_period = 0;
- 	hists__reset_col_len(hists);
- 
- 	while (next) {
--- 
-1.6.2.5
-
+                        Pekka
