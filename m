@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410Ab1J0Gp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 02:45:57 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33655 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752259Ab1J0Gpq (ORCPT
+	id S1754374Ab1J0HG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 03:06:59 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54196 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab1J0HG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 02:45:46 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-To: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 2/2] pch_uart: Delete modem status interrupt enable code
-Date: Thu, 27 Oct 2011 15:45:19 +0900
-Message-Id: <1319697919-5623-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1319697919-5623-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-References: <1319697919-5623-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+	Thu, 27 Oct 2011 03:06:57 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>, linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for Oct 25 (crypto)
+In-Reply-To: Your message of "Wed, 26 Oct 2011 08:27:17 +0200."
+             <20111026062717.GA10230@gondor.apana.org.au>
+From: Valdis.Kletnieks@vt.edu
+References: <20111025203628.40a1b8a475e32053aa34dabe@canb.auug.org.au> <4EA75759.3050900@xenotime.net>
+            <20111026062717.GA10230@gondor.apana.org.au>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1319699116_3371P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 27 Oct 2011 03:05:16 -0400
+Message-ID: <7836.1319699116@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4EA902C9.0024,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, modem status interrupt software processing is not implemented.
-So, if enabling modem status interrupt, the interrupt processing is not
-processed correctly.
-(pch_uart device has auto hardware flow control function. So, pch_uart driver
-doesn't have to control modem status interrupt.)
-This patch deletes the code.
+--==_Exmh_1319699116_3371P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
----
- drivers/tty/serial/pch_uart.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On Wed, 26 Oct 2011 08:27:17 +0200, Herbert Xu said:
+> On Tue, Oct 25, 2011 at 05:42:01PM -0700, Randy Dunlap wrote:
+> > When CONFIG_NET is not enabled:
+>
+> Thanks, I'll add this patch.
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index b1aabe8..1a076cd 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1121,7 +1121,8 @@ static void pch_uart_enable_ms(struct uart_port *port)
- {
- 	struct eg20t_port *priv;
- 	priv = container_of(port, struct eg20t_port, port);
--	pch_uart_hal_enable_interrupt(priv, PCH_UART_HAL_MS_INT);
-+	dev_info(priv->port.dev,
-+		"PCH UART : Modem status interrupt is not supported.\n");
- }
- 
- /* Control the transmission of a break signal. */
--- 
-1.7.4.4
+> diff --git a/crypto/Kconfig b/crypto/Kconfig
+> +	select NET
+
+Are there any use cases where a config (probably embedded) would wantq
+CRYPTO_USER but not CRYPTO_NET?  Would seem a shame to pull in the entire
+CONFIG_NET stuff just for what appears to me to be a few utility routines (I
+know there's still a few people out there fighting kernel bloat).
+
+In any case, I suspect that sort of restructuring will be 3.3 material - this does
+look like the right fix for this merge window.
+
+
+--==_Exmh_1319699116_3371P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOqQKscC3lWbTT17ARAiyhAJ9oRPXZ5LiECOxadROD6Uv2WAZBFQCgh6ps
+3azUaNxFSlsnMBsu+0ptrow=
+=aJCE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1319699116_3371P--
 
