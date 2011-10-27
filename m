@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab1J0NQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:16:57 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2583 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752747Ab1J0NQ4 (ORCPT
+	id S1753525Ab1J0NS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:18:27 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45558 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab1J0NSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:16:56 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host p9RDGJMv017716
-Subject: Re: Question on Memory Leak: very tough problem
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-Cc: Kernel-newbies <kernelnewbies@nl.linux.org>,
-        linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        kernelnewbies <Kernelnewbies@kernelnewbies.org>
-Date: Thu, 27 Oct 2011 15:16:20 +0200
-In-Reply-To: <CALyraeOO2DHrS1oh0FLG11XuxEvMzgJ+MRRrxwXx+vLTxbuDYg@mail.gmail.com>
-References: <CALyraeOO2DHrS1oh0FLG11XuxEvMzgJ+MRRrxwXx+vLTxbuDYg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319721383.5546.61.camel@thorin>
-Mime-Version: 1.0
-X-DCC--Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Thu, 27 Oct 2011 09:18:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1319719533.23600.55.camel@nimitz>
+References: <1319645292.3321.24.camel@br98xy6r>
+	<20111026192449.GE355@redhat.com>
+	<20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+	<1319719533.23600.55.camel@nimitz>
+Date: Thu, 27 Oct 2011 21:18:24 +0800
+Message-ID: <CAM_iQpXxe_PTSh2LcFQOwBqjBeME1y0eZVn67Q7_GQB1RrNW1A@mail.gmail.com>
+Subject: Re: kdump: No udev events for memory hotplug?
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Dave Hansen <haveblue@us.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Oct 27, 2011 at 8:45 PM, Dave Hansen <haveblue@us.ibm.com> wrote:
+> On Thu, 2011-10-27 at 09:30 +0200, Heiko Carstens wrote:
+>> > Are any events generated for memory add?
+>>
+>> Looks like uevents are only genereted when memory gets registered and
+>> unregistered, but not when when it gets set online or offline.
+>> To achieve that you would need to add similar code to
+>> store_mem_state()/memory_block_change_state() in drivers/base/memory.c
+>> like we have it already in store_online() in drivers/base/cpu.c
+>
+> Instead of doing it at that low a level, perhaps we should be generating
+> events when 'totalram_pages' changes.  That way, we'll also trigger
+> events when things like ballooning happen.
+>
 
-On Mit, 2011-10-26 at 23:20 -0400, Sri Ram Vemulpali wrote:
-> I have very difficult problem I am working on to figure out where the
-> memory leak is in my system. Sometimes it shows up and sometimes it
-> reveals very slowly (I mean increments very slowly). This is dependent
-> on system load, if the system is in very high load, then leak is very
-> fast. We tried solving this problem from many dimensions, but no
-> success.
-> 
-> After quite sometime, we started using valgrind to capture the memory
-> leak. The funny thing is the leak disappears once we start running our
-> application on top of valgrind.
-
-You do speak of an user-space application?
-
-> So, we cannot capture leak using valgrind. We came to conclusion that,
-> since valgrind serializes the allocations (leak disappears), we
-> thought this might be result of race conditions, that
-> resulted from system high load (by the way ours is multi threaded
-> system). We run system without valgrind we see the memory leak.
-
-That really smells like a race condition. So you should make sure that
-you got the synchronization between the threads correct and also the
-pointer handling in your application. The memory leak seems to be either
-a forgotten free() or an overwritten already allocated pointer as in
-----  snip ----
-void whatever(....)
-{
-	static void *p = NULL;
-	if (p == NULL) {
-		p = malloc(12345);
-	}
-}
-----  snip ----
-If that function is called in 2 threads in parallel and a task switch
-occurs after the check for NULL and before the assignment afterwards,
-you've got a memory leak.
-
-That pattern works (at least) also for global pointers and pointers in
-shared data structures.
-
-> The question is, is it true that valgrind serializes the mem
-> allocations. Does this happen to anyone disappearing the leak when
-> used valgrind.
-
-The manual page of malloc() doesn't mentions anything on threads so I
-assume that malloc() is synchronized with itself (read: it is
-thread-safe) and free(),realloc(),calloc(),strdup(), and all similar
-functions.
-
-Apart from valgrind, there are other memory debugging libs out there
-(e.g. dmalloc) which may have far less impact on the systems
-performance.
-Depending on the skill, time and desperation level, building an
-(somewhat old) gcc with an applied "bounds-checking" patch may help more
-(but you may also run in Heisenberg-problems ....).
-
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+I think we should separate the memory hot-plug issues from ballooning issues,
+so probably we need another uevent for this...
