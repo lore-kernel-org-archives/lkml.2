@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750955Ab1J0EWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 00:22:44 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:13155 "EHLO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1J0EWl (ORCPT
+	id S1751088Ab1J0Eb2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 00:31:28 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58185 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750773Ab1J0Eb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 00:22:41 -0400
-Message-ID: <4EA8DBDE.9070405@snapgear.com>
-Date: Thu, 27 Oct 2011 14:19:42 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Thu, 27 Oct 2011 00:31:26 -0400
+Date: Wed, 26 Oct 2011 21:31:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
+ staging
+Message-ID: <20111027043120.GA15725@core.coreip.homeip.net>
+References: <1318658907-16698-1-git-send-email-kys@microsoft.com>
+ <20111023072427.GA13268@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20111027000926.GB6804@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA51BAB@TK5EX14MBXC122.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k: Fall back to __gpio_to_irq() for non-arch GPIOs
-References: <1319615515-3286-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1319615515-3286-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA51BAB@TK5EX14MBXC122.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, Oct 27, 2011 at 01:19:50AM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > Sent: Wednesday, October 26, 2011 8:09 PM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; linux-
+> > input@vger.kernel.org; Haiyang Zhang; Jiri Kosina
+> > Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
+> > staging
+> > 
+> > On Sun, Oct 23, 2011 at 03:45:14PM +0000, KY Srinivasan wrote:
+> > > > > +
+> > > > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+> > > > > +	if (t == 0) {
+> > > > > +		ret = -ETIMEDOUT;
+> > > > > +		goto cleanup;
+> > > > > +	}
+> > > > > +
+> > > > > +	response = &input_dev->protocol_resp;
+> > > > > +
+> > > > > +	if (!response->response.approved) {
+> > > > > +		pr_err("synthhid protocol request failed (version %d)",
+> > > > > +		       SYNTHHID_INPUT_VERSION);
+> > > > > +		ret = -ENODEV;
+> > > > > +		goto cleanup;
+> > > > > +	}
+> > > > > +
+> > > > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+> > > >
+> > > > We just completed the wait for this completion, why are we waiting on
+> > > > the same completion again?
+> > >
+> > > In response to our initial query, we expect the host to respond back with two
+> > > distinct pieces of information; we wait for both these responses.
+> > 
+> > I think you misunderstand how completion works in Linux. IIRC about
+> > Windows events they are different ;) You can not signal completion
+> > several times and then expect to wait corrsponding number of times. Once
+> > you signal completion is it, well, complete.
+> 
+> Looking at the code for complete(), it looks like the "done" state is incremented
+> each time complete() is invoked and  the  code for do_wait_for_common() decrements the 
+> done state each time it is invoked (if the completion is properly signaled and we are not dealing
+> with a timeout. So, what am I missing here.
 
-On 26/10/11 17:51, Mark Brown wrote:
-> gpiolib provides __gpio_to_irq() to map gpiolib gpios to interrupts - hook
-> that up on m68k.
->
-> Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
-
-I'll take this through the m68knommu git tree, since it is only used
-by the ColdFire CPU parts.
-
-Thanks
-Greg
-
-
-
->   arch/m68k/include/asm/gpio.h |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/m68k/include/asm/gpio.h b/arch/m68k/include/asm/gpio.h
-> index b204683..00d0071 100644
-> --- a/arch/m68k/include/asm/gpio.h
-> +++ b/arch/m68k/include/asm/gpio.h
-> @@ -225,7 +225,8 @@ static inline void gpio_set_value(unsigned gpio, int value)
->
->   static inline int gpio_to_irq(unsigned gpio)
->   {
-> -	return (gpio<  MCFGPIO_IRQ_MAX) ? gpio + MCFGPIO_IRQ_VECBASE : -EINVAL;
-> +	return (gpio<  MCFGPIO_IRQ_MAX) ? gpio + MCFGPIO_IRQ_VECBASE
-> +		: __gpio_to_irq(gpio);
->   }
->
->   static inline int irq_to_gpio(unsigned irq)
-
+Hmm, you are right. I am not sure why I thought that completion has to
+be re-initialized before it can be reused... I guess this is true only
+if one uses complete_all().
 
 -- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Dmitry
