@@ -1,69 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab1J0GXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 02:23:00 -0400
-Received: from tundra.namei.org ([65.99.196.166]:34038 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1J0GW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 02:22:59 -0400
-Date: Thu, 27 Oct 2011 17:20:20 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Zhou Peng <ailvpeng25@gmail.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, security@kernel.org
-Subject: Re: [PATCH] ACL supports to mqueue
-In-Reply-To: <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1110271718510.5714@tundra.namei.org>
-References: <CAH-7YMmqs9j2-UTUSCZaFDEhxmjkAZvHzKVvbvy7nsG8JpFA9w@mail.gmail.com> <alpine.LRH.2.00.1110210232450.31056@tundra.namei.org> <CAH-7YMmx0J+pQFfrU4KW2ahFDPL3udvAUgPy4_Hf19HP46MZHw@mail.gmail.com>
- <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754178Ab1J0GZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 02:25:36 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61876 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab1J0GZf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 02:25:35 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-224552157-1319696421=:5714"
+X-Originating-IP: [117.254.13.84]
+Date: Thu, 27 Oct 2011 11:55:33 +0530
+Message-ID: <CAAhSdy0G_vwyEJkO6_wCsmimiCpB9NWyTjdNBRYrSvNxxwpyHw@mail.gmail.com>
+Subject: [ANNOUNCE] (offtopic) Xvisor: eXtensible Versatile hypervISOR
+From: Anup Patel <anup@brainfault.org>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Announcing Xvisor v0.1.0, a new open source bare-metal hypervisor, which aims
+towards providing virtualization solution, which is light-weight, portable,
+and flexible with small memory foot print and less virtualization overhead.
+It is distributed under GNU Public License (GPLv2).
 
---1665246916-224552157-1319696421=:5714
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Xvisor has most of the features expected from a modern full fledged hypervisor:
+ - Tree based configuration
+ - Tickless and high resolution timekeeping
+ - Threading framework
+ - Device driver framework
+ - CPU virtualization
+ - Address Space virtualization
+ - Device emulation framework
+ - Serial port virtualization
+ - Managment terminal
 
-On Tue, 25 Oct 2011, Zhou Peng wrote:
+Xvisor is currently being ported for two architectures: ARM and MIPS. The
+development & testing is being done using QEMU (0.14.xx or higher).
 
-> Hi, how about this patch pls?
+Xvisor ARM is able to boot multiple unmodified Linux-2.6.30.10 or Linux-3.0.4
+guest with a fairly interactive and smooth Busybox 0.19.2 console. Currently
+supported host for Xvisor ARM is Realview-PB-A8 Board emulated by QEMU. It is
+also being ported to real hardware, specifically Beagle Board.
 
-I'm not convinced that this is a necessary feature for the mainline 
-kernel.
+Please try out our Xivsor ARM demo on QEMU (0.14.xx or higher). To download
+the demo tarball visit the link below:
+https://docs.google.com/a/brainfault.org/leaf?id=0B0ABS_s60oP_OGE2MDA0MWYtNDUxOS00YWZkLTllMmMtN2M5MmE1ZGM0NDky&hl=en_GB
 
-> 
-> On Fri, Oct 21, 2011 at 6:46 PM, Zhou Peng <ailvpeng25@gmail.com> wrote:
-> > * In general, it can give a more fine grained and flexible DAC to msg queue obj.
-> > * NFSARK(A distro) wants all posix ipc objects to support ACL, including mqueue.
-> > * Posix semphore and shmem both support ACL, but mqueue as one of the
-> > three basic ipc doesn't.
-> > * At least, it may save one note sentence for MQ_OVERVIEW(7)   ^_^
-> >    "Linux does not currently (2.6.26) support the use of access
-> > control lists (ACLs) for POSIX message queues."
-> >    http://www.kernel.org/doc/man-pages/online/pages/man7/mq_overview.7.html
-> >
-> > On Thu, Oct 20, 2011 at 11:33 PM, James Morris <jmorris@namei.org> wrote:
-> > > On Thu, 20 Oct 2011, Zhou Peng wrote:
-> > >
-> > >> This patch adds ACL supports to mqueue filesystem.
-> > >> Based on Linux 3.0.4.
-> > >
-> > > Why is this necessary, and who is planning to use it?
-> > >
-> > > Are any distros likely to enable this?
-> > >
-> 
+Xvisor MIPS is still a work in progress and will be announced very soon.
 
--- 
-James Morris
-<jmorris@namei.org>
---1665246916-224552157-1319696421=:5714--
+Xvisor is currently hosted on Github, to clone or download source code please
+visit following links:
+Mainline: https://github.com/xvisor/xvisor
+ARM Development: https://github.com/avpatel/xvisor-arm
+MIPS Development: https://github.com/hschauhan/xvisor-mips
+
+Our developer mailing list is xvisor-devel[at]googlegroups[dot]com, please feel
+free to post your queries or join our development mailing list.
