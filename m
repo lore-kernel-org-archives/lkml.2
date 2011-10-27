@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab1J0LyS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 07:54:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50771 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab1J0LyQ (ORCPT
+	id S1755294Ab1J0MDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:03:14 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:53742 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab1J0MDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 07:54:16 -0400
-Date: Thu, 27 Oct 2011 13:54:11 +0200
-From: Domenico Andreoli <cavokz@gmail.com>
-To: Mike Turquette <mturquette@ti.com>
-Cc: jeremy.kerr@canonical.com, paul@pwsan.com, linaro-dev@lists.linaro.org,
-        linus.walleij@stericsson.com, patches@linaro.org,
-        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
-        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
-        grant.likely@secretlab.ca, dsaxena@linaro.org, tglx@linutronix.de,
-        amit.kucheria@linaro.org, skannan@quicinc.com, linux@arm.linux.org.uk,
-        arnd.bergmann@linaro.org, sboyd@quiinc.com, richard.zhao@linaro.org,
-        shawn.guo@freescale.com, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
-Message-ID: <20111027115411.GA4713@glitch>
-Mail-Followup-To: Mike Turquette <mturquette@ti.com>,
-	jeremy.kerr@canonical.com, paul@pwsan.com,
-	linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
-	patches@linaro.org, broonie@opensource.wolfsonmicro.com,
-	magnus.damm@gmail.com, linux-kernel@vger.kernel.org,
-	eric.miao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
-	tglx@linutronix.de, amit.kucheria@linaro.org, skannan@quicinc.com,
-	linux@arm.linux.org.uk, arnd.bergmann@linaro.org, sboyd@quiinc.com,
-	richard.zhao@linaro.org, shawn.guo@freescale.com,
-	linux-arm-kernel@lists.infradead.org,
-	Rob Herring <robherring2@gmail.com>
-References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
- <1316730422-20027-2-git-send-email-mturquette@ti.com>
- <4E89C3FA.9020206@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E89C3FA.9020206@gmail.com>
+	Thu, 27 Oct 2011 08:03:13 -0400
+Subject: Re: Linux 3.0.8
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+In-Reply-To: <20111025051928.GA7997@kroah.com>
+References: <20111025051928.GA7997@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Oct 2011 14:02:49 +0200
+Message-ID: <1319716969.20488.14.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2011-10-25 at 07:19 +0200, Greg KH wrote:
+> The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
+>         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+> and can be browsed at the normal kernel.org git web browser:
+>         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-On 09/22/2011 05:26 PM, Mike Turquette wrote:
-> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-> index 3530927..c53ed59 100644
-> --- a/drivers/clk/Kconfig
-> +++ b/drivers/clk/Kconfig
-> @@ -5,3 +5,6 @@ config CLKDEV_LOOKUP
->  
->  config HAVE_MACH_CLKDEV
->  	bool
-> +
-> +config GENERIC_CLK
-> +	bool
+Somehow I seem to be able to generate perfect copies of patch-3.0.4.bz2
+(and earlier), by simply doing a command like:
+    git diff v3.0 v3.04 | bzip2 -9 > patch-3.0.4-git.bz2 
 
-Now that Russel's prepare/unprepare patch is mainlined, I think you
-want to select HAVE_CLK_PREPARE here (and remove your prepare/unprepare
-function declarations in clk.h).
+But for patch-3.0.5 (and above) trivial commands like
+     git diff v3.0 v3.0.8 > patch-3.0.8-git
 
-Regards,
-Domenico
+do not generate perfect copies anymore. Have you perhaps changed the way
+you generate the patches since v3.0.5?  Not that this matters much,
+since tags v3.0.5 (and up) are signed by your "Linux kernel stable
+release signing key", but I still wonder what could cause this
+difference. Maybe it's just a git upgrade on your side.
+
+
+Paul Bolle
+
