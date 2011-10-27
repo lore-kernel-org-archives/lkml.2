@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469Ab1J0Pwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 11:52:45 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:42840 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab1J0Pwo (ORCPT
+	id S1753486Ab1J0P7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 11:59:49 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7795 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab1J0P7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 11:52:44 -0400
-Date: Fri, 28 Oct 2011 02:52:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: unable to fetch the leds and backlight trees
-Message-Id: <20111028025232.2fbe463c0dbbb6b02c278515@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__28_Oct_2011_02_52_32_+1100_eRz+QkG.4U9HtSmJ"
+	Thu, 27 Oct 2011 11:59:49 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Thu, 27 Oct 2011 08:59:44 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Belisko Marek <marek.belisko@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Oct 2011 08:59:43 -0700
+Subject: RE: [PATCH 2/2] pinmux: Unify pin type from signed to unsigned.
+Thread-Topic: [PATCH 2/2] pinmux: Unify pin type from signed to unsigned.
+Thread-Index: AcyUb34cPlGpjUaUSpel9CoACzcRAAAUPoZQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B48AB@HQMAIL01.nvidia.com>
+References: <1319662641-28416-1-git-send-email-marek.belisko@open-nandra.com>
+	<1319662641-28416-2-git-send-email-marek.belisko@open-nandra.com>
+	<alpine.DEB.2.00.1110261405400.23111@chino.kir.corp.google.com>
+ <CAAfyv35KsspWGAkmZmZOaDw5v3tngKuV8YqQ_fvZU4azHCUtYA@mail.gmail.com>
+In-Reply-To: <CAAfyv35KsspWGAkmZmZOaDw5v3tngKuV8YqQ_fvZU4azHCUtYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9RFxxSr024412
 
---Signature=_Fri__28_Oct_2011_02_52_32_+1100_eRz+QkG.4U9HtSmJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Belisko Marek wrote at Thursday, October 27, 2011 12:13 AM:
+> On Wed, Oct 26, 2011 at 11:06 PM, David Rientjes <rientjes@google.com> wrote:
+> > On Wed, 26 Oct 2011, Marek Belisko wrote:
+> >
+> >> diff --git a/include/linux/pinctrl/pinctrl.h b/include/linux/pinctrl/pinctrl.h
+> >> index 3605e94..34c33c7 100644
+> >> --- a/include/linux/pinctrl/pinctrl.h
+> >> +++ b/include/linux/pinctrl/pinctrl.h
+> >> @@ -112,7 +112,7 @@ struct pinctrl_desc {
+> >> ¬†extern struct pinctrl_dev *pinctrl_register(struct pinctrl_desc *pctldesc,
+> >> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† struct device *dev, void *driver_data);
+> >> ¬†extern void pinctrl_unregister(struct pinctrl_dev *pctldev);
+> >> -extern bool pin_is_valid(struct pinctrl_dev *pctldev, int pin);
+> >> +extern bool pin_is_valid(struct pinctrl_dev *pctldev, unsigned int pin);
+> >> ¬†extern void pinctrl_add_gpio_range(struct pinctrl_dev *pctldev,
+> >> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† struct pinctrl_gpio_range *range);
+> >> ¬†extern void pinctrl_remove_gpio_range(struct pinctrl_dev *pctldev,
+> >> @@ -123,7 +123,7 @@ extern void *pinctrl_dev_get_drvdata(struct pinctrl_dev *pctldev);
+> >>
+> >>
+> >> ¬†/* Sufficiently stupid default function when pinctrl is not in use */
+> >> -static inline bool pin_is_valid(struct pinctrl_dev *pctldev, int pin)
+> >> +static inline bool pin_is_valid(struct pinctrl_dev *pctldev, unsigned int pin)
+> >> ¬†{
+> >> ¬† ¬† ¬† return pin >= 0;
+> >> ¬†}
+> >
+> >
+> > So this would just become return true, right?
+>
+> Right I've overlooked it. Will send update version.
 
-Hi Richard,
+I wonder if the type shouldn't be signed consistently rather than unsigned,
+since a signed value, -1, is typically used to indicate "invalid pin".
 
-Fetching the leds and backlight trees produces this error (after a long
-delay):
+I wonder if the dummy pin_is_valid() should actually return false rather
+than true; that's what <linux/gpio.h> does, but asm-generic/gpio.h always
+returns true, like your updated pinctrl patch would.
 
-fatal: read error: Connection reset by peer
+Looking at include/linux/gpio.h, gpiolib has the same issue with signed/
+unsigned inconsistency. Whatever solution we pick for pinctrl should be
+consistent with gpiolib; Grant should comment here.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+-- 
+nvpublic
 
---Signature=_Fri__28_Oct_2011_02_52_32_+1100_eRz+QkG.4U9HtSmJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOqX5AAAoJEECxmPOUX5FExlQP/24XKZZc/FfFFMlNwuyKvjIf
-/BYi2Pi0Wn+2f+mOvVYBv8wEnsd4Ve+zcbRkFbWt2P0/zhXRrYd83S/m1DcIMMsV
-khtuXiDxk4NPFM8MWGSiA+O3JIH/6Y4l35l5tm/31zWSd0xXaAYkocKxa5nnkL9P
-X7LV3EIBqePrVYhU6+aqLQjocEYt2rNMZOBeMIfGa1WMDyZhpa3KdaEK7T8lNbjK
-wyWp5/RS+f0qVbdQaU0WF6eNSUSVn7JE63bnY3tShc/xOZPzJEJ+zO4HXFQAm5uS
-pO/e6+Uou7fqalQKRq/n2n5lu22pIqP0QEPyWFKwUI41+mxekZKIP2v0HLA8046+
-BZni88WsT5xSe8Fa0t4Wh0+oqdz+AuZYCVxHlLteuhdLCJ5BRgJur0XwuEtrdmwt
-rvD0dDo6yC89fvETu9+1FQie3tfIl94cPF6dA7/KQPweFcFJTuHGD901edYaQIdl
-9x5tDmH7esZCWywpYbhHKz+og9/ySn2WVi2Ucu4hlwgzTEJZfxcz437hSZImX9Ra
-NEfD8Djje7SY0dCQiyXJ7/7RrKmdQvjCL6t6D8Yys+J3cHz9wo3K00XvlkJkID/F
-avmcrJ98bLDg6t2HoSo2CmJgb8SUh3VgDc6NTPMsVBHLPmlCtfhOKx3DWf1R6qkL
-XTDs2eU1zTcTS8UbD3dN
-=nvHE
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_Oct_2011_02_52_32_+1100_eRz+QkG.4U9HtSmJ--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
