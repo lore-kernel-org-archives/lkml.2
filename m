@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab1J0V1i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 17:27:38 -0400
-Received: from fieldses.org ([174.143.236.118]:39504 "EHLO fieldses.org"
+	id S1753067Ab1J0Van (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 17:30:43 -0400
+Received: from fieldses.org ([174.143.236.118]:56625 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752222Ab1J0V1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 17:27:36 -0400
-Date: Thu, 27 Oct 2011 17:27:32 -0400
+	id S1750899Ab1J0Vam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 17:30:42 -0400
+Date: Thu, 27 Oct 2011 17:30:38 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
 To: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
         neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH v6 4/8] SUNRPC: setup rpcbind clients if service
- requires it
-Message-ID: <20111027212732.GC31669@fieldses.org>
+Subject: Re: [PATCH v6 5/8] SUNRPC: cleanup service destruction
+Message-ID: <20111027213038.GD31669@fieldses.org>
 References: <20111025100826.12689.46944.stgit@localhost6.localdomain6>
- <20111025101705.12689.68022.stgit@localhost6.localdomain6>
+ <20111025101716.12689.81697.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111025101705.12689.68022.stgit@localhost6.localdomain6>
+In-Reply-To: <20111025101716.12689.81697.stgit@localhost6.localdomain6>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 02:17:08PM +0300, Stanislav Kinsbursky wrote:
-> New function ("svc_uses_rpcbind") will be used to detect, that new service will
-> send portmapper register calls. For such services we will create rpcbind
-> clients and remove all stale portmap registrations.
-> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
-> in case of this field wasn't initialized earlier. This will allow to destroy
-> rpcbind clients when no other users of them left.
-> 
-> Note: Currently, any creating service will be detected as portmap user.
-> Probably, this is wrong. But now it depends on program versions "vs_hidden"
-> flag.
+On Tue, Oct 25, 2011 at 02:17:18PM +0300, Stanislav Kinsbursky wrote:
+> svc_unregister() call have to be removed from svc_destroy() since it will be
+> called in sv_shutdown callback.
+
+It would be clearer that you're *moving* this if this were merged with
+the following patch.  And without doing that the series isn't quite
+bisectable, unless I'm missing something.
+
+--b.
+
 > 
 > Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 > 
 > ---
->  net/sunrpc/svc.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
+>  net/sunrpc/svc.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
 > diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> index d2d61bf..918edc3 100644
+> index 918edc3..407462f 100644
 > --- a/net/sunrpc/svc.c
 > +++ b/net/sunrpc/svc.c
-> @@ -454,8 +454,15 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
->  		spin_lock_init(&pool->sp_lock);
->  	}
+> @@ -530,7 +530,6 @@ svc_destroy(struct svc_serv *serv)
+>  	if (svc_serv_is_pooled(serv))
+>  		svc_pool_map_put();
 >  
-> -	/* Remove any stale portmap registrations */
 > -	svc_unregister(serv);
-> +	if (svc_uses_rpcbind(serv)) {
-> +	       	if (svc_rpcb_setup(serv) < 0) {
-> +			kfree(serv->sv_pools);
-> +			kfree(serv);
-> +			return NULL;
-
-Nit: could we convert this (and the previous failure to allocate
-sv_pools) to the usual pattern of collecting the cleanup at the end and
-jumping to it with a goto?
-
-Looks fine otherwise.
-
---b.
-
-> +		}
-> +		if (!serv->sv_shutdown)
-> +			serv->sv_shutdown = svc_rpcb_cleanup;
-> +	}
->  
->  	return serv;
+>  	kfree(serv->sv_pools);
+>  	kfree(serv);
 >  }
 > 
