@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751088Ab1J0Eb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 00:31:28 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58185 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750773Ab1J0Eb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 00:31:26 -0400
-Date: Wed, 26 Oct 2011 21:31:20 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
- staging
-Message-ID: <20111027043120.GA15725@core.coreip.homeip.net>
-References: <1318658907-16698-1-git-send-email-kys@microsoft.com>
- <20111023072427.GA13268@core.coreip.homeip.net>
- <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20111027000926.GB6804@core.coreip.homeip.net>
- <6E21E5352C11B742B20C142EB499E0481AA51BAB@TK5EX14MBXC122.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA51BAB@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751186Ab1J0Ee7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 00:34:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54849 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab1J0Ee6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 00:34:58 -0400
+Date: Thu, 27 Oct 2011 15:34:52 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        John Stultz <john.stultz@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, mark gross <markgross@thegnar.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: lsusd - The Linux SUSpend Daemon
+Message-ID: <20111027153452.47b195f8@notabene.brown>
+In-Reply-To: <alpine.LNX.2.01.1110261625370.15209@frira.zrqbmnf.qr>
+References: <20111020111743.13b40558@notabene.brown>
+	<Pine.LNX.4.44L0.1110201019500.2081-100000@iolanthe.rowland.org>
+	<20111021162340.669742c0@notabene.brown>
+	<alpine.LNX.2.01.1110261625370.15209@frira.zrqbmnf.qr>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/YVi9WlojxaooNKHSC=cg2p3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 01:19:50AM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> > Sent: Wednesday, October 26, 2011 8:09 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; linux-
-> > input@vger.kernel.org; Haiyang Zhang; Jiri Kosina
-> > Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
-> > staging
-> > 
-> > On Sun, Oct 23, 2011 at 03:45:14PM +0000, KY Srinivasan wrote:
-> > > > > +
-> > > > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-> > > > > +	if (t == 0) {
-> > > > > +		ret = -ETIMEDOUT;
-> > > > > +		goto cleanup;
-> > > > > +	}
-> > > > > +
-> > > > > +	response = &input_dev->protocol_resp;
-> > > > > +
-> > > > > +	if (!response->response.approved) {
-> > > > > +		pr_err("synthhid protocol request failed (version %d)",
-> > > > > +		       SYNTHHID_INPUT_VERSION);
-> > > > > +		ret = -ENODEV;
-> > > > > +		goto cleanup;
-> > > > > +	}
-> > > > > +
-> > > > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
-> > > >
-> > > > We just completed the wait for this completion, why are we waiting on
-> > > > the same completion again?
-> > >
-> > > In response to our initial query, we expect the host to respond back with two
-> > > distinct pieces of information; we wait for both these responses.
-> > 
-> > I think you misunderstand how completion works in Linux. IIRC about
-> > Windows events they are different ;) You can not signal completion
-> > several times and then expect to wait corrsponding number of times. Once
-> > you signal completion is it, well, complete.
-> 
-> Looking at the code for complete(), it looks like the "done" state is incremented
-> each time complete() is invoked and  the  code for do_wait_for_common() decrements the 
-> done state each time it is invoked (if the completion is properly signaled and we are not dealing
-> with a timeout. So, what am I missing here.
+--Sig_/YVi9WlojxaooNKHSC=cg2p3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hmm, you are right. I am not sure why I thought that completion has to
-be re-initialized before it can be reused... I guess this is true only
-if one uses complete_all().
+On Wed, 26 Oct 2011 16:31:06 +0200 (CEST) Jan Engelhardt <jengelh@medozas.d=
+e>
+wrote:
 
--- 
-Dmitry
+>=20
+> On Friday 2011-10-21 07:23, NeilBrown wrote:
+> >At:
+> >    git://neil.brown.name/lsusd
+> >or
+> >    http://neil.brown.name/git/lsusd
+> >
+> >you can find a bunch of proof-of-concept sample code that implements a
+> >"Linux SUSpend Daemon" with client support library and test programs.
+> >
+> >  lsused:
+> >      lsused (which needs a better name) listens on the socket
+> >            /var/run/suspend/registration
+>=20
+> (lx)suspd and (lx)susp_eventd?
+> NB: The short form of Linux is usually lx (not l). Also, yours would be
+> the first I know to explicitly contain l/lx, which I think is rather
+> redundant, given I'll never run a type of suspend other than the linux
+> one anyway.
+
+Good points - thanks.
+I'll certainly consider them if/when I try to decide on a better name.
+
+NeilBrown
+
+
+--Sig_/YVi9WlojxaooNKHSC=cg2p3
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTqjfbDnsnt1WYoG5AQJyPg/8DeWMZjIaVzvqLLWPwEKHDUuQiwHzraZ3
+hpsfEkrBljIZ3a+g4Agp9J6nOS09LQyGNgHT7ZHdUMUBVx4OlabwS6ViqtDutNp6
+oaym8RRxs6/M1fDiLUumc3sg3xJ/38IusuEPZOw8mfdebDFObTXcySFDlpBwN6J/
+hPpOa/osntesEN1GcTuXM4ei6pzpRbpNxdCAokIXIlt4VnQhE7HXRpkFrx8t9TAg
+y3bFYyKWAPnc1lKutKo6zzGQBqXCZL9nyHQrA7bVkNuYvzuymNj5NaNVXyfqVw5O
+3+cF59oe/elv1OdKlBGp2GhL32OqfcXsh/UzMSjIXV99aZWrhgchsIoX6W8l9wJG
+3PYKmUUMzu6rzbXxFTMGEQnZYvCvX2A/pD1nY1A8efi7LNctB3LW6Fya3rLnNpMP
+TCrmykBQijPHtxNv8I7V7CuyJSN3/WgFClSSVV/wkVpFXKbyuc/w+SFostg1grCm
+VkhofIuRUpvAcPuzhS/IJUMVHefgLh8+fxDKGn/RiPzrbcqHK8/rCedst4Mao753
+HmN3vVNz0CssXZFUNx0BrPOHndnrxNFqSt0NXbaAiFQte6CqJ/GcrTEUMkp7sY0h
+Gx6K+3AnyUuG1VPwIucUAEYZxL9eEGHHZsBj3T8qQBNuTp83Gm+ClNDUskOPWyYI
+dsNyd+NerEU=
+=iZXH
+-----END PGP SIGNATURE-----
+
+--Sig_/YVi9WlojxaooNKHSC=cg2p3--
