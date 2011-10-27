@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab1J0GZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 02:25:36 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61876 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab1J0GZf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 02:25:35 -0400
+	id S1753212Ab1J0GoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 02:44:00 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:23700 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751439Ab1J0Gn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 02:43:58 -0400
+X-IronPort-AV: E=Sophos;i="4.69,412,1315206000"; 
+   d="scan'208";a="592690601"
+Message-ID: <4EA8FD98.9040500@netapp.com>
+Date: Thu, 27 Oct 2011 02:43:36 -0400
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Originating-IP: [117.254.13.84]
-Date: Thu, 27 Oct 2011 11:55:33 +0530
-Message-ID: <CAAhSdy0G_vwyEJkO6_wCsmimiCpB9NWyTjdNBRYrSvNxxwpyHw@mail.gmail.com>
-Subject: [ANNOUNCE] (offtopic) Xvisor: eXtensible Versatile hypervISOR
-From: Anup Patel <anup@brainfault.org>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+CC: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH v2 1/4] SUNRPC: rpcbind clients internals virtualization
+References: <20111025135637.5286.89632.stgit@localhost6.localdomain6> <20111025135749.5286.57091.stgit@localhost6.localdomain6>
+In-Reply-To: <20111025135749.5286.57091.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Announcing Xvisor v0.1.0, a new open source bare-metal hypervisor, which aims
-towards providing virtualization solution, which is light-weight, portable,
-and flexible with small memory foot print and less virtualization overhead.
-It is distributed under GNU Public License (GPLv2).
+On 10/25/2011 10:57 AM, Stanislav Kinsbursky wrote:
+> This patch moves static rpcbind internals to sunrpc part of network namespace
 
-Xvisor has most of the features expected from a modern full fledged hypervisor:
- - Tree based configuration
- - Tickless and high resolution timekeeping
- - Threading framework
- - Device driver framework
- - CPU virtualization
- - Address Space virtualization
- - Device emulation framework
- - Serial port virtualization
- - Managment terminal
+Rather than saying that this patch moves the static internals, could you say that it creates the new network namespace internals?  The next patch switches things over, so it's not really correct to say that this one moves everything.
 
-Xvisor is currently being ported for two architectures: ARM and MIPS. The
-development & testing is being done using QEMU (0.14.xx or higher).
+Alternatively, could this patch be merged with the next one so that you create and switch over to the new internals all at once?
 
-Xvisor ARM is able to boot multiple unmodified Linux-2.6.30.10 or Linux-3.0.4
-guest with a fairly interactive and smooth Busybox 0.19.2 console. Currently
-supported host for Xvisor ARM is Realview-PB-A8 Board emulated by QEMU. It is
-also being ported to real hardware, specifically Beagle Board.
+- Bryan
 
-Please try out our Xivsor ARM demo on QEMU (0.14.xx or higher). To download
-the demo tarball visit the link below:
-https://docs.google.com/a/brainfault.org/leaf?id=0B0ABS_s60oP_OGE2MDA0MWYtNDUxOS00YWZkLTllMmMtN2M5MmE1ZGM0NDky&hl=en_GB
+> context. This will allow to create rcpbind clients per network namespace.
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> 
+> ---
+>  net/sunrpc/netns.h |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+> index d013bf2..83eede3 100644
+> --- a/net/sunrpc/netns.h
+> +++ b/net/sunrpc/netns.h
+> @@ -9,6 +9,11 @@ struct cache_detail;
+>  struct sunrpc_net {
+>  	struct proc_dir_entry *proc_net_rpc;
+>  	struct cache_detail *ip_map_cache;
+> +
+> +	struct rpc_clnt *rpcb_local_clnt;
+> +	struct rpc_clnt *rpcb_local_clnt4;
+> +	spinlock_t rpcb_clnt_lock;
+> +	unsigned int rpcb_users;
+>  };
+>  
+>  extern int sunrpc_net_id;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Xvisor MIPS is still a work in progress and will be announced very soon.
-
-Xvisor is currently hosted on Github, to clone or download source code please
-visit following links:
-Mainline: https://github.com/xvisor/xvisor
-ARM Development: https://github.com/avpatel/xvisor-arm
-MIPS Development: https://github.com/hschauhan/xvisor-mips
-
-Our developer mailing list is xvisor-devel[at]googlegroups[dot]com, please feel
-free to post your queries or join our development mailing list.
