@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab1J0PJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 11:09:45 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:45313 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751848Ab1J0PJo (ORCPT
+	id S1752132Ab1J0PMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 11:12:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61519 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab1J0PMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 11:09:44 -0400
-X-Sasl-enc: fRpjJsNWqEvNAu7NSPyUamIARAA1JG1nXwTeGYvjNlFK 1319728183
-Date: Thu, 27 Oct 2011 17:01:03 +0200
-From: Greg KH <greg@kroah.com>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] TTY: pty, fix pty counting in
- "/proc/sys/kernel/pty/nr"
-Message-ID: <20111027150103.GC10883@kroah.com>
-References: <4EA928F3.7010204@ilyx.ru>
- <20111027123742.GB7910@kroah.com>
- <4EA95788.90808@ilyx.ru>
+	Thu, 27 Oct 2011 11:12:42 -0400
+Date: Thu, 27 Oct 2011 17:12:35 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@redhat.com>,
+        Paul Menage <paul@paulmenage.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cgroups: don't cache common ancestor in task counter
+ subsys
+Message-ID: <20111027151230.GE7974@somewhere.redhat.com>
+References: <4E9BDA43.6060406@cn.fujitsu.com>
+ <20111017172537.GH2829@somewhere>
+ <20111017172753.GA23241@ghc17.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EA95788.90808@ilyx.ru>
+In-Reply-To: <20111017172753.GA23241@ghc17.ghc.andrew.cmu.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 05:07:20PM +0400, Ilya Zykov wrote:
-> Greg KH wrote:
-> 
-> > On Thu, Oct 27, 2011 at 01:48:35PM +0400, Ilya Zykov wrote:
-> >> Regression for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
-> >> Commit: 24d406a6b accepted in Linux 3.1.
-> >> Disscussed on linux-kernel@vger.kernel.org "subject: [PATCH] TTY: pty, fix pty counting"
-> >> and not accepted.
-> >> Although, I think it's clear.
+On Mon, Oct 17, 2011 at 01:27:53PM -0400, Ben Blum wrote:
+> On Mon, Oct 17, 2011 at 07:25:41PM +0200, Frederic Weisbecker wrote:
+> > When we rollback there, we are dealing with oldcgrp of the last thread
+> > we have treated. All threads in the rollback list don't necessary belonged
+> > to that old_cgroup.
 > > 
-> > Ilya, is there some reason you are ignoring the tty maintainer and
-> > sending these to Linus directly?  These patches need to be tested in
-> > linux-next, so at the earliest, they can be merged into Linus's tree for
-> > 3.3, they are NOT 3.2 material, especially given that they are not even
-> > accepted by the current tty developers.
+> > And we can't try to retrieve these old_cgroup through task_cgroup_from_root() because
+> > the threads might have exited and thus could be assigned to the init cgroup.
 > > 
-> > So please work with us, and don't try to circumvent the existing
-> > process, it is not the way we work here.
-> > 
-> > Especially as this specific patch was already rejected, for very good
-> > reasons, why are you ignoring those reasons?
-> > 
-> > thanks,
-> > 
-> > greg k-h
+> > I believe we need to cache these old cgroups in the flex array.
 > > 
 > 
+> Doing this would fulfill the "TODO" in cgroup_attach_proc for being able
+> to pass the oldcgrp for each task in the loop around the ss->attach
+> call, so if you do that, remove the corresponding comment. :)
 > 
-> OK, I understand you rules. 
-> But I don't understand, what for, you accept patch(commit:
-> 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24), where "pty" call
-> tty_driver_remove_tty(), only for invoke its own
-> route(pty_unix98_remove).
+> -- Ben
 
-Please work with Alan and Jiri to get their acceptance of your patch,
-they are the ones that need to ack it before I will.
+I don't know, looking at the code, there is a separate issue to solve there.
+The old cgroup passed in ->attach() is the one of a random task from the thread
+group. The migrations that happen right before leave oldcgrp with the
+old cgroup of the last thread in the group.
 
-thanks,
+This doesn't seem to make any sense. As far as I checked this is only used
+by the cpuset subsystem that does a migration in cpuset_attach() from
+the old cgroup to the new.
 
-greg k-h
+I'm not sure about the details but that looks buggy.
