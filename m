@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab1J0WGU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 18:06:20 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51526 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab1J0WGS (ORCPT
+	id S1755190Ab1J0WJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 18:09:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38140 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab1J0WJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 18:06:18 -0400
-Message-ID: <4EA9D5BE.6020508@mvista.com>
-Date: Fri, 28 Oct 2011 00:05:50 +0200
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jeff Garzik <jeff@garzik.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: linux-next: manual merge of the libata tree with the at91 tree
-References: <20111025083819.0940cc9ecefac0d5390a23eb@canb.auug.org.au>
-In-Reply-To: <20111025083819.0940cc9ecefac0d5390a23eb@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Oct 2011 18:09:48 -0400
+From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+To: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org, greg@kroah.com
+Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+Subject: [PATCH 0/9] gma500: Split psb_intel_output to encoders and connectors
+Date: Fri, 28 Oct 2011 00:09:34 +0200
+Message-Id: <1319753374-1864-1-git-send-email-patrik.r.jakobsson@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+This set of patches gets rid of the pairing of encoders and connectors we had
+in psb_intel_output. This was done to make life easier getting the SDVO code
+from i915 copied into our tree (included in this patchset). It also gives more
+flexibility for better output handling in the future.
 
-On 24.10.2011 23:38, Stephen Rothwell wrote:
-> Today's linux-next merge of the libata tree got a conflict in
-> drivers/ata/pata_at91.c between commit 9585cf300d98 ("ARM: at91/pata: use
-> gpio_is_valid to check the gpio") from the at91 tree and commit
-> 8e3bfdb95ad7 ("pata_at91: call clk_put() on ata_host_activate() failure")
-> from the libata tree.
+SDVO can now properly setup DDC and get EDID on the Fit-PC2 DVI connector but
+there are known issues when setting resolutions at 1920x1080 and above.
+On Asus 1201HA the VGA connector still fails to get EDID so more work is needed.
 
-    I knew about this conflict and have informed Jean-Cristophe on 
-LAKML. I don't know why libata driver changes went in via the at91 tree...
+The changes to Cedarview, Moorestown and Medfield have not been tested so they
+are subject to change. Particularly the changes to Medfield are known not to be
+complete so more pondering is also needed there.
 
-> I fixed it up (see below) and can carry the fix as necessary.
+Patrik Jakobsson (9):
+  gma500: Initial support for our encoder and connector structs
+  gma500: Remove psb_intel_output from ddc_probe and ddc_get_modes
+  gma500: Fix encoder type checking for connectors
+  gma500: Convert PSB LVDS to new output handling
+  gma500: Add support for Intel GMBUS
+  gma500: Replace SDVO code with slightly modified version from i915
+  gma500: Convert Cedarview to work with new output handling
+  gma500: Convert Moorestown to work with new output handling
+  gma500: Convert Medfield to work with new output handling
 
-    Thanks.
+ drivers/staging/gma500/Makefile              |    1 +
+ drivers/staging/gma500/cdv_intel_crt.c       |   47 +-
+ drivers/staging/gma500/cdv_intel_display.c   |   14 +-
+ drivers/staging/gma500/cdv_intel_hdmi.c      |  112 +-
+ drivers/staging/gma500/cdv_intel_lvds.c      |  117 +-
+ drivers/staging/gma500/framebuffer.c         |    8 +-
+ drivers/staging/gma500/intel_gmbus.c         |  492 +++++
+ drivers/staging/gma500/mdfld_dsi_dbi.c       |    5 +
+ drivers/staging/gma500/mdfld_dsi_dpi.c       |    5 +
+ drivers/staging/gma500/mdfld_dsi_output.c    |   40 +-
+ drivers/staging/gma500/mdfld_intel_display.c |   14 +-
+ drivers/staging/gma500/medfield.h            |    6 +-
+ drivers/staging/gma500/mrst_crtc.c           |   18 +-
+ drivers/staging/gma500/mrst_hdmi.c           |   29 +-
+ drivers/staging/gma500/mrst_lvds.c           |   79 +-
+ drivers/staging/gma500/psb_device.c          |    7 +
+ drivers/staging/gma500/psb_drv.c             |    6 +-
+ drivers/staging/gma500/psb_drv.h             |   30 +-
+ drivers/staging/gma500/psb_intel_display.c   |   39 +-
+ drivers/staging/gma500/psb_intel_drv.h       |   98 +-
+ drivers/staging/gma500/psb_intel_lvds.c      |  151 +-
+ drivers/staging/gma500/psb_intel_modes.c     |   16 +-
+ drivers/staging/gma500/psb_intel_reg.h       |   74 +
+ drivers/staging/gma500/psb_intel_sdvo.c      | 3059 ++++++++++++++++++--------
+ drivers/staging/gma500/psb_intel_sdvo_regs.h |  591 ++++-
+ 25 files changed, 3769 insertions(+), 1289 deletions(-)
+ create mode 100644 drivers/staging/gma500/intel_gmbus.c
 
-MBR, Sergei
+-- 
+1.7.4.1
 
