@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab1J0Nli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:41:38 -0400
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:44471 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753115Ab1J0Nli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:41:38 -0400
-Message-ID: <4EA95F90.6000107@ilyx.ru>
-Date: Thu, 27 Oct 2011 17:41:36 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v2] TTY: pty, fix pty counting in "/proc/sys/kernel/pty/nr"
-References: <4EA928F3.7010204@ilyx.ru> <20111027123742.GB7910@kroah.com>
-In-Reply-To: <20111027123742.GB7910@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753733Ab1J0Nrd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:47:33 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:5572 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab1J0Nrc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 09:47:32 -0400
+X-IronPort-AV: E=Sophos;i="4.69,413,1315180800"; 
+   d="scan'208";a="8621487"
+Subject: Re: [GIT PATCH] big staging merge for 3.2
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        Mark Einon <mark.einon@gmail.com>, Jiri Pirko <jpirko@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Date: Thu, 27 Oct 2011 14:47:30 +0100
+In-Reply-To: <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
+References: <20111026120725.GA23142@kroah.com>
+	 <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1319723250.9436.126.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
+On Wed, 2011-10-26 at 14:59 +0100, Linus Torvalds wrote:
+> 
+> That driver wasn't removed, it was consolidated as one big file, and
+> so the fixes to the original files needed to be resolved. I tried to
+> do that correctly, but there's the skb_frag_dma_map() change and the
+> removal of .ndo_set_multicast_list, and while I think I did it right,
+> I really want somebody who knows that code to double check me. 
 
-> On Thu, Oct 27, 2011 at 01:48:35PM +0400, Ilya Zykov wrote:
->> Regression for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
->> Commit: 24d406a6b accepted in Linux 3.1.
->> Disscussed on linux-kernel@vger.kernel.org "subject: [PATCH] TTY: pty, fix pty counting"
->> and not accepted.
->> Although, I think it's clear.
-> 
-> Ilya, is there some reason you are ignoring the tty maintainer and
-> sending these to Linus directly?  These patches need to be tested in
-> linux-next, so at the earliest, they can be merged into Linus's tree for
-> 3.3, they are NOT 3.2 material, especially given that they are not even
-> accepted by the current tty developers.
-> 
-> So please work with us, and don't try to circumvent the existing
-> process, it is not the way we work here.
-> 
-> Especially as this specific patch was already rejected, for very good
-> reasons, why are you ignoring those reasons?
-> 
-> thanks,
-> 
-> greg k-h
-> 
+The skb_frag_dma_map aspect looks fine to me.
 
-
-But I don't understand, what for, "pty" driver, calling tty_driver_remove_tty(), 
-only for call its own function(pty_unix98_remove).
-
-
-Thank you.
-Ilya.
+Ian.
 
