@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab1J0Lmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 07:42:55 -0400
-Received: from cpanel23.proisp.no ([88.87.44.74]:60591 "EHLO
-	cpanel23.proisp.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390Ab1J0Lmy (ORCPT
+	id S1755275Ab1J0Ltj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 07:49:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49355 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754510Ab1J0Lti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 07:42:54 -0400
-Message-ID: <4EA943B0.4050107@numascale.com>
-Date: Thu, 27 Oct 2011 13:42:40 +0200
-From: Steffen Persvold <sp@numascale.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Thu, 27 Oct 2011 07:49:38 -0400
+Date: Thu, 27 Oct 2011 13:49:36 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Nayak, Rajendra" <rnayak@ti.com>
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org, shawn.guo@freescale.com
+Subject: Re: [PATCH v3 1/4] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111027114935.GA7384@opensource.wolfsonmicro.com>
+References: <1319702185-16108-1-git-send-email-rnayak@ti.com>
+ <1319702185-16108-2-git-send-email-rnayak@ti.com>
+ <20111027080953.GB18360@opensource.wolfsonmicro.com>
+ <CACYZBRG+_mm1O7Qg+ENCcLBX72iEWWyJohD_9EpAaT+Pb54cEA@mail.gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH 2/3] Add multi-node boot support
-References: <1319609230-18897-1-git-send-email-daniel@numascale-asia.com> <1319609230-18897-2-git-send-email-daniel@numascale-asia.com> <20111027073029.GD15923@elte.hu> <4EA93699.9000101@numascale.com> <20111027113819.GA19682@elte.hu>
-In-Reply-To: <20111027113819.GA19682@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel23.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACYZBRG+_mm1O7Qg+ENCcLBX72iEWWyJohD_9EpAaT+Pb54cEA@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2011 13:38, Ingo Molnar wrote:
->
-> * Steffen Persvold<sp@numascale.com>  wrote:
->
->>> If it's absolutely needed then add a proper quirk handler instead
->>> of polluting the generic code.
->>
->> We wanted to reuse as much of the generic AMD code as possible, but
->> it's tricky because most of that code is based around a single HT
->> fabric design, whereas a NumaChip based systems consists of several
->> HT fabrics connected together thus you will have identical
->> NorthBridge IDs (0-7) etc. shared between all systems.
->>
->> How would you suggest we add a quirk handler for it ?
->
-> So what we want on NumaChip systems is for the node ID in the BIOS
-> SRAT table to override the node ID that is read from the hardware,
-> right?
+On Thu, Oct 27, 2011 at 04:13:08PM +0530, Nayak, Rajendra wrote:
 
-Correct. Our bootloader modifies the SRAT table with the new IDs, and 
-initializes all processors with new real APIC IDs but we can't do 
-anything with the initial APIC ID.
+> okay, here's an updated patch which does that. I also added a binding to
+> specify a descriptive name to the regulator outputs as you suggested in
+> the other thread.
 
-Cheers,
--- 
-Steffen Persvold, Chief Architect NumaChip
-Numascale AS - www.numascale.com
-Tel: +47 92 49 25 54 Skype: spersvold
+Looks good!  I guess we may run into issues with the status change thing
+but I think we need to gather some experience to figure that out and
+since it's implicit hopefully that won't have any compatibility issues
+if it does happen.
+
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+I guess it might be useful to resend without this bit at the top to make
+it easier for Liam to apply.
