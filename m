@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab1J0Q74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:59:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4697 "EHLO mga11.intel.com"
+	id S1753887Ab1J0RFa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 13:05:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7369 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab1J0Q7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:59:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,413,1315206000"; 
-   d="scan'208";a="83157540"
-Subject: Re: [PATCH 02/10] dmaengine: move drivers to dma_transfer_direction
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mika Westerberg <mika.westerberg@iki.fi>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Li Yang <leoli@freescale.com>, Zhang Wei <zw@zh-kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, Yong Wang <yong.y.wang@intel.com>,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Boojin Kim <boojin.kim@samsung.com>, Barry Song <Baohua.Song@csr.com>
-In-Reply-To: <Pine.LNX.4.64.1110171023070.18438@axis700.grange>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	 <1318570705-17595-3-git-send-email-vinod.koul@intel.com>
-	 <Pine.LNX.4.64.1110171023070.18438@axis700.grange>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 22:26:59 +0530
-Message-ID: <1319734619.20054.220.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751759Ab1J0RF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 13:05:29 -0400
+Date: Thu, 27 Oct 2011 13:05:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED 10/13] block, cfq: unlink cfq_io_context's
+ immediately
+Message-ID: <20111027170524.GH7491@redhat.com>
+References: <1319593719-19132-1-git-send-email-tj@kernel.org>
+ <1319593719-19132-11-git-send-email-tj@kernel.org>
+ <20111026213107.GI24261@google.com>
+ <20111027143119.GD7491@redhat.com>
+ <20111027161701.GB29899@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111027161701.GB29899@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 14:52 +0200, Guennadi Liakhovetski wrote:
-
-Sorry for replying late...
-> > diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-> > index 81809c2..cab7d3e 100644
-> > --- a/drivers/dma/shdma.c
-> > +++ b/drivers/dma/shdma.c
-> > @@ -23,7 +23,6 @@
-> >  #include <linux/interrupt.h>
-> >  #include <linux/dmaengine.h>
-> >  #include <linux/delay.h>
-> > -#include <linux/dma-mapping.h>
-> >  #include <linux/platform_device.h>
-> >  #include <linux/pm_runtime.h>
-> >  #include <linux/sh_dma.h>
-> > @@ -479,19 +478,19 @@ static void sh_dmae_free_chan_resources(struct
-> dma_chan *chan)
-> >   * @sh_chan: DMA channel
-> >   * @flags:   DMA transfer flags
-> >   * @dest:    destination DMA address, incremented when direction
-> equals
-> > - *           DMA_FROM_DEVICE or DMA_BIDIRECTIONAL
-> > + *           DEV_TO_MEM
-> >   * @src:     source DMA address, incremented when direction equals
-> > - *           DMA_TO_DEVICE or DMA_BIDIRECTIONAL
-> > + *           MEM_TO_DEV
+On Thu, Oct 27, 2011 at 09:17:01AM -0700, Tejun Heo wrote:
+> Hello,
 > 
-> Why have you changed the above two comments? Doesn't seem correct to
-> me. 
-No this is the right comment.
+> On Thu, Oct 27, 2011 at 10:31:19AM -0400, Vivek Goyal wrote:
+> > On Wed, Oct 26, 2011 at 02:31:07PM -0700, Tejun Heo wrote:
+> > >  	BUG_ON(atomic_long_read(&ioc->refcount) <= 0);
+> > > +	if (locked_q)
+> > > +		lockdep_assert_held(locked_q->queue_lock);
+> > >  
+> > 
+> > Looks like lockdep_assert_held() can't be used if !CONFIG_LOCKDEP. So
+> > Jens had put following patch to fix one compilation issue. You might
+> > want to provide a null definition of lockdep_assert_held() in case
+> > of !CONFIG_LOCKDEP.
+> > 
+> > commit 334c2b0b8b2ab186fa198413386cba41fffcb4f2
+> > Author: Jens Axboe <axboe@kernel.dk>
+> > Date:   Tue Oct 25 15:51:48 2011 +0200
+> > 
+> >     blk-throttle: use queue_is_locked() instead of lockdep_is_held()
+> >     
+> >     We can't use the latter if !CONFIG_LOCKDEP.
+> >     
+> >     Reported-by: Sedat Dilek <sedat.dilek@googlemail.com>
+> >     Signed-off-by: Jens Axboe <axboe@kernel.dk>
+> 
+> Eh?  lockdep.h has dummy definition if !CONFIG_LOCKDEP.
 
-After the direction flag changes, the sh_dmae_add_desc will take new
-flags for direction. The valid flags would be DEV_TO_MEM and
-DEV_TO_DEVICE only.
+I can't seem to find the dummy definition in include/linux/lockdep.h for
+!CONFIG_LOCKDEP.
 
--- 
-~Vinod
+I see only following under CONFIG_LOCKDEP.
 
+#define lockdep_is_held(lock)   lock_is_held(&(lock)->dep_map)
+
+and nothing under #else clause.
+
+Thanks
+Vivek
