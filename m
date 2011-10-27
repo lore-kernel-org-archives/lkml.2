@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab1J0USU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 16:18:20 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8935 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab1J0UST convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 16:18:19 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 27 Oct 2011 13:18:09 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Thu, 27 Oct 2011 13:18:07 -0700
-Subject: RE: [PATCH 5/6] arm/tegra: pinmux tables and definitions for tegra30
-Thread-Topic: [PATCH 5/6] arm/tegra: pinmux tables and definitions for
- tegra30
-Thread-Index: AcyTNsTIF+jknqVFQs6K5vk1CA8r+gBreFWw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B49C4@HQMAIL01.nvidia.com>
-References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
- <1319561644-6160-6-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1319561644-6160-6-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753498Ab1J0USg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 16:18:36 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36351 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752202Ab1J0USe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 16:18:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH 1/4] freezer: make fake_signal_wake_up wake TASK_KILLABLE tasks too
+Date: Thu, 27 Oct 2011 22:21:06 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, trond.myklebust@netapp.com,
+        smfrench@gmail.com, linux-pm@lists.linux-foundation.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org, john@calva.com,
+        linux-kernel@vger.kernel.org
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com> <201110112114.28478.rjw@sisk.pl> <20111026155548.4a7c3dd8@corrin.poochiereds.net>
+In-Reply-To: <20111026155548.4a7c3dd8@corrin.poochiereds.net>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110272221.06782.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
-> Define the pinmuxing and pindrive tables for tegra30. The pinmux table defines
-> the available functions for each pinmux group. The pindrive table defines the
-> default pullup or pulldowns for each group.
+On Wednesday, October 26, 2011, Jeff Layton wrote:
+> On Tue, 11 Oct 2011 21:14:28 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Tuesday, October 11, 2011, Jeff Layton wrote:
+> > > On Tue, 11 Oct 2011 08:18:48 +0200
+> > > Pavel Machek <pavel@ucw.cz> wrote:
+> > > 
+> > > > 
+> > > > Hi!
+> > > > 
+> > > > > TASK_KILLABLE is often used to put tasks to sleep for quite some time.
+> > > > > One of the most common uses is to put tasks to sleep while waiting for
+> > > > > replies from a server on a networked filesystem (such as CIFS or NFS).
+> > > > > 
+> > > > > Unfortunately, fake_signal_wake_up does not currently wake up tasks
+> > > > > that are sleeping in TASK_KILLABLE state. This means that even if the
+> > > > > code were in place to allow them to freeze while in this sleep, it
+> > > > > wouldn't work anyway.
+> > > > > 
+> > > > > This patch changes this function to wake tasks in this state as well.
+> > > > > This should be harmless -- if the code doing the sleeping doesn't have
+> > > > > handling to deal with freezer events, it should just go back to sleep.
+> > > > 
+> > > > I'm pretty sure this will break something; but that does not mean it
+> > > > is bad idea, just that it should be merged early and tested a lot.
+> > > > 
+> > > 
+> > > FWIW, I looked at most of the places in the kernel that do
+> > > TASK_KILLABLE sleeps and they look like they'll handle this correctly.
+> > > The main one I wasn't sure about was mem_cgroup_handle_oom(), but I
+> > > think it'll do the right thing too. I certainly could have missed
+> > > something though...
+> > > 
+> > > In any case, would you mind merging this via the linux-pm tree for 3.2?
+> > 
+> > I will push it for 3.2.
+> > 
+> 
+> Hi Rafael,
+> 
+> Trond asked if you would also be willing to push patches 3 and 4 in
+> this series for 3.2 as well [1]? Note that patch #4 got another revision so
+> we'll want to make sure that you get that one. I can resend the
+> nfs/sunrpc patches if that will help...
+> 
+> [1]: I think Steve F is going to push patch #2, so that one shouldn't
+> be an issue. 
 
-This is almost fine.
+Well, I've already sent my pull request.  I can keep these patches in my
+tree for the next pull request, though (I'm sure there will be fixes against
+3.2, so they will go along with those).
 
-You added some new fields to struct tegra_pingroup_desc. This should be
-noted in the change description, pointing out that there are new HW
-features on Tegra30, but that the driver hasn't been updated to support
-them. You probably want to actually add those new fields in a separate
-patch before-hand, so you can modify pinmux-tegra20-tables.c to set all
-those reg fields to -1, so if/when the driver does support the fields,
-Tegra20 will indicate it doesn't support those parameters.
-
--- 
-nvpublic
-
+Thanks,
+Rafael
