@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab1J0Nrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:47:33 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:5572 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864Ab1J0Nrc (ORCPT
+	id S1753998Ab1J0NtM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:49:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56389 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368Ab1J0NtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:47:32 -0400
-X-IronPort-AV: E=Sophos;i="4.69,413,1315180800"; 
-   d="scan'208";a="8621487"
-Subject: Re: [GIT PATCH] big staging merge for 3.2
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Mark Einon <mark.einon@gmail.com>, Jiri Pirko <jpirko@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Date: Thu, 27 Oct 2011 14:47:30 +0100
-In-Reply-To: <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
-References: <20111026120725.GA23142@kroah.com>
-	 <CA+55aFxRETDCVs=2pLSbc1qkhUYbfexVO9KG64EP2LKNdXGCeQ@mail.gmail.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319723250.9436.126.camel@zakaz.uk.xensource.com>
+	Thu, 27 Oct 2011 09:49:10 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v4 0/2] CPU hotplug,
+ Freezer: Fix race between CPU hotplug and freezer
+Cc: a.p.zijlstra@chello.nl, rjw@sisk.pl, stern@rowland.harvard.edu,
+        pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
+        akpm@linux-foundation.org, suresh.b.siddha@intel.com,
+        lucas.demarchi@profusion.mobi, linux-pm@vger.kernel.org,
+        rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        rdunlap@xenotime.net
+Date: Thu, 27 Oct 2011 19:18:59 +0530
+Message-ID: <20111027134824.20916.46845.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-26 at 14:59 +0100, Linus Torvalds wrote:
-> 
-> That driver wasn't removed, it was consolidated as one big file, and
-> so the fixes to the original files needed to be resolved. I tried to
-> do that correctly, but there's the skb_frag_dma_map() change and the
-> removal of .ndo_set_multicast_list, and while I think I did it right,
-> I really want somebody who knows that code to double check me. 
+The CPU hotplug notifications sent out by the _cpu_up() and _cpu_down()
+functions depends on the value of the 'tasks_frozen' argument passed to them.
+(Examples: CPU_ONLINE, CPU_ONLINE_FROZEN, CPU_DEAD, CPU_DEAD_FROZEN).
 
-The skb_frag_dma_map aspect looks fine to me.
+Thus, it is essential that while the callbacks for those notifications are
+running, the state of the system with respect to the tasks being frozen or
+not remains unchanged, *throughout that duration*. Hence there is a need for
+synchronizing the CPU hotplug code with the freezer subsystem.
 
-Ian.
+This patchset introduces two freezer notifications PM_FREEZE_PREPARE and
+PM_POST_THAW to announce the freezer's activities to other interested
+subsystems. The CPU hotplug code hooks onto these notifications and prevents
+the race between CPU hotplug and freezer, thus ensuring that CPU hotplug
+notifications will always be run with the state of the system really being
+what the notifications mean.
+
+
+v4: * Retained the value 0 for the 'tasks_frozen' argument, while calling
+      _cpu_up() and _cpu_down().
+      Removed the unnecessary PM_POST_FREEZE and PM_THAW_PREPARE notifications.
+
+v3: * Added synchronization between CPU hotplug and the freezer subsystem
+      without introducing any new locks in the CPU hotplug call path.
+
+v2: * Removed the atomic_t declaration of tasks_frozen flag and the
+      atomic_[set|read] functions since they were unnecessary.
+    * Updated the changelog to give an example scenario where things could go
+      wrong due to the bug in the CPU hotplug call path.
+
+References:
+v1 -> http://thread.gmane.org/gmane.linux.kernel/1198312/
+v2 -> http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087
+v3 -> http://thread.gmane.org/gmane.linux.documentation/3472
+
+--
+Srivatsa S. Bhat (2):
+      PM / Freezer: Introduce PM_FREEZE_PREPARE and PM_POST_THAW notifications
+      CPU hotplug, Freezer: Synchronize CPU hotplug and Freezer
+
+
+ Documentation/power/notifiers.txt |    4 ++
+ include/linux/suspend.h           |    4 +-
+ kernel/cpu.c                      |   76 +++++++++++++++++++++++++++++++++++++
+ kernel/power/process.c            |    8 +++-
+ 4 files changed, 90 insertions(+), 2 deletions(-)
+
 
