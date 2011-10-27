@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab1J0MqO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 08:46:14 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42846 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751036Ab1J0MqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 08:46:11 -0400
-Subject: Re: kdump: No udev events for memory hotplug?
-From: Dave Hansen <haveblue@us.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-In-Reply-To: <20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
-References: <1319645292.3321.24.camel@br98xy6r>
-	 <20111026192449.GE355@redhat.com>
-	 <20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 05:45:33 -0700
-Message-ID: <1319719533.23600.55.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11102712-3534-0000-0000-000000F4D621
+	id S1751935Ab1J0Mqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:46:42 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33907 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955Ab1J0Mql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 08:46:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111027121432.GA3039@swordfish>
+References: <20111027121432.GA3039@swordfish>
+Date: Thu, 27 Oct 2011 08:46:40 -0400
+Message-ID: <CA+5PVA51Rdd-33v-2pxdzXpQGnMrL+PYkzeXqM1R2fxXCK=Bqg@mail.gmail.com>
+Subject: Re: [PATCH] eventpoll: possible recursive locking detected
+From: Josh Boyer <jwboyer@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-27 at 09:30 +0200, Heiko Carstens wrote:
-> > Are any events generated for memory add?
-> 
-> Looks like uevents are only genereted when memory gets registered and
-> unregistered, but not when when it gets set online or offline.
-> To achieve that you would need to add similar code to
-> store_mem_state()/memory_block_change_state() in drivers/base/memory.c
-> like we have it already in store_online() in drivers/base/cpu.c 
+On Thu, Oct 27, 2011 at 8:14 AM, Sergey Senozhatsky
+<sergey.senozhatsky@gmail.com> wrote:
+> Hello,
+> Hit this lockdep warning today (with 3.2-merge-window kernel). Below is my
+> naive approach.
 
-Instead of doing it at that low a level, perhaps we should be generating
-events when 'totalram_pages' changes.  That way, we'll also trigger
-events when things like ballooning happen.
+Nelson Elhage posted a patch to fix this for the 3.1 merge window and
+it never went in.  You can find it here:
 
--- Dave
+http://thread.gmane.org/gmane.linux.kernel/1177210
 
+Not sure why it hasn't been pushed upstream yet.
+
+josh
