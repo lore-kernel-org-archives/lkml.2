@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab1J0MMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 08:12:42 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:36508 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755326Ab1J0MMl convert rfc822-to-8bit (ORCPT
+	id S1755334Ab1J0MRG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:17:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52319 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab1J0MRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 08:12:41 -0400
+	Thu, 27 Oct 2011 08:17:03 -0400
+Date: Thu, 27 Oct 2011 15:14:33 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] eventpoll: possible recursive locking detected
+Message-ID: <20111027121432.GA3039@swordfish>
 MIME-Version: 1.0
-In-Reply-To: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
-Date: Thu, 27 Oct 2011 15:12:40 +0300
-X-Google-Sender-Auth: oSybNb8ZpKfnz1a9dLIPKLc0Ym4
-Message-ID: <CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-From: Pekka Enberg <penberg@kernel.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 3:07 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> This patch adds 'make kvmconfig' which allows to add KVM guest support
-> to a config file.
->
-> This allows for easier testing of configurations under virtualized
-> environments.
->
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: linux-kbuild@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Suggested-by: Ingo Molnar <mingo@elte.hu>
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Hello,
+Hit this lockdep warning today (with 3.2-merge-window kernel). Below is my
+naive approach.
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+------8<-------8<--------
 
-Btw, Michal, if people are OK with the patch I'd really love to take
-this patch in my kvmtool git tree to have it contained in a single
-pull request.
 
-> ---
->
-> Updated sym list to include everything required when starting from
-> 'make allnoconfig' plus KGDB support.
->
->  arch/x86/Kconfig         |   27 +++++++++++++++++++++++++++
->  scripts/kconfig/Makefile |    6 +++++-
->  2 files changed, 32 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 6a47bb2..0b74528 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -520,6 +520,33 @@ config SCHED_OMIT_FRAME_POINTER
->
->          If in doubt, say "Y".
->
-> +config KVMTOOL_TEST_ENABLE
-> +       bool "Enable options to create a bootable tools/kvm/ kernel"
-> +       select NET
-> +       select NETDEVICES
-> +       select PCI
-> +       select BLK_DEV
-> +       select NETWORK_FILESYSTEMS
-> +       select INET
-> +       select EXPERIMENTAL
-> +       select SERIAL_8250
-> +       select SERIAL_8250_CONSOLE
-> +       select IP_PNP
-> +       select IP_PNP_DHCP
-> +       select BINFMT_ELF
-> +       select PCI_MSI
-> +       select KGDB
-> +       select KGDB_SERIAL_CONSOLE
-> +       select VIRTIO
-> +       select VIRTIO_RING
-> +       select VIRTIO_PCI
-> +       select VIRTIO_BLK
-> +       select VIRTIO_CONSOLE
-> +       select VIRTIO_NET
-> +       select 9P_FS
-> +       select NET_9P
-> +       select NET_9P_VIRTIO
-> +
->  menuconfig PARAVIRT_GUEST
->        bool "Paravirtualized guest support"
->        ---help---
-> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-> index 82d2eb2..356e551 100644
-> --- a/scripts/kconfig/Makefile
-> +++ b/scripts/kconfig/Makefile
-> @@ -3,7 +3,7 @@
->  # These targets are used from top-level makefile
->
->  PHONY += oldconfig xconfig gconfig menuconfig config silentoldconfig update-po-config \
-> -       localmodconfig localyesconfig
-> +       localmodconfig localyesconfig kvmconfig
->
->  ifdef KBUILD_KCONFIG
->  Kconfig := $(KBUILD_KCONFIG)
-> @@ -33,6 +33,10 @@ silentoldconfig: $(obj)/conf
->        $(Q)mkdir -p include/generated
->        $< --$@ $(Kconfig)
->
-> +kvmconfig:
-> +       $(Q)$(CONFIG_SHELL) $(srctree)/scripts/config -e KVMTOOL_TEST_ENABLE
-> +       @echo 'Kernel configuration modified to run as KVM guest.'
-> +
->  # if no path is given, then use src directory to find file
->  ifdef LSMOD
->  LSMOD_F := $(LSMOD)
-> --
-> 1.7.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Fix possible recursive locking, because both sys_epoll_ctl() and ep_scan_ready_list()
+were trying to acquire the same ep->mtx mutex.
+
+[   23.563357] systemd-logind/2373 is trying to acquire lock:
+[   23.563568]  (&ep->mtx){+.+.+.}, at: [<ffffffff81146da5>] ep_scan_ready_list+0x3c/0x1a7
+[   23.563922] 
+[   23.563924] but task is already holding lock:
+[   23.564155]  (&ep->mtx){+.+.+.}, at: [<ffffffff81147614>] sys_epoll_ctl+0x11e/0x20b
+[   23.564504] 
+[   23.565126] 2 locks held by systemd-logind/2373:
+[   23.565130]  #0:  (epmutex){+.+.+.}, at: [<ffffffff811475cb>] sys_epoll_ctl+0xd5/0x20b
+[   23.565152]  #1:  (&ep->mtx){+.+.+.}, at: [<ffffffff81147614>] sys_epoll_ctl+0x11e/0x20b
+[   23.565165] 
+[   23.565166] stack backtrace:
+[   23.565174] Pid: 2373, comm: systemd-logind Not tainted 3.1.0-dbg-05709-g189f65b-dirty #759
+[   23.565183] Call Trace:
+[   23.565199]  [<ffffffff81072566>] print_deadlock_bug+0xea/0xf5
+[   23.565210]  [<ffffffff81072696>] check_deadlock.isra.26+0x125/0x149
+[   23.565220]  [<ffffffff81073af5>] validate_chain.isra.30+0x445/0x44f
+[   23.565229]  [<ffffffff810746fd>] __lock_acquire+0x67e/0x6f5
+[   23.565244]  [<ffffffff81146da5>] ? ep_scan_ready_list+0x3c/0x1a7
+[   23.565252]  [<ffffffff81074d08>] lock_acquire+0x138/0x1b3
+[   23.565259]  [<ffffffff81146da5>] ? ep_scan_ready_list+0x3c/0x1a7
+[   23.565268]  [<ffffffff81146da5>] ? ep_scan_ready_list+0x3c/0x1a7
+[   23.565287]  [<ffffffff814a4399>] mutex_lock_nested+0x5e/0x325
+[   23.565296]  [<ffffffff81146da5>] ? ep_scan_ready_list+0x3c/0x1a7
+[   23.565307]  [<ffffffff81146624>] ? sys_fanotify_mark+0x246/0x246
+[   23.565314]  [<ffffffff81146da5>] ep_scan_ready_list+0x3c/0x1a7
+[   23.565322]  [<ffffffff81146f10>] ? ep_scan_ready_list+0x1a7/0x1a7
+[   23.565332]  [<ffffffff81146f22>] ep_poll_readyevents_proc+0x12/0x14
+[   23.565340]  [<ffffffff81146b0a>] ep_call_nested.constprop.5+0x95/0xe1
+[   23.565352]  [<ffffffff81146c35>] ep_eventpoll_poll+0x49/0x57
+[   23.565363]  [<ffffffff814970c2>] ep_insert+0xd5/0x282
+[   23.565373]  [<ffffffff81146b45>] ? ep_call_nested.constprop.5+0xd0/0xe1
+[   23.565381]  [<ffffffff811467c6>] ? ep_poll_wakeup_proc+0x3c/0x3c
+[   23.565396]  [<ffffffff81110f08>] ? drop_file_write_access+0x45/0x45
+[   23.565407]  [<ffffffff81147673>] sys_epoll_ctl+0x17d/0x20b
+[   23.565417]  [<ffffffff814ac3d2>] system_call_fastpath+0x16/0x1b
+
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index 9026fc9..b5cf4a5 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -481,7 +481,8 @@ static int ep_scan_ready_list(struct eventpoll *ep,
+ 	 * We need to lock this because we could be hit by
+ 	 * eventpoll_release_file() and epoll_ctl().
+ 	 */
+-	mutex_lock(&ep->mtx);
++	if (!mutex_trylock(&ep->mtx))
++		return 0;
+ 
+ 	/*
+ 	 * Steal the ready list, and re-init the original one to the
+
+
