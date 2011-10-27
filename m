@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab1J0Qb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:31:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab1J0Qb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:31:58 -0400
-Subject: Re: [PATCH 0/4] iommu: iommu_ops group interface
-From: Alex Williamson <alex.williamson@redhat.com>
-To: joerg.roedel@amd.com
-Cc: dwmw2@infradead.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, chrisw@redhat.com, agraf@suse.de,
-        dwg@au1.ibm.com, scottwood@freescale.com, B08248@freescale.com,
-        benh@kernel.crashing.org
-Date: Thu, 27 Oct 2011 10:31:42 -0600
-In-Reply-To: <20111021195412.8438.9951.stgit@s20.home>
-References: <20111021195412.8438.9951.stgit@s20.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1319733103.5715.3.camel@x201.home>
-Mime-Version: 1.0
+	id S1753802Ab1J0Qhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 12:37:54 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13483 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752480Ab1J0Qhx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 12:37:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 27 Oct 2011 09:37:46 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Marek Belisko <marek.belisko@open-nandra.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Oct 2011 09:37:43 -0700
+Subject: RE: [PATCH 1/2] pinmux: Remove double pin validity check.
+Thread-Topic: [PATCH 1/2] pinmux: Remove double pin validity check.
+Thread-Index: AcyUIfob3rAiae19SI+bsCn3vbvEOQApFQdA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B48D0@HQMAIL01.nvidia.com>
+References: <1319662641-28416-1-git-send-email-marek.belisko@open-nandra.com>
+In-Reply-To: <1319662641-28416-1-git-send-email-marek.belisko@open-nandra.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-21 at 13:55 -0600, Alex Williamson wrote:
-> IOMMUs can't always distiguish transactions from each individual
-> device in a system.  Sometimes this is by design (such as powerpc
-> partitionable endpoints), other times by topology (PCIe-to-PCI
-> bridges masking downstream devices).  We call these sets of
-> indistinguishable devices "groups".
+Belisko Marek wrote at Wednesday, October 26, 2011 2:57 PM:
+> Function pin_is_valid just call pin_desc_get which is in pin_request
+> call some line below. Remove pin_is_valid() check.
+...
+> @@ -112,16 +112,6 @@ static int pin_request(struct pinctrl_dev *pctldev,
 > 
-> In order to support secure userspace drivers, like vfio, we need
-> an interface to expose the device-to-group relationship.  This
-> allows us to create policies ensuring that userspace controls all
-> of the devices in the group before allowing individual device
-> access.
+>  	dev_dbg(&pctldev->dev, "request pin %d for %s\n", pin, function);
 > 
-> This series implements the iommu_ops API interface and sysfs
-> interface for exposing groups to userspace.  This also includes
-> the intel-iommu and amd-iommu backend implementations.  It's
-> intended that the vfio driver will make use of these interfaces
-> to support generic device assignment for virtual machines.  See
-> git://github.com/awilliam/linux-vfio.git (vfio-ng) for a working
-> example using this interface.
-> 
-> Patches based on Joerg's next branch to support per-bus iommu_ops.
-> 
-> Note the amd-iommu is untested, I'm still working on setting up
-> an AMD-Vi capable system.  Thanks,
+> -	if (!pin_is_valid(pctldev, pin)) {
+> -		dev_err(&pctldev->dev, "pin is invalid\n");
+> -		return -EINVAL;
+> -	}
 
-Now tested, even seems to work :)
+So that makes sense.
 
-Alex
+> -
+> -	if (!function) {
+> -		dev_err(&pctldev->dev, "no function name given\n");
+> -		return -EINVAL;
+> -	}
 
-> ---
-> 
-> Alex Williamson (4):
->       iommu: Add option to group multi-function devices
->       amd-iommu: Implement iommu_device_group
->       intel-iommu: Implement iommu_device_group
->       iommu: Add iommu_device_group callback and iommu_group sysfs entry
-> 
-> 
->  Documentation/kernel-parameters.txt |    4 ++
->  arch/ia64/include/asm/iommu.h       |    2 +
->  arch/ia64/kernel/pci-dma.c          |    1 +
->  arch/x86/include/asm/iommu.h        |    1 +
->  arch/x86/kernel/pci-dma.c           |   11 ++++++
->  drivers/iommu/amd_iommu.c           |   21 ++++++++++++
->  drivers/iommu/intel-iommu.c         |   47 +++++++++++++++++++++++++++
->  drivers/iommu/iommu.c               |   61 +++++++++++++++++++++++++++++++++++
->  include/linux/iommu.h               |    7 ++++
->  9 files changed, 154 insertions(+), 1 deletions(-)
+But I don't think you want to remove that? Oh actually, perhaps removing
+that /is/ valid, since it's an internal function and can't be called with
+a NULL function parameter. But, you should mention why in the changelog
+so it doesn't look like a mistake.
 
-
+-- 
+nvpublic
 
