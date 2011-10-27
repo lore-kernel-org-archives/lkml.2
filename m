@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab1J0OCI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 10:02:08 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:46781 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753514Ab1J0OCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 10:02:06 -0400
-Date: Thu, 27 Oct 2011 10:02:02 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: ext4 tree back to kernel.org
-Message-ID: <20111027140202.GD31921@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; x-action=pgp-signed
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1754587Ab1J0OIz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 10:08:55 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37919 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab1J0OIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 10:08:54 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
+Subject: [GIT PULL 0/1] perf/core fix
+Date: Thu, 27 Oct 2011 12:08:45 -0200
+Message-Id: <1319724526-376-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Hi Ingo,
 
-I've actually been updating both kernel.org and github for a week or
-so, this is probably a good time as any to ask that linux-next swtich
-to tracking the dev branch at:
+        Please consider pulling from:
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
+git://github.com/acmel/linux.git perf/core
 
-Thanks,
+Regards,
 
-						- Ted
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+- Arnaldo
 
-iQIcBAEBCAAGBQJOqWRaAAoJENNvdpvBGATwx+kP/2zHjAaIHsTk0pP5uBCXpuBZ
-m4SZOOOMtnVXzBmk60c2CbGxIBR/EEJn5Mj/U6Q5RiutAlgdmpo/6iRxFEROOWyP
-Yun6mP5tdcQ1v5C+3vYJZuDDEuJLs8gMtDCJqL1XzE8TahgIJWxn0/ewyJexmWUf
-9jJk2VR516a2+aCs2CMJxRjYHO0FS/H7R1b4NP0UTroHnKl8CJqNJ0mH3om4N6Cw
-ADIgPqg1erk6iJeUZFOPJPhXQT4U3+VZ4/CicMfg/kQ3UnLue4zcpHdXp0H+mg3Y
-mXMV+9+n7Kyd7d8jB//bDIo7CHgq0RqoBobqca+fDR5yXY1VEMZDPMd+PX0Q9XUJ
-cQxVdcuOV2YMQV/9sSg9tOTxH6y2YOSwqWl+hU+snZaGEdad/CFJkRQUBgsHmG4L
-1B2HqsLhDW+Wg2EVrkctfn8wtLkrOCEFeHrHTrBV3EIEyQIgZRffZ6k/29/wUoEL
-nTPNYQkYW42J+TmeJYKsWwViilerHUPDy7hWaqrBZVP6a6hmcQmK5RW0yTXZP/ke
-Dt7H8lIzXYreFkEdHGr1ZwIidAswykL+r1738knRFy+tYJ70sAPt5pboT0WNJreT
-TzYakK2FRy9PGply5VKLaSuoP4Hir9HvEK5LHgG+f9QKDtzs7aKM+TbRsndV7ImR
-0vgW3lCpfl5jU1hKVQsR
-=Imwu
------END PGP SIGNATURE-----
+Arnaldo Carvalho de Melo (1):
+  perf hists: Fix recalculation of total_period when sorting entries
+
+ tools/perf/util/hist.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
