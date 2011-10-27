@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab1J0NzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:55:09 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36985 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753251Ab1J0NzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:55:08 -0400
-Message-ID: <4EA962B2.3030402@tao.ma>
-Date: Thu, 27 Oct 2011 21:54:58 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1754416Ab1J0OCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 10:02:08 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:46781 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753514Ab1J0OCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 10:02:06 -0400
+Date: Thu, 27 Oct 2011 10:02:02 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: ext4 tree back to kernel.org
+Message-ID: <20111027140202.GD31921@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: "Ted Ts'o" <tytso@mit.edu>, ext4 development <linux-ext4@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: Re: [PATCH V1 00/17] ext4: Add inline data support.
-References: <4EA7B788.3040503@tao.ma> <7941.1319699422@turing-police.cc.vt.edu>
-In-Reply-To: <7941.1319699422@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.39.32 authed with tm@tao.ma}
+Content-Type: text/plain; charset=us-ascii; x-action=pgp-signed
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/27/2011 03:10 PM, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 26 Oct 2011 15:32:24 +0800, Tao Ma said:
-> 
->> Currently I use all the space between i_extra_isize and inode_size if
->> inode_size = 256. For inode_size > 256, half of that space is used so as
->> to leave some space for other xattrs.
-> 
-> I didn't check the code too closely - does this code DTRT if the user tries to
-> then attach a moby-sized xattr (or set of xattrs - if it's got a security.selinux
-> tag on it, and a security.capabilities xattr, and a user xattr or two, things are
-> going to be getting full).
-sure, it will work and all these stuff will be inserted to the external
-xattr block since the in-inode space is full.
-> 
->> This is only a V1 and there are still something to do(e.g. I am thinking
->> of using unused extent space), but I'd like to send it out earlier so
->> that it can be reviewed ASAP.
-> 
-> If this works out, would it make sense to investigate doing this for all
-> tails in a V2?  So if your file was 4099 bytes long, you could save allocating
-> a second block.  Assuming random distribution of tail sizes, this wil save
-> an average of (space avail for tail)/(blocksize) per file.
-uh, it seems like a good suggestion, but it will make the code a little
-bit complicated(at least compared to the current version) and I am not
-sure whether the maintainer like it or not ;) . So Ted and Andreas, What
-do you think of this?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-Thanks
-Tao
+I've actually been updating both kernel.org and github for a week or
+so, this is probably a good time as any to ask that linux-next swtich
+to tracking the dev branch at:
 
+	git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git
+
+Thanks,
+
+						- Ted
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOqWRaAAoJENNvdpvBGATwx+kP/2zHjAaIHsTk0pP5uBCXpuBZ
+m4SZOOOMtnVXzBmk60c2CbGxIBR/EEJn5Mj/U6Q5RiutAlgdmpo/6iRxFEROOWyP
+Yun6mP5tdcQ1v5C+3vYJZuDDEuJLs8gMtDCJqL1XzE8TahgIJWxn0/ewyJexmWUf
+9jJk2VR516a2+aCs2CMJxRjYHO0FS/H7R1b4NP0UTroHnKl8CJqNJ0mH3om4N6Cw
+ADIgPqg1erk6iJeUZFOPJPhXQT4U3+VZ4/CicMfg/kQ3UnLue4zcpHdXp0H+mg3Y
+mXMV+9+n7Kyd7d8jB//bDIo7CHgq0RqoBobqca+fDR5yXY1VEMZDPMd+PX0Q9XUJ
+cQxVdcuOV2YMQV/9sSg9tOTxH6y2YOSwqWl+hU+snZaGEdad/CFJkRQUBgsHmG4L
+1B2HqsLhDW+Wg2EVrkctfn8wtLkrOCEFeHrHTrBV3EIEyQIgZRffZ6k/29/wUoEL
+nTPNYQkYW42J+TmeJYKsWwViilerHUPDy7hWaqrBZVP6a6hmcQmK5RW0yTXZP/ke
+Dt7H8lIzXYreFkEdHGr1ZwIidAswykL+r1738knRFy+tYJ70sAPt5pboT0WNJreT
+TzYakK2FRy9PGply5VKLaSuoP4Hir9HvEK5LHgG+f9QKDtzs7aKM+TbRsndV7ImR
+0vgW3lCpfl5jU1hKVQsR
+=Imwu
+-----END PGP SIGNATURE-----
