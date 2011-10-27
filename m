@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab1J0JnY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 05:43:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42906 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab1J0JnX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 05:43:23 -0400
+	id S1755181Ab1J0Jsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 05:48:38 -0400
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:44461 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725Ab1J0Jsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 05:48:37 -0400
+Message-ID: <4EA928F3.7010204@ilyx.ru>
+Date: Thu, 27 Oct 2011 13:48:35 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
 MIME-Version: 1.0
-In-Reply-To: <20111027090507.GA5213@suse.de>
-References: <CAJSP0QWV9V7JzCcJROF9_Psib3kC0f67c2OwZzJbxPmZn9SBJg@mail.gmail.com>
-	<20111027090507.GA5213@suse.de>
-Date: Thu, 27 Oct 2011 10:43:21 +0100
-Message-ID: <CAJSP0QWJOODix7xR9JjUsB9XpYinwJ1Mk+GfO9649HGUd92dzQ@mail.gmail.com>
-Subject: Re: staging: line6 driver status
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Markus Grabner <grabner@icg.tugraz.at>
-Cc: devel@linuxdriverproject.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] TTY: pty, fix pty counting in "/proc/sys/kernel/pty/nr"
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 10:05 AM, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Oct 27, 2011 at 09:28:59AM +0100, Stefan Hajnoczi wrote:
->> What is the status of the line6 staging driver?  There is no TODO file
->> so I'm not sure what is blocking it from leaving staging.
->
-> That's a good question.  I don't really know the status of the driver at
-> the moment, does anyone else?
+Regression for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
+Commit: 24d406a6b accepted in Linux 3.1.
+Disscussed on linux-kernel@vger.kernel.org "subject: [PATCH] TTY: pty, fix pty counting"
+and not accepted.
+Although, I think it's clear.
 
-I have one question about the design of the driver:
-
-Do we really need the sysfs attributes which boil down to MIDI
-commands?  I think a userspace library provides a better interface
-because the MIDI commands/values vary between device models and bloat
-the driver.  Generic sound recording and MIDI software would talk to
-the driver.  Utilities to control the device could link against the
-userspace library.
-
-By splitting the code into the kernel MIDI/pcm driver and a userspace
-control library which uses MIDI we can slim down the kernel driver and
-leave the large variation of MIDI commands/values to a library that
-the community can improve for specific device models.
-
-This will make the driver smaller and easier for review.
-
-Stefan
+diff -uprN -X ../../dontdiff a/drivers/tty/pty.c b/drivers/tty/pty.c
+--- a/drivers/tty/pty.c	2011-05-19 08:06:34.000000000 +0400
++++ b/drivers/tty/pty.c	2011-10-24 23:59:23.000000000 +0400
+@@ -36,13 +36,15 @@
+ static struct tty_driver *ptm_driver;
+ static struct tty_driver *pts_driver;
+ #endif
++static int pty_count;
+ 
+ static void pty_close(struct tty_struct *tty, struct file *filp)
+ {
+ 	BUG_ON(!tty);
+-	if (tty->driver->subtype == PTY_TYPE_MASTER)
++	if (tty->driver->subtype == PTY_TYPE_MASTER) {
+ 		WARN_ON(tty->count > 1);
+-	else {
++		pty_count--;
++	} else {
+ 		if (tty->count > 2)
+ 			return;
+ 	}
+@@ -446,7 +448,6 @@ static inline void legacy_pty_init(void)
+ int pty_limit = NR_UNIX98_PTY_DEFAULT;
+ static int pty_limit_min;
+ static int pty_limit_max = NR_UNIX98_PTY_MAX;
+-static int pty_count;
+ 
+ static struct cdev ptmx_cdev;
+ 
+@@ -599,15 +600,9 @@ free_mem_out:
+ 	return -ENOMEM;
+ }
+ 
+-static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
+-{
+-	pty_count--;
+-}
+-
+ static const struct tty_operations ptm_unix98_ops = {
+ 	.lookup = ptm_unix98_lookup,
+ 	.install = pty_unix98_install,
+-	.remove = pty_unix98_remove,
+ 	.open = pty_open,
+ 	.close = pty_close,
+ 	.write = pty_write,
+@@ -624,7 +619,6 @@ static const struct tty_operations ptm_u
+ static const struct tty_operations pty_unix98_ops = {
+ 	.lookup = pts_unix98_lookup,
+ 	.install = pty_unix98_install,
+-	.remove = pty_unix98_remove,
+ 	.open = pty_open,
+ 	.close = pty_close,
+ 	.write = pty_write,
+Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
