@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1J0Ntc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:49:32 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56466 "EHLO
+	id S1754360Ab1J0Ntn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:49:43 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56522 "EHLO
 	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab1J0Nta (ORCPT
+	with ESMTP id S1754088Ab1J0Ntl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:49:30 -0400
+	Thu, 27 Oct 2011 09:49:41 -0400
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v4 1/2] PM / Freezer: Introduce PM_FREEZE_PREPARE and
- PM_POST_THAW notifications
+Subject: [PATCH v4 2/2] CPU hotplug,
+ Freezer: Synchronize CPU hotplug and Freezer
 Cc: a.p.zijlstra@chello.nl, rjw@sisk.pl, stern@rowland.harvard.edu,
         pavel@ucw.cz, len.brown@intel.com, mingo@elte.hu,
         akpm@linux-foundation.org, suresh.b.siddha@intel.com,
@@ -17,102 +17,138 @@ Cc: a.p.zijlstra@chello.nl, rjw@sisk.pl, stern@rowland.harvard.edu,
         rusty@rustcorp.com.au, vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
         linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
         rdunlap@xenotime.net
-Date: Thu, 27 Oct 2011 19:19:18 +0530
-Message-ID: <20111027134911.20916.41612.stgit@srivatsabhat.in.ibm.com>
+Date: Thu, 27 Oct 2011 19:19:30 +0530
+Message-ID: <20111027134926.20916.21637.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20111027134824.20916.46845.stgit@srivatsabhat.in.ibm.com>
 References: <20111027134824.20916.46845.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 11102713-2674-0000-0000-000000FE4D8B
+x-cbid: 11102713-2674-0000-0000-000000FE4DA5
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several subsystems and code paths (like CPU hotplug) that would
-like to sync up with the activities of the freezer subsystem. So, this patch
-introduces two notifications in the freezer, namely PM_FREEZE_PREPARE and
-PM_POST_THAW, so as to make other subsystems aware of the freezer's activity.
-Thus whichever code wants to avoid racing with the freezer or take any
-specific action when the freezer is active, can hook onto these notifications
-and implement the necessary functionality in their callbacks.
+Prevent CPU hotplug and the freezer from racing with each other, to ensure
+that during the *entire duration* for which the callbacks for CPU hotplug
+notifications such as CPU_ONLINE[_FROZEN], CPU_DEAD[_FROZEN] etc are being
+executed, the state of the system (with respect to the tasks being frozen
+or not) remains constant.
+
+This patches hooks the CPU hotplug infrastructure onto the freezer
+notifications (PM_FREEZE_PREPARE and PM_POST_THAW) and thus synchronizes
+with the freezer.
+
+Specifically,
+
+* Upon the PM_FREEZE_PREPARE notification, the CPU hotplug callback disables
+  future (regular) CPU hotplugging and also ensures that any currently running
+  CPU hotplug operation is completed before allowing the freezer to continue
+  any further.
+
+* Upon the PM_POST_THAW notification, the CPU hotplug callback re-enables
+  regular CPU hotplug.
 
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- Documentation/power/notifiers.txt |    4 ++++
- include/linux/suspend.h           |    4 +++-
- kernel/power/process.c            |    8 +++++++-
- 3 files changed, 14 insertions(+), 2 deletions(-)
+ kernel/cpu.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 76 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/power/notifiers.txt b/Documentation/power/notifiers.txt
-index c2a4a34..3234306 100644
---- a/Documentation/power/notifiers.txt
-+++ b/Documentation/power/notifiers.txt
-@@ -37,6 +37,10 @@ PM_POST_SUSPEND		The system has just resumed or an error occurred during
- 			suspend.  Device drivers' resume callbacks have been
- 			executed and tasks have been thawed.
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..61985ce 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
++#include <linux/suspend.h>
  
-+PM_FREEZE_PREPARE	Freezing of tasks is about to begin.
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -478,6 +479,81 @@ static int alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
+ #endif /* CONFIG_PM_SLEEP_SMP */
+ 
 +
-+PM_POST_THAW		Thawing of tasks has been completed.
-+
- It is generally assumed that whatever the notifiers do for
- PM_HIBERNATION_PREPARE, should be undone for PM_POST_HIBERNATION.  Analogously,
- operations performed for PM_SUSPEND_PREPARE should be reversed for
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 57a6924..9530832 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -323,13 +323,15 @@ static inline int hibernate(void) { return -ENOSYS; }
- static inline bool system_entering_hibernation(void) { return false; }
- #endif /* CONFIG_HIBERNATION */
- 
--/* Hibernation and suspend events */
-+/* Hibernation, suspend and freezer events */
- #define PM_HIBERNATION_PREPARE	0x0001 /* Going to hibernate */
- #define PM_POST_HIBERNATION	0x0002 /* Hibernation finished */
- #define PM_SUSPEND_PREPARE	0x0003 /* Going to suspend the system */
- #define PM_POST_SUSPEND		0x0004 /* Suspend finished */
- #define PM_RESTORE_PREPARE	0x0005 /* Going to restore a saved image */
- #define PM_POST_RESTORE		0x0006 /* Restore failed */
-+#define PM_FREEZE_PREPARE	0X0007 /* Going to freeze tasks */
-+#define PM_POST_THAW		0x0008 /* Thawing of tasks finished */
- 
- #ifdef CONFIG_PM_SLEEP
- void save_processor_state(void);
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index addbbe5..17a31a2 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -17,7 +17,9 @@
- #include <linux/delay.h>
- #include <linux/workqueue.h>
- 
--/* 
-+#include "power.h"
++#ifdef CONFIG_FREEZER
 +
 +/*
-  * Timeout for stopping processes
-  */
- #define TIMEOUT	(20 * HZ)
-@@ -141,6 +143,8 @@ int freeze_processes(void)
- {
- 	int error;
- 
-+	pm_notifier_call_chain(PM_FREEZE_PREPARE);
++ * Avoid CPU hotplug racing with the freezer subsystem, by disabling CPU
++ * hotplug when tasks are about to be frozen.
++ *
++ * Also, don't allow the freezer subsystem to continue until any currently
++ * running CPU hotplug operation gets completed.
++ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
++ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
++ * CPU hotplug path and released only after it is complete. Thus, we
++ * (and hence the freezer) will block here until any currently running CPU
++ * hotplug operation is completed.
++ */
++static void cpu_hotplug_freezer_block_begin(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
 +
- 	printk("Freezing user space processes ... ");
- 	error = try_to_freeze_tasks(true);
- 	if (!error) {
-@@ -201,5 +205,7 @@ void thaw_processes(void)
- 	thaw_tasks(false);
- 	schedule();
- 	printk("done.\n");
 +
-+	pm_notifier_call_chain(PM_POST_THAW);
- }
- 
++/*
++ * When thawing of tasks is complete, re-enable CPU hotplug (which had been
++ * disabled while beginning to freeze tasks).
++ */
++static void cpu_hotplug_freezer_block_done(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
++
++/*
++ * Avoid CPU hotplug and the freezer subsystem from racing with each other,
++ * so that when CPU hotplug notifications are being sent (i.e., the
++ * registered callbacks being executed), the state of the system reported
++ * by the notifier (with respect to the tasks being frozen or not) is
++ * consistent with the actual state of the system, *throughout the duration*
++ * during which the CPU hotplug notifications are active.
++ */
++static int
++cpu_hotplug_freezer_callback(struct notifier_block *nb,
++				unsigned long action, void *ptr)
++{
++	switch (action) {
++
++	case PM_FREEZE_PREPARE:
++		cpu_hotplug_freezer_block_begin();
++		break;
++
++	case PM_POST_THAW:
++		cpu_hotplug_freezer_block_done();
++		break;
++
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++
++int cpu_hotplug_freezer_sync_init(void)
++{
++	pm_notifier(cpu_hotplug_freezer_callback, 0);
++	return 0;
++}
++core_initcall(cpu_hotplug_freezer_sync_init);
++
++#endif /* CONFIG_FREEZER */
++
++
+ /**
+  * notify_cpu_starting(cpu) - call the CPU_STARTING notifiers
+  * @cpu: cpu that just started
 
