@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1J0PjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 11:39:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab1J0PjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 11:39:05 -0400
-Date: Thu, 27 Oct 2011 11:39:01 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] block, cfq: misc updates to cfq_io_context
-Message-ID: <20111027153901.GG7491@redhat.com>
-References: <1319593719-19132-1-git-send-email-tj@kernel.org>
- <1319593719-19132-7-git-send-email-tj@kernel.org>
+	id S1753035Ab1J0PmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 11:42:13 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45589 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab1J0PmM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 11:42:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319593719-19132-7-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
+References: <1318583622-23518-1-git-send-email-corentincj@iksaif.net>
+Date: Thu, 27 Oct 2011 17:42:10 +0200
+Message-ID: <CAHR064i7SsGvpzvrZo7aniAK6zE5kYNxgWjnBMuPL6u1btRoWw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Pegatron Lucid series for asus-laptop
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Anisse Astier <anisse@astier.eu>, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Ross <andy.ross@windriver.com>,
+        Corentin Chary <corentincj@iksaif.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 06:48:32PM -0700, Tejun Heo wrote:
-> Make the following changes to prepare for ioc/cic management cleanup.
-> 
-> * Add cic->q so that ioc can determine the associated queue without
->   querying cfq.  This will eventually replace ->key.
+Hi Matthew,
+Do you think these patch will be able to make it to 3.2 ?
+Thanks,
 
-Not sure what's the advantage of storing cic->q instead of cic->cfqd.
-In blk-ioc code getting to cic's queue becomes easier but then reaching
-to cfqd in cfq code becomes much longer.
+On Fri, Oct 14, 2011 at 11:13 AM, Corentin Chary <corentincj@iksaif.net> wrote:
+> Hi,
+> This is a series of patch that were staging in my tree for
+> way too long. I hope they will make it to the next merge window.
+> Thanks,
+>
+> Andy Ross (4):
+>  asus-laptop: Platform detection for Pegatron Lucid
+>  asus-laptop: Pegatron Lucid ALS sensor
+>  asus-laptop: allow boot time control of Pegatron ALS sensor
+>  asus-laptop: Pegatron Lucid accelerometer
+>
+> Anisse Astier (2):
+>  asus-laptop: pega_accel - Report accelerometer orientation change
+>    through udev
+>  asus-laptop: Add rfkill support for Pegatron Lucid tablet
+>
+> Corentin Chary (2):
+>  asus-laptop: hide leds on Pegatron Lucid
+>  asus-laptop: fix module description
+>
+>  drivers/platform/x86/Kconfig       |   19 +-
+>  drivers/platform/x86/asus-laptop.c |  366 ++++++++++++++++++++++++++++++++++--
+>  2 files changed, 363 insertions(+), 22 deletions(-)
+>
+> --
+> 1.7.3.4
+>
+>
 
-static inline struct cfq_data *cic_to_cfqd(struct cfq_io_context *cic)
-{
-        return cic->q->elevator->elevator_data;
-}
 
-May be storing cic->cfqd is not a bad idea.
 
-For blk-ioc.
-
-cic_queue = cic->cfqd->queue;
-
-And for CFQ
-
-cic_cfqd = cic->cfqd;
-
-None of the paths is too long for either code. It is a very minor point
-though.
-
-Thanks
-Vivek
+-- 
+Corentin Chary
+http://xf.iksaif.net
