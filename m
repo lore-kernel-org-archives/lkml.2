@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab1J0RoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 13:44:21 -0400
-Received: from mail-pz0-f56.google.com ([209.85.210.56]:51414 "EHLO
-	mail-pz0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab1J0RoU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 13:44:20 -0400
-X-Greylist: delayed 769 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Oct 2011 13:44:20 EDT
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Thu, 27 Oct 2011 10:31:30 -0700 (PDT)
-In-Reply-To: <fa.sHib65lEoXP9G43lrndbDfam4CU@ifi.uio.no>
-Reply-To: fa.linux.kernel@googlegroups.com
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=2620:0:1000:1b02:1aa9:5ff:fe24:3620;
- posting-account=B0m2yQoAAABHLnvb2W6ip1n_G1NPelzT
-NNTP-Posting-Host: 2620:0:1000:1b02:1aa9:5ff:fe24:3620
-References: <fa.DU5J+vcQ1k3A34VvvU/+Dois5+Y@ifi.uio.no> <fa.sHib65lEoXP9G43lrndbDfam4CU@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
+	id S1754466Ab1J0SJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:09:55 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:23386 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab1J0SJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 14:09:54 -0400
+Subject: [PATCH v3 0/3] SUNRPC: rcbind clients virtualization
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Date: Thu, 27 Oct 2011 22:10:43 +0300
+Message-ID: <20111027180824.20459.23219.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Message-ID: <22032480.316.1319736691009.JavaMail.geo-discussion-forums@prgt10>
-Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a signal
-From: scott@netsplit.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I wonder whether we could use a slightly different approach for this loop.
+v3:
+1) First two patches from previous version were squashed.
 
-In the current code in the case where there is a signal pending on the crashing process (in our case it looks like it's SIGTERM as a result of the process group being killed) we never call pipe_wait() at all. This means everything is certainly missing from /proc if the crashing process is reaped before crash-reporter gets a look-in.
+This patch-set was created in context of clone of git branch:
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
+and rebased on tag "v3.1".
 
-What would be the side-effect of changing the code such that we call pipe_wait() at least once in this scenario, for example:
+This patch-set virtualizes rpcbind clients per network namespace context. IOW,
+each network namespace will have its own pair of rpcbind clients (if they would
+be created by request).
+
+Note:
+1) this patch-set depends on "SUNRPC: make rpcbind clients allocated and
+destroyed dynamically" patch-set which has been send earlier.
+2) init_net pointer is still used instead of current->nsproxy->net_ns,
+because I'm not sure yet about how to virtualize services. I.e. NFS callback
+services will be per netns. NFSd service will be per netns too from my pow. But
+Lockd can be per netns or one for all. And also we have NFSd file system, which
+is not virtualized yet.
+
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (3):
+      SUNRPC: move rpcbind internals to sunrpc part of network namespace context
+      SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
+      SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
 
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 25dcbe5..8959d304 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2030,11 +2030,11 @@ static void wait_for_dump_helpers(struct file *file)
-        pipe->readers++;
-        pipe->writers--;
- 
--       while ((pipe->readers > 1) && (!signal_pending(current))) {
-+       do {
-                wake_up_interruptible_sync(&pipe->wait);
-                kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
-                pipe_wait(pipe);
--       }
-+       } while ((pipe->readers > 1) && (!signal_pending(current)));
- 
-        pipe->readers--;
-        pipe->writers++;
+ net/sunrpc/netns.h     |    5 ++
+ net/sunrpc/rpcb_clnt.c |  103 ++++++++++++++++++++++++++----------------------
+ 2 files changed, 61 insertions(+), 47 deletions(-)
 
-This way around would it not at least wait for the core_pattern user mode helper to call read() at least once before bailing out due to signal?
-
-Scott
+-- 
+Signature
