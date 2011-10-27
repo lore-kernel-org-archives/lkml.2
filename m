@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab1J0QDt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:03:49 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42723 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab1J0QDq convert rfc822-to-8bit (ORCPT
+	id S1753526Ab1J0QEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 12:04:08 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10446 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab1J0QEE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:03:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319396024-28558-1-git-send-email-martinez.javier@gmail.com>
-References: <1319396024-28558-1-git-send-email-martinez.javier@gmail.com>
-From: Javier Martinez Canillas <martinez.javier@gmail.com>
-Date: Thu, 27 Oct 2011 18:03:26 +0200
-Message-ID: <CAAwP0s2gPpC6kar0=-Kg4WPcc34G3rOdjWqamr+R3PQ1PSJ51A@mail.gmail.com>
-Subject: Re: [PATCH v7 0/3] Input: Cypress TTSP device driver
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Mohan Pallaka <mpallaka@codeaurora.org>,
-        Kevin McNeely <kev@cypress.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 27 Oct 2011 12:04:04 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 27 Oct 2011 09:03:55 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Oct 2011 09:03:54 -0700
+Subject: RE: [PATCHv2] arm/tegra: clk_get should not be fatal
+Thread-Topic: [PATCHv2] arm/tegra: clk_get should not be fatal
+Thread-Index: AcyTuxoiKKMhQgS7Q0aR7F3FdJkY1ABBq3KA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B48B0@HQMAIL01.nvidia.com>
+References: <1319618501-15020-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1319618501-15020-1-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 8:53 PM, Javier Martinez Canillas
-<martinez.javier@gmail.com> wrote:
-> Cypress TrueTouch(tm) Standard Product controllers are found in a wide range of
-> embedded devices. This patch-set adds support for a variety of TTSP controllers.
->
-> The original author of the driver is Kevin McNeely <kev@cypress.com>
->
-> Since the hardware is capable of tracking identifiable contacts and the original
-> driver used multi-touch protocol type A (stateless), I've added multi-touch
-> protocol type B (stateful) support.
->
-> The driver is composed of a core driver that process the data sent by the
-> contacts (fingers) and two bus specific interface modules (I2C and SPI).
->
-> This is version 7 of the driver that fixes issues called out by Dmitry Torokhov,
-> Henrik Rydberg, Mohan Pallaka, Kevin McNeely and Shubhrajyoti Datta.
->
-> The patchset is composed of the following patches:
->
-> [PATCH v7 1/3] Input: cyttsp - Cypress TTSP capacitive multi-touch screen support
-> [PATCH v7 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
-> [PATCH v7 3/3] Input: cyttsp - add support for Cypress TTSP touchscreen SPI bus interface
->
+pdeschrijver@nvidia.com wrote at Wednesday, October 26, 2011 2:42 AM:
+> The timer and rtc-timer clocks aren't gated by default, so there is no reason
+> to crash the system if the dummy enable call failed.
+...
+>  	clk = clk_get_sys("timer", NULL);
+> -	BUG_ON(IS_ERR(clk));
+> -	clk_enable(clk);
+> +	if (IS_ERR(clk))
+> +		pr_warn("Unable to get timer clock\n");
+> +	else
+> +		clk_enable(clk);
 
-Hello,
+This seems reasonable to me, and is certainly required for Tegra30 support
+until we get a full clock tree set up for Tegra30, which I think we'll
+probably defer until the common clock infra-structure is in place.
 
-Any feedback from this patch-set?
-
-Thank you and best regards,
+Acked-by: Stephen Warren <swarren@nvidia.com>
 
 -- 
-Javier Martínez Canillas
-(+34) 682 39 81 69
-Barcelona, Spain
+nvpublic
+
