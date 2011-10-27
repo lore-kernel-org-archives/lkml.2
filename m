@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab1J0QYN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 12:24:13 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:37601 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753441Ab1J0QYM (ORCPT
+	id S1753841Ab1J0QZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 12:25:00 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65507 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab1J0QZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 12:24:12 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] asm-generic/gpio.h: merge basic gpiolib wrappers
-References: <1319528012-19006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-	<1319720503-3183-1-git-send-email-vapier@gentoo.org>
-X-Yow: ..Wait 'til those  ITALIAN TEENAGERS get back to their HONDAS &
- discover them to be FILLED to the BRIM with MAZOLA!!
-Date: Thu, 27 Oct 2011 18:24:08 +0200
-In-Reply-To: <1319720503-3183-1-git-send-email-vapier@gentoo.org> (Mike
-	Frysinger's message of "Thu, 27 Oct 2011 09:01:43 -0400")
-Message-ID: <m21utymmhj.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (gnu/linux)
+	Thu, 27 Oct 2011 12:25:00 -0400
+Date: Thu, 27 Oct 2011 09:24:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: axboe@kernel.dk, ctalbott@google.com, rni@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/13] block, cfq: misc updates to cfq_io_context
+Message-ID: <20111027162454.GC29899@google.com>
+References: <1319593719-19132-1-git-send-email-tj@kernel.org>
+ <1319593719-19132-7-git-send-email-tj@kernel.org>
+ <20111027153901.GG7491@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111027153901.GG7491@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger <vapier@gentoo.org> writes:
+Hello, Vivek.
 
-> I don't see m68k supporting gpoilib, so I've just ignored it.
+On Thu, Oct 27, 2011 at 11:39:01AM -0400, Vivek Goyal wrote:
+> On Tue, Oct 25, 2011 at 06:48:32PM -0700, Tejun Heo wrote:
+> > Make the following changes to prepare for ioc/cic management cleanup.
+> > 
+> > * Add cic->q so that ioc can determine the associated queue without
+> >   querying cfq.  This will eventually replace ->key.
+> 
+> Not sure what's the advantage of storing cic->q instead of cic->cfqd.
+> In blk-ioc code getting to cic's queue becomes easier but then reaching
+> to cfqd in cfq code becomes much longer.
 
-Typo: gpiolib
+It's primarily for API separation.  Currently, io_context and cfq are
+intermixed without clear layer of separation.  The optimization of
+avoiding one indirect deref at this level isn't worth blurring API
+boundaries especially when the cachelines being derefed are known to
+be hot (we're deep in elevator path after all).  I'm working on a
+patchset to make proper separation between them.  If reducing that one
+indrect load proves to be worthwhile (I'm extremely skeptical tho), we
+can use another another caching entry in cic.
 
-Andreas.
+Thanks.
 
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+tejun
