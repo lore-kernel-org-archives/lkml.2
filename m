@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab1J0HcB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 03:32:01 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59614 "EHLO mx3.mail.elte.hu"
+	id S1752894Ab1J0HhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 03:37:10 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43576 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab1J0HcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 03:32:00 -0400
-Date: Thu, 27 Oct 2011 09:30:29 +0200
+	id S1750779Ab1J0HhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 03:37:09 -0400
+Date: Thu, 27 Oct 2011 09:35:33 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Daniel J Blueman <daniel@numascale-asia.com>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
         linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 2/3] Add multi-node boot support
-Message-ID: <20111027073029.GD15923@elte.hu>
+Subject: Re: [PATCH 1/3] Add Numachip APIC support
+Message-ID: <20111027073533.GE15923@elte.hu>
 References: <1319609230-18897-1-git-send-email-daniel@numascale-asia.com>
- <1319609230-18897-2-git-send-email-daniel@numascale-asia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319609230-18897-2-git-send-email-daniel@numascale-asia.com>
+In-Reply-To: <1319609230-18897-1-git-send-email-daniel@numascale-asia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,58 +38,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > From: Steffen Persvold <sp@numascale.com>
 > 
 > From: Steffen Persvold <sp@numascale.com>
-> 
-> Fix booting multi-node systems with Numascale's NumaChip.
+
+Please fix these duplicate lines.
+
+> Add support for Numascale's NumaChip APIC mapping mechanism to allow
+> booting more than ~168 cores.
 > 
 > v2:
+>  - [Steffen] enumerate only accessible northbridges
 >  - [Daniel] rediffed and validated against 3.1-rc10
 > 
 > Signed-off-by: Steffen Persvold <sp@numascale.com>
 > Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
-> ---
->  arch/x86/kernel/cpu/amd.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index b13ed39..4b551f5 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -7,6 +7,7 @@
->  #include <asm/apic.h>
->  #include <asm/cpu.h>
->  #include <asm/pci-direct.h>
-> +#include <asm/numachip/numachip.h>
->  
->  #ifdef CONFIG_X86_64
->  # include <asm/numa_64.h>
-> @@ -350,6 +351,12 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
->  	node = numa_cpu_node(cpu);
->  	if (node == NUMA_NO_NODE)
->  		node = per_cpu(cpu_llc_id, cpu);
-> +	else if (is_numachip_system()) {
-> +		/* fix for multi-node systems: set phys_proc_id and cpu_llc_id
-> +		   to node number from ACPI SRAT table */
 
-please use the customary (multi-line) comment style:
+> +/*
+> + * Set up the logical destination ID.
+> + *
+> + * Intel recommends to set DFR, LDR and TPR before enabling
+> + * an APIC. See e.g. "AP-388 82489DX User's Manual" (Intel
+> + * document number 292116).
+> + */
+> +static void numachip_init_apic_ldr(void)
+> +{
+> +	unsigned long val;
+> +	unsigned long num, id;
+> +
+> +	num = smp_processor_id();
+> +	id = 1UL << num;
+> +	apic_write(APIC_DFR, APIC_DFR_FLAT);
+> +	val = apic_read(APIC_LDR) & ~APIC_LDR_MASK;
+> +	val |= SET_APIC_LOGICAL_ID(id);
+> +	apic_write(APIC_LDR, val);
+> +}
 
-  /*
-   * Comment .....
-   * ...... goes here.
-   */
+Looks like a flat out copy of arch/x86/kernel/apic/apic_flat_64.c's 
+flat_init_apic_ldr(). Please make that function global instead of 
+copying it.
 
-specified in Documentation/CodingStyle.
-
-> +		c->phys_proc_id = node;
-> +		per_cpu(cpu_llc_id, cpu) = node;
-> +	}
-
-But more importantly, please first explain why the quirk is needed 
-(the patch only explains what it does but does not explain why it 
-needs these changes - other NUMA systems are able to boot without 
-this quirk).
-
-If it's absolutely needed then add a proper quirk handler instead of 
-polluting the generic code.
+Also, when you copy another file to derive your new code from you 
+*MUST* refer in your copyright notices to the code you copied from.
 
 Thanks,
 
