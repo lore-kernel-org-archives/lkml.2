@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab1J0Soe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 14:44:34 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:39227 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754761Ab1J0Sod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 14:44:33 -0400
-Date: Thu, 27 Oct 2011 11:32:21 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Bob Pearson <rpearson@systemfabricworks.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        David Miller <davem@davemloft.net>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Time for a fresh slice-by-8 crc32.c posting?
-Message-ID: <20111027183221.GV12447@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111004235357.1560.12602.stgit@elm3c44.beaverton.ibm.com> <20111004235403.1560.55503.stgit@elm3c44.beaverton.ibm.com> <20111021122803.GA15803@gondor.apana.org.au> <20111021165703.GS12447@tux1.beaverton.ibm.com> <20111021191514.GA3997@gondor.apana.org.au> <20111026171556.GU12447@tux1.beaverton.ibm.com>
+	id S932067Ab1J0SsH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:48:07 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:49302 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754639Ab1J0SsG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 14:48:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAGamqU4Y9geI/2dsb2JhbAAMN4R3p2ABAQEBAgEjVQEFCwsOBgEDAgIFFgsCAgkDAgECAUUGDQEFAgEBh36jDpIBgTCGOoEUBKYI
+X-IronPort-AV: E=Sophos;i="4.69,414,1315195200"; 
+   d="scan'208";a="144824322"
+Message-ID: <4EA9A763.3000607@teksavvy.com>
+Date: Thu, 27 Oct 2011 14:48:03 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111026171556.GU12447@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11102718-1976-0000-0000-0000006813BC
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: asix usb network driver: nfg
+References: <4EA89972.5060101@teksavvy.com> <20111026.194045.2019668159403582571.davem@davemloft.net> <4EA8B283.3010105@teksavvy.com> <20111026.221719.2216112919297458522.davem@davemloft.net>
+In-Reply-To: <20111026.221719.2216112919297458522.davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bob,
-
-Would you mind posting your current crc32 patches to lkml again?  A couple of
-months have gone by, and it sure would be nice to replace the circa-July patch
-in -next with a newer one.  I recall that there were requests for some code
-changes even in Bob's 8/31 submission, so it'd be nice to have a fresh set from
-you with your latest changes.
-
-I'd also like to freshen my crc32c refactor patches and send them along too.
-
-To clarify, I tried the new crc32{,c}  on my ppc32 and it passed the self test.
-
---D
-
-On Wed, Oct 26, 2011 at 10:16:10AM -0700, Darrick J. Wong wrote:
-> On Fri, Oct 21, 2011 at 09:15:14PM +0200, Herbert Xu wrote:
-> > On Fri, Oct 21, 2011 at 09:57:03AM -0700, Darrick J. Wong wrote:
-> > > 
-> > > My patchset builds upon Bob Pearson's crc32 patchset from early September.  Do
-> > > my patches fail to apply after applying his patchset?
-> > > 
-> > > Or, to speed things along, should I simply repost both Bob's and my patches as
-> > > one big series?
-> > > 
-> > > Bob, have you sent out a new iteration of your patches since September 6th?
-> > 
-> > I'm fine with you pushing this through whichever tree that Bob's
-> > patches are going through.
+On 11-10-26 10:17 PM, David Miller wrote:
+> From: Mark Lord <kernel@teksavvy.com>
+> Date: Wed, 26 Oct 2011 21:23:15 -0400
 > 
-> Bob,
+>> Any strong advance objections to replacing the in-kernel version
+>> with a (fixed) vendor open source version?
 > 
-> Which tree (if any) are your patches going through?  
-> 
-> --D
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> It need to meet the coding etc. standards for inclusion, last
+> time I looked at it their driver indeed need a bit of cleaning up.
 
+Yeah, okay -- I've got approval to spend some paid time on the effort,
+so I'll have a deeper look at things.
+
+> It's a sad situation, they started with the upstream driver and
+> just hacked on it however they pleased in their private copy.
+> So now we have this huge divergance and no effort on their part
+> to rectify things.
+
+Will there be any issues with "Signed-Off-By" on this?
+It's all GPL, by License, but we don't necessarily know who
+make what changes to their driver since they forked it.
+I don't think that matters much, but then what I think doesn't matter much
+either. :)
+
+But it is the only one of the two that's close to working
+(and does work when DEBUG messages are enabled -- a timing issue
+somewhere that I'll fix).
+
+Thanks David.
