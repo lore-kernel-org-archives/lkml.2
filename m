@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab1J0Ud3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 16:33:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36399 "EHLO ogre.sisk.pl"
+	id S1754569Ab1J0UeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 16:34:17 -0400
+Received: from fieldses.org ([174.143.236.118]:46493 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753304Ab1J0Ud2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 16:33:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: maciej.rutecki@gmail.com
-Subject: Re: regression tracking
-Date: Thu, 27 Oct 2011 22:35:59 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Florian Mickler <florian@mickler.org>,
-        linux-kernel@vger.kernel.org
-References: <CAErSpo4REhcp_SgDyUTbi8jw9_8317Zi1duo1fTihB8x=drtuw@mail.gmail.com> <201110262013.55562.maciej.rutecki@gmail.com>
-In-Reply-To: <201110262013.55562.maciej.rutecki@gmail.com>
+	id S1753516Ab1J0UeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 16:34:15 -0400
+Date: Thu, 27 Oct 2011 16:34:12 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: nfsd (and lock) changes for 3.2
+Message-ID: <20111027203412.GB31669@fieldses.org>
+References: <20111025121924.GA15662@fieldses.org>
+ <4EA77B78.6080706@panasas.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201110272235.59240.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EA77B78.6080706@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 26, 2011, Maciej Rutecki wrote:
-> Hi
-> 
-> On środa, 26 października 2011 o 19:23:11 Bjorn Helgaas wrote:
-> > The regression tracking that you folks used to do before the demise of
-> > bugzilla.kernel.org was incredibly valuable.
+On Tue, Oct 25, 2011 at 08:16:08PM -0700, Boaz Harrosh wrote:
+> On 10/25/2011 05:19 AM, J. Bruce Fields wrote:
+> > Boaz Harrosh (1):
+> >       nfsd4: fix failure to end nfsd4 grace period
 > > 
-> > I'm very concerned about the fact that we don't have a systematic way
-> > to do this any more.  Some things do get reported on LKML, of course,
-> > but without the legwork you guys did, I'm afraid we're just dropping
-> > things on the floor because there's no summary of what the issues are,
-> > how many people are seeing them, who's responsible, etc.
-> > 
-> > Consider this as (1) kudos for performing an essential community
-> > service, and (2) a plea for the resurrection or replacement of
-> > bugzilla.kernel.org or some other mechanism for reviving regression
-> > tracking.
 > 
-> Because bugzilla is still down, I yesterday started send regressions (found in 
-> LKML) report directly to Rafael, to create summary report (etc.) of them. 
-> Until bugzilla comes back, we plan to collect regression in this way, but any 
-> proposal for a better solution is welcome.
+> Bruce hi.
+> 
+> As I recall this failure I have experienced in early stages of the
+> 3.1-rcX series. I admit that I always run with Benny's pnfs tree,
+> but I do not think it is patches that Benny added from the 3.2 set
+> I think it is breakage introduced by the 3.1 merge window.
+> 
+> Therefor I think that this patch must be sent to Stable@ otherwise
+> surly 3.1 Kernel users are to hit it. (You can escapee it)
 
-Seconded.
+We need to test it, but I think you're probably correct,
+6577aac01f00636c16cd583c30bd4dedf18475d5 "nfsd4: fix failure to end
+nfsd4 grace period" should have been tagged for stable.  Does that also
+require any previous patches? (E.g.
+48483bf23a568f3ef4cc7ad2c8f1a082f10ad0e7 "nfsd4: simplify recovery dir
+setting"?)
 
-Especially if there's a password-protected Wiki service somewhere that we
-could use to store data temporarily until the BZ is back, it would be much
-appreciated.
-
-Thanks,
-Rafael
+--b.
