@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab1J0Mhu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 08:37:50 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:52417 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754521Ab1J0Mht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 08:37:49 -0400
-X-Sasl-enc: A4xVCpzeT0NbWZ3dIN/8Z0JN68K1EaQNUa72VQsqtZBe 1319719068
-Date: Thu, 27 Oct 2011 14:37:42 +0200
-From: Greg KH <greg@kroah.com>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] TTY: pty, fix pty counting in
- "/proc/sys/kernel/pty/nr"
-Message-ID: <20111027123742.GB7910@kroah.com>
-References: <4EA928F3.7010204@ilyx.ru>
+	id S1755391Ab1J0Miz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:38:55 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56555 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755300Ab1J0Miz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 08:38:55 -0400
+Date: Thu, 27 Oct 2011 14:37:13 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+Message-ID: <20111027123713.GB22032@elte.hu>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+ <CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EA928F3.7010204@ilyx.ru>
+In-Reply-To: <CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 01:48:35PM +0400, Ilya Zykov wrote:
-> Regression for commit: 24d406a6bf736f7aebdc8fa0f0ec86e0890c6d24
-> Commit: 24d406a6b accepted in Linux 3.1.
-> Disscussed on linux-kernel@vger.kernel.org "subject: [PATCH] TTY: pty, fix pty counting"
-> and not accepted.
-> Although, I think it's clear.
 
-Ilya, is there some reason you are ignoring the tty maintainer and
-sending these to Linus directly?  These patches need to be tested in
-linux-next, so at the earliest, they can be merged into Linus's tree for
-3.3, they are NOT 3.2 material, especially given that they are not even
-accepted by the current tty developers.
+* Pekka Enberg <penberg@kernel.org> wrote:
 
-So please work with us, and don't try to circumvent the existing
-process, it is not the way we work here.
+> On Thu, Oct 27, 2011 at 3:07 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > This patch adds 'make kvmconfig' which allows to add KVM guest support
+> > to a config file.
+> >
+> > This allows for easier testing of configurations under virtualized
+> > environments.
+> >
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Michal Marek <mmarek@suse.cz>
+> > Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> > Cc: linux-kbuild@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Suggested-by: Ingo Molnar <mingo@elte.hu>
+> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> 
+> Acked-by: Pekka Enberg <penberg@kernel.org>
+> 
+> Btw, Michal, if people are OK with the patch I'd really love to 
+> take this patch in my kvmtool git tree to have it contained in a 
+> single pull request.
 
-Especially as this specific patch was already rejected, for very good
-reasons, why are you ignoring those reasons?
+I like the feature - i hope it's expressed in the right Kbuild-ish 
+fashion.
 
-thanks,
+Acked-by: Ingo Molnar <mingo@elte.hu>
 
-greg k-h
+Thanks,
+
+	Ingo
