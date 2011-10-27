@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab1J0Miz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 08:38:55 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56555 "EHLO mx2.mail.elte.hu"
+	id S1751585Ab1J0MqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:46:14 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42846 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab1J0Miz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 08:38:55 -0400
-Date: Thu, 27 Oct 2011 14:37:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111027123713.GB22032@elte.hu>
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
- <CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLH-O8+Fx=VLsoXhVLNtXWD_1eVrUMOgbk2DODbrwPAzhQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1751036Ab1J0MqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 08:46:11 -0400
+Subject: Re: kdump: No udev events for memory hotplug?
+From: Dave Hansen <haveblue@us.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+References: <1319645292.3321.24.camel@br98xy6r>
+	 <20111026192449.GE355@redhat.com>
+	 <20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Oct 2011 05:45:33 -0700
+Message-ID: <1319719533.23600.55.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 11102712-3534-0000-0000-000000F4D621
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Pekka Enberg <penberg@kernel.org> wrote:
-
-> On Thu, Oct 27, 2011 at 3:07 PM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > This patch adds 'make kvmconfig' which allows to add KVM guest support
-> > to a config file.
-> >
-> > This allows for easier testing of configurations under virtualized
-> > environments.
-> >
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Michal Marek <mmarek@suse.cz>
-> > Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> > Cc: linux-kbuild@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Suggested-by: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+On Thu, 2011-10-27 at 09:30 +0200, Heiko Carstens wrote:
+> > Are any events generated for memory add?
 > 
-> Acked-by: Pekka Enberg <penberg@kernel.org>
-> 
-> Btw, Michal, if people are OK with the patch I'd really love to 
-> take this patch in my kvmtool git tree to have it contained in a 
-> single pull request.
+> Looks like uevents are only genereted when memory gets registered and
+> unregistered, but not when when it gets set online or offline.
+> To achieve that you would need to add similar code to
+> store_mem_state()/memory_block_change_state() in drivers/base/memory.c
+> like we have it already in store_online() in drivers/base/cpu.c 
 
-I like the feature - i hope it's expressed in the right Kbuild-ish 
-fashion.
+Instead of doing it at that low a level, perhaps we should be generating
+events when 'totalram_pages' changes.  That way, we'll also trigger
+events when things like ballooning happen.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+-- Dave
 
-Thanks,
-
-	Ingo
