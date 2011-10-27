@@ -1,53 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab1J0I1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:27:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37198 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1J0I1p (ORCPT
+	id S1754814Ab1J0I3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:29:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58250 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab1J0I3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:27:45 -0400
-Message-ID: <1319704053.2673.0.camel@phoenix>
-Subject: [PATCH v2] ASoC: wm8940: Fix mask for setting BCLKDIV
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Paulson-Ellis <chris@edesix.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Date: Thu, 27 Oct 2011 16:27:33 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 27 Oct 2011 04:29:00 -0400
+MIME-Version: 1.0
+Date: Thu, 27 Oct 2011 09:28:59 +0100
+Message-ID: <CAJSP0QWV9V7JzCcJROF9_Psib3kC0f67c2OwZzJbxPmZn9SBJg@mail.gmail.com>
+Subject: staging: line6 driver status
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Markus Grabner <grabner@icg.tugraz.at>
+Cc: Mariusz Kozlowski <m.kozlowski@tuxland.pl>,
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the datasheet:
-BCLK is controlled by BIT[4:2] of WM8940_CLOCK(06h) register.
+What is the status of the line6 staging driver?  There is no TODO file
+so I'm not sure what is blocking it from leaving staging.
 
-Signed-off-by: Chris Paulson-Ellis <chris@edesix.com>
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8940.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-index dc5cb31..de9ec9b 100644
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -621,7 +621,7 @@ static int wm8940_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
- 
- 	switch (div_id) {
- 	case WM8940_BCLKDIV:
--		reg = snd_soc_read(codec, WM8940_CLOCK) & 0xFFEF3;
-+		reg = snd_soc_read(codec, WM8940_CLOCK) & 0xFFE3;
- 		ret = snd_soc_write(codec, WM8940_CLOCK, reg | (div << 2));
- 		break;
- 	case WM8940_MCLKDIV:
--- 
-1.7.5.4
-
-
-
+Thanks,
+Stefan
