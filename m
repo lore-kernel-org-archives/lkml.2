@@ -1,34 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab1J0X2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 19:28:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47599 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab1J0X2r (ORCPT
+	id S1753870Ab1J0XeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 19:34:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43313 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab1J0XeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 19:28:47 -0400
+	Thu, 27 Oct 2011 19:34:16 -0400
+Date: Fri, 28 Oct 2011 08:34:07 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, aarcange@redhat.com,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+Message-ID: <20111027233407.GC29407@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <CAH+fs=-WkbLgB-wsNEPS_OnvqwK9eChMCrMOudjtg7bu2ZtqHg@mail.gmail.com>
-References: <CAH+fs=-WkbLgB-wsNEPS_OnvqwK9eChMCrMOudjtg7bu2ZtqHg@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 28 Oct 2011 01:28:24 +0200
-Message-ID: <CAMjpGUcGS8yB2fdB_fG=MrUn8yrmfB31APirryhSQ7-fCXPg+A@mail.gmail.com>
-Subject: Re: [PATCH]: expose FORCE_MAX_ZONEORDER on x86
-To: Marc Leeman <marc.leeman@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319511580.22361.141.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 11:02, Marc Leeman <marc.leeman@gmail.com> wrote:
-> Larger blocks of memory can be required for e.g. higher resolutions on
-> some capture card drivers; this patch just enables an already
-> available configuration option on x86 (it was already exposed on other
-> architectures).
+On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> With current logic, if page reclaim finds a huge page, it will just reclaim
+> the head page and leave tail pages reclaimed later. Let's take an example,
+> lru list has page A and B, page A is huge page:
+> 1. page A is isolated
+> 2. page B is isolated
+> 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> page A+1, page A+2, ... are added to lru list.
+> 4. shrink_page_list() adds page B to swap page cache.
+> 5. page A and B is written out and reclaimed.
+> 6. page A+1, A+2 ... is isolated and reclaimed later.
+> So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
 
-at this point, it sounds like maybe we should make it available to
-everyone.  perhaps under the embedded/expert/whatever-it's-called-now
-sub-menu.
--mike
+I don't see your code yet but have a question.
+You mitigate this problem by 4/5 which could add subpages into lru tail
+so subpages would reclaim next interation of reclaim.
+
+What do we need 5/5?
+Do I miss something?
+
+> 
+> We expected the whole huge page A is reclaimed in the meantime, so
+> the order is A, A+1, ... A+HPAGE_PMD_NR-1, B, ....
+> 
+> With this patch, we do huge page split just after the head page is isolated
+> for inactive lru list, so the tail pages will be reclaimed immediately.
+> 
+> In a test, a range of anonymous memory is written and will trigger swap.
+> Without the patch:
+> #cat /proc/vmstat|grep thp
+> thp_fault_alloc 451
+> thp_fault_fallback 0
+> thp_collapse_alloc 0
+> thp_collapse_alloc_failed 0
+> thp_split 238
+> 
+> With the patch:
+> #cat /proc/vmstat|grep thp
+> thp_fault_alloc 450
+> thp_fault_fallback 1
+> thp_collapse_alloc 0
+> thp_collapse_alloc_failed 0
+> thp_split 103
+> 
+> So the thp_split number is reduced a lot, though there is one extra
+> thp_fault_fallback.
+
+Wow. The result seems to be good.
+Is it result of effect only 5/5? or both 4/5 and 5/5?
+
+-- 
+Kind regards,
+Minchan Kim
