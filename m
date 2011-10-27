@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1J0Iiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:38:50 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52708 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab1J0Iit (ORCPT
+	id S1754907Ab1J0Ikc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:40:32 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:45086 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754574Ab1J0Ika convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:38:49 -0400
-Message-ID: <1319704722.2673.5.camel@phoenix>
-Subject: [PATCH 2/2] ASoC: tlv320aic3x: Clear BIT_CLK_MASTER and
- WORD_CLK_MASTER bits for for slave mode
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vladimir Barinov <vbarinov@embeddedalley.com>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org
-Date: Thu, 27 Oct 2011 16:38:42 +0800
-In-Reply-To: <1319704549.2673.2.camel@phoenix>
-References: <1319704549.2673.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 27 Oct 2011 04:40:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1319701536.10258.74.camel@jtkirshe-mobl>
+References: <CAMuHMdXxqKoPNNo9a+VK-Yzu0Qp-8zY2+OhHL6pDPF=dsnNK5Q@mail.gmail.com>
+	<CAMuHMdUW5PjPU7qNOPA16CbxHJs-bL4r+aFcEGV95SDRBotXRg@mail.gmail.com>
+	<1319701536.10258.74.camel@jtkirshe-mobl>
+Date: Thu, 27 Oct 2011 10:40:30 +0200
+X-Google-Sender-Auth: 2AxPQ6Iu-VNwX22c65bfLYzG578
+Message-ID: <CAMuHMdUXg3D=+dCHZ=OwzfD2eejSaB73Y-sgv2cXoH4cnjzV5w@mail.gmail.com>
+Subject: Re: drivers/net/ethernet/apple
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: jeffrey.t.kirsher@intel.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the datasheet:
+On Thu, Oct 27, 2011 at 09:45, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
+> On Wed, 2011-10-26 at 22:16 -0700, Geert Uytterhoeven wrote:
+>> On Tue, Oct 25, 2011 at 22:19, Geert Uytterhoeven
+>> <geert@linux-m68k.org> wrote:
+>> > drivers/net/ethernet/apple/mac89x0.c is a driver for the Crystal
+>> Semiconductor
+>> > (Now Cirrus Logic) CS89[02]0, so it belongs in
+>> drivers/net/ethernet/cirrus,
+>> > next to cs89x0.c.
+>>
+>> And on the first -next run since its inclusion:
+>>
+>> | drivers/net/ethernet/apple/mac89x0.c:107:20: error: cs89x0.h: No
+>> such file or directory
+>>
+>> it needs the (shared) header file which is in
+>> drivers/net/ethernet/cirrus/.
+>>
+>> http://kisskb.ellerman.id.au/kisskb/buildresult/4835488/
+>
+> Ah, yeah, now it is coming back to me why I placed cs89x0.[ch] in the
+> drivers/net/ethernet/apple/ because it was grouped with the "common"
+> drivers.  The intent was to group drivers that use common code together.
+>
+> I can put together a patch to fix this if you are not able to.
 
-Page0 / Register8: Audio Serial Data interface Control Register A
-BIT 7: Bit Clock Directional Control
-        0: Bit clock is an input (slave mode)
-        1: Bit clock is an output (master mode)
+I will create a patch to move mac89x0 to .../cirrus, when I get to compiling a
+Mac kernel myself.
 
-BIT 6: Word Clock Directional Control
-        0: Word clock is an input (slave mode)
-        1: Word clock is an output (master mode)
+Gr{oetje,eeting}s,
 
-Current code sets BIT_CLK_MASTER and WORD_CLK_MASTER bits for master mode,
-but does not clear these bits for slave mode.
+                        Geert
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/tlv320aic3x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/sound/soc/codecs/tlv320aic3x.c b/sound/soc/codecs/tlv320aic3x.c
-index a77f6ea..14cb553 100644
---- a/sound/soc/codecs/tlv320aic3x.c
-+++ b/sound/soc/codecs/tlv320aic3x.c
-@@ -1021,6 +1021,7 @@ static int aic3x_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 		break;
- 	case SND_SOC_DAIFMT_CBS_CFS:
- 		aic3x->master = 0;
-+		iface_areg &= ~(BIT_CLK_MASTER | WORD_CLK_MASTER);
- 		break;
- 	default:
- 		return -EINVAL;
--- 
-1.7.5.4
-
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
