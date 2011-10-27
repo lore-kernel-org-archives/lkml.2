@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750895Ab1J0ERG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 00:17:06 -0400
-Received: from n3b.bullet.cnb.yahoo.com ([202.43.216.213]:29242 "HELO
-	n3b.bullet.cnb.yahoo.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750744Ab1J0ERE (ORCPT
+	id S1750955Ab1J0EWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 00:22:44 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:13155 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab1J0EWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 00:17:04 -0400
-X-Yahoo-Newman-Id: 791550.80900.bm@omp1002.mail.cnh.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 5XyGs2kVM1mNJdVBrpQZeU12YBwVNUASD0fXO9aU2hGmUdr
- w0c3IS9dnGHXtTbadRefOyKNzGh521H.w2xYUjRY6VyARMLmAjQ6O9d_lQJp
- B9nlqIZ3Zu5oRLPFJT9taFKmPgNC9ePmDP1t6G8CkK8mqvSGmaVZYTXocVBC
- I2CjNnJQd_.hLgUGZK_QW_rJyB.831GLapDwhTjCsoLLtrwenLuq8wlszV_k
- XKA.D2TuUPd4nz0aOBpPkvtHCMSuuGfxwIJvQuayEpNnXgrT1mihonO1hDGE
- 0q6jTjpI6cnO70e8q1sn4xeijfmcE9po0pqV8XvflqvY61h.XIhlE_7.1TTY
- WkdO5JTZ3YGiFeW7hA_JSxwpsSHQ-
-X-Yahoo-SMTP: fkllYiaswBCOzWjbUCJWvZhU0xL9ptNN4pif1EIKps_njQ--
-Message-ID: <D210924CC37C384D6DB492180874162F@lgflrz>
-From: "hndapfcuw" <powellxtxqof@yahoo.cn>
-Subject: =?utf-8?B?aG5kYXBmY3V35L2g5aW9MQ==?=
-Date: Thu, 27 Oct 2011 12:17:03 +0800
+	Thu, 27 Oct 2011 00:22:41 -0400
+Message-ID: <4EA8DBDE.9070405@snapgear.com>
+Date: Thu, 27 Oct 2011 14:19:42 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
-To: unlisted-recipients:; (no To-header on input)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] m68k: Fall back to __gpio_to_irq() for non-arch GPIOs
+References: <1319615515-3286-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1319615515-3286-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9R4HCbM021596
+
+Hi Mark,
+
+On 26/10/11 17:51, Mark Brown wrote:
+> gpiolib provides __gpio_to_irq() to map gpiolib gpios to interrupts - hook
+> that up on m68k.
+>
+> Signed-off-by: Mark Brown<broonie@opensource.wolfsonmicro.com>
+
+I'll take this through the m68knommu git tree, since it is only used
+by the ColdFire CPU parts.
+
+Thanks
+Greg
 
 
- æœ¬å…¬å¸ç°æœ‰(å•†å“é”€å”®ï¼›å»ºç­‘å·¥ç¨‹ï¼›è£…ä¿®è®¾è®¡ï¼›å¹¿å‘Šï¼›ç§Ÿèµï¼›æœåŠ¡å’¨è¯¢;åŠ å·¥ä¿®ç†ï¼›è¿è¾“ï¼›é¤é¥®ä½å®¿;
 
-æµ·å…³;å¢å€¼ç¨ç­‰ç­‰ )ã€‚å¦‚è´µå…¬å¸éœ€è¦æˆ‘å¸ä»£å¼€ç™¼ç¥¨ï¼Œéœ€æå‰å‘æˆ‘å¸æä¾›å‡†ç¡®è¯¦ç»†çš„èµ„æ–™æ¸…å•ï¼›å¦‚è´µå…¬
+>   arch/m68k/include/asm/gpio.h |    3 ++-
+>   1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/m68k/include/asm/gpio.h b/arch/m68k/include/asm/gpio.h
+> index b204683..00d0071 100644
+> --- a/arch/m68k/include/asm/gpio.h
+> +++ b/arch/m68k/include/asm/gpio.h
+> @@ -225,7 +225,8 @@ static inline void gpio_set_value(unsigned gpio, int value)
+>
+>   static inline int gpio_to_irq(unsigned gpio)
+>   {
+> -	return (gpio<  MCFGPIO_IRQ_MAX) ? gpio + MCFGPIO_IRQ_VECBASE : -EINVAL;
+> +	return (gpio<  MCFGPIO_IRQ_MAX) ? gpio + MCFGPIO_IRQ_VECBASE
+> +		: __gpio_to_irq(gpio);
+>   }
+>
+>   static inline int irq_to_gpio(unsigned irq)
 
 
-å¸æ‰€åœ¨åœ°æ˜¯å…¶å®ƒçœã€å¸‚çš„ï¼Œæœ¬å…¬å¸éƒ½æ˜¯ä»¥å¿«é€’æŠ•é€’çš„æ–¹å¼ (24å°æ—¶è‡³48å°æ—¶åˆ°è¾¾)ï¼Œå¹¶å¯ä¸Šç½‘æŸ¥è¯¢éªŒ
-
-è¯ã€‚æ”¶åˆ°ç¡®è®¤æ— è¯¯åå†ç»™æˆ‘å¸åˆ’è´¦(æ•°é‡é‡‘é¢å¤§å¯å†å•†è®¨ä¼˜æƒ ç¨ç‡)ã€‚è¯¦æƒ…æ¬¢è¿æ¥ç”µå’¨è¯¢! é¡ºç¥å•†ç¥º. 
-
-è”ç³»ç”µè¯13692264168å‘¨ç›ŠèƒœQQ1979969374
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
