@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab1J0AGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:06:49 -0400
-Received: from ozlabs.org ([203.10.76.45]:58595 "EHLO ozlabs.org"
+	id S1753800Ab1J0AHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:07:05 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38140 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753713Ab1J0AGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:06:48 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Pawel Moll <Pawel.Moll@arm.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "virtualization\@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        "Michael S.Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH v3] virtio: Add platform bus driver for memory mapped virtio device
-In-Reply-To: <1319612222.2878.4.camel@rojo>
-References: <1317841030-17758-1-git-send-email-pawel.moll@arm.com> <1317919843-8343-1-git-send-email-pawel.moll@arm.com> <1317921230.28696.102.camel@hornet.cambridge.arm.com> <87lisjq6tu.fsf@rustcorp.com.au> <1318931075.3146.285.camel@hornet.cambridge.arm.com> <87ty75adtb.fsf@rustcorp.com.au> <1319219844.5094.16.camel@hornet.cambridge.arm.com> <87wrbv15lp.fsf@rustcorp.com.au> <1319461560.3668.16.camel@hornet.cambridge.arm.com> <871uu0pfag.fsf@rustcorp.com.au> <1319612222.2878.4.camel@rojo>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 26 Oct 2011 22:20:54 +1030
-Message-ID: <87ehy0nf8h.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753567Ab1J0AHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 20:07:03 -0400
+Date: Thu, 27 Oct 2011 09:01:53 +0900
+To: ebiederm@xmission.com
+Cc: konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86 swiotlb: Verify we can perform the remapping
+ requested.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <m1ty6yig24.fsf@fess.ebiederm.org>
+References: <m1lisj48q1.fsf@fess.ebiederm.org>
+	<20111021004031.GB13687@phenom.dumpdata.com>
+	<m1ty6yig24.fsf@fess.ebiederm.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20111027090019T.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 27 Oct 2011 09:01:55 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Oct 2011 10:54:50 +0100, Pawel Moll <Pawel.Moll@arm.com> wrote:
-> Morning,
+On Mon, 24 Oct 2011 08:07:31 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
+
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 > 
-> > I've applied the corresponding changes to the latest version of the
-> > virtio pci draft spec (0.9.2).  Please check it's accurate...
+> > On Mon, Oct 17, 2011 at 02:19:18PM -0700, Eric W. Biederman wrote:
+> >> 
+> >> Recently I had a driver try with a peculiar 2G dma memory limit.
+> >> It failed in weird and strange ways because my bounce buffers were
+> >> being allocated above 2G where the driver could not reach, and
+> >> no error was reported when the mappings were setup.
 > >
-> Just a typo (my fault probably ;-) in the InterruptStatus register
-> description:
-> * There is:  "Bit 0 | Use Ring Update"
-> * Should be: "Bit 0 | Used Ring update"
+> > OK, so the overflow buffer was used instead.. which presumarily
+> > also was allocated above the 2G? That seems to point that
+> > alloc_bootmem_low_pages is not doing its job?
 > 
-> The rest is just fine.
+> I just looked alloc_bootmem_low_pages allocates memory below
+> ARCH_ADDRESS_LIMIT which for everything except s390 is 4G.
+> 
+> I know I was mostly using the amd gart driver.  So I may be mistaken
+> that the swiotlb driver had the same issue.  However my only solution
+> at the time was to boot with mem=2G.  So I believe the swiotlb did
+> have this issue.
+> 
+> Mostly the patch was.  Hmm.  That looks stupid not wiring up the
+> swiotlb address space limit check when someone has already written it.
 
-Thanks, that was me mangling it I think.  I won't release an update just
-for that, but there's more coming...
+http://www.gossamer-threads.com/lists/linux/kernel/1333685?do=post_view_threaded#1333685
 
-Cheers,
-Rusty.
+swiotlb isn't designed to handle hardware having odd dma mask (e.g. 2G
+or something). Such device needs the own bouncing mechanism.
