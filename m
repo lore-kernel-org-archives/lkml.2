@@ -1,75 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab1J0WJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 18:09:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38140 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab1J0WJs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 18:09:48 -0400
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org, greg@kroah.com
-Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Subject: [PATCH 0/9] gma500: Split psb_intel_output to encoders and connectors
-Date: Fri, 28 Oct 2011 00:09:34 +0200
-Message-Id: <1319753374-1864-1-git-send-email-patrik.r.jakobsson@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754857Ab1J0WQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 18:16:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36261 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753212Ab1J0WP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 18:15:59 -0400
+Message-ID: <4EA9D819.9050400@redhat.com>
+Date: Fri, 28 Oct 2011 00:15:53 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110807 Thunderbird/5.0
+MIME-Version: 1.0
+To: Ari Savolainen <ari.m.savolainen@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: lvm gets stuck during booting due to recent uevent change
+References: <CAEbykaU_v6yYOVO3obyQDzacKrF5baOV6yXGZC010S1D=YKsbw@mail.gmail.com>
+In-Reply-To: <CAEbykaU_v6yYOVO3obyQDzacKrF5baOV6yXGZC010S1D=YKsbw@mail.gmail.com>
+X-Enigmail-Version: 1.2.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches gets rid of the pairing of encoders and connectors we had
-in psb_intel_output. This was done to make life easier getting the SDVO code
-from i915 copied into our tree (included in this patchset). It also gives more
-flexibility for better output handling in the future.
+On 10/27/2011 11:59 PM, Ari Savolainen wrote:
+> At the same time udevd is executing "/sbin/lvm vgchange -a y" (from
+> /lib/udev/rules.d/85-lvm2.rules) that calls ioctl to resume a logical
+> volume. After that lvm gets stuck forever. Booting continues after the
+> 61 second timeout.
 
-SDVO can now properly setup DDC and get EDID on the Fit-PC2 DVI connector but
-there are known issues when setting resolutions at 1920x1080 and above.
-On Asus 1201HA the VGA connector still fails to get EDID so more work is needed.
+If you call vgchange or even vgscan from udev rule, it is completely wrong.
 
-The changes to Cedarview, Moorestown and Medfield have not been tested so they
-are subject to change. Particularly the changes to Medfield are known not to be
-complete so more pondering is also needed there.
+This is not lvm upstream udev rule btw.
 
-Patrik Jakobsson (9):
-  gma500: Initial support for our encoder and connector structs
-  gma500: Remove psb_intel_output from ddc_probe and ddc_get_modes
-  gma500: Fix encoder type checking for connectors
-  gma500: Convert PSB LVDS to new output handling
-  gma500: Add support for Intel GMBUS
-  gma500: Replace SDVO code with slightly modified version from i915
-  gma500: Convert Cedarview to work with new output handling
-  gma500: Convert Moorestown to work with new output handling
-  gma500: Convert Medfield to work with new output handling
-
- drivers/staging/gma500/Makefile              |    1 +
- drivers/staging/gma500/cdv_intel_crt.c       |   47 +-
- drivers/staging/gma500/cdv_intel_display.c   |   14 +-
- drivers/staging/gma500/cdv_intel_hdmi.c      |  112 +-
- drivers/staging/gma500/cdv_intel_lvds.c      |  117 +-
- drivers/staging/gma500/framebuffer.c         |    8 +-
- drivers/staging/gma500/intel_gmbus.c         |  492 +++++
- drivers/staging/gma500/mdfld_dsi_dbi.c       |    5 +
- drivers/staging/gma500/mdfld_dsi_dpi.c       |    5 +
- drivers/staging/gma500/mdfld_dsi_output.c    |   40 +-
- drivers/staging/gma500/mdfld_intel_display.c |   14 +-
- drivers/staging/gma500/medfield.h            |    6 +-
- drivers/staging/gma500/mrst_crtc.c           |   18 +-
- drivers/staging/gma500/mrst_hdmi.c           |   29 +-
- drivers/staging/gma500/mrst_lvds.c           |   79 +-
- drivers/staging/gma500/psb_device.c          |    7 +
- drivers/staging/gma500/psb_drv.c             |    6 +-
- drivers/staging/gma500/psb_drv.h             |   30 +-
- drivers/staging/gma500/psb_intel_display.c   |   39 +-
- drivers/staging/gma500/psb_intel_drv.h       |   98 +-
- drivers/staging/gma500/psb_intel_lvds.c      |  151 +-
- drivers/staging/gma500/psb_intel_modes.c     |   16 +-
- drivers/staging/gma500/psb_intel_reg.h       |   74 +
- drivers/staging/gma500/psb_intel_sdvo.c      | 3059 ++++++++++++++++++--------
- drivers/staging/gma500/psb_intel_sdvo_regs.h |  591 ++++-
- 25 files changed, 3769 insertions(+), 1289 deletions(-)
- create mode 100644 drivers/staging/gma500/intel_gmbus.c
-
--- 
-1.7.4.1
-
+Milan
