@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab1J0UV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 16:21:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:52078 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752424Ab1J0UVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 16:21:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,414,1315206000"; 
-   d="scan'208";a="83231263"
-Subject: Re: 3.1-rc9 and 3.1 wifi problem , problem continues with 3.1
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: werner <w.landgraf@ru.ru>,
+	id S1753746Ab1J0UWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 16:22:19 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6817 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab1J0UWR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 16:22:17 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 27 Oct 2011 13:22:06 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "dave.taht@gmail.com" <dave.taht@gmail.com>,
-        "arend@broadcom.com" <arend@broadcom.com>,
-        "toralf.foerster@gmx.de" <toralf.foerster@gmx.de>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "larry.finger@gmail.com" <larry.finger@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1110271312280.7639@chino.kir.corp.google.com>
-References: <web-634287632@zbackend1.aha.ru>
-	 <alpine.DEB.2.00.1110271312280.7639@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 12:30:05 -0700
-Message-ID: <1319743805.31823.91.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Thu, 27 Oct 2011 13:22:04 -0700
+Subject: RE: [PATCH 6/6] arm/tegra: add support for tegra30 based board
+ cardhu
+Thread-Topic: [PATCH 6/6] arm/tegra: add support for tegra30 based board
+ cardhu
+Thread-Index: AcyTNsXAyMFSooEkRwi4e9gBIvvoJwBrsqow
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173E1B49C9@HQMAIL01.nvidia.com>
+References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
+ <1319561644-6160-7-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1319561644-6160-7-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-27 at 13:12 -0700, David Rientjes wrote:
-> On Thu, 27 Oct 2011, werner wrote:
+Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
+> From: Peter De Schrijver <pdeschrijver@nvidia.com>
 > 
-> > With the patch sent by Guy, Wey-Yi W , now wifi works at that laptop.
-> > 
+> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+
+Some description of what Cardhu is and what's done in the patch please.
+
+> diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
+> new file mode 100644
+> index 0000000..0f3f8a8
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/tegra-cardhu.dts
+> @@ -0,0 +1,37 @@
+> +/dts-v1/;
+> +
+> +/include/ "tegra30.dtsi"
+> +
+> +/ {
+> +	model = "NVIDIA Tegra30 Cardhu evaluation board";
+> +	compatible = "nvidia,cardhu", "nvidia,tegra30";
+> +
+> +	memory {
+> +		device_type = "memory";
+
+The other boards don't contain this. If they should, can you please post
+a patch to add it to them all? Thanks.
+
+> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+> index 21c99f9..3ff191a 100644
+> --- a/arch/arm/mach-tegra/Kconfig
+> +++ b/arch/arm/mach-tegra/Kconfig
+> @@ -83,6 +83,12 @@ config MACH_VENTANA
+>         help
+>           Support for the nVidia Ventana development platform
 > 
-> Could you send a pointer to the exact patch(es) that you applied so we can 
-> add your tested-by?
-> 
-> Thanks for testing!
+> +config MACH_CARDHU
+> +       bool "Cardhu board"
+> +       select MACH_TEGRA_DT
+> +       help
+> +         Support for the nVidia Cardhu development platform
 
-I did not push the patch yet, I will have the Reported-by and Tested-by
-and push it to wireless and CC to stable tree tomorrow
+This should depend on Tegra30 support.
 
-Thanks
-Wey
+Please use the capitalization NVIDIA; we should do a pass and clean up
+any existing instances sometime.
 
+-- 
+nvpublic
 
