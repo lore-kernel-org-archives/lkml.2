@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab1J0USy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 16:18:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45137 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752202Ab1J0USw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 16:18:52 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=egI4Y9tFtpYUJEYp/Se/0q4E+/WqIeZ+yi/xpPt1Ei58ZlCTm2h5anxbjnC0XIahq
-	eY1ceDMRR5r4yI5LFSJng==
-Date: Thu, 27 Oct 2011 13:18:40 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-Message-ID: <alpine.DEB.2.00.1110271318220.7639@chino.kir.corp.google.com>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753415Ab1J0UUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 16:20:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36369 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752424Ab1J0UUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 16:20:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-pm@lists.linux-foundation.org
+Subject: Re: [linux-pm] [PATCH 1/4] freezer: make fake_signal_wake_up wake TASK_KILLABLE tasks too
+Date: Thu, 27 Oct 2011 22:22:39 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Jeff Layton <jlayton@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, trond.myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, smfrench@gmail.com, john@calva.com
+References: <1317210761-11518-1-git-send-email-jlayton@redhat.com> <20111026155548.4a7c3dd8@corrin.poochiereds.net> <201110272221.06782.rjw@sisk.pl>
+In-Reply-To: <201110272221.06782.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110272222.39962.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Oct 2011, Dan Magenheimer wrote:
+On Thursday, October 27, 2011, Rafael J. Wysocki wrote:
+> On Wednesday, October 26, 2011, Jeff Layton wrote:
+> > On Tue, 11 Oct 2011 21:14:28 +0200
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > 
+> > > On Tuesday, October 11, 2011, Jeff Layton wrote:
+> > > > On Tue, 11 Oct 2011 08:18:48 +0200
+> > > > Pavel Machek <pavel@ucw.cz> wrote:
+> > > > 
+> > > > > 
+> > > > > Hi!
+> > > > > 
+> > > > > > TASK_KILLABLE is often used to put tasks to sleep for quite some time.
+> > > > > > One of the most common uses is to put tasks to sleep while waiting for
+> > > > > > replies from a server on a networked filesystem (such as CIFS or NFS).
+> > > > > > 
+> > > > > > Unfortunately, fake_signal_wake_up does not currently wake up tasks
+> > > > > > that are sleeping in TASK_KILLABLE state. This means that even if the
+> > > > > > code were in place to allow them to freeze while in this sleep, it
+> > > > > > wouldn't work anyway.
+> > > > > > 
+> > > > > > This patch changes this function to wake tasks in this state as well.
+> > > > > > This should be harmless -- if the code doing the sleeping doesn't have
+> > > > > > handling to deal with freezer events, it should just go back to sleep.
+> > > > > 
+> > > > > I'm pretty sure this will break something; but that does not mean it
+> > > > > is bad idea, just that it should be merged early and tested a lot.
+> > > > > 
+> > > > 
+> > > > FWIW, I looked at most of the places in the kernel that do
+> > > > TASK_KILLABLE sleeps and they look like they'll handle this correctly.
+> > > > The main one I wasn't sure about was mem_cgroup_handle_oom(), but I
+> > > > think it'll do the right thing too. I certainly could have missed
+> > > > something though...
+> > > > 
+> > > > In any case, would you mind merging this via the linux-pm tree for 3.2?
+> > > 
+> > > I will push it for 3.2.
+> > > 
+> > 
+> > Hi Rafael,
+> > 
+> > Trond asked if you would also be willing to push patches 3 and 4 in
+> > this series for 3.2 as well [1]? Note that patch #4 got another revision so
+> > we'll want to make sure that you get that one. I can resend the
+> > nfs/sunrpc patches if that will help...
+> > 
+> > [1]: I think Steve F is going to push patch #2, so that one shouldn't
+> > be an issue. 
+> 
+> Well, I've already sent my pull request.  I can keep these patches in my
+> tree for the next pull request, though (I'm sure there will be fixes against
+> 3.2, so they will go along with those).
 
-> Hi Linus --
-> 
-> Frontswap now has FOUR users: Two already merged in-tree (zcache
-> and Xen) and two still in development but in public git trees
-> (RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
-> changes required to support transcendent memory; part 1 was cleancache
-> which you merged at 3.0 (and which now has FIVE users).
-> 
-> Frontswap patches have been in linux-next since June 3 (with zero
-> changes since Sep 22).  First posted to lkml in June 2009, frontswap 
-> is now at version 11 and has incorporated feedback from a wide range
-> of kernel developers.  For a good overview, see
->    http://lwn.net/Articles/454795.
-> If further rationale is needed, please see the end of this email
-> for more info.
-> 
-> SO... Please pull:
-> 
-> git://oss.oracle.com/git/djm/tmem.git #tmem
-> 
+BTW, do you have current versions handy?  Or hasn't they changed?
 
-Isn't this something that should go through the -mm tree?
+Rafael
