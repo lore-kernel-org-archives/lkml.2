@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab1J0Idx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:33:53 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45240 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754789Ab1J0Idw (ORCPT
+	id S1754875Ab1J0If6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:35:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34238 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab1J0If4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:33:52 -0400
-Date: Thu, 27 Oct 2011 09:33:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Barry Song <Barry.Song@csr.com>, Arnd Bergmann <arnd@arndb.de>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        workgroup.linux@csr.com, Rongjun Ying <Rongjun.Ying@csr.com>,
-        Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-Message-ID: <20111027083318.GC19187@n2100.arm.linux.org.uk>
-References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com> <1319703535.20054.30.camel@vkoul-udesk3>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319703535.20054.30.camel@vkoul-udesk3>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 27 Oct 2011 04:35:56 -0400
+Message-ID: <1319704549.2673.2.camel@phoenix>
+Subject: [PATCH 1/2] ASoC: tlv320aic23: Clear TLV320AIC23_MS_MASTER bit for
+ slave mode
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org
+Date: Thu, 27 Oct 2011 16:35:49 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 01:48:55PM +0530, Vinod Koul wrote:
-> On Mon, 2011-10-17 at 20:08 -0700, Barry Song wrote:
-> > From: Rongjun Ying <Rongjun.Ying@csr.com>
-> > 
-> > Cc: Jassi Brar <jaswinder.singh@linaro.org>
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Linus Walleij <linus.walleij@linaro.org>
-> > Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
-> > Signed-off-by: Barry Song <Baohua.Song@csr.com>
-> > ---
-> >  -v4:
-> >  add error handler in probe;
-> >  free resource in remove;
-> >  add necessary comments in source codes;
-> >  fix the mismatch of license between file head and MODULE_LINCENSE;
-> >  define MACRO to replace magic number for xlen/dma_width boundary.
-> Barry,
-> 
-> You should _always_ run checkpatch before sending patches. It should
-> have 0 errors.
+According to the datasheet:
 
-Not true.
+Digital Audio Interface Format (07h) register:
+BIT6:	Master/slave mode
+	0: Slave
+	1: Master
 
-> ERROR: trailing whitespace
-> #773: FILE: drivers/dma/sirf-dma.c:649:
-> +^I$
-> 
-> 
-> Also there are bunch of 80char warning, see if you can reduce/eliminate
-> them without sacrificing the code readability, and looking at them it
-> seems possible
+Current code sets TLV320AIC23_MS_MASTER bit for master mode,
+but does not clear it for slave mode.
 
-80char warnings about printks should be ignored, because breaking kernel
-messages across lines prevents them from being greppable.  This (breaking
-kernel messages, particularly error messages, across multiple lines) is a
-topic Linus has frequently complained about.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/tlv320aic23.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/sound/soc/codecs/tlv320aic23.c b/sound/soc/codecs/tlv320aic23.c
+index ab27dbc..336de8f 100644
+--- a/sound/soc/codecs/tlv320aic23.c
++++ b/sound/soc/codecs/tlv320aic23.c
+@@ -430,6 +430,7 @@ static int tlv320aic23_set_dai_fmt(struct snd_soc_dai *codec_dai,
+ 		iface_reg |= TLV320AIC23_MS_MASTER;
+ 		break;
+ 	case SND_SOC_DAIFMT_CBS_CFS:
++		iface_reg &= ~TLV320AIC23_MS_MASTER;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.7.5.4
+
+
+
