@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754418Ab1J0IVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:21:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25402 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753301Ab1J0IVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:21:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="68446429"
-Subject: Re: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vinod.koul@intel.com>
-To: Barry Song <Barry.Song@csr.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        workgroup.linux@csr.com, Rongjun Ying <Rongjun.Ying@csr.com>,
-        Jassi Brar <jaswinder.singh@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Barry Song <Baohua.Song@csr.com>
-In-Reply-To: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
-References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 13:48:55 +0530
-Message-ID: <1319703535.20054.30.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754746Ab1J0IZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:25:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34633 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab1J0IZS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 04:25:18 -0400
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20111027071659.GB3053@opensource.wolfsonmicro.com>
+References: <1319594021.2517.0.camel@phoenix> <1319594139.2517.2.camel@phoenix>
+ <20111027071659.GB3053@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 27 Oct 2011 16:24:57 +0800
+Message-ID: <CAF+7xW=5tUW4Tn6HZt4dC=OE_VipO+rMsa0v4+HSpsbUU+Ojxw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] ASoC: wm8940: Fix mask for setting BCLKDIV
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Chris Paulson-Ellis <chris@edesix.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-17 at 20:08 -0700, Barry Song wrote:
-> From: Rongjun Ying <Rongjun.Ying@csr.com>
-> 
-> Cc: Jassi Brar <jaswinder.singh@linaro.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
-> Signed-off-by: Barry Song <Baohua.Song@csr.com>
-> ---
->  -v4:
->  add error handler in probe;
->  free resource in remove;
->  add necessary comments in source codes;
->  fix the mismatch of license between file head and MODULE_LINCENSE;
->  define MACRO to replace magic number for xlen/dma_width boundary.
-Barry,
+2011/10/27 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Wed, Oct 26, 2011 at 09:55:39AM +0800, Axel Lin wrote:
+>> According to the datasheet:
+>> BCLK is controlled by BIT[4:2] of WM8940_CLOCK(06h) register.
+>
+> This doesn't apply against current code.
+>
+Ooops. sorry.
+I generate the patch base on the for-3.3 branch of the asoc tree.
+The commit bdb527e "ASoC: wm8940: Fix a typo for the mask of setting
+WM8940_BCLKDIV"
+in the for-3.3 branch should be dropped, because it is fixed by this commit now.
 
-You should _always_ run checkpatch before sending patches. It should
-have 0 errors.
+I'll send a v2 base on your for-next tree.
 
-ERROR: trailing whitespace
-#773: FILE: drivers/dma/sirf-dma.c:649:
-+^I$
-
-
-Also there are bunch of 80char warning, see if you can reduce/eliminate
-them without sacrificing the code readability, and looking at them it
-seems possible
-
-Also, Please ensure you send patches which compile with ZERO warnings:
-drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
-drivers/dma/sirf-dma.c:616: warning: assignment from incompatible pointer type
-drivers/dma/sirf-dma.c:617: warning: assignment from incompatible pointer type
-which comes from the fact that your prep_interleaved_dma does not have
-last argument of flags.
-On the second one you have not rebased to patch from Jassi which I
-applied after converting direction stuff.
-
--- 
-~Vinod
-
+Thanks,
+Axel
