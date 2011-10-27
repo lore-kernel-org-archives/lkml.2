@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab1J0NyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 09:54:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:34963 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab1J0NyV (ORCPT
+	id S1754374Ab1J0NzJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 09:55:09 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:36985 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753251Ab1J0NzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 09:54:21 -0400
+	Thu, 27 Oct 2011 09:55:08 -0400
+Message-ID: <4EA962B2.3030402@tao.ma>
+Date: Thu, 27 Oct 2011 21:54:58 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <201106292334.24518.rjw@sisk.pl>
-References: <201106260054.20578.rjw@sisk.pl>
-	<201106292329.04163.rjw@sisk.pl>
-	<201106292334.24518.rjw@sisk.pl>
-Date: Thu, 27 Oct 2011 15:54:20 +0200
-X-Google-Sender-Auth: Ud-xKhZw2z8d-beh-SprLl2OAiI
-Message-ID: <CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
-Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
- system sleep (v2)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stable@kernel.org
+To: Valdis.Kletnieks@vt.edu
+CC: "Ted Ts'o" <tytso@mit.edu>, ext4 development <linux-ext4@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger@dilger.ca>
+Subject: Re: [PATCH V1 00/17] ext4: Add inline data support.
+References: <4EA7B788.3040503@tao.ma> <7941.1319699422@turing-police.cc.vt.edu>
+In-Reply-To: <7941.1319699422@turing-police.cc.vt.edu>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 221.217.39.32 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/29 Rafael J. Wysocki <rjw@sisk.pl>:
+On 10/27/2011 03:10 PM, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 26 Oct 2011 15:32:24 +0800, Tao Ma said:
+> 
+>> Currently I use all the space between i_extra_isize and inode_size if
+>> inode_size = 256. For inode_size > 256, half of that space is used so as
+>> to leave some space for other xattrs.
+> 
+> I didn't check the code too closely - does this code DTRT if the user tries to
+> then attach a moby-sized xattr (or set of xattrs - if it's got a security.selinux
+> tag on it, and a security.capabilities xattr, and a user xattr or two, things are
+> going to be getting full).
+sure, it will work and all these stuff will be inserted to the external
+xattr block since the in-inode space is full.
+> 
+>> This is only a V1 and there are still something to do(e.g. I am thinking
+>> of using unused extent space), but I'd like to send it out earlier so
+>> that it can be reviewed ASAP.
+> 
+> If this works out, would it make sense to investigate doing this for all
+> tails in a V2?  So if your file was 4099 bytes long, you could save allocating
+> a second block.  Assuming random distribution of tail sizes, this wil save
+> an average of (space avail for tail)/(blocksize) per file.
+uh, it seems like a good suggestion, but it will make the code a little
+bit complicated(at least compared to the current version) and I am not
+sure whether the maintainer like it or not ;) . So Ted and Andreas, What
+do you think of this?
 
-> One of the roles of the PM core is to prevent different PM callbacks
-> executed for the same device object from racing with each other.
-> Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
-> (PM: Allow pm_runtime_suspend() to succeed during system suspend)
-> runtime PM callbacks may be executed concurrently with system
-> suspend/resume callbacks for the same device.
-(...)
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Thanks
+Tao
 
-A quick question: is there some specific reason why this patch should
-not go into the 3.0.y stable releases? We are trying to produce
-a runtime PM system of product quality based on 3.0.y and we've
-already had to backport this patch ourselves to get things stable.
-
-We have also backported:
-PM: Introduce generic "noirq" callback routines for subsystems (v2)
-PM / Runtime: Update documentation of interactions with system sleep
-PM / Runtime: Add new helper function: pm_runtime_status_suspended()
-
-And now it seems to be sufficient to get this thing going.
-
-Yours,
-Linus Walleij
