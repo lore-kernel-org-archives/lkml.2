@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab1J0Lw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 07:52:58 -0400
-Received: from bitmer.com ([213.157.87.50]:33267 "EHLO bitmer.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab1J0Lw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 07:52:57 -0400
-Subject: Re: [PATCH 2/2] ASoC: tlv320aic3x: Clear BIT_CLK_MASTER and
- WORD_CLK_MASTER bits for for slave mode
-From: Jarkko Nikula <jarkko.nikula@bitmer.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Vladimir Barinov <vbarinov@embeddedalley.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, alsa-devel@alsa-project.org
-In-Reply-To: <1319704722.2673.5.camel@phoenix>
-References: <1319704549.2673.2.camel@phoenix>
-	 <1319704722.2673.5.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 13:52:21 +0200
-Message-ID: <1319716341.4629.10.camel@puukko.homenet-68>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755284Ab1J0LyS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 07:54:18 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50771 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754294Ab1J0LyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 07:54:16 -0400
+Date: Thu, 27 Oct 2011 13:54:11 +0200
+From: Domenico Andreoli <cavokz@gmail.com>
+To: Mike Turquette <mturquette@ti.com>
+Cc: jeremy.kerr@canonical.com, paul@pwsan.com, linaro-dev@lists.linaro.org,
+        linus.walleij@stericsson.com, patches@linaro.org,
+        broonie@opensource.wolfsonmicro.com, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, dsaxena@linaro.org, tglx@linutronix.de,
+        amit.kucheria@linaro.org, skannan@quicinc.com, linux@arm.linux.org.uk,
+        arnd.bergmann@linaro.org, sboyd@quiinc.com, richard.zhao@linaro.org,
+        shawn.guo@freescale.com, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH v2 1/7] clk: Add a generic clock infrastructure
+Message-ID: <20111027115411.GA4713@glitch>
+Mail-Followup-To: Mike Turquette <mturquette@ti.com>,
+	jeremy.kerr@canonical.com, paul@pwsan.com,
+	linaro-dev@lists.linaro.org, linus.walleij@stericsson.com,
+	patches@linaro.org, broonie@opensource.wolfsonmicro.com,
+	magnus.damm@gmail.com, linux-kernel@vger.kernel.org,
+	eric.miao@linaro.org, grant.likely@secretlab.ca, dsaxena@linaro.org,
+	tglx@linutronix.de, amit.kucheria@linaro.org, skannan@quicinc.com,
+	linux@arm.linux.org.uk, arnd.bergmann@linaro.org, sboyd@quiinc.com,
+	richard.zhao@linaro.org, shawn.guo@freescale.com,
+	linux-arm-kernel@lists.infradead.org,
+	Rob Herring <robherring2@gmail.com>
+References: <1316730422-20027-1-git-send-email-mturquette@ti.com>
+ <1316730422-20027-2-git-send-email-mturquette@ti.com>
+ <4E89C3FA.9020206@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E89C3FA.9020206@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-27 at 16:38 +0800, Axel Lin wrote:
-> According to the datasheet:
-> 
-> Page0 / Register8: Audio Serial Data interface Control Register A
-> BIT 7: Bit Clock Directional Control
->         0: Bit clock is an input (slave mode)
->         1: Bit clock is an output (master mode)
-> 
-> BIT 6: Word Clock Directional Control
->         0: Word clock is an input (slave mode)
->         1: Word clock is an output (master mode)
-> 
-> Current code sets BIT_CLK_MASTER and WORD_CLK_MASTER bits for master mode,
-> but does not clear these bits for slave mode.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/codecs/tlv320aic3x.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-This is not entirely true - there is this fussy '& 0x3f' operation that
-does clear those bits a few code lines above your change. Now we can rid
-of it thanks to your patch, hopefully for iface_breg too (in case if you
-are going to send an another patch as this is applied) :-)
+Hi,
 
--- 
-Jarkko
+On 09/22/2011 05:26 PM, Mike Turquette wrote:
+> diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+> index 3530927..c53ed59 100644
+> --- a/drivers/clk/Kconfig
+> +++ b/drivers/clk/Kconfig
+> @@ -5,3 +5,6 @@ config CLKDEV_LOOKUP
+>  
+>  config HAVE_MACH_CLKDEV
+>  	bool
+> +
+> +config GENERIC_CLK
+> +	bool
 
+Now that Russel's prepare/unprepare patch is mainlined, I think you
+want to select HAVE_CLK_PREPARE here (and remove your prepare/unprepare
+function declarations in clk.h).
+
+Regards,
+Domenico
