@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1J0AHF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:07:05 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38140 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab1J0AHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:07:03 -0400
-Date: Thu, 27 Oct 2011 09:01:53 +0900
-To: ebiederm@xmission.com
-Cc: konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86 swiotlb: Verify we can perform the remapping
- requested.
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <m1ty6yig24.fsf@fess.ebiederm.org>
-References: <m1lisj48q1.fsf@fess.ebiederm.org>
-	<20111021004031.GB13687@phenom.dumpdata.com>
-	<m1ty6yig24.fsf@fess.ebiederm.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20111027090019T.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 27 Oct 2011 09:01:55 +0900 (JST)
+	id S1753665Ab1J0AJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:09:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53381 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751178Ab1J0AJm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 20:09:42 -0400
+Date: Wed, 26 Oct 2011 17:09:27 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH 1/1] Staging: hv: mousevsc: Move the mouse driver out of
+ staging
+Message-ID: <20111027000926.GB6804@core.coreip.homeip.net>
+References: <1318658907-16698-1-git-send-email-kys@microsoft.com>
+ <20111023072427.GA13268@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA3369B@TK5EX14MBXC126.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Oct 2011 08:07:31 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Sun, Oct 23, 2011 at 03:45:14PM +0000, KY Srinivasan wrote:
+> > > +
+> > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+> > > +	if (t == 0) {
+> > > +		ret = -ETIMEDOUT;
+> > > +		goto cleanup;
+> > > +	}
+> > > +
+> > > +	response = &input_dev->protocol_resp;
+> > > +
+> > > +	if (!response->response.approved) {
+> > > +		pr_err("synthhid protocol request failed (version %d)",
+> > > +		       SYNTHHID_INPUT_VERSION);
+> > > +		ret = -ENODEV;
+> > > +		goto cleanup;
+> > > +	}
+> > > +
+> > > +	t = wait_for_completion_timeout(&input_dev->wait_event, 5*HZ);
+> > 
+> > We just completed the wait for this completion, why are we waiting on
+> > the same completion again?
+> 
+> In response to our initial query, we expect the host to respond back with two
+> distinct pieces of information; we wait for both these responses.
 
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-> 
-> > On Mon, Oct 17, 2011 at 02:19:18PM -0700, Eric W. Biederman wrote:
-> >> 
-> >> Recently I had a driver try with a peculiar 2G dma memory limit.
-> >> It failed in weird and strange ways because my bounce buffers were
-> >> being allocated above 2G where the driver could not reach, and
-> >> no error was reported when the mappings were setup.
-> >
-> > OK, so the overflow buffer was used instead.. which presumarily
-> > also was allocated above the 2G? That seems to point that
-> > alloc_bootmem_low_pages is not doing its job?
-> 
-> I just looked alloc_bootmem_low_pages allocates memory below
-> ARCH_ADDRESS_LIMIT which for everything except s390 is 4G.
-> 
-> I know I was mostly using the amd gart driver.  So I may be mistaken
-> that the swiotlb driver had the same issue.  However my only solution
-> at the time was to boot with mem=2G.  So I believe the swiotlb did
-> have this issue.
-> 
-> Mostly the patch was.  Hmm.  That looks stupid not wiring up the
-> swiotlb address space limit check when someone has already written it.
+I think you misunderstand how completion works in Linux. IIRC about
+Windows events they are different ;) You can not signal completion
+several times and then expect to wait corrsponding number of times. Once
+you signal completion is it, well, complete.
 
-http://www.gossamer-threads.com/lists/linux/kernel/1333685?do=post_view_threaded#1333685
+>  
+> > 
+> > > +	if (t == 0) {
+> > > +		ret = -ETIMEDOUT;
+> > > +		goto cleanup;
+> > > +	}
+> > > +
+> > > +	/*
+> > > +	 * We should have gotten the device attr, hid desc and report
+> > > +	 * desc at this point
+> > > +	 */
+> > > +	if (input_dev->dev_info_status)
+> > > +		ret = -ENOMEM;
+> > 
+> > -ENOMEM seems wrong.
+> > 
+> There are many failures here and not being able to allocate memory is the 
+> primary one; and so I chose to capture that.
 
-swiotlb isn't designed to handle hardware having odd dma mask (e.g. 2G
-or something). Such device needs the own bouncing mechanism.
+Any chance that these failures have their own exit paths?
+
+Thanks.
+
+-- 
+Dmitry
