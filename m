@@ -1,82 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab1J0XeR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 19:34:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43313 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab1J0XeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 19:34:16 -0400
-Date: Fri, 28 Oct 2011 08:34:07 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, aarcange@redhat.com,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
-Message-ID: <20111027233407.GC29407@barrios-laptop.redhat.com>
-References: <1319511580.22361.141.camel@sli10-conroe>
+	id S1754885Ab1J0XrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 19:47:21 -0400
+Received: from tundra.namei.org ([65.99.196.166]:50168 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750797Ab1J0XrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 19:47:19 -0400
+Date: Fri, 28 Oct 2011 10:47:11 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Zhou Peng <ailvpeng25@gmail.com>
+cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        linux-security-module@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] ACL supports to mqueue
+In-Reply-To: <alpine.LRH.2.00.1110271718510.5714@tundra.namei.org>
+Message-ID: <alpine.LRH.2.00.1110281044410.11733@tundra.namei.org>
+References: <CAH-7YMmqs9j2-UTUSCZaFDEhxmjkAZvHzKVvbvy7nsG8JpFA9w@mail.gmail.com> <alpine.LRH.2.00.1110210232450.31056@tundra.namei.org> <CAH-7YMmx0J+pQFfrU4KW2ahFDPL3udvAUgPy4_Hf19HP46MZHw@mail.gmail.com> <CAH-7YMmAM8e051PopL92WhqSvqz23_eWKjfZbuaLZ4_UhGR5jw@mail.gmail.com>
+ <alpine.LRH.2.00.1110271718510.5714@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319511580.22361.141.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/MIXED; BOUNDARY="1665246916-727352010-1319759231=:11733"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
-> With current logic, if page reclaim finds a huge page, it will just reclaim
-> the head page and leave tail pages reclaimed later. Let's take an example,
-> lru list has page A and B, page A is huge page:
-> 1. page A is isolated
-> 2. page B is isolated
-> 3. shrink_page_list() adds page A to swap page cache. so page A is split.
-> page A+1, page A+2, ... are added to lru list.
-> 4. shrink_page_list() adds page B to swap page cache.
-> 5. page A and B is written out and reclaimed.
-> 6. page A+1, A+2 ... is isolated and reclaimed later.
-> So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I don't see your code yet but have a question.
-You mitigate this problem by 4/5 which could add subpages into lru tail
-so subpages would reclaim next interation of reclaim.
+--1665246916-727352010-1319759231=:11733
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-What do we need 5/5?
-Do I miss something?
+On Thu, 27 Oct 2011, James Morris wrote:
+
+> On Tue, 25 Oct 2011, Zhou Peng wrote:
+> 
+> > Hi, how about this patch pls?
+> 
+> I'm not convinced that this is a necessary feature for the mainline 
+> kernel.
+
+It also needs more review, from at least other security folk, and ideally
+also from fs/vfs folk.
+
+Why does NFSARK want this supportr?  Are its users asking for it?  (I 
+couldn't find the distro, btw).
+
+
 
 > 
-> We expected the whole huge page A is reclaimed in the meantime, so
-> the order is A, A+1, ... A+HPAGE_PMD_NR-1, B, ....
+> > 
+> > On Fri, Oct 21, 2011 at 6:46 PM, Zhou Peng <ailvpeng25@gmail.com> wrote:
+> > > * In general, it can give a more fine grained and flexible DAC to msg queue obj.
+> > > * NFSARK(A distro) wants all posix ipc objects to support ACL, including mqueue.
+> > > * Posix semphore and shmem both support ACL, but mqueue as one of the
+> > > three basic ipc doesn't.
+> > > * At least, it may save one note sentence for MQ_OVERVIEW(7)   ^_^
+> > >    "Linux does not currently (2.6.26) support the use of access
+> > > control lists (ACLs) for POSIX message queues."
+> > >    http://www.kernel.org/doc/man-pages/online/pages/man7/mq_overview.7.html
+> > >
+> > > On Thu, Oct 20, 2011 at 11:33 PM, James Morris <jmorris@namei.org> wrote:
+> > > > On Thu, 20 Oct 2011, Zhou Peng wrote:
+> > > >
+> > > >> This patch adds ACL supports to mqueue filesystem.
+> > > >> Based on Linux 3.0.4.
+> > > >
+> > > > Why is this necessary, and who is planning to use it?
+> > > >
+> > > > Are any distros likely to enable this?
+> > > >
+> > 
 > 
-> With this patch, we do huge page split just after the head page is isolated
-> for inactive lru list, so the tail pages will be reclaimed immediately.
-> 
-> In a test, a range of anonymous memory is written and will trigger swap.
-> Without the patch:
-> #cat /proc/vmstat|grep thp
-> thp_fault_alloc 451
-> thp_fault_fallback 0
-> thp_collapse_alloc 0
-> thp_collapse_alloc_failed 0
-> thp_split 238
-> 
-> With the patch:
-> #cat /proc/vmstat|grep thp
-> thp_fault_alloc 450
-> thp_fault_fallback 1
-> thp_collapse_alloc 0
-> thp_collapse_alloc_failed 0
-> thp_split 103
-> 
-> So the thp_split number is reduced a lot, though there is one extra
-> thp_fault_fallback.
-
-Wow. The result seems to be good.
-Is it result of effect only 5/5? or both 4/5 and 5/5?
+> -- 
+> James Morris
+> <jmorris@namei.org>
 
 -- 
-Kind regards,
-Minchan Kim
+James Morris
+<jmorris@namei.org>
+--1665246916-727352010-1319759231=:11733--
