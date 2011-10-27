@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab1J0Ikc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:40:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45086 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab1J0Ika convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:40:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319701536.10258.74.camel@jtkirshe-mobl>
-References: <CAMuHMdXxqKoPNNo9a+VK-Yzu0Qp-8zY2+OhHL6pDPF=dsnNK5Q@mail.gmail.com>
-	<CAMuHMdUW5PjPU7qNOPA16CbxHJs-bL4r+aFcEGV95SDRBotXRg@mail.gmail.com>
-	<1319701536.10258.74.camel@jtkirshe-mobl>
-Date: Thu, 27 Oct 2011 10:40:30 +0200
-X-Google-Sender-Auth: 2AxPQ6Iu-VNwX22c65bfLYzG578
-Message-ID: <CAMuHMdUXg3D=+dCHZ=OwzfD2eejSaB73Y-sgv2cXoH4cnjzV5w@mail.gmail.com>
-Subject: Re: drivers/net/ethernet/apple
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: jeffrey.t.kirsher@intel.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754928Ab1J0IlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:41:03 -0400
+Received: from mga01.intel.com ([192.55.52.88]:51133 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754859Ab1J0IlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 04:41:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,412,1315206000"; 
+   d="scan'208";a="82978250"
+Subject: Re: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Barry Song <Barry.Song@csr.com>, Arnd Bergmann <arnd@arndb.de>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <Rongjun.Ying@csr.com>,
+        Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20111027083318.GC19187@n2100.arm.linux.org.uk>
+References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
+	 <1319703535.20054.30.camel@vkoul-udesk3>
+	 <20111027083318.GC19187@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 Oct 2011 14:08:09 +0530
+Message-ID: <1319704689.20054.37.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 09:45, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
-> On Wed, 2011-10-26 at 22:16 -0700, Geert Uytterhoeven wrote:
->> On Tue, Oct 25, 2011 at 22:19, Geert Uytterhoeven
->> <geert@linux-m68k.org> wrote:
->> > drivers/net/ethernet/apple/mac89x0.c is a driver for the Crystal
->> Semiconductor
->> > (Now Cirrus Logic) CS89[02]0, so it belongs in
->> drivers/net/ethernet/cirrus,
->> > next to cs89x0.c.
->>
->> And on the first -next run since its inclusion:
->>
->> | drivers/net/ethernet/apple/mac89x0.c:107:20: error: cs89x0.h: No
->> such file or directory
->>
->> it needs the (shared) header file which is in
->> drivers/net/ethernet/cirrus/.
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/4835488/
->
-> Ah, yeah, now it is coming back to me why I placed cs89x0.[ch] in the
-> drivers/net/ethernet/apple/ because it was grouped with the "common"
-> drivers.  The intent was to group drivers that use common code together.
->
-> I can put together a patch to fix this if you are not able to.
+On Thu, 2011-10-27 at 09:33 +0100, Russell King - ARM Linux wrote:
+> On Thu, Oct 27, 2011 at 01:48:55PM +0530, Vinod Koul wrote:
+> > On Mon, 2011-10-17 at 20:08 -0700, Barry Song wrote:
+> > > From: Rongjun Ying <Rongjun.Ying@csr.com>
+> > > 
+> > > Cc: Jassi Brar <jaswinder.singh@linaro.org>
+> > > Cc: Arnd Bergmann <arnd@arndb.de>
+> > > Cc: Linus Walleij <linus.walleij@linaro.org>
+> > > Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+> > > Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> > > ---
+> > >  -v4:
+> > >  add error handler in probe;
+> > >  free resource in remove;
+> > >  add necessary comments in source codes;
+> > >  fix the mismatch of license between file head and MODULE_LINCENSE;
+> > >  define MACRO to replace magic number for xlen/dma_width boundary.
+> > Barry,
+> > 
+> > You should _always_ run checkpatch before sending patches. It should
+> > have 0 errors.
+> 
+> Not true. 
+> 
+> > ERROR: trailing whitespace
+> > #773: FILE: drivers/dma/sirf-dma.c:649:
+> > +^I$
+> > 
+> > 
+> > Also there are bunch of 80char warning, see if you can reduce/eliminate
+> > them without sacrificing the code readability, and looking at them it
+> > seems possible
+> 
+> 80char warnings about printks should be ignored, because breaking kernel
+> messages across lines prevents them from being greppable.  This (breaking
+> kernel messages, particularly error messages, across multiple lines) is a
+> topic Linus has frequently complained about.
+Sure, I wasn't complaining about printks, btw none of them were hit by
+printks.
 
-I will create a patch to move mac89x0 to .../cirrus, when I get to compiling a
-Mac kernel myself.
+These were mostly write_l exceeding 80chars, thats why my suggestion to
+see if they can be reduced/eliminated without sacrificing code
+readability
 
-Gr{oetje,eeting}s,
 
-                        Geert
+-- 
+~Vinod
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
