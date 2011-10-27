@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab1J0Rmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 13:42:42 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7122 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab1J0Rml convert rfc822-to-8bit (ORCPT
+	id S1754292Ab1J0RoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 13:44:21 -0400
+Received: from mail-pz0-f56.google.com ([209.85.210.56]:51414 "EHLO
+	mail-pz0-f56.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044Ab1J0RoU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 13:42:41 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 27 Oct 2011 10:42:40 -0700
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "pavel@ucw.cz" <pavel@ucw.cz>, "len.brown@intel.com" <len.brown@intel.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-Date: Thu, 27 Oct 2011 23:12:37 +0530
-Subject: RE: [PATCH] PM: fix calculation mistake in roll-over cases
-Thread-Topic: [PATCH] PM: fix calculation mistake in roll-over cases
-Thread-Index: AcyTFv7I10HHq9xGS6u0cVWRZkVU/QBtrX4w
-Message-ID: <D958900912E20642BCBC71664EFECE3E6D123A0AFF@BGMAIL02.nvidia.com>
-References: <1319538052-2480-1-git-send-email-vbyravarasu@nvidia.com>
- <201110251508.40854.rjw@sisk.pl>
-In-Reply-To: <201110251508.40854.rjw@sisk.pl>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Thu, 27 Oct 2011 13:44:20 -0400
+X-Greylist: delayed 769 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Oct 2011 13:44:20 EDT
+Path: glegroupsg2000goo.googlegroups.com!not-for-mail
+Newsgroups: fa.linux.kernel
+Date: Thu, 27 Oct 2011 10:31:30 -0700 (PDT)
+In-Reply-To: <fa.sHib65lEoXP9G43lrndbDfam4CU@ifi.uio.no>
+Reply-To: fa.linux.kernel@googlegroups.com
+Complaints-To: groups-abuse@google.com
+Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=2620:0:1000:1b02:1aa9:5ff:fe24:3620;
+ posting-account=B0m2yQoAAABHLnvb2W6ip1n_G1NPelzT
+NNTP-Posting-Host: 2620:0:1000:1b02:1aa9:5ff:fe24:3620
+References: <fa.DU5J+vcQ1k3A34VvvU/+Dois5+Y@ifi.uio.no> <fa.sHib65lEoXP9G43lrndbDfam4CU@ifi.uio.no>
+User-Agent: G2/1.0
+X-Google-Web-Client: true
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Message-ID: <22032480.316.1319736691009.JavaMail.geo-discussion-forums@prgt10>
+Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a signal
+From: scott@netsplit.com
+To: fa.linux.kernel@googlegroups.com
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Rafael J. Wysocki [mailto:rjw@sisk.pl] 
-Sent: Tuesday, October 25, 2011 6:39 PM
-To: Venu Byravarasu
-Cc: pavel@ucw.cz; len.brown@intel.com; gregkh@suse.de; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org; Alan Stern
-Subject: Re: [PATCH] PM: fix calculation mistake in roll-over cases
+I wonder whether we could use a slightly different approach for this loop.
 
-On Tuesday, October 25, 2011, vbyravarasu@nvidia.com wrote:
-> From: venu byravarasu <vbyravarasu@nvidia.com>
-> 
-> In case of jiffies roll over, delta is made zero.
-> Hence fixing it, after taking roll over into consideration.
-> 
-> Signed-off-by: venu byravarasu <vbyravarasu@nvidia.com>
-> ---
-> When jiffies roll over, calculation of time spent in the
-> current state (stored in variable 'delta') is incorrect.
-> Hence fixing it, after taking roll over into consideration.
-> 
->  drivers/base/power/runtime.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-> index 1079e03..bd93fb0 100644
-> --- a/drivers/base/power/runtime.c
-> +++ b/drivers/base/power/runtime.c
-> @@ -30,12 +30,13 @@ static int rpm_suspend(struct device *dev, int rpmflags);
->  void update_pm_runtime_accounting(struct device *dev)
->  {
->  	unsigned long now = jiffies;
-> -	int delta;
-> +	unsigned long delta;
-> +	unsigned long max_num = ~0;
->  
->  	delta = now - dev->power.accounting_timestamp;
->  
-> -	if (delta < 0)
-> -		delta = 0;
-> +	if (now < dev->power.accounting_timestamp)
-> +		delta = max_num - dev->power.accounting_timestamp + now;
->  
->  	dev->power.accounting_timestamp = now;
+In the current code in the case where there is a signal pending on the crashing process (in our case it looks like it's SIGTERM as a result of the process group being killed) we never call pipe_wait() at all. This means everything is certainly missing from /proc if the crashing process is reaped before crash-reporter gets a look-in.
 
-> I'm not sure how this is supposed to improve things.  Care to give more
-> details?
-Below two items were taken care with this change:
-1. Value of now is jiffies which is unsigned long.
-As it is being stored in delta of 'int' type, for all values of now > 0x80000000,
-Delta will be made 0 with the original if condition.
-By changing delta to unsigned long, this is taken care.
+What would be the side-effect of changing the code such that we call pipe_wait() at least once in this scenario, for example:
 
-2. Even if delta is made unsigned, in cases of jiffies roll over, delta will be zero.
-That is also being taken care with the code added as part of if condition.
 
-Plz let me know if you still have any questions.
-> Rafael
-Thanks,
-Venu
+diff --git a/fs/exec.c b/fs/exec.c
+index 25dcbe5..8959d304 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2030,11 +2030,11 @@ static void wait_for_dump_helpers(struct file *file)
+        pipe->readers++;
+        pipe->writers--;
+ 
+-       while ((pipe->readers > 1) && (!signal_pending(current))) {
++       do {
+                wake_up_interruptible_sync(&pipe->wait);
+                kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+                pipe_wait(pipe);
+-       }
++       } while ((pipe->readers > 1) && (!signal_pending(current)));
+ 
+        pipe->readers--;
+        pipe->writers++;
+
+This way around would it not at least wait for the core_pattern user mode helper to call read() at least once before bailing out due to signal?
+
+Scott
