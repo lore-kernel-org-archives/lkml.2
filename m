@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab1J0MH0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 08:07:26 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64653 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754248Ab1J0MHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 08:07:24 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH] config: Add 'make kvmconfig'
-Date: Thu, 27 Oct 2011 14:07:14 +0200
-Message-Id: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.7.1
+	id S1755309Ab1J0MJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 08:09:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49994 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754248Ab1J0MJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 08:09:18 -0400
+Date: Thu, 27 Oct 2011 14:08:40 +0200
+From: Greg KH <gregkh@suse.de>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
+Subject: Re: Linux 3.0.8
+Message-ID: <20111027120840.GA6863@suse.de>
+References: <20111025051928.GA7997@kroah.com>
+ <1319716969.20488.14.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319716969.20488.14.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 'make kvmconfig' which allows to add KVM guest support
-to a config file.
+On Thu, Oct 27, 2011 at 02:02:49PM +0200, Paul Bolle wrote:
+> On Tue, 2011-10-25 at 07:19 +0200, Greg KH wrote:
+> > The updated 3.0.y git tree can be found at (NOTE THE ADDRESS CHANGE):
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+> > and can be browsed at the normal kernel.org git web browser:
+> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> 
+> Somehow I seem to be able to generate perfect copies of patch-3.0.4.bz2
+> (and earlier), by simply doing a command like:
+>     git diff v3.0 v3.04 | bzip2 -9 > patch-3.0.4-git.bz2 
+> 
+> But for patch-3.0.5 (and above) trivial commands like
+>      git diff v3.0 v3.0.8 > patch-3.0.8-git
+> 
+> do not generate perfect copies anymore. Have you perhaps changed the way
+> you generate the patches since v3.0.5?  Not that this matters much,
+> since tags v3.0.5 (and up) are signed by your "Linux kernel stable
+> release signing key", but I still wonder what could cause this
+> difference. Maybe it's just a git upgrade on your side.
 
-This allows for easier testing of configurations under virtualized
-environments.
+We have found out that different versions of git will generate different
+patches.  The end result of the patch when you apply it will always be
+the same, but this is a non-trivial problem to solve.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Suggested-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
+That's why we generate the patches on our local machine and upload them,
+instead of just generating the signature and having the server create
+it.
 
-Updated sym list to include everything required when starting from
-'make allnoconfig' plus KGDB support.
+Can you verify that the end result from your patch, and my patch,
+produces the same tree?  If not, we need to resolve that.
 
- arch/x86/Kconfig         |   27 +++++++++++++++++++++++++++
- scripts/kconfig/Makefile |    6 +++++-
- 2 files changed, 32 insertions(+), 1 deletions(-)
+thanks,
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6a47bb2..0b74528 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -520,6 +520,33 @@ config SCHED_OMIT_FRAME_POINTER
- 
- 	  If in doubt, say "Y".
- 
-+config KVMTOOL_TEST_ENABLE
-+	bool "Enable options to create a bootable tools/kvm/ kernel"
-+	select NET
-+	select NETDEVICES
-+	select PCI
-+	select BLK_DEV
-+	select NETWORK_FILESYSTEMS
-+	select INET
-+	select EXPERIMENTAL
-+	select SERIAL_8250
-+	select SERIAL_8250_CONSOLE
-+	select IP_PNP
-+	select IP_PNP_DHCP
-+	select BINFMT_ELF
-+	select PCI_MSI
-+	select KGDB
-+	select KGDB_SERIAL_CONSOLE
-+	select VIRTIO
-+	select VIRTIO_RING
-+	select VIRTIO_PCI
-+	select VIRTIO_BLK
-+	select VIRTIO_CONSOLE
-+	select VIRTIO_NET
-+	select 9P_FS
-+	select NET_9P
-+	select NET_9P_VIRTIO
-+
- menuconfig PARAVIRT_GUEST
- 	bool "Paravirtualized guest support"
- 	---help---
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 82d2eb2..356e551 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -3,7 +3,7 @@
- # These targets are used from top-level makefile
- 
- PHONY += oldconfig xconfig gconfig menuconfig config silentoldconfig update-po-config \
--	localmodconfig localyesconfig
-+	localmodconfig localyesconfig kvmconfig
- 
- ifdef KBUILD_KCONFIG
- Kconfig := $(KBUILD_KCONFIG)
-@@ -33,6 +33,10 @@ silentoldconfig: $(obj)/conf
- 	$(Q)mkdir -p include/generated
- 	$< --$@ $(Kconfig)
- 
-+kvmconfig:
-+	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/config -e KVMTOOL_TEST_ENABLE
-+	@echo 'Kernel configuration modified to run as KVM guest.'
-+
- # if no path is given, then use src directory to find file
- ifdef LSMOD
- LSMOD_F := $(LSMOD)
--- 
-1.7.7.1
-
+greg k-h
