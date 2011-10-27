@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab1J0Aez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Oct 2011 20:34:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20440 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab1J0Aez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Oct 2011 20:34:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="67922223"
-Subject: Re: Multi-partition block layer behaviour
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tiju Jacob <jacobtiju@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
-References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
-	 <CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
-	 <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Oct 2011 08:42:41 +0800
-Message-ID: <1319676161.22361.148.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753613Ab1J0Aku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Oct 2011 20:40:50 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56893 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab1J0Akt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Oct 2011 20:40:49 -0400
+Date: Thu, 27 Oct 2011 08:39:16 +0800
+From: wangyanqing <udknight@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init:enable usermodehelper as soon as we have a root
+ filesystem
+Message-ID: <20111027003916.GA3934@udknight.homenetwork>
+Mail-Followup-To: wangyanqing <Udknight@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <20111023150957.GA2937@udknight.homenetwork>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111023150957.GA2937@udknight.homenetwork>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-10-26 at 18:10 +0800, Tiju Jacob wrote:
-> >> 1. When an I/O request is made to the filesystem, process 'A' acquires
-> >> a mutex FS lock and a mutex block driver lock.
-> >>
-> >> 2. Process 'B' tries to acquire the mutex FS lock, which is not
-> >> available. Hence, it goes to sleep. Due to the new plugging mechanism,
-> >> before going to sleep, shcedule() is invoked which disables preemption
-> >> and the context becomes atomic. In schedule(), the newly added
-> >> blk_flush_plug_list() is invoked which unplugs the block driver.
-> >>
-> >> 3) During unplug operation the block driver tries to acquire the mutex
-> >> lock which fails, because the lock was held by process 'A'. Previous
-> >> invocation of scheudle() in step 2 has already made the context as
-> >> atomic, hence the error "Schedule while atomic" occured.
-> > if blk_flush_plug_list() is called in schedule(), it will use
-> > blk_run_queue_async
-> > to unplug the queue. This runs in a workqueue. So how could this happen?
-> >
+On Sun, Oct 23, 2011 at 11:09:57PM +0800, wangyanqing wrote:
+> before we have a filesystem , it is useless to enable usermodehelper,
+> and it may cause bug if we enable usermodehelper too early (see commit
+> d5767c53535ac79758084773418e0ad186aba4a2 for the reason why linus mv 
+> 'usermodehelper_enable()' to the end of do_basic_setup, and commit 
+> b0f84374b6ab0dc9c47975df0b02d46165d558d4).This patch
+> enable usermodehelper as soon as we have a filesystem.
 > 
-> The call stack goes as follows:
+> Signed-off-by: wang yanqing <udknight@gmail.com>
+> ---
+>  init/do_mounts.c |    3 +++
+>  init/initramfs.c |    2 ++
+>  init/main.c      |    1 -
+>  3 files changed, 5 insertions(+), 1 deletions(-)
 > 
-> From schedule() it calls blk_schedule_flush_plug()  and
-> blk_flush_plug_list() gets invoked.
+> diff --git a/init/do_mounts.c b/init/do_mounts.c
+> index c0851a8..9575bdd 100644
+> --- a/init/do_mounts.c
+> +++ b/init/do_mounts.c
+> @@ -490,4 +490,7 @@ out:
+>  	devtmpfs_mount("dev");
+>  	sys_mount(".", "/", NULL, MS_MOVE, NULL);
+>  	sys_chroot((const char __user __force *)".");
+> +#ifndef CONFIG_BLK_DEV_INITRD
+> +	usermodehelper_enable();
+> +#endif
+>  }
+> diff --git a/init/initramfs.c b/init/initramfs.c
+> index 2531811..881fc4b 100644
+> --- a/init/initramfs.c
+> +++ b/init/initramfs.c
+> @@ -581,6 +581,7 @@ static int __init populate_rootfs(void)
+>  		err = unpack_to_rootfs((char *)initrd_start,
+>  			initrd_end - initrd_start);
+>  		if (!err) {
+> +			usermodehelper_enable();
+>  			free_initrd();
+>  			return 0;
+>  		} else {
+> @@ -603,6 +604,7 @@ static int __init populate_rootfs(void)
+>  			initrd_end - initrd_start);
+>  		if (err)
+>  			printk(KERN_EMERG "Initramfs unpacking failed: %s\n", err);
+> +		usermodehelper_enable();
+>  		free_initrd();
+>  #endif
+>  	}
+> diff --git a/init/main.c b/init/main.c
+> index 03b408d..2e232cb 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -730,7 +730,6 @@ static void __init do_basic_setup(void)
+>  	driver_init();
+>  	init_irq_proc();
+>  	do_ctors();
+> -	usermodehelper_enable();
+>  	do_initcalls();
+>  }
+>  
+> -- 
+> 1.7.3.4
 > 
-> In blk_flush_plug_list() queue_unplugged() does not get invoked. Hence
->  blk_run_queue_async is not called.
-> Instead __elv_add_request() is invoked with ELEVATOR_INSERT_SORT_MERGE
-> flag and the flag gets reassigned to ELEVATOR_INSERT_BACK.
-> 	
-> In ELEVATOR_INSERT_BACK, __blk_run_queue() gets invoked and calls request_fn().
-This doesn't make sense. why the flag is changed from
-ELEVATOR_INSERT_SORT_MERGE to ELEVATOR_INSERT_BACK?
-
-can you post a full log? or did your driver have something special?
-
-
+Hi,Linus.Sorry, but I just want to know whether this patch is wrong? And any suggestion is welcome, thanks!
