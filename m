@@ -1,65 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab1J0T1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 15:27:52 -0400
-Received: from nm9-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.196]:30519 "HELO
-	nm9-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751475Ab1J0T1v convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 15:27:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 930204.56919.bm@omp1034.mail.sp2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=EsVQU5HVwx31suhgwm29/0Cu+n0hnt8mkA44MI/ZpOmL19hU5KODVSpOKmroEAvIZu+SE3xqTRHs/oG/BgeikgweVz7OQY0KK+1yh0ZQdaeJ9i7Y+zDb+orejwCIZGJnwZTQ317Uxf13lYEgO0Hw51QZ1a58gnBZwDYUtm34dws=;
-X-YMail-OSG: 0iqd1wQVM1lb.CuYeLNkenASIrlbVxFVgd6p19zhV.F5PKV
- G.JbbrH22e3emMIbTHVy8OhtpohF5ePTBeZcxcT1J9_Hm9HAafkvAe6yshtA
- lSJF1s04Hn4z.gzcYmbxEJ9YKw0x3NMENMKA6XFbvxTgaIXoW8U6I0ZtyhEV
- CIYfD92HD.fFQIIEhWtMJTxBNv8iwW0GWpX42jVfQn8qvvXGZxGuN.qlMlCx
- QbpC50oYSifT9XchUTL..Xt_h_IfkGHKeTqrbMZQlg2ZQSjZQvIM17YYWszk
- 8HE_w2Bi5Rx_.mXQdbSY8VvCZFYnEmT_SysZospD7BMmzqkDKQnzhoQgCeAn
- t9Wc4IwCDm0lohsmeXQeHZ2cl9yd4X87DPP34NUgKghGKFou7o1ldkl37dTP
- xO9kx2KC0Idev8q8HiNjMHPnhdP3U0lqvRw2.UFh0n3f8GJIx3wtxKqeYbBX
- ZOi4vZLm_.cl1X0c9hnAOfBZ7ZmC.x3.zUvz8yjT2UAw0HTNeYqml_A.ETqI
- ldTHEsTBcagxo_FnlLhdAfmwg
-X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1319743670.62757.YahooMailNeo@web130109.mail.mud.yahoo.com>
-Date: Thu, 27 Oct 2011 12:27:50 -0700 (PDT)
-From: Alex Davis <alex14641@yahoo.com>
-Reply-To: Alex Davis <alex14641@yahoo.com>
-Subject: Re:[bisected] i915 dpms does not switch back light on
-To: "wmkoolen@science.uva.nl" <wmkoolen@science.uva.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1752186Ab1J0Tbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 15:31:53 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:32949 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1J0Tbw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 15:31:52 -0400
+Message-ID: <4EA9B14C.7020407@oracle.com>
+Date: Thu, 27 Oct 2011 12:30:20 -0700
+From: Kurt Hackel <kurt.hackel@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 OracleBeehiveExtension/1.0.0.2-OracleInternal ObetStats/CATCAT_1303154118366-399881229 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090203.4EA9B155.01E5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Hi guys,
+Hi,
+As the dev manager for OracleVM (x86) I'd like to express my interest in seeing frontswap get merged upstream.  The OracleVM product has been capable of working with frontswap for over a year now, and we'd very much like to see the complete cleancache+frontswap feature set fully upstreamed.  Oracle is also fully committed to the ongoing maintenance of frontswap.
+thanks
+kurt
+
+Kurt C. Hackel
+Development Director
+Oracle VM
+kurt.hackel@oracle.com
+
+
+On 10/27/2011 11:52 AM, Dan Magenheimer wrote:
+> Hi Linus --
 >
->After update from kernel 3.0.8 to 3.1 I encounter the following problem. 
->When power saving turns off the back light, key/mouse activity does not 
->turn it back on. I can turn it back on by pressing the "brightness++" key.
-
-
-I've been having this problem as well. I created a patch that fixes the problem for me and others:
-
-diff --git a/drivers/gpu/drm/i915/intel_panel.c b/drivers/gpu/drm/i915/intel_panel.c
-index 6f56676..a9e0c7b 100644
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -262,6 +262,8 @@ void intel_panel_disable_backlight(struct drm_device *dev)
-                dev_priv->backlight_level = intel_panel_get_backlight(dev);
-                dev_priv->backlight_enabled = false;
-        }
-+
-+       intel_panel_set_backlight(dev, 0);
- }
-
-
-For more info, see http://marc.info/?l=linux-kernel&m=131959957117710&w=2
-
-I code, therefore I am
+> Frontswap now has FOUR users: Two already merged in-tree (zcache
+> and Xen) and two still in development but in public git trees
+> (RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
+> changes required to support transcendent memory; part 1 was cleancache
+> which you merged at 3.0 (and which now has FIVE users).
+>
+> Frontswap patches have been in linux-next since June 3 (with zero
+> changes since Sep 22).  First posted to lkml in June 2009, frontswap
+> is now at version 11 and has incorporated feedback from a wide range
+> of kernel developers.  For a good overview, see
+>     http://lwn.net/Articles/454795.
+> If further rationale is needed, please see the end of this email
+> for more info.
+>
+> SO... Please pull:
+>
+> git://oss.oracle.com/git/djm/tmem.git #tmem
+>
+> since git commit b6fd41e29dea9c6753b1843a77e50433e6123bcb
+> Linus Torvalds (1):
+>
+> 	Linux 3.1-rc6
+>
+> (identical commits being pulled by sfr into linux-next since Sep22)
+>
+> Note that in addition to frontswap, this commit series includes
+> some minor changes to cleancache necessary for consistency with
+> changes for frontswap required by Andrew Morton (e.g. flush->invalidate
+> name change; use debugfs instead of sysfs).  As a result, a handful
+> of cleancache-related VFS files incur only a very small change.
+>
+> Dan Magenheimer (8):
+>        mm: frontswap: add frontswap header file
+>        mm: frontswap: core swap subsystem hooks and headers
+>        mm: frontswap: core frontswap functionality
+>        mm: frontswap: config and doc files
+>        mm: cleancache: s/flush/invalidate/
+>        mm: frontswap/cleancache: s/flush/invalidate/
+>        mm: cleancache: report statistics via debugfs instead of sysfs.
+>        mm: cleancache: Use __read_mostly as appropiate.
+>
+> Diffstat:
+>   .../ABI/testing/sysfs-kernel-mm-cleancache         |   11 -
+>   Documentation/vm/cleancache.txt                    |   41 ++--
+>   Documentation/vm/frontswap.txt                     |  210 +++++++++++++++
+>   drivers/staging/zcache/zcache-main.c               |   10 +-
+>   drivers/xen/tmem.c                                 |   10 +-
+>   fs/buffer.c                                        |    2 +-
+>   fs/super.c                                         |    2 +-
+>   include/linux/cleancache.h                         |   24 +-
+>   include/linux/frontswap.h                          |    9 +-
+>   include/linux/swap.h                               |    4 +
+>   include/linux/swapfile.h                           |   13 +
+>   mm/Kconfig                                         |   17 ++
+>   mm/Makefile                                        |    1 +
+>   mm/cleancache.c                                    |   98 +++-----
+>   mm/filemap.c                                       |    2 +-
+>   mm/frontswap.c                                     |  273 ++++++++++++++++++++
+>   mm/page_io.c                                       |   12 +
+>   mm/swapfile.c                                      |   64 ++++-
+>   mm/truncate.c                                      |   10 +-
+>   19 files changed, 672 insertions(+), 141 deletions(-)
+>
+> ====
+>
+> FURTHER RATIONALE, INFORMATION, AND LINKS:
+>
+> In-kernel users (grep for CONFIG_FRONTSWAP):
+> - drivers/staging/zcache (since 2.6.39)
+> - drivers/xen/tmem.c (since 3.1)
+> - drivers/xen/xen-selfballoon.c (since 3.1)
+>
+> Users in development in public git trees:
+> - "RAMster" driver, see ramster branch of
+>      git://oss.oracle.com/git/djm/tmem.git
+> - KVM port now underway, see:
+>      https://github.com/sashalevin/kvm-tmem/commits/tmem
+>
+> History of frontswap code:
+> - code first written in Dec 2008
+> - previously known as "hswap" and "preswap"
+> - first public posting in Feb 2009
+> - first LKML posting on June 19, 2009
+> - renamed frontswap, posted on May 28, 2010
+> - in linux-next since June 3, 2011
+> - incorporated feedback from: (partial list)
+>     Andrew Morton, Jan Beulich, Konrad Wilk,
+>      Jeremy Fitzhardinge, Kamezawa Hiroyuki,
+>      Seth Jennings (IBM)
+>
+> Linux kernel distros incorporating frontswap:
+> - Oracle UEK 2.6.39 Beta:
+>     http://oss.oracle.com/git/?p=linux-2.6-unbreakable-beta.git;a=summary
+> - OpenSuSE since 11.2 (2009) [see mm/tmem-xen.c]
+>     http://kernel.opensuse.org/cgit/kernel/
+> - a popular Gentoo distro
+>     http://forums.gentoo.org/viewtopic-t-862105.html
+>
+> Xen distros supporting Linux guests with frontswap:
+> - Xen hypervisor backend since Xen 4.0 (2009)
+>     http://www.xen.org/files/Xen_4_0_Datasheet.pdf
+> - OracleVM since 2.2 (2009)
+>     http://twitter.com/#!/Djelibeybi/status/113876514688352256
+>
+> Public visibility for frontswap (as part of transcendent memory):
+> - presented at OSDI'08, OLS'09, LCA'10, LPC'10, LinuxCon NA 11, Oracle
+>    Open World 2011, two LSF/MM Summits (2010,2011), and three
+>    Xen Summits (2009,2010,2011)
+> - http://lwn.net/Articles/454795 (current overview)
+> - http://lwn.net/Articles/386090 (2010)
+> - http://lwn.net/Articles/340080 (2009)
