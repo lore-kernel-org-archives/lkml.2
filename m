@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab1J0Rfn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 13:35:43 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:27279 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752012Ab1J0Rfm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 13:35:42 -0400
-Date: Thu, 27 Oct 2011 13:35:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Miche Baker-Harvey <miche@google.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: Re: Regression: patch " hvc_console: display printk messages on
- console." causing infinite loop with 3.2-rc0 + Xen.
-Message-ID: <20111027173527.GA23839@phenom.dumpdata.com>
-References: <20111027053007.GA32765@phenom.dumpdata.com>
- <20111027054806.GA1377@suse.de>
- <CAB8Rdaq2r4Uc-WZK-k=wiEW8DKdixn+9dB7E4_XDL7k8jCMwSw@mail.gmail.com>
- <20111027150826.GC1157@phenom.dumpdata.com>
- <20111027153132.GA2751@phenom.dumpdata.com>
- <CAB8RdarECbYFuuD7-Jz_o5kC3aBd5JAASB76B=ZioYo2-sjPfg@mail.gmail.com>
+	id S1754265Ab1J0RmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 13:42:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33521 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab1J0RmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 13:42:14 -0400
+Date: Thu, 27 Oct 2011 13:40:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kdump: Fix crash_kexec - smp_send_stop race in panic
+Message-ID: <20111027174053.GK7491@redhat.com>
+References: <1319639649.3321.11.camel@br98xy6r>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAB8RdarECbYFuuD7-Jz_o5kC3aBd5JAASB76B=ZioYo2-sjPfg@mail.gmail.com>
+In-Reply-To: <1319639649.3321.11.camel@br98xy6r>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4EA99668.000C:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 10:22:21AM -0700, Miche Baker-Harvey wrote:
-> Konrad,
+On Wed, Oct 26, 2011 at 04:34:09PM +0200, Michael Holzheu wrote:
+> Hello Andrew,
 > 
-> This looks similar to something I was seeing before I added some
-> locking and multi-hvc console support.
-> I think what's happening is that once the console is enabled, the
-> first line in printk's console buffer is
-> being infinitely printed.  Would you be willing to try another patch?
+> After the discussion with Eric and Vivek the following patch
+> seems to be a good solution to me. Could you accept this patch?
+> 
+> When two CPUs call panic at the same time there is a
+> possible race condition that can stop kdump. The first
+> CPU calls crash_kexec() and the second CPU calls
+> smp_send_stop() in panic() before crash_kexec() finished
+> on the first CPU. So the second CPU stops the first CPU
+> and therefore kdump fails:
+> 
+> 1st CPU:
+> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
+> 
+> 2nd CPU:
+> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
+>        ->smp_send_stop()-> stop 1st CPU (stop kdump)
+> 
+> This patch fixes the problem by introducing a spinlock in
+> panic that allows only one CPU to process crash_kexec() and
+> the subsequent panic code.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-Sure.
-> I'm pulling the patch into Linus'
-> latest now...
+Sounds reasonable to me.
 
-OK. Just send it to me and I will try it out.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Thanks
+Vivek
+
+> ---
+>  kernel/panic.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
+>   */
+>  NORET_TYPE void panic(const char * fmt, ...)
+>  {
+> +	static DEFINE_SPINLOCK(panic_lock);
+>  	static char buf[1024];
+>  	va_list args;
+>  	long i, i_next = 0;
+> @@ -82,6 +83,13 @@ NORET_TYPE void panic(const char * fmt,
+>  #endif
+>  
+>  	/*
+> +	 * Only one CPU is allowed to execute the panic code from here. For
+> +	 * multiple parallel invocations of panic all other CPUs will wait on
+> +	 * the panic_lock. They are stopped afterwards by smp_send_stop().
+> +	 */
+> +	spin_lock(&panic_lock);
+> +
+> +	/*
+>  	 * If we have crashed and we have a crash kernel loaded let it handle
+>  	 * everything else.
+>  	 * Do we want to call this before we try to display a message?
+> 
