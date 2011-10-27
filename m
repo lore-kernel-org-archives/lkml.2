@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab1J0IGV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 04:06:21 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:56969 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab1J0IGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 04:06:18 -0400
-Date: Thu, 27 Oct 2011 04:06:11 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Arnaud Lacombe <lacombar@gmail.com>
-Subject: Re: [PATCH -next] jbd2: fix build when CONFIG_BUG is not enabled
-Message-ID: <20111027080611.GZ31921@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Arnd Bergmann <arnd@arndb.de>, Arnaud Lacombe <lacombar@gmail.com>
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
- <4E9495C8.1030200@xenotime.net>
+	id S1754663Ab1J0IJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 04:09:58 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54007 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752631Ab1J0IJ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 04:09:56 -0400
+Date: Thu, 27 Oct 2011 10:09:53 +0200
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Rajendra Nayak <rnayak@ti.com>
+Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        tony@atomide.com, lrg@ti.com, b-cousson@ti.com, patches@linaro.org,
+        linux-kernel@vger.kernel.org, shawn.guo@freescale.com
+Subject: Re: [PATCH v3 1/4] regulator: helper routine to extract
+ regulator_init_data
+Message-ID: <20111027080953.GB18360@opensource.wolfsonmicro.com>
+References: <1319702185-16108-1-git-send-email-rnayak@ti.com>
+ <1319702185-16108-2-git-send-email-rnayak@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E9495C8.1030200@xenotime.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <1319702185-16108-2-git-send-email-rnayak@ti.com>
+X-Cookie: Bridge ahead.  Pay troll.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 11, 2011 at 12:15:20PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> 
-> Fix build error when CONFIG_BUG is not enabled:
-> 
-> fs/jbd2/transaction.c:1175:3: error: implicit declaration of function '__WARN'
-> 
-> by changing __WARN() to WARN_ON(), as suggested by
-> Arnaud Lacombe <lacombar@gmail.com>.
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Arnaud Lacombe <lacombar@gmail.com>
+On Thu, Oct 27, 2011 at 01:26:22PM +0530, Rajendra Nayak wrote:
 
-Thanks, applied.
+> +	min_uV = of_get_property(np, "regulator-min-uV", NULL);
+> +	if (min_uV)
+> +		(*init_data)->constraints.min_uV = be32_to_cpu(*min_uV);
+> +	max_uV = of_get_property(np, "regulator-max-uV", NULL);
+> +	if (max_uV)
+> +		(*init_data)->constraints.max_uV = be32_to_cpu(*max_uV);
 
-					- Ted
+If we have min_uV and max_uV we should also set REGULATOR_CHANGE_VOLTAGE
+(and similarly for the currents).  
+
+We should also have a way to enable status changes - since there's an
+always_on property (which does make sense) I'd suggest that as a first
+pass we should enable status changes if always_on is not set (these two
+things are a bit redundant in the existing constrints).  This is
+slightly risky as you can get a situation where new device driver
+support for regulators starts unexpectedly turning off supplies but
+that's always going to be a risk with constraints disassociated from the
+kernel.
