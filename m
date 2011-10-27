@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab1J0SsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 14:48:07 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:49302 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754639Ab1J0SsG (ORCPT
+	id S1755077Ab1J0Sxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 14:53:46 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:63826 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab1J0Sxo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 14:48:06 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAGamqU4Y9geI/2dsb2JhbAAMN4R3p2ABAQEBAgEjVQEFCwsOBgEDAgIFFgsCAgkDAgECAUUGDQEFAgEBh36jDpIBgTCGOoEUBKYI
-X-IronPort-AV: E=Sophos;i="4.69,414,1315195200"; 
-   d="scan'208";a="144824322"
-Message-ID: <4EA9A763.3000607@teksavvy.com>
-Date: Thu, 27 Oct 2011 14:48:03 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Thu, 27 Oct 2011 14:53:44 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: asix usb network driver: nfg
-References: <4EA89972.5060101@teksavvy.com> <20111026.194045.2019668159403582571.davem@davemloft.net> <4EA8B283.3010105@teksavvy.com> <20111026.221719.2216112919297458522.davem@davemloft.net>
-In-Reply-To: <20111026.221719.2216112919297458522.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Message-ID: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+Date: Thu, 27 Oct 2011 11:52:22 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: [GIT PULL] mm: frontswap (for 3.2 window)
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090201.4EA9A86C.0095,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-10-26 10:17 PM, David Miller wrote:
-> From: Mark Lord <kernel@teksavvy.com>
-> Date: Wed, 26 Oct 2011 21:23:15 -0400
-> 
->> Any strong advance objections to replacing the in-kernel version
->> with a (fixed) vendor open source version?
-> 
-> It need to meet the coding etc. standards for inclusion, last
-> time I looked at it their driver indeed need a bit of cleaning up.
+Hi Linus --
 
-Yeah, okay -- I've got approval to spend some paid time on the effort,
-so I'll have a deeper look at things.
+Frontswap now has FOUR users: Two already merged in-tree (zcache
+and Xen) and two still in development but in public git trees
+(RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
+changes required to support transcendent memory; part 1 was cleancache
+which you merged at 3.0 (and which now has FIVE users).
 
-> It's a sad situation, they started with the upstream driver and
-> just hacked on it however they pleased in their private copy.
-> So now we have this huge divergance and no effort on their part
-> to rectify things.
+Frontswap patches have been in linux-next since June 3 (with zero
+changes since Sep 22).  First posted to lkml in June 2009, frontswap 
+is now at version 11 and has incorporated feedback from a wide range
+of kernel developers.  For a good overview, see
+   http://lwn.net/Articles/454795.
+If further rationale is needed, please see the end of this email
+for more info.
 
-Will there be any issues with "Signed-Off-By" on this?
-It's all GPL, by License, but we don't necessarily know who
-make what changes to their driver since they forked it.
-I don't think that matters much, but then what I think doesn't matter much
-either. :)
+SO... Please pull:
 
-But it is the only one of the two that's close to working
-(and does work when DEBUG messages are enabled -- a timing issue
-somewhere that I'll fix).
+git://oss.oracle.com/git/djm/tmem.git #tmem
 
-Thanks David.
+since git commit b6fd41e29dea9c6753b1843a77e50433e6123bcb
+Linus Torvalds (1):
+
+	Linux 3.1-rc6
+
+(identical commits being pulled by sfr into linux-next since Sep22)
+
+Note that in addition to frontswap, this commit series includes
+some minor changes to cleancache necessary for consistency with
+changes for frontswap required by Andrew Morton (e.g. flush->invalidate
+name change; use debugfs instead of sysfs).  As a result, a handful
+of cleancache-related VFS files incur only a very small change.
+
+Dan Magenheimer (8):
+      mm: frontswap: add frontswap header file
+      mm: frontswap: core swap subsystem hooks and headers
+      mm: frontswap: core frontswap functionality
+      mm: frontswap: config and doc files
+      mm: cleancache: s/flush/invalidate/
+      mm: frontswap/cleancache: s/flush/invalidate/
+      mm: cleancache: report statistics via debugfs instead of sysfs.
+      mm: cleancache: Use __read_mostly as appropiate.
+
+Diffstat:
+ .../ABI/testing/sysfs-kernel-mm-cleancache         |   11 -
+ Documentation/vm/cleancache.txt                    |   41 ++--
+ Documentation/vm/frontswap.txt                     |  210 +++++++++++++++
+ drivers/staging/zcache/zcache-main.c               |   10 +-
+ drivers/xen/tmem.c                                 |   10 +-
+ fs/buffer.c                                        |    2 +-
+ fs/super.c                                         |    2 +-
+ include/linux/cleancache.h                         |   24 +-
+ include/linux/frontswap.h                          |    9 +-
+ include/linux/swap.h                               |    4 +
+ include/linux/swapfile.h                           |   13 +
+ mm/Kconfig                                         |   17 ++
+ mm/Makefile                                        |    1 +
+ mm/cleancache.c                                    |   98 +++-----
+ mm/filemap.c                                       |    2 +-
+ mm/frontswap.c                                     |  273 ++++++++++++++++++++
+ mm/page_io.c                                       |   12 +
+ mm/swapfile.c                                      |   64 ++++-
+ mm/truncate.c                                      |   10 +-
+ 19 files changed, 672 insertions(+), 141 deletions(-)
+
+====
+
+FURTHER RATIONALE, INFORMATION, AND LINKS:
+
+In-kernel users (grep for CONFIG_FRONTSWAP):
+- drivers/staging/zcache (since 2.6.39)
+- drivers/xen/tmem.c (since 3.1)
+- drivers/xen/xen-selfballoon.c (since 3.1)
+
+Users in development in public git trees:
+- "RAMster" driver, see ramster branch of
+    git://oss.oracle.com/git/djm/tmem.git
+- KVM port now underway, see:
+    https://github.com/sashalevin/kvm-tmem/commits/tmem 
+
+History of frontswap code:
+- code first written in Dec 2008
+- previously known as "hswap" and "preswap"
+- first public posting in Feb 2009
+- first LKML posting on June 19, 2009
+- renamed frontswap, posted on May 28, 2010
+- in linux-next since June 3, 2011
+- incorporated feedback from: (partial list)
+   Andrew Morton, Jan Beulich, Konrad Wilk,
+    Jeremy Fitzhardinge, Kamezawa Hiroyuki,
+    Seth Jennings (IBM)
+
+Linux kernel distros incorporating frontswap:
+- Oracle UEK 2.6.39 Beta:
+   http://oss.oracle.com/git/?p=linux-2.6-unbreakable-beta.git;a=summary 
+- OpenSuSE since 11.2 (2009) [see mm/tmem-xen.c]
+   http://kernel.opensuse.org/cgit/kernel/ 
+- a popular Gentoo distro
+   http://forums.gentoo.org/viewtopic-t-862105.html 
+
+Xen distros supporting Linux guests with frontswap:
+- Xen hypervisor backend since Xen 4.0 (2009)
+   http://www.xen.org/files/Xen_4_0_Datasheet.pdf 
+- OracleVM since 2.2 (2009)
+   http://twitter.com/#!/Djelibeybi/status/113876514688352256 
+
+Public visibility for frontswap (as part of transcendent memory):
+- presented at OSDI'08, OLS'09, LCA'10, LPC'10, LinuxCon NA 11, Oracle
+  Open World 2011, two LSF/MM Summits (2010,2011), and three
+  Xen Summits (2009,2010,2011)
+- http://lwn.net/Articles/454795 (current overview)
+- http://lwn.net/Articles/386090 (2010)
+- http://lwn.net/Articles/340080 (2009)
