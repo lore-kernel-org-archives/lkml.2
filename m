@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab1J1NWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 09:22:31 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58284 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755755Ab1J1NWa (ORCPT
+	id S1755822Ab1J1N2j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 09:28:39 -0400
+Received: from fep16.mx.upcmail.net ([62.179.121.36]:57235 "EHLO
+	fep16.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1J1N2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 09:22:30 -0400
-Date: Fri, 28 Oct 2011 21:22:13 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux-kernel@vger.kernel.org, Keith Packard <keithp@keithp.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [Known BUG?] i915 hang on 3.0.0-12 (Ubuntu 11.10 release)
-Message-ID: <20111028132213.GA6003@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111028122235.GA5593@zhy>
- <e0d58a$21chp4@orsmga002.jf.intel.com>
+	Fri, 28 Oct 2011 09:28:38 -0400
+X-SourceIP: 14.96.114.90
+X-Authenticated-Sender: w.sleegers1@chello.nl
+Reply-To: <update60@gra1m.net>
+From: "OCTOBER PROMO" <info@beam.com>
+Subject: Microsoft is paying you
+Date: Fri, 28 Oct 2011 18:58:28 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <e0d58a$21chp4@orsmga002.jf.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20111028132834.TNGZ1962.viefep16-int.chello.at@edge01.upcmail.net>
+X-Cloudmark-Analysis: v=1.1 cv=jqrf5qXv5urL2URZ3a9OklEvUdrM81ZtB3GWlHLPCVk= c=1 sm=0 a=Dyoqhi_TatcA:10 a=NXj5hmW9Yy4A:10 a=wJtiXpwJxLAA:10 a=8EU9Q7FnrCoA:10 a=rzBr93XoTPcA:10 a=Cfj4BQAnxiAA:10 a=8oaNKCbgBYfM_cCFyNsA:9 a=aOTMHLzhXkxofBuFssUA:7 a=Ft8UYL4EG9YA:10 a=yrSFLfv2kfCmTRL8:21 a=NUtZzPbqEvmpnzp5:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 01:56:39PM +0100, Chris Wilson wrote:
-> On Fri, 28 Oct 2011 20:22:35 +0800, Yong Zhang <yong.zhang0@gmail.com> wrote:
-> > Hi,
-> > 
-> > Just got below error on Ubuntu-11.10 (kernel: 3.0.0-12-generic),
-> > and after that my screen can't show normally.
-> > No sure if it's a known issue.
-> 
-> No, that is the first time I've seen that. It looks as if the fence was
-> not released, or reacquired, before the the batch was executed. (There
-> is a later batch that also uses this buffer.)
-> 
-> The fence is programmed with:
->   fence[15] = 04e00001
->     valid, x-tiled, pitch: 512, start: 0x04e00000, size: 1048576
-> 
-> And the BLT command uses:
->   0x0df006b0:      0x54300004: XY_COLOR_BLT (rgb enabled, alpha enabled, dst tile 
-> 0)
->   0x0df006b4:      0x03f00100:    format 8888, pitch 256, clipping disabled
->   0x0df006b8:      0x00000000:    (0,0)
->   0x0df006bc:      0x00140037:    (55,20)
->   0x0df006c0:      0x04e00000:    offset 0x04e00000
->   0x0df006c4:      0x00000000:    color
->   0x0df006c8:      0x54f00006: XY_SRC_COPY_BLT (rgb enabled, alpha enabled, src tile 0, dst tile 0)
->   0x0df006cc:      0x03cc0100:    format 8888, dst pitch 256, clipping disabled
->   0x0df006d0:      0x00000000:    dst (0,0)
->   0x0df006d4:      0x00140037:    dst (55,20)
->   0x0df006d8:      0x04e00000:    dst offset 0x04e00000
->   0x0df006dc:      0x012c0003:    src (3,300)
->   0x0df006e0:      0x00000400:    src pitch 1024
->   0x0df006e4:      0x08500000:    src offset 0x08500000
-> 
-> So we try to perform an undefined operation and the GPU hangs. I suspect
-> this will be timing dependent, but if you can find a way to reproduce
-> it, that would be very useful.
+YOUR EMAIL BOX HAS WON 1,000,000.00 GBP in the British MICRO-SOFT ONLINE PROMO 2011.
 
-Just got it by accident when I'm browsing web with firefox & chromium,
-and the machine has been running for a long time.
 
-No reliable way to reproduce it for now :(
+You have been advised to furnish the following details below to enable the
+immediate processing of your Winning payment ASAP.
+===========================================================
+REQUIRED DATA VERIFICATION FORM TO CLAIM YOUR WINNING PRIZE
+===========================================================
+1. Full Name: ......................
+2. Address: ........................
+3. Marital Status: .................
+4. Occupation: .....................
+5. Age: ............................
+6. Sex: ............................
+7. Nationality: ....................
+8. Tel: ............................
 
-Thanks,
-Yong
+Mr. Terry William
+Online Co-ordinator
+---------------------------------------------
+NOTICE:
+* This is NOT a SPAM Email
+* The wining Information contained in this e-mail is private and
+confidential.
+* If you are not the intended recipient, note that any review, dissemination
+ or copying of this e-mail and information contained herein is prohibited.
+* If you have received this e-mail in error, please immediately notify the
+sender by return e-mail and delete this e-mail from your computer system.
