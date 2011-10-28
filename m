@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab1J1MgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:36:03 -0400
+	id S932912Ab1J1MgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:36:17 -0400
 Received: from mga03.intel.com ([143.182.124.21]:24307 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932839Ab1J1Mf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:35:59 -0400
+	id S932850Ab1J1MgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 08:36:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,418,1315206000"; 
-   d="scan'208";a="68013638"
+   d="scan'208";a="68013686"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv6 13/19] usb: otg: ulpi: Start using struct usb_otg
-Date: Fri, 28 Oct 2011 15:35:19 +0300
-Message-Id: <1319805325-24689-14-git-send-email-heikki.krogerus@linux.intel.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [PATCHv6 19/19] usb: otg: Convert all users to pass struct usb_otg for OTG functions
+Date: Fri, 28 Oct 2011 15:35:25 +0300
+Message-Id: <1319805325-24689-20-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -22,374 +23,505 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use struct usb_otg members with OTG specific functions instead
-of usb_phy members.
+This changes the otg functions so that they receive struct
+otg instead of struct usb_phy as parameter and
+converts all users of these functions to pass the otg member
+of their usb_phy.
+
+Includes fixes to IMX code from Sascha Hauer.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Acked-by: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- arch/arm/mach-pxa/pxa3xx-ulpi.c       |    6 +-
- arch/arm/plat-mxc/include/mach/ulpi.h |    2 +-
- arch/arm/plat-mxc/ulpi.c              |    2 +-
- drivers/usb/otg/ulpi.c                |  114 ++++++++++++++++++---------------
- drivers/usb/otg/ulpi_viewport.c       |    2 +-
- include/linux/usb/ulpi.h              |    4 +-
- 6 files changed, 71 insertions(+), 59 deletions(-)
+ arch/arm/mach-pxa/pxa3xx-ulpi.c   |    8 ++++----
+ drivers/usb/gadget/ci13xxx_udc.c  |    7 ++++---
+ drivers/usb/gadget/fsl_udc_core.c |    5 +++--
+ drivers/usb/gadget/langwell_udc.c |    2 +-
+ drivers/usb/gadget/omap_udc.c     |    7 ++++---
+ drivers/usb/gadget/pxa25x_udc.c   |    5 +++--
+ drivers/usb/gadget/pxa27x_udc.c   |    5 +++--
+ drivers/usb/host/ehci-fsl.c       |    4 ++--
+ drivers/usb/host/ehci-hub.c       |    2 +-
+ drivers/usb/host/ehci-msm.c       |    4 ++--
+ drivers/usb/host/ehci-mxc.c       |    2 +-
+ drivers/usb/host/ehci-tegra.c     |    6 +++---
+ drivers/usb/host/ohci-omap.c      |    6 +++---
+ drivers/usb/musb/musb_core.c      |    2 +-
+ drivers/usb/musb/musb_gadget.c    |   11 ++++++-----
+ drivers/usb/musb/omap2430.c       |    8 ++++----
+ include/linux/usb/otg.h           |   30 +++++++++++++++---------------
+ 17 files changed, 60 insertions(+), 54 deletions(-)
 
 diff --git a/arch/arm/mach-pxa/pxa3xx-ulpi.c b/arch/arm/mach-pxa/pxa3xx-ulpi.c
-index 83e185d..a299e11 100644
+index a299e11..e385dde 100644
 --- a/arch/arm/mach-pxa/pxa3xx-ulpi.c
 +++ b/arch/arm/mach-pxa/pxa3xx-ulpi.c
-@@ -111,7 +111,7 @@ static int pxa310_ulpi_write(struct usb_phy *otg, u32 val, u32 reg)
- 	return pxa310_ulpi_poll();
- }
+@@ -145,13 +145,13 @@ static int pxa310_start_otg_host_transcvr(struct usb_bus *host)
+ 		return err;
+ 	}
  
--struct otg_io_access_ops pxa310_ulpi_access_ops = {
-+struct usb_phy_io_ops pxa310_ulpi_access_ops = {
- 	.read	= pxa310_ulpi_read,
- 	.write	= pxa310_ulpi_write,
- };
-@@ -139,7 +139,7 @@ static int pxa310_start_otg_host_transcvr(struct usb_bus *host)
+-	err = otg_set_vbus(u2d->otg, 1);
++	err = otg_set_vbus(u2d->otg->otg, 1);
+ 	if (err) {
+ 		pr_err("OTG transceiver VBUS set failed");
+ 		return err;
+ 	}
  
+-	err = otg_set_host(u2d->otg, host);
++	err = otg_set_host(u2d->otg->otg, host);
+ 	if (err)
+ 		pr_err("OTG transceiver Host mode set failed");
+ 
+@@ -189,8 +189,8 @@ static void pxa310_stop_otg_hc(void)
+ {
  	pxa310_otg_transceiver_rtsm();
  
--	err = otg_init(u2d->otg);
-+	err = usb_phy_init(u2d->otg);
- 	if (err) {
- 		pr_err("OTG transceiver init failed");
- 		return err;
-@@ -191,7 +191,7 @@ static void pxa310_stop_otg_hc(void)
- 
- 	otg_set_host(u2d->otg, NULL);
- 	otg_set_vbus(u2d->otg, 0);
--	otg_shutdown(u2d->otg);
-+	usb_phy_shutdown(u2d->otg);
+-	otg_set_host(u2d->otg, NULL);
+-	otg_set_vbus(u2d->otg, 0);
++	otg_set_host(u2d->otg->otg, NULL);
++	otg_set_vbus(u2d->otg->otg, 0);
+ 	usb_phy_shutdown(u2d->otg);
  }
  
- static void pxa310_u2d_setup_otg_hc(void)
-diff --git a/arch/arm/plat-mxc/include/mach/ulpi.h b/arch/arm/plat-mxc/include/mach/ulpi.h
-index d39d94a..42bdaca 100644
---- a/arch/arm/plat-mxc/include/mach/ulpi.h
-+++ b/arch/arm/plat-mxc/include/mach/ulpi.h
-@@ -10,7 +10,7 @@ static inline struct usb_phy *imx_otg_ulpi_create(unsigned int flags)
- }
- #endif
+diff --git a/drivers/usb/gadget/ci13xxx_udc.c b/drivers/usb/gadget/ci13xxx_udc.c
+index 8361c9d..9b8ea7b 100644
+--- a/drivers/usb/gadget/ci13xxx_udc.c
++++ b/drivers/usb/gadget/ci13xxx_udc.c
+@@ -2911,7 +2911,8 @@ static int udc_probe(struct ci13xxx_udc_driver *driver, struct device *dev,
+ 		goto unreg_device;
  
--extern struct otg_io_access_ops mxc_ulpi_access_ops;
-+extern struct usb_phy_io_ops mxc_ulpi_access_ops;
+ 	if (udc->transceiver) {
+-		retval = otg_set_peripheral(udc->transceiver, &udc->gadget);
++		retval = otg_set_peripheral(udc->transceiver->otg,
++						&udc->gadget);
+ 		if (retval)
+ 			goto remove_dbg;
+ 	}
+@@ -2928,7 +2929,7 @@ static int udc_probe(struct ci13xxx_udc_driver *driver, struct device *dev,
  
- #endif /* __MACH_ULPI_H */
+ remove_trans:
+ 	if (udc->transceiver) {
+-		otg_set_peripheral(udc->transceiver, &udc->gadget);
++		otg_set_peripheral(udc->transceiver->otg, &udc->gadget);
+ 		usb_put_transceiver(udc->transceiver);
+ 	}
  
-diff --git a/arch/arm/plat-mxc/ulpi.c b/arch/arm/plat-mxc/ulpi.c
-index 8eeeb6b..d296342 100644
---- a/arch/arm/plat-mxc/ulpi.c
-+++ b/arch/arm/plat-mxc/ulpi.c
-@@ -106,7 +106,7 @@ static int ulpi_write(struct usb_phy *otg, u32 val, u32 reg)
- 	return ulpi_poll(view, ULPIVW_RUN);
- }
+@@ -2964,7 +2965,7 @@ static void udc_remove(void)
+ 	usb_del_gadget_udc(&udc->gadget);
  
--struct otg_io_access_ops mxc_ulpi_access_ops = {
-+struct usb_phy_io_ops mxc_ulpi_access_ops = {
- 	.read	= ulpi_read,
- 	.write	= ulpi_write,
- };
-diff --git a/drivers/usb/otg/ulpi.c b/drivers/usb/otg/ulpi.c
-index abc2339..b109258 100644
---- a/drivers/usb/otg/ulpi.c
-+++ b/drivers/usb/otg/ulpi.c
-@@ -48,31 +48,31 @@ static struct ulpi_info ulpi_ids[] = {
- 	ULPI_INFO(ULPI_ID(0x0424, 0x0006), "SMSC USB331x"),
- };
+ 	if (udc->transceiver) {
+-		otg_set_peripheral(udc->transceiver, &udc->gadget);
++		otg_set_peripheral(udc->transceiver->otg, &udc->gadget);
+ 		usb_put_transceiver(udc->transceiver);
+ 	}
+ #ifdef CONFIG_USB_GADGET_DEBUG_FILES
+diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
+index e58484c..bb50502 100644
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -1971,7 +1971,8 @@ static int fsl_start(struct usb_gadget_driver *driver,
  
--static int ulpi_set_otg_flags(struct usb_phy *otg)
-+static int ulpi_set_otg_flags(struct usb_phy *xceiv)
- {
- 	unsigned int flags = ULPI_OTG_CTRL_DP_PULLDOWN |
- 			     ULPI_OTG_CTRL_DM_PULLDOWN;
+ 		/* connect to bus through transceiver */
+ 		if (udc_controller->transceiver) {
+-			retval = otg_set_peripheral(udc_controller->transceiver,
++			retval = otg_set_peripheral(
++					udc_controller->transceiver->otg,
+ 						    &udc_controller->gadget);
+ 			if (retval < 0) {
+ 				ERR("can't bind to transceiver\n");
+@@ -2011,7 +2012,7 @@ static int fsl_stop(struct usb_gadget_driver *driver)
+ 		return -EINVAL;
  
--	if (otg->flags & ULPI_OTG_ID_PULLUP)
-+	if (xceiv->flags & ULPI_OTG_ID_PULLUP)
- 		flags |= ULPI_OTG_CTRL_ID_PULLUP;
+ 	if (udc_controller->transceiver)
+-		otg_set_peripheral(udc_controller->transceiver, NULL);
++		otg_set_peripheral(udc_controller->transceiver->otg, NULL);
  
- 	/*
- 	 * ULPI Specification rev.1.1 default
- 	 * for Dp/DmPulldown is enabled.
- 	 */
--	if (otg->flags & ULPI_OTG_DP_PULLDOWN_DIS)
-+	if (xceiv->flags & ULPI_OTG_DP_PULLDOWN_DIS)
- 		flags &= ~ULPI_OTG_CTRL_DP_PULLDOWN;
+ 	/* stop DR, disable intr */
+ 	dr_controller_stop(udc_controller);
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index a0bbf56..30496c2 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -1912,7 +1912,7 @@ static int langwell_stop(struct usb_gadget *g,
  
--	if (otg->flags & ULPI_OTG_DM_PULLDOWN_DIS)
-+	if (xceiv->flags & ULPI_OTG_DM_PULLDOWN_DIS)
- 		flags &= ~ULPI_OTG_CTRL_DM_PULLDOWN;
+ 	/* unbind OTG transceiver */
+ 	if (dev->transceiver)
+-		(void)otg_set_peripheral(dev->transceiver, 0);
++		(void)otg_set_peripheral(dev->transceiver->otg, 0);
  
--	if (otg->flags & ULPI_OTG_EXTVBUSIND)
-+	if (xceiv->flags & ULPI_OTG_EXTVBUSIND)
- 		flags |= ULPI_OTG_CTRL_EXTVBUSIND;
+ 	/* disable interrupt and set controller to stop state */
+ 	langwell_udc_stop(dev);
+diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_udc.c
+index 5b5c355..115b741 100644
+--- a/drivers/usb/gadget/omap_udc.c
++++ b/drivers/usb/gadget/omap_udc.c
+@@ -1213,7 +1213,7 @@ static int omap_wakeup(struct usb_gadget *gadget)
+ 	/* NOTE:  non-OTG systems may use SRP TOO... */
+ 	} else if (!(udc->devstat & UDC_ATT)) {
+ 		if (udc->transceiver)
+-			retval = otg_start_srp(udc->transceiver);
++			retval = otg_start_srp(udc->transceiver->otg);
+ 	}
+ 	spin_unlock_irqrestore(&udc->lock, flags);
  
--	return otg_io_write(otg, flags, ULPI_OTG_CTRL);
-+	return usb_phy_io_write(xceiv, flags, ULPI_OTG_CTRL);
- }
+@@ -2156,7 +2156,8 @@ static int omap_udc_start(struct usb_gadget_driver *driver,
  
--static int ulpi_set_fc_flags(struct usb_phy *otg)
-+static int ulpi_set_fc_flags(struct usb_phy *xceiv)
- {
- 	unsigned int flags = 0;
+ 	/* connect to bus through transceiver */
+ 	if (udc->transceiver) {
+-		status = otg_set_peripheral(udc->transceiver, &udc->gadget);
++		status = otg_set_peripheral(udc->transceiver->otg,
++						&udc->gadget);
+ 		if (status < 0) {
+ 			ERR("can't bind to transceiver\n");
+ 			if (driver->unbind) {
+@@ -2202,7 +2203,7 @@ static int omap_udc_stop(struct usb_gadget_driver *driver)
+ 		omap_vbus_session(&udc->gadget, 0);
  
-@@ -80,27 +80,27 @@ static int ulpi_set_fc_flags(struct usb_phy *otg)
- 	 * ULPI Specification rev.1.1 default
- 	 * for XcvrSelect is Full Speed.
- 	 */
--	if (otg->flags & ULPI_FC_HS)
-+	if (xceiv->flags & ULPI_FC_HS)
- 		flags |= ULPI_FUNC_CTRL_HIGH_SPEED;
--	else if (otg->flags & ULPI_FC_LS)
-+	else if (xceiv->flags & ULPI_FC_LS)
- 		flags |= ULPI_FUNC_CTRL_LOW_SPEED;
--	else if (otg->flags & ULPI_FC_FS4LS)
-+	else if (xceiv->flags & ULPI_FC_FS4LS)
- 		flags |= ULPI_FUNC_CTRL_FS4LS;
+ 	if (udc->transceiver)
+-		(void) otg_set_peripheral(udc->transceiver, NULL);
++		(void) otg_set_peripheral(udc->transceiver->otg, NULL);
  	else
- 		flags |= ULPI_FUNC_CTRL_FULL_SPEED;
+ 		pullup_disable(udc);
  
--	if (otg->flags & ULPI_FC_TERMSEL)
-+	if (xceiv->flags & ULPI_FC_TERMSEL)
- 		flags |= ULPI_FUNC_CTRL_TERMSELECT;
+diff --git a/drivers/usb/gadget/pxa25x_udc.c b/drivers/usb/gadget/pxa25x_udc.c
+index 162c2cc..d6b2986 100644
+--- a/drivers/usb/gadget/pxa25x_udc.c
++++ b/drivers/usb/gadget/pxa25x_udc.c
+@@ -1301,7 +1301,8 @@ fail:
  
- 	/*
- 	 * ULPI Specification rev.1.1 default
- 	 * for OpMode is Normal Operation.
- 	 */
--	if (otg->flags & ULPI_FC_OP_NODRV)
-+	if (xceiv->flags & ULPI_FC_OP_NODRV)
- 		flags |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
--	else if (otg->flags & ULPI_FC_OP_DIS_NRZI)
-+	else if (xceiv->flags & ULPI_FC_OP_DIS_NRZI)
- 		flags |= ULPI_FUNC_CTRL_OPMODE_DISABLE_NRZI;
--	else if (otg->flags & ULPI_FC_OP_NSYNC_NEOP)
-+	else if (xceiv->flags & ULPI_FC_OP_NSYNC_NEOP)
- 		flags |= ULPI_FUNC_CTRL_OPMODE_NOSYNC_NOEOP;
- 	else
- 		flags |= ULPI_FUNC_CTRL_OPMODE_NORMAL;
-@@ -111,54 +111,54 @@ static int ulpi_set_fc_flags(struct usb_phy *otg)
- 	 */
- 	flags |= ULPI_FUNC_CTRL_SUSPENDM;
+ 	/* connect to bus through transceiver */
+ 	if (dev->transceiver) {
+-		retval = otg_set_peripheral(dev->transceiver, &dev->gadget);
++		retval = otg_set_peripheral(dev->transceiver->otg,
++						&dev->gadget);
+ 		if (retval) {
+ 			DMSG("can't bind to transceiver\n");
+ 			if (driver->unbind)
+@@ -1360,7 +1361,7 @@ static int pxa25x_stop(struct usb_gadget_driver *driver)
+ 	local_irq_enable();
  
--	return otg_io_write(otg, flags, ULPI_FUNC_CTRL);
-+	return usb_phy_io_write(xceiv, flags, ULPI_FUNC_CTRL);
- }
+ 	if (dev->transceiver)
+-		(void) otg_set_peripheral(dev->transceiver, NULL);
++		(void) otg_set_peripheral(dev->transceiver->otg, NULL);
  
--static int ulpi_set_ic_flags(struct usb_phy *otg)
-+static int ulpi_set_ic_flags(struct usb_phy *xceiv)
- {
- 	unsigned int flags = 0;
+ 	driver->unbind(&dev->gadget);
+ 	dev->gadget.dev.driver = NULL;
+diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
+index da8c6b8..d62366b 100644
+--- a/drivers/usb/gadget/pxa27x_udc.c
++++ b/drivers/usb/gadget/pxa27x_udc.c
+@@ -1835,7 +1835,8 @@ static int pxa27x_udc_start(struct usb_gadget_driver *driver,
+ 		driver->driver.name);
  
--	if (otg->flags & ULPI_IC_AUTORESUME)
-+	if (xceiv->flags & ULPI_IC_AUTORESUME)
- 		flags |= ULPI_IFC_CTRL_AUTORESUME;
+ 	if (udc->transceiver) {
+-		retval = otg_set_peripheral(udc->transceiver, &udc->gadget);
++		retval = otg_set_peripheral(udc->transceiver->otg,
++						&udc->gadget);
+ 		if (retval) {
+ 			dev_err(udc->dev, "can't bind to transceiver\n");
+ 			goto transceiver_fail;
+@@ -1908,7 +1909,7 @@ static int pxa27x_udc_stop(struct usb_gadget_driver *driver)
+ 		 driver->driver.name);
  
--	if (otg->flags & ULPI_IC_EXTVBUS_INDINV)
-+	if (xceiv->flags & ULPI_IC_EXTVBUS_INDINV)
- 		flags |= ULPI_IFC_CTRL_EXTERNAL_VBUS;
- 
--	if (otg->flags & ULPI_IC_IND_PASSTHRU)
-+	if (xceiv->flags & ULPI_IC_IND_PASSTHRU)
- 		flags |= ULPI_IFC_CTRL_PASSTHRU;
- 
--	if (otg->flags & ULPI_IC_PROTECT_DIS)
-+	if (xceiv->flags & ULPI_IC_PROTECT_DIS)
- 		flags |= ULPI_IFC_CTRL_PROTECT_IFC_DISABLE;
- 
--	return otg_io_write(otg, flags, ULPI_IFC_CTRL);
-+	return usb_phy_io_write(xceiv, flags, ULPI_IFC_CTRL);
- }
- 
--static int ulpi_set_flags(struct usb_phy *otg)
-+static int ulpi_set_flags(struct usb_phy *xceiv)
- {
- 	int ret;
- 
--	ret = ulpi_set_otg_flags(otg);
-+	ret = ulpi_set_otg_flags(xceiv);
- 	if (ret)
- 		return ret;
- 
--	ret = ulpi_set_ic_flags(otg);
-+	ret = ulpi_set_ic_flags(xceiv);
- 	if (ret)
- 		return ret;
- 
--	return ulpi_set_fc_flags(otg);
-+	return ulpi_set_fc_flags(xceiv);
- }
- 
--static int ulpi_check_integrity(struct usb_phy *otg)
-+static int ulpi_check_integrity(struct usb_phy *xceiv)
- {
- 	int ret, i;
- 	unsigned int val = 0x55;
- 
- 	for (i = 0; i < 2; i++) {
--		ret = otg_io_write(otg, val, ULPI_SCRATCH);
-+		ret = usb_phy_io_write(xceiv, val, ULPI_SCRATCH);
- 		if (ret < 0)
- 			return ret;
- 
--		ret = otg_io_read(otg, ULPI_SCRATCH);
-+		ret = usb_phy_io_read(xceiv, ULPI_SCRATCH);
- 		if (ret < 0)
- 			return ret;
- 
-@@ -174,13 +174,13 @@ static int ulpi_check_integrity(struct usb_phy *otg)
+ 	if (udc->transceiver)
+-		return otg_set_peripheral(udc->transceiver, NULL);
++		return otg_set_peripheral(udc->transceiver->otg, NULL);
  	return 0;
  }
  
--static int ulpi_init(struct usb_phy *otg)
-+static int ulpi_init(struct usb_phy *xceiv)
- {
- 	int i, vid, pid, ret;
- 	u32 ulpi_id = 0;
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index 72edcd2..7c138a6 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -147,7 +147,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
+ 			hcd, ehci, ehci->transceiver);
  
- 	for (i = 0; i < 4; i++) {
--		ret = otg_io_read(otg, ULPI_PRODUCT_ID_HIGH - i);
-+		ret = usb_phy_io_read(xceiv, ULPI_PRODUCT_ID_HIGH - i);
- 		if (ret < 0)
- 			return ret;
- 		ulpi_id = (ulpi_id << 8) | ret;
-@@ -198,16 +198,17 @@ static int ulpi_init(struct usb_phy *otg)
+ 		if (ehci->transceiver) {
+-			retval = otg_set_host(ehci->transceiver,
++			retval = otg_set_host(ehci->transceiver->otg,
+ 					      &ehci_to_hcd(ehci)->self);
+ 			if (retval) {
+ 				if (ehci->transceiver)
+@@ -194,7 +194,7 @@ static void usb_hcd_fsl_remove(struct usb_hcd *hcd,
+ 	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+ 
+ 	if (ehci->transceiver) {
+-		otg_set_host(ehci->transceiver, NULL);
++		otg_set_host(ehci->transceiver->otg, NULL);
+ 		put_device(ehci->transceiver->dev);
+ 	}
+ 
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index 77bbb23..75a2b30 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -727,7 +727,7 @@ static int ehci_hub_control (
+ #ifdef CONFIG_USB_OTG
+ 			if ((hcd->self.otg_port == (wIndex + 1))
+ 			    && hcd->self.b_hnp_enable) {
+-				otg_start_hnp(ehci->transceiver);
++				otg_start_hnp(ehci->transceiver->otg);
+ 				break;
+ 			}
+ #endif
+diff --git a/drivers/usb/host/ehci-msm.c b/drivers/usb/host/ehci-msm.c
+index bb97dc3..b909430 100644
+--- a/drivers/usb/host/ehci-msm.c
++++ b/drivers/usb/host/ehci-msm.c
+@@ -152,7 +152,7 @@ static int ehci_msm_probe(struct platform_device *pdev)
+ 		goto unmap;
+ 	}
+ 
+-	ret = otg_set_host(xceiv, &hcd->self);
++	ret = otg_set_host(xceiv->otg, &hcd->self);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "unable to register with transceiver\n");
+ 		goto put_transceiver;
+@@ -186,7 +186,7 @@ static int __devexit ehci_msm_remove(struct platform_device *pdev)
+ 	pm_runtime_disable(&pdev->dev);
+ 	pm_runtime_set_suspended(&pdev->dev);
+ 
+-	otg_set_host(xceiv, NULL);
++	otg_set_host(xceiv->otg, NULL);
+ 	usb_put_transceiver(xceiv);
+ 
+ 	usb_put_hcd(hcd);
+diff --git a/drivers/usb/host/ehci-mxc.c b/drivers/usb/host/ehci-mxc.c
+index b762fe0..a797d51 100644
+--- a/drivers/usb/host/ehci-mxc.c
++++ b/drivers/usb/host/ehci-mxc.c
+@@ -226,7 +226,7 @@ static int ehci_mxc_drv_probe(struct platform_device *pdev)
+ 			ret = -ENODEV;
+ 			goto err_add;
  		}
+-		ret = otg_set_vbus(pdata->otg, 1);
++		ret = otg_set_vbus(pdata->otg->otg, 1);
+ 		if (ret) {
+ 			dev_err(dev, "unable to enable vbus on transceiver\n");
+ 			goto err_add;
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 896f0f8..f58698a 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -670,7 +670,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 	if (pdata->operating_mode == TEGRA_USB_OTG) {
+ 		tegra->transceiver = usb_get_transceiver();
+ 		if (tegra->transceiver)
+-			otg_set_host(tegra->transceiver, &hcd->self);
++			otg_set_host(tegra->transceiver->otg, &hcd->self);
  	}
- 
--	ret = ulpi_check_integrity(otg);
-+	ret = ulpi_check_integrity(xceiv);
- 	if (ret)
- 		return ret;
- 
--	return ulpi_set_flags(otg);
-+	return ulpi_set_flags(xceiv);
- }
- 
--static int ulpi_set_host(struct usb_phy *otg, struct usb_bus *host)
-+static int ulpi_set_host(struct usb_otg *otg, struct usb_bus *host)
- {
--	unsigned int flags = otg_io_read(otg, ULPI_IFC_CTRL);
-+	struct usb_phy *xceiv = otg->xceiv;
-+	unsigned int flags = usb_phy_io_read(xceiv, ULPI_IFC_CTRL);
- 
- 	if (!host) {
- 		otg->host = NULL;
-@@ -220,51 +221,62 @@ static int ulpi_set_host(struct usb_phy *otg, struct usb_bus *host)
- 		   ULPI_IFC_CTRL_3_PIN_SERIAL_MODE |
- 		   ULPI_IFC_CTRL_CARKITMODE);
- 
--	if (otg->flags & ULPI_IC_6PIN_SERIAL)
-+	if (xceiv->flags & ULPI_IC_6PIN_SERIAL)
- 		flags |= ULPI_IFC_CTRL_6_PIN_SERIAL_MODE;
--	else if (otg->flags & ULPI_IC_3PIN_SERIAL)
-+	else if (xceiv->flags & ULPI_IC_3PIN_SERIAL)
- 		flags |= ULPI_IFC_CTRL_3_PIN_SERIAL_MODE;
--	else if (otg->flags & ULPI_IC_CARKIT)
-+	else if (xceiv->flags & ULPI_IC_CARKIT)
- 		flags |= ULPI_IFC_CTRL_CARKITMODE;
- 
--	return otg_io_write(otg, flags, ULPI_IFC_CTRL);
-+	return usb_phy_io_write(xceiv, flags, ULPI_IFC_CTRL);
- }
- 
--static int ulpi_set_vbus(struct usb_phy *otg, bool on)
-+static int ulpi_set_vbus(struct usb_otg *otg, bool on)
- {
--	unsigned int flags = otg_io_read(otg, ULPI_OTG_CTRL);
-+	struct usb_phy *xceiv = otg->xceiv;
-+	unsigned int flags = usb_phy_io_read(xceiv, ULPI_OTG_CTRL);
- 
- 	flags &= ~(ULPI_OTG_CTRL_DRVVBUS | ULPI_OTG_CTRL_DRVVBUS_EXT);
- 
- 	if (on) {
--		if (otg->flags & ULPI_OTG_DRVVBUS)
-+		if (xceiv->flags & ULPI_OTG_DRVVBUS)
- 			flags |= ULPI_OTG_CTRL_DRVVBUS;
- 
--		if (otg->flags & ULPI_OTG_DRVVBUS_EXT)
-+		if (xceiv->flags & ULPI_OTG_DRVVBUS_EXT)
- 			flags |= ULPI_OTG_CTRL_DRVVBUS_EXT;
- 	}
- 
--	return otg_io_write(otg, flags, ULPI_OTG_CTRL);
-+	return usb_phy_io_write(xceiv, flags, ULPI_OTG_CTRL);
- }
- 
- struct usb_phy *
--otg_ulpi_create(struct otg_io_access_ops *ops,
-+otg_ulpi_create(struct usb_phy_io_ops *ops,
- 		unsigned int flags)
- {
--	struct usb_phy *otg;
-+	struct usb_phy *xceiv;
-+	struct usb_otg *otg;
-+
-+	xceiv = kzalloc(sizeof(*xceiv), GFP_KERNEL);
-+	if (!xceiv)
-+		return NULL;
- 
- 	otg = kzalloc(sizeof(*otg), GFP_KERNEL);
--	if (!otg)
-+	if (!otg) {
-+		kfree(xceiv);
- 		return NULL;
-+	}
-+
-+	xceiv->label	= "ULPI";
-+	xceiv->flags	= flags;
-+	xceiv->io_ops	= ops;
-+	xceiv->otg	= otg;
-+	xceiv->init	= ulpi_init;
- 
--	otg->label	= "ULPI";
--	otg->flags	= flags;
--	otg->io_ops	= ops;
--	otg->init	= ulpi_init;
-+	otg->xceiv	= xceiv;
- 	otg->set_host	= ulpi_set_host;
- 	otg->set_vbus	= ulpi_set_vbus;
- 
--	return otg;
-+	return xceiv;
- }
- EXPORT_SYMBOL_GPL(otg_ulpi_create);
- 
-diff --git a/drivers/usb/otg/ulpi_viewport.c b/drivers/usb/otg/ulpi_viewport.c
-index e7b311b..c5ba7e5 100644
---- a/drivers/usb/otg/ulpi_viewport.c
-+++ b/drivers/usb/otg/ulpi_viewport.c
-@@ -74,7 +74,7 @@ static int ulpi_viewport_write(struct usb_phy *otg, u32 val, u32 reg)
- 	return ulpi_viewport_wait(view, ULPI_VIEW_RUN);
- }
- 
--struct otg_io_access_ops ulpi_viewport_access_ops = {
-+struct usb_phy_io_ops ulpi_viewport_access_ops = {
- 	.read	= ulpi_viewport_read,
- 	.write	= ulpi_viewport_write,
- };
-diff --git a/include/linux/usb/ulpi.h b/include/linux/usb/ulpi.h
-index 51ebf72..6f033a4 100644
---- a/include/linux/usb/ulpi.h
-+++ b/include/linux/usb/ulpi.h
-@@ -181,12 +181,12 @@
- 
- /*-------------------------------------------------------------------------*/
- 
--struct usb_phy *otg_ulpi_create(struct otg_io_access_ops *ops,
-+struct usb_phy *otg_ulpi_create(struct usb_phy_io_ops *ops,
- 					unsigned int flags);
- 
- #ifdef CONFIG_USB_ULPI_VIEWPORT
- /* access ops for controllers with a viewport register */
--extern struct otg_io_access_ops ulpi_viewport_access_ops;
-+extern struct usb_phy_io_ops ulpi_viewport_access_ops;
  #endif
  
- #endif /* __LINUX_USB_ULPI_H */
+@@ -685,7 +685,7 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ fail:
+ #ifdef CONFIG_USB_OTG_UTILS
+ 	if (tegra->transceiver) {
+-		otg_set_host(tegra->transceiver, NULL);
++		otg_set_host(tegra->transceiver->otg, NULL);
+ 		usb_put_transceiver(tegra->transceiver);
+ 	}
+ #endif
+@@ -743,7 +743,7 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+ 
+ #ifdef CONFIG_USB_OTG_UTILS
+ 	if (tegra->transceiver) {
+-		otg_set_host(tegra->transceiver, NULL);
++		otg_set_host(tegra->transceiver->otg, NULL);
+ 		usb_put_transceiver(tegra->transceiver);
+ 	}
+ #endif
+diff --git a/drivers/usb/host/ohci-omap.c b/drivers/usb/host/ohci-omap.c
+index 1e4aa2a..cc63e46 100644
+--- a/drivers/usb/host/ohci-omap.c
++++ b/drivers/usb/host/ohci-omap.c
+@@ -171,7 +171,7 @@ static void start_hnp(struct ohci_hcd *ohci)
+ 	unsigned long	flags;
+ 	u32 l;
+ 
+-	otg_start_hnp(ohci->transceiver);
++	otg_start_hnp(ohci->transceiver->otg);
+ 
+ 	local_irq_save(flags);
+ 	ohci->transceiver->state = USB_PHY_STATE_A_SUSPEND;
+@@ -212,7 +212,7 @@ static int ohci_omap_init(struct usb_hcd *hcd)
+ 	if (need_transceiver) {
+ 		ohci->transceiver = usb_get_transceiver();
+ 		if (ohci->transceiver) {
+-			int	status = otg_set_host(ohci->transceiver,
++			int	status = otg_set_host(ohci->transceiver->otg,
+ 						&ohci_to_hcd(ohci)->self);
+ 			dev_dbg(hcd->self.controller, "init %s transceiver, status %d\n",
+ 					ohci->transceiver->label, status);
+@@ -404,7 +404,7 @@ usb_hcd_omap_remove (struct usb_hcd *hcd, struct platform_device *pdev)
+ 
+ 	usb_remove_hcd(hcd);
+ 	if (ohci->transceiver) {
+-		(void) otg_set_host(ohci->transceiver, 0);
++		(void) otg_set_host(ohci->transceiver->otg, 0);
+ 		put_device(ohci->transceiver->dev);
+ 	}
+ 	if (machine_is_omap_osk())
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index dd918f0..3278efa 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1971,7 +1971,7 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+ 	if (is_host_enabled(musb)) {
+ 		struct usb_hcd	*hcd = musb_to_hcd(musb);
+ 
+-		otg_set_host(musb->xceiv, &hcd->self);
++		otg_set_host(musb->xceiv->otg, &hcd->self);
+ 
+ 		if (is_otg_enabled(musb))
+ 			hcd->self.otg_port = 1;
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 3a95c6b..2962773 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1626,7 +1626,7 @@ static int musb_gadget_wakeup(struct usb_gadget *gadget)
+ 		}
+ 
+ 		spin_unlock_irqrestore(&musb->lock, flags);
+-		otg_start_srp(musb->xceiv);
++		otg_start_srp(musb->xceiv->otg);
+ 		spin_lock_irqsave(&musb->lock, flags);
+ 
+ 		/* Block idling for at least 1s */
+@@ -1900,6 +1900,7 @@ static int musb_gadget_start(struct usb_gadget *g,
+ 		struct usb_gadget_driver *driver)
+ {
+ 	struct musb		*musb = gadget_to_musb(g);
++	struct usb_otg		*otg = musb->xceiv->otg;
+ 	unsigned long		flags;
+ 	int			retval = -EINVAL;
+ 
+@@ -1916,7 +1917,7 @@ static int musb_gadget_start(struct usb_gadget *g,
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	musb->is_active = 1;
+ 
+-	otg_set_peripheral(musb->xceiv, &musb->g);
++	otg_set_peripheral(otg, &musb->g);
+ 	musb->xceiv->state = USB_PHY_STATE_B_IDLE;
+ 
+ 	/*
+@@ -1947,8 +1948,8 @@ static int musb_gadget_start(struct usb_gadget *g,
+ 		}
+ 
+ 		if ((musb->xceiv->last_event == USB_EVENT_ID)
+-					&& musb->xceiv->set_vbus)
+-			otg_set_vbus(musb->xceiv, 1);
++					&& otg->set_vbus)
++			otg_set_vbus(otg, 1);
+ 
+ 		hcd->self.uses_pio_for_control = 1;
+ 	}
+@@ -2034,7 +2035,7 @@ static int musb_gadget_stop(struct usb_gadget *g,
+ 
+ 	musb->xceiv->state = USB_PHY_STATE_UNDEFINED;
+ 	stop_activity(musb, driver);
+-	otg_set_peripheral(musb->xceiv, NULL);
++	otg_set_peripheral(musb->xceiv->otg, NULL);
+ 
+ 	dev_dbg(musb->controller, "unregistering driver %s\n", driver->function);
+ 
+diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+index f61afc9..fc9377c 100644
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -165,8 +165,8 @@ static void omap2430_musb_set_vbus(struct musb *musb, int is_on)
+ 				}
+ 			}
+ 
+-			if (ret && musb->xceiv->set_vbus)
+-				otg_set_vbus(musb->xceiv, 1);
++			if (ret && otg->set_vbus)
++				otg_set_vbus(otg, 1);
+ 		} else {
+ 			musb->is_active = 1;
+ 			otg->default_a = 1;
+@@ -268,8 +268,8 @@ static int musb_otg_notifications(struct notifier_block *nb,
+ 			}
+ 
+ 		if (data->interface_type == MUSB_INTERFACE_UTMI) {
+-			if (musb->xceiv->set_vbus)
+-				otg_set_vbus(musb->xceiv, 0);
++			if (musb->xceiv->otg->set_vbus)
++				otg_set_vbus(musb->xceiv->otg, 0);
+ 		}
+ 		usb_phy_shutdown(musb->xceiv);
+ 		break;
+diff --git a/include/linux/usb/otg.h b/include/linux/usb/otg.h
+index ff47067..1f7661f 100644
+--- a/include/linux/usb/otg.h
++++ b/include/linux/usb/otg.h
+@@ -192,30 +192,30 @@ static inline const char *usb_phy_state_string(enum usb_phy_state state)
+ 
+ /* Context: can sleep */
+ static inline int
+-otg_start_hnp(struct usb_phy *x)
++otg_start_hnp(struct usb_otg *otg)
+ {
+-	if (x->otg && x->otg->start_hnp)
+-		return x->otg->start_hnp(x->otg);
++	if (otg && otg->start_hnp)
++		return otg->start_hnp(otg);
+ 
+ 	return -ENOTSUPP;
+ }
+ 
+ /* Context: can sleep */
+ static inline int
+-otg_set_vbus(struct usb_phy *x, bool enabled)
++otg_set_vbus(struct usb_otg *otg, bool enabled)
+ {
+-	if (x->otg && x->otg->set_vbus)
+-		return x->otg->set_vbus(x->otg, enabled);
++	if (otg && otg->set_vbus)
++		return otg->set_vbus(otg, enabled);
+ 
+ 	return -ENOTSUPP;
+ }
+ 
+ /* for HCDs */
+ static inline int
+-otg_set_host(struct usb_phy *x, struct usb_bus *host)
++otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ {
+-	if (x->otg && x->otg->set_host)
+-		return x->otg->set_host(x->otg, host);
++	if (otg && otg->set_host)
++		return otg->set_host(otg, host);
+ 
+ 	return -ENOTSUPP;
+ }
+@@ -224,10 +224,10 @@ otg_set_host(struct usb_phy *x, struct usb_bus *host)
+ 
+ /* Context: can sleep */
+ static inline int
+-otg_set_peripheral(struct usb_phy *x, struct usb_gadget *periph)
++otg_set_peripheral(struct usb_otg *otg, struct usb_gadget *periph)
+ {
+-	if (x->otg && x->otg->set_peripheral)
+-		return x->otg->set_peripheral(x->otg, periph);
++	if (otg && otg->set_peripheral)
++		return otg->set_peripheral(otg, periph);
+ 
+ 	return -ENOTSUPP;
+ }
+@@ -251,10 +251,10 @@ usb_phy_set_suspend(struct usb_phy *x, int suspend)
+ }
+ 
+ static inline int
+-otg_start_srp(struct usb_phy *x)
++otg_start_srp(struct usb_otg *otg)
+ {
+-	if (x->otg && x->otg->start_srp)
+-		return x->otg->start_srp(x->otg);
++	if (otg && otg->start_srp)
++		return otg->start_srp(otg);
+ 
+ 	return -ENOTSUPP;
+ }
 -- 
 1.7.4.1
 
