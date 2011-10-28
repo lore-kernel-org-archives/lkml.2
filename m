@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab1J1Jag (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 05:30:36 -0400
-Received: from office.intopix.com ([212.166.54.212]:44920 "EHLO
-	office.intopix.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab1J1Jaf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 05:30:35 -0400
-From: Charles Buysschaert <Charles.Buysschaert@intopix.com>
-To: Matthias Schniedermeyer <ms@citd.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Speed of RAM reserved with memmap kernel command line option.
-Thread-Topic: Speed of RAM reserved with memmap kernel command line option.
-Thread-Index: AcyMoYqk4aToPCQsSBu7Gz7pox+iqAAHaCoAAiR2u0A=
-Date: Fri, 28 Oct 2011 09:30:22 +0000
-Message-ID: <894F5F1132E3C5458AAB08FA0A1AC9380F1E9AFF@IPX-MAIL.Intopix.com>
-References: <894F5F1132E3C5458AAB08FA0A1AC9380F1E2F12@IPX-MAIL.Intopix.com>
- <20111017132318.GA9098@citd.de>
-In-Reply-To: <20111017132318.GA9098@citd.de>
-Accept-Language: en-US, fr-BE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.128.0.206]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755163Ab1J1Jal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:30:41 -0400
+Received: from fieldses.org ([174.143.236.118]:48081 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753032Ab1J1Jaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 05:30:39 -0400
+Date: Fri, 28 Oct 2011 05:30:36 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3 0/3] SUNRPC: rcbind clients virtualization
+Message-ID: <20111028093036.GA2604@fieldses.org>
+References: <20111027180824.20459.23219.stgit@localhost6.localdomain6>
+ <20111027202514.GA31669@fieldses.org>
+ <4EAA74DD.3070708@parallels.com>
 MIME-Version: 1.0
-X-Intopix-MailScanner: Found to be clean
-X-Intopix-MailScanner-From: charles.buysschaert@intopix.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EAA74DD.3070708@parallels.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Matthias, 
+On Fri, Oct 28, 2011 at 01:24:45PM +0400, Stanislav Kinsbursky wrote:
+> This patch-set was created before you've sent your NFSd plan and we
+> disacussed Lockd per netns.
+> So, this sentence: "NFSd service will be per netns too from my pow"
+> is obsolete. And Lockd will be one for all.
 
-Thanks for your feedback. 
+I believe lockd should be pert-netns--at least that's what the server
+needs.
 
->Smells to me like you are missing a mapping in MTRR ...
->Documentation/x86/mtrr.txt
+(The single lockd thread may handle requests from all netns, but it
+should behave like a different service depending on netns, so its data
+structures, etc. will need to be per-ns.
 
-I checked and those definitely look correct:
+--b.
 
-This is the physical ram map at boot:
-
-[    0.000000] user-defined physical RAM map:
-[    0.000000]  user: 0000000000000000 - 0000000000096800 (usable)
-[    0.000000]  user: 0000000000096800 - 00000000000a0000 (reserved)
-[    0.000000]  user: 00000000000e4c00 - 0000000000100000 (reserved)
-[    0.000000]  user: 0000000000100000 - 0000000040000000 (usable)
-[    0.000000]  user: 0000000040000000 - 0000000060000000 (reserved)
-[    0.000000]  user: 0000000060000000 - 00000000bf780000 (usable)
-[    0.000000]  user: 00000000bf780000 - 00000000bf798000 (ACPI data)
-[    0.000000]  user: 00000000bf798000 - 00000000bf7dc000 (ACPI NVS)
-[    0.000000]  user: 00000000bf7dc000 - 00000000c0000000 (reserved)
-[    0.000000]  user: 00000000fee00000 - 00000000fee01000 (reserved)
-[    0.000000]  user: 00000000ffe00000 - 0000000100000000 (reserved)
-[    0.000000]  user: 0000000100000000 - 00000001c0000000 (usable)
-
-And this is the  MTRR contents.
-
-$ cat /proc/mtrr
-reg00: base=0x1c0000000 ( 7168MB), size= 1024MB, count=1: uncachable
-reg01: base=0x000000000 (    0MB), size= 8192MB, count=1: write-back
-reg02: base=0x0c0000000 ( 3072MB), size= 1024MB, count=1: uncachable
-reg03: base=0x0bf800000 ( 3064MB), size=    8MB, count=1: uncachable
-
-The reserved zone is indeed marked as 'reserved' 512Mb located at 1Go.
-And this zone is
-covered by the reg01 MTRR without being overriden by anyother, so it's 'write-back' which is good.
-
-> ... or PAT.
-> Documentation/x86/pat.txt
-This is also what we tried to set by modifying the protection field given to the remap_pfn_range.
-
-we dumped the kernel_page_tables file provided by "debugfs", and we can see the following entry:
-0xFFFF880040000000 -> 0xFFFF880060000000	512M	RW	PCD	PSE	GLB	NX	pmd
-
-I am not 100% sure it is the mapping of my "0000000040000000" physical address, but it looks like (is there a way to see which physical address it relates to?).
-I can see the flag "PCD" Page Cache Disabled. 
-
-Does the kernel automatically create a mapping for memory reserved with "memmap=" option? 
-Would "aliasing" be the reason why my "remap_pfn_range" seems to ignore the vma->vm_page_prot we are setting? 
-(
-static inline pgprot_t pgprot_cached(pgprot_t _prot)
-{
-    unsigned long prot = pgprot_val(_prot);
-    prot = (prot & ~_CACHE_MASK);
-    return __pgprot(prot);
-}
-vma->vm_page_prot = pgprot_cached(vma->vm_page_prot);
-remap_pfn_range(vma, vma->vm_start, myboard_var[board].dmablkp>>PAGE_SHIFT,DMA_BUFFER_SIZE, vma->vm_page_prot)
-)
-
-Thanks for your help,
-
-
-Charles
-
+> Or you are asking about something else?
+> 
+> >--b.
+> >
+> >>And also we have NFSd file system, which
+> >>is not virtualized yet.
+> >>
+> >>The following series consists of:
+> >>
+> >>---
+> >>
+> >>Stanislav Kinsbursky (3):
+> >>       SUNRPC: move rpcbind internals to sunrpc part of network namespace context
+> >>       SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
+> >>       SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
+> >>
+> >>
+> >>  net/sunrpc/netns.h     |    5 ++
+> >>  net/sunrpc/rpcb_clnt.c |  103 ++++++++++++++++++++++++++----------------------
+> >>  2 files changed, 61 insertions(+), 47 deletions(-)
+> >>
+> >>--
+> >>Signature
+> 
+> 
+> -- 
+> Best regards,
+> Stanislav Kinsbursky
