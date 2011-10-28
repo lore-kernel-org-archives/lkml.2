@@ -1,33 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab1J1W26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 18:28:58 -0400
-Received: from mail.ao-rummo.it ([2.119.136.228]:45790 "EHLO mail.ao-rummo.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933639Ab1J1W24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 18:28:56 -0400
-Message-ID: <20111028175522.2ztmuy6jso804wgc@mail.ao-rummo.it>
-Date: Fri, 28 Oct 2011 17:55:22 +0200
-From: Young Chang <youngch@yahoo.com.hk>
-Reply-to: young.chang15@yahoo.com.hk
-To: undisclosed-recipients:;
-Subject: Re:..
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	id S1756165Ab1J1Wlj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 18:41:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43631 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab1J1Wlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 18:41:39 -0400
+Date: Fri, 28 Oct 2011 15:41:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: holzheu@linux.vnet.ibm.com
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, Dave Hansen <haveblue@us.ibm.com>
+Subject: Re: [PATCH] kdump: Add udev events for memory online/offline
+Message-Id: <20111028154137.1aeb5a6c.akpm@linux-foundation.org>
+In-Reply-To: <1319707965.2830.1.camel@br98xy6r>
+References: <1319645292.3321.24.camel@br98xy6r>
+	<20111026192449.GE355@redhat.com>
+	<20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+	<1319707965.2830.1.camel@br98xy6r>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-Originating-IP: 88.198.96.251
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-May I ask if you would be eligible to pursue a Business Proposal of  
-$19.7m with
-me if you don't mind? Let me know if you are interested?
+On Thu, 27 Oct 2011 11:32:45 +0200
+Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
 
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> Currently no udev events for memory hotplug "online" and "offline" are
+> generated:
+> 
+> # udevadm monitor
+> # echo offline > /sys/devices/system/memory/memory4/state
+> ==> No event
+> 
+> When kdump is loaded, kexec detects the current memory configuration and
+> stores it in the pre-allocated ELF core header. Therefore, for kdump it is
+> necessary to reload the kdump kernel with kexec when the memory
+> configuration changes (e.g. for online/offline hotplug memory).
+> 
+> In order to do this automatically, udev rules should be used. This kernel
+> patch adds udev events for "online" and "offline". Together with this kernel
+> patch, the following udev rules for online/offline have to be added to
+> "/etc/udev/rules.d/98-kexec.rules":
+> 
+> SUBSYSTEM=="memory", ACTION=="online", PROGRAM="/etc/init.d/kdump restart"
+> SUBSYSTEM=="memory", ACTION=="offline", PROGRAM="/etc/init.d/kdump restart"
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  drivers/base/memory.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -310,11 +310,15 @@ store_mem_state(struct sys_device *dev,
+>  
+>  	mem = container_of(dev, struct memory_block, sysdev);
+>  
+> -	if (!strncmp(buf, "online", min((int)count, 6)))
+> +	if (!strncmp(buf, "online", min((int)count, 6))) {
+>  		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
+> -	else if(!strncmp(buf, "offline", min((int)count, 7)))
+> +		if (ret == 0)
+> +			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+> +	} else if (!strncmp(buf, "offline", min((int)count, 7))) {
+>  		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
+> -
+> +		if (ret == 0)
+> +			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+> +	}
 
+ot: what on earth is up with that min() thing which
+Dave-who-doesn't-know-about-min_t added to the strncmp() calls?
 
