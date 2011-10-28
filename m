@@ -1,90 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab1J1IUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:20:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58994 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab1J1IUK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:20:10 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com
-Subject: Re: [PATCH 12/13] vfs: count unlinked inodes
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
-	<1318430946-7091-13-git-send-email-miklos@szeredi.hu>
-	<20111028060801.GA15345@infradead.org>
-	<1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
-	<20111028080445.GA10318@infradead.org>
-Date: Fri, 28 Oct 2011 10:20:06 +0200
-In-Reply-To: <20111028080445.GA10318@infradead.org> (Christoph Hellwig's
-	message of "Fri, 28 Oct 2011 04:04:45 -0400")
-Message-ID: <87hb2t5xzd.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755258Ab1J1IZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:25:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37247 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751689Ab1J1IY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 04:24:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: NeilBrown <neilb@suse.de>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate interfaces
+Date: Fri, 28 Oct 2011 10:27:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Greg KH <greg@kroah.com>
+References: <201110230007.33683.rjw@sisk.pl> <Pine.LNX.4.44L0.1110231122430.4497-100000@netrider.rowland.org> <20111028110215.0cc5175f@notabene.brown>
+In-Reply-To: <20111028110215.0cc5175f@notabene.brown>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201110281027.31071.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> writes:
+On Friday, October 28, 2011, NeilBrown wrote:
+> On Sun, 23 Oct 2011 11:50:40 -0400 (EDT) Alan Stern
+> <stern@rowland.harvard.edu> wrote:
+> 
+> > On Sun, 23 Oct 2011, Rafael J. Wysocki wrote:
+> > 
+> > > Moreover, the race is real, because if you have two processes trying to use
+> > > /sys/power/wakeup_count at the same time, you can get:
+> > > 
+> > > Process A		Process B
+> > > read from wakeup_count
+> > > talk to apps
+> > > write to wakeup_count
+> > > --------- wakeup event ----------
+> > > 			read from wakeup_count
+> > > 			talk to apps
+> > > 			write to wakeup_count
+> > > try to suspend -> success (should be failure, because the wakeup event
+> > > may still be processed by applications at this point and Process A hasn't
+> > > checked that).
+> > > 
+> > > Now, there are systems running two (or more) desktop environments each of
+> > > which has a power manager that may want to suspend on it's own.  They both
+> > > will probably use pm-utils, but then I somehow doubt that pm-utils is well
+> > > prepared to handle such concurrency.
+> > 
+> > I have no objection to adding a kernel-based mechanism for restricting
+> > the suspend interface to one process at a time.  However, that's just
+> > part of your most recent proposal.  The other part involves
+> > coordinating the requirements of all the processes that may want to
+> > prevent the system from suspending, which is a harder job.
+> > 
+> > 
+> > > I have one more rule.  If my would-be user space solution has the following
+> > > properties:
+> > > 
+> > > * It is supposed to be used by all of the existing variants of user space
+> > >   (i.e. all existing variants of user space are expected to use the very same
+> > >   thing).
+> > > 
+> > > * It requires all of those user space variants to be modified to work with it
+> > >   correctly.
+> > > 
+> > > * It includes a daemon process having to be started on boot and run permanently.
+> > > 
+> > > then it likely is better to handle the problem in the kernel.
+> > 
+> > This reasoning doesn't apply to the second problem of allowing
+> > processes to block suspend.  Whether the solution is implemented in the
+> > kernel or as a daemon, other programs will have to be modified to
+> > accomodate it.
+> > 
+> > In fact, if it's done properly then these other programs should each
+> > need only a single set of modifications; the differences involved in 
+> > communicating with the kernel vs. a daemon could be encapsulated in a 
+> > shared library.
+> > 
+> > 
+> > Overall, I think the discussion is getting a little muddled because of
+> > a significant problem that has not yet been addressed sufficiently.
+> > 
+> > There is a big difference between Android's kernel wakelocks and the
+> > currently proposed use of wakeup_sources.  In Android, a kernel
+> > wakelock associated with an input device isn't released until the
+> > device's queue becomes empty, whereas we have been talking about
+> > releasing the corresponding wakeup_source as soon as data added to
+> > the queue becomes visible to userspace.
+> > 
+> > This is quite a significant difference.  It means there's a window of
+> > time (from when the data is added to the queue to when it is removed)  
+> > during which userspace is forced to cope with suspend races, instead of
+> > letting the kernel handle things.  This is what leads to our problems
+> > about sending fd's to the daemon process and sending a request to each
+> > client before the daemon starts a suspend.
+> > 
+> > (Other aspects of this problem that haven't been mentioned before: What
+> > happens when a client program using the notify-fd API wants to close
+> > one of the wakeup-capable fd's?  It would have to tell the daemon to
+> > close its copy of the fd as well.  And likewise, a client would have to 
+> > inform the daemon whenever it opened a new wakeup-capable device file.)
+> 
+> In my current code the client only associates a single event fd with each
+> socket to the server, and when the client closes that socket, the fd gets
+> closed (though there are rough edges I think).
+> Teaching the client to use multiple fds per socket would not be difficult.
+> The biggest challenge would be choosing labels to use to identify the fds so
+> it can ask the server to close them - and that isn't hard.
+> But I certainly agree that this needs to be properly thought through and
+> resolved.
+> 
+> > 
+> > Now, in the end, I think our approach makes more sense in a general 
+> > setting.  The Android approach is okay for a restricted environment 
+> > where you know beforehand exactly which devices will be wakeup-capable 
+> > and which wakeup events will be monitored by userspace programs.  But 
+> > for the whole range of Linux-based systems, the kernel can't rely on 
+> > such information.
+> 
+> I think that is exactly right.  The Android code is understandable written
+> to particularly suit the Android context and may not be generally applicable.
 
-> On Fri, Oct 28, 2011 at 09:53:53AM +0200, Miklos Szeredi wrote:
->> On Fri, 2011-10-28 at 02:08 -0400, Christoph Hellwig wrote:
->> > This one gets me a repeated spew of WARN_ONs during XFS log recover,
->> > repeating the following pattern:
->> 
->> The assumption here is that set_nlink() is called with a non-zero count.
->> The point of introducing set_nlink() was to verify this assumption,
->> otherwise pending delete accounting will be screwed up.
->> 
->> If setting i_nlink to zero is not a bug in xfs we can do two things:
->> 
->>  1) do a conditional clear_nlink() in xfs_setup_inode() to document that
->> nlink can indeed be zero
->> 
->>  2) remove the warning from set_nlink().  That may hide some cases where
->> i_nlink was cleared without the intention of the filesystem but it will
->> work just fine wrt. the pending delete accounting. 
->
-> I suspect 2 might be the better option.  The pattern we see here in
-> XFS is pretty typical for transactional filesytems - when we mount a
-> filesystem after an unclean shutdown we need to drop all inodes that
-> were open but unlinked when the system crashed, and that typically
-> means reading inodes from disk that have a zero i_nlink.  Maybe some
-> filesystems never instanciate a VFS inode for it, but I suspect many
-> do.
->
-> For XFS we will actually see it during regularly testing as we have
-> an ioctl that simulates a shutdown and can thus trigger log recovery
-> easily, while for others like ext4 you'd actually have to do a real
-> reset of your (physical or virtual) machine.
+I'm not sure why the heck this makes any difference.  For now, there doesn't
+seem to be no one else who needs that functionality.  If there were people
+like that we'd see some concurrent approaches appearing, but for now it's only
+us considering the alternatives _theoretically_.
 
-Okay, so a WARN_ON is not warranted.  Perhaps a printk instead?
+Moreover, if somebody who needs similar functionality and for whom the Android
+stuff is not sufficient appears in the future, I don't see why not to address
+his needs _at_ _that_ _time_ instead of trying to anticipate them (which is
+kind of useless anyway, because we have no idea what those needs may be).
 
-While initializing nlink with zero normally shouldn't be a problem it
-might indicate something unexpected.
+> I think the Android folk understand this and don't insist on having exactly
+> that code merged.  They just want the same functionality with the same
+> efficiency without unnecessary change to user-space.
+
+The whole problem is that the Android code is proven to work on lots and
+lots of systems and whatever else we can come up with will not be.
+
+> > 
+> > (If you think back to the original wakelock patches, for example,
+> > you'll remember that the patch descriptions were expressed in terms of
+> > what happens as the screen is turned on and off.  Obviously this is
+> > meaningless for systems that, unlike an Android phone, don't have a
+> > built-in screen.  I complained about this at the time, and the Android
+> > people seemed to have a hard time understanding what I was objecting
+> > to.)
+> > 
+> > So this is really our biggest problem.  If we can figure out a really
+> > good way to solve it, I predict we'll find that the kernel-based and
+> > daemon-based suspend solutions are extremely similar.
+> 
+> Actually I think our biggest problem is - and has always been - communication
+> and understanding :-)
+> 
+> There are probably a dozen or more ways to solve this problem, each of which
+> has some impact on the kernel and some impact on the Android user-space.
+> 
+> We need an effective dialogue (we have had plenty of ineffective dialogue)
+> between people who know and care about Android and people who know and care
+> about the kernel.
+> 
+> I think we are having a useful discussion, but I think it would be much more
+> useful if we had some inside perspective and engagement with Android.
+> 
+> So I have added a Cc to Brian Swetland, hoping - Brian - that you might be
+> able to provide some insight - or maybe tell us where this discussion is
+> already happening and already progressing (maybe I missed something).
+> 
+> I'm particularly interested in:
+>  - is it fair to say that all wakeup events are - or could be - available to
+>    user-space though an 'fd' which reports POLLIN when an event is pending?
+>    If not - could you list some of those other wakeup events?
+>  - does a process that is handling wakeup events always "know" they are (or
+>    could be) wakeup events and so could take some extra action?  (assume for
+>    the moment that the action is free, it just has to be done for fds
+>    receiving wakeup events, and not for other fds).
+>  - How performance-sensitive is the opportunistic suspend event?  i.e. I'm
+>    assuming there are a collection of user-space and kernel-space things that
+>    block and unblock suspend from time to time.  At some point the last block
+>    is removed and the system should then enter suspend.  What sort of latency
+>    is acceptable at that point (microseconds? milliseconds?) and what sort of
+>    frequency would we expect that to happen (100HZ? 10HZ? 1HZ?  0.01HZ??)
+> 
+> I think answers to those would help a lot to parameterise the problem space.
+
+I'm sure they would, but I also think this already has taken too much time -
+and too much pain for people who have to support two different kernels, the
+mainline and the Android one, at the same time.
 
 Thanks,
-Miklos
-
----
- fs/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/fs/inode.c
-===================================================================
---- linux-2.6.orig/fs/inode.c	2011-10-27 22:26:12.000000000 +0200
-+++ linux-2.6/fs/inode.c	2011-10-28 10:14:18.000000000 +0200
-@@ -320,7 +320,8 @@ EXPORT_SYMBOL(clear_nlink);
-  */
- void set_nlink(struct inode *inode, unsigned int nlink)
- {
--	if (WARN_ON(!nlink)) {
-+	if (!nlink) {
-+		printk(KERN_INFO "set_nlink() clearing i_nlink on %s inode %li\n", inode->i_sb->s_type->name, inode->i_ino);
- 		clear_nlink(inode);
- 	} else {
- 		/* Yes, some filesystems do change nlink from zero to one */
+Rafael
