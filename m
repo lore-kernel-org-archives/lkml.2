@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933644Ab1J1Vtf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 17:49:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8586 "EHLO mx1.redhat.com"
+	id S933661Ab1J1Vtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 17:49:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933512Ab1J1VtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 17:49:16 -0400
+	id S933512Ab1J1Vti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 17:49:38 -0400
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 11/16] PCI: frv: use generic pcibios_set_master()
+Subject: [PATCH -v2 14/16] PCI: sh: use generic pcibios_set_master()
 To: jbarnes@virtuousgeek.org
 Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, vapier@gentoo.org,
         dhowells@redhat.com, ysato@users.sourceforge.jp, tony.luck@intel.com,
@@ -16,8 +16,8 @@ Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, vapier@gentoo.org,
         davem@davemloft.net, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
         tglx@linutronix.de, mingo@redhat.com, chris@zankel.net,
         linux-kernel@vger.kernel.org
-Date: Fri, 28 Oct 2011 15:48:45 -0600
-Message-ID: <20111028214845.20088.99179.stgit@amt.stowe>
+Date: Fri, 28 Oct 2011 15:49:06 -0600
+Message-ID: <20111028214906.20088.7056.stgit@amt.stowe>
 In-Reply-To: <20111028214726.20088.30551.stgit@amt.stowe>
 References: <20111028214726.20088.30551.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -30,7 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Myron Stowe <mstowe@redhat.com>
 
-This patch removes frv's architecture-specific 'pcibios_set_master()'
+This patch removes sh's architecture-specific 'pcibios_set_master()'
 routine and lets the default PCI core based implementation handle PCI
 device 'latency timer' setup.
 
@@ -39,18 +39,17 @@ No functional change.
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- arch/frv/mb93090-mb00/pci-frv.c |   14 --------------
- 1 files changed, 0 insertions(+), 14 deletions(-)
+ arch/sh/drivers/pci/pci.c |   15 ---------------
+ 1 files changed, 0 insertions(+), 15 deletions(-)
 
-diff --git a/arch/frv/mb93090-mb00/pci-frv.c b/arch/frv/mb93090-mb00/pci-frv.c
-index 6a0cd64..c281217 100644
---- a/arch/frv/mb93090-mb00/pci-frv.c
-+++ b/arch/frv/mb93090-mb00/pci-frv.c
-@@ -194,17 +194,3 @@ void __init pcibios_resource_survey(void)
- 	pcibios_allocate_resources(1);
- 	pcibios_assign_resources();
+diff --git a/arch/sh/drivers/pci/pci.c b/arch/sh/drivers/pci/pci.c
+index a0c92fd..280e2a1 100644
+--- a/arch/sh/drivers/pci/pci.c
++++ b/arch/sh/drivers/pci/pci.c
+@@ -242,21 +242,6 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
+ 	return pci_enable_resources(dev, mask);
  }
--
+ 
 -void pcibios_set_master(struct pci_dev *dev)
 -{
 -	u8 lat;
@@ -61,7 +60,12 @@ index 6a0cd64..c281217 100644
 -		lat = pcibios_max_latency;
 -	else
 -		return;
--	printk(KERN_DEBUG "PCI: Setting latency timer of device %s to %d\n", pci_name(dev), lat);
+-	printk(KERN_INFO "PCI: Setting latency timer of device %s to %d\n",
+-	       pci_name(dev), lat);
 -	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
 -}
+-
+ void __init pcibios_update_irq(struct pci_dev *dev, int irq)
+ {
+ 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
 
