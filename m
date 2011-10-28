@@ -1,161 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1J1L7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 07:59:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37733 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755258Ab1J1L7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 07:59:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 2/2] CPU hotplug, Freezer: Synchronize CPU hotplug and Freezer
-Date: Fri, 28 Oct 2011 14:02:18 +0200
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, pavel@ucw.cz,
-        len.brown@intel.com, mingo@elte.hu, akpm@linux-foundation.org,
-        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au,
-        vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        rdunlap@xenotime.net, Tejun Heo <tj@kernel.org>,
-        Borislav Petkov <bp@amd64.org>
-References: <20111027134824.20916.46845.stgit@srivatsabhat.in.ibm.com> <4EAA875D.5010203@linux.vnet.ibm.com> <201110281357.01484.rjw@sisk.pl>
-In-Reply-To: <201110281357.01484.rjw@sisk.pl>
+	id S932425Ab1J1ME2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:04:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33142 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab1J1ME0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 08:04:26 -0400
+thread-index: AcyVaaWCHF69Z5M+QkK3dHPwk8Lzyg==
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures for omap3
+From: Tero Kristo <t-kristo@ti.com>
+Reply-To: <t-kristo@ti.com>
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+CC: Paul Walmsley <paul@pwsan.com>, "Cousson, Benoit" <b-cousson@ti.com>,
+        "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
+        <parthab@india.ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Gadiyar, Anand" <gadiyar@ti.com>, <sameo@linux.intel.com>,
+        <tony@atomide.com>, "Hilman, Kevin" <khilman@ti.com>,
+        <johnstul@us.ibm.com>, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
+In-Reply-To: <CAP05o4LUpo=H9_2sXswYzk_vkgyvm2F2qT3Pdo6cqSzMKMYi5A@mail.gmail.com>
+References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com> <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com> <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com> <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com> <cbad72cea703d117067f7c628f7db806@mail.gmail.com> <1317127327.3820.31.camel@sokoban> <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com> <CAP05o4K2EzAKDgC9EdfEURCfcM=M7TRJdBuAtRafL2RHg+qTag@mail.gmail.com> <1318505283.23199.4.camel@sokoban> <CAP05o4LUpo=H9_2sXswYzk_vkgyvm2F2qT3Pdo6cqSzMKMYi5A@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Organization: Texas Instruments
+Date: Fri, 28 Oct 2011 15:03:36 +0300
+Message-ID: <1319803416.12919.2.camel@sokoban>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201110281402.19108.rjw@sisk.pl>
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 28, 2011, Rafael J. Wysocki wrote:
-> On Friday, October 28, 2011, Srivatsa S. Bhat wrote:
-> > On 10/28/2011 01:43 AM, Rafael J. Wysocki wrote:
-> > > Hi,
-> > > 
-> > > On Thursday, October 27, 2011, Srivatsa S. Bhat wrote:
-> > >> Prevent CPU hotplug and the freezer from racing with each other, to ensure
-> > >> that during the *entire duration* for which the callbacks for CPU hotplug
-> > >> notifications such as CPU_ONLINE[_FROZEN], CPU_DEAD[_FROZEN] etc are being
-> > >> executed, the state of the system (with respect to the tasks being frozen
-> > >> or not) remains constant.
-> > >>
-> > >> This patches hooks the CPU hotplug infrastructure onto the freezer
-> > >> notifications (PM_FREEZE_PREPARE and PM_POST_THAW) and thus synchronizes
-> > >> with the freezer.
-> > >>
-> > >> Specifically,
-> > >>
-> > >> * Upon the PM_FREEZE_PREPARE notification, the CPU hotplug callback disables
-> > >>   future (regular) CPU hotplugging and also ensures that any currently running
-> > >>   CPU hotplug operation is completed before allowing the freezer to continue
-> > >>   any further.
-> > >>
-> > >> * Upon the PM_POST_THAW notification, the CPU hotplug callback re-enables
-> > >>   regular CPU hotplug.
-> > >>
-> > >> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> > >> ---
-> > >>
-> > >>  kernel/cpu.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >>  1 files changed, 76 insertions(+), 0 deletions(-)
-> > >>
-> > >> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> > >> index 12b7458..61985ce 100644
-> > >> --- a/kernel/cpu.c
-> > >> +++ b/kernel/cpu.c
-> > >> @@ -15,6 +15,7 @@
-> > >>  #include <linux/stop_machine.h>
-> > >>  #include <linux/mutex.h>
-> > >>  #include <linux/gfp.h>
-> > >> +#include <linux/suspend.h>
-> > >>  
-> > >>  #ifdef CONFIG_SMP
-> > >>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-> > >> @@ -478,6 +479,81 @@ static int alloc_frozen_cpus(void)
-> > >>  core_initcall(alloc_frozen_cpus);
-> > >>  #endif /* CONFIG_PM_SLEEP_SMP */
-> > >>  
-> > >> +
-> > >> +#ifdef CONFIG_FREEZER
-> > >> +
-> > >> +/*
-> > >> + * Avoid CPU hotplug racing with the freezer subsystem, by disabling CPU
-> > >> + * hotplug when tasks are about to be frozen.
-> > >> + *
-> > >> + * Also, don't allow the freezer subsystem to continue until any currently
-> > >> + * running CPU hotplug operation gets completed.
-> > >> + * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-> > >> + * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-> > >> + * CPU hotplug path and released only after it is complete. Thus, we
-> > >> + * (and hence the freezer) will block here until any currently running CPU
-> > >> + * hotplug operation is completed.
-> > >> + */
-> > >> +static void cpu_hotplug_freezer_block_begin(void)
-> > >> +{
-> > >> +	cpu_maps_update_begin();
-> > >> +	cpu_hotplug_disabled = 1;
-> > >> +	cpu_maps_update_done();
-> > >> +}
-> > >> +
-> > >> +
-> > >> +/*
-> > >> + * When thawing of tasks is complete, re-enable CPU hotplug (which had been
-> > >> + * disabled while beginning to freeze tasks).
-> > >> + */
-> > >> +static void cpu_hotplug_freezer_block_done(void)
-> > >> +{
-> > >> +	cpu_maps_update_begin();
-> > >> +	cpu_hotplug_disabled = 0;
-> > >> +	cpu_maps_update_done();
-> > >> +}
-> > >> +
-> > > 
-> > > I wonder if the new PM notifier events are really necessary?
-> > > 
-> > > Why don't you just call cpu_hotplug_freezer_block_begin() (perhaps
-> > > with a better name?) directly from freeze_processes()?  And analogously
-> > > for cpu_hotplug_freezer_block_done() and thaw_processes()?
-> > > 
-> > 
-> > Yes, we can definitely do that. 
-> > 
-> > But the reason why I chose to introduce new notifiers was to make this
-> > more extensible (because we know that at least 2 subsystems would benefit
-> > from mutually excluding themselves from the freezer, namely CPU hotplug
-> > and x86 microcode).
-> > http://thread.gmane.org/gmane.linux.kernel/1198291/focus=1200591
-> > 
-> > But now that I think of it, hooking onto the freezer notifiers wouldn't
-> > solve the microcode cases since usermodehelper_disable() is called
-> > _before_ freezing tasks... :(
-> > 
-> > So we should probably call the functions directly like you suggested.. 
-> > 
-> > But I really didn't want to clutter the freezer call path because of problems
-> > elsewhere. So I felt freezer notifiers would be a cleaner way of dealing with
-> > such things. Also, since freezer is a generic subsystem that could be used
-> > for purposes other than S3/S4 as well (I have heard of attempts to use freezer
-> > during tracing), wouldn't it be better to introduce new notifiers to
-> > announce the begin and end of freezer activity to interested subsystems?
-> > (and then use them to solve the CPU hotplug issue like this patch does...)
-> > 
-> > Please let me know your suggestions.
-> 
-> The freeze_processes() and thaw_processes() functions are only used for
-> system suspend and hibernation, as far as I can tell, and I don't think there
-> will be any other users in predictable future.
-> 
-> Also, adding the calls directly to those functions will show exactly what
-> the dependecies are, while doing that through a notifier kind of obfuscates
-> things.  So, please make direct calls from there.
+Hi Again,
 
-Alternatively, which I'd even prefer in fact, you can simply use the
-PM_SUSPEND_PREPARE and PM_POST_SUSPEND notifier events (and analogously
-for hibernation) to run that code.  Which also might be useful for solving
-the microcode case.
+I created a new version of the patch which should be better than this
+hack, I'll send it as an RFC to the l-o list in a bit.
 
-Thanks,
-Rafael
+On Thu, 2011-10-13 at 13:49 +0200, Munegowda, Keshava wrote:
+> On Thu, Oct 13, 2011 at 4:58 PM, Tero Kristo <t-kristo@ti.com> wrote:
+> > On Thu, 2011-10-13 at 09:12 +0200, Munegowda, Keshava wrote:
+> >> On Tue, Sep 27, 2011 at 6:48 PM, Munegowda, Keshava
+> >> <keshava_mgowda@ti.com> wrote:
+> >> > On Tue, Sep 27, 2011 at 6:12 PM, Tero Kristo <t-kristo@ti.com> wrote:
+> >> >> On Tue, 2011-09-27 at 08:04 +0200, Basak, Partha wrote:
+> >> >>> >
+> >> >> Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
+> >> >>
+> >> >>
+> > Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
+> >
+> > 
+Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
+ 
+-----Original Message-----
+
+> >
+> >> >>
+> >> >>> >From: Munegowda, Keshava [mailto:keshava_mgowda@ti.com]
+> >> >>> >Sent: Monday, September 26, 2011 7:49 PM
+> >> >>> >To: Paul Walmsley; Tero Kristo; b-cousson@ti.com; balbi@ti.com;
+> >> >>> >parthab@india.ti.com
+> >> >>> >Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+> >> >>> >kernel@vger.kernel.org; gadiyar@ti.com; sameo@linux.intel.com;
+> >> >>> >tony@atomide.com; khilman@ti.com; johnstul@us.ibm.com;
+> >> >>> >vishwanath.bs@ti.com
+> >> >>> >Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod
+> >> >>> >structures for omap3
+> >> >>> >
+> >> >>> >On Sat, Sep 24, 2011 at 12:00 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> >> >>> >> On Fri, 23 Sep 2011, Munegowda, Keshava wrote:
+> >> >>> >>
+> >> >>> >>> On Thu, Sep 22, 2011 at 11:31 PM, Paul Walmsley <paul@pwsan.com>
+> >> >>> >wrote:
+> >> >>> >>>
+> >> >>> >>> But the question arises here , why do we need these ehci and ohci as
+> >> >>> >two
+> >> >>> >>> different hwmods containing only irq and base address? It is required
+> >> >>> >>> for future - to implement remote wakeup feature for ehci and ohci
+> >> >>> >ports
+> >> >>> >>> depending on irq-chain handler patches by Tero. Separate hwmods for
+> >> >>> >ehci
+> >> >>> >>> and ohci are needed to enable prcm chain-handler to uniquely identify
+> >> >>> >>> the wakeup source as ehci or ohci and call only the corresponding
+> >> >>> >>> interrupt handler. We will be using omap_hwmod_mux_init for ehci and
+> >> >>> >>> ohci hwmods to enable I/O wakeup capability for respective IO-pads.
+> >> >>> >>> Depending on the particular wakeup source(ehci/ohci), the
+> >> >>> >corresponding
+> >> >>> >>> ehci or ohci irq handler will be called.
+> >> >>> >>>
+> >> >>> >>> If ehci and ohci are combined with usbhs hwmod as a single hwmod ,
+> >> >>> >then
+> >> >>> >>> for every wakeup (either ehci or ohci port wakeup) only the first
+> >> >>> >>> interrupt handler will be called (please look at the function
+> >> >>> >>> omap_hwmod_mux_handle_irq of
+> >> >>> >>>
+> >> >>> >>> /arch/arm/mach-omap2/mux.c file ; in tero's latest patch:
+> >> >>> >>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg53139.html)
+> >> >>> >>> , so in this
+> >> >>> >>> case, if ehci interrupt is the first interrupt , then even for ohci
+> >> >>> >wakeup
+> >> >>> >>> , only ehci interrupt will get called; which will break the
+> >> >>> >functionality.
+> >> >>> >>
+> >> >>> >> Any reason why this couldn't be handled either by:
+> >> >>> >>
+> >> >>> >> 1. adding an IRQ number field to struct omap_hwmod_mux_info, and
+> >> >>> >changing
+> >> >>> >> _omap_hwmod_mux_handle_irq() to raise that IRQ number?
+> >> >>> >
+> >> >>> >
+> >> >>> >yes, it is possible by changing the existing irq-chain handler by tero
+> >> >>> >Kristo
+> >> >>> >
+> >> >>> >I am looping tero too.
+> >> >>> >
+> >> >>> >So here are new requirements for the irq-chain handler
+> >> >>> >
+> >> >>> >1. The hwmod should have have option to have multiple mux structures
+> >> >>> >
+> >> >>> >This is something like:
+> >> >>> >
+> >> >>> >The existing mux structure definition in omap_hwmod [file:
+> >> >>> >/arch/arm/plat-omap/include/plat/omap_hwmod.h ] structure
+> >> >>> >
+> >> >>> >     struct omap_hwmod_mux_info      *mux;
+> >> >>> >
+> >> >>> >it should changed to
+> >> >>> >
+> >> >>> >     struct omap_hwmod_mux_info      **pmux;
+> >> >>> >         U32                                            mux_cnt;
+> >> >>> >
+> >> >>> >
+> >> >>> >pmux - pointers to mux ; array of mux structures.
+> >> >>> >mux_cnt - number of mux per hwmod.
+> >> >>> >
+> >> >>> >
+> >> >>> >2. The mux  omap_hwmod_mux_info  structure should have new member
+> >> >>> >called irq, like as follows:
+> >> >>> >
+> >> >>> >struct omap_hwmod_mux_info {
+> >> >>> >     int                             nr_pads;
+> >> >>> >     ...
+> >> >>> >        ....
+> >> >>> >        u32                           irq;
+> >> >>> >
+> >> >>> >};
+> >> >>> >
+> >> >>> >Upon wakeup of the I/O pad of the mux , the irq-chain handler should
+> >> >>> >invoke the irq handler of the irq numbered <map_hwmod_mux_info.irq>
+> >> >>> >
+> >> >>> >3.  There should be "SOME WAY" to supply the irqs  from hwmod
+> >> >>> >structure (omap_hwmod) to mux structure (omap_hwmod_mux_info)
+> >> >>> >
+> >> >>> >
+> >> >>> >if you , tero and other opensource people are aligned on the proposed
+> >> >>> >changes on the irq-handler ;
+> >> >>> >then it is possible to have two hwmods ( usbhs and tll) for usbhost
+> >> >>> >driver.
+> >> >>> >please let me know you comments on the above approach.
+> >> >>> >
+> >> >>>
+> >> >>> Hello Tero,
+> >> >>>
+> >> >>> I would like to draw your attention to the following thread:
+> >> >>>
+> >> >>> We need to support the following:
+> >> >>> 1. Ability to associate multiple mux info to a hwmod.
+> >> >>> 2. Able to associate a particular irq handler to a mux info.
+> >> >>> 3. PRCM Chain handler should loop through all mux-info arrays
+> >> >>>    for a particular hwmod to identify the possible wakeup source(s)
+> >> >>>    and call the appropriate irq handler for that mux-info.
+> >> >>>    (It is possible that both mux-info are woken up in which case both
+> >> >>> handlers should be called).
+> >> >>>
+> >> >>> To give you a little more perspective, EHCI & OHCI are co-controllers
+> >> >>> under UHH/TLL.
+> >> >>> They do not get presented separately to the OCP bus, hence do not qualify
+> >> >>> as separate hwmods
+> >> >>> (Paul had objected to the design approach representing EHCI & OHCI as
+> >> >>> different hwmods).
+> >> >>>
+> >> >>> However, we need a mechanism to efficiently identify/distinguish
+> >> >>> remote-wakeup, connect/disconnect
+> >> >>> On to an EHCI port vs an OHCI port & call only the correct interrupt
+> >> >>> handler(EHCI or OHCI).
+> >> >>>
+> >> >>>  To incorporate this, chain handler implementation would need some
+> >> >>> enhancements.
+> >> >>>  We can look into the details in the next merge window cycle in
+> >> >>> conjunction with aggressive clock management support for EHCI/OHCI.
+> >> >>>  But fundamentally, if you are aligned to the approach, we can go ahead
+> >> >>> collapsing the EHCI & OHCI hwmods into one.
+> >> >>
+> >> >> Hi,
+> >> >>
+> >> >> So, you would need a mechanism to do something like this:
+> >> >>
+> >> >> pad a or b wakeup detected -> irq0
+> >> >> pad c or d wakeup detected -> irq1?
+> >> >
+> >> > yes, if get something like this , its perfect.
+> >>
+> >> Hi Tero
+> >>            Are you posting the patches with these changes?
+> >> please let me know when you will be able to post the patches.
+> >> so that I start the design of usb host remote wakeup using your changes.
+> >>
+> >> regards
+> >> keshava
+> >>
+> >
+> > Sorry for the delay, but I am still not quite sure how this should be
+> > handled for upstream. Attached is a proposal hack patch that should
+> > work, you can at least try it out to see what happens. It applies on top
+> > of my latest PRCM chain handler set (version 9.) Patch desc contains a
+> > guide how to use it.
+> >
+> > -Tero
+> 
+> 
+> Thanks tero,
+>           we are still in the internal design discussion of usbhs remote wakeup.
+> but, we are looking for the upstreamable code.
+> I request please send it as formal patch so that we will align with
+> Paul, benoit, kevin
+> Felipe and all other USB and PM experts.
+> 
+> regards
+> keshava
+
+
