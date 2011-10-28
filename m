@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab1J1JXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 05:23:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:47426 "EHLO relay.sw.ru"
+	id S1754319Ab1J1J0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:26:08 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:45205 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab1J1JXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 05:23:53 -0400
-Message-ID: <4EAA74DD.3070708@parallels.com>
-Date: Fri, 28 Oct 2011 13:24:45 +0400
+	id S1751517Ab1J1J0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 05:26:06 -0400
+Message-ID: <4EAA7565.1040101@parallels.com>
+Date: Fri, 28 Oct 2011 13:27:01 +0400
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
@@ -19,66 +19,70 @@ CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "davem@davemloft.net" <davem@davemloft.net>,
         "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v3 0/3] SUNRPC: rcbind clients virtualization
-References: <20111027180824.20459.23219.stgit@localhost6.localdomain6> <20111027202514.GA31669@fieldses.org>
-In-Reply-To: <20111027202514.GA31669@fieldses.org>
+Subject: Re: [PATCH v6 4/8] SUNRPC: setup rpcbind clients if service requires
+ it
+References: <20111025100826.12689.46944.stgit@localhost6.localdomain6> <20111025101705.12689.68022.stgit@localhost6.localdomain6> <20111027212732.GC31669@fieldses.org>
+In-Reply-To: <20111027212732.GC31669@fieldses.org>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.10.2011 00:25, J. Bruce Fields пишет:
-> On Thu, Oct 27, 2011 at 10:10:43PM +0300, Stanislav Kinsbursky wrote:
->> v3:
->> 1) First two patches from previous version were squashed.
+28.10.2011 01:27, J. Bruce Fields пишет:
+> On Tue, Oct 25, 2011 at 02:17:08PM +0300, Stanislav Kinsbursky wrote:
+>> New function ("svc_uses_rpcbind") will be used to detect, that new service will
+>> send portmapper register calls. For such services we will create rpcbind
+>> clients and remove all stale portmap registrations.
+>> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
+>> in case of this field wasn't initialized earlier. This will allow to destroy
+>> rpcbind clients when no other users of them left.
 >>
->> This patch-set was created in context of clone of git branch:
->> git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
->> and rebased on tag "v3.1".
+>> Note: Currently, any creating service will be detected as portmap user.
+>> Probably, this is wrong. But now it depends on program versions "vs_hidden"
+>> flag.
 >>
->> This patch-set virtualizes rpcbind clients per network namespace context. IOW,
->> each network namespace will have its own pair of rpcbind clients (if they would
->> be created by request).
->>
->> Note:
->> 1) this patch-set depends on "SUNRPC: make rpcbind clients allocated and
->> destroyed dynamically" patch-set which has been send earlier.
->> 2) init_net pointer is still used instead of current->nsproxy->net_ns,
->> because I'm not sure yet about how to virtualize services. I.e. NFS callback
->> services will be per netns. NFSd service will be per netns too from my pow. But
->> Lockd can be per netns or one for all.
->
-> I'm not sure what you mean by that; could you explain?
->
-
-This patch-set was created before you've sent your NFSd plan and we disacussed 
-Lockd per netns.
-So, this sentence: "NFSd service will be per netns too from my pow" is obsolete. 
-And Lockd will be one for all.
-Or you are asking about something else?
-
-> --b.
->
->> And also we have NFSd file system, which
->> is not virtualized yet.
->>
->> The following series consists of:
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
 >>
 >> ---
+>>   net/sunrpc/svc.c |   11 +++++++++--
+>>   1 files changed, 9 insertions(+), 2 deletions(-)
 >>
->> Stanislav Kinsbursky (3):
->>        SUNRPC: move rpcbind internals to sunrpc part of network namespace context
->>        SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
->>        SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
+>> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+>> index d2d61bf..918edc3 100644
+>> --- a/net/sunrpc/svc.c
+>> +++ b/net/sunrpc/svc.c
+>> @@ -454,8 +454,15 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+>>   		spin_lock_init(&pool->sp_lock);
+>>   	}
 >>
+>> -	/* Remove any stale portmap registrations */
+>> -	svc_unregister(serv);
+>> +	if (svc_uses_rpcbind(serv)) {
+>> +	       	if (svc_rpcb_setup(serv)<  0) {
+>> +			kfree(serv->sv_pools);
+>> +			kfree(serv);
+>> +			return NULL;
+>
+> Nit: could we convert this (and the previous failure to allocate
+> sv_pools) to the usual pattern of collecting the cleanup at the end and
+> jumping to it with a goto?
+>
+
+Sure, we can. I will implement this "goto pattern", is you insist.
+
+> Looks fine otherwise.
+>
+> --b.
+>
+>> +		}
+>> +		if (!serv->sv_shutdown)
+>> +			serv->sv_shutdown = svc_rpcb_cleanup;
+>> +	}
 >>
->>   net/sunrpc/netns.h     |    5 ++
->>   net/sunrpc/rpcb_clnt.c |  103 ++++++++++++++++++++++++++----------------------
->>   2 files changed, 61 insertions(+), 47 deletions(-)
+>>   	return serv;
+>>   }
 >>
->> --
->> Signature
 
 
 -- 
