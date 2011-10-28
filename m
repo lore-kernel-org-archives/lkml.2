@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933765Ab1J1XBR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 19:01:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33511 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932722Ab1J1XBQ (ORCPT
+	id S933775Ab1J1XC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 19:02:27 -0400
+Received: from mail132.messagelabs.com ([216.82.242.115]:11085 "EHLO
+	mail132.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932722Ab1J1XC0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 19:01:16 -0400
-Date: Fri, 28 Oct 2011 16:01:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au
-Subject: Re: [PATCH] ida: make ida_simple_get/put() IRQ safe
-Message-Id: <20111028160115.bba2b8cf.akpm@linux-foundation.org>
-In-Reply-To: <20111026203311.GF24261@google.com>
-References: <20111026203311.GF24261@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Oct 2011 19:02:26 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-5.tower-132.messagelabs.com!1319842944!43425763!1
+X-Originating-IP: [216.166.12.32]
+X-StarScan-Version: 6.3.6; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "joe@perches.com" <joe@perches.com>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "jkosina@suse.cz" <jkosina@suse.cz>
+Date: Fri, 28 Oct 2011 18:02:22 -0500
+Subject: RE: [PATCH 3/3] Staging: hv: mousevsc: Use the KBUILD_MODNAME macro
+Thread-Topic: [PATCH 3/3] Staging: hv: mousevsc: Use the KBUILD_MODNAME macro
+Thread-Index: AcyVwElEjB2U8jNVRAOfq4V52gZOLAAAbvPg
+Message-ID: <ADE657CA350FB648AAC2C43247A983F001F39DEE70F6@AUSP01VMBX24.collaborationhost.net>
+References: <1319839847-28959-1-git-send-email-kys@microsoft.com>
+	<1319839888-29000-1-git-send-email-kys@microsoft.com>
+ <1319839888-29000-3-git-send-email-kys@microsoft.com>
+In-Reply-To: <1319839888-29000-3-git-send-email-kys@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Oct 2011 13:33:11 -0700
-Tejun Heo <tj@kernel.org> wrote:
-
-> It's often convenient to be able to release resource from IRQ context.
-> Make ida_simple_*() use irqsave/restore spin ops so that they are IRQ
-> safe.
-
-The patch also accidentally makes ida_simple_get() callable from
-interrupt context.  That's a somewhat unreliable operation due to
--ENOMEM possibilities even with GFP_ATOMIC.
-
-> --- work.orig/lib/idr.c
-> +++ work/lib/idr.c
-> @@ -944,6 +944,7 @@ int ida_simple_get(struct ida *ida, unsi
->  {
->  	int ret, id;
->  	unsigned int max;
-> +	unsigned long flags;
+On Friday, October 28, 2011 3:11 PM, K. Y. Srinivasan wrote:
+> 
+> Use the KBUILD_MODNAME macro.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/staging/hv/hv_mouse.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
+> index c22f729..2c2e1b4 100644
+> --- a/drivers/staging/hv/hv_mouse.c
+> +++ b/drivers/staging/hv/hv_mouse.c
+> @@ -578,7 +578,7 @@ static const struct hv_vmbus_device_id id_table[] = {
+>  MODULE_DEVICE_TABLE(vmbus, id_table);
 >  
->  	BUG_ON((int)start < 0);
->  	BUG_ON((int)end < 0);
-> @@ -959,7 +960,7 @@ again:
->  	if (!ida_pre_get(ida, gfp_mask))
->  		return -ENOMEM;
->  
-> -	spin_lock(&simple_ida_lock);
-> +	spin_lock_irqsave(&simple_ida_lock, flags);
->  	ret = ida_get_new_above(ida, start, &id);
->  	if (!ret) {
->  		if (id > max) {
-> @@ -969,7 +970,7 @@ again:
->  			ret = id;
->  		}
->  	}
-> -	spin_unlock(&simple_ida_lock);
-> +	spin_unlock_irqrestore(&simple_ida_lock, flags);
->  
->  	if (unlikely(ret == -EAGAIN))
->  		goto again;
-> @@ -985,10 +986,12 @@ EXPORT_SYMBOL(ida_simple_get);
->   */
->  void ida_simple_remove(struct ida *ida, unsigned int id)
->  {
-> +	unsigned long flags;
-> +
->  	BUG_ON((int)id < 0);
-> -	spin_lock(&simple_ida_lock);
-> +	spin_lock_irqsave(&simple_ida_lock, flags);
->  	ida_remove(ida, id);
-> -	spin_unlock(&simple_ida_lock);
-> +	spin_unlock_irqrestore(&simple_ida_lock, flags);
->  }
->  EXPORT_SYMBOL(ida_simple_remove);
+>  static struct  hv_driver mousevsc_drv = {
+> -	.name = "mousevsc",
+> +	.name = KBUILD_MODNAME,
+>  	.id_table = id_table,
+>  	.probe = mousevsc_probe,
+>  	.remove = mousevsc_remove,
 
-It didn't update the kerneldoc.  I wouldn't have bothered either ;)
-We're generally bad about documenting permissible calling environments
-and preconditions.
+It's just my opinion, but I'm not sure this is better.
+
+By changing the name to KBUILD_MODNAME you can no longer grep the source to
+find the driver based on it's name:
+
+$ grep -r name * | grep mousevsc
+drivers/staging/hv/hv_mouse.c:  .name = "mousevsc",
+
+Also, doesn't this change the name of the driver from "mousevsc" to "hv_mouse"?
+Does anything else need modified to handle the name change or is the matching
+handled strictly by the id_table?
+
+Regards,
+Hartley
 
