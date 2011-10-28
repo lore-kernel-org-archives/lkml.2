@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab1J1JsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 05:48:19 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:11704 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab1J1JsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 05:48:18 -0400
-Message-ID: <4EAA7A98.5070502@parallels.com>
-Date: Fri, 28 Oct 2011 13:49:12 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	id S932152Ab1J1Juw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:50:52 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:49713 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab1J1Juv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 05:50:51 -0400
+Date: Fri, 28 Oct 2011 18:50:40 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+Message-ID: <20111028095040.GA31281@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
+ <20111027233407.GC29407@barrios-laptop.redhat.com>
+ <1319778715.22361.155.camel@sli10-conroe>
+ <20111028073026.GB6268@barrios-laptop.redhat.com>
+ <1319790356.22361.165.camel@sli10-conroe>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v6 5/8] SUNRPC: cleanup service destruction
-References: <20111025100826.12689.46944.stgit@localhost6.localdomain6> <20111025101716.12689.81697.stgit@localhost6.localdomain6> <20111027213038.GD31669@fieldses.org>
-In-Reply-To: <20111027213038.GD31669@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319790356.22361.165.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.10.2011 01:30, J. Bruce Fields пишет:
-> On Tue, Oct 25, 2011 at 02:17:18PM +0300, Stanislav Kinsbursky wrote:
->> svc_unregister() call have to be removed from svc_destroy() since it will be
->> called in sv_shutdown callback.
->
-> It would be clearer that you're *moving* this if this were merged with
-> the following patch.  And without doing that the series isn't quite
-> bisectable, unless I'm missing something.
->
+On Fri, Oct 28, 2011 at 04:25:56PM +0800, Shaohua Li wrote:
+> On Fri, 2011-10-28 at 15:30 +0800, Minchan Kim wrote:
+> > On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
+> > > On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
+> > > > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> > > > > With current logic, if page reclaim finds a huge page, it will just reclaim
+> > > > > the head page and leave tail pages reclaimed later. Let's take an example,
+> > > > > lru list has page A and B, page A is huge page:
+> > > > > 1. page A is isolated
+> > > > > 2. page B is isolated
+> > > > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> > > > > page A+1, page A+2, ... are added to lru list.
+> > > > > 4. shrink_page_list() adds page B to swap page cache.
+> > > > > 5. page A and B is written out and reclaimed.
+> > > > > 6. page A+1, A+2 ... is isolated and reclaimed later.
+> > > > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> > > > 
+> > > > I don't see your code yet but have a question.
+> > > > You mitigate this problem by 4/5 which could add subpages into lru tail
+> > > > so subpages would reclaim next interation of reclaim.
+> > > > 
+> > > > What do we need 5/5?
+> > > > Do I miss something?
+> > > Both patches are required. without this patch, current page reclaim will
+> > > only reclaim the first page of a huge page, because the hugepage isn't
+> > > split yet. The hugepage is split when the first page is being written to
+> > > swap, which is too later and page reclaim might already isolated a lot
+> > > of pages.
+> > 
+> > When split happens, subpages would be located in tail of LRU by your 4/5.
+> > (Assume tail of LRU is old age).
+> yes, but a lot of other pages already isolated. we will reclaim those
+> pages first. for example, reclaim huge page A, B. current reclaim order
+> is A, B, A+1, ... B+1, because we will isolated A and B first, all tail
+> pages are not isolated yet. While with my patch, the order is A, A
+> +1, ... B, B+1,.... with my patch, we can avoid unnecessary page split
+> or page isolation. This is exactly why my patch reduces the thp_split
+> count.
 
-Yes, you are right. Will resend new version soon.
+It's possbile but I doubt how it is effective becuase add_to_swap has a unlikely as follows
 
-> --b.
->
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   net/sunrpc/svc.c |    1 -
->>   1 files changed, 0 insertions(+), 1 deletions(-)
->>
->> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
->> index 918edc3..407462f 100644
->> --- a/net/sunrpc/svc.c
->> +++ b/net/sunrpc/svc.c
->> @@ -530,7 +530,6 @@ svc_destroy(struct svc_serv *serv)
->>   	if (svc_serv_is_pooled(serv))
->>   		svc_pool_map_put();
->>
->> -	svc_unregister(serv);
->>   	kfree(serv->sv_pools);
->>   	kfree(serv);
->>   }
->>
+	if (unlikely(PageTransHuge(page)))
 
+I don't mean unlikely assumption is absolutely right.
+But at least, you have to convince us of it's wrong.
+Personally, I don't want to add more logic and handling THP pages
+different with normal page unless it's real concern.
+
+> 
+> > In addtion, isolation happens 32 page chunk so the subpages would be isolated
+> > and reclaimed in next iteration. I think 32 pages are not too many.
+> > 
+> > What do you think about it?
+> since headpage and tailpages are in different list, the 32 chunk will
+> not include tailpages.
+
+Yes. but it would be handled in next iteration.
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Kind regards,
+Minchan Kim
