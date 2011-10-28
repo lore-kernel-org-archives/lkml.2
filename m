@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab1J1J0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 05:26:08 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:45205 "EHLO relay.sw.ru"
+	id S1754793Ab1J1J2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:28:06 -0400
+Received: from smtp.nokia.com ([147.243.1.48]:56340 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517Ab1J1J0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 05:26:06 -0400
-Message-ID: <4EAA7565.1040101@parallels.com>
-Date: Fri, 28 Oct 2011 13:27:01 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v6 4/8] SUNRPC: setup rpcbind clients if service requires
- it
-References: <20111025100826.12689.46944.stgit@localhost6.localdomain6> <20111025101705.12689.68022.stgit@localhost6.localdomain6> <20111027212732.GC31669@fieldses.org>
-In-Reply-To: <20111027212732.GC31669@fieldses.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753192Ab1J1J2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 05:28:05 -0400
+Subject: HSI framework for linux-next
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        "peter_henn@gmx.de" <peter_henn@gmx.de>,
+        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
+        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
+        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
+        Sebastian Reichel <sre@debian.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Oct 2011 12:27:46 +0300
+Message-ID: <1319794066.28874.22.camel@groo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.10.2011 01:27, J. Bruce Fields пишет:
-> On Tue, Oct 25, 2011 at 02:17:08PM +0300, Stanislav Kinsbursky wrote:
->> New function ("svc_uses_rpcbind") will be used to detect, that new service will
->> send portmapper register calls. For such services we will create rpcbind
->> clients and remove all stale portmap registrations.
->> Also, svc_rpcb_cleanup() will be set as sv_shutdown callback for such services
->> in case of this field wasn't initialized earlier. This will allow to destroy
->> rpcbind clients when no other users of them left.
->>
->> Note: Currently, any creating service will be detected as portmap user.
->> Probably, this is wrong. But now it depends on program versions "vs_hidden"
->> flag.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>
->> ---
->>   net/sunrpc/svc.c |   11 +++++++++--
->>   1 files changed, 9 insertions(+), 2 deletions(-)
->>
->> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
->> index d2d61bf..918edc3 100644
->> --- a/net/sunrpc/svc.c
->> +++ b/net/sunrpc/svc.c
->> @@ -454,8 +454,15 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
->>   		spin_lock_init(&pool->sp_lock);
->>   	}
->>
->> -	/* Remove any stale portmap registrations */
->> -	svc_unregister(serv);
->> +	if (svc_uses_rpcbind(serv)) {
->> +	       	if (svc_rpcb_setup(serv)<  0) {
->> +			kfree(serv->sv_pools);
->> +			kfree(serv);
->> +			return NULL;
->
-> Nit: could we convert this (and the previous failure to allocate
-> sv_pools) to the usual pattern of collecting the cleanup at the end and
-> jumping to it with a goto?
->
+Hi Stephen,
 
-Sure, we can. I will implement this "goto pattern", is you insist.
+I have been working in an HSI framework for linux:
 
-> Looks fine otherwise.
->
-> --b.
->
->> +		}
->> +		if (!serv->sv_shutdown)
->> +			serv->sv_shutdown = svc_rpcb_cleanup;
->> +	}
->>
->>   	return serv;
->>   }
->>
+https://lkml.org/lkml/2011/6/10/280
 
+The framework is in good shape and is currently being used for some
+people so we would like it to see it integrated, if possible, for 3.3
 
+Latest discussion for integration:
+https://lkml.org/lkml/2011/10/20/177
+
+Therefore, could you add the following tree to linux-next ? 
+	git@gitorious.org:kernel-hsi/kernel-hsi.git for-next
+
+Currently the framework does not have any HSI/SSI controller driver, but
+myself I am working on an SSI OMAP one, which needs some changes to get
+full acceptance. So hopefully I will have the changes done and acked on
+time.
+There are also other people preparing their controllers for integration
+(see the integration discussion)
+
+Thanks and br,
 -- 
-Best regards,
-Stanislav Kinsbursky
+Carlos Chinea <carlos.chinea@nokia.com>
+
