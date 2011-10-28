@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab1J1OZW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:25:22 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:40573 "EHLO relay.sw.ru"
+	id S932980Ab1J1O0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:26:05 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:26279 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932948Ab1J1OZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:25:19 -0400
-Subject: [PATCH 7/7] SUNRPC: added debug messages to RPC pipefs
+	id S932887Ab1J1OZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:25:03 -0400
+Subject: [PATCH 5/7] SUNRPC: put pipefs superblock link on network namespace
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Fri, 28 Oct 2011 18:26:14 +0300
-Message-ID: <20111028142614.5796.43437.stgit@localhost6.localdomain6>
+Date: Fri, 28 Oct 2011 18:25:59 +0300
+Message-ID: <20111028142559.5796.82490.stgit@localhost6.localdomain6>
 In-Reply-To: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
 References: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -24,45 +24,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds debug messages for notification events.
+We have modules (like, pNFS blocklayout module) which creates pipes on
+rpc_pipefs. Thus we need per-net operations for them. To make it possible we
+require appropriate super block. So we have to put sb link on network namespace
+context. Note, that it's not strongly required to create pipes in per-net
+operations. IOW, if pipefs wasn't mounted yet, that no sb link reference will
+present on network namespace and in this case we need just need to pass through
+pipe creation. Pipe dentry will be created during pipefs mount notification.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/rpc_pipe.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ net/sunrpc/netns.h    |    2 ++
+ net/sunrpc/rpc_pipe.c |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index d013bf2..b384252 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -9,6 +9,8 @@ struct cache_detail;
+ struct sunrpc_net {
+ 	struct proc_dir_entry *proc_net_rpc;
+ 	struct cache_detail *ip_map_cache;
++
++	struct super_block *pipefs_sb;
+ };
+ 
+ extern int sunrpc_net_id;
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index cbf213e..42e4b6e 100644
+index 4860a56..5c313d3 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -33,6 +33,10 @@
- #include "netns.h"
- #include "sunrpc.h"
+@@ -1042,6 +1042,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct inode *inode;
+ 	struct dentry *root;
+ 	struct net *net = data;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	int err;
  
-+#define RPCDBG_FACILITY RPCDBG_DEBUG
-+
-+#define NET_NAME(net)	((net == &init_net) ? " (init_net)" : "")
-+
- static struct vfsmount *rpc_mnt __read_mostly;
- static int rpc_mount_count;
+ 	sb->s_blocksize = PAGE_CACHE_SIZE;
+@@ -1066,6 +1067,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (err)
+ 		goto err_depopulate;
+ 	sb->s_fs_info = get_net(net);
++	sn->pipefs_sb = sb;
+ 	return 0;
  
-@@ -1095,6 +1099,8 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	}
- 	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
- 		return -ENOMEM;
-+	dprintk("RPC:	sending pipefs MOUNT notification for net %p%s\n", net,
-+								NET_NAME(net));
- 	err = blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_MOUNT,
- 					   sb);
-@@ -1128,6 +1134,8 @@ void rpc_kill_sb(struct super_block *sb)
- 	sn->pipefs_sb = NULL;
- 	mutex_unlock(&sn->pipefs_sb_lock);
+ err_depopulate:
+@@ -1086,7 +1088,9 @@ rpc_mount(struct file_system_type *fs_type,
+ void rpc_kill_sb(struct super_block *sb)
+ {
+ 	struct net *net = sb->s_fs_info;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
++	sn->pipefs_sb = NULL;
  	put_net(net);
-+	dprintk("RPC:	sending pipefs UMOUNT notification for net %p%s\n", net,
-+								NET_NAME(net));
  	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
  					   RPC_PIPEFS_UMOUNT,
- 					   sb);
 
