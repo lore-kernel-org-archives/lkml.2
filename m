@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab1J1KvC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 06:51:02 -0400
-Received: from lnx503.hrz.tu-darmstadt.de ([130.83.156.232]:55327 "EHLO
-	lnx503.hrz.tu-darmstadt.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755387Ab1J1Ku7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 06:50:59 -0400
-From: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+	id S932226Ab1J1KvW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 06:51:22 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:5613 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932149Ab1J1KvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 06:51:18 -0400
+Subject: [PATCH v7 0/7] SUNRPC: make rpcbind clients allocated and destroyed
+	dynamically
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
+Date: Fri, 28 Oct 2011 14:52:09 +0300
+Message-ID: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <20138.35080.947860.881774@elektron.ikp.physik.tu-darmstadt.de>
-Date: Fri, 28 Oct 2011 12:50:48 +0200
-To: Andrew Worsley <amworsley@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Johan Hovold <jhovold@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix Corruption issue in USB ftdi driver drivers/usb/serial/ftdi_sio.c
-In-Reply-To: <CA+Y=x3=xEa6XVspsodhbKOArtZ7VMYSMLhpF4WZ1sFNfaJ_E9g@mail.gmail.com>
-References: <CA+Y=x3=xEa6XVspsodhbKOArtZ7VMYSMLhpF4WZ1sFNfaJ_E9g@mail.gmail.com>
-X-Mailer: VM 7.19 under Emacs 21.3.1
-X-PMX-TU: seen v1.2 by 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.10.28.103614
-X-PMX-RELAY: outgoing
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Andrew" == Andrew Worsley <amworsley@gmail.com> writes:
+This patch-set was created in context of clone of git branch:
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
+and rebased on tag "v3.1".
 
-    Andrew> ftdi_set_termios() is always setting the baud rate and data bits
-    Andrew> and parity on every call. When called while characters are being
-    Andrew> transmitted can cause the FTDI chip to corrupt the serial port
-    Andrew> bit stream by stalling the output half a bit during the output
-    Andrew> of a character.  Simple fix by skipping this setting if the baud
-    Andrew> rate/data bits/parity are unchanged.
+v7:
+1) Implemented "goto pattern" in __svc_create().
+2) Pathes 5 and 6 from perious patch-set were squashed to make things looks
+clearer and to allow safe bisecting of the patch-set.
 
-    Andrew> Signed-off-by: Andrew Worsley <amworsley@gmail.com> ----
+v6:
+1) Fixes in rpcb_clients management.
 
-    Andrew> This bug was observed on 2.6.32 kernel (this patch is ported to
-    Andrew> latest kernel for ease of review).  Using a FTDI USB serial chip
-    Andrew> at 38400 repeatedly generating output by running a simple
-    Andrew> command such as "uname -a" or "echo Linux" gives occasional
-    Andrew> corruption on the output
+v4:
+1) creation and destruction on rpcbind clients now depends on service program
+versions "vs_hidden" flag.
 
-    Andrew> ...
-    >> echo Linux
-    Andrew> L$,3u=(Bnux
+This patch is required for further RPC layer virtualization, because rpcbind
+clients have to be per network namespace.
+To achive this, we have to untie network namespace from rpcbind clients sockets.
+The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
+clients will be created during first RPC service creation, and destroyed when
+last RPC service is stopped.
+With this patch set rpcbind clients can be virtualized easely.
 
-Could you please give a more specific receipe to reproduce the bug. Running
-with an adapter with TX/RX shorted at "stty -F /dev/ttyUSB0" 38400", several
-> uname -a /dev/ttyUSB0
-runs gave no artifact in a "seyon -modem /dev/ttyUSB0" console.
+The following series consists of:
 
-Doing 
-> uname -a /dev/ttyUSB0
-in one xterm and receiving with
->cat /dev/ttyUSB0
-in another xterm gives lot of repeated lines in the receiving terminal. But
-I have the same behaviour with /dev/ttyS0 on a real serial port on the
-mainboard.
+---
 
-Otherwise, shouldn't all control transfers to the FTDI be only done with the
-tx buffer in the FTDI empty? I guess the RX buffer is not affected by some
-change. But this is something to be done with great knowledge...
+Stanislav Kinsbursky (7):
+      SUNRPC: introduce helpers for reference counted rpcbind clients
+      SUNRPC: use rpcbind reference counting helpers
+      SUNRPC: introduce svc helpers for prepairing rpcbind infrastructure
+      SUNRPC: setup rpcbind clients if service requires it
+      SUNRPC: cleanup service destruction
+      SUNRPC: remove rpcbind clients creation during service registering
+      SUNRPC: remove rpcbind clients destruction on module cleanup
 
-Bye
--- 
-Uwe Bonnes                bon@elektron.ikp.physik.tu-darmstadt.de
 
-Institut fuer Kernphysik  Schlossgartenstrasse 9  64289 Darmstadt
---------- Tel. 06151 162516 -------- Fax. 06151 164321 ----------
+ fs/nfsd/nfssvc.c            |    2 +
+ include/linux/sunrpc/clnt.h |    2 +
+ include/linux/sunrpc/svc.h  |    1 
+ net/sunrpc/rpcb_clnt.c      |   88 ++++++++++++++++++++++++++++---------------
+ net/sunrpc/sunrpc_syms.c    |    3 -
+ net/sunrpc/svc.c            |   57 ++++++++++++++++++++++++----
+ 6 files changed, 113 insertions(+), 40 deletions(-)
+
