@@ -1,98 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab1J1Pfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 11:35:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60264 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932447Ab1J1Pf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 11:35:29 -0400
-Message-ID: <1319770585.2529.21.camel@Joe-Laptop>
-Subject: Re: [patch net-next]alx: Atheros AR8131/AR8151/AR8152/AR8161
- Ethernet driver
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: cloud.ren@atheros.com, davem@davemloft.net, Luis.Rodriguez@atheros.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20111019222140.GA9937@electric-eye.fr.zoreil.com>
-References: <1319009213-20627-1-git-send-email-cloud.ren@atheros.com>
-	 <20111019222140.GA9937@electric-eye.fr.zoreil.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 05:56:25 +0300
-Mime-Version: 1.0
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	id S932990Ab1J1PgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 11:36:09 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:34105 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab1J1PgH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 11:36:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	<75efb251-7a5e-4aca-91e2-f85627090363@default>
+	<20111027215243.GA31644@infradead.org>
+	<1319785956.3235.7.camel@lappy>
+	<CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+	<552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+Date: Fri, 28 Oct 2011 18:36:03 +0300
+X-Google-Sender-Auth: TxJEruJw1wbDTTJ89fEHWAtH9kE
+Message-ID: <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+From: Pekka Enberg <penberg@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Cyclonus J <cyclonusj@gmail.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-20 at 00:21 +0200, Francois Romieu wrote:
-> cloud.ren@atheros.com <cloud.ren@atheros.com> :
-> > diff --git a/drivers/net/ethernet/atheros/alx/alf_hw.c b/drivers/net/ethernet/atheros/alx/alf_hw.c
-[]
-> > +	if (en) { /* enable */
-> > +		MEM_W32(ctx, L1F_RXQ0, rxq | L1F_RXQ0_EN);
-> > +		MEM_W32(ctx, L1F_TXQ0, txq | L1F_TXQ0_EN);
-> > +		if (0 != (en_ctrl & LX_MACSPEED_1000)) {
-> > +			FIELD_SETL(mac, L1F_MAC_CTRL_SPEED,
-> > +			    L1F_MAC_CTRL_SPEED_1000);
-> > +		} else {
-> > +			FIELD_SETL(mac, L1F_MAC_CTRL_SPEED,
-> > +			    L1F_MAC_CTRL_SPEED_10_100);
-> > +		}
-> > +		if (0 != (en_ctrl & LX_MACDUPLEX_FULL)) {
-> > +			mac |= L1F_MAC_CTRL_FULLD;
-> > +		} else {
-> > +			mac &= ~L1F_MAC_CTRL_FULLD;
-> > +		}
-> > +		/* rx filter */
-> > +		if (0 != (en_ctrl & LX_FLT_PROMISC)) {
-> > +			mac |= L1F_MAC_CTRL_PROMISC_EN;
-> > +		} else {
-> > +			mac &= ~L1F_MAC_CTRL_PROMISC_EN;
-> > +		}
-> > +		if (0 != (en_ctrl & LX_FLT_MULTI_ALL)) {
-> > +			mac |= L1F_MAC_CTRL_MULTIALL_EN;
-> > +		} else {
-> > +			mac &= ~L1F_MAC_CTRL_MULTIALL_EN;
-> > +		}
-> > +		if (0 != (en_ctrl & LX_FLT_BROADCAST)) {
-> > +			mac |= L1F_MAC_CTRL_BRD_EN;
-> > +		} else {
-> > +			mac &= ~L1F_MAC_CTRL_BRD_EN;
-> > +		}
-> Code duplication. Who cares ?
+Hi Dan,
 
-Maybe add a macro like:
+On Fri, Oct 28, 2011 at 6:21 PM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+> If you grep the 3.1 source for CONFIG_FRONTSWAP, you will find
+> two users already in-kernel waiting for frontswap to be merged.
+> I think Sasha and Neo (and Brian and Nitin and ...) are simply
+> indicating that there can be more, but there is a chicken-and-egg
+> problem that can best be resolved by merging the (really very small
+> and barely invasive) frontswap patchset.
 
-#define mac_ctrl(mac, ctrl, flag, bit)		\
-do {						\
-	if ((ctrl) & (flag))			\
-		mac |= (bit);			\
-	else					\
-		mac &= ~(bit);			\
-} while (0)
+Yup, I was referring to the two external projects. I also happen to
+think that only Xen matters because zcache is in staging. So that's
+one user in the tree.
 
-so these become
+On Fri, Oct 28, 2011 at 6:21 PM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+>> As for the frontswap patches, there's pretty no ACKs from MM people
+>> apart from one Reviewed-by from Andrew. I really don't see why the
+>> pull request is sent directly to Linus...
+>
+> Has there not been ample opportunity (in 2-1/2 years) for other
+> MM people to contribute?  I'm certainly not trying to subvert any
+> useful technical discussion and if there is some documented MM process
+> I am failing to follow, please point me to it.  But there are
+> real users and real distros and real products waiting, so if there
+> are any real issues, let's get them resolved.
 
-	mac_ctrl(mac, en_ctrl, LX_MACDUPLEX_FULL, L1F_MAC_CTRL_FULLD);
-	mac_ctrl(mac, en_ctrl, LX_FLT_PROMISC, L1F_MAC_CTRL_PROMISC_EN);
-	mac_ctrl(mac, en_ctrl, LX_FLT_MULTI_ALL, L1F_MAC_CTRL_MULTIALL_EN);
-	mac_ctrl(mac, en_ctrl, LX_FLT_BROADCAST, L1F_MAC_CTRL_BRD_EN);
-	mac_ctrl(mac, en_ctrl, LX_FLT_DIRECT, L1F_MAC_CTRL_RX_EN);
-	mac_ctrl(mac, en_ctrl, LX_FC_TXEN, L1F_MAC_CTRL_TXFC_EN);
-	mac_ctrl(mac, en_ctrl, LX_FC_RXEN, L1F_MAC_CTRL_RXFC_EN);
-	etc.
+You are changing core kernel code without ACKs from relevant
+maintainers. That's very unfortunate. Existing users certainly matter
+but that doesn't mean you get to merge code without maintainers even
+looking at it.
 
-Or maybe add mac, en_ctrl and L1F_MAC_CTRL_ to the macro if you
-really want to shorten it up.
+Looking at your patches, there's no trace that anyone outside your own
+development team even looked at the patches. Why do you feel that it's
+OK to ask Linus to pull them?
 
-	mac_ctrl(MACDUPLEX_FULL, FULLD);
-	mac_ctrl(FLT_PROMISC, PROMISC_EN);
-	mac_ctrl(FLT_MULTI_ALL, MULTIALL_EN);
-	etc.
+> P.S. before commenting further, I suggest that you read the
+> background material at http://lwn.net/Articles/454795/
+> (with an open mind :-).
 
-> It may make some sense to move these ~60 loc in a xyz_enable_something
-> method...
+I'm not for or against frontswap. I assume we need something like that
+since Xen and KVM folks are interested. That doesn't mean you get a
+free pass to add more complexity to the VM.
 
-2 macros?
+So really, why don't you just use scripts/get_maintainer.pl and simply
+ask the relevant people for their ACK?
 
+                                Pekka
