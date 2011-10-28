@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754776Ab1J1DB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 23:01:29 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45012 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503Ab1J1DB2 (ORCPT
+	id S1754755Ab1J1DIO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 23:08:14 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51261 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503Ab1J1DIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 23:01:28 -0400
-Date: Thu, 27 Oct 2011 23:01:20 -0400 (EDT)
-Message-Id: <20111027.230120.1348321590012576474.davem@davemloft.net>
-To: jeffrey.t.kirsher@intel.com
-Cc: marcos.mage@gmail.com, akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MAINTAINERS: Remove quotes of maintaners's names
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <610B86C6-622E-4EFE-89DF-BF09BDB4D765@intel.com>
-References: <1319739381-5244-1-git-send-email-marcos.mage@gmail.com>
-	<610B86C6-622E-4EFE-89DF-BF09BDB4D765@intel.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 27 Oct 2011 23:08:13 -0400
+Message-ID: <1319771281.3944.1.camel@phoenix>
+Subject: [PATCH 1/2] ASoC: wm8711: Fix wrong mask for setting input audio
+ data bit length select
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Date: Fri, 28 Oct 2011 11:08:01 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 27 Oct 2011 20:01:24 -0700 (PDT)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-Date: Thu, 27 Oct 2011 14:35:54 -0700
+The Input Audio Data Bit Length Select is controlled by BIT[3:2] of
+WM8711_IFACE(07h) register.
+Current code incorrectly masks BIT[1:0] which is for Audio Data Format Select.
 
-> The reason these names are in quotes is because they need to be
-> wrapped in quotes when used in a git patch (I.e. CC: "David
-> S. Miller" <davem@davemloft.net>) because of the . in the friendly
-> name.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8711.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-That's correct, if a character such as "." appears in an email
-header field it must be surrounded by double quotes, as per
-SMTP rules.
+diff --git a/sound/soc/codecs/wm8711.c b/sound/soc/codecs/wm8711.c
+index 8d0347c..8ba49d8 100644
+--- a/sound/soc/codecs/wm8711.c
++++ b/sound/soc/codecs/wm8711.c
+@@ -151,7 +151,7 @@ static int wm8711_hw_params(struct snd_pcm_substream *substream,
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+ 	struct wm8711_priv *wm8711 =  snd_soc_codec_get_drvdata(codec);
+-	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0xfffc;
++	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0xfff3;
+ 	int i = get_coeff(wm8711->sysclk, params_rate(params));
+ 	u16 srate = (coeff_div[i].sr << 2) |
+ 		(coeff_div[i].bosr << 1) | coeff_div[i].usb;
+-- 
+1.7.5.4
 
-VGER rejects any email where this rule is not followed properly.
+
+
