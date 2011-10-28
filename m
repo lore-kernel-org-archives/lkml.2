@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab1J1BZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 21:25:29 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:32858 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab1J1BZ2 (ORCPT
+	id S1754153Ab1J1BfM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 21:35:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48405 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751940Ab1J1BfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 21:25:28 -0400
-Date: Fri, 28 Oct 2011 03:25:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+	Thu, 27 Oct 2011 21:35:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111028012521.GF25795@one.firstfloor.org>
+References: <1319764761.23112.14.camel@edumazet-laptop> <20111028012521.GF25795@one.firstfloor.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 27 Oct 2011 18:34:48 -0700
+X-Google-Sender-Auth: 4T7NUehy3AGttKhUrdZqiEfYpbQ
+Message-ID: <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
 Subject: Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-Message-ID: <20111028012521.GF25795@one.firstfloor.org>
-References: <1319764761.23112.14.camel@edumazet-laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319764761.23112.14.camel@edumazet-laptop>
-User-Agent: Mutt/1.4.2.2i
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 03:19:21AM +0200, Eric Dumazet wrote:
-> In commit 4e60c86bd9e (gcc-4.6: mm: fix unused but set warnings)
-> Andi forced VM_BUG_ON(cond) to evaluate cond, even if CONFIG_DEBUG_VM is
-> not set :
-> 
-> #ifdef CONFIG_DEBUG_VM
-> #define VM_BUG_ON(cond) BUG_ON(cond)
-> #else
-> #define VM_BUG_ON(cond) do { (void)(cond); } while (0)
-> #endif
+On Thu, Oct 27, 2011 at 6:25 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Seems reasonable too. In fact we usually should have memory barriers
+> for this anyways which obsolete the volatile.
 
-Eventually the warnings were disabled in the Makefile.
-So it would be reasonable to just revert that patch now, at least
-for VM_BUG_ON, if it costs performance.
+No we shouldn't. Memory barriers are insanely expensive, and pointless
+for atomics - that aren't ordered anyway.
 
-> 
-> So maybe a fix would be to introduce an atomic_read_stable() variant ?
-> 
-> static inline int atomic_read_stable(const atomic_t *v)
-> {
-> 	return v->counter;
-> }
+You may mean compiler barriers.
 
-Seems reasonable too. In fact we usually should have memory barriers
-for this anyways which obsolete the volatile.
+That said, removing the volatile entirely might be a good idea, and
+never mind any barriers at all. The ordering for atomics really isn't
+well enough specified that we should care. So I wouldn't object to a
+patch that just removes the volatile entirely, but it would have to be
+accompanied with quite a bit of testing, in case some odd case ends up
+depending on it. But nothing *should* be looping on those things
+anyway.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+                       Linus
