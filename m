@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab1J1CYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 22:24:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab1J1CYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 22:24:45 -0400
-Date: Thu, 27 Oct 2011 23:52:48 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Eric B Munson <emunson@mgebm.net>
-Cc: avi@redhat.com, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com
-Subject: Re: [PATCH 3/6] Add ioctl for KVM_GUEST_STOPPED
-Message-ID: <20111028015248.GA13000@amt.cnet>
-References: <1319570779-8907-1-git-send-email-emunson@mgebm.net>
- <1319570779-8907-4-git-send-email-emunson@mgebm.net>
+	id S1754504Ab1J1C2s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 22:28:48 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:50201 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab1J1C2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 22:28:47 -0400
+X-AuditID: b753bd60-a32aeba0000019f4-bb-4eaa135c0e23
+X-AuditID: b753bd60-a32aeba0000019f4-bb-4eaa135c0e23
+Message-ID: <4EAA1357.8060802@hitachi.com>
+Date: Fri, 28 Oct 2011 11:28:39 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319570779-8907-4-git-send-email-emunson@mgebm.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rabin Vincent <rabin@rab.in>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86: call stop_machine_text_poke() on all CPUs
+References: <1319702072-32676-1-git-send-email-rabin@rab.in>
+In-Reply-To: <1319702072-32676-1-git-send-email-rabin@rab.in>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 03:26:16PM -0400, Eric B Munson wrote:
-> Now that we have a flag that will tell the guest it was suspended, create an
-> interface for that communication using a KVM ioctl.
+(2011/10/27 16:54), Rabin Vincent wrote:
+> It appears that stop_machine_text_poke() wants to be called on all CPUs,
+> like it's done from text_poke_smp().  Fix text_poke_smp_batch() to do
+> this.
+
+cpu_mask==NULL finally falls back to cpu_online_mask, but even though
+it should be specified correctly.
+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
 > 
-> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Jason Baron <jbaron@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Rabin Vincent <rabin@rab.in>
 > ---
->  arch/x86/include/asm/pvclock.h |    3 +++
->  arch/x86/kernel/kvmclock.c     |   12 ++++++++++++
->  arch/x86/kvm/x86.c             |    5 +++++
->  include/linux/kvm.h            |    2 ++
->  4 files changed, 22 insertions(+), 0 deletions(-)
+>  arch/x86/kernel/alternative.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-> index 7d3ba41..9312814 100644
-> --- a/arch/x86/include/asm/pvclock.h
-> +++ b/arch/x86/include/asm/pvclock.h
-> @@ -3,6 +3,7 @@
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index c638228..1f84794 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -738,5 +738,5 @@ void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
 >  
->  #include <linux/clocksource.h>
->  #include <asm/pvclock-abi.h>
-> +#include <linux/kvm_host.h>
->  
->  /* some helper functions for xen and kvm pv clock sources */
->  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
-> @@ -13,6 +14,8 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
->  			    struct timespec *ts);
->  void pvclock_resume(void);
->  
-> +void kvm_set_host_stopped(struct kvm_vcpu *vcpu);
-> +
->  bool kvm_check_and_clear_host_stopped(int cpu);
->  
->  /*
-> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-> index 8ddcfaf..f4fff3d 100644
-> --- a/arch/x86/kernel/kvmclock.c
-> +++ b/arch/x86/kernel/kvmclock.c
-> @@ -22,6 +22,7 @@
->  #include <asm/msr.h>
->  #include <asm/apic.h>
->  #include <linux/percpu.h>
-> +#include <linux/kvm_host.h>
->  
->  #include <asm/x86_init.h>
->  #include <asm/reboot.h>
-> @@ -113,6 +114,17 @@ static void kvm_get_preset_lpj(void)
->  	preset_lpj = lpj;
+>  	atomic_set(&stop_machine_first, 1);
+>  	wrote_text = 0;
+> -	__stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+> +	__stop_machine(stop_machine_text_poke, (void *)&tpp, cpu_online_mask);
 >  }
->  
-> +/*
-> + * kvm_set_host_stopped() indicates to the guest kernel that it has been
-> + * stopped by the hypervisor.  This function will be called from the host only.
-> + */
-> +void kvm_set_host_stopped(struct kvm_vcpu *vcpu)
-> +{
-> +	struct pvclock_vcpu_time_info *src = &vcpu->arch.hv_clock;
-> +	src->flags |= PVCLOCK_GUEST_STOPPED;
-> +}
-> +EXPORT_SYMBOL_GPL(kvm_set_host_stopped);
-> +
->  bool kvm_check_and_clear_host_stopped(int cpu)
->  {
->  	bool ret = false;
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 84a28ea..16e029e 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -3264,6 +3264,11 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
->  
->  		goto out;
->  	}
-> +	case KVM_PAUSE_GUEST: {
 
-Pause guest?? :)
 
-> +		r = 0;
-> +		kvm_set_host_stopped(vcpu);
-> +		break;
-> +	}
->  	default:
->  		r = -EINVAL;
->  	}
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
