@@ -1,38 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab1J1KiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 06:38:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47970 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754258Ab1J1KiH (ORCPT
+	id S932190Ab1J1Kjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 06:39:43 -0400
+Received: from speedmark.co.id ([202.51.112.171]:44475 "EHLO
+	mail.fafakids.web.id" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754722Ab1J1Kjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 06:38:07 -0400
+	Fri, 28 Oct 2011 06:39:42 -0400
+Message-ID: <766c610ed11c5894da16723bd5ecddb4.squirrel@webmail.speedmark.co.id>
+Date: Fri, 28 Oct 2011 17:22:43 +0700 (WIT)
+Subject: Web News!!!
+From: "Upgrade Team" <info@accountupdate.net>
+Reply-To: web.support@gala.net
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <1319782638.22700.8.camel@dabdike>
-References: <1319782638.22700.8.camel@dabdike>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Fri, 28 Oct 2011 12:37:44 +0200
-X-Google-Sender-Auth: yhOL7Gl-CLD5adl0ab2HfBmMb0M
-Message-ID: <CAO+b5-poCGta55VVZCLc_YsJDyZzGHs=zmvFT8pRqns-xw5vaQ@mail.gmail.com>
-Subject: Re: [GIT PULL] first round of SCSI updates for the 3.1 merge window
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 8:17 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> This represents the usual round of driver updates [ ... ]
+Dear Accounts User
 
-Have these two patches perhaps been overlooked ?
-* Make scsi_free_queue() kill pending SCSI commands, which fixes a
-kernel deadlock that is easy to trigger from user space
-(http://marc.info/?l=linux-scsi&m=131680195721932).
-* srp_transport: Fix atttribute registration race
-(http://marc.info/?l=linux-rdma&m=131921626507904).
+Visit the link to update your account:
+https://docs.google.com/spreadsheet/viewform?formkey=dExrUTNRLVhpMENsbUwwLVdWLVlZOUE6MQ&theme=0AX42CRMsmRFbUy1iODQwMzFlYi1iZjJhLTRmNmUtODQ0My1iNjJmYTUzNjQ2ZWE&ifq
 
-Bart.
+
+Thanks & Regards
+
