@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1J1Roe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 13:44:34 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35354 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab1J1Rod convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 13:44:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=QXL5DtMwEASIvJMJq8SiwME7S8Jde4KCA2xdfY2GxPgiZF3Fxcgu5jjziKemk5NnL
-	pvzyEnHKZ1pjD6+aFpnHw==
-MIME-Version: 1.0
-In-Reply-To: <201110272235.59240.rjw@sisk.pl>
-References: <CAErSpo4REhcp_SgDyUTbi8jw9_8317Zi1duo1fTihB8x=drtuw@mail.gmail.com>
- <201110262013.55562.maciej.rutecki@gmail.com> <201110272235.59240.rjw@sisk.pl>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 28 Oct 2011 11:44:09 -0600
-Message-ID: <CAErSpo7ck7N780SfF6NnCFK97PUJc2sx5742kzspq5DbDHkJqQ@mail.gmail.com>
-Subject: Re: regression tracking
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: maciej.rutecki@gmail.com, Florian Mickler <florian@mickler.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1752840Ab1J1RwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 13:52:08 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:46808 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138Ab1J1RwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 13:52:07 -0400
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: dwmw2@infradead.org, dedekind1@gmail.com, mikedunn@newsguy.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH 00/13]  DocG3 fixes and write support
+Date: Fri, 28 Oct 2011 19:51:19 +0200
+Message-Id: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 2:35 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Wednesday, October 26, 2011, Maciej Rutecki wrote:
->> Hi
->>
->> On środa, 26 października 2011 o 19:23:11 Bjorn Helgaas wrote:
->> > The regression tracking that you folks used to do before the demise of
->> > bugzilla.kernel.org was incredibly valuable.
->> >
->> > I'm very concerned about the fact that we don't have a systematic way
->> > to do this any more.  Some things do get reported on LKML, of course,
->> > but without the legwork you guys did, I'm afraid we're just dropping
->> > things on the floor because there's no summary of what the issues are,
->> > how many people are seeing them, who's responsible, etc.
->> >
->> > Consider this as (1) kudos for performing an essential community
->> > service, and (2) a plea for the resurrection or replacement of
->> > bugzilla.kernel.org or some other mechanism for reviving regression
->> > tracking.
->>
->> Because bugzilla is still down, I yesterday started send regressions (found in
->> LKML) report directly to Rafael, to create summary report (etc.) of them.
->> Until bugzilla comes back, we plan to collect regression in this way, but any
->> proposal for a better solution is welcome.
->
-> Seconded.
->
-> Especially if there's a password-protected Wiki service somewhere that we
-> could use to store data temporarily until the BZ is back, it would be much
-> appreciated.
+This patchset is aimed at :
+ - fixing 4 glitches in the driver
+ - add several new functions
 
-I don't know exactly what you would like to do with a wiki, but Google
-Docs might be a possibility.
+The added functions are :
+ - add block erase capability
+ - add write page capability
+ - add powerdown and powerup
+ - add multiple floor support
+ - add ECC support
 
-Disclaimer: I work for Google but this is not any sort of official
-offer of help or support beyond the standard functionality that's
-available to everybody.
+The ECC part should especially be reviewed by Ivan and Mike,
+as this is their work (patch "add ECC correction code"). 
 
-Bjorn
+Happy review.
+
+--
+Robert
+
+Robert Jarzmik (13):
+  mtd/docg3: fix debug log verbosity
+  mtd/docg3: fix tracing of IO in writeb
+  mtd/docg3: fix protection areas reading
+  mtd/docg3: fix BCH registers
+  mtd/docg3: add multiple floor support
+  mtd/docg3: add OOB layout to mtdinfo
+  mtd/docg3: add registers for erasing and writing
+  mtd/docg3: add OOB buffer to device structure
+  mtd/docg3: add write functions
+  mtd/docg3: add erase functions
+  mtd/docg3: map erase and write functions
+  mtd/docg3: add ECC correction code
+  mtd/docg3: add suspend and resume
+
+ drivers/mtd/devices/Kconfig |    1 +
+ drivers/mtd/devices/docg3.c |  933 +++++++++++++++++++++++++++++++++++++------
+ drivers/mtd/devices/docg3.h |   42 ++-
+ 3 files changed, 860 insertions(+), 116 deletions(-)
+
+-- 
+1.7.5.4
+
