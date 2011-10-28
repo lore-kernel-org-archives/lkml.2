@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1J1DVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 23:21:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:42903 "EHLO mga11.intel.com"
+	id S1754893Ab1J1DVQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 23:21:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7293 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897Ab1J1DVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 23:21:17 -0400
+	id S1754391Ab1J1DVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Oct 2011 23:21:15 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,416,1315206000"; 
-   d="scan'208";a="78819812"
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="68780314"
 Subject: [RFC] ata port runtime pm
 From: Lin Ming <ming.m.lin@intel.com>
 To: linux-ide@vger.kernel.org
@@ -17,8 +17,8 @@ Cc: linux-kernel@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
         Priyanka Gupta <ankaguptaca@gmail.com>,
         Zhang Rui <rui.zhang@intel.com>, "Huang, Ying" <ying.huang@intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 11:21:12 +0800
-Message-ID: <1319772072.24236.0.camel@minggr>
+Date: Fri, 28 Oct 2011 11:20:15 +0800
+Message-ID: <1319772015.18801.62.camel@minggr>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -251,6 +251,5 @@ index 46d087f..88fc7fe 100644
  	spin_lock_irqsave(ap->lock, irq_flags);
  
  	ata_scsi_dump_cdb(ap, cmd);
-
 
 
