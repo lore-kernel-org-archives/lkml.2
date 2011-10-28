@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab1J1Om4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:42:56 -0400
-Received: from fieldses.org ([174.143.236.118]:40789 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab1J1Omz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:42:55 -0400
-Date: Fri, 28 Oct 2011 10:42:52 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: nfsd (and lock) changes for 3.2
-Message-ID: <20111028144252.GB5798@fieldses.org>
-References: <20111025121924.GA15662@fieldses.org>
- <4EA77B78.6080706@panasas.com>
- <20111027203412.GB31669@fieldses.org>
- <4EA9F5E8.6060900@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA9F5E8.6060900@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755921Ab1J1Ors (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:47:48 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61328 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753411Ab1J1Orq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:47:46 -0400
+Message-ID: <1319813252.23112.122.camel@edumazet-laptop>
+Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 28 Oct 2011 16:47:32 +0200
+In-Reply-To: <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
+References: <1319764761.23112.14.camel@edumazet-laptop>
+	 <20111028012521.GF25795@one.firstfloor.org>
+	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
+	 <1319766293.6759.17.camel@deadeye>
+	 <1319770376.23112.58.camel@edumazet-laptop>
+	 <1319772566.6759.27.camel@deadeye>
+	 <1319777025.23112.67.camel@edumazet-laptop>
+	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
+	 <1319803781.23112.113.camel@edumazet-laptop>
+	 <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
+	 <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 05:23:04PM -0700, Boaz Harrosh wrote:
-> On 10/27/2011 01:34 PM, J. Bruce Fields wrote:
-> > We need to test it, but I think you're probably correct,
-> > 6577aac01f00636c16cd583c30bd4dedf18475d5 "nfsd4: fix failure to end
-> > nfsd4 grace period" should have been tagged for stable.  Does that also
-> > require any previous patches? (E.g.
-> > 48483bf23a568f3ef4cc7ad2c8f1a082f10ad0e7 "nfsd4: simplify recovery dir
-> > setting"?)
-> > 
+Le vendredi 28 octobre 2011 à 05:40 -0700, Linus Torvalds a écrit :
+> On Fri, Oct 28, 2011 at 5:19 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > "Sane interfaces" are important. Insane interfaces lead to bugs.
 > 
-> right, and all for that dmesg print. But yes! 
+> Qutie frankly, if I do "atomic_read()", I do expect to get a single
+> value. If I don't get a single value, but some mixture of two values,
+> I'd personally go
 > 
-> Well the 3.1 Kernel without them gets stuck. I guess you need to experiment
-> with what would be the minimal patchset needed for 3.1 .
+>   wtf, what does that "atomic" mean in "atomic_read()"?
 > 
-> Tell me if you need help testing that the damage has gone. But basically I have
-> a script (4 years old) that does: 
-> 	server: service nfs stop/start 
-> 	client: mount
-> back to back, The client gets stuck forever.
+> and I think that's a reasonable wtf to ask.
+> 
+> That said, as mentioned, I don't know of any way to tell gcc "at most once".
+> 
+> Hmm.
+> 
+> Except perhaps using inline asm. Something like this might work:
+> 
+>   static inline int atomic_read(const atomic_t *v)
+>   {
+>        int val;
+>        asm("":"=r" (val):"0" (v->value));
+>        return val;
+>   }
+> 
+> (totally untested, but you get the idea: use a non-volatile asm to
+> make sure that gcc doesn't think it can re-load the value).
+> 
+> That's the trick we use in asmlinkage_protect() and a couple of other
+> places. It *should* make gcc able to optimize the value away entirely
+> if it isn't used, but will stop gcc from doing the reload magic.
+> 
+> Does that work for the test-case with VM_BUG_ON()?
 
-You and I are pretty sure those patches are needed, and fix the problem.
-But it would probably be a good idea, to make sure.
 
-Would you mind passing both along to stable@kernel.org?  Cc: me and I'll
-ack them.
+On x86 it seems to work :
 
---b.
+c050f80f: 0f 84 ea 00 00 00       je     c050f8ff <tcp_sendmsg+0xa1f>
+c050f815: 8b 55 bc                mov    -0x44(%ebp),%edx
+c050f818: f0 ff 42 10             lock incl 0x10(%edx)      atomic_inc(&page->count)
+c050f81c: 8b 02                   mov    (%edx),%eax        page->flags
+c050f81e: 25 00 40 02 00          and    $0x24000,%eax
+c050f823: 3d 00 40 02 00          cmp    $0x24000,%eax
+c050f828: 0f 84 9f 01 00 00       je     c050f9cd <tcp_sendmsg+0xaed>
+
+On x86_64 (gcc-4.6.1 Debian-4.6.1-4) we still have a page->flags useless load,
+but the atomic_read() itself is removed.
+
+
+This looks like a CONFIG_PAGEFLAGS_EXTENDED difference.
+
+In this case, PageTail() is :
+
+#define TESTPAGEFLAG(uname, lname)                  \
+static inline int Page##uname(const struct page *page)          \
+	{ return test_bit(PG_##lname, &page->flags); } 
+
+
+So we need a similar idea to remove the volatile from :
+
+static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
+{
+return ((1UL << (nr % BITS_PER_LONG)) &
+	 (addr[nr / BITS_PER_LONG])) != 0;
+}
+
+
+
