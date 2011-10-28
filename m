@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619Ab1J1MSO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:18:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43585 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932443Ab1J1MNs (ORCPT
+	id S932523Ab1J1MTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:19:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64023 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932422Ab1J1MTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:13:48 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: hch@infradead.org
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Subject: [PATCH 01/13] vfs: ignore error on forced remount
-Date: Fri, 28 Oct 2011 14:13:20 +0200
-Message-Id: <1319804012-16346-2-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1319804012-16346-1-git-send-email-miklos@szeredi.hu>
-References: <1319804012-16346-1-git-send-email-miklos@szeredi.hu>
+	Fri, 28 Oct 2011 08:19:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <1319803781.23112.113.camel@edumazet-laptop>
+References: <1319764761.23112.14.camel@edumazet-laptop> <20111028012521.GF25795@one.firstfloor.org>
+ <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
+ <1319766293.6759.17.camel@deadeye> <1319770376.23112.58.camel@edumazet-laptop>
+ <1319772566.6759.27.camel@deadeye> <1319777025.23112.67.camel@edumazet-laptop>
+ <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com> <1319803781.23112.113.camel@edumazet-laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 28 Oct 2011 05:19:01 -0700
+X-Google-Sender-Auth: DFRwZPzSw2dYQbuoUX6C3p3ozXY
+Message-ID: <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
+Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Fri, Oct 28, 2011 at 5:09 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>
+> What you describe is true for non atomic variables as well, its not part
+> of the atomic_ops documented semantic.
 
-On emergency remount we want to force MS_RDONLY on the super block
-even if ->remount_fs() failed for some reason.
+Eric - your "documentation" is so much toilet paper. So don't bother
+talkign about "documented semantics". Start talking about SANE
+INTERFACES.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
----
- fs/super.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+What I described is very much true of non-atomics. Nobody doubts that.
 
-diff --git a/fs/super.c b/fs/super.c
-index 3f56a26..14948d6 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -727,8 +727,13 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
- 
- 	if (sb->s_op->remount_fs) {
- 		retval = sb->s_op->remount_fs(sb, &flags, data);
--		if (retval)
--			return retval;
-+		if (retval) {
-+			if (!force)
-+				return retval;
-+			/* If forced remount, go ahead despite any errors */
-+			WARN(1, "forced remount of a %s fs returned %i\n",
-+			     sb->s_type->name, retval);
-+		}
- 	}
- 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
- 
--- 
-1.7.3.4
+THE QUESTION IS WHETHER IT MAKES SENSE FOR ATOMICS, DAMMIT!
 
+And quite frankly, the behavior I described does not seem to make any
+sense for atomics.
+
+"Sane interfaces" are important. Insane interfaces lead to bugs.
+
+                      Linus
