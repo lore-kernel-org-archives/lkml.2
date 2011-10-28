@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab1J1H5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:57:12 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37850 "EHLO mx2.mail.elte.hu"
+	id S932146Ab1J1H7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:59:14 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38164 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab1J1H5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:57:11 -0400
-Date: Fri, 28 Oct 2011 09:52:31 +0200
+	id S1754918Ab1J1H7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 03:59:13 -0400
+Date: Fri, 28 Oct 2011 09:54:33 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
         linux-kbuild@vger.kernel.org
 Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111028075231.GA8626@elte.hu>
+Message-ID: <20111028075432.GB8626@elte.hu>
 References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
  <20111027193448.GA3514@merkur.ravnborg.org>
  <20111028070336.GF12995@elte.hu>
- <1319786635.3235.11.camel@lappy>
- <20111028073915.GA27593@elte.hu>
- <1319788039.3235.13.camel@lappy>
+ <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319788039.3235.13.camel@lappy>
+In-Reply-To: <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,30 +37,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Sasha Levin <levinsasha928@gmail.com> wrote:
+* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-> On Fri, 2011-10-28 at 09:39 +0200, Ingo Molnar wrote:
-> > * Sasha Levin <levinsasha928@gmail.com> wrote:
-> > 
-> > > > ? It would be very obvious at a glance what it does.
-> > > 
-> > > We can possibly make 'make defconfig abc' run arch specific script 
-> > > located next to the defconfig files (arch/$(ARCH)/configs/).
-> > 
-> > AFAICS that's not the same as the current kvmconfig functionality 
-> > though: we want to minimally enable certain config options in the 
-> > current .config - not pick some default config.
+> > ? It would be very obvious at a glance what it does.
 > 
-> Yup, I wasn't planning on it to work like defconfig does where it 
-> just uses a default config, thats why I said 'run arch specific 
-> script' :)
+> This fits in the generic "I have a .config and I want to enable an 
+> additional option" functionality:
 > 
-> That script could either copy over a default config, or simply add 
-> config options like what we're interested in doing.
+> make oldconfig CONFIG_KVMTOOL_TEST_ENABLE=y
+> 
+> Don't we already have that support? I seem to remember it flying 
+> by. Or was it just a proposal that never got implemented?
 
-i'd be fine with that extension to defconfig functionality. It in 
-fact makes much more sense than the *current* defconfig functionality 
-which is kind of a joke (as it's really just an arbitrary config).
+Well, it would be nice to have something (much) shorter and more 
+obvious, as we really expect to use this frequently.
+
+Maybe:
+
+  make oldconfig kvm
+
+would work too.
 
 Thanks,
 
