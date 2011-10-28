@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab1J1MNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:13:52 -0400
+	id S932533Ab1J1MNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:13:55 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:44591 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab1J1MNt (ORCPT
+	with ESMTP id S932511Ab1J1MNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:13:49 -0400
+	Fri, 28 Oct 2011 08:13:53 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: hch@infradead.org
 Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
         toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
-Subject: [PATCH 02/13] vfs: keep list of mounts for each superblock
-Date: Fri, 28 Oct 2011 14:13:21 +0200
-Message-Id: <1319804012-16346-3-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 04/13] vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
+Date: Fri, 28 Oct 2011 14:13:23 +0200
+Message-Id: <1319804012-16346-5-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1319804012-16346-1-git-send-email-miklos@szeredi.hu>
 References: <1319804012-16346-1-git-send-email-miklos@szeredi.hu>
@@ -24,97 +24,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Keep track of vfsmounts belonging to a superblock.  List is protected
-by vfsmount_lock.
+Now a successful sb_prepare_remount_readonly() should ensure that no
+writable files remain for this superblock.  So turn this check into a
+WARN_ON.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Tested-by: Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
 ---
- fs/namespace.c        |   10 ++++++++++
- fs/super.c            |    2 ++
- include/linux/fs.h    |    1 +
- include/linux/mount.h |    1 +
- 4 files changed, 14 insertions(+), 0 deletions(-)
+ fs/file_table.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/namespace.c b/fs/namespace.c
-index b4febb2..ccbec4e 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -696,6 +696,11 @@ vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void
- 	mnt->mnt_sb = root->d_sb;
- 	mnt->mnt_mountpoint = mnt->mnt_root;
- 	mnt->mnt_parent = mnt;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-+	br_write_unlock(vfsmount_lock);
-+
- 	return mnt;
- }
- EXPORT_SYMBOL_GPL(vfs_kern_mount);
-@@ -745,6 +750,10 @@ static struct vfsmount *clone_mnt(struct vfsmount *old, struct dentry *root,
- 			if (!list_empty(&old->mnt_expire))
- 				list_add(&mnt->mnt_expire, &old->mnt_expire);
- 		}
-+
-+		br_write_lock(vfsmount_lock);
-+		list_add_tail(&mnt->mnt_instance, &mnt->mnt_sb->s_mounts);
-+		br_write_unlock(vfsmount_lock);
- 	}
- 	return mnt;
+diff --git a/fs/file_table.c b/fs/file_table.c
+index c322794..dc9f437 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -486,8 +486,11 @@ int fs_may_remount_ro(struct super_block *sb)
+ 		if (inode->i_nlink == 0)
+ 			goto too_bad;
  
-@@ -805,6 +814,7 @@ put_again:
- 		acct_auto_close_mnt(mnt);
- 		goto put_again;
- 	}
-+	list_del(&mnt->mnt_instance);
- 	br_write_unlock(vfsmount_lock);
- 	mntfree(mnt);
- }
-diff --git a/fs/super.c b/fs/super.c
-index 14948d6..a021ca2 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -142,6 +142,7 @@ static struct super_block *alloc_super(struct file_system_type *type)
- 		INIT_LIST_HEAD(&s->s_dentry_lru);
- 		INIT_LIST_HEAD(&s->s_inode_lru);
- 		spin_lock_init(&s->s_inode_lru_lock);
-+		INIT_LIST_HEAD(&s->s_mounts);
- 		init_rwsem(&s->s_umount);
- 		mutex_init(&s->s_lock);
- 		lockdep_set_class(&s->s_umount, &type->s_umount_key);
-@@ -200,6 +201,7 @@ static inline void destroy_super(struct super_block *s)
- 	free_percpu(s->s_files);
- #endif
- 	security_sb_free(s);
-+	WARN_ON(!list_empty(&s->s_mounts));
- 	kfree(s->s_subtype);
- 	kfree(s->s_options);
- 	kfree(s);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ba98668..6eb9a30 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1412,6 +1412,7 @@ struct super_block {
- #else
- 	struct list_head	s_files;
- #endif
-+	struct list_head	s_mounts;	/* list of mounts */
- 	/* s_dentry_lru, s_nr_dentry_unused protected by dcache.c lru locks */
- 	struct list_head	s_dentry_lru;	/* unused dentry lru */
- 	int			s_nr_dentry_unused;	/* # of dentry on lru */
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 33fe53d..f88c726 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -67,6 +67,7 @@ struct vfsmount {
- #endif
- 	struct list_head mnt_mounts;	/* list of children, anchored here */
- 	struct list_head mnt_child;	/* and going through their mnt_child */
-+	struct list_head mnt_instance;	/* mount instance on sb->s_mounts */
- 	int mnt_flags;
- 	/* 4 bytes hole on 64bits arches without fsnotify */
- #ifdef CONFIG_FSNOTIFY
+-		/* Writeable file? */
+-		if (S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE))
++		/*
++		 * Writable file?
++		 * Should be caught by sb_prepare_remount_readonly().
++		 */
++		if (WARN_ON(S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE)))
+ 			goto too_bad;
+ 	} while_file_list_for_each_entry;
+ 	lg_global_unlock(files_lglock);
 -- 
 1.7.3.4
 
