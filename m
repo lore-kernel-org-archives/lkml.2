@@ -1,126 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab1J1DnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 23:43:17 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59044 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab1J1DnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 23:43:15 -0400
-Message-ID: <4EAA2492.3020907@cn.fujitsu.com>
-Date: Fri, 28 Oct 2011 11:42:10 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+	id S1750914Ab1J1EGg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 00:06:36 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:22435 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750715Ab1J1EGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 00:06:34 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: y35CKNIVM1nq9.zas3fGwJjMEpnDR7OkLhqUmDqEAlbICrx
+ R99_iFBTY5isH4FNeBOnr8HTcFwFFmUECN69MUW90__ZB1y.TLXrbxGQUZbw
+ AdcwuCSrzLg1FMJ3gA4RxVunXhQtKSezSp.KmkC.bOjhzC9V6byU7hQplP5v
+ 2hN1mtWHffUUpxjX5QfFhNiePt1QJvQz7ytjtvmi7_sR3988jgnPzTUTkgfd
+ gclFPEq44GCuvVTlqC0CpUhOhR3c.ns.g90DW8aBa8.yfxCjhEho4IAeTIDR
+ IMI6GMOqbXPgSLFbCn5Zk3_ZUlbxnKhEaFcmosqaI0dw9ejHBf9TxKmKgB_D
+ d7kT2h1aeN4gLdxHjSWgVOx8Y2bE2pkjdRl56iooOOeOYjPQ-
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Thu, 27 Oct 2011 23:06:31 -0500 (CDT)
+From: Christoph Lameter <cl@gentwo.org>
+X-X-Sender: cl@router.home
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v2 6/6] slub: only preallocate cpus_with_slabs if
+ offstack
+In-Reply-To: <1319385413-29665-7-git-send-email-gilad@benyossef.com>
+Message-ID: <alpine.DEB.2.00.1110272304020.14619@router.home>
+References: <1319385413-29665-1-git-send-email-gilad@benyossef.com> <1319385413-29665-7-git-send-email-gilad@benyossef.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: [possible deadlock][3.1.0-g138c4ae] possible circular locking dependency
- detected
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-28 11:41:16,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-28 11:41:17,
-	Serialize complete at 2011-10-28 11:41:17
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks:
+On Sun, 23 Oct 2011, Gilad Ben-Yossef wrote:
 
-My dmesg said that:
+> We need a cpumask to track cpus with per cpu cache pages
+> to know which cpu to whack during flush_all. For
+> CONFIG_CPUMASK_OFFSTACK=n we allocate the mask on stack.
+> For CONFIG_CPUMASK_OFFSTACK=y we don't want to call kmalloc
+> on the flush_all path, so we preallocate per kmem_cache
+> on cache creation and use it in flush_all.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.1.0-138c4ae #2
--------------------------------------------------------
-hugemmap05/18198 is trying to acquire lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff8114d85c>] might_fault+0x5c/0xb0
+I think the on stack alloc should be the default because we can then avoid
+the field in kmem_cache and the associated logic with managing the field.
+Can we do a GFP_ATOMIC allocation in flush_all()? If the alloc
+fails then you can still fallback to send an IPI to all cpus.
 
-but task is already holding lock:
- (&sb->s_type->i_mutex_key#21){+.+.+.}, at: [<ffffffff811a10f6>] vfs_readdir+0x86/0xe0
-
-which lock already depends on the new lock.
-
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (&sb->s_type->i_mutex_key#21){+.+.+.}:
-       [<ffffffff810afd34>] validate_chain+0x704/0x860
-       [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
-       [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
-       [<ffffffff815464f2>] __mutex_lock_common+0x62/0x420
-       [<ffffffff81546a1a>] mutex_lock_nested+0x4a/0x60
-       [<ffffffff8120b4ba>] hugetlbfs_file_mmap+0xaa/0x160
-       [<ffffffff81158071>] mmap_region+0x3e1/0x590
-       [<ffffffff81158584>] do_mmap_pgoff+0x364/0x3b0
-       [<ffffffff811587d9>] sys_mmap_pgoff+0x209/0x240
-       [<ffffffff8101aac9>] sys_mmap+0x29/0x30
-       [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
-
--> #0 (&mm->mmap_sem){++++++}:
-       [<ffffffff810af607>] check_prev_add+0x537/0x560
-       [<ffffffff810afd34>] validate_chain+0x704/0x860
-       [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
-       [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
-       [<ffffffff8114d889>] might_fault+0x89/0xb0
-       [<ffffffff811a0f2e>] filldir+0x7e/0xe0
-       [<ffffffff811b445e>] dcache_readdir+0x5e/0x230
-       [<ffffffff811a1130>] vfs_readdir+0xc0/0xe0
-       [<ffffffff811a12c9>] sys_getdents+0x89/0x100
-       [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&sb->s_type->i_mutex_key);
-                               lock(&mm->mmap_sem);
-                               lock(&sb->s_type->i_mutex_key);
-  lock(&mm->mmap_sem);
-
- *** DEADLOCK ***
-
-1 lock held by hugemmap05/18198:
- #0:  (&sb->s_type->i_mutex_key#21){+.+.+.}, at: [<ffffffff811a10f6>] vfs_readdir+0x86/0xe0
-
-stack backtrace:
-Pid: 18198, comm: hugemmap05 Not tainted 3.1.0-138c4ae #2
-Call Trace:
- [<ffffffff810ad469>] print_circular_bug+0x109/0x110
- [<ffffffff810af607>] check_prev_add+0x537/0x560
- [<ffffffff8114e112>] ? do_anonymous_page+0xf2/0x2d0
- [<ffffffff810afd34>] validate_chain+0x704/0x860
- [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
- [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
- [<ffffffff8114d85c>] ? might_fault+0x5c/0xb0
- [<ffffffff8114d889>] might_fault+0x89/0xb0
- [<ffffffff8114d85c>] ? might_fault+0x5c/0xb0
- [<ffffffff81546763>] ? __mutex_lock_common+0x2d3/0x420
- [<ffffffff811a10f6>] ? vfs_readdir+0x86/0xe0
- [<ffffffff811a0f2e>] filldir+0x7e/0xe0
- [<ffffffff811b445e>] dcache_readdir+0x5e/0x230
- [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
- [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
- [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
- [<ffffffff811a1130>] vfs_readdir+0xc0/0xe0
- [<ffffffff8118e9be>] ? fget+0xee/0x220
- [<ffffffff8118e8d0>] ? fget_raw+0x220/0x220
- [<ffffffff811a12c9>] sys_getdents+0x89/0x100
- [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
-
-
-
-Wile hugemmap05 is a test case from LTP.
-http://ltp.git.sourceforge.net/git/gitweb.cgi?p=ltp/ltp.git;a=blob;f=testcases/kernel/mem/hugetlb/hugemmap/hugemmap05.c;h=50bb8ca23ae9686662740f9ea5d7187affff8b60;hb=HEAD
-
-But I don't know how to reproduce this.
-
-
-Thanks
--Wanlong Gao
