@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980Ab1J1O0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:26:05 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26279 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932887Ab1J1OZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:25:03 -0400
-Subject: [PATCH 5/7] SUNRPC: put pipefs superblock link on network namespace
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Fri, 28 Oct 2011 18:25:59 +0300
-Message-ID: <20111028142559.5796.82490.stgit@localhost6.localdomain6>
-In-Reply-To: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
-References: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S932957Ab1J1O03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:26:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:61351 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932884Ab1J1O00 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:26:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.com>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	<75efb251-7a5e-4aca-91e2-f85627090363@default>
+	<20111027215243.GA31644@infradead.org>
+	<1319785956.3235.7.camel@lappy>
+	<CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.com>
+Date: Fri, 28 Oct 2011 17:26:24 +0300
+X-Google-Sender-Auth: -wTyeHVkjZ6CRoPVrRlDdGrfWAo
+Message-ID: <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+From: Pekka Enberg <penberg@kernel.org>
+To: Cyclonus J <cyclonusj@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have modules (like, pNFS blocklayout module) which creates pipes on
-rpc_pipefs. Thus we need per-net operations for them. To make it possible we
-require appropriate super block. So we have to put sb link on network namespace
-context. Note, that it's not strongly required to create pipes in per-net
-operations. IOW, if pipefs wasn't mounted yet, that no sb link reference will
-present on network namespace and in this case we need just need to pass through
-pipe creation. Pipe dentry will be created during pipefs mount notification.
+On Fri, Oct 28, 2011 at 10:30 AM, Cyclonus J <cyclonusj@gmail.com> wrote:
+>> I felt it would be difficult to try and merge any tmem KVM patches until
+>> both frontswap and cleancache are in the kernel, thats why the
+>> development is currently paused at the POC level.
+>
+> Same here. I am working a KVM support for Transcedent Memory as well.
+> It would be nice to see this in the mainline.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+We don't really merge code for future projects - especially when it
+touches the core kernel.
 
----
- net/sunrpc/netns.h    |    2 ++
- net/sunrpc/rpc_pipe.c |    4 ++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+As for the frontswap patches, there's pretty no ACKs from MM people
+apart from one Reviewed-by from Andrew. I really don't see why the
+pull request is sent directly to Linus...
 
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index d013bf2..b384252 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -9,6 +9,8 @@ struct cache_detail;
- struct sunrpc_net {
- 	struct proc_dir_entry *proc_net_rpc;
- 	struct cache_detail *ip_map_cache;
-+
-+	struct super_block *pipefs_sb;
- };
- 
- extern int sunrpc_net_id;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 4860a56..5c313d3 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1042,6 +1042,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	struct inode *inode;
- 	struct dentry *root;
- 	struct net *net = data;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	int err;
- 
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
-@@ -1066,6 +1067,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	if (err)
- 		goto err_depopulate;
- 	sb->s_fs_info = get_net(net);
-+	sn->pipefs_sb = sb;
- 	return 0;
- 
- err_depopulate:
-@@ -1086,7 +1088,9 @@ rpc_mount(struct file_system_type *fs_type,
- void rpc_kill_sb(struct super_block *sb)
- {
- 	struct net *net = sb->s_fs_info;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 
-+	sn->pipefs_sb = NULL;
- 	put_net(net);
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
-
+                        Pekka
