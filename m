@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932957Ab1J1O03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:26:29 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61351 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab1J1O00 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:26:26 -0400
+	id S1755939Ab1J1OXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:23:37 -0400
+Received: from fieldses.org ([174.143.236.118]:38588 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755890Ab1J1OXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:23:33 -0400
+Date: Fri, 28 Oct 2011 10:23:28 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
+        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, devel@openvz.org
+Subject: Re: [PATCH v7 0/7] SUNRPC: make rpcbind clients allocated and
+ destroyed dynamically
+Message-ID: <20111028142328.GE5193@fieldses.org>
+References: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.com>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	<75efb251-7a5e-4aca-91e2-f85627090363@default>
-	<20111027215243.GA31644@infradead.org>
-	<1319785956.3235.7.camel@lappy>
-	<CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.com>
-Date: Fri, 28 Oct 2011 17:26:24 +0300
-X-Google-Sender-Auth: -wTyeHVkjZ6CRoPVrRlDdGrfWAo
-Message-ID: <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-From: Pekka Enberg <penberg@kernel.org>
-To: Cyclonus J <cyclonusj@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 10:30 AM, Cyclonus J <cyclonusj@gmail.com> wrote:
->> I felt it would be difficult to try and merge any tmem KVM patches until
->> both frontswap and cleancache are in the kernel, thats why the
->> development is currently paused at the POC level.
->
-> Same here. I am working a KVM support for Transcedent Memory as well.
-> It would be nice to see this in the mainline.
+On Fri, Oct 28, 2011 at 02:52:09PM +0300, Stanislav Kinsbursky wrote:
+> This patch-set was created in context of clone of git branch:
+> git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
+> and rebased on tag "v3.1".
+> 
+> v7:
+> 1) Implemented "goto pattern" in __svc_create().
+> 2) Pathes 5 and 6 from perious patch-set were squashed to make things looks
+> clearer and to allow safe bisecting of the patch-set.
 
-We don't really merge code for future projects - especially when it
-touches the core kernel.
+This series looks fine to me; thanks!
 
-As for the frontswap patches, there's pretty no ACKs from MM people
-apart from one Reviewed-by from Andrew. I really don't see why the
-pull request is sent directly to Linus...
+--b.
 
-                        Pekka
+> 
+> v6:
+> 1) Fixes in rpcb_clients management.
+> 
+> v4:
+> 1) creation and destruction on rpcbind clients now depends on service program
+> versions "vs_hidden" flag.
+> 
+> This patch is required for further RPC layer virtualization, because rpcbind
+> clients have to be per network namespace.
+> To achive this, we have to untie network namespace from rpcbind clients sockets.
+> The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
+> clients will be created during first RPC service creation, and destroyed when
+> last RPC service is stopped.
+> With this patch set rpcbind clients can be virtualized easely.
+> 
+> The following series consists of:
+> 
+> ---
+> 
+> Stanislav Kinsbursky (7):
+>       SUNRPC: introduce helpers for reference counted rpcbind clients
+>       SUNRPC: use rpcbind reference counting helpers
+>       SUNRPC: introduce svc helpers for prepairing rpcbind infrastructure
+>       SUNRPC: setup rpcbind clients if service requires it
+>       SUNRPC: cleanup service destruction
+>       SUNRPC: remove rpcbind clients creation during service registering
+>       SUNRPC: remove rpcbind clients destruction on module cleanup
+> 
+> 
+>  fs/nfsd/nfssvc.c            |    2 +
+>  include/linux/sunrpc/clnt.h |    2 +
+>  include/linux/sunrpc/svc.h  |    1 
+>  net/sunrpc/rpcb_clnt.c      |   88 ++++++++++++++++++++++++++++---------------
+>  net/sunrpc/sunrpc_syms.c    |    3 -
+>  net/sunrpc/svc.c            |   57 ++++++++++++++++++++++++----
+>  6 files changed, 113 insertions(+), 40 deletions(-)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
