@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab1J1ISI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:18:08 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62874 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755277Ab1J1ISC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:18:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,417,1315206000"; 
-   d="scan'208";a="78889980"
-Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
-From: Shaohua Li <shaohua.li@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111028073026.GB6268@barrios-laptop.redhat.com>
-References: <1319511580.22361.141.camel@sli10-conroe>
-	 <20111027233407.GC29407@barrios-laptop.redhat.com>
-	 <1319778715.22361.155.camel@sli10-conroe>
-	 <20111028073026.GB6268@barrios-laptop.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 16:25:56 +0800
-Message-ID: <1319790356.22361.165.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932182Ab1J1IUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:20:14 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58994 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797Ab1J1IUK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 04:20:10 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com
+Subject: Re: [PATCH 12/13] vfs: count unlinked inodes
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+	<1318430946-7091-13-git-send-email-miklos@szeredi.hu>
+	<20111028060801.GA15345@infradead.org>
+	<1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
+	<20111028080445.GA10318@infradead.org>
+Date: Fri, 28 Oct 2011 10:20:06 +0200
+In-Reply-To: <20111028080445.GA10318@infradead.org> (Christoph Hellwig's
+	message of "Fri, 28 Oct 2011 04:04:45 -0400")
+Message-ID: <87hb2t5xzd.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-28 at 15:30 +0800, Minchan Kim wrote:
-> On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
-> > On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
-> > > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
-> > > > With current logic, if page reclaim finds a huge page, it will just reclaim
-> > > > the head page and leave tail pages reclaimed later. Let's take an example,
-> > > > lru list has page A and B, page A is huge page:
-> > > > 1. page A is isolated
-> > > > 2. page B is isolated
-> > > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
-> > > > page A+1, page A+2, ... are added to lru list.
-> > > > 4. shrink_page_list() adds page B to swap page cache.
-> > > > 5. page A and B is written out and reclaimed.
-> > > > 6. page A+1, A+2 ... is isolated and reclaimed later.
-> > > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
-> > > 
-> > > I don't see your code yet but have a question.
-> > > You mitigate this problem by 4/5 which could add subpages into lru tail
-> > > so subpages would reclaim next interation of reclaim.
-> > > 
-> > > What do we need 5/5?
-> > > Do I miss something?
-> > Both patches are required. without this patch, current page reclaim will
-> > only reclaim the first page of a huge page, because the hugepage isn't
-> > split yet. The hugepage is split when the first page is being written to
-> > swap, which is too later and page reclaim might already isolated a lot
-> > of pages.
-> 
-> When split happens, subpages would be located in tail of LRU by your 4/5.
-> (Assume tail of LRU is old age).
-yes, but a lot of other pages already isolated. we will reclaim those
-pages first. for example, reclaim huge page A, B. current reclaim order
-is A, B, A+1, ... B+1, because we will isolated A and B first, all tail
-pages are not isolated yet. While with my patch, the order is A, A
-+1, ... B, B+1,.... with my patch, we can avoid unnecessary page split
-or page isolation. This is exactly why my patch reduces the thp_split
-count.
+Christoph Hellwig <hch@infradead.org> writes:
 
-> In addtion, isolation happens 32 page chunk so the subpages would be isolated
-> and reclaimed in next iteration. I think 32 pages are not too many.
-> 
-> What do you think about it?
-since headpage and tailpages are in different list, the 32 chunk will
-not include tailpages.
+> On Fri, Oct 28, 2011 at 09:53:53AM +0200, Miklos Szeredi wrote:
+>> On Fri, 2011-10-28 at 02:08 -0400, Christoph Hellwig wrote:
+>> > This one gets me a repeated spew of WARN_ONs during XFS log recover,
+>> > repeating the following pattern:
+>> 
+>> The assumption here is that set_nlink() is called with a non-zero count.
+>> The point of introducing set_nlink() was to verify this assumption,
+>> otherwise pending delete accounting will be screwed up.
+>> 
+>> If setting i_nlink to zero is not a bug in xfs we can do two things:
+>> 
+>>  1) do a conditional clear_nlink() in xfs_setup_inode() to document that
+>> nlink can indeed be zero
+>> 
+>>  2) remove the warning from set_nlink().  That may hide some cases where
+>> i_nlink was cleared without the intention of the filesystem but it will
+>> work just fine wrt. the pending delete accounting. 
+>
+> I suspect 2 might be the better option.  The pattern we see here in
+> XFS is pretty typical for transactional filesytems - when we mount a
+> filesystem after an unclean shutdown we need to drop all inodes that
+> were open but unlinked when the system crashed, and that typically
+> means reading inodes from disk that have a zero i_nlink.  Maybe some
+> filesystems never instanciate a VFS inode for it, but I suspect many
+> do.
+>
+> For XFS we will actually see it during regularly testing as we have
+> an ioctl that simulates a shutdown and can thus trigger log recovery
+> easily, while for others like ext4 you'd actually have to do a real
+> reset of your (physical or virtual) machine.
 
+Okay, so a WARN_ON is not warranted.  Perhaps a printk instead?
+
+While initializing nlink with zero normally shouldn't be a problem it
+might indicate something unexpected.
+
+Thanks,
+Miklos
+
+---
+ fs/inode.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c	2011-10-27 22:26:12.000000000 +0200
++++ linux-2.6/fs/inode.c	2011-10-28 10:14:18.000000000 +0200
+@@ -320,7 +320,8 @@ EXPORT_SYMBOL(clear_nlink);
+  */
+ void set_nlink(struct inode *inode, unsigned int nlink)
+ {
+-	if (WARN_ON(!nlink)) {
++	if (!nlink) {
++		printk(KERN_INFO "set_nlink() clearing i_nlink on %s inode %li\n", inode->i_sb->s_type->name, inode->i_ino);
+ 		clear_nlink(inode);
+ 	} else {
+ 		/* Yes, some filesystems do change nlink from zero to one */
