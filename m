@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab1J1TT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 15:19:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53741 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab1J1TT0 (ORCPT
+	id S1753251Ab1J1Tcj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 15:32:39 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60059 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab1J1Tci convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 15:19:26 -0400
-Subject: Re: Linux USB HID should ignore values outside Logical
- Minimum/Maximum range
-From: Christoph Fritz <chf.fritz@googlemail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Denilson Figueiredo de =?ISO-8859-1?Q?S=E1?= 
-	<denilsonsa@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-usb@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1110281817380.3541@pobox.suse.cz>
-References: <op.v3q34la3dsdv5o@localhost> <1319476183.3210.12.camel@lovely>
-	 <20111024203204.GA31721@core.coreip.homeip.net>
-	 <alpine.LNX.2.00.1110281817380.3541@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 21:27:00 +0200
-Message-ID: <1319830020.3467.7.camel@lovely>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 28 Oct 2011 15:32:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <1319685104.4598.3.camel@phoenix>
+References: <1319685104.4598.3.camel@phoenix>
+Date: Fri, 28 Oct 2011 21:32:37 +0200
+Message-ID: <CACRpkda7Q4q5YoWHbvC-gkcE99h0nUr3QhFT+GGuLGA4=V9gqg@mail.gmail.com>
+Subject: Re: [linux-next 20111025] build failure with make u8500_defconfig
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>, Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        "Stephen Rothwell sfr"@canb.auug.org.au
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-28 at 18:23 +0200, Jiri Kosina wrote:
-> On Mon, 24 Oct 2011, Dmitry Torokhov wrote:
-> 
-> > While input core does not clam or validate the values reported by the 
-> > driver it might make sense to do so in hid-input; I am not sure how 
-> > often these limits programmed intorrectly. Jiri i sprobably the best 
-> > person to answer this question.
-> 
-> I haven't met such a device myself yet.
-> 
-> On the other hand I feel like just dropping the report on the floor should 
-> be the proper thing to do.
-> 
-> 
-> Christoph, how about the (untested at my side yet) patch below? It'd be 
-> nice if you could test with the device you are seeing the problem with and 
-> let me know.
+On Thu, Oct 27, 2011 at 5:11 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
+> I got below build error by "make u8500_defconfig" on linux-next 20111025.
+>
+>  CC      arch/arm/common/gic.o
+> arch/arm/common/gic.c: In function 'gic_dist_init':
+> arch/arm/common/gic.c:290: error: 'irq_start' undeclared (first use in this function)
+> arch/arm/common/gic.c:290: error: (Each undeclared identifier is reported only once
+> arch/arm/common/gic.c:290: error: for each function it appears in.)
+> arch/arm/common/gic.c:296: error: 'struct gic_chip_data' has no member named 'irq_offset'
+> arch/arm/common/gic.c: In function 'gic_init':
+> arch/arm/common/gic.c:620: error: 'THIS_MODULE' undeclared (first use in this function)
+> make[1]: *** [arch/arm/common/gic.o] Error 1
+> make: *** [arch/arm/common] Error 2
 
-I don't have this device and I'm not the person who started this thread.
-It's Denilson Figueiredo de SÃ¡ <denilsonsa@gmail.com> , just see above.
+Hm I don't get it, the lines in the compile error seems to come from the
+"ARM: gic: consolidate PPI handling" patch, so Marc if this is my
+fault can you help me out in advicing me on how to fix it up properly?
 
-Denilson, please comment.
-
-Thanks,
- -- Christoph
-
-
+Yours,
+Linus Walleij
