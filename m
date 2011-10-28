@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab1J1AaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 20:30:13 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:12303 "EHLO
+	id S1753421Ab1J1Ada (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 20:33:30 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1098 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750916Ab1J1AaJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751619Ab1J1Ad2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 20:30:09 -0400
+	Thu, 27 Oct 2011 20:33:28 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-To: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com,
         Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 2/2] pch_dma: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
-Date: Fri, 28 Oct 2011 09:29:50 +0900
-Message-Id: <1319761790-6882-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 2/2] pch_phub: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
+Date: Fri, 28 Oct 2011 09:33:14 +0900
+Message-Id: <1319761994-6950-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1319761790-6882-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-References: <1319761790-6882-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+In-Reply-To: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+References: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,31 +27,40 @@ OKI SEMICONDUCTOR Co., Ltd. changed the company name in to LAPIS Semiconductor C
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 ---
- drivers/dma/pch_dma.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/misc/pch_phub.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/dma/pch_dma.c b/drivers/dma/pch_dma.c
-index a46bedb..60aca37 100644
---- a/drivers/dma/pch_dma.c
-+++ b/drivers/dma/pch_dma.c
-@@ -1,7 +1,7 @@
+diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
+index b50f48a..e7c5995 100644
+--- a/drivers/misc/pch_phub.c
++++ b/drivers/misc/pch_phub.c
+@@ -1,5 +1,5 @@
  /*
-  * Topcliff PCH DMA controller driver
-  * Copyright (c) 2010 Intel Corporation
-- * Copyright (C) 2011 OKI SEMICONDUCTOR CO., LTD.
+- * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
 + * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
   *
   * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -1061,7 +1061,7 @@ static void __exit pch_dma_exit(void)
- module_init(pch_dma_init);
- module_exit(pch_dma_exit);
+  * it under the terms of the GNU General Public License as published by
+@@ -41,10 +41,10 @@
+ #define PCH_PHUB_ROM_START_ADDR_EG20T 0x80 /* ROM data area start address offset
+ 					      (Intel EG20T PCH)*/
+ #define PCH_PHUB_ROM_START_ADDR_ML7213 0x400 /* ROM data area start address
+-						offset(OKI SEMICONDUCTOR ML7213)
++						offset(LAPIS Semicon ML7213)
+ 					      */
+ #define PCH_PHUB_ROM_START_ADDR_ML7223 0x400 /* ROM data area start address
+-						offset(OKI SEMICONDUCTOR ML7223)
++						offset(LAPIS Semicon ML7223)
+ 					      */
  
--MODULE_DESCRIPTION("Intel EG20T PCH/OKI SEMICONDUCTOR ML7213/ML7223/ML7831 IOH "
-+MODULE_DESCRIPTION("Intel EG20T PCH / LAPIS Semicon ML7213/ML7223/ML7831 IOH "
- 		   "DMA controller driver");
- MODULE_AUTHOR("Yong Wang <yong.y.wang@intel.com>");
- MODULE_LICENSE("GPL v2");
+ /* MAX number of INT_REDUCE_CONTROL registers */
+@@ -893,5 +893,5 @@ static void __exit pch_phub_pci_exit(void)
+ module_init(pch_phub_pci_init);
+ module_exit(pch_phub_pci_exit);
+ 
+-MODULE_DESCRIPTION("Intel EG20T PCH/OKI SEMICONDUCTOR IOH(ML7213/ML7223) PHUB");
++MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7223) PHUB");
+ MODULE_LICENSE("GPL");
 -- 
 1.7.4.4
 
