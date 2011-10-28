@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab1J1KxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 06:53:09 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41685 "EHLO relay.sw.ru"
+	id S932286Ab1J1Kyl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 06:54:41 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:34554 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab1J1KxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 06:53:07 -0400
-Subject: [PATCH v7 7/7] SUNRPC: remove rpcbind clients destruction on module
-	cleanup
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Fri, 28 Oct 2011 14:54:02 +0300
-Message-ID: <20111028105400.24628.78761.stgit@localhost6.localdomain6>
-In-Reply-To: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
-References: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1755059Ab1J1Kyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 06:54:40 -0400
+Message-ID: <4EAA89EB.4020503@nod.at>
+Date: Fri, 28 Oct 2011 12:54:35 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Jeff Dike <jdike@addtoit.com>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net
+Subject: Re: [PATCH 18/49] um: irq: Remove IRQF_DISABLED
+References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com> <1319277421-9203-19-git-send-email-yong.zhang0@gmail.com>
+In-Reply-To: <1319277421-9203-19-git-send-email-yong.zhang0@gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF977B42524113E1953A58BE1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rpcbind clients destruction during SUNRPC module removing is obsolete since now
-those clients are destroying during last RPC service shutdown.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF977B42524113E1953A58BE1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Am 22.10.2011 11:56, schrieb Yong Zhang:
+> Since commit [e58aa3d2: genirq: Run irq handlers with interrupts disabl=
+ed],
+> We run all interrupt handlers with interrupts disabled
+> and we even check and yell when an interrupt handler
+> returns with interrupts enabled (see commit [b738a50a:
+> genirq: Warn when handler enables interrupts]).
+>=20
+> So now this flag is a NOOP and can be removed.
+>=20
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Acked-by: Richard Weinberger <richard@nod.at>
 
----
- net/sunrpc/rpcb_clnt.c   |   12 ------------
- net/sunrpc/sunrpc_syms.c |    3 ---
- 2 files changed, 0 insertions(+), 15 deletions(-)
+BTW: I think it's better when I carry this patch through my UML tree.
+Okay?
 
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index 115c691..983b74f 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -1100,15 +1100,3 @@ static struct rpc_program rpcb_program = {
- 	.version	= rpcb_version,
- 	.stats		= &rpcb_stats,
- };
--
--/**
-- * cleanup_rpcb_clnt - remove xprtsock's sysctls, unregister
-- *
-- */
--void cleanup_rpcb_clnt(void)
--{
--	if (rpcb_local_clnt4)
--		rpc_shutdown_client(rpcb_local_clnt4);
--	if (rpcb_local_clnt)
--		rpc_shutdown_client(rpcb_local_clnt);
--}
-diff --git a/net/sunrpc/sunrpc_syms.c b/net/sunrpc/sunrpc_syms.c
-index 9d08091..8ec9778 100644
---- a/net/sunrpc/sunrpc_syms.c
-+++ b/net/sunrpc/sunrpc_syms.c
-@@ -61,8 +61,6 @@ static struct pernet_operations sunrpc_net_ops = {
- 
- extern struct cache_detail unix_gid_cache;
- 
--extern void cleanup_rpcb_clnt(void);
--
- static int __init
- init_sunrpc(void)
- {
-@@ -102,7 +100,6 @@ out:
- static void __exit
- cleanup_sunrpc(void)
- {
--	cleanup_rpcb_clnt();
- 	rpcauth_remove_module();
- 	cleanup_socket_xprt();
- 	svc_cleanup_xprt_sock();
+Thanks,
+//richard
 
+
+--------------enigF977B42524113E1953A58BE1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOqonrAAoJEN9758yqZn9easAH/0A1JSqAAvhdCaoUqxMdsqc3
+ImfhENr8E+JYMovspXz93m+H21McaT4ns5cg3kTn54te/21CpGxzp9Xy+Be9J5Cx
+giVI0nhB2JGvAdMeo75thJFsLX99srf+HmkgYMb6zC0/QUtzQm/Qg1iowZAZmGn3
+TZ80Iu9LwhjPCC8RZooiGHgYHLyn0WJgy8C9lYzDOm0yoKPNnMPOM031q3pyNrS9
+W+UUpVR9f75kyCAcz5S9xxB+HOdRcM6XfJDsybZZ+QX9ZlVOlyMn6ah8WBDO2JpB
+De2ykCJYDQZjZd5z5pLvEeFGsxDMbLXp37dgxice1bfGK408LlqWDPP9cOadNgk=
+=sM73
+-----END PGP SIGNATURE-----
+
+--------------enigF977B42524113E1953A58BE1--
