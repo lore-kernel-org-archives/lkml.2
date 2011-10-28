@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab1J1LiR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 07:38:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43308 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab1J1LiP (ORCPT
+	id S932412Ab1J1Lj3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 07:39:29 -0400
+Received: from nm7.access.bullet.mail.mud.yahoo.com ([66.94.237.208]:35544
+	"HELO nm7.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752915Ab1J1Lj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 07:38:15 -0400
+	Fri, 28 Oct 2011 07:39:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 204344.5066.bm@omp1018.access.mail.mud.yahoo.com
+X-YMail-OSG: tR5JUboVM1mDahMbv9UurrOIvBb_B_4JiDOBCWkgGQV82cT
+ U6RTVltzdwh9OlZjyAYnbBeXp.Rf0gtPqT2KIweIOBnic2uyfFdQx8ByGeB4
+ rqxXIbH9koVzrg_QKmdaevacyT5YYo8krTGbkz.qJWTzFtWy5_HZuvUWc1Ox
+ KfjsemW0iMiW_tQlPkG5MtI7ntuQ66bf7v7063XZaC8EoIbjg2suVTRbXvcN
+ xo.Ze2j4dmpKC64vZ7ceyJH9EmZ1WPBkIfiMqQpZ04IkwPdlrDfHC78ORxMX
+ X49sPXHhmrZEiQZTA53Foe4dUeJX5cEoNc01zlI9sHA3I5wFwEErWG0rB6ZQ
+ Lmp.gKT6a3OVpiSVletWZ_ANEpZ77GZm8MN0U3ZZ2SpKvO3Qb2NJKYf0xdQi
+ fv3Rnb3Cgo4oE0EehrZ3efvVtdPduszBM.58ilJMtzrYns4mjPuP2HipTvmx
+ GBj5A1LWfXa9ny8_TR8bdZoxdVcef8IVXNXZdEgluC_5gdgHNj5l1EMltVqZ
+ mxAMsXoEkOM0O8ecEM4FhdCJvEP6M5WUi2C5Q7ty2U07GkpwAuYvHIMD45pn
+ Q4Tg-
+X-RocketYMMF: webbaygon@att.net
+X-Mailer: YahooMailRC/574 YahooMailWebService/0.8.114.317681
+Message-ID: <1319801966.27889.YahooMailRC@web181605.mail.ne1.yahoo.com>
+Date: Fri, 28 Oct 2011 04:39:26 -0700 (PDT)
+From: gracendoye <gracendoye45@rediffmail.com>
+Reply-To: gracendoye <gracendoye0@gala.net>
+Subject: Hello My Dear, My name is grace ndoye,i read through your profile today and i became interested in you,i will also like to know you the more,and i want you to send an e-mail to my e-mail address so i can give you my picture for you to know whom i am and for the both of us to know each other very well and better in life,and we can achieve it in future because ture love and feeling means alot in future.Here is my private e-mail address you can contact me with it.(gracendoye0@gala.net)I am waiting for your mail to my e-mail address above and aslo, Remember the distance or colour does not matter but love,feeling,e-motions and sympathetic love matters alot in life. Thanks,and i promise to be honest and to keep a very good relationship with you. Grace.              gracendoye0@gala.net
+To: undisclosed recipients:;
 MIME-Version: 1.0
-In-Reply-To: <1319777025.23112.67.camel@edumazet-laptop>
-References: <1319764761.23112.14.camel@edumazet-laptop> <20111028012521.GF25795@one.firstfloor.org>
- <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
- <1319766293.6759.17.camel@deadeye> <1319770376.23112.58.camel@edumazet-laptop>
- <1319772566.6759.27.camel@deadeye> <1319777025.23112.67.camel@edumazet-laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 28 Oct 2011 04:37:53 -0700
-X-Google-Sender-Auth: 8U7IFAVyCxEZEq5SuyJghfPp8tk
-Message-ID: <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
-Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 9:43 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->
-> The only requirement of atomic_read() is that it must return value
-> before or after an atomic_write(), not a garbled value.
 
-The problem is that gcc *can* return a garbled value.
 
-> In fact, if a compiler is stupid enough to issue two reads on following
-> code :
-
-The compiler really *can* be that "stupid". Except the code tends to
-look like this:
-
-   int value = atomic_read(&atomic_var);
-   if (value > 10)
-     return;
-   .. do something with value ..
-
-and gcc may decide - under register pressure, and in the absense of a
-'volatile' - to read 'value' first once for that "> 10" check, and
-then it drops the registers and instead of saving it on the stack
-frame, it can decide to re-load it from atomic_var.
-
-IOW, "value" could be two or more different values: one value when
-testing, and *another* value in "do something with value".
-
-This is why we have "ACCESS_ONCE()".
-
-Whether atomics guarantee ACCESS_ONCE() semantics or not is not
-entirely clear. But afaik, there is no way to tell gcc "access at
-*most* once, and never ever reload".
-
-                             Linus
