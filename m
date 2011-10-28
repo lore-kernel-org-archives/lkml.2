@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab1J1Pqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 11:46:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47595 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985Ab1J1Pqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 11:46:30 -0400
-Date: Fri, 28 Oct 2011 17:46:29 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Nico Schottelius <nico-linux-20111017@schottelius.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
-In-Reply-To: <20111022102427.GB26724@schottelius.org>
-Message-ID: <alpine.LNX.2.00.1110281745290.3541@pobox.suse.cz>
-References: <20111017175906.GA3461@schottelius.org> <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz> <20111017214050.GA1408@schottelius.org> <20111019150122.GA6157@schottelius.org> <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz> <20111019210742.GA2432@schottelius.org>
- <20111022020205.GA26724@schottelius.org> <20111022102427.GB26724@schottelius.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756026Ab1J1PsW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 11:48:22 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44449 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab1J1PsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 11:48:21 -0400
+Date: Fri, 28 Oct 2011 08:48:15 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [RFC/PATCH 7/7] x86, mm: Unify zone_sizes_init()
+Message-ID: <20111028154815.GA29806@google.com>
+References: <1319811801-1725-1-git-send-email-penberg@kernel.org>
+ <1319811801-1725-7-git-send-email-penberg@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319811801-1725-7-git-send-email-penberg@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Oct 2011, Nico Schottelius wrote:
+On Fri, Oct 28, 2011 at 05:23:21PM +0300, Pekka Enberg wrote:
+> Now that zone_sizes_init() is identical on 32-bit and 64-bit, move the code to
+> arch/x86/mm/init.c and use it for both architectures.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-> The missing bit to correct my previous patch: To which device IDs do the 
-> devices named above match to? I.e. is USB_DEVICE_ID_APPLE_WELLSPRING6_* 
-> the MacBook Air 4,2?
+For all seven patches in this series.
 
-You need to check the USB IDs (lsusb will tell you) to see which quirk / 
-translation table is getting used.
+ Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
 
 -- 
-Jiri Kosina
-SUSE Labs
+tejun
