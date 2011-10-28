@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756191Ab1J1X7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 19:59:03 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:42343 "EHLO mgw2.diku.dk"
+	id S933899Ab1J1X7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 19:59:01 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42341 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838Ab1J1X66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754798Ab1J1X66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Oct 2011 19:58:58 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] drivers/hid/hid-roccat.c: eliminate a null pointer dereference
-Date: Sat, 29 Oct 2011 01:58:15 +0200
-Message-Id: <1319846297-2985-3-git-send-email-julia@diku.dk>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: kernel-janitors@vger.kernel.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/net/wireless/brcm80211/brcmsmac/dma.c: eliminate a null pointer dereference
+Date: Sat, 29 Oct 2011 01:58:14 +0200
+Message-Id: <1319846297-2985-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -20,9 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-It is not possible to take the lock in device if device is NULL.
-The mutex_lock is thus moved after the NULL test, and the relevant part of
-the shared error handling code is moved up.
+Delete di->name from the error reporting code, as it is meaningless if di
+is NULL.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -48,31 +47,20 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/hid/hid-roccat.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/wireless/brcm80211/brcmsmac/dma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
-index 2596321..36a28b8 100644
---- a/drivers/hid/hid-roccat.c
-+++ b/drivers/hid/hid-roccat.c
-@@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+index b56a302..1d66f53 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+@@ -361,7 +361,7 @@ static uint _dma_ctrlflags(struct dma_info *di, uint mask, uint flags)
+ 	uint dmactrlflags = di->dma.dmactrlflags;
  
- 	device = devices[minor];
- 
--	mutex_lock(&device->readers_lock);
--
- 	if (!device) {
- 		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
--		error = -ENODEV;
--		goto exit_err;
-+		kfree(reader);
-+		mutex_lock(&devices_lock);
-+		return -ENODEV;
+ 	if (di == NULL) {
+-		DMA_ERROR(("%s: _dma_ctrlflags: NULL dma handle\n", di->name));
++		DMA_ERROR(("_dma_ctrlflags: NULL dma handle\n"));
+ 		return 0;
  	}
  
-+	mutex_lock(&device->readers_lock);
-+
- 	if (!device->open++) {
- 		/* power on device on adding first reader */
- 		error = hid_hw_power(device->hid, PM_HINT_FULLON);
 
