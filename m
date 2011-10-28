@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab1J1HVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:21:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57352 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab1J1HVe (ORCPT
+	id S932085Ab1J1HYA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:24:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40151 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab1J1HX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:21:34 -0400
-Date: Fri, 28 Oct 2011 16:21:25 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 4/5]thp: correct order in lru list for split huge page
-Message-ID: <20111028072102.GA6268@barrios-laptop.redhat.com>
-References: <1319511577.22361.140.camel@sli10-conroe>
- <20111027231928.GB29407@barrios-laptop.redhat.com>
- <1319778538.22361.152.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319778538.22361.152.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Oct 2011 03:23:59 -0400
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kbuild@vger.kernel.org
+In-Reply-To: <20111028070336.GF12995@elte.hu>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+	 <20111027193448.GA3514@merkur.ravnborg.org>
+	 <20111028070336.GF12995@elte.hu>
+Content-Type: text/plain; charset="us-ascii"
+Date: Fri, 28 Oct 2011 09:23:55 +0200
+Message-ID: <1319786635.3235.11.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 01:08:58PM +0800, Shaohua Li wrote:
-> On Fri, 2011-10-28 at 07:19 +0800, Minchan Kim wrote:
-> > On Tue, Oct 25, 2011 at 10:59:37AM +0800, Shaohua Li wrote:
-> > > If a huge page is split, all the subpages should live in lru list adjacently
-> > > because they should be taken as a whole.
-> > > In page split, with current code:
-> > > a. if huge page is in lru list, the order is: page, page+HPAGE_PMD_NR-1,
-> > > page + HPAGE_PMD_NR-2, ..., page + 1(in lru page reclaim order)
-> > > b. otherwise, the order is: page, ..other pages.., page + 1, page + 2, ...(in
-> > > lru page reclaim order). page + 1 ... page + HPAGE_PMD_NR - 1 are in the lru
-> > > reclaim tail.
+On Fri, 2011-10-28 at 09:03 +0200, Ingo Molnar wrote:
+> * Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+> > On Thu, Oct 27, 2011 at 02:07:14PM +0200, Sasha Levin wrote:
+> > > This patch adds 'make kvmconfig' which allows to add KVM guest support
+> > > to a config file.
 > > > 
-> > > In case a, the order is wrong. In case b, page is isolated (to be reclaimed),
-> > > but other tail pages will not soon.
+> > > This allows for easier testing of configurations under virtualized
+> > > environments.
 > > > 
-> > > With below patch:
-> > > in case a, the order is: page, page + 1, ... page + HPAGE_PMD_NR-1(in lru page
-> > > reclaim order).
-> > > in case b, the order is: page + 1, ... page + HPAGE_PMD_NR-1 (in lru page reclaim
-> > > order). The tail pages are in the lru reclaim head.
-> > > 
-> > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > > Cc: Ingo Molnar <mingo@elte.hu>
+> > > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Cc: Michal Marek <mmarek@suse.cz>
+> > > Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> > > Cc: linux-kbuild@vger.kernel.org
+> > > Cc: linux-kernel@vger.kernel.org
+> > > Suggested-by: Ingo Molnar <mingo@elte.hu>
+> > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 > > 
-> > In case of a, it doesn't matter ordering of subpages.
-> > As a huge page, age of sub pages are same.
-> It does matter. Hugepage is split first and then reclaim. if page, page
-> +HPAGE_PMD_NR-1 is reclaimed, you can't get an order-1 page. but if
-> page, page+1 is reclaimed, you can.
+> > Two points about the implmentation that I do not like...
+> > 
+> > The kvmconfig is an x86 specific thing - so it does not belong
+> > in the scripts/kconfig/Makefile
+> > 
+> > The *config namespace is general config targets.
+> > 
+> > Suggestion:
+> > Move the implmentation to arch/x86/Makefile and name the target
+> > something that does not match the *config pattern.
+> > 
+> > Suggestion:
+> > 
+> >    make kvmbootable
+> > 
+> > To tell that this convert the current config to a kvmbootable config.
+> > 
+> > And then add the target to the x86 specific help too.
+> 
+> KVM itself is not x86 specific (although this patch obviously is), so 
+> we'd like to keep at least the naming non-x86.
+> 
+> Furthermore, the functionality generally fits into the pattern that 
+> 'oldconfig' does: it changes an existing config - so having 'config' 
+> in the name somewhere makes quite a bit of sense. If i didn't know 
+> what 'kvmbootable' does i couldnt guess that it touches the .config - 
+> while the *config pattern makes that patently obvious.
+> 
+> Could we set aside some sort of name for such subsystem specific 
+> purposes and be done with it? Could we reuse the 'defconfig' 
+> naming perhaps and make it richer:
+> 
+> 	make defconfig kvm
+> 
+> or:
+> 
+> 	make defconfig-kvm
+> 
+> ? It would be very obvious at a glance what it does.
 
-Right you are. I didn't catch up it.
-It would be better to add it in description.
-It's most important part in this patch.
+We can possibly make 'make defconfig abc' run arch specific script
+located next to the defconfig files (arch/$(ARCH)/configs/).
 
-Thanks.
+It would both solve the problem with being arch specific, and would
+allow for future expansion of other 'kvm defconfig' options.
 
 -- 
-Kind regards,
-Minchan Kim
+
+Sasha.
+
