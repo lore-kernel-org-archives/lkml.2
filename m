@@ -1,37 +1,29 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754736Ab1JKPQu (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Tue, 11 Oct 2011 11:16:50 -0400
-Received: from nm15.bullet.mail.bf1.yahoo.com ([98.139.212.174]:25800 "HELO
-        nm15.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with SMTP id S1750699Ab1JKPQt (ORCPT
+        id S1755503Ab1J1LcX (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Fri, 28 Oct 2011 07:32:23 -0400
+Received: from vomta4.indiatimes.com ([223.165.24.197]:32810 "HELO
+        vomta4.indiatimes.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with SMTP id S1755334Ab1J1LcV (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 11 Oct 2011 11:16:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 688948.44683.bm@omp1054.mail.bf1.yahoo.com
-X-YMail-OSG: 2238apUVM1m7r4CENNEjuzmTjOs5vOoT2_Y4M9ocZS3Aa2o
- I90FT7Ei2VxX.Ow92XRR4qlprZJOcQkr5EyJ9.pYt1_02ff5CY3MRldxCepp
- G_1zdNvtKruk2rJakhaWh44EvBo.uXdFL2wBQI22U3LYOZa6BhYL1hBahwcg
- D_CiW0UTt33GVwRMruQ8z.G69xzc4jDTuYJ1ODBwoVZr.I3fu7lgZ99F7OG3
- JkFE1iqJk8Mn7_3ET5zLGF_oN.OWcMOEG359r4PcHI3Jm0EI9Lpp2lKmNyOf
- F_0058UYgqHcPVhAVIa8cmC8IJcmwDVg8But0bo4ebKFe3I9FQsoDbxbNSFs
- 5Tlb6Lsqz8aRn53kAFT07KmxaKdrzE.dziPrGn5fwDI0LcTnORW_ptnlIoWt
- GENviQ4XAv9wR0Qcy53mF83HHlCxD9.t5xGkgZSisd5qg0vOyy62j0ONek6o
- Z2muXMwL3_BI2vgE6RqcNROraR.sEop65MM9UbebrZZyN_OYDDD.1UgyDcFr
- Rdn8YNQ--
-X-Mailer: YahooMailWebService/0.8.114.317681
-Message-ID: <1318346207.2526.yint-ygo-j2me@web31701.mail.mud.yahoo.com>
-Date: Tue, 11 Oct 2011 08:16:47 -0700 (PDT)
-From: Balbir Singh <balbir_soni@yahoo.com>
-Subject: 
-To: vladimir@acm.org, jetdirect@india.hp.com,
-        celestin.john@pearsoned.co.in, xkmonika1@ti.com,
-        ken.dimaggio@csetalent.com, linux-kernel@vger.kernel.org,
-        rkiran@adobe.com, kkiran@secf.com, vikramk@india.hp.com
+        Fri, 28 Oct 2011 07:32:21 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Oct 2011 07:32:20 EDT
+Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
+X-Indiatimes-Scanner-Mail-From: lisa_hedstrand@indiatimes.com via vomta
+X-Indiatimes-Scanner: 1.25st (Clear:RC:1(192.168.24.55):SA:0(?/?):. Processed in 25.543771 secs Process 57004)
+Date: Fri, 28 Oct 2011 16:54:36 +0530 (IST)
+From: lisa hedstrand <lisa_hedstrand@indiatimes.com>
+Reply-To: lisa hedstrand <lisahedstrand@yahoo.com>
+Message-ID: <886498940.936461319801076376.JavaMail.root@tilmb17.indiatimes.com>
+Subject: Hello
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [41.82.177.253]
+X-Mailer: Zimbra 5.0.6_GA_2313.RHEL4_64 (zclient/5.0.6_GA_2313.RHEL4_64)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Real help for you.... http://strapius.sc49.info/com.page.php?zGIS=08g6
+My name is Miss Lisa Please accept my apology if my mode of contacting you will in any way offend you. I am compelled to contact you via this medium because i needed a friend from that part of the world. We will get to know each other in details if my proposition accepted. l am a student in UK but originally from USA.
