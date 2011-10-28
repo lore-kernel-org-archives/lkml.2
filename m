@@ -1,62 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751073Ab1J1EMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 00:12:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7081 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750716Ab1J1EMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 00:12:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="68427986"
-Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-From: Vinod Koul <vinod.koul@intel.com>
-To: Barry Song <Barry.Song@csr.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
-	 <1319703535.20054.30.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
+	id S1752381Ab1J1En7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 00:43:59 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:51467 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab1J1En5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 00:43:57 -0400
+Message-ID: <1319777025.23112.67.camel@edumazet-laptop>
+Subject: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 28 Oct 2011 06:43:45 +0200
+In-Reply-To: <1319772566.6759.27.camel@deadeye>
+References: <1319764761.23112.14.camel@edumazet-laptop>
+	 <20111028012521.GF25795@one.firstfloor.org>
+	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
+	 <1319766293.6759.17.camel@deadeye>
+	 <1319770376.23112.58.camel@edumazet-laptop>
+	 <1319772566.6759.27.camel@deadeye>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 09:39:42 +0530
-Message-ID: <1319774982.20054.228.camel@vkoul-udesk3>
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-28 at 01:49 +0000, Barry Song wrote:
-> > Also, Please ensure you send patches which compile with ZERO warnings:
-> > drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
-> > drivers/dma/sirf-dma.c:616: warning: assignment from incompatible pointer
-> > type
-> > drivers/dma/sirf-dma.c:617: warning: assignment from incompatible pointer
-> > type
-> > which comes from the fact that your prep_interleaved_dma does not have
-> > last argument of flags.
-> > On the second one you have not rebased to patch from Jassi which I
-> > applied after converting direction stuff.
+Le vendredi 28 octobre 2011 à 04:29 +0100, Ben Hutchings a écrit :
+> On Fri, 2011-10-28 at 04:52 +0200, Eric Dumazet wrote:
+> > Le vendredi 28 octobre 2011 à 02:44 +0100, Ben Hutchings a écrit :
+> > 
+> > > Whether or not it needs to provide any ordering guarantee, atomic_read()
+> > > must never read more than once, and I think that requires the volatile
+> > > qualification.  It might be clearer to use the ACCESS_ONCE macro,
+> > > however.
+> > > 
+> > 
+> > Where this requirement comes from ?
 > 
+> That is the conventional behaviour of 'atomic' operations, and callers
+> may depend on it.
 > 
-[pls wrap 80chars within paragraphs, i have reformatted below)
-> I rebased to both yours and Jassi by my merging manually. I remember
-> you have changed the last param of device_prep_dma_cyclic from
-> dma_data_direction to dma_transfer_direction. After checking the tree
-> interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git,
-> it doesn't. then make another compiling warning in
-> sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in
-> sirfsoc_dma_prep_cyclic().
-Yes for cyclic, I have missed to fix that. I will push the fixed version
-now
 
--- 
-~Vinod
+Thats your opinion, not a fact documented in
+Documentation/atomic_ops.txt
+
+<QUOTE>
+---------------------------------------------------------
+Next, we have:
+
+        #define atomic_read(v)  ((v)->counter)
+
+which simply reads the counter value currently visible to the calling thread.
+The read is atomic in that the return value is guaranteed to be one of the
+values initialized or modified with the interface operations if a proper
+implicit or explicit memory barrier is used after possible runtime
+initialization by any other thread and the value is modified only with the
+interface operations.  atomic_read does not guarantee that the runtime
+initialization by any other thread is visible yet, so the user of the
+interface must take care of that with a proper implicit or explicit memory
+barrier.
+
+*** WARNING: atomic_read() and atomic_set() DO NOT IMPLY BARRIERS! ***
+
+Some architectures may choose to use the volatile keyword, barriers, or inline
+assembly to guarantee some degree of immediacy for atomic_read() and
+atomic_set().  This is not uniformly guaranteed, and may change in the future,
+so all users of atomic_t should treat atomic_read() and atomic_set() as simple
+C statements that may be reordered or optimized away entirely by the compiler
+or processor, and explicitly invoke the appropriate compiler and/or memory
+barrier for each use case.  Failure to do so will result in code that may
+suddenly break when used with different architectures or compiler
+optimizations, or even changes in unrelated code which changes how the
+compiler optimizes the section accessing atomic_t variables.
+
+*** YOU HAVE BEEN WARNED! ***
+---------------------------------------------------------------
+</QUOTE>
+
+The only requirement of atomic_read() is that it must return value
+before or after an atomic_write(), not a garbled value.
+
+So the ACCESS_ONCE semantic is on the write side (the atomic itself
+cannot be used as a temporary variable. It must contain only two value
+of atomic_{write|add|sub}() [ prior to the operation, after the
+operation ]
+
+In fact, if a compiler is stupid enough to issue two reads on following
+code :
+
+static inline atomic_read(const atomic_t *p)
+{
+	return p->value;
+}
+
+Then its fine, because in the end the returned value will be the old or
+new one.
+
+
 
