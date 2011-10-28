@@ -1,150 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab1J1U2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 16:28:13 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:27312 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab1J1U2M convert rfc822-to-8bit (ORCPT
+	id S1756119Ab1J1U3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 16:29:40 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:54622 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755389Ab1J1U3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 16:28:12 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-Thread-Index: AQHMk/Yfbv94uVs6kUmFh5QHJPmlm5WSkYKA//+MPrCAAIjtgP//i45Q
-Date: Fri, 28 Oct 2011 20:28:11 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1319645321-9770-1-git-send-email-kys@microsoft.com>
- <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz>
- <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
- <20111028200315.GA30918@suse.de>
-In-Reply-To: <20111028200315.GA30918@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 28 Oct 2011 16:29:38 -0400
+Date: Fri, 28 Oct 2011 13:29:35 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI changes
+Message-ID: <20111028132935.6630b575@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/IPhjJqk/CdkjtqIUBpfJKXd"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/IPhjJqk/CdkjtqIUBpfJKXd
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+Note!  There are two branches available, see below.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Friday, October 28, 2011 4:03 PM
-> To: KY Srinivasan
-> Cc: Jiri Kosina; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> virtualization@lists.osdl.org; ohering@suse.com; Dmitry Torokhov
-> Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-> 
-> On Fri, Oct 28, 2011 at 07:50:59PM +0000, KY Srinivasan wrote:
-> > > >  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
-> > > >  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
-> > > >  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
-> > > > +obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
-> > >
-> > > I'd prefer a bit to follow the current naming of the drivers in
-> > > drivers/hid directory ... all the device-specific (vendor-specific)
-> > > drivers currently are called hid-<vendor> or similar.
-> > >
-> > > We could talk about changing this naming scheme, but before we reach any
-> > > conclusion on this, I'd prefer this to stay for all drivers if possible.
-> >
-> > Do you want the driver module to conform to the naming scheme you have?
-> > Greg, in the past has resisted changing driver names, but I have no objection
-> > to conforming to the naming convention you have.
-> 
-> I recommend following the proper naming scheme.  As this driver is
-> auto-loaded when the virtual hardware is seen, the name really doesn't
-> matter at all.
-> 
-> So, how about 'hid-hyperv' or 'hid-hv'?
+The following changes since commit
+e9308cfd5ab4ade3d81cf591c7599c3a05a21b04:
 
-I will go with hid-hv  if there are no objections.
-> 
-> > > > +	switch (hid_msg->header.type) {
-> > > > +	case SYNTH_HID_PROTOCOL_RESPONSE:
-> > > > +		memcpy(&input_dev->protocol_resp, pipe_msg,
-> > > > +		       pipe_msg->size + sizeof(struct pipe_prt_msg) -
-> > > > +		       sizeof(unsigned char));
-> > >
-> > > Is there any guarantee anywhere that packet doesn't get corrupted (either
-> > > maliciously or not)?
-> > >
-> > > Seems to me like we are taking it 'raw' in mousevsc_on_channel_callback()
-> > > without any sanity checking.
-> > >
-> > > If not, second argument of this memcpy() could easily overflow, causing
-> > > quite some memory corruption, right?
-> > >
-> > > Actually the question of sanity of the raw packet is much more general one
-> > > throughout this driver. I am not very familiar with things in drivers/hv,
-> > > hence the question.
-> >
-> > The guest cannot survive a malicious host; so I think it is safe to say that the
-> > guest can assume the host is following the protocol.
-> 
-> That's not good for a very large number of reasons, not the least being
-> that we have no idea how secure the hyperv hypervisor is, so making it
-> so that there isn't an obvious hole into linux through it, would be a
-> good idea.
-> 
-> And yes, I'd say the same thing if this was a KVM or Xen driver as well.
-> Please be very defensive in this area of the code, especially as there
-> are no performance issues here.
+  Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-1=
+0-14 17:07:52 +1200)
 
-In the chain of trust, the hypervisor and the host are the foundations
-as far as the guest is concerned, since both the hypervisor and the host
-can affect the guest in ways that the guest has no obvious way to protect itself.
-If the hypervisor/host have security holes, there is not much you can do in the guest
-to deal with it. 
-In this case, I can add checks but I am not sure how useful it is.
+are available in the git repository at:
 
-> 
-> > > > +				return;
-> > > > +			}
-> > > > +			break;
-> > > > +		}
-> > > > +	} while (1);
-> > >
-> > > Again, not being familiar with 'hv' infrastructure at all, this inifite
-> > > loop makes me to ask -- in what context does it run? Why do we need it?
-> > >
-> > > It seems to me that it's some kind of infinite loop for event-driven
-> > > programming, which is not something we do in kernel (outside of kernel
-> > > threads, perhaps, with very careful handling).
-> >
-> > This loop is invoked in a tasklet context. The agreed upon protocol between the
-> > guest and the host is that the consumer of a ring buffer (in this case the guest)
-> will
-> > process all available data before returning. This permits signaling optimizations
-> between
-> > the producer and the consumer. For instance, if the consumer is still active as
-> seen by the
-> > producer (based on the read index seen by the producer), as the producer
-> enqueues additional
-> > data, the producer does not have to signal the consumer.
-> 
-> That's great, but again, be defensive and at least have a "time out"
-> way to get out of this loop in case something goes wrong.  It will be
-> triggered some day, by someone, I guarantee it.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci next-revert
 
-I am not sure what you are recommending here Greg; the host mandates that
-we exit this loop only when there is nothing more to be read; that exit path is in the
-current code. If we exit this code for any other reason (such as based on a timeout)
-we will not be awakened by the host when in fact there is data to be read.
+Probably the most exciting bits of this series are the MPS fixes and
+Joerg's PASID stuff.  But I don't think there's anything really risky
+(i.e. no big resource management changes this time around).
 
-Regards,
+We found a problem on PPC with the latency setup changes, so this
+branch includes reverts for those patches.  However, another branch is
+available with those patches rebased out if you prefer a cleaner
+changelog.  See below for the changelog and diffstat to expect from
+that branch.
 
-K. Y 
+Ben Hutchings (2):
+      PCI: Add Solarflare vendor ID and SFC4000 device IDs
+      PCI: Add quirk for known incorrect MPSS
 
+Benjamin Herrenschmidt (2):
+      PCI: Make pci_setup_bridge() non-static for use by arch code
+      pci: Clamp pcie_set_readrq() when using "performance" settings
+
+Jan Beulich (1):
+      x86: constify PCI raw ops structures
+
+Jesse Barnes (7):
+      Revert "PCI: latency timer doesn't apply to PCIe"
+      Revert "PCI: x86: use generic pcibios_set_master()"
+      Revert "PCI: sh: use generic pcibios_set_master()"
+      Revert "PCI: mn10300: use generic pcibios_set_master()"
+      Revert "PCI: mips: use generic pcibios_set_master()"
+      Revert "PCI: frv: use generic pcibios_set_master()"
+      Revert "PCI: Pull PCI 'latency timer' setup up into the core"
+
+Joerg Roedel (4):
+      PCI: Move ATS implementation into own file
+      PCI: Export ATS functions to modules
+      PCI: Add implementation for PRI capability
+      PCI: Add support for PASID capability
+
+Jon Mason (3):
+      PCI: Workaround for Intel MPS errata
+      PCI: enable MPS "performance" setting to properly handle bridge MPS
+      PCI: Clean-up MPS debug output
+
+Josh Boyer (1):
+      PCI quirk: mmc: Always check for lower base frequency quirk for Ricoh=
+ 1180:e823
+
+Myron Stowe (7):
+      PCI: Pull PCI 'latency timer' setup up into the core
+      PCI: frv: use generic pcibios_set_master()
+      PCI: mips: use generic pcibios_set_master()
+      PCI: mn10300: use generic pcibios_set_master()
+      PCI: sh: use generic pcibios_set_master()
+      PCI: x86: use generic pcibios_set_master()
+      PCI: latency timer doesn't apply to PCIe
+
+Prarit Bhargava (1):
+      PCI hotplug: acpiphp: Prevent deadlock on PCI-to-PCI bridge remove
+
+Rafael J. Wysocki (2):
+      PCI / PM: Extend PME polling to all PCI devices
+      PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
+
+ arch/x86/include/asm/pci_x86.h     |    6 +-
+ arch/x86/pci/ce4100.c              |    2 +-
+ arch/x86/pci/common.c              |    4 +-
+ arch/x86/pci/direct.c              |    6 +-
+ arch/x86/pci/mmconfig_32.c         |    2 +-
+ arch/x86/pci/mmconfig_64.c         |    2 +-
+ arch/x86/pci/numaq_32.c            |    2 +-
+ arch/x86/pci/olpc.c                |    2 +-
+ arch/x86/pci/pcbios.c              |    4 +-
+ drivers/acpi/osl.c                 |    3 +-
+ drivers/net/sfc/efx.c              |   10 +-
+ drivers/net/sfc/efx.h              |    4 -
+ drivers/net/sfc/falcon.c           |    3 +-
+ drivers/net/sfc/falcon_boards.c    |    3 +-
+ drivers/pci/Kconfig                |   26 +++
+ drivers/pci/Makefile               |    1 +
+ drivers/pci/ats.c                  |  438 ++++++++++++++++++++++++++++++++=
+++++
+ drivers/pci/hotplug/acpiphp_glue.c |  109 ++++++++--
+ drivers/pci/iov.c                  |  142 ------------
+ drivers/pci/pci-acpi.c             |    6 +-
+ drivers/pci/pci.c                  |   59 +++--
+ drivers/pci/pcie/pme.c             |    9 +
+ drivers/pci/probe.c                |   68 +++---
+ drivers/pci/quirks.c               |  111 ++++++++--
+ drivers/pci/setup-bus.c            |    2 +-
+ include/acpi/acpiosxf.h            |    2 +
+ include/linux/pci-ats.h            |   75 ++++++
+ include/linux/pci.h                |    2 +
+ include/linux/pci_ids.h            |    5 +
+ include/linux/pci_regs.h           |   20 ++
+ 30 files changed, 868 insertions(+), 260 deletions(-)
+ create mode 100644 drivers/pci/ats.c
+
+--------- rebased tree info below
+
+The following changes since commit e9308cfd5ab4ade3d81cf591c7599c3a05a21b04:
+
+  Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6 (2011-1=
+0-14 17:07:52 +1200)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci next-rebase
+
+Ben Hutchings (2):
+      PCI: Add Solarflare vendor ID and SFC4000 device IDs
+      PCI: Add quirk for known incorrect MPSS
+
+Benjamin Herrenschmidt (2):
+      PCI: Make pci_setup_bridge() non-static for use by arch code
+      pci: Clamp pcie_set_readrq() when using "performance" settings
+
+Jan Beulich (1):
+      x86: constify PCI raw ops structures
+
+Joerg Roedel (4):
+      PCI: Move ATS implementation into own file
+      PCI: Export ATS functions to modules
+      PCI: Add implementation for PRI capability
+      PCI: Add support for PASID capability
+
+Jon Mason (3):
+      PCI: Workaround for Intel MPS errata
+      PCI: enable MPS "performance" setting to properly handle bridge MPS
+      PCI: Clean-up MPS debug output
+
+Josh Boyer (1):
+      PCI quirk: mmc: Always check for lower base frequency quirk for Ricoh=
+ 1180:e823
+
+Prarit Bhargava (1):
+      PCI hotplug: acpiphp: Prevent deadlock on PCI-to-PCI bridge remove
+
+Rafael J. Wysocki (2):
+      PCI / PM: Extend PME polling to all PCI devices
+      PCI / PM: Remove unnecessary error variable from acpi_dev_run_wake()
+
+ arch/x86/include/asm/pci_x86.h     |    6 +-
+ arch/x86/pci/ce4100.c              |    2 +-
+ arch/x86/pci/common.c              |    4 +-
+ arch/x86/pci/direct.c              |    6 +-
+ arch/x86/pci/mmconfig_32.c         |    2 +-
+ arch/x86/pci/mmconfig_64.c         |    2 +-
+ arch/x86/pci/numaq_32.c            |    2 +-
+ arch/x86/pci/olpc.c                |    2 +-
+ arch/x86/pci/pcbios.c              |    4 +-
+ drivers/acpi/osl.c                 |    3 +-
+ drivers/net/sfc/efx.c              |   10 +-
+ drivers/net/sfc/efx.h              |    4 -
+ drivers/net/sfc/falcon.c           |    3 +-
+ drivers/net/sfc/falcon_boards.c    |    3 +-
+ drivers/pci/Kconfig                |   26 +++
+ drivers/pci/Makefile               |    1 +
+ drivers/pci/ats.c                  |  438 ++++++++++++++++++++++++++++++++=
+++++
+ drivers/pci/hotplug/acpiphp_glue.c |  109 ++++++++--
+ drivers/pci/iov.c                  |  142 ------------
+ drivers/pci/pci-acpi.c             |    6 +-
+ drivers/pci/pci.c                  |   59 +++--
+ drivers/pci/pcie/pme.c             |    9 +
+ drivers/pci/probe.c                |   68 +++---
+ drivers/pci/quirks.c               |  111 ++++++++--
+ drivers/pci/setup-bus.c            |    2 +-
+ include/acpi/acpiosxf.h            |    2 +
+ include/linux/pci-ats.h            |   75 ++++++
+ include/linux/pci.h                |    2 +
+ include/linux/pci_ids.h            |    5 +
+ include/linux/pci_regs.h           |   20 ++
+ 30 files changed, 868 insertions(+), 260 deletions(-)
+ create mode 100644 drivers/pci/ats.c
+
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/IPhjJqk/CdkjtqIUBpfJKXd
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOqxCvAAoJEIEoDkX4Qk9hiboP/RbvgFb2awf6VgVKt0p705E4
+D5aDi4uLg+/o6wXmc6XrpeIj7B2kl4M8WT+FOvZjiB7IoBGe2AecYfwhKo2j9M63
+aOic/RcICf0wjSTQz3qC/37XL7F5TbNcuvUTYH7FsUfkvkDNvL7knWane60uw+3v
+oe7QYfG8+LzF+NZOxkQAFb6Fb2QEhyjIJhG4fmb2VLCUGAozHKZdM9Pjf4LewaHR
+2BbBvwmDaQyEQ6hpuGLUYA9NTYqbhWc7WO1lauJZgLv0VtQVzYukljcfsNvL45U7
+qQ2kafuG/U6sGfUHUIwCEAo6hQytlXj7DFXM5vHBJVjboTray5wNbtpEEUR8NwfF
+6n9YEff8x4qFpHdbAf1fOxX+pVx3br9qFt+Q4De3J0oQI3ZlU9h4u6jmZfZwRAO5
+esZdUQb6p+9NJdyhfvwn2eY2ra8Lv/Y5jKbeFr2uEVSb0Qkk9dEv9LFZUquAZGEH
+3gw8xGFNanqzrNSV5fjRaEGPCGQZ+hW7uqXNooECGarDXev5TOuTNpMeZUzZLWzR
+b8++u8liJsizCIji7F6kO6FQ9cW4mDi2Z5ocfZmc1L5wZyGITq0q/l1LGAe7uifY
+owIJDtJedjpi4/g4Gn0wL6u/LU9rRtVVKZ6Be1i/xtnKY6Cy3H1hqnXdpnn08E8D
+k23xMMyiNlCLM5WAb8YD
+=9JnL
+-----END PGP SIGNATURE-----
+
+--Sig_/IPhjJqk/CdkjtqIUBpfJKXd--
