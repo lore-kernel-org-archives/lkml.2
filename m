@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547Ab1J1LU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 07:20:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40884 "EHLO
+	id S932233Ab1J1LUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 07:20:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65358 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755391Ab1J1LUX (ORCPT
+	with ESMTP id S1755561Ab1J1LUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 07:20:23 -0400
-X-Authority-Analysis: v=1.1 cv=QqHiGEe6yGvmA2Hj/+B5Qdh2oWFRI3gWtdRZxD5t9t4= c=1 sm=0 a=vhdKIqpQuCYA:10 a=XWJhXNWrUEcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=d_yON4x6gciIcn7BXBAA:9 a=aV8xZ56l4vTWJKqxg94A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=dUJvYfdQjxm5iQoyl10A:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 28 Oct 2011 07:20:40 -0400
+X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=vhdKIqpQuCYA:10 a=0fc9ZQCChTAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=Fl5eY8M0jbBIqMiGCIIA:9 a=KVQI4cpVpNLvF4p_un8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=VzEIr6rREtcuOvmoocQA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111028112020.315528165@goodmis.org>
+Message-Id: <20111028112037.610135627@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 28 Oct 2011 07:16:07 -0400
+Date: Fri, 28 Oct 2011 07:16:15 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 09/21] ktest: Add IF and ELSE to config sections
+Subject: [PATCH 17/21] ktest: Add processing of complex conditionals
 References: <20111028111558.173726794@goodmis.org>
-Content-Disposition: inline; filename=0009-ktest-Add-IF-and-ELSE-to-config-sections.patch
+Content-Disposition: inline; filename=0017-ktest-Add-processing-of-complex-conditionals.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,188 +31,130 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Add IF keyword to sections within the config. Also added an ELSE
-keyword that allows different config options to be set for a given
-section.
+The IF statements for DEFAULTS and TEST_START sections now handle
+complex statements (&&,||)
 
-For example:
+Example:
 
-TYPE :=3D 1
-STATUS :=3D 0
-
-DEFAULTS IF ${TYPE}
-[...]
-ELSE IF ${STATUS}
-[...]
-ELSE
-[...]
-
-The above will process the first section as $TYPE is true. If it
-was false, it would process the last section as $STATUS is false.
+  TEST_START IF (DEFINED ALL_TESTS || ${MYTEST} =3D=3D boottest) && ${MACHI=
+NE} =3D=3D gandalf
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl    |   64 +++++++++++++++++++++++++++++++++++=
-+--
- tools/testing/ktest/sample.conf |   38 +++++++++++++++++++++++
- 2 files changed, 98 insertions(+), 4 deletions(-)
+ tools/testing/ktest/ktest.pl    |   53 +++++++++++++++++++++++++++++++++++=
+---
+ tools/testing/ktest/sample.conf |   10 +++++++
+ 2 files changed, 58 insertions(+), 5 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 057676a..c76e18f 100755
+index d292c2d..1bda07f 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -361,6 +361,21 @@ sub set_variable {
-     }
+@@ -304,7 +304,7 @@ sub get_ktest_configs {
  }
 =20
+ sub process_variables {
+-    my ($value) =3D @_;
++    my ($value, $remove_undef) =3D @_;
+     my $retval =3D "";
+=20
+     # We want to check for '\', and it is just easier
+@@ -322,6 +322,10 @@ sub process_variables {
+ 	$retval =3D "$retval$begin";
+ 	if (defined($variable{$var})) {
+ 	    $retval =3D "$retval$variable{$var}";
++	} elsif (defined($remove_undef) && $remove_undef) {
++	    # for if statements, any variable that is not defined,
++	    # we simple convert to 0
++	    $retval =3D "${retval}0";
+ 	} else {
+ 	    # put back the origin piece.
+ 	    $retval =3D "$retval\$\{$var\}";
+@@ -403,10 +407,40 @@ sub value_defined {
+ 	defined($opt{$2});
+ }
+=20
+-sub process_if {
+-    my ($name, $value) =3D @_;
++my $d =3D 0;
++sub process_expression {
++    my ($name, $val) =3D @_;
++
++    my $c =3D $d++;
++
++    while ($val =3D~ s/\(([^\(]*?)\)/\&\&\&\&VAL\&\&\&\&/) {
++	my $express =3D $1;
++
++	if (process_expression($name, $express)) {
++	    $val =3D~ s/\&\&\&\&VAL\&\&\&\&/ 1 /;
++	} else {
++	    $val =3D~ s/\&\&\&\&VAL\&\&\&\&/ 0 /;
++	}
++    }
++
++    $d--;
++    my $OR =3D "\\|\\|";
++    my $AND =3D "\\&\\&";
+=20
+-    my $val =3D process_variables($value);
++    while ($val =3D~ s/^(.*?)($OR|$AND)//) {
++	my $express =3D $1;
++	my $op =3D $2;
++
++	if (process_expression($name, $express)) {
++	    if ($op eq "||") {
++		return 1;
++	    }
++	} else {
++	    if ($op eq "&&") {
++		return 0;
++	    }
++	}
++    }
+=20
+     if ($val =3D~ /(.*)(=3D=3D|\!=3D|>=3D|<=3D|>|<)(.*)/) {
+ 	my $ret =3D process_compare($1, $2, $3);
+@@ -431,7 +465,16 @@ sub process_if {
+     }
+=20
+     die ("$name: $.: Undefined content $val in if statement\n");
+-    return 1;
++}
++
 +sub process_if {
 +    my ($name, $value) =3D @_;
 +
-+    my $val =3D process_variables($value);
++    # Convert variables and replace undefined ones with 0
++    my $val =3D process_variables($value, 1);
++    my $ret =3D process_expression $name, $val;
 +
-+    if ($val =3D~ /^\s*0\s*$/) {
-+	return 0;
-+    } elsif ($val =3D~ /^\s*\d+\s*$/) {
-+	return 1;
-+    }
-+
-+    die ("$name: $.: Undefined variable $val in if statement\n");
-+    return 1;
-+}
-+
- sub read_config {
-     my ($config) =3D @_;
++    return $ret;
+ }
 =20
-@@ -376,6 +391,8 @@ sub read_config {
-     my $skip =3D 0;
-     my $rest;
-     my $test_case =3D 0;
-+    my $if =3D 0;
-+    my $if_set =3D 0;
-=20
-     while (<IN>) {
-=20
-@@ -397,7 +414,7 @@ sub read_config {
- 	    $default =3D 0;
- 	    $repeat =3D 1;
-=20
--	    if ($rest =3D~ /\s+SKIP(.*)/) {
-+	    if ($rest =3D~ /\s+SKIP\b(.*)/) {
- 		$rest =3D $1;
- 		$skip =3D 1;
- 	    } else {
-@@ -411,9 +428,16 @@ sub read_config {
- 		$repeat_tests{"$test_num"} =3D $repeat;
- 	    }
-=20
--	    if ($rest =3D~ /\s+SKIP(.*)/) {
--		$rest =3D $1;
--		$skip =3D 1;
-+	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		$rest =3D $2;
-+		if (process_if($name, $1)) {
-+		    $if_set =3D 1;
-+		} else {
-+		    $skip =3D 1;
-+		}
-+		$if =3D 1;
-+	    } else {
-+		$if =3D 0;
- 	    }
-=20
- 	    if ($rest !~ /^\s*$/) {
-@@ -437,10 +461,42 @@ sub read_config {
- 		$skip =3D 0;
- 	    }
-=20
-+	    if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		$if =3D 1;
-+		$rest =3D $2;
-+		if (process_if($name, $1)) {
-+		    $if_set =3D 1;
-+		} else {
-+		    $skip =3D 1;
-+		}
-+	    } else {
-+		$if =3D 0;
-+	    }
-+
- 	    if ($rest !~ /^\s*$/) {
- 		die "$name: $.: Gargbage found after DEFAULTS\n$_";
- 	    }
-=20
-+	} elsif (/^\s*ELSE(.*)$/) {
-+	    if (!$if) {
-+		die "$name: $.: ELSE found with out matching IF section\n$_";
-+	    }
-+	    $rest =3D $1;
-+	    if ($if_set) {
-+		$skip =3D 1;
-+	    } else {
-+		$skip =3D 0;
-+
-+		if ($rest =3D~ /\sIF\s+(\S*)(.*)/) {
-+		    # May be a ELSE IF section.
-+		    if (!process_if($name, $1)) {
-+			$skip =3D 1;
-+		    }
-+		} else {
-+		    $if =3D 0;
-+		}
-+	    }
-+
- 	} elsif (/^\s*([A-Z_\[\]\d]+)\s*=3D\s*(.*?)\s*$/) {
-=20
- 	    next if ($skip);
+ sub __read_config {
 diff --git a/tools/testing/ktest/sample.conf b/tools/testing/ktest/sample.c=
 onf
-index 67bc4e0..6a0a0ba 100644
+index 7b49f07..dbedfa1 100644
 --- a/tools/testing/ktest/sample.conf
 +++ b/tools/testing/ktest/sample.conf
-@@ -72,6 +72,44 @@
- # the same option name under the same test or as default
- # ktest will fail to execute, and no tests will run.
+@@ -154,6 +154,16 @@
+ # MAKE_CMD :=3D make ARCH=3Dx86
  #
-+# Both TEST_START and DEFAULTS sections can also have the IF keyword
-+# The value after the IF must evaluate into a 0 or non 0 positive
-+# integer, and can use the config variables (explained below).
+ #
++# And/or ops (&&,||) may also be used to make complex conditionals.
 +#
-+# DEFAULTS IF ${IS_X86_32}
++# TEST_START IF (DEFINED ALL_TESTS || ${MYTEST} =3D=3D boottest) && ${MACH=
+INE} =3D=3D gandalf
 +#
-+# The above will process the DEFAULTS section if the config
-+# variable IS_X86_32 evaluates to a non zero positive integer
-+# otherwise if it evaluates to zero, it will act the same
-+# as if the SKIP keyword was used.
++# Notice the use of paranthesis. Without any paranthesis the above would be
++# processed the same as:
 +#
-+# The ELSE keyword can be used directly after a section with
-+# a IF statement.
-+#
-+# TEST_START IF ${RUN_NET_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
-+# ELSE
-+#
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-normal
++# TEST_START IF DEFINED ALL_TESTS || (${MYTEST} =3D=3D boottest && ${MACHI=
+NE} =3D=3D gandalf)
 +#
 +#
-+# The ELSE keyword can also contain an IF statement to allow multiple
-+# if then else sections. But all the sections must be either
-+# DEFAULT or TEST_START, they can not be a mixture.
-+#
-+# TEST_START IF ${RUN_NET_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
-+# ELSE IF ${RUN_DISK_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-tests
-+#
-+# ELSE IF ${RUN_CPU_TESTS}
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-cpu
-+#
-+# ELSE
-+# BUILD_TYPE =3D useconfig:${CONFIG_DIR}/config-network
-+#
-=20
- #### Config variables ####
+ #
+ # INCLUDE file
  #
 --=20
 1.7.6.3
@@ -226,19 +168,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOqo/0AAoJEIy3vGnGbaoAf3QP/39g+lwyWTS3apM5HQYYMWMV
-9FqlxdQKZ7nHsfp5GXrvFSKN25PQbOBZRmt7UK3ieoXwKgBjVSFaFAO8kQN++sg+
-DL0WRjCwjOxQ1haRZWyhpMTsmPtK6P+yCLGq/ZvOGUCY0fpLReHiHTaS93SRdc7b
-Vn+jXxVha5FHTthpUjDGr2M48VO65LdK5+FTPxMHlfr/XaqSNyfhpNBRnPWEXSj/
-FENh7FSp3RH0Omm8ZjYeNrnAzMSsbQkkEOu3pXQdmLZE6aTDjx6y4Ej6HYAFtvrH
-85jQQcC248V8fJw12ElqNu3vZPb3lFPQ3KxWgdTyZvGbLyJo+SbAJUj5IgW7C68l
-tBAr+hrMV3/T/xD8qHS67fgwKMl67Ti06hSpTBq69KxerccaGtAdHdDBHOvZSyV0
-0ihsAINuA3QtBb9MkDa+abmnznOvHX+Yx3Sv+ppZxc9iavudbxzpGOHg2qraIcsq
-63fXJ+oj5zLzVy8ElAYBJr85vqAbR9iv/Z9vFJzlePo3ulQK/YhvwTy+9O46POaP
-ea+oT9XO3UEbeCccvOcNJ8685vGKPRH8U241WK7EPepH4e6GiV/060wX/4q30WFM
-RB1aKdkZOGBhqE8Wn8RCGivVg0/75DVWrQf68T+qNiDVVHyv91+iD3EdP83hlj+D
-u++I0PDm4EPVMy/MRgRV
-=N0Kj
+iQIcBAABAgAGBQJOqpAFAAoJEIy3vGnGbaoAUmoQAOsZptxNJqdaPCz0onPCEfh3
+M5hej7LRToUeHk9Shj5Yjt+ZaVRTw0u6NWK1ufnaWfddmAiO6ii8UQB3IXlpNrEV
+3Fv4ac4Qpo2HP9k5i7uuWzWI7b6xsprCJXfvudB7Feh2ejZKfhd3BjMMe+s2hwKc
+Jlayz+wn7GjDiQOkJXu/GCvfyWlA8hyDjBrCCZ1rd3m4+hVRtXP0BFSFgum2V+yE
+/t6WJsuqPEsgfvZA08KVBgn3Y+SW3mxbORskJQH2jCySlM7QxKj36rjyc4A3oeQD
+RnSS0sAtVCoLmq0s8ynBn1jTnLgA2fGt83KQCJWhAVCy5F0w8OItFqUG6SJ1nn8X
+ipgD6AhIRVxLrxxLlEIlJsFxeGciOhfo1RcKvDECbrnDMQMwB8qJygeuSMy2uGDm
+ATR2WMk63aNm1Bd4r+i1ZBA2DRFlJwuttQlclvWuleIRMKE4NNKhVrrgD2ZBUH69
+kYogRmyOZQ/4DmJNUhS3D2yB2dLD79iHA7YeDaz8px48lGrDZlCaRCMJ3lWgQwXR
+9+iffaM7TJyzPJiBdI3gqsg1/bj5SkqkyPFL3LyRiqwsksVeQr7tA6SGC24PIPRI
+gmkrxojkdy1ki4JFXSzuICJ9vnMVZ/dd7n5S3hNIOiEfErJZi7JH+68628x/4jrs
+L8GPd/8BhAr3pxDXCkGI
+=K9mn
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
