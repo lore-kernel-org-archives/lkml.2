@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933816Ab1J1XKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 19:10:43 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:24006 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933783Ab1J1XKl (ORCPT
+	id S1756170Ab1J1XLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 19:11:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41422 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754273Ab1J1XLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 19:10:41 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Christoph Hellwig (hch@infradead.org)" <hch@infradead.org>
-Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Topic: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out
- of staging
-Thread-Index: AQHMiwB5ssYxGyHyyU2tUZBy8HXDxZV+YdCA///RXnCAAtYrAP//mN2AgAB/eQCAEUW68A==
-Date: Fri, 28 Oct 2011 23:10:40 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0481AA542D1@TK5EX14MBXC122.redmond.corp.microsoft.com>
-References: <1318660132-21529-1-git-send-email-kys@microsoft.com>
-	 <1318714047.7271.49.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA0FED0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-	 <1318859976.4794.8.camel@dabdike.int.hansenpartnership.com>
-	 <6E21E5352C11B742B20C142EB499E0481AA15174@TK5EX14MBXC124.redmond.corp.microsoft.com>
- <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1318865202.4794.21.camel@dabdike.int.hansenpartnership.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Fri, 28 Oct 2011 19:11:44 -0400
+Date: Fri, 28 Oct 2011 16:11:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: holzheu@linux.vnet.ibm.com
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Vivek Goyal <vgoyal@redhat.com>, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kdump: Fix crash_kexec - smp_send_stop race in panic
+Message-Id: <20111028161143.e5ebf617.akpm@linux-foundation.org>
+In-Reply-To: <1319639649.3321.11.camel@br98xy6r>
+References: <1319639649.3321.11.camel@br98xy6r>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9SNAmjH031124
 
+On Wed, 26 Oct 2011 16:34:09 +0200
+Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
 
-
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Sent: Monday, October 17, 2011 11:27 AM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
-> linux-scsi@vger.kernel.org; hch@infradead.org; Haiyang Zhang
-> Subject: RE: [PATCH 1/1] Staging: hv: storvsc: Move the storage driver out of
-> staging
+> Hello Andrew,
 > 
-> On Mon, 2011-10-17 at 15:15 +0000, KY Srinivasan wrote:
+> After the discussion with Eric and Vivek the following patch
+> seems to be a good solution to me. Could you accept this patch?
 > 
-> > As I deal with the review comments now, do you want me to get these
-> > changes
-> > applied first to Greg's tree before you would consider moving this
-> > driver to drivers/scsi
-> > directory, or could you move the driver as it is in Greg's tree under
-> > staging and I could give
-> > you patches against the moved driver.
+> When two CPUs call panic at the same time there is a
+> possible race condition that can stop kdump. The first
+> CPU calls crash_kexec() and the second CPU calls
+> smp_send_stop() in panic() before crash_kexec() finished
+> on the first CPU. So the second CPU stops the first CPU
+> and therefore kdump fails:
 > 
-> Either way is fine by me.  The best route for this is to get the staging
-> update into Linus head, then work on the actual SCSI problems.  I'd like
-> other SCSI people besides me to review it.
-
-Christoph had reviewed this code sometime back and I think I have addressed the
-issues he had raised. These patches have already been applied by Greg to his
-staging tree.
-
+> 1st CPU:
+> panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
 > 
-> > > OK, so as I read the code, what it can't handle is fragments except at
-> > > the ends.  As long as everything always transfers in multiples of 4k,
-> > > the problem will never occur.  This means that all devices you present
-> > > need to tell the OS they have 4k sectors.  I *think* you can do this by
-> > > setting  blk_limits_io_min() in the driver ... but you'll have to test
-> > > this.  The minimum sector size gets set also in sd.c when we probe the
-> > > disk.  I think that won't override blk_limits_io_min(), but please test
-> > > (we don't have any SCSI drivers which have ever used this setting).
-> > >
-> > > The way to test, is to read back the /sys/block/<dev>/queue/ settings
-> > > when presenting a 512 byte sector disk.  (And the way to activate your
-> > > bounce code would be to create a filesystem with a < PAGE_SIZE block
-> > > size).
+> 2nd CPU:
+> panic()->crash_kexec()->kexec_mutex already held by 1st CPU
+>        ->smp_send_stop()-> stop 1st CPU (stop kdump)
 > 
-> >  In any event, I will try your suggestion though.
+> This patch fixes the problem by introducing a spinlock in
+> panic that allows only one CPU to process crash_kexec() and
+> the subsequent panic code.
 > 
-> Just to be clear: Setting the minimum I/O size is completely well
-> tested: it's how we handle 4k sector drives.  What hasn't been tested is
-> the ability of the *driver* to enforce the minimum using
-> blk_limits_io_min().  As long at that doesn't get overridden by sd when
-> it sees a 512b drive, the rest of the block paths (those which actually
-> enforce the minimum) have all been well tested.
->
- 
-James, I used the blk_limits_io_min() to 4k and yet I see I/O requests coming in
-to the driver that need to be handled with the bounce buffers. So I am not quite
-sure how to avoid having the bounce buffer handling code. This is with a file system
-with 2k block size.
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> ---
+>  kernel/panic.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
+>   */
+>  NORET_TYPE void panic(const char * fmt, ...)
+>  {
+> +	static DEFINE_SPINLOCK(panic_lock);
+>  	static char buf[1024];
+>  	va_list args;
+>  	long i, i_next = 0;
+> @@ -82,6 +83,13 @@ NORET_TYPE void panic(const char * fmt,
+>  #endif
+>  
+>  	/*
+> +	 * Only one CPU is allowed to execute the panic code from here. For
+> +	 * multiple parallel invocations of panic all other CPUs will wait on
+> +	 * the panic_lock. They are stopped afterwards by smp_send_stop().
+> +	 */
+> +	spin_lock(&panic_lock);
+> +
 
-Other than this, I have addressed all of your other comments. I am going to send these
-patches out to the staging tree. Do you want me to send out a patch moving the driver
-out of staging for your review as well. Let me know.
+hm.  Boy.  That'll stop 'em OK!
 
-Regards,
+Should this be done earlier in the function?  As it stands we'll have
+multiple CPUs scribbling on buf[] at the same time and all trying to
+print the same thing at the same time, dumping their stacks, etc. 
+Perhaps it would be better to single-thread all that stuff.
 
-K. Y 
-   
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Also...  this patch affects all CPU architectures, all configs, etc. 
+So we're expecting that every architecture's smp_send_stop() is able to
+stop a CPU which is spinning in spin_lock(), possibly with local
+interrupts disabled.  Will this work?
