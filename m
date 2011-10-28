@@ -1,146 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1J1IR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:17:58 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19265 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab1J1IR4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:17:56 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 28 Oct 2011 01:17:41 -0700
-Date: Fri, 28 Oct 2011 11:17:38 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/6] arm/tegra: prepare pinmux code for multiple tegra
- variants
-Message-ID: <20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
-References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
- <1319561644-6160-3-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932169Ab1J1ISI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:18:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62874 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755277Ab1J1ISC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 04:18:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,417,1315206000"; 
+   d="scan'208";a="78889980"
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111028073026.GB6268@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
+	 <20111027233407.GC29407@barrios-laptop.redhat.com>
+	 <1319778715.22361.155.camel@sli10-conroe>
+	 <20111028073026.GB6268@barrios-laptop.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Oct 2011 16:25:56 +0800
+Message-ID: <1319790356.22361.165.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 09:59:49PM +0200, Stephen Warren wrote:
-> Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
-> > This patch modifies the pinmux code to be useable for multiple tegra variants.
-> > Some tegra20 specific constants will be replaced by variables which will be
-> > initialized to the appropriate value at runtime.
+On Fri, 2011-10-28 at 15:30 +0800, Minchan Kim wrote:
+> On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
+> > On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
+> > > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> > > > With current logic, if page reclaim finds a huge page, it will just reclaim
+> > > > the head page and leave tail pages reclaimed later. Let's take an example,
+> > > > lru list has page A and B, page A is huge page:
+> > > > 1. page A is isolated
+> > > > 2. page B is isolated
+> > > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> > > > page A+1, page A+2, ... are added to lru list.
+> > > > 4. shrink_page_list() adds page B to swap page cache.
+> > > > 5. page A and B is written out and reclaimed.
+> > > > 6. page A+1, A+2 ... is isolated and reclaimed later.
+> > > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> > > 
+> > > I don't see your code yet but have a question.
+> > > You mitigate this problem by 4/5 which could add subpages into lru tail
+> > > so subpages would reclaim next interation of reclaim.
+> > > 
+> > > What do we need 5/5?
+> > > Do I miss something?
+> > Both patches are required. without this patch, current page reclaim will
+> > only reclaim the first page of a huge page, because the hugepage isn't
+> > split yet. The hugepage is split when the first page is being written to
+> > swap, which is too later and page reclaim might already isolated a lot
+> > of pages.
 > 
-> You should probably also mention:
-> * Removal of include of pinmux-t2.h from pinmux.h.
-> * The file renames you performed and why.
-> * The removal of the suspend/resume code and why.
+> When split happens, subpages would be located in tail of LRU by your 4/5.
+> (Assume tail of LRU is old age).
+yes, but a lot of other pages already isolated. we will reclaim those
+pages first. for example, reclaim huge page A, B. current reclaim order
+is A, B, A+1, ... B+1, because we will isolated A and B first, all tail
+pages are not isolated yet. While with my patch, the order is A, A
++1, ... B, B+1,.... with my patch, we can avoid unnecessary page split
+or page isolation. This is exactly why my patch reduces the thp_split
+count.
+
+> In addtion, isolation happens 32 page chunk so the subpages would be isolated
+> and reclaimed in next iteration. I think 32 pages are not too many.
 > 
-> > diff --git a/arch/arm/mach-tegra/include/mach/pinmux-t2.h b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
-> > deleted file mode 100644
-> > index 4c26263..0000000
-> > --- a/arch/arm/mach-tegra/include/mach/pinmux-t2.h
-> > +++ /dev/null
-> 
-> So this file shows up as a delete and an add. Isn't there a way to get
-> it to show up as a rename; I've certainly seen git diff tell me that, but
-> I'm not sure if the same feature is available for format-patch. In
-> particular, IIRC from internal review, there weren't any changes to this
-> file besides direct fallout from the rename, but there were quite a few
-> symbol name changes in pinmux-t2-tables.c, and also the removal of
-> suspend/resume, which it'd be nice if the diff highlighted.
-> 
+> What do you think about it?
+since headpage and tailpages are in different list, the 32 chunk will
+not include tailpages.
 
-Hmm. Maybe if I split it in 2 patches? 2 rename and 1 modification?
-
-> > diff --git a/arch/arm/mach-tegra/include/mach/pinmux.h b/arch/arm/mach-tegra/include/mach/pinmux.h
-> > index bb7dfdb..8f6e9f3 100644
-> > --- a/arch/arm/mach-tegra/include/mach/pinmux.h
-> > +++ b/arch/arm/mach-tegra/include/mach/pinmux.h
-> ...
-> > @@ -219,13 +213,20 @@ struct tegra_pingroup_desc {
-> >  	s8 pupd_bit;	/* offset into the PULL_UPDOWN_REG_* register bit */
-> >  };
-> > 
-> > -extern const struct tegra_pingroup_desc tegra_soc_pingroups[];
-> > -extern const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[];
-> > +struct tegra_pinmux_pm {
-> > +	void (*suspend)(void);
-> > +	void (*resume)(void);
-> > +};
-> 
-> Since we elected to strip out suspend/resume (it's currently incomplete
-> anyway) to simplify the addition of Tegra30, I don't think you need that
-> struct type any more.
-> 
-
-True :)
-
-> I wonder if removal of the suspend/resume functions should have been a
-> separate patch before this?
-> 
-
-Good point.
-
-> > diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-> > index 1d20165..0789122 100644
-> > --- a/arch/arm/mach-tegra/pinmux.c
-> > +++ b/arch/arm/mach-tegra/pinmux.c
-> > @@ -21,6 +21,9 @@
-> >  #include <linux/spinlock.h>
-> >  #include <linux/io.h>
-> >  #include <linux/platform_device.h>
-> > +#ifdef CONFIG_OF
-> > +#include <linux/of_platform.h>
-> > +#endif
-> 
-> I think just include that without any ifdef.
-> 
-
-Thinking of it, probably indeed.
-
-> > @@ -668,11 +668,24 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
-> >  	}
-> >  }
-> > 
-> > +static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
-> > +	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
-> > +	{ },
-> > +};
-> > +
-> >  static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
-> >  {
-> >  	struct resource *res;
-> >  	int i;
-> >  	int config_bad = 0;
-> > +	const struct of_device_id *match;
-> > +
-> > +#ifdef CONFIG_OF
-> > +	match = of_match_device(tegra_pinmux_of_match, &pdev->dev);
-> 
-> What if match==NULL? I suppose that "can't" happen with DT, since the
-> device wouldn't have been probed unless there was a matching entry...
-> 
-
-Exactly. That was my reasoning as well. We can't get here unless there is a
-match.
-
-> Does this work when booting without DT; IIRC the internal patches I saw
-> fell back to hard-coding a call to tegra20_pinmux_init() when booting
-> a static board file (i.e. not booting device-tree)? Perhaps that's in a
-
-Unfortunately I don't have a tegra20 board which is supported without
-devicetree.
-
-Cheers,
-
-Peter.
