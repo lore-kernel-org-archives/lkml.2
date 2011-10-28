@@ -1,46 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab1J1GMm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 02:12:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60016 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab1J1GMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 02:12:41 -0400
-Message-ID: <4EAA4799.1020505@cn.fujitsu.com>
-Date: Fri, 28 Oct 2011 14:11:37 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: FNST
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+	id S1755167Ab1J1GOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 02:14:22 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:44874 "HELO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754477Ab1J1GOV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 02:14:21 -0400
+x-mimeole: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Bob Liu <lliubbo@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [possible deadlock][3.1.0-g138c4ae] possible circular locking
- dependency detected
-References: <4EAA2492.3020907@cn.fujitsu.com>	<CAA_GA1eGt-Xu1wQ-g0v+J7CD4OEAU1nm1Eviww1+mOKjYWEcMg@mail.gmail.com>	<4EAA4263.2090809@cn.fujitsu.com> <CAA_GA1cKK45Z=YFUHRi-LUuhWpcs9ruW9xom_6LRmqhRNao+hQ@mail.gmail.com>
-In-Reply-To: <CAA_GA1cKK45Z=YFUHRi-LUuhWpcs9ruW9xom_6LRmqhRNao+hQ@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-28 14:10:42,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-10-28 14:10:43,
-	Serialize complete at 2011-10-28 14:10:43
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: Contact email for claims: cllams@dgoh.org
+Date: Fri, 28 Oct 2011 08:03:01 +0200
+Message-ID: <1964200DB0A4C14AA4128BBB93CBA36BA1FE06@srv-ex-01.intra.igr.fr>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: Contact email for claims: cllams@dgoh.org
+thread-index: AcyVNz8235qmpBt7TJebityQjwrY1g==
+From: <Diane.GOERE@igr.fr>
+X-OriginalArrivalTime: 28 Oct 2011 06:03:01.0814 (UTC) FILETIME=[401ACD60:01CC9537]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2011 02:02 PM, Bob Liu wrote:
+You have been awarded the sum of £1,000,000.00 GBP by the Microsoft Lottery Board.
 
-
->>
->>
->> Oh, it looks like can fix this bug, but I also can't reproduce it whether with or without this patch.
->>
-> 
-> Make sure CONFIG_DEBUG_LOCK_ALLOC was set.
-> 
-
-
-Yeah, certainly, if not, the dmesg can't appear anyway.
+Contact email for claims: cllams@dgoh.org
