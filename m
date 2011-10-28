@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1J1PIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 11:08:30 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58305 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755453Ab1J1PI2 (ORCPT
+	id S1755994Ab1J1PRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 11:17:54 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:57131 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753481Ab1J1PRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 11:08:28 -0400
-Date: Fri, 28 Oct 2011 11:08:27 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: NeilBrown <neilb@suse.de>, Linux PM list <linux-pm@vger.kernel.org>,
-        mark gross <markgross@thegnar.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Greg KH <greg@kroah.com>
-Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate
- interfaces
-In-Reply-To: <201110281027.31071.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1110281058190.2175-100000@iolanthe.rowland.org>
+	Fri, 28 Oct 2011 11:17:53 -0400
+Message-ID: <4EAAC794.8010809@ti.com>
+Date: Fri, 28 Oct 2011 20:47:40 +0530
+From: Shubhrajyoti <shubhrajyoti@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: artem.bityutskiy@linux.intel.com
+CC: Carlos Chinea <carlos.chinea@nokia.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        "peter_henn@gmx.de" <peter_henn@gmx.de>,
+        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
+        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
+        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
+        Sebastian Reichel <sre@debian.org>
+Subject: Re: HSI framework for linux-next
+References: <1319794066.28874.22.camel@groo> <1319800996.31184.131.camel@sauron>
+In-Reply-To: <1319800996.31184.131.camel@sauron>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Oct 2011, Rafael J. Wysocki wrote:
+On Friday 28 October 2011 04:53 PM, Artem Bityutskiy wrote:
+> On Fri, 2011-10-28 at 12:27 +0300, Carlos Chinea wrote:
+>> Hi Stephen,
+>>
+>> I have been working in an HSI framework for linux:
+>>
+>> https://lkml.org/lkml/2011/6/10/280
+>>
+>> The framework is in good shape and is currently being used for some
+>> people so we would like it to see it integrated, if possible, for 3.3
+>>
+>> Latest discussion for integration:
+>> https://lkml.org/lkml/2011/10/20/177
+> Stephen,
+>
+> I confirm that this is useful and solid framework, works well, and we
+> are also interested to see it upstream.
+>
+Yes also it may help others to hook up their controller support.
 
-> > > Now, in the end, I think our approach makes more sense in a general 
-> > > setting.  The Android approach is okay for a restricted environment 
-> > > where you know beforehand exactly which devices will be wakeup-capable 
-> > > and which wakeup events will be monitored by userspace programs.  But 
-> > > for the whole range of Linux-based systems, the kernel can't rely on 
-> > > such information.
-> > 
-> > I think that is exactly right.  The Android code is understandable written
-> > to particularly suit the Android context and may not be generally applicable.
-> 
-> I'm not sure why the heck this makes any difference.  For now, there doesn't
-> seem to be no one else who needs that functionality.  If there were people
-> like that we'd see some concurrent approaches appearing, but for now it's only
-> us considering the alternatives _theoretically_.
-> 
-> Moreover, if somebody who needs similar functionality and for whom the Android
-> stuff is not sufficient appears in the future, I don't see why not to address
-> his needs _at_ _that_ _time_ instead of trying to anticipate them (which is
-> kind of useless anyway, because we have no idea what those needs may be).
-
-You're missing the point.  There could easily be situations where the
-Android kernel will block suspend but a more general system should
-_not_ block it.  Behavior that is appropriate in an Android phone might
-not be appropriate in, say, a desktop system.
-
-If we duplicate the Android functionality then people (who may or may
-not theoretically want it now) might find that they _don't_ want the
-new behavior.
-
-> > I think the Android folk understand this and don't insist on having exactly
-> > that code merged.  They just want the same functionality with the same
-> > efficiency without unnecessary change to user-space.
-> 
-> The whole problem is that the Android code is proven to work on lots and
-> lots of systems and whatever else we can come up with will not be.
-
-But it seems likely that the Android code, which has been tested on 
-only one kind of system, will _not_ work correctly on other kinds of 
-systems.
-
-Assuming we do go ahead and merge some form of the Android code, we
-must make sure that it won't have bad effects in situations where it's
-not needed or wanted.  This means more than configuring it away with 
-Kconfig.  When it is present, there has to be a way to control its 
-behavior in some detail.
-
-Alan Stern
+> Thanks!
+>
 
