@@ -1,101 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab1J1MJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:09:57 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45806 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab1J1MJz (ORCPT
+	id S932484Ab1J1MNs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:13:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44591 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab1J1MNq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:09:55 -0400
-Message-ID: <1319803781.23112.113.camel@edumazet-laptop>
-Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 28 Oct 2011 14:09:41 +0200
-In-Reply-To: <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
-References: <1319764761.23112.14.camel@edumazet-laptop>
-	 <20111028012521.GF25795@one.firstfloor.org>
-	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
-	 <1319766293.6759.17.camel@deadeye>
-	 <1319770376.23112.58.camel@edumazet-laptop>
-	 <1319772566.6759.27.camel@deadeye>
-	 <1319777025.23112.67.camel@edumazet-laptop>
-	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 28 Oct 2011 08:13:46 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: hch@infradead.org
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com, mszeredi@suse.cz
+Subject: [PATCH 00/13] read-only remount race fix v9
+Date: Fri, 28 Oct 2011 14:13:19 +0200
+Message-Id: <1319804012-16346-1-git-send-email-miklos@szeredi.hu>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 28 octobre 2011 à 04:37 -0700, Linus Torvalds a écrit :
-> On Thu, Oct 27, 2011 at 9:43 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > The only requirement of atomic_read() is that it must return value
-> > before or after an atomic_write(), not a garbled value.
-> 
-> The problem is that gcc *can* return a garbled value.
-> 
-> > In fact, if a compiler is stupid enough to issue two reads on following
-> > code :
-> 
-> The compiler really *can* be that "stupid". Except the code tends to
-> look like this:
-> 
->    int value = atomic_read(&atomic_var);
->    if (value > 10)
->      return;
->    .. do something with value ..
-> 
-> and gcc may decide - under register pressure, and in the absense of a
-> 'volatile' - to read 'value' first once for that "> 10" check, and
-> then it drops the registers and instead of saving it on the stack
-> frame, it can decide to re-load it from atomic_var.
-> 
-> IOW, "value" could be two or more different values: one value when
-> testing, and *another* value in "do something with value".
-> 
-> This is why we have "ACCESS_ONCE()".
-> 
-> Whether atomics guarantee ACCESS_ONCE() semantics or not is not
-> entirely clear. But afaik, there is no way to tell gcc "access at
-> *most* once, and never ever reload".
-> 
+This update changes a WARN_ON to a rate limited printk and a small
+update for 3.2.
 
-What you describe is true for non atomic variables as well, its not part
-of the atomic_ops documented semantic.
+git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git read-only-remount-fixes.v9
 
-And we do use ACCESS_ONCE() on the rare cases we need to make sure no
-reload is done.
+Thanks,
+Miklos
+---
 
-RCU use makes this implied (ACCESS_ONCE() being done in
-rcu_dereference()), so we dont have many raw ACCESS_ONCE() in our code.
+Miklos Szeredi (13):
+      vfs: ignore error on forced remount
+      vfs: keep list of mounts for each superblock
+      vfs: protect remounting superblock read-only
+      vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
+      hypfs: remove unnecessary nlink setting
+      jfs: remove unnecessary nlink setting
+      ocfs2: remove unnecessary nlink setting
+      logfs: remove unnecessary nlink setting
+      filesystems: add missing nlink wrappers
+      filesystems: add set_nlink()
+      vfs: protect i_nlink
+      vfs: count unlinked inodes
+      vfs: prevent remount read-only if pending removes
 
-int value = ACCESS_ONCE(atomic_read(&atomic_var));
-if (value > 10)
-     return;
-.. do something with value ..
-
-One of such rare use is explained in commit f1987257
-(tcp: protect sysctl_tcp_cookie_size reads)
-
-Since its a bit ugly, I suggested :
-
-int value = atomic_read_once(&atomic_var);
-if (value > 10)
-     return;
-    .. do something with value ..
-
-I dont know, it seems the right way, but yes it might break things.
-
-We can take the otherway and patch thousand atomic_read() to
-atomic_read_stable(), its safer but very boring :)
-
-
+---
+ arch/s390/hypfs/inode.c          |    6 +--
+ drivers/mtd/mtdchar.c            |    2 +-
+ drivers/staging/pohmelfs/inode.c |    2 +-
+ fs/9p/vfs_inode.c                |    4 +-
+ fs/9p/vfs_inode_dotl.c           |    4 +-
+ fs/adfs/inode.c                  |    2 +-
+ fs/affs/amigaffs.c               |    4 +-
+ fs/affs/inode.c                  |    8 ++--
+ fs/affs/namei.c                  |    6 +-
+ fs/afs/fsclient.c                |    2 +-
+ fs/afs/inode.c                   |    4 +-
+ fs/autofs4/inode.c               |    2 +-
+ fs/befs/linuxvfs.c               |    2 +-
+ fs/bfs/dir.c                     |    2 +-
+ fs/bfs/inode.c                   |    2 +-
+ fs/binfmt_misc.c                 |    2 +-
+ fs/btrfs/delayed-inode.c         |    2 +-
+ fs/btrfs/disk-io.c               |    2 +-
+ fs/btrfs/inode.c                 |    4 +-
+ fs/btrfs/tree-log.c              |    2 +-
+ fs/ceph/caps.c                   |    2 +-
+ fs/ceph/inode.c                  |    2 +-
+ fs/cifs/inode.c                  |    6 +-
+ fs/cifs/link.c                   |    2 +-
+ fs/coda/coda_linux.c             |    2 +-
+ fs/coda/dir.c                    |    2 +-
+ fs/devpts/inode.c                |    4 +-
+ fs/ecryptfs/inode.c              |   12 +++---
+ fs/efs/inode.c                   |    2 +-
+ fs/exofs/inode.c                 |    2 +-
+ fs/ext2/ialloc.c                 |    2 +-
+ fs/ext2/inode.c                  |    2 +-
+ fs/ext3/ialloc.c                 |    2 +-
+ fs/ext3/inode.c                  |    2 +-
+ fs/ext3/namei.c                  |    6 +-
+ fs/ext4/ialloc.c                 |    2 +-
+ fs/ext4/inode.c                  |    2 +-
+ fs/ext4/migrate.c                |    2 +-
+ fs/ext4/namei.c                  |    8 ++--
+ fs/fat/inode.c                   |    4 +-
+ fs/fat/namei_msdos.c             |    2 +-
+ fs/fat/namei_vfat.c              |    2 +-
+ fs/file_table.c                  |   23 ----------
+ fs/freevxfs/vxfs_inode.c         |    2 +-
+ fs/fuse/control.c                |    2 +-
+ fs/fuse/inode.c                  |    2 +-
+ fs/gfs2/glops.c                  |    2 +-
+ fs/hfs/dir.c                     |    4 +-
+ fs/hfs/inode.c                   |    4 +-
+ fs/hfsplus/dir.c                 |    4 +-
+ fs/hfsplus/inode.c               |   10 ++--
+ fs/hostfs/hostfs_kern.c          |    2 +-
+ fs/hpfs/dir.c                    |    2 +-
+ fs/hpfs/inode.c                  |   10 ++--
+ fs/hpfs/namei.c                  |    8 ++--
+ fs/hppfs/hppfs.c                 |    2 +-
+ fs/hugetlbfs/inode.c             |    2 +-
+ fs/inode.c                       |   87 +++++++++++++++++++++++++++++++++++++-
+ fs/internal.h                    |    1 +
+ fs/isofs/inode.c                 |    4 +-
+ fs/isofs/rock.c                  |    4 +-
+ fs/jffs2/dir.c                   |    6 +-
+ fs/jffs2/fs.c                    |    6 +-
+ fs/jfs/jfs_imap.c                |    6 +-
+ fs/jfs/jfs_inode.c               |    2 +-
+ fs/jfs/namei.c                   |   12 +++---
+ fs/jfs/super.c                   |    1 -
+ fs/libfs.c                       |    2 +-
+ fs/logfs/dir.c                   |    8 ++--
+ fs/logfs/inode.c                 |    3 +-
+ fs/logfs/readwrite.c             |    2 +-
+ fs/minix/inode.c                 |    4 +-
+ fs/namespace.c                   |   57 ++++++++++++++++++++++++-
+ fs/ncpfs/inode.c                 |    2 +-
+ fs/nfs/inode.c                   |    6 +-
+ fs/nilfs2/inode.c                |    4 +-
+ fs/nilfs2/namei.c                |    2 +-
+ fs/ntfs/inode.c                  |    8 ++--
+ fs/ocfs2/dir.c                   |    4 +-
+ fs/ocfs2/dlmglue.c               |    2 +-
+ fs/ocfs2/inode.c                 |    4 +-
+ fs/ocfs2/namei.c                 |   18 ++++----
+ fs/openpromfs/inode.c            |    4 +-
+ fs/proc/base.c                   |   12 +++---
+ fs/proc/generic.c                |    2 +-
+ fs/proc/inode.c                  |    2 +-
+ fs/proc/proc_sysctl.c            |    2 +-
+ fs/qnx4/inode.c                  |    2 +-
+ fs/reiserfs/inode.c              |   10 ++--
+ fs/reiserfs/namei.c              |   16 ++++----
+ fs/romfs/super.c                 |    2 +-
+ fs/squashfs/inode.c              |   18 ++++----
+ fs/stack.c                       |    2 +-
+ fs/super.c                       |   27 ++++++++++--
+ fs/sysfs/inode.c                 |    2 +-
+ fs/sysv/inode.c                  |    2 +-
+ fs/ubifs/super.c                 |    2 +-
+ fs/ubifs/xattr.c                 |    4 +-
+ fs/udf/inode.c                   |    8 ++-
+ fs/udf/namei.c                   |   15 +++----
+ fs/ufs/ialloc.c                  |    2 +-
+ fs/ufs/inode.c                   |    4 +-
+ fs/xfs/xfs_iops.c                |    2 +-
+ include/linux/fs.h               |   66 ++++++++++-------------------
+ include/linux/mount.h            |    1 +
+ mm/shmem.c                       |    2 +-
+ 106 files changed, 393 insertions(+), 286 deletions(-)
 
