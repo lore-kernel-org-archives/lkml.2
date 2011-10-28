@@ -1,132 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab1J1GDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 02:03:00 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56076 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab1J1GC7 convert rfc822-to-8bit (ORCPT
+	id S1754994Ab1J1GFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 02:05:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41136 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754388Ab1J1GFh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 02:02:59 -0400
+	Fri, 28 Oct 2011 02:05:37 -0400
+Date: Fri, 28 Oct 2011 08:05:35 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Chen Jie <chenj@lemote.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] time: Improve documentation of timekeeeping_adjust()
+Message-ID: <20111028060534.GB1957@netboy.at.omicron.at>
+References: <1319764362-32367-1-git-send-email-john.stultz@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <4EAA4263.2090809@cn.fujitsu.com>
-References: <4EAA2492.3020907@cn.fujitsu.com>
-	<CAA_GA1eGt-Xu1wQ-g0v+J7CD4OEAU1nm1Eviww1+mOKjYWEcMg@mail.gmail.com>
-	<4EAA4263.2090809@cn.fujitsu.com>
-Date: Fri, 28 Oct 2011 14:02:56 +0800
-Message-ID: <CAA_GA1cKK45Z=YFUHRi-LUuhWpcs9ruW9xom_6LRmqhRNao+hQ@mail.gmail.com>
-Subject: Re: [possible deadlock][3.1.0-g138c4ae] possible circular locking
- dependency detected
-From: Bob Liu <lliubbo@gmail.com>
-To: gaowanlong@cn.fujitsu.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319764362-32367-1-git-send-email-john.stultz@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 1:49 PM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-> On 10/28/2011 01:44 PM, Bob Liu wrote:
->
->> On Fri, Oct 28, 2011 at 11:42 AM, Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
->>> Hi folks:
->>>
->>> My dmesg said that:
->>>
->>> ======================================================
->>> [ INFO: possible circular locking dependency detected ]
->>> 3.1.0-138c4ae #2
->>> -------------------------------------------------------
->>> hugemmap05/18198 is trying to acquire lock:
->>>  (&mm->mmap_sem){++++++}, at: [<ffffffff8114d85c>] might_fault+0x5c/0xb0
->>>
->>> but task is already holding lock:
->>>  (&sb->s_type->i_mutex_key#21){+.+.+.}, at: [<ffffffff811a10f6>] vfs_readdir+0x86/0xe0
->>>
->>> which lock already depends on the new lock.
->>>
->>>
->>> the existing dependency chain (in reverse order) is:
->>>
->>> -> #1 (&sb->s_type->i_mutex_key#21){+.+.+.}:
->>>       [<ffffffff810afd34>] validate_chain+0x704/0x860
->>>       [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
->>>       [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
->>>       [<ffffffff815464f2>] __mutex_lock_common+0x62/0x420
->>>       [<ffffffff81546a1a>] mutex_lock_nested+0x4a/0x60
->>>       [<ffffffff8120b4ba>] hugetlbfs_file_mmap+0xaa/0x160
->>>       [<ffffffff81158071>] mmap_region+0x3e1/0x590
->>>       [<ffffffff81158584>] do_mmap_pgoff+0x364/0x3b0
->>>       [<ffffffff811587d9>] sys_mmap_pgoff+0x209/0x240
->>>       [<ffffffff8101aac9>] sys_mmap+0x29/0x30
->>>       [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
->>>
->>> -> #0 (&mm->mmap_sem){++++++}:
->>>       [<ffffffff810af607>] check_prev_add+0x537/0x560
->>>       [<ffffffff810afd34>] validate_chain+0x704/0x860
->>>       [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
->>>       [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
->>>       [<ffffffff8114d889>] might_fault+0x89/0xb0
->>>       [<ffffffff811a0f2e>] filldir+0x7e/0xe0
->>>       [<ffffffff811b445e>] dcache_readdir+0x5e/0x230
->>>       [<ffffffff811a1130>] vfs_readdir+0xc0/0xe0
->>>       [<ffffffff811a12c9>] sys_getdents+0x89/0x100
->>>       [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
->>>
->>> other info that might help us debug this:
->>>
->>>  Possible unsafe locking scenario:
->>>
->>>       CPU0                    CPU1
->>>       ----                    ----
->>>  lock(&sb->s_type->i_mutex_key);
->>>                               lock(&mm->mmap_sem);
->>>                               lock(&sb->s_type->i_mutex_key);
->>>  lock(&mm->mmap_sem);
->>>
->>>  *** DEADLOCK ***
->>>
->>> 1 lock held by hugemmap05/18198:
->>>  #0:  (&sb->s_type->i_mutex_key#21){+.+.+.}, at: [<ffffffff811a10f6>] vfs_readdir+0x86/0xe0
->>>
->>> stack backtrace:
->>> Pid: 18198, comm: hugemmap05 Not tainted 3.1.0-138c4ae #2
->>> Call Trace:
->>>  [<ffffffff810ad469>] print_circular_bug+0x109/0x110
->>>  [<ffffffff810af607>] check_prev_add+0x537/0x560
->>>  [<ffffffff8114e112>] ? do_anonymous_page+0xf2/0x2d0
->>>  [<ffffffff810afd34>] validate_chain+0x704/0x860
->>>  [<ffffffff810b018c>] __lock_acquire+0x2fc/0x500
->>>  [<ffffffff810b0b01>] lock_acquire+0xb1/0x1a0
->>>  [<ffffffff8114d85c>] ? might_fault+0x5c/0xb0
->>>  [<ffffffff8114d889>] might_fault+0x89/0xb0
->>>  [<ffffffff8114d85c>] ? might_fault+0x5c/0xb0
->>>  [<ffffffff81546763>] ? __mutex_lock_common+0x2d3/0x420
->>>  [<ffffffff811a10f6>] ? vfs_readdir+0x86/0xe0
->>>  [<ffffffff811a0f2e>] filldir+0x7e/0xe0
->>>  [<ffffffff811b445e>] dcache_readdir+0x5e/0x230
->>>  [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
->>>  [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
->>>  [<ffffffff811a0eb0>] ? filldir64+0xf0/0xf0
->>>  [<ffffffff811a1130>] vfs_readdir+0xc0/0xe0
->>>  [<ffffffff8118e9be>] ? fget+0xee/0x220
->>>  [<ffffffff8118e8d0>] ? fget_raw+0x220/0x220
->>>  [<ffffffff811a12c9>] sys_getdents+0x89/0x100
->>>  [<ffffffff81551542>] system_call_fastpath+0x16/0x1b
->>>
->>
->> Please try this patch "lockdep: Add helper function for dir vs file
->> i_mutex annotation" by josh.
->> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=e096d0c7e2e4e5893792db865dd065ac73cf1f00
->>
->
->
-> Oh, it looks like can fix this bug, but I also can't reproduce it whether with or without this patch.
->
+On Thu, Oct 27, 2011 at 06:12:42PM -0700, John Stultz wrote:
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index a5846a8..de8737e 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -802,14 +802,44 @@ static void timekeeping_adjust(s64 offset)
+>  	s64 error, interval = timekeeper.cycle_interval;
+>  	int adj;
+>  
+> +	/*
+> +	 * The point of this is to check if the error is greater then half
+> +	 * an interval.
+> +	 *
+> +	 * First we shift it down from NTP_SHIFT to clocksource->shifted nsecs.
+> +	 *
+> +	 * Note we subtract one in the shift, so that error is really error*2.
+> +	 * This "saves" dividing(shifting) intererval twice, but keeps the
+> +	 * (error > interval) comparision as still measuring if error is
+> +	 * larger then half an interval.
+> +	 *
+> +	 * Note: It does not "save" on aggrivation when reading the code.
 
-Make sure CONFIG_DEBUG_LOCK_ALLOC was set.
+... or on "aggravation" either :)
 
--- 
-Regards,
---Bob
+Thanks,
+Richard
