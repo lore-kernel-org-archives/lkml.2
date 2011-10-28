@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925Ab1J1X7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 19:59:13 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:42354 "EHLO mgw2.diku.dk"
+	id S1756191Ab1J1X7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 19:59:03 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42343 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754963Ab1J1X7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 19:59:08 -0400
+	id S1754838Ab1J1X66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 19:58:58 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, linux-media@vger.kernel.org,
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: kernel-janitors@vger.kernel.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] drivers/media/video/atmel-isi.c: eliminate a null pointer dereference
-Date: Sat, 29 Oct 2011 01:58:16 +0200
-Message-Id: <1319846297-2985-4-git-send-email-julia@diku.dk>
+Subject: [PATCH 3/5] drivers/hid/hid-roccat.c: eliminate a null pointer dereference
+Date: Sat, 29 Oct 2011 01:58:15 +0200
+Message-Id: <1319846297-2985-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -20,8 +20,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-The variable isi might be null or might be freed at the point of the call
-to clk_put.  pclk contains the value that isi->pclk is expected to point to.
+It is not possible to take the lock in device if device is NULL.
+The mutex_lock is thus moved after the NULL test, and the relevant part of
+the shared error handling code is moved up.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -47,20 +48,31 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/media/video/atmel-isi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-roccat.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/video/atmel-isi.c b/drivers/media/video/atmel-isi.c
-index 774715d..a3dafd6 100644
---- a/drivers/media/video/atmel-isi.c
-+++ b/drivers/media/video/atmel-isi.c
-@@ -1026,7 +1026,7 @@ err_alloc_ctx:
- err_alloc_descriptors:
- 	kfree(isi);
- err_alloc_isi:
--	clk_put(isi->pclk);
-+	clk_put(pclk);
+diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
+index 2596321..36a28b8 100644
+--- a/drivers/hid/hid-roccat.c
++++ b/drivers/hid/hid-roccat.c
+@@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
  
- 	return ret;
- }
+ 	device = devices[minor];
+ 
+-	mutex_lock(&device->readers_lock);
+-
+ 	if (!device) {
+ 		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
+-		error = -ENODEV;
+-		goto exit_err;
++		kfree(reader);
++		mutex_lock(&devices_lock);
++		return -ENODEV;
+ 	}
+ 
++	mutex_lock(&device->readers_lock);
++
+ 	if (!device->open++) {
+ 		/* power on device on adding first reader */
+ 		error = hid_hw_power(device->hid, PM_HINT_FULLON);
 
