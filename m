@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933025Ab1J1Qik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 12:38:40 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49690 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab1J1Qij convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 12:38:39 -0400
+	id S933034Ab1J1Qko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 12:40:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50138 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932292Ab1J1Qkn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 12:40:43 -0400
+Date: Fri, 28 Oct 2011 18:27:59 +0200
+From: Greg KH <gregkh@suse.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Miche Baker-Harvey <miche@google.com>, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, Amit Shah <amit.shah@redhat.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] VirtioConsole support.
+Message-ID: <20111028162759.GA27263@suse.de>
+References: <20111027173527.GA23839@phenom.dumpdata.com>
+ <1319751802-27013-1-git-send-email-miche@google.com>
+ <20111027215535.GA5671@phenom.dumpdata.com>
 MIME-Version: 1.0
-Message-ID: <f0030f74-6c10-4127-beb9-96ef290ecf4c@default>
-Date: Fri, 28 Oct 2011 09:37:25 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Cyclonus J <cyclonusj@gmail.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default
- CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
-In-Reply-To: <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4EAADA45.0123,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+In-Reply-To: <20111027215535.GA5671@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You are changing core kernel code without ACKs from relevant
-> maintainers. That's very unfortunate. Existing users certainly matter
-> but that doesn't mean you get to merge code without maintainers even
-> looking at it.
+On Thu, Oct 27, 2011 at 05:55:35PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Thu, Oct 27, 2011 at 02:43:22PM -0700, Miche Baker-Harvey wrote:
+> > Multiple HVC console terminals enabled.
 > 
-> So really, why don't you just use scripts/get_maintainer.pl and simply
-> ask the relevant people for their ACK?
+> Miche,
+> 
+> You might want to flesh out the description a bit. Perhaps include
+> such details as : "fixes the infinite loop that git commit XX
+> caused". Perhaps include some of the serial console output.
+> 
+> Maybe also change the title - the patch name (which is what shows up
+> if you do 'git log --oneline') is 'VirtioConsole support.' which is
+> not very informative.
 
-Actually I had done that before posting the patches and,
-doing it now again, I *do* have many of the relevant people
-on the ack list, and nearly all on the cc list of the
-patch postings.  (I apologize that I see I missed you
-on my list.)  
+Yes, all of these need to be resolved before I can accept this.
 
-I think every relevant maintainer has had the chance to
-review and acknowledge but some have, for whatever reason,
-chosen not to. 
+thanks,
 
-> Looking at your patches, there's no trace that anyone outside your own
-> development team even looked at the patches.
-
-Hmmm... I have reviews/acks from IBM, Fujitsu, and Citrix (and
-a long list of documented Cc's) in the git comments, so I'm
-not sure what you are seeing.
-
-Ah, perhaps you are referring to the naming changes in the
-cleancache hooks?  Akpm required me to rename various frontswap
-hooks to use "invalidate" in the function name instead of
-"flush".  I took the opportunity to rename the cleancache
-hooks for consistency in this same patchset and this occurred
-in only in the most recent version of the patchset.  It is true
-that I didn't ask for Ack's from those maintainers, though
-these changes would probably have gone through the trivial
-patch monkey later anyway.
-
-> Why do you feel that it's OK to ask Linus to pull them?
-
-Frontswap is essentially the second half of the cleancache
-patchset (or, more accurately, both are halves of the
-transcendent memory patchset).  They are similar in that
-the hooks in core MM code are fairly trivial and the
-real value/functionality lies outside of the core kernel;
-as a result core MM maintainers don't have much interest
-I guess.
-
-Linus personally merged cleancache for 3.0 (quoting from his
-offlist email: "I've looked through it, and it seems simple
-enough, with a pretty minimal support burden"); I was assuming
-a similar path for frontswap.
-
-I repeat that I'm not trying to subvert any process.  There
-just doesn't seem to be much of a process in place for this kind
-of a patchset, and I'm not letting silence or indifference
-or "don't like it much" get in the way.
-
-Thanks,
-Dan
-
+greg k-h
