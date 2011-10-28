@@ -1,124 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab1J1T6o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 15:58:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932661Ab1J1T6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 15:58:43 -0400
-Date: Fri, 28 Oct 2011 15:58:32 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Jens Axboe <axboe@kernel.dk>, Len Brown <len.brown@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] floppy: Remove _hlt related functions
-Message-ID: <20111028195832.GC28833@zod.bos.redhat.com>
+	id S933272Ab1J1UAE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 16:00:04 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:55009 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab1J1UAC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 16:00:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201110272206.35180.rjw@sisk.pl>
+References: <201106260054.20578.rjw@sisk.pl>
+	<201106292334.24518.rjw@sisk.pl>
+	<CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
+	<201110272206.35180.rjw@sisk.pl>
+Date: Fri, 28 Oct 2011 22:00:01 +0200
+Message-ID: <CACRpkdahSR0P-hSSJWqhouAn8KwdH-=Tsgg9K0sjeT_JAtDzVg@mail.gmail.com>
+Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
+ system sleep (v2)
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's close enough to 2012 and the WARN_ONCE is causing things like abrt to
-auto-file bugs that aren't really bugs.
+On Thu, Oct 27, 2011 at 10:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+>> We are trying to produce
+>> a runtime PM system of product quality based on 3.0.y and we've
+>> already had to backport this patch ourselves to get things stable.
+>>
+>> We have also backported:
+>> PM: Introduce generic "noirq" callback routines for subsystems (v2)
+>> PM / Runtime: Update documentation of interactions with system sleep
+>> PM / Runtime: Add new helper function: pm_runtime_status_suspended()
+>>
+>> And now it seems to be sufficient to get this thing going.
+>
+> Well, it isn't a simple fix and it changes the code's behavior quite
+> significantly, so I thought it might not be a good idea to risk problems
+> with -stable because of it.  Perhaps let's see how it works out in 3.1
+> and backport it later if there are no problem reports related to it?
 
-diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
-index d5ac362..df1e87c 100644
---- a/Documentation/feature-removal-schedule.txt
-+++ b/Documentation/feature-removal-schedule.txt
-@@ -6,14 +6,6 @@ be removed from this file.
- 
- ---------------------------
- 
--What:	x86 floppy disable_hlt
--When:	2012
--Why:	ancient workaround of dubious utility clutters the
--	code used by everybody else.
--Who:	Len Brown <len.brown@intel.com>
--
-----------------------------
--
- What:	CONFIG_APM_CPU_IDLE, and its ability to call APM BIOS in idle
- When:	2012
- Why:	This optional sub-feature of APM is of dubious reliability,
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index 9955a53..40bf4c2 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -1032,37 +1032,6 @@ static int fd_wait_for_completion(unsigned long delay, timeout_fn function)
- 	return 0;
- }
- 
--static DEFINE_SPINLOCK(floppy_hlt_lock);
--static int hlt_disabled;
--static void floppy_disable_hlt(void)
--{
--	unsigned long flags;
--
--	WARN_ONCE(1, "floppy_disable_hlt() scheduled for removal in 2012");
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (!hlt_disabled) {
--		hlt_disabled = 1;
--#ifdef HAVE_DISABLE_HLT
--		disable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
--static void floppy_enable_hlt(void)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&floppy_hlt_lock, flags);
--	if (hlt_disabled) {
--		hlt_disabled = 0;
--#ifdef HAVE_DISABLE_HLT
--		enable_hlt();
--#endif
--	}
--	spin_unlock_irqrestore(&floppy_hlt_lock, flags);
--}
--
- static void setup_DMA(void)
- {
- 	unsigned long f;
-@@ -1107,7 +1076,6 @@ static void setup_DMA(void)
- 	fd_enable_dma();
- 	release_dma_lock(f);
- #endif
--	floppy_disable_hlt();
- }
- 
- static void show_floppy(void);
-@@ -1709,7 +1677,6 @@ irqreturn_t floppy_interrupt(int irq, void *dev_id)
- 	fd_disable_dma();
- 	release_dma_lock(f);
- 
--	floppy_enable_hlt();
- 	do_floppy = NULL;
- 	if (fdc >= N_FDC || FDCS->address == -1) {
- 		/* we don't even know which FDC is the culprit */
-@@ -1858,8 +1825,6 @@ static void floppy_shutdown(unsigned long data)
- 		show_floppy();
- 	cancel_activity();
- 
--	floppy_enable_hlt();
--
- 	flags = claim_dma_lock();
- 	fd_disable_dma();
- 	release_dma_lock(flags);
-@@ -4504,7 +4469,6 @@ static void floppy_release_irq_and_dma(void)
- #if N_FDC > 1
- 	set_dor(1, ~8, 0);
- #endif
--	floppy_enable_hlt();
- 
- 	if (floppy_track_buffer && max_buffer_sectors) {
- 		tmpsize = max_buffer_sectors * 1024;
--- 
-1.7.6.4
+OK no hurries, let's give it a spin in 3.1 for some weeks or so.
 
+Yours,
+Linus Walleij
