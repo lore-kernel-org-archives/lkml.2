@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab1J1BpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 21:45:09 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:46051 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab1J1BpH (ORCPT
+	id S1754265Ab1J1BuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 21:50:08 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:34164 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752284Ab1J1BuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 21:45:07 -0400
-Message-ID: <1319766293.6759.17.camel@deadeye>
-Subject: Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andi Kleen <andi@firstfloor.org>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 28 Oct 2011 02:44:53 +0100
-In-Reply-To: <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
-References: <1319764761.23112.14.camel@edumazet-laptop>
-	 <20111028012521.GF25795@one.firstfloor.org>
-	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Oct 2011 21:50:07 -0400
+X-AuditID: b753bd60-a0aaaba0000019f4-1e-4eaa0a4b3f4e
+X-AuditID: b753bd60-a0aaaba0000019f4-1e-4eaa0a4b3f4e
+Message-ID: <4EAA0A3D.90102@hitachi.com>
+Date: Fri, 28 Oct 2011 10:49:49 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Originating-IP: [88.96.1.126]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18474.005
-X-TM-AS-Result: No--22.788800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 28 Oct 2011 01:45:07.0060 (UTC) FILETIME=[386EBB40:01CC9513]
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>, Ingo Molnar <mingo@elte.hu>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH x86 2/2] Cleanup do_int3
+References: <20111025141812.GA21225@linux.vnet.ibm.com> <20111025142159.GB21225@linux.vnet.ibm.com>
+In-Reply-To: <20111025142159.GB21225@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-10-27 at 18:34 -0700, Linus Torvalds wrote:
-> On Thu, Oct 27, 2011 at 6:25 PM, Andi Kleen <andi@firstfloor.org> wrote:
-> >
-> > Seems reasonable too. In fact we usually should have memory barriers
-> > for this anyways which obsolete the volatile.
-> 
-> No we shouldn't. Memory barriers are insanely expensive, and pointless
-> for atomics - that aren't ordered anyway.
-> 
-> You may mean compiler barriers.
-> 
-> That said, removing the volatile entirely might be a good idea, and
-> never mind any barriers at all. The ordering for atomics really isn't
-> well enough specified that we should care. So I wouldn't object to a
-> patch that just removes the volatile entirely, but it would have to be
-> accompanied with quite a bit of testing, in case some odd case ends up
-> depending on it. But nothing *should* be looping on those things
-> anyway.
+(2011/10/25 23:21), Srikar Dronamraju wrote:
+> Since there is a possibility of !KPROBES int3 listeners and since
+> DIE_TRAP is currently not being used by anybody, notify all listeners
+> with DIE_INT3.
 
-Whether or not it needs to provide any ordering guarantee, atomic_read()
-must never read more than once, and I think that requires the volatile
-qualification.  It might be clearer to use the ACCESS_ONCE macro,
-however.
+I'm not sure why this CONFIG_KPROBES dependency had been introduced,
+but it's the time to fix it. do_int3 should send DIE_INT3 always.
 
-Ben.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> 
+> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kernel/traps.c |    7 +------
+>  1 files changed, 1 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 6913369..c9a4be5 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -461,15 +461,10 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
+>  			== NOTIFY_STOP)
+>  		return;
+>  #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
+> -#ifdef CONFIG_KPROBES
+> +
+>  	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
+>  			== NOTIFY_STOP)
+>  		return;
+> -#else
+> -	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
+> -			== NOTIFY_STOP)
+> -		return;
+> -#endif
+>  
+>  	preempt_conditional_sti(regs);
+>  	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
