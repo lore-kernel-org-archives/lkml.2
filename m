@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab1J1Rwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 13:52:33 -0400
-Received: from smtp6-g21.free.fr ([212.27.42.6]:47888 "EHLO smtp6-g21.free.fr"
+	id S1753823Ab1J1Rw3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 13:52:29 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58432 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab1J1Rwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 13:52:32 -0400
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: dwmw2@infradead.org, dedekind1@gmail.com, mikedunn@newsguy.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH 02/13] mtd/docg3: fix tracing of IO in writeb
-Date: Fri, 28 Oct 2011 19:51:21 +0200
-Message-Id: <1319824292-11085-3-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>
-References: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>
+	id S1753552Ab1J1Rw1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 13:52:27 -0400
+Subject: Re: [RFC][PATCH 2/2] Example to show use of uio pgprot
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20111028163706.GB27444@kroah.com>
+Date: Fri, 28 Oct 2011 12:52:01 -0500
+Cc: hjk@hansjkoch.de, linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A42590B4-A0D4-433D-ADA8-57ECBFAB9A6E@kernel.crashing.org>
+References: <1319817030-23992-1-git-send-email-galak@kernel.crashing.org> <1319817030-23992-2-git-send-email-galak@kernel.crashing.org> <20111028163706.GB27444@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Writeb was incorrectly traced as a 16 bits write, instead of
-a 8 bits write. Fix it by tracing the correct width.
 
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
- drivers/mtd/devices/docg3.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Oct 28, 2011, at 11:37 AM, Greg KH wrote:
 
-diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
-index 6f5233d..8942a75 100644
---- a/drivers/mtd/devices/docg3.c
-+++ b/drivers/mtd/devices/docg3.c
-@@ -82,7 +82,7 @@ static inline u16 doc_readw(struct docg3 *docg3, u16 reg)
- static inline void doc_writeb(struct docg3 *docg3, u8 val, u16 reg)
- {
- 	writeb(val, docg3->base + reg);
--	trace_docg3_io(1, 16, reg, val);
-+	trace_docg3_io(1, 8, reg, val);
- }
- 
- static inline void doc_writew(struct docg3 *docg3, u16 val, u16 reg)
--- 
-1.7.5.4
+> On Fri, Oct 28, 2011 at 10:50:30AM -0500, Kumar Gala wrote:
+>> ---
+>> drivers/uio/uio_dpa.c |  200 +++++++++++++++++++++++++++++++++++++++++++++++++
+>> 1 files changed, 200 insertions(+), 0 deletions(-)
+>> create mode 100644 drivers/uio/uio_dpa.c
+> 
+> You do realize this does not build, right?
+> 
+> thanks,
+> 
+> greg k-h
 
+Yes, it was meant to show Hans and example of why we need to allow a UIO driver to set its own pgprot.  We plan on upstream all that code, but wanted at least to get feedback on the general UIO change.
+
+- k
