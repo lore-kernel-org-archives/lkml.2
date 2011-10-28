@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1J1IuS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:50:18 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:52790 "EHLO
+	id S1753036Ab1J1JJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:09:54 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48435 "EHLO
 	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab1J1IuR convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752396Ab1J1JJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:50:17 -0400
+	Fri, 28 Oct 2011 05:09:53 -0400
 MIME-Version: 1.0
 X-Originating-IP: [89.138.253.16]
-In-Reply-To: <alpine.DEB.2.00.1110272257040.14619@router.home>
+In-Reply-To: <alpine.DEB.2.00.1110272304020.14619@router.home>
 References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
-	<1319385413-29665-6-git-send-email-gilad@benyossef.com>
-	<alpine.DEB.2.00.1110272257040.14619@router.home>
-Date: Fri, 28 Oct 2011 10:50:16 +0200
-Message-ID: <CAOtvUMd3vWPfPFoLiZ7O1M1Ka1=py0p0Lx_G1PoH4bG2tfAJEQ@mail.gmail.com>
-Subject: Re: [PATCH v2 5/6] slub: Only IPI CPUs that have per cpu obj to flush
+	<1319385413-29665-7-git-send-email-gilad@benyossef.com>
+	<alpine.DEB.2.00.1110272304020.14619@router.home>
+Date: Fri, 28 Oct 2011 11:09:52 +0200
+Message-ID: <CAOtvUMcHOysen7betBOwEJAjL-UVzvBfCf0fzmmBERFrivkOBA@mail.gmail.com>
+Subject: Re: [PATCH v2 6/6] slub: only preallocate cpus_with_slabs if offstack
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: Christoph Lameter <cl@gentwo.org>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,7 +24,6 @@ Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
         Sasha Levin <levinsasha928@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,73 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Fri, Oct 28, 2011 at 6:06 AM, Christoph Lameter <cl@gentwo.org> wrote:
 > On Sun, 23 Oct 2011, Gilad Ben-Yossef wrote:
 >
->> diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
->> index f58d641..b130f61 100644
->> --- a/include/linux/slub_def.h
->> +++ b/include/linux/slub_def.h
->> @@ -102,6 +102,9 @@ struct kmem_cache {
->>        */
->>       int remote_node_defrag_ratio;
->>  #endif
->> +
->> +     /* Which CPUs hold local slabs for this cache. */
->> +     cpumask_var_t cpus_with_slabs;
->>       struct kmem_cache_node *node[MAX_NUMNODES];
->>  };
+>> We need a cpumask to track cpus with per cpu cache pages
+>> to know which cpu to whack during flush_all. For
+>> CONFIG_CPUMASK_OFFSTACK=n we allocate the mask on stack.
+>> For CONFIG_CPUMASK_OFFSTACK=y we don't want to call kmalloc
+>> on the flush_all path, so we preallocate per kmem_cache
+>> on cache creation and use it in flush_all.
 >
-> Please do not add fields to structures for passing parameters to
-> functions. This just increases the complexity of the patch and extends a
-> structures needlessly.
+> I think the on stack alloc should be the default because we can then avoid
+> the field in kmem_cache and the associated logic with managing the field.
+> Can we do a GFP_ATOMIC allocation in flush_all()? If the alloc
+> fails then you can still fallback to send an IPI to all cpus.
 
-The field was added to provide storage to cpus_with_slabs during
-flush_all, since otherwise cpus_with_slabs, being a cpumask, would
-require a kmem_cache allocation in the middle of flush_all  for
-CONFIG_CPUMASK_OFF_STACK=y case, which Pekka E. objected to.
 
-The next patch in the series makes the field (and overhead) only added
-for  CONFIG_CPUMASK_OFF_STACK=y case but I wanted to break out the
-addition to the patch core feature and the optimization of only adding
-the field for CONFIG_CPUMASK_OFF_STACK=y, so this patch as is without
-the next one is only good for bisect value.
+Yes, that was exactly what I did in the first version of this patch
+did. See: https://lkml.org/lkml/2011/9/25/32
 
-I should have probably have commented about it in the description of
-this patch and not only in the next one. Sorry about that. I will fix
-it for the next round.
+Pekka E. did not like it because of the allocation out of kmem_cache
+in CONFIG_CPUMASK_OFFSTACK=y case in a code path that is supposed to
+shrink kmem_caches. I have to say I certainly see his point so I tried
+to work around that. On the other hand the overhead code complexity
+wise of avoiding that allocation is non trivial.
 
->
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 7c54fe8..f8cbf2d 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -1948,7 +1948,18 @@ static void flush_cpu_slab(void *d)
->>
->>  static void flush_all(struct kmem_cache *s)
->>  {
->> -     on_each_cpu(flush_cpu_slab, s, 1);
->> +     struct kmem_cache_cpu *c;
->> +     int cpu;
->> +
->> +     for_each_online_cpu(cpu) {
->> +             c = per_cpu_ptr(s->cpu_slab, cpu);
->> +             if (c && c->page)
->> +                     cpumask_set_cpu(cpu, s->cpus_with_slabs);
->> +             else
->> +                     cpumask_clear_cpu(cpu, s->cpus_with_slabs);
->> +     }
->> +
->> +     on_each_cpu_mask(s->cpus_with_slabs, flush_cpu_slab, s, 1);
->>  }
->
->
-> You do not need s->cpus_with_slabs to be in kmem_cache. Make it a local
-> variable instead.
+I tried to give it some more thought -
 
-That is what the next patch does - for CONFIG_CPUMASK_OFFSTACK=n, alt least.
+Since flush_all is called on a kmem_cache basis, to allocate off of
+the cpumask kmem_cache while shrinking *another cache* is fine. A
+little weird maybe, but fine.
 
-Thanks,
+Trouble might lurk if some code path will try to shrink the cpumask
+kmem_cache. This can happens if a code path ever tries to either close
+the cpumask kmem_cache, which I find very unlikely, or if someone will
+try to shrink the cpumask kmem_cache. Right now the only in tree user
+I found of kmem_shrink_cache is the acpi code, and even that happens
+only for a few specific caches and only during boot. I don't see that
+changing.
+
+I think if it is up to me, I recommend going the simpler  route that
+does the allocation in flush_all using GFP_ATOMIC for
+CPUMASK_OFFSTACK=y and sends an IPI to all CPUs if it fails, because
+it is simpler code and in the end I believe it is also correct.
+
+What do you guys think?
+
+Thanks!
 Gilad
-
-
 -- 
 Gilad Ben-Yossef
 Chief Coffee Drinker
