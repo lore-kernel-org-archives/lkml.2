@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab1J1Kg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 06:36:58 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39864 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab1J1Kg5 (ORCPT
+	id S932161Ab1J1KiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 06:38:09 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:47970 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754258Ab1J1KiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 06:36:57 -0400
-Subject: [PATCH] nfs: Fix unused variable warning.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 16:36:32 +0600
-Message-ID: <1319798192.26450.1.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 8bit
+	Fri, 28 Oct 2011 06:38:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <1319782638.22700.8.camel@dabdike>
+References: <1319782638.22700.8.camel@dabdike>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Fri, 28 Oct 2011 12:37:44 +0200
+X-Google-Sender-Auth: yhOL7Gl-CLD5adl0ab2HfBmMb0M
+Message-ID: <CAO+b5-poCGta55VVZCLc_YsJDyZzGHs=zmvFT8pRqns-xw5vaQ@mail.gmail.com>
+Subject: Re: [GIT PULL] first round of SCSI updates for the 3.1 merge window
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- When CONFIG_NFS=y, but CONFIG_NFS_V3_{,V4}=n we get the following warning:
+On Fri, Oct 28, 2011 at 8:17 AM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> This represents the usual round of driver updates [ ... ]
 
-	fs/nfs/write.c: In function ‘nfs_writeback_done’:
-	fs/nfs/write.c:1246:21: warning: unused variable ‘server’
+Have these two patches perhaps been overlooked ?
+* Make scsi_free_queue() kill pending SCSI commands, which fixes a
+kernel deadlock that is easy to trigger from user space
+(http://marc.info/?l=linux-scsi&m=131680195721932).
+* srp_transport: Fix atttribute registration race
+(http://marc.info/?l=linux-rdma&m=131921626507904).
 
- This patch fixes it.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 2219c88..e528e5c 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1243,7 +1243,6 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
- {
- 	struct nfs_writeargs	*argp = &data->args;
- 	struct nfs_writeres	*resp = &data->res;
--	struct nfs_server	*server = NFS_SERVER(data->inode);
- 	int status;
- 
- 	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
-@@ -1272,6 +1271,8 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
- 		 *	 as a dprintk() in order to avoid filling syslog.
- 		 */
- 		static unsigned long    complain;
-+		struct nfs_server	*server;
-+		server = NFS_SERVER(data->inode);
- 
- 		/* Note this will print the MDS for a DS write */
- 		if (time_before(complain, jiffies)) {
-
-
+Bart.
