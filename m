@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab1J1Hac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:30:32 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38158 "EHLO
+	id S932104Ab1J1Hfr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:35:47 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65471 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097Ab1J1Hab (ORCPT
+	with ESMTP id S1752970Ab1J1Hfq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:30:31 -0400
-Date: Fri, 28 Oct 2011 16:30:26 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
-Message-ID: <20111028073026.GB6268@barrios-laptop.redhat.com>
-References: <1319511580.22361.141.camel@sli10-conroe>
- <20111027233407.GC29407@barrios-laptop.redhat.com>
- <1319778715.22361.155.camel@sli10-conroe>
+	Fri, 28 Oct 2011 03:35:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319778715.22361.155.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111028071129.GA2362@tarshish>
+References: <1319772453-1275-1-git-send-email-Barry.Song@csr.com> <20111028071129.GA2362@tarshish>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 28 Oct 2011 15:35:23 +0800
+Message-ID: <CAGsJ_4z=VtU+RJ4c0Y2ruttWU6mTVtHMxzvCYWGz=5w6i7QJMQ@mail.gmail.com>
+Subject: Re: [PATCH] UART: add CSR SiRFprimaII SoC on-chip uart drivers
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: torvalds@linux-foundation.org, Rong Wang <Rong.Wang@csr.com>,
+        Bin Shi <Bin.Shi@csr.com>, Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org, workgroup.linux@csr.com,
+        linux-serial@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
-> On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
-> > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
-> > > With current logic, if page reclaim finds a huge page, it will just reclaim
-> > > the head page and leave tail pages reclaimed later. Let's take an example,
-> > > lru list has page A and B, page A is huge page:
-> > > 1. page A is isolated
-> > > 2. page B is isolated
-> > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
-> > > page A+1, page A+2, ... are added to lru list.
-> > > 4. shrink_page_list() adds page B to swap page cache.
-> > > 5. page A and B is written out and reclaimed.
-> > > 6. page A+1, A+2 ... is isolated and reclaimed later.
-> > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
-> > 
-> > I don't see your code yet but have a question.
-> > You mitigate this problem by 4/5 which could add subpages into lru tail
-> > so subpages would reclaim next interation of reclaim.
-> > 
-> > What do we need 5/5?
-> > Do I miss something?
-> Both patches are required. without this patch, current page reclaim will
-> only reclaim the first page of a huge page, because the hugepage isn't
-> split yet. The hugepage is split when the first page is being written to
-> swap, which is too later and page reclaim might already isolated a lot
-> of pages.
+2011/10/28 Baruch Siach <baruch@tkos.co.il>:
+> Hi Barry,
+>
+> On Thu, Oct 27, 2011 at 08:27:33PM -0700, Barry Song wrote:
+>> From: Rong Wang <Rong.Wang@csr.com>
+>>
+>> SiRFprimaII is the latest generation application processor from CSR’s
+>> multi-function SoC product family.
+>> The SoC support codes are in arch/arm/mach-prima2 from Linux mainline
+>> 3.0.
+>>
+>> There are three dedicated UARTs in system. This patch adds basic driver
+>> support for them.
+>>
+>> It has used the newest pinmux subsystem from Linus Walleij.
+>>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Signed-off-by: Rong Wang <Rong.Wang@csr.com>
+>> Signed-off-by: Bin Shi <Bin.Shi@csr.com>
+>> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+>> Acked-by: Alan Cox <alan@linux.intel.com>
+>> ---
+>
+> [snip]
+>
+>> +config SERIAL_SIRFSOC
+>> +        tristate "SiRF SoC Platform Serial port support"
+>> +        depends on ARM && ARCH_PRIMA2
+>> +        select SERIAL_CORE
+>> +        help
+>> +          Support for the on-chip UART on the CSR SiRFprimaII series,
+>> +          providing /dev/ttyS0, 1 and 2 (note, some machines may not
+>> +          provide all of these ports, depending on how the serial port
+>> +          pins are configured.
+>
+> Unbalanced parentheses.
 
-When split happens, subpages would be located in tail of LRU by your 4/5.
-(Assume tail of LRU is old age).
-In addtion, isolation happens 32 page chunk so the subpages would be isolated
-and reclaimed in next iteration. I think 32 pages are not too many.
+Hi Baruch,
+Thanks for reviewing! I sent this mail for Torvalds to pick seperately
+since it depends on pinctl tree, and it was not gone through tty tree
+since tty has no pinctrl before linus merges it.
+This patch has been reviewed and acked in linux-serial, unfortunately,
+missed this error.
+i am not sure whether i will make Linus confused if i send a new
+version at this moment. how about i send a seperate patch to fix this
+after the driver is applied?
 
-What do you think about it?
--- 
-Kind regards,
-Minchan Kim
+>
+> baruch
+>
+> --
+>                                                     ~. .~   Tk Open Systems
+> =}------------------------------------------------ooO--U--Ooo------------{=
+>   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+
+-barry
