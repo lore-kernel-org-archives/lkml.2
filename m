@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab1J1OY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:24:27 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:25193 "EHLO relay.sw.ru"
+	id S932672Ab1J1OYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:24:34 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:13479 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932362Ab1J1OYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:24:24 -0400
-Subject: [PATCH 0/7] SUNRPC: initial part of making pipefs work in net ns
+	id S932566Ab1J1OYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:24:31 -0400
+Subject: [PATCH 1/7] SUNRPC: create RPC pipefs superblock per network
+	namespace context
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         bfields@fieldses.org, davem@davemloft.net, devel@openvz.org
-Date: Fri, 28 Oct 2011 18:25:19 +0300
-Message-ID: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
+Date: Fri, 28 Oct 2011 18:25:27 +0300
+Message-ID: <20111028142527.5796.54573.stgit@localhost6.localdomain6>
+In-Reply-To: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
+References: <20111028142245.5796.89937.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,36 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set was created in context of clone of git branch:
-git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
-and rebased on tag "v3.1".
+This is the initial step of RPC pipefs virtualization. It changes nothing to
+current pipefs behaviour except that mount of pipefs in other than init_net
+network namespace context will provide only root tree. No other dentries will
+be visible.
 
-This patch-set implements pipefs superblock creation per network namespace
-context instead of using single one for all possible contexts. Also, it
-provides pipefs dentries creation and destruction helpers for kernel routines.
-
-Additional description of the idea about how to make RPC pipefs work per
-network namespace context can be found in the letter titled "SUNRPC: "RPC
-pipefs per network namespace" preparations", which has been sent already to
-linux-nfs@vger.kernel.org.
-
-The following series consists of:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
+ net/sunrpc/rpc_pipe.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Stanislav Kinsbursky (7):
-      SUNRPC: create RPC pipefs superblock per network namespace context
-      SUNRPC: hold current network namespace while pipefs superblock is active
-      SUNRPC: send notification events on pipefs sb creation and destruction
-      SUNRPC: pipefs dentry lookup helper introduced
-      SUNRPC: put pipefs superblock link on network namespace
-      SUNRPC: pipefs per-net operations helper introduced
-      SUNRPC: added debug messages to RPC pipefs
-
-
- include/linux/sunrpc/rpc_pipe_fs.h |   15 +++++
- net/sunrpc/netns.h                 |    3 +
- net/sunrpc/rpc_pipe.c              |  113 +++++++++++++++++++++++++++++++++++-
- net/sunrpc/sunrpc_syms.c           |    1 
- 4 files changed, 130 insertions(+), 2 deletions(-)
+diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
+index b181e34..ad517bd 100644
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1006,6 +1006,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ {
+ 	struct inode *inode;
+ 	struct dentry *root;
++	struct net *net = data;
+ 
+ 	sb->s_blocksize = PAGE_CACHE_SIZE;
+ 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
+@@ -1030,7 +1031,7 @@ static struct dentry *
+ rpc_mount(struct file_system_type *fs_type,
+ 		int flags, const char *dev_name, void *data)
+ {
+-	return mount_single(fs_type, flags, data, rpc_fill_super);
++	return mount_ns(fs_type, flags, current->nsproxy->net_ns, rpc_fill_super);
+ }
+ 
+ static struct file_system_type rpc_pipe_fs_type = {
 
