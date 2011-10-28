@@ -1,77 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab1J1M1K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:27:10 -0400
-Received: from mx11.lb01.inode.at ([62.99.145.13]:24351 "EHLO mx.inode.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753397Ab1J1M1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:27:08 -0400
-X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Oct 2011 08:27:08 EDT
-Message-ID: <4EAA9FD5.4070202@hale.at>
-Date: Fri, 28 Oct 2011 14:28:05 +0200
-From: Michael Thalmeier <michael.thalmeier@hale.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755626Ab1J1M24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:28:56 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:52847 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab1J1M2y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 08:28:54 -0400
+Message-ID: <4EAA9FF6.5060004@linux.vnet.ibm.com>
+Date: Fri, 28 Oct 2011 17:58:38 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: rt <linux-rt-users@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Michael Thalmeier <michael@thalmeier.at>
-Subject: Re: [PATCH] USB: g_serial: fix deadlock with PREEMPT_RT enabled
-References: <1319804185-18559-1-git-send-email-michael.thalmeier@hale.at>
-In-Reply-To: <1319804185-18559-1-git-send-email-michael.thalmeier@hale.at>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, pavel@ucw.cz,
+        len.brown@intel.com, mingo@elte.hu, akpm@linux-foundation.org,
+        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au,
+        vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        rdunlap@xenotime.net, Tejun Heo <tj@kernel.org>,
+        Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH v4 2/2] CPU hotplug, Freezer: Synchronize CPU hotplug
+ and Freezer
+References: <20111027134824.20916.46845.stgit@srivatsabhat.in.ibm.com> <4EAA875D.5010203@linux.vnet.ibm.com> <201110281357.01484.rjw@sisk.pl> <201110281402.19108.rjw@sisk.pl>
+In-Reply-To: <201110281402.19108.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-HALE-MailScanner-Information: Please contact the ISP for more information
-X-MailScanner-ID: p9SCR6qp031367
-X-HALE-MailScanner: Found to be clean
-X-HALE-MailScanner-From: michael.thalmeier@hale.at
-MailScanner-NULL-Check: 1320409627.59221@muxiuHvd3eGDbs8vMe3/2w
+x-cbid: 11102803-3568-0000-0000-0000009893AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-10-28 14:16, Michael Thalmeier wrote:
-
-> In commit 44a0c0190b500ee6bcfc0976fe540f65dee2cd67 unlocking of spin_locks has
-> been removed. This patch party restores this functionality.
+On 10/28/2011 05:32 PM, Rafael J. Wysocki wrote:
+> On Friday, October 28, 2011, Rafael J. Wysocki wrote:
+>> On Friday, October 28, 2011, Srivatsa S. Bhat wrote:
+>>> On 10/28/2011 01:43 AM, Rafael J. Wysocki wrote:
+>>>> Hi,
+>>>>
+>>>> On Thursday, October 27, 2011, Srivatsa S. Bhat wrote:
+>>>>> Prevent CPU hotplug and the freezer from racing with each other, to ensure
+>>>>> that during the *entire duration* for which the callbacks for CPU hotplug
+>>>>> notifications such as CPU_ONLINE[_FROZEN], CPU_DEAD[_FROZEN] etc are being
+>>>>> executed, the state of the system (with respect to the tasks being frozen
+>>>>> or not) remains constant.
+>>>>>
+>>>>> This patches hooks the CPU hotplug infrastructure onto the freezer
+>>>>> notifications (PM_FREEZE_PREPARE and PM_POST_THAW) and thus synchronizes
+>>>>> with the freezer.
+>>>>>
+>>>>> Specifically,
+>>>>>
+>>>>> * Upon the PM_FREEZE_PREPARE notification, the CPU hotplug callback disables
+>>>>>   future (regular) CPU hotplugging and also ensures that any currently running
+>>>>>   CPU hotplug operation is completed before allowing the freezer to continue
+>>>>>   any further.
+>>>>>
+>>>>> * Upon the PM_POST_THAW notification, the CPU hotplug callback re-enables
+>>>>>   regular CPU hotplug.
+>>>>>
+>>>>> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+>>>>> ---
+>>>>>
+>>>>>  kernel/cpu.c |   76 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>>>  1 files changed, 76 insertions(+), 0 deletions(-)
+>>>>>
+>>>>> diff --git a/kernel/cpu.c b/kernel/cpu.c
+>>>>> index 12b7458..61985ce 100644
+>>>>> --- a/kernel/cpu.c
+>>>>> +++ b/kernel/cpu.c
+>>>>> @@ -15,6 +15,7 @@
+>>>>>  #include <linux/stop_machine.h>
+>>>>>  #include <linux/mutex.h>
+>>>>>  #include <linux/gfp.h>
+>>>>> +#include <linux/suspend.h>
+>>>>>  
+>>>>>  #ifdef CONFIG_SMP
+>>>>>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>>>>> @@ -478,6 +479,81 @@ static int alloc_frozen_cpus(void)
+>>>>>  core_initcall(alloc_frozen_cpus);
+>>>>>  #endif /* CONFIG_PM_SLEEP_SMP */
+>>>>>  
+>>>>> +
+>>>>> +#ifdef CONFIG_FREEZER
+>>>>> +
+>>>>> +/*
+>>>>> + * Avoid CPU hotplug racing with the freezer subsystem, by disabling CPU
+>>>>> + * hotplug when tasks are about to be frozen.
+>>>>> + *
+>>>>> + * Also, don't allow the freezer subsystem to continue until any currently
+>>>>> + * running CPU hotplug operation gets completed.
+>>>>> + * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+>>>>> + * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+>>>>> + * CPU hotplug path and released only after it is complete. Thus, we
+>>>>> + * (and hence the freezer) will block here until any currently running CPU
+>>>>> + * hotplug operation is completed.
+>>>>> + */
+>>>>> +static void cpu_hotplug_freezer_block_begin(void)
+>>>>> +{
+>>>>> +	cpu_maps_update_begin();
+>>>>> +	cpu_hotplug_disabled = 1;
+>>>>> +	cpu_maps_update_done();
+>>>>> +}
+>>>>> +
+>>>>> +
+>>>>> +/*
+>>>>> + * When thawing of tasks is complete, re-enable CPU hotplug (which had been
+>>>>> + * disabled while beginning to freeze tasks).
+>>>>> + */
+>>>>> +static void cpu_hotplug_freezer_block_done(void)
+>>>>> +{
+>>>>> +	cpu_maps_update_begin();
+>>>>> +	cpu_hotplug_disabled = 0;
+>>>>> +	cpu_maps_update_done();
+>>>>> +}
+>>>>> +
+>>>>
+>>>> I wonder if the new PM notifier events are really necessary?
+>>>>
+>>>> Why don't you just call cpu_hotplug_freezer_block_begin() (perhaps
+>>>> with a better name?) directly from freeze_processes()?  And analogously
+>>>> for cpu_hotplug_freezer_block_done() and thaw_processes()?
+>>>>
+>>>
+>>> Yes, we can definitely do that. 
+>>>
+>>> But the reason why I chose to introduce new notifiers was to make this
+>>> more extensible (because we know that at least 2 subsystems would benefit
+>>> from mutually excluding themselves from the freezer, namely CPU hotplug
+>>> and x86 microcode).
+>>> http://thread.gmane.org/gmane.linux.kernel/1198291/focus=1200591
+>>>
+>>> But now that I think of it, hooking onto the freezer notifiers wouldn't
+>>> solve the microcode cases since usermodehelper_disable() is called
+>>> _before_ freezing tasks... :(
+>>>
+>>> So we should probably call the functions directly like you suggested.. 
+>>>
+>>> But I really didn't want to clutter the freezer call path because of problems
+>>> elsewhere. So I felt freezer notifiers would be a cleaner way of dealing with
+>>> such things. Also, since freezer is a generic subsystem that could be used
+>>> for purposes other than S3/S4 as well (I have heard of attempts to use freezer
+>>> during tracing), wouldn't it be better to introduce new notifiers to
+>>> announce the begin and end of freezer activity to interested subsystems?
+>>> (and then use them to solve the CPU hotplug issue like this patch does...)
+>>>
+>>> Please let me know your suggestions.
+>>
+>> The freeze_processes() and thaw_processes() functions are only used for
+>> system suspend and hibernation, as far as I can tell, and I don't think there
+>> will be any other users in predictable future.
+>>
+>> Also, adding the calls directly to those functions will show exactly what
+>> the dependecies are, while doing that through a notifier kind of obfuscates
+>> things.  So, please make direct calls from there.
 > 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
-> ---
->  drivers/usb/gadget/u_serial.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
+> Alternatively, which I'd even prefer in fact, you can simply use the
+> PM_SUSPEND_PREPARE and PM_POST_SUSPEND notifier events (and analogously
+> for hibernation) to run that code.  Which also might be useful for solving
+> the microcode case.
 > 
-> diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-> index 40f7716..a925b9e 100644
-> --- a/drivers/usb/gadget/u_serial.c
-> +++ b/drivers/usb/gadget/u_serial.c
-> @@ -553,7 +553,16 @@ recycle:
->  	 * a workqueue, so we won't get callbacks and can hold port_lock
->  	 */
->  	if (tty && do_push) {
-> +		/*
-> +		 * Drop the lock here since it might end up calling
-> +		 * gs_flush_chars, which takes the lock.
-> +		 */
-> +		spin_unlock_irq(&port->port_lock);
->  		tty_flip_buffer_push(tty);
-> +		spin_lock_irq(&port->port_lock);
-> +
-> +		/* tty may have been closed */
-> +		tty = port->port_tty;
->  	}
->  
->  
 
-In the function tty_flip_buffer_push the PRREMPT_RT patch changes the
-behaviour. Most serial drivers (those that don't set low_latency) assume
-that work is only scheduled and not executed immediately in current context.
-This patch only fixes this driver but other serial drivers likely have
-similar problems.
+The primary reason I hadn't used those notifications for this purpose till now was
+because I thought freezer might have usecases other than S3/S4 and hence we needed
+synchronization at the freezer level. But now that you clarified that part, I'll
+go ahead and use the SUSPEND/HIBERNATE notifiers for this.
+Thank you very much.
 
-Michael
-
-
-
---
-Scanned by MailScanner.
+-- 
+Regards,
+Srivatsa S. Bhat  <srivatsa.bhat@linux.vnet.ibm.com>
+Linux Technology Center,
+IBM India Systems and Technology Lab
 
