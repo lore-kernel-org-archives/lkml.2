@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab1J1Wlj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 18:41:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43631 "EHLO
+	id S933711Ab1J1Wqc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 18:46:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab1J1Wlj (ORCPT
+	with ESMTP id S932752Ab1J1Wqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 18:41:39 -0400
-Date: Fri, 28 Oct 2011 15:41:37 -0700
+	Fri, 28 Oct 2011 18:46:31 -0400
+Date: Fri, 28 Oct 2011 15:46:30 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: holzheu@linux.vnet.ibm.com
 Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
@@ -16,7 +16,7 @@ Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
         kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         Kay Sievers <kay.sievers@vrfy.org>, Dave Hansen <haveblue@us.ibm.com>
 Subject: Re: [PATCH] kdump: Add udev events for memory online/offline
-Message-Id: <20111028154137.1aeb5a6c.akpm@linux-foundation.org>
+Message-Id: <20111028154630.77c7b96c.akpm@linux-foundation.org>
 In-Reply-To: <1319707965.2830.1.camel@br98xy6r>
 References: <1319645292.3321.24.camel@br98xy6r>
 	<20111026192449.GE355@redhat.com>
@@ -78,7 +78,12 @@ Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
 > +		if (ret == 0)
 > +			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
 > +	}
+>  	if (ret)
+>  		return ret;
+>  	return count;
 
-ot: what on earth is up with that min() thing which
-Dave-who-doesn't-know-about-min_t added to the strncmp() calls?
+I think a safer place from which to send the uevent is
+memory_block_change_state() or even memory_block_action().  Because if
+either of those functions later gets new callers, those callers might
+forget to send the uevent?
 
