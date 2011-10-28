@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab1J1OXh (ORCPT <rfc822;w@1wt.eu>);
+	id S1755970Ab1J1O1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:27:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65189 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753315Ab1J1OXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Oct 2011 10:23:37 -0400
-Received: from fieldses.org ([174.143.236.118]:38588 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755890Ab1J1OXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:23:33 -0400
-Date: Fri, 28 Oct 2011 10:23:28 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org, xemul@parallels.com,
-        neilb@suse.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, devel@openvz.org
-Subject: Re: [PATCH v7 0/7] SUNRPC: make rpcbind clients allocated and
- destroyed dynamically
-Message-ID: <20111028142328.GE5193@fieldses.org>
-References: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111028104530.24628.23631.stgit@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Pekka Enberg <penberg@kernel.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [RFC/PATCH 5/7] x86, mm: Use max_low_pfn for ZONE_NORMAL on 64-bit
+Date: Fri, 28 Oct 2011 17:23:19 +0300
+Message-Id: <1319811801-1725-5-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1319811801-1725-1-git-send-email-penberg@kernel.org>
+References: <1319811801-1725-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 02:52:09PM +0300, Stanislav Kinsbursky wrote:
-> This patch-set was created in context of clone of git branch:
-> git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
-> and rebased on tag "v3.1".
-> 
-> v7:
-> 1) Implemented "goto pattern" in __svc_create().
-> 2) Pathes 5 and 6 from perious patch-set were squashed to make things looks
-> clearer and to allow safe bisecting of the patch-set.
+64-bit has no highmem so max_low_pfn is always the same as 'max_pfn'.
 
-This series looks fine to me; thanks!
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ arch/x86/mm/init_64.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
---b.
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index a9214e6..f6b1f08 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -623,7 +623,7 @@ static void __init zone_sizes_init(void)
+ #ifdef CONFIG_ZONE_DMA32
+ 	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
+ #endif
+-	max_zone_pfns[ZONE_NORMAL] = max_pfn;
++	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+ 
+ 	free_area_init_nodes(max_zone_pfns);
+ }
+-- 
+1.7.6.4
 
-> 
-> v6:
-> 1) Fixes in rpcb_clients management.
-> 
-> v4:
-> 1) creation and destruction on rpcbind clients now depends on service program
-> versions "vs_hidden" flag.
-> 
-> This patch is required for further RPC layer virtualization, because rpcbind
-> clients have to be per network namespace.
-> To achive this, we have to untie network namespace from rpcbind clients sockets.
-> The idea of this patch set is to make rpcbind clients non-static. I.e. rpcbind
-> clients will be created during first RPC service creation, and destroyed when
-> last RPC service is stopped.
-> With this patch set rpcbind clients can be virtualized easely.
-> 
-> The following series consists of:
-> 
-> ---
-> 
-> Stanislav Kinsbursky (7):
->       SUNRPC: introduce helpers for reference counted rpcbind clients
->       SUNRPC: use rpcbind reference counting helpers
->       SUNRPC: introduce svc helpers for prepairing rpcbind infrastructure
->       SUNRPC: setup rpcbind clients if service requires it
->       SUNRPC: cleanup service destruction
->       SUNRPC: remove rpcbind clients creation during service registering
->       SUNRPC: remove rpcbind clients destruction on module cleanup
-> 
-> 
->  fs/nfsd/nfssvc.c            |    2 +
->  include/linux/sunrpc/clnt.h |    2 +
->  include/linux/sunrpc/svc.h  |    1 
->  net/sunrpc/rpcb_clnt.c      |   88 ++++++++++++++++++++++++++++---------------
->  net/sunrpc/sunrpc_syms.c    |    3 -
->  net/sunrpc/svc.c            |   57 ++++++++++++++++++++++++----
->  6 files changed, 113 insertions(+), 40 deletions(-)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
