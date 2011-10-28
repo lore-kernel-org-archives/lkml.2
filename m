@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab1J1HaN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:30:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57552 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab1J1HaM convert rfc822-to-8bit (ORCPT
+	id S932125Ab1J1Hac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:30:32 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:38158 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab1J1Hab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:30:12 -0400
+	Fri, 28 Oct 2011 03:30:31 -0400
+Date: Fri, 28 Oct 2011 16:30:26 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+Message-ID: <20111028073026.GB6268@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
+ <20111027233407.GC29407@barrios-laptop.redhat.com>
+ <1319778715.22361.155.camel@sli10-conroe>
 MIME-Version: 1.0
-In-Reply-To: <1319785956.3235.7.camel@lappy>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	<75efb251-7a5e-4aca-91e2-f85627090363@default>
-	<20111027215243.GA31644@infradead.org>
-	<1319785956.3235.7.camel@lappy>
-Date: Fri, 28 Oct 2011 00:30:10 -0700
-Message-ID: <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-From: Cyclonus J <cyclonusj@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319778715.22361.155.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 12:12 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Thu, 2011-10-27 at 17:52 -0400, Christoph Hellwig wrote:
->> On Thu, Oct 27, 2011 at 02:49:31PM -0700, Dan Magenheimer wrote:
->> > If Linux truly subscribes to the "code rules" mantra, no core
->> > VM developer has proposed anything -- even a design, let alone
->> > working code -- that comes close to providing the functionality
->> > and flexibility that frontswap (and cleancache) provides, and
->> > frontswap provides it with a very VERY small impact on existing
->> > kernel code AND has been posted and working for 2+ years.
->> > (And during that 2+ years, excellent feedback has improved the
->> > "kernel-ness" of the code, but NONE of the core frontswap
->> > design/hooks have changed... because frontswap _just works_!)
->>
->> It might work for whatever defintion of work, but you certainly couldn't
->> convince anyone that matters that it's actually sexy and we'd actually
->> need it.  Only actually working on Xen of course doesn't help.
->
-> Theres a working POC of it on KVM, mostly based on reusing in-kernel Xen
-> code.
->
-> I felt it would be difficult to try and merge any tmem KVM patches until
-> both frontswap and cleancache are in the kernel, thats why the
-> development is currently paused at the POC level.
+On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
+> On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
+> > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> > > With current logic, if page reclaim finds a huge page, it will just reclaim
+> > > the head page and leave tail pages reclaimed later. Let's take an example,
+> > > lru list has page A and B, page A is huge page:
+> > > 1. page A is isolated
+> > > 2. page B is isolated
+> > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> > > page A+1, page A+2, ... are added to lru list.
+> > > 4. shrink_page_list() adds page B to swap page cache.
+> > > 5. page A and B is written out and reclaimed.
+> > > 6. page A+1, A+2 ... is isolated and reclaimed later.
+> > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> > 
+> > I don't see your code yet but have a question.
+> > You mitigate this problem by 4/5 which could add subpages into lru tail
+> > so subpages would reclaim next interation of reclaim.
+> > 
+> > What do we need 5/5?
+> > Do I miss something?
+> Both patches are required. without this patch, current page reclaim will
+> only reclaim the first page of a huge page, because the hugepage isn't
+> split yet. The hugepage is split when the first page is being written to
+> swap, which is too later and page reclaim might already isolated a lot
+> of pages.
 
-Same here. I am working a KVM support for Transcedent Memory as well.
-It would be nice to see this in the mainline.
+When split happens, subpages would be located in tail of LRU by your 4/5.
+(Assume tail of LRU is old age).
+In addtion, isolation happens 32 page chunk so the subpages would be isolated
+and reclaimed in next iteration. I think 32 pages are not too many.
 
-Thanks,
-CJ
-
->
-> --
->
-> Sasha.
->
->
+What do you think about it?
+-- 
+Kind regards,
+Minchan Kim
