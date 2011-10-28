@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933652Ab1J1VuU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 17:50:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3101 "EHLO mx1.redhat.com"
+	id S933546Ab1J1VvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 17:51:23 -0400
+Received: from www.hansjkoch.de ([178.63.77.200]:43963 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933531Ab1J1Vte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 17:49:34 -0400
-From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 13/16] PCI: mn10300: use generic pcibios_set_master()
-To: jbarnes@virtuousgeek.org
-Cc: linux-pci@vger.kernel.org, linux@arm.linux.org.uk, vapier@gentoo.org,
-        dhowells@redhat.com, ysato@users.sourceforge.jp, tony.luck@intel.com,
-        fenghua.yu@intel.com, monstr@monstr.eu, ralf@linux-mips.org,
-        benh@kernel.crashing.org, paulus@samba.org, lethal@linux-sh.org,
-        davem@davemloft.net, cmetcalf@tilera.com, gxt@mprc.pku.edu.cn,
-        tglx@linutronix.de, mingo@redhat.com, chris@zankel.net,
+	id S933502Ab1J1Vs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 17:48:28 -0400
+Date: Fri, 28 Oct 2011 23:48:12 +0200
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: hjk@hansjkoch.de, Greg KH <greg@kroah.com>, linuxppc-dev@ozlabs.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 28 Oct 2011 15:48:59 -0600
-Message-ID: <20111028214859.20088.60760.stgit@amt.stowe>
-In-Reply-To: <20111028214726.20088.30551.stgit@amt.stowe>
-References: <20111028214726.20088.30551.stgit@amt.stowe>
-User-Agent: StGIT/0.14.3
+Subject: Re: [RFC][PATCH 1/2] uio: allow drivers to override the pgprot for
+ mmap
+Message-ID: <20111028214812.GD23092@local>
+References: <1319817030-23992-1-git-send-email-galak@kernel.crashing.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319817030-23992-1-git-send-email-galak@kernel.crashing.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Myron Stowe <mstowe@redhat.com>
+On Fri, Oct 28, 2011 at 10:50:29AM -0500, Kumar Gala wrote:
+> For some devices, the default behavior of pgprot_noncached() is not
+> appropriate for all of its mappable regions. This provides a means for
+> the kernel side of the UIO driver to override the flags without having
+> to implement its own full mmap callback.
 
-This patch removes mn10300's architecture-specific 'pcibios_set_master()'
-routine for ASB2305 and lets the default PCI core based implementation
-handle PCI device 'latency timer' setup.
+Thanks for also providing an example driver showing the use of this.
+You should also post this driver in a mainline-ready version, I'm a bit
+uncomfortable with adding a new function pointer without having any users.
 
-No functional change.
+And since you change uio_driver.h you should also update documentation
+accordingly (Documentation/DocBook/uio-howto.tmpl).
 
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
----
+Otherwise, I have no general objections.
 
- arch/mn10300/unit-asb2305/pci-asb2305.c |   16 ----------------
- 1 files changed, 0 insertions(+), 16 deletions(-)
+Thanks,
+Hans
 
-diff --git a/arch/mn10300/unit-asb2305/pci-asb2305.c b/arch/mn10300/unit-asb2305/pci-asb2305.c
-index 2b299c4..c4e2e79 100644
---- a/arch/mn10300/unit-asb2305/pci-asb2305.c
-+++ b/arch/mn10300/unit-asb2305/pci-asb2305.c
-@@ -213,22 +213,6 @@ void __init pcibios_resource_survey(void)
- 	pcibios_allocate_resources(1);
- }
- 
--void pcibios_set_master(struct pci_dev *dev)
--{
--	u8 lat;
--
--	pci_read_config_byte(dev, PCI_LATENCY_TIMER, &lat);
--
--	if (lat < 16)
--		lat = (64 <= pcibios_max_latency) ? 64 : pcibios_max_latency;
--	else if (lat > pcibios_max_latency)
--		lat = pcibios_max_latency;
--	else
--		return;
--
--	pci_write_config_byte(dev, PCI_LATENCY_TIMER, lat);
--}
--
- int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
- 			enum pci_mmap_state mmap_state, int write_combine)
- {
-
+> 
+> Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+> Signed-off-by: Geoff Thorpe <geoff@geoffthorpe.net>
+> ---
+>  drivers/uio/uio.c          |    6 +++++-
+>  include/linux/uio_driver.h |    3 +++
+>  2 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index dc27d89..0aebe27 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -655,7 +655,11 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
+>  
+>  	vma->vm_flags |= VM_IO | VM_RESERVED;
+>  
+> -	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+> +	if (idev->info->set_pgprot)
+> +		vma->vm_page_prot = idev->info->set_pgprot(idev->info, mi,
+> +							   vma->vm_page_prot);
+> +	else
+> +		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+>  
+>  	return remap_pfn_range(vma,
+>  			       vma->vm_start,
+> diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+> index fd99ff9..edfe7c8 100644
+> --- a/include/linux/uio_driver.h
+> +++ b/include/linux/uio_driver.h
+> @@ -80,6 +80,7 @@ struct uio_device;
+>   * @open:		open operation for this uio device
+>   * @release:		release operation for this uio device
+>   * @irqcontrol:		disable/enable irqs when 0/1 is written to /dev/uioX
+> + * @set_pgprot:		allow driver to override default(noncached) pgprot
+>   */
+>  struct uio_info {
+>  	struct uio_device	*uio_dev;
+> @@ -95,6 +96,8 @@ struct uio_info {
+>  	int (*open)(struct uio_info *info, struct inode *inode);
+>  	int (*release)(struct uio_info *info, struct inode *inode);
+>  	int (*irqcontrol)(struct uio_info *info, s32 irq_on);
+> +	pgprot_t (*set_pgprot)(struct uio_info *uio, unsigned int mem_idx,
+> +			       pgprot_t prot);
+>  };
+>  
+>  extern int __must_check
+> -- 
+> 1.7.3.4
+> 
+> 
