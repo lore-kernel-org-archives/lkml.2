@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab1J1En7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 00:43:59 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51467 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab1J1En5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 00:43:57 -0400
-Message-ID: <1319777025.23112.67.camel@edumazet-laptop>
-Subject: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Fri, 28 Oct 2011 06:43:45 +0200
-In-Reply-To: <1319772566.6759.27.camel@deadeye>
-References: <1319764761.23112.14.camel@edumazet-laptop>
-	 <20111028012521.GF25795@one.firstfloor.org>
-	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
-	 <1319766293.6759.17.camel@deadeye>
-	 <1319770376.23112.58.camel@edumazet-laptop>
-	 <1319772566.6759.27.camel@deadeye>
+	id S1752798Ab1J1FBH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 01:01:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21201 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595Ab1J1FBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 01:01:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,416,1315206000"; 
+   d="scan'208";a="83373011"
+Subject: Re: [patch 4/5]thp: correct order in lru list for split huge page
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111027231928.GB29407@barrios-laptop.redhat.com>
+References: <1319511577.22361.140.camel@sli10-conroe>
+	 <20111027231928.GB29407@barrios-laptop.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
+Date: Fri, 28 Oct 2011 13:08:58 +0800
+Message-ID: <1319778538.22361.152.camel@sli10-conroe>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 28 octobre 2011 à 04:29 +0100, Ben Hutchings a écrit :
-> On Fri, 2011-10-28 at 04:52 +0200, Eric Dumazet wrote:
-> > Le vendredi 28 octobre 2011 à 02:44 +0100, Ben Hutchings a écrit :
+On Fri, 2011-10-28 at 07:19 +0800, Minchan Kim wrote:
+> On Tue, Oct 25, 2011 at 10:59:37AM +0800, Shaohua Li wrote:
+> > If a huge page is split, all the subpages should live in lru list adjacently
+> > because they should be taken as a whole.
+> > In page split, with current code:
+> > a. if huge page is in lru list, the order is: page, page+HPAGE_PMD_NR-1,
+> > page + HPAGE_PMD_NR-2, ..., page + 1(in lru page reclaim order)
+> > b. otherwise, the order is: page, ..other pages.., page + 1, page + 2, ...(in
+> > lru page reclaim order). page + 1 ... page + HPAGE_PMD_NR - 1 are in the lru
+> > reclaim tail.
 > > 
-> > > Whether or not it needs to provide any ordering guarantee, atomic_read()
-> > > must never read more than once, and I think that requires the volatile
-> > > qualification.  It might be clearer to use the ACCESS_ONCE macro,
-> > > however.
-> > > 
+> > In case a, the order is wrong. In case b, page is isolated (to be reclaimed),
+> > but other tail pages will not soon.
 > > 
-> > Where this requirement comes from ?
+> > With below patch:
+> > in case a, the order is: page, page + 1, ... page + HPAGE_PMD_NR-1(in lru page
+> > reclaim order).
+> > in case b, the order is: page + 1, ... page + HPAGE_PMD_NR-1 (in lru page reclaim
+> > order). The tail pages are in the lru reclaim head.
+> > 
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 > 
-> That is the conventional behaviour of 'atomic' operations, and callers
-> may depend on it.
-> 
+> In case of a, it doesn't matter ordering of subpages.
+> As a huge page, age of sub pages are same.
+It does matter. Hugepage is split first and then reclaim. if page, page
++HPAGE_PMD_NR-1 is reclaimed, you can't get an order-1 page. but if
+page, page+1 is reclaimed, you can.
 
-Thats your opinion, not a fact documented in
-Documentation/atomic_ops.txt
-
-<QUOTE>
----------------------------------------------------------
-Next, we have:
-
-        #define atomic_read(v)  ((v)->counter)
-
-which simply reads the counter value currently visible to the calling thread.
-The read is atomic in that the return value is guaranteed to be one of the
-values initialized or modified with the interface operations if a proper
-implicit or explicit memory barrier is used after possible runtime
-initialization by any other thread and the value is modified only with the
-interface operations.  atomic_read does not guarantee that the runtime
-initialization by any other thread is visible yet, so the user of the
-interface must take care of that with a proper implicit or explicit memory
-barrier.
-
-*** WARNING: atomic_read() and atomic_set() DO NOT IMPLY BARRIERS! ***
-
-Some architectures may choose to use the volatile keyword, barriers, or inline
-assembly to guarantee some degree of immediacy for atomic_read() and
-atomic_set().  This is not uniformly guaranteed, and may change in the future,
-so all users of atomic_t should treat atomic_read() and atomic_set() as simple
-C statements that may be reordered or optimized away entirely by the compiler
-or processor, and explicitly invoke the appropriate compiler and/or memory
-barrier for each use case.  Failure to do so will result in code that may
-suddenly break when used with different architectures or compiler
-optimizations, or even changes in unrelated code which changes how the
-compiler optimizes the section accessing atomic_t variables.
-
-*** YOU HAVE BEEN WARNED! ***
----------------------------------------------------------------
-</QUOTE>
-
-The only requirement of atomic_read() is that it must return value
-before or after an atomic_write(), not a garbled value.
-
-So the ACCESS_ONCE semantic is on the write side (the atomic itself
-cannot be used as a temporary variable. It must contain only two value
-of atomic_{write|add|sub}() [ prior to the operation, after the
-operation ]
-
-In fact, if a compiler is stupid enough to issue two reads on following
-code :
-
-static inline atomic_read(const atomic_t *p)
-{
-	return p->value;
-}
-
-Then its fine, because in the end the returned value will be the old or
-new one.
-
-
+> In case of b, what a page is located in tail and other subpages are located in head
+> isn't critical problem.
+Same way here.
 
