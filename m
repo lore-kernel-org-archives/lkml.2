@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab1J1BuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 21:50:08 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:34164 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab1J1BuH (ORCPT
+	id S1754333Ab1J1BuY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 21:50:24 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:34930 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754276Ab1J1BuV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 21:50:07 -0400
-X-AuditID: b753bd60-a0aaaba0000019f4-1e-4eaa0a4b3f4e
-X-AuditID: b753bd60-a0aaaba0000019f4-1e-4eaa0a4b3f4e
-Message-ID: <4EAA0A3D.90102@hitachi.com>
-Date: Fri, 28 Oct 2011 10:49:49 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Thu, 27 Oct 2011 21:50:21 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Topic: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Index: AQHMjUNMpdQ62Jn2VkSdRYTOA7OjuZWPYX+AgAGqasA=
+Date: Fri, 28 Oct 2011 01:49:35 +0000
+Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
+ <1319703535.20054.30.camel@vkoul-udesk3>
+In-Reply-To: <1319703535.20054.30.camel@vkoul-udesk3>
+Accept-Language: zh-CN, en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.125.36.58]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>, Ingo Molnar <mingo@elte.hu>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH x86 2/2] Cleanup do_int3
-References: <20111025141812.GA21225@linux.vnet.ibm.com> <20111025142159.GB21225@linux.vnet.ibm.com>
-In-Reply-To: <20111025142159.GB21225@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/10/25 23:21), Srikar Dronamraju wrote:
-> Since there is a possibility of !KPROBES int3 listeners and since
-> DIE_TRAP is currently not being used by anybody, notify all listeners
-> with DIE_INT3.
+> Also, Please ensure you send patches which compile with ZERO warnings:
+> drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
+> drivers/dma/sirf-dma.c:616: warning: assignment from incompatible pointer
+> type
+> drivers/dma/sirf-dma.c:617: warning: assignment from incompatible pointer
+> type
+> which comes from the fact that your prep_interleaved_dma does not have
+> last argument of flags.
+> On the second one you have not rebased to patch from Jassi which I
+> applied after converting direction stuff.
 
-I'm not sure why this CONFIG_KPROBES dependency had been introduced,
-but it's the time to fix it. do_int3 should send DIE_INT3 always.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you!
-
-> 
-> Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  arch/x86/kernel/traps.c |    7 +------
->  1 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 6913369..c9a4be5 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -461,15 +461,10 @@ dotraplinkage void __kprobes do_int3(struct pt_regs *regs, long error_code)
->  			== NOTIFY_STOP)
->  		return;
->  #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
-> -#ifdef CONFIG_KPROBES
-> +
->  	if (notify_die(DIE_INT3, "int3", regs, error_code, 3, SIGTRAP)
->  			== NOTIFY_STOP)
->  		return;
-> -#else
-> -	if (notify_die(DIE_TRAP, "int3", regs, error_code, 3, SIGTRAP)
-> -			== NOTIFY_STOP)
-> -		return;
-> -#endif
->  
->  	preempt_conditional_sti(regs);
->  	do_trap(3, SIGTRAP, "int3", regs, error_code, NULL);
+I rebased to both yours and Jassi by my merging manually. I remember you have changed the last param of device_prep_dma_cyclic from dma_data_direction to dma_transfer_direction. After checking the tree interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git, it doesn't. then make another compiling warning in sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in sirfsoc_dma_prep_cyclic().
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ~Vinod
+> 
+-barry
 
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
