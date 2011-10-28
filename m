@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab1J1UJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 16:09:38 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45694 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab1J1UJh convert rfc822-to-8bit (ORCPT
+	id S1755628Ab1J1ULi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 16:11:38 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59960 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755151Ab1J1ULh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 16:09:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <4EAB0772.40404@garzik.org>
-References: <4EAB0772.40404@garzik.org>
-Date: Fri, 28 Oct 2011 22:09:36 +0200
-Message-ID: <CACRpkdaPMKo2bDq0uJ7ZiQtKJXhcaNG9BQEeufK9=H780dn44g@mail.gmail.com>
-Subject: Re: Zero-length ARM headers in git HEAD
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>, swarren@nvidia.com,
-        Olof Johansson <olof@lixom.net>, Ben Hutchings <ben@decadent.org.uk>,
-        "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wolfram Sang <w.sang@pengutronix.de>, bs14@csr.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Oct 2011 16:11:37 -0400
+From: Scott James Remnant <scott@netsplit.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mandeep Singh Baines <msb@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Scott James Remnant <scott@netsplit.com>
+Subject: [PATCH] coredump: wait on the core pattern umh at least once
+Date: Fri, 28 Oct 2011 13:11:28 -0700
+Message-Id: <1319832688-30336-1-git-send-email-scott@netsplit.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 9:50 PM, Jeff Garzik <jeff@garzik.org> wrote:
+If a thread crashes as a result of a signal on the thread group leader
+that signal can still be pending, which means the loop in
+wait_for_dump_helpers() falls straight though.
 
-> the file ...$platform/mach/gpio.h is replaced with an empty file.  This
-> disagrees with kernel tradition and kernel makefiles, where zero length
-> files are intentionally deleted when "make distclean" is executed.
->
-> As a result, git sequences such as "make distclean ; git checkout master"
-> may fail, because several files are present in the index but not on disk,
-> making it appear as if modifications have been made:
+This can mean that the crashing process is reaped before any core
+pattern user-mode helper is run, leaving it without entries in /proc
+to look through.
 
-Argh!
+While the helper obviously has to deal with that, tweaking this loop
+so it runs at least one iteration even in that case helps a lot.
 
-> An update, either (a) making these files non-zero length or (b) deleting the
-> files in git would be appreciated.  Reading the commit descriptions, it
-> appears (a) is the correct path?
+Signed-off-by: Scott James Remnant <scott@netsplit.com>
+---
+ fs/exec.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Russell already told me what to do, I just was too stupid to go back
-and fix it up properly so I'm doing that now.
+diff --git a/fs/exec.c b/fs/exec.c
+index 25dcbe5..8959d304 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -2030,11 +2030,11 @@ static void wait_for_dump_helpers(struct file *file)
+ 	pipe->readers++;
+ 	pipe->writers--;
+ 
+-	while ((pipe->readers > 1) && (!signal_pending(current))) {
++	do {
+ 		wake_up_interruptible_sync(&pipe->wait);
+ 		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
+ 		pipe_wait(pipe);
+-	}
++	} while ((pipe->readers > 1) && (!signal_pending(current)));
+ 
+ 	pipe->readers--;
+ 	pipe->writers++;
+-- 
+1.7.3.1
 
-Thanks,
-Linus Walleij
