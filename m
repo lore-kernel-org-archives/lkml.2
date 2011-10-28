@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab1J1JT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 05:19:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53614 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1J1JT5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 05:19:57 -0400
+	id S1753920Ab1J1JXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 05:23:54 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47426 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751572Ab1J1JXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 05:23:53 -0400
+Message-ID: <4EAA74DD.3070708@parallels.com>
+Date: Fri, 28 Oct 2011 13:24:45 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-X-Originating-IP: [85.13.70.251]
-In-Reply-To: <20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
-References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
-	<1319561644-6160-3-git-send-email-pdeschrijver@nvidia.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
-	<20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
-Date: Fri, 28 Oct 2011 02:19:56 -0700
-Message-ID: <CAOesGMi4NgYXUf8HtFM_=YX1aGnHbj2Wh8Wq7w=y17=Z21dqjQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6] arm/tegra: prepare pinmux code for multiple tegra variants
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH v3 0/3] SUNRPC: rcbind clients virtualization
+References: <20111027180824.20459.23219.stgit@localhost6.localdomain6> <20111027202514.GA31669@fieldses.org>
+In-Reply-To: <20111027202514.GA31669@fieldses.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 1:17 AM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
-> On Thu, Oct 27, 2011 at 09:59:49PM +0200, Stephen Warren wrote:
+28.10.2011 00:25, J. Bruce Fields пишет:
+> On Thu, Oct 27, 2011 at 10:10:43PM +0300, Stanislav Kinsbursky wrote:
+>> v3:
+>> 1) First two patches from previous version were squashed.
+>>
+>> This patch-set was created in context of clone of git branch:
+>> git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git
+>> and rebased on tag "v3.1".
+>>
+>> This patch-set virtualizes rpcbind clients per network namespace context. IOW,
+>> each network namespace will have its own pair of rpcbind clients (if they would
+>> be created by request).
+>>
+>> Note:
+>> 1) this patch-set depends on "SUNRPC: make rpcbind clients allocated and
+>> destroyed dynamically" patch-set which has been send earlier.
+>> 2) init_net pointer is still used instead of current->nsproxy->net_ns,
+>> because I'm not sure yet about how to virtualize services. I.e. NFS callback
+>> services will be per netns. NFSd service will be per netns too from my pow. But
+>> Lockd can be per netns or one for all.
+>
+> I'm not sure what you mean by that; could you explain?
+>
 
-> Hmm. Maybe if I split it in 2 patches? 2 rename and 1 modification?
+This patch-set was created before you've sent your NFSd plan and we disacussed 
+Lockd per netns.
+So, this sentence: "NFSd service will be per netns too from my pow" is obsolete. 
+And Lockd will be one for all.
+Or you are asking about something else?
 
-Yep, please do renames separately (you can rename all of them in one
-patch, but no modifications in that please, besides what you need to
-build with the new filename).
+> --b.
+>
+>> And also we have NFSd file system, which
+>> is not virtualized yet.
+>>
+>> The following series consists of:
+>>
+>> ---
+>>
+>> Stanislav Kinsbursky (3):
+>>        SUNRPC: move rpcbind internals to sunrpc part of network namespace context
+>>        SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
+>>        SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
+>>
+>>
+>>   net/sunrpc/netns.h     |    5 ++
+>>   net/sunrpc/rpcb_clnt.c |  103 ++++++++++++++++++++++++++----------------------
+>>   2 files changed, 61 insertions(+), 47 deletions(-)
+>>
+>> --
+>> Signature
 
 
--Olof
+-- 
+Best regards,
+Stanislav Kinsbursky
