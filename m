@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab1J1FEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 01:04:05 -0400
-Received: from mga14.intel.com ([143.182.124.37]:59882 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751595Ab1J1FED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 01:04:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,416,1315206000"; 
-   d="scan'208";a="67892051"
-Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
-From: Shaohua Li <shaohua.li@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111027233407.GC29407@barrios-laptop.redhat.com>
-References: <1319511580.22361.141.camel@sli10-conroe>
-	 <20111027233407.GC29407@barrios-laptop.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 Oct 2011 13:11:55 +0800
-Message-ID: <1319778715.22361.155.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753070Ab1J1FFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 01:05:06 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:57191 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062Ab1J1FFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 01:05:05 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Topic: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Index: AQHMjUNMpdQ62Jn2VkSdRYTOA7OjuZWPYX+AgAGqasD//6JKAIAAlPjg
+Date: Fri, 28 Oct 2011 05:03:51 +0000
+Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E98419F924@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
+	 <1319703535.20054.30.camel@vkoul-udesk3>
+	 <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
+ <1319774982.20054.228.camel@vkoul-udesk3>
+In-Reply-To: <1319774982.20054.228.camel@vkoul-udesk3>
+Accept-Language: zh-CN, en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.125.36.58]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9S55BEv026763
 
-On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
-> On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
-> > With current logic, if page reclaim finds a huge page, it will just reclaim
-> > the head page and leave tail pages reclaimed later. Let's take an example,
-> > lru list has page A and B, page A is huge page:
-> > 1. page A is isolated
-> > 2. page B is isolated
-> > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
-> > page A+1, page A+2, ... are added to lru list.
-> > 4. shrink_page_list() adds page B to swap page cache.
-> > 5. page A and B is written out and reclaimed.
-> > 6. page A+1, A+2 ... is isolated and reclaimed later.
-> > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> -----Original Message-----
+> From: Vinod Koul [mailto:vinod.koul@intel.com]
+> Sent: 2011å¹´10æœˆ28æ—¥ 12:10
+> To: Barry Song
+> Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
+> DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
+> Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
 > 
-> I don't see your code yet but have a question.
-> You mitigate this problem by 4/5 which could add subpages into lru tail
-> so subpages would reclaim next interation of reclaim.
-> 
-> What do we need 5/5?
-> Do I miss something?
-Both patches are required. without this patch, current page reclaim will
-only reclaim the first page of a huge page, because the hugepage isn't
-split yet. The hugepage is split when the first page is being written to
-swap, which is too later and page reclaim might already isolated a lot
-of pages.
- 
-> > We expected the whole huge page A is reclaimed in the meantime, so
-> > the order is A, A+1, ... A+HPAGE_PMD_NR-1, B, ....
-> > 
-> > With this patch, we do huge page split just after the head page is isolated
-> > for inactive lru list, so the tail pages will be reclaimed immediately.
-> > 
-> > In a test, a range of anonymous memory is written and will trigger swap.
-> > Without the patch:
-> > #cat /proc/vmstat|grep thp
-> > thp_fault_alloc 451
-> > thp_fault_fallback 0
-> > thp_collapse_alloc 0
-> > thp_collapse_alloc_failed 0
-> > thp_split 238
-> > 
-> > With the patch:
-> > #cat /proc/vmstat|grep thp
-> > thp_fault_alloc 450
-> > thp_fault_fallback 1
-> > thp_collapse_alloc 0
-> > thp_collapse_alloc_failed 0
-> > thp_split 103
-> > 
-> > So the thp_split number is reduced a lot, though there is one extra
-> > thp_fault_fallback.
-> 
-> Wow. The result seems to be good.
-> Is it result of effect only 5/5? or both 4/5 and 5/5?
-both are required.
+> On Fri, 2011-10-28 at 01:49 +0000, Barry Song wrote:
+> > > Also, Please ensure you send patches which compile with ZERO warnings:
+> > > drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
+> > > drivers/dma/sirf-dma.c:616: warning: assignment from incompatible
+> pointer
+> > > type
+> > > drivers/dma/sirf-dma.c:617: warning: assignment from incompatible
+> pointer
+> > > type
+> > > which comes from the fact that your prep_interleaved_dma does not have
+> > > last argument of flags.
+> > > On the second one you have not rebased to patch from Jassi which I
+> > > applied after converting direction stuff.
+> >
+> >
+> [pls wrap 80chars within paragraphs, i have reformatted below)
+> > I rebased to both yours and Jassi by my merging manually. I remember
+> > you have changed the last param of device_prep_dma_cyclic from
+> > dma_data_direction to dma_transfer_direction. After checking the tree
+> > interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git,
+> > it doesn't. then make another compiling warning in
+> > sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in
+> > sirfsoc_dma_prep_cyclic().
+> Yes for cyclic, I have missed to fix that. I will push the fixed version
 
+Ok. note my v5 is still using dma_data_direction. You might take care too :-)
+
+> now
+> 
+> --
+> ~Vinod
+
+-barry
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
