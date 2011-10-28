@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab1J1Ngg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 09:36:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58701 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab1J1Ngf (ORCPT
+	id S1755826Ab1J1Nrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 09:47:52 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:42980 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab1J1Nrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 09:36:35 -0400
+	Fri, 28 Oct 2011 09:47:51 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] CPU hotplug, PM: Remove unused symbol 'suspend_cpu_hotplug'
+To: rjw@sisk.pl
+Cc: stern@rowland.harvard.edu, akpm@linux-foundation.org, gregkh@suse.de,
+        brandon@ifup.org, amwang@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, a.p.zijlstra@chello.nl, pavel@ucw.cz,
+        linux-pm@lists.linux-foundation.org, mingo@elte.hu
+Date: Fri, 28 Oct 2011 19:17:40 +0530
+Message-ID: <20111028134737.18461.60249.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Date: Fri, 28 Oct 2011 15:36:33 +0200
-Message-ID: <CAGgmwq6X5OcTvMioYT6JGXqwaX2JE0Aw_XZ9S_-1s=2fcvgRJQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] LSM: Do not apply mmap_min_addr check to PROT_NONE
-From: Gregory Sahanovitch <gsahanovitch@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Eric Paris <eparis@parisplace.org>,
-        Stephen Smalley <sds@tycho.nsa.gov>, selinux@tycho.nsa.gov,
-        John Johansen <john.johansen@canonical.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It's exactly the case that I did mention: an application's own attempt to
-> ensure robustness by doing a PROT_NONE mmap of the [0,0x10000) region.  An
-> application cannot presume that this region is already precluded from being
-> used by any non-MAP_FIXED mmap across all systems and configurations, so
-> it's defensive coding to explicitly block it off with a PROT_NONE mapping.
 
-I don't see a realistic threat model in the example you give.
 
-Since mmap_min_addr is used to prevent a *malicious* process from
-maping the zero page and then taking advantage of a user-pointer
-dereference in the *kernel code*, I do not see what you gain by
-guaranteeing that the application *that you control* would never
-exploit such a vulnerability?
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-Sorry if I'm being thick, but it would be helpful to me if you clarify.
+ include/linux/cpu.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
--- 
-- Greg
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index b1a635a..6cb60fd 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -196,13 +196,9 @@ static inline void cpu_hotplug_driver_unlock(void)
+ #endif		/* CONFIG_HOTPLUG_CPU */
+ 
+ #ifdef CONFIG_PM_SLEEP_SMP
+-extern int suspend_cpu_hotplug;
+-
+ extern int disable_nonboot_cpus(void);
+ extern void enable_nonboot_cpus(void);
+ #else /* !CONFIG_PM_SLEEP_SMP */
+-#define suspend_cpu_hotplug	0
+-
+ static inline int disable_nonboot_cpus(void) { return 0; }
+ static inline void enable_nonboot_cpus(void) {}
+ #endif /* !CONFIG_PM_SLEEP_SMP */
+
