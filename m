@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753421Ab1J1Ada (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 20:33:30 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1098 "EHLO
+	id S1753083Ab1J1Ad3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 20:33:29 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1086 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751619Ab1J1Ad2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751156Ab1J1Ad2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 Oct 2011 20:33:28 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
@@ -12,55 +12,100 @@ To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com,
         Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 2/2] pch_phub: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
-Date: Fri, 28 Oct 2011 09:33:14 +0900
-Message-Id: <1319761994-6950-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 1/2] pch_phub: Support new device LAPIS Semiconductor ML7831 IOH
+Date: Fri, 28 Oct 2011 09:33:13 +0900
+Message-Id: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
-References: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On October 1 in 2011,
-OKI SEMICONDUCTOR Co., Ltd. changed the company name in to LAPIS Semiconductor Co., Ltd.
+ML7831 is companion chip for Intel Atom E6xx series.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 ---
- drivers/misc/pch_phub.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/misc/Kconfig    |   15 ++++++++-------
+ drivers/misc/pch_phub.c |   20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index d593878..5664696 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -472,7 +472,7 @@ config BMP085
+ 	  module will be called bmp085.
+ 
+ config PCH_PHUB
+-	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) PHUB"
++	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) PHUB"
+ 	depends on PCI
+ 	help
+ 	  This driver is for PCH(Platform controller Hub) PHUB(Packet Hub) of
+@@ -480,12 +480,13 @@ config PCH_PHUB
+ 	  processor. The Topcliff has MAC address and Option ROM data in SROM.
+ 	  This driver can access MAC address and Option ROM data in SROM.
+ 
+-	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+-	  Output Hub), ML7213 and ML7223.
+-	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
+-	  for MP(Media Phone) use.
+-	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
+-	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
++	  This driver also can be used for LAPIS Semiconductor's IOH,
++	  ML7213/ML7223/ML7831.
++	  ML7213 which is for IVI(In-Vehicle Infotainment) use.
++	  ML7223 IOH is for MP(Media Phone) use.
++	  ML7831 IOH is for general purpose use.
++	  ML7213/ML7223/ML7831 is companion chip for Intel Atom E6xx series.
++	  ML7213/ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+ 
+ 	  To compile this driver as a module, choose M here: the module will
+ 	  be called pch_phub.
 diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index b50f48a..e7c5995 100644
+index dee33ad..b50f48a 100644
 --- a/drivers/misc/pch_phub.c
 +++ b/drivers/misc/pch_phub.c
-@@ -1,5 +1,5 @@
- /*
-- * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-+ * Copyright (C) 2011 LAPIS Semiconductor Co., Ltd.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -41,10 +41,10 @@
- #define PCH_PHUB_ROM_START_ADDR_EG20T 0x80 /* ROM data area start address offset
- 					      (Intel EG20T PCH)*/
- #define PCH_PHUB_ROM_START_ADDR_ML7213 0x400 /* ROM data area start address
--						offset(OKI SEMICONDUCTOR ML7213)
-+						offset(LAPIS Semicon ML7213)
- 					      */
- #define PCH_PHUB_ROM_START_ADDR_ML7223 0x400 /* ROM data area start address
--						offset(OKI SEMICONDUCTOR ML7223)
-+						offset(LAPIS Semicon ML7223)
- 					      */
+@@ -73,6 +73,9 @@
+ #define PCI_DEVICE_ID_ROHM_ML7223_mPHUB	0x8012 /* for Bus-m */
+ #define PCI_DEVICE_ID_ROHM_ML7223_nPHUB	0x8002 /* for Bus-n */
  
- /* MAX number of INT_REDUCE_CONTROL registers */
-@@ -893,5 +893,5 @@ static void __exit pch_phub_pci_exit(void)
- module_init(pch_phub_pci_init);
- module_exit(pch_phub_pci_exit);
++/* Macros for ML7831 */
++#define PCI_DEVICE_ID_ROHM_ML7831_PHUB 0x8801
++
+ /* SROM ACCESS Macro */
+ #define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
  
--MODULE_DESCRIPTION("Intel EG20T PCH/OKI SEMICONDUCTOR IOH(ML7213/ML7223) PHUB");
-+MODULE_DESCRIPTION("Intel EG20T PCH/LAPIS Semiconductor IOH(ML7213/ML7223) PHUB");
- MODULE_LICENSE("GPL");
+@@ -763,6 +766,22 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
+ 		chip->pch_opt_rom_start_address =\
+ 						 PCH_PHUB_ROM_START_ADDR_ML7223;
+ 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
++	} else if (id->driver_data == 5) { /* ML7831 */
++		retval = sysfs_create_file(&pdev->dev.kobj,
++					   &dev_attr_pch_mac.attr);
++		if (retval)
++			goto err_sysfs_create;
++
++		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
++		if (retval)
++			goto exit_bin_attr;
++
++		/* set the prefech value */
++		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
++		/* set the interrupt delay value */
++		iowrite32(0x25, chip->pch_phub_base_address + 0x44);
++		chip->pch_opt_rom_start_address = PCH_PHUB_ROM_START_ADDR_EG20T;
++		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_EG20T;
+ 	}
+ 
+ 	chip->ioh_type = id->driver_data;
+@@ -847,6 +866,7 @@ static struct pci_device_id pch_phub_pcidev_id[] = {
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_mPHUB), 3,  },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_nPHUB), 4,  },
++	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7831_PHUB), 5,  },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(pci, pch_phub_pcidev_id);
 -- 
 1.7.4.4
 
