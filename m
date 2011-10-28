@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab1J1Ad3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Oct 2011 20:33:29 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1086 "EHLO
+	id S1753139Ab1J1Afb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Oct 2011 20:35:31 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1252 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751156Ab1J1Ad2 (ORCPT
+	by vger.kernel.org with ESMTP id S1752202Ab1J1Afa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Oct 2011 20:33:28 -0400
+	Thu, 27 Oct 2011 20:35:30 -0400
 From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-To: linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk, gregkh@suse.de
+To: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
         kok.howg.ewe@intel.com,
         Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: [PATCH 1/2] pch_phub: Support new device LAPIS Semiconductor ML7831 IOH
-Date: Fri, 28 Oct 2011 09:33:13 +0900
-Message-Id: <1319761994-6950-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+Subject: [PATCH 1/2] spi-topcliff-pch: Support new device LAPIS Semiconductor ML7831 IOH
+Date: Fri, 28 Oct 2011 09:35:21 +0900
+Message-Id: <1319762122-7019-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,88 +25,64 @@ ML7831 is companion chip for Intel Atom E6xx series.
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 ---
- drivers/misc/Kconfig    |   15 ++++++++-------
- drivers/misc/pch_phub.c |   20 ++++++++++++++++++++
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ drivers/spi/Kconfig            |    6 +++---
+ drivers/spi/spi-topcliff-pch.c |    5 ++++-
+ 2 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index d593878..5664696 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -472,7 +472,7 @@ config BMP085
- 	  module will be called bmp085.
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index a1fd73d..6168516 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -346,14 +346,14 @@ config SPI_TI_SSP
+ 	  serial port.
  
- config PCH_PHUB
--	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR IOH(ML7213/ML7223) PHUB"
-+	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) PHUB"
+ config SPI_TOPCLIFF_PCH
+-	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH SPI controller"
++	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) SPI"
  	depends on PCI
  	help
- 	  This driver is for PCH(Platform controller Hub) PHUB(Packet Hub) of
-@@ -480,12 +480,13 @@ config PCH_PHUB
- 	  processor. The Topcliff has MAC address and Option ROM data in SROM.
- 	  This driver can access MAC address and Option ROM data in SROM.
+ 	  SPI driver for the Topcliff PCH (Platform Controller Hub) SPI bus
+ 	  used in some x86 embedded processors.
  
--	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
--	  Output Hub), ML7213 and ML7223.
--	  ML7213 IOH is for IVI(In-Vehicle Infotainment) use and ML7223 IOH is
--	  for MP(Media Phone) use.
--	  ML7213/ML7223 is companion chip for Intel Atom E6xx series.
--	  ML7213/ML7223 is completely compatible for Intel EG20T PCH.
-+	  This driver also can be used for LAPIS Semiconductor's IOH,
-+	  ML7213/ML7223/ML7831.
-+	  ML7213 which is for IVI(In-Vehicle Infotainment) use.
-+	  ML7223 IOH is for MP(Media Phone) use.
-+	  ML7831 IOH is for general purpose use.
-+	  ML7213/ML7223/ML7831 is companion chip for Intel Atom E6xx series.
-+	  ML7213/ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+-	  This driver also supports the ML7213, a companion chip for the
+-	  Atom E6xx series and compatible with the Intel EG20T PCH.
++	  This driver also supports the ML7213/ML7223/ML7831, a companion chip
++	  for the Atom E6xx series and compatible with the Intel EG20T PCH.
  
- 	  To compile this driver as a module, choose M here: the module will
- 	  be called pch_phub.
-diff --git a/drivers/misc/pch_phub.c b/drivers/misc/pch_phub.c
-index dee33ad..b50f48a 100644
---- a/drivers/misc/pch_phub.c
-+++ b/drivers/misc/pch_phub.c
-@@ -73,6 +73,9 @@
- #define PCI_DEVICE_ID_ROHM_ML7223_mPHUB	0x8012 /* for Bus-m */
- #define PCI_DEVICE_ID_ROHM_ML7223_nPHUB	0x8002 /* for Bus-n */
+ config SPI_TXX9
+ 	tristate "Toshiba TXx9 SPI controller"
+diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
+index 6a80749..2b1e966 100644
+--- a/drivers/spi/spi-topcliff-pch.c
++++ b/drivers/spi/spi-topcliff-pch.c
+@@ -95,16 +95,18 @@
+ #define PCH_CLOCK_HZ		50000000
+ #define PCH_MAX_SPBR		1023
  
-+/* Macros for ML7831 */
-+#define PCI_DEVICE_ID_ROHM_ML7831_PHUB 0x8801
-+
- /* SROM ACCESS Macro */
- #define PCH_WORD_ADDR_MASK (~((1 << 2) - 1))
+-/* Definition for ML7213 by OKI SEMICONDUCTOR */
++/* Definition for ML7213/ML7831 by OKI SEMICONDUCTOR */
+ #define PCI_VENDOR_ID_ROHM		0x10DB
+ #define PCI_DEVICE_ID_ML7213_SPI	0x802c
+ #define PCI_DEVICE_ID_ML7223_SPI	0x800F
++#define PCI_DEVICE_ID_ML7831_SPI	0x8816
  
-@@ -763,6 +766,22 @@ static int __devinit pch_phub_probe(struct pci_dev *pdev,
- 		chip->pch_opt_rom_start_address =\
- 						 PCH_PHUB_ROM_START_ADDR_ML7223;
- 		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_ML7223;
-+	} else if (id->driver_data == 5) { /* ML7831 */
-+		retval = sysfs_create_file(&pdev->dev.kobj,
-+					   &dev_attr_pch_mac.attr);
-+		if (retval)
-+			goto err_sysfs_create;
-+
-+		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pch_bin_attr);
-+		if (retval)
-+			goto exit_bin_attr;
-+
-+		/* set the prefech value */
-+		iowrite32(0x000affaa, chip->pch_phub_base_address + 0x14);
-+		/* set the interrupt delay value */
-+		iowrite32(0x25, chip->pch_phub_base_address + 0x44);
-+		chip->pch_opt_rom_start_address = PCH_PHUB_ROM_START_ADDR_EG20T;
-+		chip->pch_mac_start_address = PCH_PHUB_MAC_START_ADDR_EG20T;
- 	}
+ /*
+  * Set the number of SPI instance max
+  * Intel EG20T PCH :		1ch
+  * OKI SEMICONDUCTOR ML7213 IOH :	2ch
+  * OKI SEMICONDUCTOR ML7223 IOH :	1ch
++ * OKI SEMICONDUCTOR ML7831 IOH :	1ch
+ */
+ #define PCH_SPI_MAX_DEV			2
  
- 	chip->ioh_type = id->driver_data;
-@@ -847,6 +866,7 @@ static struct pci_device_id pch_phub_pcidev_id[] = {
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7213_PHUB), 2,  },
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_mPHUB), 3,  },
- 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7223_nPHUB), 4,  },
-+	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ROHM_ML7831_PHUB), 5,  },
+@@ -218,6 +220,7 @@ static struct pci_device_id pch_spi_pcidev_id[] = {
+ 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_GE_SPI),    1, },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_SPI), 2, },
+ 	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_SPI), 1, },
++	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7831_SPI), 1, },
  	{ }
  };
- MODULE_DEVICE_TABLE(pci, pch_phub_pcidev_id);
+ 
 -- 
 1.7.4.4
 
