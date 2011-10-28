@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab1J1IE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:04:56 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54377
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932085Ab1J1IEy (ORCPT
+	id S932163Ab1J1IJL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:09:11 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:41443 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073Ab1J1IJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:04:54 -0400
-Date: Fri, 28 Oct 2011 04:04:45 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
-        toshi.okajima@jp.fujitsu.com
-Subject: Re: [PATCH 12/13] vfs: count unlinked inodes
-Message-ID: <20111028080445.GA10318@infradead.org>
-References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
- <1318430946-7091-13-git-send-email-miklos@szeredi.hu>
- <20111028060801.GA15345@infradead.org>
- <1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
+	Fri, 28 Oct 2011 04:09:07 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Topic: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Thread-Index: AQHMjUNMpdQ62Jn2VkSdRYTOA7OjuZWPYX+AgAGqasD//6JKAIAAlPjggAAy06A=
+Date: Fri, 28 Oct 2011 08:08:27 +0000
+Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E98419FAC0@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
+	 <1319703535.20054.30.camel@vkoul-udesk3>
+	 <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
+ <1319774982.20054.228.camel@vkoul-udesk3> 
+Accept-Language: zh-CN, en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.125.36.58]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id p9S89LNX027377
 
-On Fri, Oct 28, 2011 at 09:53:53AM +0200, Miklos Szeredi wrote:
-> On Fri, 2011-10-28 at 02:08 -0400, Christoph Hellwig wrote:
-> > This one gets me a repeated spew of WARN_ONs during XFS log recover,
-> > repeating the following pattern:
+> -----Original Message-----
+> From: Barry Song
+> Sent: 2011å¹´10æœˆ28æ—¥ 13:04
+> To: 'Vinod Koul'
+> Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
+> DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
+> Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
 > 
-> The assumption here is that set_nlink() is called with a non-zero count.
-> The point of introducing set_nlink() was to verify this assumption,
-> otherwise pending delete accounting will be screwed up.
+> > -----Original Message-----
+> > From: Vinod Koul [mailto:vinod.koul@intel.com]
+> > Sent: 2011å¹´10æœˆ28æ—¥ 12:10
+> > To: Barry Song
+> > Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
+> > DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
+> > Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+> >
+> > On Fri, 2011-10-28 at 01:49 +0000, Barry Song wrote:
+> > > > Also, Please ensure you send patches which compile with ZERO warnings:
+> > > > drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
+> > > > drivers/dma/sirf-dma.c:616: warning: assignment from incompatible
+> > pointer
+> > > > type
+> > > > drivers/dma/sirf-dma.c:617: warning: assignment from incompatible
+> > pointer
+> > > > type
+> > > > which comes from the fact that your prep_interleaved_dma does not have
+> > > > last argument of flags.
+> > > > On the second one you have not rebased to patch from Jassi which I
+> > > > applied after converting direction stuff.
+> > >
+> > >
+> > [pls wrap 80chars within paragraphs, i have reformatted below)
+> > > I rebased to both yours and Jassi by my merging manually. I remember
+> > > you have changed the last param of device_prep_dma_cyclic from
+> > > dma_data_direction to dma_transfer_direction. After checking the tree
+> > > interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git,
+> > > it doesn't. then make another compiling warning in
+> > > sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in
+> > > sirfsoc_dma_prep_cyclic().
+> > Yes for cyclic, I have missed to fix that. I will push the fixed version
 > 
-> If setting i_nlink to zero is not a bug in xfs we can do two things:
-> 
->  1) do a conditional clear_nlink() in xfs_setup_inode() to document that
-> nlink can indeed be zero
-> 
->  2) remove the warning from set_nlink().  That may hide some cases where
-> i_nlink was cleared without the intention of the filesystem but it will
-> work just fine wrt. the pending delete accounting. 
+> Ok. note my v5 is still using dma_data_direction. You might take care too :-)
 
-I suspect 2 might be the better option.  The pattern we see here in
-XFS is pretty typical for transactional filesytems - when we mount a
-filesystem after an unclean shutdown we need to drop all inodes that
-were open but unlinked when the system crashed, and that typically
-means reading inodes from disk that have a zero i_nlink.  Maybe some
-filesystems never instanciate a VFS inode for it, but I suspect many
-do.
+Vinod, as I have acked interleaved dma API explicitly before, could you pls add: 
+Acked-by: Barry Song <Baohua.Song@csr.com>
+in the commit of " DMAEngine: Define interleaved transfer request api" in your tree too. I didn't find it after I fetch your tree :-)
 
-For XFS we will actually see it during regularly testing as we have
-an ioctl that simulates a shutdown and can thus trigger log recovery
-easily, while for others like ext4 you'd actually have to do a real
-reset of your (physical or virtual) machine.
+> 
+> > now
+> >
+> > --
+> > ~Vinod
+-barry
 
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
