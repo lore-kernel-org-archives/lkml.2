@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab1J1MPY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 08:15:24 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33637 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab1J1MPV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 08:15:21 -0400
+	id S932622Ab1J1MPw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 08:15:52 -0400
+Received: from mx18.lb01.inode.at ([62.99.145.20]:10122 "EHLO mx.inode.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932233Ab1J1MPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 08:15:49 -0400
+From: Michael Thalmeier <michael.thalmeier@hale.at>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: rt <linux-rt-users@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        Michael Thalmeier <michael@thalmeier.at>
+Subject: [PATCH] USB: g_serial: fix deadlock with PREEMPT_RT enabled
+Date: Fri, 28 Oct 2011 14:16:25 +0200
+Message-Id: <1319804185-18559-1-git-send-email-michael.thalmeier@hale.at>
+X-Mailer: git-send-email 1.7.6.4
 MIME-Version: 1.0
-In-Reply-To: <20111027131124.GK19187@n2100.arm.linux.org.uk>
-References: <1319528012-19006-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1319720503-3183-1-git-send-email-vapier@gentoo.org> <20111027131124.GK19187@n2100.arm.linux.org.uk>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 28 Oct 2011 14:15:00 +0200
-X-Google-Sender-Auth: WyTDOdtviFSWLZS9IjjvztfbLOM
-Message-ID: <CAJaTeTp71t0BYsEpDu07BE5ox2FBAiH7xEQqjhb=6QadrsQGAQ@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic/gpio.h: merge basic gpiolib wrappers
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-HALE-MailScanner-Information: Please contact the ISP for more information
+X-MailScanner-ID: p9SCFmI8030473
+X-HALE-MailScanner: Found to be clean
+X-HALE-MailScanner-From: michael.thalmeier@hale.at
+MailScanner-NULL-Check: 1320408948.70489@eymcYEjCUshUGI6Ws8+fWQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 15:11, Russell King - ARM Linux wrote:
-> This is extremely dangerous.  Consider for example this code
-> (see ARM mach-davinci's gpio.h):
+In commit 44a0c0190b500ee6bcfc0976fe540f65dee2cd67 unlocking of spin_locks has
+been removed. This patch party restores this functionality.
 
-it's interesting you highlight davinci.  if i'm reading things
-correctly, the current davinci code is broken today and my v2 proposed
-patch actually fixes it.
+Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
+---
+ drivers/usb/gadget/u_serial.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-let's see if i have this right:
-arch/arm/include/asm/gpio.h:
-...
-#include <mach/gpio.h>
-#ifndef __ARM_GPIOLIB_COMPLEX
-/* The trivial gpiolib dispatchers */
-#define gpio_get_value  __gpio_get_value
-#define gpio_set_value  __gpio_set_value
-#define gpio_cansleep   __gpio_cansleep
-#endif
-...
+diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
+index 40f7716..a925b9e 100644
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -553,7 +553,16 @@ recycle:
+ 	 * a workqueue, so we won't get callbacks and can hold port_lock
+ 	 */
+ 	if (tty && do_push) {
++		/*
++		 * Drop the lock here since it might end up calling
++		 * gs_flush_chars, which takes the lock.
++		 */
++		spin_unlock_irq(&port->port_lock);
+ 		tty_flip_buffer_push(tty);
++		spin_lock_irq(&port->port_lock);
++
++		/* tty may have been closed */
++		tty = port->port_tty;
+ 	}
+ 
+ 
+-- 
+1.7.6.4
 
-arch/arm/mach-davinci/include/mach/gpio.h:
-...
-#include <asm-generic/gpio.h>
-...
-static inline void gpio_set_value(unsigned gpio, int value)
-{
-    if (__builtin_constant_p(value) && gpio < davinci_soc_info.gpio_num) {
-           ... do some SoC checking ...
-    }
-    __gpio_set_value(gpio, value);
-}
-... same thing for gpio_get_value and gpio_cansleep ...
-...
 
-since the davinci code doesn't define __ARM_GPIOLIB_COMPLEX, the
-common arm gpio.h will rewrite these few gpio calls to the gpiolib
-code all the time, and so all the inline funcs in the davinci header
-always get ignored.
 
-i noticed because when comparing the compiled
--mike
+--
+Scanned by MailScanner.
+
