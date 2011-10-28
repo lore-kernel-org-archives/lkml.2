@@ -1,106 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274Ab1J1UB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 16:01:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16193 "EHLO mx1.redhat.com"
+	id S933280Ab1J1UDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 16:03:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34846 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932387Ab1J1UBZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 16:01:25 -0400
-Date: Fri, 28 Oct 2011 16:00:50 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Chen, Gong" <gong.chen@intel.com>,
+	id S932387Ab1J1UD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 16:03:29 -0400
+Date: Fri, 28 Oct 2011 22:03:15 +0200
+From: Greg KH <gregkh@suse.de>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "hughd@chromium.org" <hughd@chromium.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v2 -next 2/2] Adding lock operations to
- kmsg_dump()/pstore_dump()
-Message-ID: <20111028200050.GF3452@redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C576122A9@USINDEVS01.corp.hds.com>
- <20111028183347.GE3452@redhat.com>
- <987664A83D2D224EAE907B061CE93D5301F2030C4F@orsmsx505.amr.corp.intel.com>
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Message-ID: <20111028200315.GA30918@suse.de>
+References: <1319645321-9770-1-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz>
+ <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301F2030C4F@orsmsx505.amr.corp.intel.com>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 12:02:15PM -0700, Luck, Tony wrote:
-> > It ain't pretty but it moves things towards a more reliable message dump.
-> > The odds of us needing to bust the spinlocks are really small.  Most of
-> > the time no one reads the pstore filesystem.
+On Fri, Oct 28, 2011 at 07:50:59PM +0000, KY Srinivasan wrote:
+> > >  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
+> > >  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
+> > >  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
+> > > +obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
+> > 
+> > I'd prefer a bit to follow the current naming of the drivers in
+> > drivers/hid directory ... all the device-specific (vendor-specific)
+> > drivers currently are called hid-<vendor> or similar.
+> > 
+> > We could talk about changing this naming scheme, but before we reach any
+> > conclusion on this, I'd prefer this to stay for all drivers if possible.
 > 
-> Does it really change the odds much?  As you say, the common case is that
-> pstore front-end doesn't have the lock held - so that case is unchanged.
-> We can get the lock anyway, we don't need to bust it.
+> Do you want the driver module to conform to the naming scheme you have?
+> Greg, in the past has resisted changing driver names, but I have no objection 
+> to conforming to the naming convention you have.
 
-Agreed.
+I recommend following the proper naming scheme.  As this driver is
+auto-loaded when the virtual hardware is seen, the name really doesn't
+matter at all.
 
+So, how about 'hid-hyperv' or 'hid-hv'?
+
+> > > +	switch (hid_msg->header.type) {
+> > > +	case SYNTH_HID_PROTOCOL_RESPONSE:
+> > > +		memcpy(&input_dev->protocol_resp, pipe_msg,
+> > > +		       pipe_msg->size + sizeof(struct pipe_prt_msg) -
+> > > +		       sizeof(unsigned char));
+> > 
+> > Is there any guarantee anywhere that packet doesn't get corrupted (either
+> > maliciously or not)?
+> > 
+> > Seems to me like we are taking it 'raw' in mousevsc_on_channel_callback()
+> > without any sanity checking.
+> > 
+> > If not, second argument of this memcpy() could easily overflow, causing
+> > quite some memory corruption, right?
+> > 
+> > Actually the question of sanity of the raw packet is much more general one
+> > throughout this driver. I am not very familiar with things in drivers/hv,
+> > hence the question.
 > 
-> Looking at the uncommon case where the lock is held - that means that
-> pstore was in the middle of some back-end operation. Busting the lock
-> means that the back-end will be surprised by being called again when the
-> first operation had not yet completed. In the case of a state machine
-> driven back end like ERST, I don't think this has a high probability of
-> working out well.
+> The guest cannot survive a malicious host; so I think it is safe to say that the 
+> guest can assume the host is following the protocol.
 
-Remember ERST has two modes, state machine and NVRAM.  The state machine
-will have issues, but the NVRAM part (which isn't implemented yet) might
-not.  Not sure about EFI. But shouldn't the backend determine that, not pstore?
+That's not good for a very large number of reasons, not the least being
+that we have no idea how secure the hyperv hypervisor is, so making it
+so that there isn't an obvious hole into linux through it, would be a
+good idea.
 
+And yes, I'd say the same thing if this was a KVM or Xen driver as well.
+Please be very defensive in this area of the code, especially as there
+are no performance issues here.
+
+> > > +				return;
+> > > +			}
+> > > +			break;
+> > > +		}
+> > > +	} while (1);
+> > 
+> > Again, not being familiar with 'hv' infrastructure at all, this inifite
+> > loop makes me to ask -- in what context does it run? Why do we need it?
+> > 
+> > It seems to me that it's some kind of infinite loop for event-driven
+> > programming, which is not something we do in kernel (outside of kernel
+> > threads, perhaps, with very careful handling).
 > 
-> So you might be moving the needle from 99.999% chance of saving to pstore
-> with 0.001% chance of hanging on the spin lock. to 99.9991% chance of
-> saving, and 0.0009% chance of something highly weird happening in the
-> back-end driver because you busted the lock and called it anyway.
+> This loop is invoked in a tasklet context. The agreed upon protocol between the
+> guest and the host is that the consumer of a ring buffer (in this case the guest) will
+> process all available data before returning. This permits signaling optimizations between
+> the producer and the consumer. For instance, if the consumer is still active as seen by the 
+> producer (based on the read index seen by the producer), as the producer enqueues additional
+> data, the producer does not have to signal the consumer.
 
-Sure.  But at the same time, APEI is one of those 'value add' by OEMs.  If
-you are paying $20K for this feature, wouldn't you expect this feature to
-work 100% of the time?  At least with kdump/netdump, you can say, hey it
-was free so you get what you pay for.
+That's great, but again, be defensive and at least have a "time out"
+way to get out of this loop in case something goes wrong.  It will be
+triggered some day, by someone, I guarantee it.
 
-I guess it would help if we had more machines with working firmware to
-test this.
+thanks,
 
-> 
-> > I would love to figure out a prettier solution for this locking mess, but
-> > I can't think of anything.  We have customers who want to utilize this
-> > technology, so I am trying to make sure it is stable and robust for now.
-> > A little selfish I suppose.  But we are open to ideas?
-> 
-> If a prettier solution is needed - it will have to involve the back-end.
-> Perhaps a whole separate write/panic path (with separate buffer). Then
-> a sufficiently smart back end could do the right thing. I have little
-> confidence that ERST could be made smart in this way, because almost all
-> of the heavy lifting is done by the BIOS - so Linux has no way to influence
-> the flow of execution.
-
-Sadly I agree.
-
-Perhaps I have been hanging around mjg too much, but I little confidence
-in anything ACPI related being smart.
-
-I don't have that much motivation to push this patch very hard.  I just
-saw some a theoretical issue and thought I could help Seiji solve it.  I
-am more interested in getting the first patch of this series in than this one.
-
-If you find this patch adds more complexity for very little gain, so be
-it.  We tried. :-)
-
-Cheers,
-Don
+greg k-h
