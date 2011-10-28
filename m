@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab1J1IJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 04:09:11 -0400
-Received: from cluster-d.mailcontrol.com ([85.115.60.190]:41443 "EHLO
-	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab1J1IJH (ORCPT
+	id S1755269Ab1J1IR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:17:58 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19265 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab1J1IR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 04:09:07 -0400
-From: Barry Song <Barry.Song@csr.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
+	Fri, 28 Oct 2011 04:17:56 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 28 Oct 2011 01:17:41 -0700
+Date: Fri, 28 Oct 2011 11:17:38 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-Thread-Topic: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-Thread-Index: AQHMjUNMpdQ62Jn2VkSdRYTOA7OjuZWPYX+AgAGqasD//6JKAIAAlPjggAAy06A=
-Date: Fri, 28 Oct 2011 08:08:27 +0000
-Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E98419FAC0@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
-	 <1319703535.20054.30.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
- <1319774982.20054.228.camel@vkoul-udesk3> 
-Accept-Language: zh-CN, en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.125.36.58]
-Content-Type: text/plain; charset="utf-8"
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/6] arm/tegra: prepare pinmux code for multiple tegra
+ variants
+Message-ID: <20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
+References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
+ <1319561644-6160-3-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9S89LNX027377
 
-> -----Original Message-----
-> From: Barry Song
-> Sent: 2011å¹´10æœˆ28æ—¥ 13:04
-> To: 'Vinod Koul'
-> Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
-> DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
-> Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+On Thu, Oct 27, 2011 at 09:59:49PM +0200, Stephen Warren wrote:
+> Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
+> > This patch modifies the pinmux code to be useable for multiple tegra variants.
+> > Some tegra20 specific constants will be replaced by variables which will be
+> > initialized to the appropriate value at runtime.
 > 
-> > -----Original Message-----
-> > From: Vinod Koul [mailto:vinod.koul@intel.com]
-> > Sent: 2011å¹´10æœˆ28æ—¥ 12:10
-> > To: Barry Song
-> > Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
-> > DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
-> > Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-> >
-> > On Fri, 2011-10-28 at 01:49 +0000, Barry Song wrote:
-> > > > Also, Please ensure you send patches which compile with ZERO warnings:
-> > > > drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
-> > > > drivers/dma/sirf-dma.c:616: warning: assignment from incompatible
-> > pointer
-> > > > type
-> > > > drivers/dma/sirf-dma.c:617: warning: assignment from incompatible
-> > pointer
-> > > > type
-> > > > which comes from the fact that your prep_interleaved_dma does not have
-> > > > last argument of flags.
-> > > > On the second one you have not rebased to patch from Jassi which I
-> > > > applied after converting direction stuff.
-> > >
-> > >
-> > [pls wrap 80chars within paragraphs, i have reformatted below)
-> > > I rebased to both yours and Jassi by my merging manually. I remember
-> > > you have changed the last param of device_prep_dma_cyclic from
-> > > dma_data_direction to dma_transfer_direction. After checking the tree
-> > > interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git,
-> > > it doesn't. then make another compiling warning in
-> > > sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in
-> > > sirfsoc_dma_prep_cyclic().
-> > Yes for cyclic, I have missed to fix that. I will push the fixed version
+> You should probably also mention:
+> * Removal of include of pinmux-t2.h from pinmux.h.
+> * The file renames you performed and why.
+> * The removal of the suspend/resume code and why.
 > 
-> Ok. note my v5 is still using dma_data_direction. You might take care too :-)
-
-Vinod, as I have acked interleaved dma API explicitly before, could you pls add: 
-Acked-by: Barry Song <Baohua.Song@csr.com>
-in the commit of " DMAEngine: Define interleaved transfer request api" in your tree too. I didn't find it after I fetch your tree :-)
-
+> > diff --git a/arch/arm/mach-tegra/include/mach/pinmux-t2.h b/arch/arm/mach-tegra/include/mach/pinmux-t2.h
+> > deleted file mode 100644
+> > index 4c26263..0000000
+> > --- a/arch/arm/mach-tegra/include/mach/pinmux-t2.h
+> > +++ /dev/null
 > 
-> > now
-> >
-> > --
-> > ~Vinod
--barry
+> So this file shows up as a delete and an add. Isn't there a way to get
+> it to show up as a rename; I've certainly seen git diff tell me that, but
+> I'm not sure if the same feature is available for format-patch. In
+> particular, IIRC from internal review, there weren't any changes to this
+> file besides direct fallout from the rename, but there were quite a few
+> symbol name changes in pinmux-t2-tables.c, and also the removal of
+> suspend/resume, which it'd be nice if the diff highlighted.
+> 
 
+Hmm. Maybe if I split it in 2 patches? 2 rename and 1 modification?
 
+> > diff --git a/arch/arm/mach-tegra/include/mach/pinmux.h b/arch/arm/mach-tegra/include/mach/pinmux.h
+> > index bb7dfdb..8f6e9f3 100644
+> > --- a/arch/arm/mach-tegra/include/mach/pinmux.h
+> > +++ b/arch/arm/mach-tegra/include/mach/pinmux.h
+> ...
+> > @@ -219,13 +213,20 @@ struct tegra_pingroup_desc {
+> >  	s8 pupd_bit;	/* offset into the PULL_UPDOWN_REG_* register bit */
+> >  };
+> > 
+> > -extern const struct tegra_pingroup_desc tegra_soc_pingroups[];
+> > -extern const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[];
+> > +struct tegra_pinmux_pm {
+> > +	void (*suspend)(void);
+> > +	void (*resume)(void);
+> > +};
+> 
+> Since we elected to strip out suspend/resume (it's currently incomplete
+> anyway) to simplify the addition of Tegra30, I don't think you need that
+> struct type any more.
+> 
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+True :)
+
+> I wonder if removal of the suspend/resume functions should have been a
+> separate patch before this?
+> 
+
+Good point.
+
+> > diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
+> > index 1d20165..0789122 100644
+> > --- a/arch/arm/mach-tegra/pinmux.c
+> > +++ b/arch/arm/mach-tegra/pinmux.c
+> > @@ -21,6 +21,9 @@
+> >  #include <linux/spinlock.h>
+> >  #include <linux/io.h>
+> >  #include <linux/platform_device.h>
+> > +#ifdef CONFIG_OF
+> > +#include <linux/of_platform.h>
+> > +#endif
+> 
+> I think just include that without any ifdef.
+> 
+
+Thinking of it, probably indeed.
+
+> > @@ -668,11 +668,24 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+> >  	}
+> >  }
+> > 
+> > +static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
+> > +	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
+> > +	{ },
+> > +};
+> > +
+> >  static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
+> >  {
+> >  	struct resource *res;
+> >  	int i;
+> >  	int config_bad = 0;
+> > +	const struct of_device_id *match;
+> > +
+> > +#ifdef CONFIG_OF
+> > +	match = of_match_device(tegra_pinmux_of_match, &pdev->dev);
+> 
+> What if match==NULL? I suppose that "can't" happen with DT, since the
+> device wouldn't have been probed unless there was a matching entry...
+> 
+
+Exactly. That was my reasoning as well. We can't get here unless there is a
+match.
+
+> Does this work when booting without DT; IIRC the internal patches I saw
+> fell back to hard-coding a call to tegra20_pinmux_init() when booting
+> a static board file (i.e. not booting device-tree)? Perhaps that's in a
+
+Unfortunately I don't have a tegra20 board which is supported without
+devicetree.
+
+Cheers,
+
+Peter.
