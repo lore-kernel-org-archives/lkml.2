@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab1J1LYS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 07:24:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:65213 "EHLO
+	id S1755497Ab1J1LUP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 07:20:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:40831 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab1J1LUV (ORCPT
+	with ESMTP id S1755479Ab1J1LUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 07:20:21 -0400
-X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=vhdKIqpQuCYA:10 a=6Mc5Nmu5D4kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=EOjbvJ8Y0MT3O1Ua2AYA:9 a=GUWOx1SM66l2TzKvHh8A:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=bqwy9bwCJzqER_7q:21 a=VKljtPumy7uPvgbQ:21 a=q25IntYG1Ll27FC1wtYA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Fri, 28 Oct 2011 07:20:12 -0400
+X-Authority-Analysis: v=1.1 cv=QqHiGEe6yGvmA2Hj/+B5Qdh2oWFRI3gWtdRZxD5t9t4= c=1 sm=0 a=vhdKIqpQuCYA:10 a=sJ7mlw4ZgFUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=LhNPSl8vHYZcF8Syk74A:9 a=Vdf6MleSGQnVMSxM4RoA:7 a=QEXdDO2ut3YA:10 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Gav36qMsiirTAy4XNfgA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20111028112018.130650509@goodmis.org>
+Message-Id: <20111028112009.453946163@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 28 Oct 2011 07:16:06 -0400
+Date: Fri, 28 Oct 2011 07:16:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 08/21] ktest: Do not reboot on config or build issues
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrew Jones <drjones@redhat.com>
+Subject: [PATCH 04/21] ktest: Include monitor in reboot code
 References: <20111028111558.173726794@goodmis.org>
-Content-Disposition: inline; filename=0008-ktest-Do-not-reboot-on-config-or-build-issues.patch
+Content-Disposition: inline; filename=0004-ktest-Include-monitor-in-reboot-code.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,88 +30,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Andrew Jones <drjones@redhat.com>
 
-Even if REBOOT_ON_ERROR is set, it becomes annoying that the target
-machine is rebooted when a config option is incorrect or a build
-fails. There's no reason to reboot the target for host only issues.
+Several places that call reboot do the same thing with respect to the
+monitor. By adding this code into the reboot code, redundant code is
+removed and it paves the way for the the reset time patch.
 
+Signed-off-by: Andrew Jones <drjones@redhat.com>
+Link: http://lkml.kernel.org/r/1313155932-20092-4-git-send-email-drjones@re=
+dhat.com
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+ tools/testing/ktest/ktest.pl |   36 ++++++++++++++++--------------------
+ 1 files changed, 16 insertions(+), 20 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 51ddaa5..057676a 100755
+index 20b0e73..debc689 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -133,6 +133,9 @@ my %config_help;
- my %variable;
- my %force_config;
+@@ -603,8 +603,13 @@ sub doprint {
+ }
 =20
-+# do not force reboots on config problems
-+my $no_reboot =3D 1;
+ sub run_command;
++sub start_monitor;
++sub end_monitor;
++sub wait_for_monitor;
+=20
+ sub reboot {
++    my ($time) =3D @_;
 +
- $config_help{"MACHINE"} =3D << "EOF"
-  The machine hostname that you will test.
- EOF
-@@ -640,7 +643,7 @@ sub reboot {
+     # try to reboot normally
+     if (run_command $reboot) {
+ 	if (defined($powercycle_after_reboot)) {
+@@ -615,6 +620,12 @@ sub reboot {
+ 	# nope? power cycle it.
+ 	run_command "$power_cycle";
+     }
++
++    if (defined($time)) {
++	start_monitor;
++	wait_for_monitor $time;
++	end_monitor;
++    }
+ }
+=20
  sub do_not_reboot {
-     my $i =3D $iteration;
+@@ -719,10 +730,7 @@ sub fail {
+ 	# no need to reboot for just building.
+ 	if (!do_not_reboot) {
+ 	    doprint "REBOOTING\n";
+-	    reboot;
+-	    start_monitor;
+-	    wait_for_monitor $sleep_time;
+-	    end_monitor;
++	    reboot $sleep_time;
+ 	}
 =20
--    return $test_type eq "build" ||
-+    return $test_type eq "build" || $no_reboot ||
- 	($test_type eq "patchcheck" && $opt{"PATCHCHECK_TYPE[$i]"} eq "build") ||
- 	($test_type eq "bisect" && $opt{"BISECT_TYPE[$i]"} eq "build");
- }
-@@ -1285,6 +1288,10 @@ sub build {
+ 	my $name =3D "";
+@@ -1356,10 +1364,7 @@ sub success {
 =20
-     unlink $buildlog;
-=20
-+    # Failed builds should not reboot the target
-+    my $save_no_reboot =3D $no_reboot;
-+    $no_reboot =3D 1;
-+
-     if (defined($pre_build)) {
- 	my $ret =3D run_command $pre_build;
- 	if (!$ret && defined($pre_build_die) &&
-@@ -1353,10 +1360,15 @@ sub build {
-=20
-     if (!$build_ret) {
- 	# bisect may need this to pass
--	return 0 if ($in_bisect);
-+	if ($in_bisect) {
-+	    $no_reboot =3D $save_no_reboot;
-+	    return 0;
-+	}
- 	fail "failed build" and return 0;
+     if ($i !=3D $opt{"NUM_TESTS"} && !do_not_reboot) {
+ 	doprint "Reboot and wait $sleep_time seconds\n";
+-	reboot;
+-	start_monitor;
+-	wait_for_monitor $sleep_time;
+-	end_monitor;
++	reboot $sleep_time;
      }
-=20
-+    $no_reboot =3D $save_no_reboot;
-+
-     return 1;
  }
 =20
-@@ -2806,6 +2818,9 @@ sub set_test_option {
- # First we need to do is the builds
- for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+@@ -1500,10 +1505,7 @@ sub run_git_bisect {
 =20
-+    # Do not reboot on failing test options
-+    $no_reboot =3D 1;
-+
-     $iteration =3D $i;
+ sub bisect_reboot {
+     doprint "Reboot and sleep $bisect_sleep_time seconds\n";
+-    reboot;
+-    start_monitor;
+-    wait_for_monitor $bisect_sleep_time;
+-    end_monitor;
++    reboot $bisect_sleep_time;
+ }
 =20
-     my $makecmd =3D set_test_option("MAKE_CMD", $i);
-@@ -2941,6 +2956,9 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
- 	    die "failed to checkout $checkout";
+ # returns 1 on success, 0 on failure, -1 on skip
+@@ -2066,10 +2068,7 @@ sub config_bisect {
+=20
+ sub patchcheck_reboot {
+     doprint "Reboot and sleep $patchcheck_sleep_time seconds\n";
+-    reboot;
+-    start_monitor;
+-    wait_for_monitor $patchcheck_sleep_time;
+-    end_monitor;
++    reboot $patchcheck_sleep_time;
+ }
+=20
+ sub patchcheck {
+@@ -2659,10 +2658,7 @@ sub make_min_config {
+ 	}
+=20
+ 	doprint "Reboot and wait $sleep_time seconds\n";
+-	reboot;
+-	start_monitor;
+-	wait_for_monitor $sleep_time;
+-	end_monitor;
++	reboot $sleep_time;
      }
 =20
-+    $no_reboot =3D 0;
-+
-+
-     if ($test_type eq "bisect") {
- 	bisect $i;
- 	next;
+     success $i;
 --=20
 1.7.6.3
 
@@ -123,19 +147,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJOqo/yAAoJEIy3vGnGbaoA/e8QAOpOqDvv+/i+yTR+KgFMmTBb
-yo3MHQ0k8CfQGs+ocavTKrJkm6qka3NJoXnOnV8BHyaUtlqpRpB5FXHmDX+U9R2b
-imBvVNovQJUvvYZQnxG+lfsvpYA3RcajaHZJXTayZ3aK304yr9QBQks3eEyTYOr0
-ZlbVoVwMxzvCKWee1QVgBlkoBKema8hhFvWWQ8YPLIjPpSIYFcM24Y8Vm2eOubdR
-KQPaoBmgQgVEsjKOwl/pWjI7aruP0wPgE07Babsao0HgNjcP80IWi/rHd9kjv5x9
-KcC7NrpiE6Eq/HrRvJ9sO+8c9aimB76Q5uDhMIcO/VcvTMlJ0mW4KB3MLtxmOsD5
-Hhqiuh3ch71GJm0iTpnldUhrgL2+GHOE5f6XhoT7+gFy5dfgNg5Zchpd1rgM6VYo
-TCjyTd/3PasfXoZy2HqV5c5Z+1j09lEXHG7s6Pb7Dc0OsxLmLWDD4B+26hFaLqPM
-pVHYNmawGjJxDTNARltWm1Nxrj2x2oaf+N65OZ3f/AJIZqAmnhsrHInNzAI7w+42
-zRA+qLr+gqVfSvi+xyq/o4qL7fIA1JWJhoI9ta3CQLXGDC9qkQk7gGkBLTPvHlTI
-8REEe9XN4bUpjmerb41ZOv+76TcKBbSc8TMA5ioXkkihAJNIcEDd6STy3qGsLTdD
-Yo6EfbXBDrqrokZ4Bl7P
-=FLMP
+iQIcBAABAgAGBQJOqo/pAAoJEIy3vGnGbaoAbxMQAIeJOYxAhoTL/GD6mhlnE5xs
+h4WSphkD3e9uOSQmfm++k/AdSQQol2r+MLkP9ze7dllA0kLu4UjVryLSNAwIoGwK
+T+8fJ6Us/4auJc0nmzwUu5PFqPB8medhqkU0Hgo5GFcsOVQiffmeZ12c7so3yrES
+urZxNMGZaeDPlbSVUEQMx/qsE886Aql7B5+YZ7fOGoV4tO88GfZUz3FYymBt5Kws
+V6Zb2W5r2Beot6Ta53qg5ktoo1FzotGlEr0uAVg2gawTb2xQi/JM+fhEmqXbUVM0
+TBsqR2DkDzfPbKvcUznu/gL1N42OxtsAIG22BE9iSZfYh0QojuYSG40H3wEJqBSv
+5EiF3mMufJGeCs/hSuQWbqJmawUrbo1EhKAe0v0m9LnoS8E4y4cFObd9qVfFaGON
+enXjcJF9GAbwxFZURdkmSqarVtxAwZz0RuFh4gpNyAIbqjAhlWzcBobxVFkQ7aGg
+9ZopyRbBUtIt7Li9bF5qcPKjzRLoTpeSOs+BAJMRs6PJGrZVJms9s8JChIp7lwPK
+D7YKhH6n+saUPs/U8XY8cCHRVe7hNjPY4ERT5GJuNYqnPi8VcdCQRXjjS7VjsUhQ
+hXOqLsQFpU+kNyflMwNZBUizWBOjiRtS+ihkNJ8c2JwmOE4EWctrpo/NmPhK9vt9
+nEx7YF+39aqzaHAtJH2a
+=kLq5
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
