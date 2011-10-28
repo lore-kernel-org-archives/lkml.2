@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1J1HSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:18:08 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46567 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723Ab1J1HSH (ORCPT
+	id S1754956Ab1J1HVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:21:35 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57352 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab1J1HVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:18:07 -0400
-Message-ID: <1319786276.2401.1.camel@phoenix>
-Subject: [PATCH 2/2] ASoC: Leave input audio data bit length settings
- untouched in wm8711_set_dai_fmt
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Date: Fri, 28 Oct 2011 15:17:56 +0800
-In-Reply-To: <1319771281.3944.1.camel@phoenix>
-References: <1319771281.3944.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 28 Oct 2011 03:21:34 -0400
+Date: Fri, 28 Oct 2011 16:21:25 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 4/5]thp: correct order in lru list for split huge page
+Message-ID: <20111028072102.GA6268@barrios-laptop.redhat.com>
+References: <1319511577.22361.140.camel@sli10-conroe>
+ <20111027231928.GB29407@barrios-laptop.redhat.com>
+ <1319778538.22361.152.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319778538.22361.152.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation in wm8711_set_dai_fmt always clear BIT[3:2]
-(the Input Audio Data Bit Length Select) of WM8711_IFACE(07h) register.
-Input Audio Data Bit Length Select bits are set by wm8711_hw_params,
-we should leave BIT[3:2] untouched in wm8711_set_dai_fmt.
+On Fri, Oct 28, 2011 at 01:08:58PM +0800, Shaohua Li wrote:
+> On Fri, 2011-10-28 at 07:19 +0800, Minchan Kim wrote:
+> > On Tue, Oct 25, 2011 at 10:59:37AM +0800, Shaohua Li wrote:
+> > > If a huge page is split, all the subpages should live in lru list adjacently
+> > > because they should be taken as a whole.
+> > > In page split, with current code:
+> > > a. if huge page is in lru list, the order is: page, page+HPAGE_PMD_NR-1,
+> > > page + HPAGE_PMD_NR-2, ..., page + 1(in lru page reclaim order)
+> > > b. otherwise, the order is: page, ..other pages.., page + 1, page + 2, ...(in
+> > > lru page reclaim order). page + 1 ... page + HPAGE_PMD_NR - 1 are in the lru
+> > > reclaim tail.
+> > > 
+> > > In case a, the order is wrong. In case b, page is isolated (to be reclaimed),
+> > > but other tail pages will not soon.
+> > > 
+> > > With below patch:
+> > > in case a, the order is: page, page + 1, ... page + HPAGE_PMD_NR-1(in lru page
+> > > reclaim order).
+> > > in case b, the order is: page + 1, ... page + HPAGE_PMD_NR-1 (in lru page reclaim
+> > > order). The tail pages are in the lru reclaim head.
+> > > 
+> > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > 
+> > In case of a, it doesn't matter ordering of subpages.
+> > As a huge page, age of sub pages are same.
+> It does matter. Hugepage is split first and then reclaim. if page, page
+> +HPAGE_PMD_NR-1 is reclaimed, you can't get an order-1 page. but if
+> page, page+1 is reclaimed, you can.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8711.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Right you are. I didn't catch up it.
+It would be better to add it in description.
+It's most important part in this patch.
 
-diff --git a/sound/soc/codecs/wm8711.c b/sound/soc/codecs/wm8711.c
-index 8ba49d8..076bdb9 100644
---- a/sound/soc/codecs/wm8711.c
-+++ b/sound/soc/codecs/wm8711.c
-@@ -232,7 +232,7 @@ static int wm8711_set_dai_fmt(struct snd_soc_dai *codec_dai,
- 		unsigned int fmt)
- {
- 	struct snd_soc_codec *codec = codec_dai->codec;
--	u16 iface = 0;
-+	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0x000c;
- 
- 	/* set master/slave audio interface */
- 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+Thanks.
+
 -- 
-1.7.5.4
-
-
-
+Kind regards,
+Minchan Kim
