@@ -1,96 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab1J1HIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:08:19 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49030 "EHLO mx2.mail.elte.hu"
+	id S1754131Ab1J1HKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 03:10:23 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42113 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752307Ab1J1HIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:08:17 -0400
-Date: Fri, 28 Oct 2011 09:03:36 +0200
+	id S1751163Ab1J1HKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 03:10:22 -0400
+Date: Fri, 28 Oct 2011 09:08:39 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111028070336.GF12995@elte.hu>
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
- <20111027193448.GA3514@merkur.ravnborg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        jeremy.fitzhardinge@citrix.com, mingo@redhat.com, stable@kernel.org,
+        tglx@linutronix.de
+Subject: Re: Not really merged? Re: [merged]
+ x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
+ removed from -mm tree
+Message-ID: <20111028070838.GG12995@elte.hu>
+References: <201110141951.p9EJpn3A006989@hpaq5.eem.corp.google.com>
+ <20111025182450.GA9843@phenom.dumpdata.com>
+ <20111027155329.0adc1358.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111027193448.GA3514@merkur.ravnborg.org>
+In-Reply-To: <20111027155329.0adc1358.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Sam Ravnborg <sam@ravnborg.org> wrote:
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> On Thu, Oct 27, 2011 at 02:07:14PM +0200, Sasha Levin wrote:
-> > This patch adds 'make kvmconfig' which allows to add KVM guest support
-> > to a config file.
+> On Tue, 25 Oct 2011 14:24:50 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > On Fri, Oct 14, 2011 at 12:51:48PM -0700, akpm@google.com wrote:
+> > > 
+> > > The patch titled
+> > >      Subject: x86/paravirt: PTE updates in k(un)map_atomic need to be synchronous, regardless of lazy_mmu mode
+> > > has been removed from the -mm tree.  Its filename was
+> > >      x86-paravirt-pte-updates-in-kunmap_atomic-need-to-be-synchronous-regardless-of-lazy_mmu-mode.patch
+> > > 
+> > > This patch was dropped because it was merged into mainline or a subsystem tree
 > > 
-> > This allows for easier testing of configurations under virtualized
-> > environments.
+> > Hey Andrew,
 > > 
-> > Cc: Ingo Molnar <mingo@elte.hu>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > Cc: Michal Marek <mmarek@suse.cz>
-> > Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> > Cc: linux-kbuild@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Suggested-by: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > I am actually not seeing this in mainline? Was it accidently dropped out of your tree?
 > 
-> Two points about the implmentation that I do not like...
-> 
-> The kvmconfig is an x86 specific thing - so it does not belong
-> in the scripts/kconfig/Makefile
-> 
-> The *config namespace is general config targets.
-> 
-> Suggestion:
-> Move the implmentation to arch/x86/Makefile and name the target
-> something that does not match the *config pattern.
-> 
-> Suggestion:
-> 
->    make kvmbootable
-> 
-> To tell that this convert the current config to a kvmbootable config.
-> 
-> And then add the target to the x86 specific help too.
+> hm, well spotted.  I'm not sure what happened here - possibly the 
+> patch was merged into an x86 tree (and hence linux-next) but later 
+> got lost. Or possibly not, and I just screwed up.
 
-KVM itself is not x86 specific (although this patch obviously is), so 
-we'd like to keep at least the naming non-x86.
+No, a patch with the -i 'paravirt.*lazy' pattern never touched -tip, 
+even temporarily.
 
-Furthermore, the functionality generally fits into the pattern that 
-'oldconfig' does: it changes an existing config - so having 'config' 
-in the name somewhere makes quite a bit of sense. If i didn't know 
-what 'kvmbootable' does i couldnt guess that it touches the .config - 
-while the *config pattern makes that patently obvious.
+Could it be that someone else (say the Xen guys) picked it up, it 
+went into linux-next, you thought it's applied - but then they 
+dropped it?
 
-Could we set aside some sort of name for such subsystem specific 
-purposes and be done with it? Could we reuse the 'defconfig' 
-naming perhaps and make it richer:
+Do we have a full log of all linux-next patches?
 
-	make defconfig kvm
+> Either way, it's a pretty important patch - we marked it for 
+> -stable backporting.
 
-or:
+Agreed.
 
-	make defconfig-kvm
+But IMO it's at least as important to figure out what went wrong. I 
+somehow doubt it that you spuriously dropped it - that someone else 
+messes up has a far higher likelihood.
 
-? It would be very obvious at a glance what it does.
+> > If that is the case I can convience you to put it back in or can 
+> > I drive it to Linus with your Ack-ed by?
+> 
+> I resurrected my copy and shall send it along to the x86 guys soon.
 
 Thanks,
 
