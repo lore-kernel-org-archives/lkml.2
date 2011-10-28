@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab1J1H7O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 03:59:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38164 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab1J1H7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 03:59:13 -0400
-Date: Fri, 28 Oct 2011 09:54:33 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111028075432.GB8626@elte.hu>
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
- <20111027193448.GA3514@merkur.ravnborg.org>
- <20111028070336.GF12995@elte.hu>
- <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
+	id S932158Ab1J1IE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 04:04:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:54377
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932085Ab1J1IEy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 04:04:54 -0400
+Date: Fri, 28 Oct 2011 04:04:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Miklos Szeredi <miklos@szeredi.hu>,
+        viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, akpm@linux-foundation.org,
+        toshi.okajima@jp.fujitsu.com
+Subject: Re: [PATCH 12/13] vfs: count unlinked inodes
+Message-ID: <20111028080445.GA10318@infradead.org>
+References: <1318430946-7091-1-git-send-email-miklos@szeredi.hu>
+ <1318430946-7091-13-git-send-email-miklos@szeredi.hu>
+ <20111028060801.GA15345@infradead.org>
+ <1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
+In-Reply-To: <1319788433.13842.8.camel@tucsk.pomaz.szeredi.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-
-> > ? It would be very obvious at a glance what it does.
+On Fri, Oct 28, 2011 at 09:53:53AM +0200, Miklos Szeredi wrote:
+> On Fri, 2011-10-28 at 02:08 -0400, Christoph Hellwig wrote:
+> > This one gets me a repeated spew of WARN_ONs during XFS log recover,
+> > repeating the following pattern:
 > 
-> This fits in the generic "I have a .config and I want to enable an 
-> additional option" functionality:
+> The assumption here is that set_nlink() is called with a non-zero count.
+> The point of introducing set_nlink() was to verify this assumption,
+> otherwise pending delete accounting will be screwed up.
 > 
-> make oldconfig CONFIG_KVMTOOL_TEST_ENABLE=y
+> If setting i_nlink to zero is not a bug in xfs we can do two things:
 > 
-> Don't we already have that support? I seem to remember it flying 
-> by. Or was it just a proposal that never got implemented?
+>  1) do a conditional clear_nlink() in xfs_setup_inode() to document that
+> nlink can indeed be zero
+> 
+>  2) remove the warning from set_nlink().  That may hide some cases where
+> i_nlink was cleared without the intention of the filesystem but it will
+> work just fine wrt. the pending delete accounting. 
 
-Well, it would be nice to have something (much) shorter and more 
-obvious, as we really expect to use this frequently.
+I suspect 2 might be the better option.  The pattern we see here in
+XFS is pretty typical for transactional filesytems - when we mount a
+filesystem after an unclean shutdown we need to drop all inodes that
+were open but unlinked when the system crashed, and that typically
+means reading inodes from disk that have a zero i_nlink.  Maybe some
+filesystems never instanciate a VFS inode for it, but I suspect many
+do.
 
-Maybe:
+For XFS we will actually see it during regularly testing as we have
+an ioctl that simulates a shutdown and can thus trigger log recovery
+easily, while for others like ext4 you'd actually have to do a real
+reset of your (physical or virtual) machine.
 
-  make oldconfig kvm
-
-would work too.
-
-Thanks,
-
-	Ingo
