@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753070Ab1J1FFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 01:05:06 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:57191 "EHLO
-	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab1J1FFF (ORCPT
+	id S1753718Ab1J1FRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 01:17:20 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45380 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab1J1FRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 01:05:05 -0400
-From: Barry Song <Barry.Song@csr.com>
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <Workgroup.Linux@csr.com>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-Thread-Topic: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
-Thread-Index: AQHMjUNMpdQ62Jn2VkSdRYTOA7OjuZWPYX+AgAGqasD//6JKAIAAlPjg
-Date: Fri, 28 Oct 2011 05:03:51 +0000
-Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E98419F924@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1318907324-17046-1-git-send-email-Barry.Song@csr.com>
-	 <1319703535.20054.30.camel@vkoul-udesk3>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E98419F7FF@SHAASIEXM01.ASIA.ROOT.PRI>
- <1319774982.20054.228.camel@vkoul-udesk3>
-In-Reply-To: <1319774982.20054.228.camel@vkoul-udesk3>
-Accept-Language: zh-CN, en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.125.36.58]
-Content-Type: text/plain; charset="utf-8"
+	Fri, 28 Oct 2011 01:17:19 -0400
+Message-ID: <4EAA3ADC.4030501@vflare.org>
+Date: Fri, 28 Oct 2011 01:17:16 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, levinsasha928@gmail.com,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id p9S55BEv026763
 
-> -----Original Message-----
-> From: Vinod Koul [mailto:vinod.koul@intel.com]
-> Sent: 2011å¹´10æœˆ28æ—¥ 12:10
-> To: Barry Song
-> Cc: Arnd Bergmann; Jassi Brar; Linus Walleij; linux-kernel@vger.kernel.org;
-> DL-SHA-WorkGroupLinux; Rongjun Ying; linux-arm-kernel@lists.infradead.org
-> Subject: RE: [PATCH v4] dmaengine: add CSR SiRFprimaII DMAC driver
+Hi Dan,
+
+On 10/27/2011 02:52 PM, Dan Magenheimer wrote:
+
+> Hi Linus --
 > 
-> On Fri, 2011-10-28 at 01:49 +0000, Barry Song wrote:
-> > > Also, Please ensure you send patches which compile with ZERO warnings:
-> > > drivers/dma/sirf-dma.c: In function 'sirfsoc_dma_probe':
-> > > drivers/dma/sirf-dma.c:616: warning: assignment from incompatible
-> pointer
-> > > type
-> > > drivers/dma/sirf-dma.c:617: warning: assignment from incompatible
-> pointer
-> > > type
-> > > which comes from the fact that your prep_interleaved_dma does not have
-> > > last argument of flags.
-> > > On the second one you have not rebased to patch from Jassi which I
-> > > applied after converting direction stuff.
-> >
-> >
-> [pls wrap 80chars within paragraphs, i have reformatted below)
-> > I rebased to both yours and Jassi by my merging manually. I remember
-> > you have changed the last param of device_prep_dma_cyclic from
-> > dma_data_direction to dma_transfer_direction. After checking the tree
-> > interleaved_dma @ git://git.infradead.org/users/vkoul/slave-dma.git,
-> > it doesn't. then make another compiling warning in
-> > sirfsoc_dma_prep_cyclic(). so I'll still use dma_data_direction in
-> > sirfsoc_dma_prep_cyclic().
-> Yes for cyclic, I have missed to fix that. I will push the fixed version
-
-Ok. note my v5 is still using dma_data_direction. You might take care too :-)
-
-> now
-> 
-> --
-> ~Vinod
-
--barry
+> Frontswap now has FOUR users: Two already merged in-tree (zcache
+> and Xen) and two still in development but in public git trees
+> (RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
+> changes required to support transcendent memory; part 1 was cleancache
+> which you merged at 3.0 (and which now has FIVE users).
+>
 
 
-Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
-More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I think frontswap would be really useful. Without this, zcache would be
+limited to compressed caching just the page cache pages but with
+frontswap, we can balance out compressed memory usage between swap cache
+and page cache pages. It also provides many advantages over existing
+solutions like zram which presents a fixed size virtual (compressed)
+block device interface. Since fronstwap doesn't have to "pretend" as a
+block device, it can incorporate many dynamic resizing policies, a
+critical factor for compressed caching.
+
+Thanks,
+Nitin
