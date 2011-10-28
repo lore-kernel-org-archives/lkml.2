@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab1J1UfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 16:35:12 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59005 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab1J1UfK convert rfc822-to-8bit (ORCPT
+	id S1756100Ab1J1UhD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 16:37:03 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35752 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755651Ab1J1UhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 16:35:10 -0400
+	Fri, 28 Oct 2011 16:37:01 -0400
+Message-ID: <4EAB126A.5090507@garzik.org>
+Date: Fri, 28 Oct 2011 16:36:58 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
-References: <CAMuHMdW6hC1JchxVL9-4f58a8Vg7cF+97BbKePxjEDHY3H8wNw@mail.gmail.com>
-Date: Fri, 28 Oct 2011 22:35:09 +0200
-X-Google-Sender-Auth: tqpGsAthygMp9vnrwqa2zkDoc18
-Message-ID: <CAMuHMdU3H63vx8436fdm_WBuPBwqNxHtPiAO9j6RhMn0VCAy2w@mail.gmail.com>
-Subject: Re: -next: NET_VENDOR_8390 dependencies
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        swarren@nvidia.com, olof@lixom.net, ben@decadent.org.uk,
+        arnaud.patard@rtp-net.org, grant.likely@secretlab.ca,
+        w.sang@pengutronix.de, bs14@csr.com
+Subject: Re: [PATCH] ARM: mark empty gpio.h files empty
+References: <1319833142-4764-1-git-send-email-linus.walleij@linaro.org>
+In-Reply-To: <1319833142-4764-1-git-send-email-linus.walleij@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 23:21, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> drivers/net/ethernet/8390/Kconfig:
+On 10/28/2011 04:19 PM, Linus Walleij wrote:
+> It is generally a better idea to make intentionally empty files
+> contain the human-readable /* empty */ comment, also it makes
+> the files play nice with "make distclean".
 >
-> config NET_VENDOR_8390
->        depends on NET_VENDOR_NATSEMI && (AMIGA_PCMCIA || PCI || SUPERH || \
->                   ISA || MCA || EISA || MAC || M32R || MACH_TX49XX || \
->                   MCA_LEGACY || H8300 || ARM || MIPS || ZORRO || PCMCIA || \
->                   EXPERIMENTAL)
+> Reported-by: Jeff Garzik<jeff@garzik.org>
+> Signed-off-by: Linus Walleij<linus.walleij@linaro.org>
 
-> So NET_VENDOR_8390 depends on NET_VENDOR_NATSEMI.
+Thanks!
 
-> config NET_VENDOR_NATSEMI
->        depends on MCA || MAC || MACH_JAZZ || PCI || XTENSA_PLATFORM_XT2000
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
 
-> But NET_VENDOR_NATSEMI will never be true for several of the other
-> dependencies of NET_VENDOR_8390 (e.g. AMIGA_PCMCIA, EISA, H8300, ARM,
-> ZORRO, PCMCIA)?
 
-There's a similar issue with:
 
-config NET_VENDOR_I825XX
-        depends on NET_VENDOR_INTEL && (ISA || ISA_DMA_API || ARM || \
-                   ARCH_ACORN || MCA || MCA_LEGACY || SNI_RM || SUN3 || \
-                   GSC || BVME6000 || MVME16x || EXPERIMENTAL)
-
-But:
-
-config NET_VENDOR_INTEL
-        depends on PCI || PCI_MSI
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
