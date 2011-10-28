@@ -1,35 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab1J1Oe1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Oct 2011 10:34:27 -0400
-Received: from fieldses.org ([174.143.236.118]:43521 "EHLO fieldses.org"
+	id S1755887Ab1J1Om4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Oct 2011 10:42:56 -0400
+Received: from fieldses.org ([174.143.236.118]:40789 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594Ab1J1Oe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Oct 2011 10:34:26 -0400
-Date: Fri, 28 Oct 2011 10:34:21 -0400
+	id S1753369Ab1J1Omz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Oct 2011 10:42:55 -0400
+Date: Fri, 28 Oct 2011 10:42:52 -0400
 From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched: document wait_for_completion_* return values
-Message-ID: <20111028143421.GA5798@fieldses.org>
-References: <20111006192246.GB28026@fieldses.org>
- <20111028084351.GB2010@fieldses.org>
- <1319791636.13128.17.camel@laptop>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: nfsd (and lock) changes for 3.2
+Message-ID: <20111028144252.GB5798@fieldses.org>
+References: <20111025121924.GA15662@fieldses.org>
+ <4EA77B78.6080706@panasas.com>
+ <20111027203412.GB31669@fieldses.org>
+ <4EA9F5E8.6060900@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319791636.13128.17.camel@laptop>
+In-Reply-To: <4EA9F5E8.6060900@panasas.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 10:47:16AM +0200, Peter Zijlstra wrote:
-> On Fri, 2011-10-28 at 04:43 -0400, J. Bruce Fields wrote:
-> > Ping?  Should I resend this or send it someplace different?
+On Thu, Oct 27, 2011 at 05:23:04PM -0700, Boaz Harrosh wrote:
+> On 10/27/2011 01:34 PM, J. Bruce Fields wrote:
+> > We need to test it, but I think you're probably correct,
+> > 6577aac01f00636c16cd583c30bd4dedf18475d5 "nfsd4: fix failure to end
+> > nfsd4 grace period" should have been tagged for stable.  Does that also
+> > require any previous patches? (E.g.
+> > 48483bf23a568f3ef4cc7ad2c8f1a082f10ad0e7 "nfsd4: simplify recovery dir
+> > setting"?)
+> > 
 > 
-> Its in my queue somewhere, conferences got in the way.
+> right, and all for that dmesg print. But yes! 
+> 
+> Well the 3.1 Kernel without them gets stuck. I guess you need to experiment
+> with what would be the minimal patchset needed for 3.1 .
+> 
+> Tell me if you need help testing that the damage has gone. But basically I have
+> a script (4 years old) that does: 
+> 	server: service nfs stop/start 
+> 	client: mount
+> back to back, The client gets stuck forever.
 
-Great, thanks!
+You and I are pretty sure those patches are needed, and fix the problem.
+But it would probably be a good idea, to make sure.
+
+Would you mind passing both along to stable@kernel.org?  Cc: me and I'll
+ack them.
 
 --b.
