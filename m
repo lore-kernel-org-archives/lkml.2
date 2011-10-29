@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab1J2MYW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 08:24:22 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:32897 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754978Ab1J2MYU convert rfc822-to-8bit (ORCPT
+	id S932868Ab1J2Mm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 08:42:26 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:51357 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932225Ab1J2MmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 08:24:20 -0400
+	Sat, 29 Oct 2011 08:42:24 -0400
+Date: Sat, 29 Oct 2011 08:42:09 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Earl Chew <earl_chew@agilent.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a
+ signal
+Message-ID: <20111029124208.GA2296@neilslaptop.think-freely.org>
+References: <1319591228-20397-1-git-send-email-msb@chromium.org>
+ <20111028162631.294c1f8a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20111025112629.GA10864@kroah.com>
-References: <20111025112629.GA10864@kroah.com>
-Date: Sat, 29 Oct 2011 14:24:19 +0200
-X-Google-Sender-Auth: IzA30CprK97KhcC5q8ZCl7ZTnSA
-Message-ID: <CAMuHMdW0YfSp6D9C2Jf_4UXFRtnys89Bb-woq1EQkxDx8CARQg@mail.gmail.com>
-Subject: Re: [GIT PATCH] big staging merge for 3.2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>,
-        linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111028162631.294c1f8a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.6 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 13:26, Greg KH <greg@kroah.com> wrote:
-> Greg Kroah-Hartman (27):
->      Staging: remove drivers/char/scc.h as it should have gone a while ago
+On Fri, Oct 28, 2011 at 04:26:31PM -0700, Andrew Morton wrote:
+> On Tue, 25 Oct 2011 18:07:08 -0700
+> Mandeep Singh Baines <msb@chromium.org> wrote:
+> 
+> > To allow coredump pipe readers to look at /proc/<pid> of the crashing
+> > process, the kernel waits for the reader to exit. However, the wait
+> > is silently aborted if the crashing process is signalled.
+> > 
+> > This patch, logs whenever wait_for_dump_helpers is aborted or in order
+> > to assist in debugging cases where /proc/<pid> is gone.
+> 
+> You don't really describe what problem you're observing.  What's the
+> use case?  What are you trying to do?  etc.
+> 
+> Because if that is known, we can perhaps find better solutions.
+> 
+> > Alternatively, we may want to consider not aborting on a signal. You
+> > could always break the loop by killing the reader process.
+> 
+> Well.  Neil's changelog for 61be228a06dc6e8662 is quite nice and tells
+> us everything we could possibly want to know, except for why it tests
+> sgnal_pending() :(
+> 
+> Neil, Oleg: can you remember?
+> 
+I _think_ it was a way to detect if the helper was still running, or had become
+stuck.  I.e. we send the process a SIGIO, and if on the next iteration its still
+pending, we can assume something has gone wrong, and abort the dump.  Of course
+my memory could be faulty, Oleg do you have better recollection than I?
 
-That's commit 1ec3ba93c5fad9dca0dab272491c625fe6a2f67d
-Author: Greg Kroah-Hartman <gregkh@suse.de>
-Date:   Wed Aug 24 14:44:13 2011 -0700
+I'm heading out for a long weekend, but when I get back, I'll dig through the
+archives for a better answer.  I recall Oleg and I talking at length about this
+code.
 
-    Staging: remove drivers/char/scc.h as it should have gone a while ago
-
-    This was needed by one of the generic serial drivers that was removed a
-    while ago.  No one even noticed that the driver could not be built
-    properly while it was in the staging directory.
-
-    So this removed the unneeded .h file.
-
-    Reported-by: Arnd Bergmann <arnd@arndb.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-diff --git a/drivers/char/scc.h b/drivers/char/scc.h
-deleted file mode 100644
-index 341b114..0000000
---- a/drivers/char/scc.h
-+++ /dev/null
-@@ -1,613 +0,0 @@
--/*
-- * atari_SCC.h: Definitions for the Am8530 Serial Communications Controller
-
-Funny, Google doesn't seem to find any evidence this patch has ever been
-posted on a public maling list?
-
-Anyone, no real harm done.
-
-Just for the record, there are two reason no one noticed that
-drivers/staging/generic_serial/vme_scc.c no longer compiled:
-  1. linux-next doesn't build staging,
-  2. The m68k tree still has the (too long) work-in-progress atari_scc driver.
-     The Atari SCC driver was the original user of scc.h, so when I moved that
-     one to drivers/staging/ in the m68k tree, it masked compile
-failures for vme_scc
-     in mainline.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> > --- a/fs/exec.c
+> > +++ b/fs/exec.c
+> > @@ -2030,7 +2030,14 @@ static void wait_for_dump_helpers(struct file *file)
+> >  	pipe->readers++;
+> >  	pipe->writers--;
+> >  
+> > -	while ((pipe->readers > 1) && (!signal_pending(current))) {
+> > +	while (pipe->readers > 1) {
+> > +		if (signal_pending(current)) {
+> > +			pr_info("wait_for_dump_helpers[%d]: "
+> > +				"aborted due to signal\n",
+> > +				task_pid_nr(current));
+> > +			break;
+> > +		}
+> > +
+> 
+> argh, printk("i screwed up").  Hopefully we can find a better solution
+> to whatever-your-problem is than this!
+> 
