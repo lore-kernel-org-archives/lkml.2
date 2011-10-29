@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab1J2Ors (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 10:47:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34926 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933035Ab1J2Orq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 10:47:46 -0400
-Date: Sat, 29 Oct 2011 16:43:15 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mandeep Singh Baines <msb@chromium.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Neil Horman <nhorman@tuxdriver.com>, Earl Chew <earl_chew@agilent.com>,
-        Andi Kleen <andi@firstfloor.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] exec: log when wait_for_dump_helpers aborts due to a
-	signal
-Message-ID: <20111029144315.GB7036@redhat.com>
-References: <1319591228-20397-1-git-send-email-msb@chromium.org> <20111028162631.294c1f8a.akpm@linux-foundation.org>
+	id S933413Ab1J2PDi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 11:03:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38370 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab1J2PDg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 11:03:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111028162631.294c1f8a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EA85764.60309@xenotime.net>
+References: <4EA85764.60309@xenotime.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 29 Oct 2011 08:03:14 -0700
+X-Google-Sender-Auth: Gpcq_HzHns9gzAczO9etU9T5-II
+Message-ID: <CA+55aFyghT3vx5Y0dPsa4sXpTV_vd0FAtzXurv1oh_26P8G7zQ@mail.gmail.com>
+Subject: Re: [git pull] Documentation: DocBook/drm, basic copyediting
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michael Witten <mfwitten@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Andrew Morton wrote:
+On Wed, Oct 26, 2011 at 11:54 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
 >
-> Well.  Neil's changelog for 61be228a06dc6e8662 is quite nice and tells
-> us everything we could possibly want to know, except for why it tests
-> sgnal_pending() :(
+> Note:  Please check that I haven't mucked up somewhere, because this:
+> $ git diff -M --stat --summary master..HEAD
+>
+> shows me more than the changes above.
 
-In short, signal_pending() should not be here. It only reflects the
-fact that do_coredump() needs the fixes (and can't resist, I sent the
-patch several years ago, but it was ignored ;)
+You have indeed messed up  - there are extraneous merges there. But
+that's not why your diff fails: your diff probably fails because
+"master" is ahead of your base, so when you ask for the diff between
+master and HEAD, you get a diff that contains (the reverse of)
+everything that I have done that isn't in your tree.
 
-There are 2 reasons. if signal_pending() == T then:
+For diffs, you likely want to look at the diff between the "merge
+base" and your HEAD. Which is what "..." (triple dot) does, so you can
+probably do
 
-	- pipe_wait() is pointless, it won't block. We do not want
-	  a busywait loop.
+   git diff -M --stat --summary master...HEAD
 
-	- And probably even wait_for_dump_helpers() is pointless,
-	  it is quite possible that pipe_write() already failed
-	  before and the reader doesn't know this.
+and it should give you the right thing.
 
-What I think we should do:
+However, I really don't see why you have two extra merges on top of
+that commit series.
 
-	- Fix this code, it should not react to signals.
-
-	- But! at the same time the explicit SIGKILL should stop
-	  the coredump. It can take a lot of time/resources.
-
-	  This also makes it oom-killable, and this is important.
-
-	- If we dump to the pipe, then perhaps it makes sense to
-	  send a signal to the pipe reader in the latter case, but
-	  this is a bit offtopic.
-
-I'll try to redo my old patches for 3.2 once I have the time. There
-are some nasty problems which I forgot, _iirc_ this is not that
-trivial.
-
-Oleg.
-
+                            Linus
