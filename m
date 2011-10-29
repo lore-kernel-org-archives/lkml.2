@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413Ab1J2PDi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 11:03:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38370 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744Ab1J2PDg convert rfc822-to-8bit (ORCPT
+	id S933426Ab1J2P3n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 11:29:43 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51478 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932944Ab1J2P3m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 11:03:36 -0400
+	Sat, 29 Oct 2011 11:29:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <4EA85764.60309@xenotime.net>
-References: <4EA85764.60309@xenotime.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 29 Oct 2011 08:03:14 -0700
-X-Google-Sender-Auth: Gpcq_HzHns9gzAczO9etU9T5-II
-Message-ID: <CA+55aFyghT3vx5Y0dPsa4sXpTV_vd0FAtzXurv1oh_26P8G7zQ@mail.gmail.com>
-Subject: Re: [git pull] Documentation: DocBook/drm, basic copyediting
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michael Witten <mfwitten@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
+X-Originating-IP: [89.138.18.247]
+In-Reply-To: <4EAAD351.70805@redhat.com>
+References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
+	<1319385413-29665-5-git-send-email-gilad@benyossef.com>
+	<4EAAD351.70805@redhat.com>
+Date: Sat, 29 Oct 2011 17:29:41 +0200
+Message-ID: <CAOtvUMd8Z_jbs__+cVG2+ZkPZLqGkJGym402RMRYGDDjT73bkg@mail.gmail.com>
+Subject: Re: [PATCH v2 4/6] mm: Only IPI CPUs to drain local pages if they exist
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 11:54 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Fri, Oct 28, 2011 at 6:07 PM, Rik van Riel <riel@redhat.com> wrote:
+> On 10/23/2011 11:56 AM, Gilad Ben-Yossef wrote:
+>>
+>> Use a cpumask to track CPUs with per-cpu pages in any zone
+>> and only send an IPI requesting CPUs to drain these pages
+>> to the buddy allocator if they actually have pages.
 >
-> Note:  Please check that I haven't mucked up somewhere, because this:
-> $ git diff -M --stat --summary master..HEAD
+>> +/* Which CPUs have per cpu pages  */
+>> +cpumask_var_t cpus_with_pcp;
+>> +static DEFINE_PER_CPU(unsigned long, total_cpu_pcp_count);
 >
-> shows me more than the changes above.
+> Does the flushing happen so frequently that it is worth keeping this
+> state on a per-cpu basis, or would it be better to check each CPU's
+> pcp info and assemble a cpumask at flush time like done in patch 5?
+>
 
-You have indeed messed up  - there are extraneous merges there. But
-that's not why your diff fails: your diff probably fails because
-"master" is ahead of your base, so when you ask for the diff between
-master and HEAD, you get a diff that contains (the reverse of)
-everything that I have done that isn't in your tree.
+No, I don't  believe it is frequent at all. I will try to re-work the
+patch as suggested.
 
-For diffs, you likely want to look at the diff between the "merge
-base" and your HEAD. Which is what "..." (triple dot) does, so you can
-probably do
+Thanks,
+Gilad
 
-   git diff -M --stat --summary master...HEAD
+>
 
-and it should give you the right thing.
+>
+> --
+> All rights reversed
+>
 
-However, I really don't see why you have two extra merges on top of
-that commit series.
 
-                            Linus
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"I've seen things you people wouldn't believe. Goto statements used to
+implement co-routines. I watched C structures being stored in
+registers. All those moments will be lost in time... like tears in
+rain... Time to die. "
