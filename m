@@ -1,140 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab1J2J3P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 05:29:15 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3260 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab1J2J3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 05:29:13 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4EABC757.7080505@broadcom.com>
-Date: Sat, 29 Oct 2011 11:28:55 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
- Gecko/20110922 Thunderbird/3.1.15
+	id S1754955Ab1J2JfU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 05:35:20 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35678 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab1J2JfT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 05:35:19 -0400
+Date: Sat, 29 Oct 2011 10:34:58 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, msb@chromium.org,
+        linux-kernel@vger.kernel.org, sergiu@chromium.org,
+        Bryan Freed <bfreed@chromium.org>, akpm@linux-foundation.org,
+        seiji.aguchi@hds.com
+Subject: Re: [PATCH] ramoops appears geared to not support ARM
+Message-ID: <20111029093458.GX19187@n2100.arm.linux.org.uk>
+References: <1319844110-23062-1-git-send-email-bfreed@chromium.org> <4EABBBD3.5030700@gmail.com>
 MIME-Version: 1.0
-To: "Julian Calaby" <julian.calaby@gmail.com>
-cc: "Julia Lawall" <julia@diku.dk>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/5] drivers/net/wireless/brcm80211/brcmsmac/dma.c:
- eliminate a null pointer dereference
-References: <1319846297-2985-2-git-send-email-julia@diku.dk>
- <4EAB6495.40707@gmail.com>
-In-Reply-To: <4EAB6495.40707@gmail.com>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62B516913JW10827114-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EABBBD3.5030700@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2011 04:27 AM, Julian Calaby wrote:
-> On 29/10/11 10:58, Julia Lawall wrote:
->> From: Julia Lawall <julia@diku.dk>
+On Sat, Oct 29, 2011 at 10:39:47AM +0200, Marco Stornelli wrote:
+> (Added linux-arm)
+>
+> Il 29/10/2011 01:21, Bryan Freed ha scritto:
+>> I had some difficulty in getting ramoops to work on our ARM systems.
+>> The driver maps memory with ioremap() which is supposed to map IO memory,
+>> not physical RAM.  This happens to work on x86 and apparently some other
+>> architectures, but it does not work on ARM.
+>> Specifically, I see this comment in __arm_ioremap_pfn_caller():
+>> 	Don't allow RAM to be mapped - this causes problems with ARMv6+
 >>
->> Delete di->name from the error reporting code, as it is meaningless if di
->> is NULL.
+>> So here is a patch that hacks around the issue using page_is_ram() to
+>> differentiate between the two.
 >>
->> The semantic match that finds this problem is as follows:
->> (http://coccinelle.lip6.fr/)
+>> Am I missing something here?
+>> Is ramoops working on any ARM systems yet, and I am just doing something wrong?
 >>
->> // <smpl>
->> @r@
->> expression E, E1;
->> identifier f;
->> statement S1,S2,S3;
->> @@
+>> My ARM platform reserves a section of RAM for use by ramoops, but it is still
+>> mapped along with the rest of main memory.  This is so /dev/mem can find it
+>> with xlate_dev_mem_ptr().
+>> On x86, I see our BIOS reserves the memory so that it is not counted as main
+>> memory, and it is not mapped until ramoops ioremaps it.
 >>
->> if (E == NULL)
->> {
->>   ... when != if (E == NULL || ...) S1 else S2
->>       when != E = E1
->> *E->f
->>   ... when any
->>   return ...;
->> }
->> else S3
->> // </smpl>
+>> Bryan Freed (1):
+>>    ramoops: Add support for ARM systems.
 >>
->> Signed-off-by: Julia Lawall <julia@diku.dk>
+>>   drivers/char/ramoops.c |   67 +++++++++++++++++++++++++++++++++++++----------
+>>   1 files changed, 52 insertions(+), 15 deletions(-)
 >>
->> ---
->>  drivers/net/wireless/brcm80211/brcmsmac/dma.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
->> index b56a302..1d66f53 100644
->> --- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
->> +++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
->> @@ -361,7 +361,7 @@ static uint _dma_ctrlflags(struct dma_info *di, uint mask, uint flags)
->>  	uint dmactrlflags = di->dma.dmactrlflags;
-> 
-> If di is null, we've already failed as it's dereferenced here.
-> 
->>  	if (di == NULL) {
->> -		DMA_ERROR(("%s: _dma_ctrlflags: NULL dma handle\n", di->name));
->> +		DMA_ERROR(("_dma_ctrlflags: NULL dma handle\n"));
->>  		return 0;
->>  	}
-> 
-> So, a better patch would be something like this:
-> 
-> (apologies if this doesn't apply - I've pretty much built it manually)
-> 
-> ---
-> 
-> Though it's unlikely, di may be null, so we can't dereference
-> di->dma.dmactrlflags until we've checked it.
-> 
-> Move this de-reference after the check, and adjust the error
-> message to not require de-referencing di.
-> 
-> This is based upon Julia's original patch:
-> <1319846297-2985-2-git-send-email-julia@diku.dk>
-> 
-> Reported-by: Julia Lawall <julia@diku.dk>
-> Signed-off-by: Julian Calaby <julian.calaby@gmail.com>
-> CC: Julia Lawall <julia@diku.dk>
-> 
-> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-> index b56a302..6ebec8f 100644
-> --- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-> +++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
-> @@ -358,13 +358,14 @@ static uint nrxdactive(struct dma_info *di, uint h, uint t
->  
->  static uint _dma_ctrlflags(struct dma_info *di, uint mask, uint flags)
->  {
-> -       uint dmactrlflags = di->dma.dmactrlflags;
-> +       uint dmactrlflags;
->  
->         if (di == NULL) {
-> -               DMA_ERROR(("%s: _dma_ctrlflags: NULL dma handle\n", di->name));
-> +               DMA_ERROR(("_dma_ctrlflags: NULL dma handle\n"));
->                 return 0;
->         }
->  
-> +       dmactrlflags = di->dma.dmactrlflags;
->         dmactrlflags &= ~mask;
->         dmactrlflags |= flags;
->  
-> 
-> 
-> 
-> 
+>
+> Can some ARM guys give an opinion about that?
 
-Hi Julian, Julia
-
-That change looks good, but it does not apply on top of our pending
-patches. Probably need to resend those after the merge window. I will
-create a applying patch and send it to John (and resend later if
-needed). Thanks for finding this one.
-
-Gr. AvS
-
+Opinion about the patch which isn't present in this email (so we can't
+see it) or about the commentry above?
