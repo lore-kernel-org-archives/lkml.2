@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933106Ab1J2Tiu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 15:38:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46215 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932561Ab1J2Tit convert rfc822-to-8bit (ORCPT
+	id S933160Ab1J2TqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 15:46:09 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48429 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932479Ab1J2TqG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 15:38:49 -0400
+	Sat, 29 Oct 2011 15:46:06 -0400
 MIME-Version: 1.0
-X-Originating-IP: [67.170.233.23]
-In-Reply-To: <20111029193027.GA22101@redhat.com>
-References: <1319832688-30336-1-git-send-email-scott@netsplit.com>
-	<20111029141323.GA7036@redhat.com>
-	<CA+bD78hSSDkOBsNTy=VjnzjYSMMtw_B6Gu2hX39G7zp2smGUVg@mail.gmail.com>
-	<20111029193027.GA22101@redhat.com>
-Date: Sat, 29 Oct 2011 12:38:47 -0700
-Message-ID: <CA+bD78itEWGdYBSprPASeG8HEkWPF4ANF8F==7As=EacD6EVuw@mail.gmail.com>
-Subject: Re: [PATCH] coredump: wait on the core pattern umh at least once
-From: Scott James Remnant <scott@netsplit.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1317131836-11822-4-git-send-email-joerg.roedel@amd.com>
+References: <1317131836-11822-1-git-send-email-joerg.roedel@amd.com>
+	<1317131836-11822-4-git-send-email-joerg.roedel@amd.com>
+Date: Sat, 29 Oct 2011 21:36:13 +0200
+X-Google-Sender-Auth: 2jWtU1XT6OUaVMkdPp1jO1BBRYc
+Message-ID: <CAMuHMdUJU+4n73P6Kc920+ZeJZouCc52QVa1Emanjiiu1kmq-w@mail.gmail.com>
+Subject: Re: [PATCH 3/4] PCI: Add implementation for PRI capability
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 12:30 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 10/29, Scott James Remnant wrote:
->>
->> On Sat, Oct 29, 2011 at 7:13 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>
->> > On 10/28, Scott James Remnant wrote:
->> > >
->> > > If a thread crashes as a result of a signal on the thread group leader
->> > > that signal can still be pending,
->> >
->> > No. do_coredump() clears TIF_SIGPENDING.
->> >
->> I'm definitely seeing cases where SIGTERM sent to the process group
->> that chrome is in results in one of chrome's thread's crashing (not
->> your concern, obviously), but at the point it enters this function
+On Tue, Sep 27, 2011 at 15:57, Joerg Roedel <joerg.roedel@amd.com> wrote:
+> Implement the necessary functions to handle PRI capabilities
+> on PCIe devices. With PRI devices behind an IOMMU can signal
+> page fault conditions to software and recover from such
+> faults.
 >
-> which function? wait_for_dump_helpers?
+> Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+> ---
+>  drivers/pci/Kconfig      |    9 +++
+>  drivers/pci/ats.c        |  167 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pci-ats.h  |   42 ++++++++++++
+>  include/linux/pci_regs.h |   12 +++
+>  4 files changed, 230 insertions(+), 0 deletions(-)
 >
->> TIF_SIGPENDING is definitely set and the signal is SIGTERM.
+> diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
+> index 1d8ce83..fb1e9707 100644
+> --- a/drivers/pci/Kconfig
+> +++ b/drivers/pci/Kconfig
+> @@ -85,6 +85,15 @@ config PCI_IOV
 >
-> Yes, this is possible. But not as result of a signal which triggers
-> the coredumping. And once again, this clear_thread_flag(TIF_SIGPENDING)
-> is simply wrong (I mean, not enough).
+>          If unsure, say N.
 >
-Makes sense.
+> +config PCI_PRI
+> +       bool "PCI PRI support"
 
->> > I already tried to explain why this signal_pending() was added, but
->> > apparently I was not clear. I'll try again in the previous thread.
->> >
->> Could you add me to the Cc: of that thread?
->
-> I thought you were cc'ed ;) Sorry, I didn't realiaze that these 2
-> threads are totally separate. Please look at
->
-> � � � �http://marc.info/?t=131959137800005
->
-> and at
-> � � � �http://marc.info/?l=linux-kernel&m=131989970411759
->
-> in particular.
->
-Yeah I couldn't really work out why the signal_pending() was there
-either, I was trying to rework the loop to keep it on the assumption
-it was there for a reason - I'm quite happy that it get removed, that
-also fixes my problem :)
+Shouldn't this depend on PCI?
 
-Scott
+It doesn't seem to hurt on PCI-less platforms, but I prefer not seeing
+PCI-related
+questions when CONFIG_PCI is not set.
+
+> +       select PCI_ATS
+> +       help
+> +         PRI is the PCI Page Request Interface. It allows PCI devices that are
+> +         behind an IOMMU to recover from page faults.
+> +
+> +         If unsure, say N.
+> +
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
