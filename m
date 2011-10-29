@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab1J2R0B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 13:26:01 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35430 "EHLO
+	id S933596Ab1J2R0I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 13:26:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35439 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933496Ab1J2R0A (ORCPT
+	with ESMTP id S933557Ab1J2R0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 13:26:00 -0400
+	Sat, 29 Oct 2011 13:26:05 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/3] perf report: Add progress bar when processing time ordered events
-Date: Sat, 29 Oct 2011 15:25:51 -0200
-Message-Id: <1319909151-11432-4-git-send-email-acme@infradead.org>
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>, yrl.pp-manager.tt@hitachi.com,
+        arnaldo.melo@gmail.com
+Subject: [GIT PULL 0/3] perf/core fixes and improvements
+Date: Sat, 29 Oct 2011 15:25:48 -0200
+Message-Id: <1319909151-11432-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1319909151-11432-1-git-send-email-acme@infradead.org>
-References: <1319909151-11432-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-So that for large perf.data files the user can have visual feedback that
-activity is being performed.
+        Please consider pulling from:
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3ysn01mpspfrbsy56gznzqqz@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/session.c |    9 +++++++++
- tools/perf/util/session.h |    1 +
- 2 files changed, 10 insertions(+), 0 deletions(-)
+git://github.com/acmel/linux.git perf/core
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index da354fe..85c1e6b 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -502,6 +502,7 @@ static void flush_sample_queue(struct perf_session *s,
- 	struct perf_sample sample;
- 	u64 limit = os->next_flush;
- 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
-+	unsigned idx = 0, progress_next = os->nr_samples / 16;
- 	int ret;
- 
- 	if (!ops->ordered_samples || !limit)
-@@ -521,6 +522,11 @@ static void flush_sample_queue(struct perf_session *s,
- 		os->last_flush = iter->timestamp;
- 		list_del(&iter->list);
- 		list_add(&iter->list, &os->sample_cache);
-+		if (++idx >= progress_next) {
-+			progress_next += os->nr_samples / 16;
-+			ui_progress__update(idx, os->nr_samples,
-+					    "Processing time ordered events...");
-+		}
- 	}
- 
- 	if (list_empty(head)) {
-@@ -529,6 +535,8 @@ static void flush_sample_queue(struct perf_session *s,
- 		os->last_sample =
- 			list_entry(head->prev, struct sample_queue, list);
- 	}
-+
-+	os->nr_samples = 0;
- }
- 
- /*
-@@ -588,6 +596,7 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
- 	u64 timestamp = new->timestamp;
- 	struct list_head *p;
- 
-+	++os->nr_samples;
- 	os->last_sample = new;
- 
- 	if (!sample) {
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 514b06d..6e393c9 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -23,6 +23,7 @@ struct ordered_samples {
- 	struct sample_queue	*sample_buffer;
- 	struct sample_queue	*last_sample;
- 	int			sample_buffer_idx;
-+	unsigned int		nr_samples;
- };
- 
- struct perf_session {
--- 
-1.6.2.5
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (2):
+  perf hists browser: Warn about lost events
+  perf report: Add progress bar when processing time ordered events
+
+Masami Hiramatsu (1):
+  perf tools: Fix a typo of command name as trace-cmd
+
+ tools/perf/builtin-top.c            |   41 +++++++++++++++++++++--------
+ tools/perf/util/hist.h              |    1 +
+ tools/perf/util/session.c           |   38 ++++++++++++++++++++++----
+ tools/perf/util/session.h           |    1 +
+ tools/perf/util/top.h               |    1 -
+ tools/perf/util/trace-event-info.c  |    2 +-
+ tools/perf/util/ui/browser.c        |   21 ++++++++++++---
+ tools/perf/util/ui/browser.h        |    3 +-
+ tools/perf/util/ui/browsers/hists.c |   49 ++++++++++++++++++++++++++++++----
+ 9 files changed, 127 insertions(+), 30 deletions(-)
 
