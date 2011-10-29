@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536Ab1J2RFL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 13:05:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53982 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932930Ab1J2RFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 13:05:10 -0400
-Date: Sat, 29 Oct 2011 19:05:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        "ohering@suse.com" <ohering@suse.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
-Message-ID: <alpine.LNX.2.00.1110291904190.3541@pobox.suse.cz>
-References: <1319645321-9770-1-git-send-email-kys@microsoft.com> <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz> <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com> <20111028200315.GA30918@suse.de>
- <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933552Ab1J2R0B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 13:26:01 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35430 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933496Ab1J2R0A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 13:26:00 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/3] perf report: Add progress bar when processing time ordered events
+Date: Sat, 29 Oct 2011 15:25:51 -0200
+Message-Id: <1319909151-11432-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1319909151-11432-1-git-send-email-acme@infradead.org>
+References: <1319909151-11432-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Oct 2011, KY Srinivasan wrote:
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-> > > > >  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
-> > > > >  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
-> > > > >  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
-> > > > > +obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
-> > > >
-> > > > I'd prefer a bit to follow the current naming of the drivers in
-> > > > drivers/hid directory ... all the device-specific (vendor-specific)
-> > > > drivers currently are called hid-<vendor> or similar.
-> > > >
-> > > > We could talk about changing this naming scheme, but before we reach any
-> > > > conclusion on this, I'd prefer this to stay for all drivers if possible.
-> > >
-> > > Do you want the driver module to conform to the naming scheme you have?
-> > > Greg, in the past has resisted changing driver names, but I have no objection
-> > > to conforming to the naming convention you have.
-> > 
-> > I recommend following the proper naming scheme.  As this driver is
-> > auto-loaded when the virtual hardware is seen, the name really doesn't
-> > matter at all.
-> > 
-> > So, how about 'hid-hyperv' or 'hid-hv'?
-> 
-> I will go with hid-hv  if there are no objections.
+So that for large perf.data files the user can have visual feedback that
+activity is being performed.
 
-OK by me, thanks.
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-3ysn01mpspfrbsy56gznzqqz@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/session.c |    9 +++++++++
+ tools/perf/util/session.h |    1 +
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index da354fe..85c1e6b 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -502,6 +502,7 @@ static void flush_sample_queue(struct perf_session *s,
+ 	struct perf_sample sample;
+ 	u64 limit = os->next_flush;
+ 	u64 last_ts = os->last_sample ? os->last_sample->timestamp : 0ULL;
++	unsigned idx = 0, progress_next = os->nr_samples / 16;
+ 	int ret;
+ 
+ 	if (!ops->ordered_samples || !limit)
+@@ -521,6 +522,11 @@ static void flush_sample_queue(struct perf_session *s,
+ 		os->last_flush = iter->timestamp;
+ 		list_del(&iter->list);
+ 		list_add(&iter->list, &os->sample_cache);
++		if (++idx >= progress_next) {
++			progress_next += os->nr_samples / 16;
++			ui_progress__update(idx, os->nr_samples,
++					    "Processing time ordered events...");
++		}
+ 	}
+ 
+ 	if (list_empty(head)) {
+@@ -529,6 +535,8 @@ static void flush_sample_queue(struct perf_session *s,
+ 		os->last_sample =
+ 			list_entry(head->prev, struct sample_queue, list);
+ 	}
++
++	os->nr_samples = 0;
+ }
+ 
+ /*
+@@ -588,6 +596,7 @@ static void __queue_event(struct sample_queue *new, struct perf_session *s)
+ 	u64 timestamp = new->timestamp;
+ 	struct list_head *p;
+ 
++	++os->nr_samples;
+ 	os->last_sample = new;
+ 
+ 	if (!sample) {
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 514b06d..6e393c9 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -23,6 +23,7 @@ struct ordered_samples {
+ 	struct sample_queue	*sample_buffer;
+ 	struct sample_queue	*last_sample;
+ 	int			sample_buffer_idx;
++	unsigned int		nr_samples;
+ };
+ 
+ struct perf_session {
 -- 
-Jiri Kosina
-SUSE Labs
+1.6.2.5
+
