@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab1J2N00 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 09:26:26 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38279 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152Ab1J2N0X (ORCPT
+	id S933044Ab1J2NqA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 09:46:00 -0400
+Received: from re04.intra2net.com ([82.165.46.26]:49923 "EHLO
+	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932721Ab1J2Np7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 09:26:23 -0400
-From: Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar karkala Mallikarjunayya 
-	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 7/7] Staging: comedi: fix brace coding style issue in das16m1.c
-Date: Sat, 29 Oct 2011 18:55:29 +0530
-Message-Id: <1319894729-1744-7-git-send-email-ravishankar.km@greenturtles.in>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
-References: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
+	Sat, 29 Oct 2011 09:45:59 -0400
+Message-ID: <4EAC0394.5000807@intra2net.com>
+Date: Sat, 29 Oct 2011 15:45:56 +0200
+From: Thomas Jarosch <thomas.jarosch@intra2net.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix off-by-two in arcs_cmdline buffer size check
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das16m1.c file that fixes up a brace coding
-warning found by the checkpatch.pl tool.
+Cause is a misplaced bracket.
 
-Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+The code
+
+    strlen(buf+1)
+
+will be two bytes less than
+
+    strlen(buf)+1
+
+The +1 is in this code to reserve space for an additional space character.
+
+Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
 ---
- drivers/staging/comedi/drivers/das16m1.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+ arch/mips/pmc-sierra/yosemite/prom.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
-index a5ce3b2..b8de374 100644
---- a/drivers/staging/comedi/drivers/das16m1.c
-+++ b/drivers/staging/comedi/drivers/das16m1.c
-@@ -384,20 +384,20 @@ static int das16m1_cmd_exec(struct comedi_device *dev,
- 	byte = 0;
- 	/* if we are using external start trigger (also board dislikes having
- 	 * both start and conversion triggers external simultaneously) */
--	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT) {
-+	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT)
- 		byte |= EXT_TRIG_BIT;
--	}
-+
- 	outb(byte, dev->iobase + DAS16M1_CS);
- 	/* clear interrupt bit */
- 	outb(0, dev->iobase + DAS16M1_CLEAR_INTR);
+diff --git a/arch/mips/pmc-sierra/yosemite/prom.c b/arch/mips/pmc-sierra/yosemite/prom.c
+index cf4c868..a6d5eb3 100644
+--- a/arch/mips/pmc-sierra/yosemite/prom.c
++++ b/arch/mips/pmc-sierra/yosemite/prom.c
+@@ -102,7 +102,7 @@ void __init prom_init(void)
  
- 	/* enable interrupts and internal pacer */
- 	devpriv->control_state &= ~PACER_MASK;
--	if (cmd->convert_src == TRIG_TIMER) {
-+	if (cmd->convert_src == TRIG_TIMER)
- 		devpriv->control_state |= INT_PACER;
--	} else {
-+	else
- 		devpriv->control_state |= EXT_PACER;
--	}
-+
- 	devpriv->control_state |= INTE;
- 	outb(devpriv->control_state, dev->iobase + DAS16M1_INTR_CONTROL);
+ 	/* Get the boot parameters */
+ 	for (i = 1; i < argc; i++) {
+-		if (strlen(arcs_cmdline) + strlen(arg[i] + 1) >=
++		if (strlen(arcs_cmdline) + strlen(arg[i]) + 1 >=
+ 		    sizeof(arcs_cmdline))
+ 			break;
  
-@@ -531,9 +531,8 @@ static void munge_sample_array(short *array, unsigned int num_elements)
- {
- 	unsigned int i;
- 
--	for (i = 0; i < num_elements; i++) {
-+	for (i = 0; i < num_elements; i++)
- 		array[i] = munge_sample(array[i]);
--	}
- }
- 
- static void das16m1_handler(struct comedi_device *dev, unsigned int status)
 -- 
-1.7.0.4
+1.7.6.4
 
