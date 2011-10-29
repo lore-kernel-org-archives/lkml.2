@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab1J2Nty (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 09:49:54 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:48239 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932721Ab1J2Ntx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 09:49:53 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Oct 2011 09:49:53 EDT
-From: Ed Tomlinson <edt@aei.ca>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-Date: Sat, 29 Oct 2011 09:43:08 -0400
-Message-ID: <1777884.rjTZT9Wj01@grover>
-Organization: me
-User-Agent: KMail/4.7.2 (Linux/3.1.0-crc+; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S933085Ab1J2OJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 10:09:57 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:53712 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab1J2OJ4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 10:09:56 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Index: AQHMk/Yfbv94uVs6kUmFh5QHJPmlm5WSkYKA//+MPrCAAIjtgP//i45QgAEkuICAAAnN4A==
+Date: Sat, 29 Oct 2011 14:09:55 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA5443E@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1319645321-9770-1-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz>
+ <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20111028200315.GA30918@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20111029063409.GB2207@suse.de>
+In-Reply-To: <20111029063409.GB2207@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
 Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 October 2011 11:52:22 Dan Magenheimer wrote:
-> Hi Linus --
 
-> SO... Please pull:
+
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Saturday, October 29, 2011 2:34 AM
+> To: KY Srinivasan
+> Cc: Jiri Kosina; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; Dmitry Torokhov
+> Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
 > 
-> git://oss.oracle.com/git/djm/tmem.git #tmem
+> On Fri, Oct 28, 2011 at 08:28:11PM +0000, KY Srinivasan wrote:
+> > > > The guest cannot survive a malicious host; so I think it is safe to say that the
+> > > > guest can assume the host is following the protocol.
+> > >
+> > > That's not good for a very large number of reasons, not the least being
+> > > that we have no idea how secure the hyperv hypervisor is, so making it
+> > > so that there isn't an obvious hole into linux through it, would be a
+> > > good idea.
+> > >
+> > > And yes, I'd say the same thing if this was a KVM or Xen driver as well.
+> > > Please be very defensive in this area of the code, especially as there
+> > > are no performance issues here.
+> >
+> > In the chain of trust, the hypervisor and the host are the foundations
+> > as far as the guest is concerned, since both the hypervisor and the host
+> > can affect the guest in ways that the guest has no obvious way to protect itself.
 > 
+> That's true.
+> 
+> > If the hypervisor/host have security holes, there is not much you can do in the
+> guest
+> > to deal with it.
+> > In this case, I can add checks but I am not sure how useful it is.
+> 
+> I would prefer to see them here, just to be safe, it can not hurt,
+> right?
 
-My wife has an old PC thats short on memory.  Its got Ubuntu
-running on it.  It also has cleancache and zram enabled.  The
-box works better when using these.  Frontcache would improve 
-things further.  It will balance the tmem vs physical memory
-dynamicily making it a better solution than zram.
+I have added a check in the patches I sent out yesterday.
 
-I'd love to see this in the kernel.
+Regards,
 
-Thanks
-Ed Tomlinson
+K. Y
+> 
+> 
+> greg k-h
 
-PS.  At work we use AIX with memory compression.  With the
-workloads we run compression lets the OS act like it has 30%
-more memory.  It works.  It would be nice to have a similar
-facility in Linux.
