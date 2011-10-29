@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932684Ab1J2XtN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:49:13 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47484 "EHLO
+	id S932618Ab1J2XtM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:49:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:41362 "EHLO
 	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab1J2XtL (ORCPT
+	with ESMTP id S932398Ab1J2XtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 29 Oct 2011 19:49:11 -0400
-Date: Sat, 29 Oct 2011 14:06:55 +0200
+Date: Sat, 29 Oct 2011 17:12:15 +0200
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] OMAP: SPI: call pm_runtime_disable in error path and
- remove
-Message-ID: <20111029120655.GE22592@ponder.secretlab.ca>
-References: <1319802259-16565-1-git-send-email-shubhrajyoti@ti.com>
- <1319802259-16565-3-git-send-email-shubhrajyoti@ti.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Cc: linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com
+Subject: Re: [PATCH 1/2] pch_gpio: Support new device LAPIS Semiconductor
+ ML7831 IOH
+Message-ID: <20111029151215.GB10954@ponder.secretlab.ca>
+References: <1319761413-6438-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319802259-16565-3-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1319761413-6438-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 05:14:18PM +0530, Shubhrajyoti D wrote:
-> omap mcspi probe() doesnt call pm_runtime  disable functions
-> in case of failure. remove() doesnt call pm_runtime disable. This could
-> lead to warnings as below on subsequent insmod.
+On Fri, Oct 28, 2011 at 09:23:32AM +0900, Tomoya MORINAGA wrote:
+> ML7831 is companion chip for Intel Atom E6xx series.
 > 
-> ~# insmod spi-omap2-mcspi.ko
-> [  255.383671] omap2_mcspi omap2_mcspi.1: Unbalanced pm_runtime_enable!
-> ...
-> 
-> This patch adds the pm_runtime disable() at appropriate stages.
-> 
-> Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
 
-Nitpick: please use the format "spi/<device>: ...." for the subject
-line of spi patches.  It's just a consistency thing that I like.
-
-Picked up for v3.3, thanks.
+Applied for 3.3, thanks.
 
 g.
 
 > ---
->  drivers/spi/spi-omap2-mcspi.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>  drivers/gpio/Kconfig    |   11 ++++++-----
+>  drivers/gpio/gpio-pch.c |    1 +
+>  2 files changed, 7 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index 471b0f3..6875a0b 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -1195,6 +1195,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->  err4:
->  	spi_master_put(master);
->  err3:
-> +	pm_runtime_disable(&pdev->dev);
->  	kfree(mcspi->dma_channels);
->  err2:
->  	release_mem_region(r->start, resource_size(r));
-> @@ -1216,6 +1217,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
->  	dma_channels = mcspi->dma_channels;
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index a107d44..82c4496 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -387,7 +387,7 @@ config GPIO_LANGWELL
+>  	  Say Y here to support Intel Langwell/Penwell GPIO.
 >  
->  	omap2_mcspi_disable_clocks(mcspi);
-> +	pm_runtime_disable(&pdev->dev);
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	release_mem_region(r->start, resource_size(r));
+>  config GPIO_PCH
+> -	bool "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
+> +	bool "Intel EG20T PCH/LAPIS Semiconductor IOH(ML7223/ML7831) GPIO"
+>  	depends on PCI && X86
+>  	select GENERIC_IRQ_CHIP
+>  	help
+> @@ -395,11 +395,12 @@ config GPIO_PCH
+>  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+>  	  This driver can access PCH GPIO device.
 >  
+> -	  This driver also can be used for OKI SEMICONDUCTOR IOH(Input/
+> -	  Output Hub), ML7223.
+> +	  This driver also can be used for LAPIS Semiconductor IOH(Input/
+> +	  Output Hub), ML7223 and ML7831.
+>  	  ML7223 IOH is for MP(Media Phone) use.
+> -	  ML7223 is companion chip for Intel Atom E6xx series.
+> -	  ML7223 is completely compatible for Intel EG20T PCH.
+> +	  ML7831 IOH is for general purpose use.
+> +	  ML7223/ML7831 is companion chip for Intel Atom E6xx series.
+> +	  ML7223/ML7831 is completely compatible for Intel EG20T PCH.
+>  
+>  config GPIO_ML_IOH
+>  	bool "OKI SEMICONDUCTOR ML7213 IOH GPIO support"
+> diff --git a/drivers/gpio/gpio-pch.c b/drivers/gpio/gpio-pch.c
+> index 64b0e39..8d9116f 100644
+> --- a/drivers/gpio/gpio-pch.c
+> +++ b/drivers/gpio/gpio-pch.c
+> @@ -524,6 +524,7 @@ static DEFINE_PCI_DEVICE_TABLE(pch_gpio_pcidev_id) = {
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8803) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8014) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8043) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_ROHM, 0x8803) },
+>  	{ 0, }
+>  };
+>  MODULE_DEVICE_TABLE(pci, pch_gpio_pcidev_id);
 > -- 
-> 1.7.1
+> 1.7.4.4
 > 
-> 
-> ------------------------------------------------------------------------------
-> The demand for IT networking professionals continues to grow, and the
-> demand for specialized networking skills is growing even more rapidly.
-> Take a complimentary Learning@Cisco Self-Assessment and learn 
-> about Cisco certifications, training, and career opportunities. 
-> http://p.sf.net/sfu/cisco-dev2dev
-> _______________________________________________
-> spi-devel-general mailing list
-> spi-devel-general@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
