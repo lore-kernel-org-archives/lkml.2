@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab1J2P3n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 11:29:43 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51478 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932944Ab1J2P3m convert rfc822-to-8bit (ORCPT
+	id S933450Ab1J2PnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 11:43:16 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:57084 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932484Ab1J2PnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 11:29:42 -0400
-MIME-Version: 1.0
-X-Originating-IP: [89.138.18.247]
-In-Reply-To: <4EAAD351.70805@redhat.com>
-References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
-	<1319385413-29665-5-git-send-email-gilad@benyossef.com>
-	<4EAAD351.70805@redhat.com>
-Date: Sat, 29 Oct 2011 17:29:41 +0200
-Message-ID: <CAOtvUMd8Z_jbs__+cVG2+ZkPZLqGkJGym402RMRYGDDjT73bkg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/6] mm: Only IPI CPUs to drain local pages if they exist
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 29 Oct 2011 11:43:14 -0400
+Message-ID: <1319902984.2586.35.camel@edumazet-laptop>
+Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sat, 29 Oct 2011 17:43:04 +0200
+In-Reply-To: <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
+References: <1319764761.23112.14.camel@edumazet-laptop>
+	 <20111028012521.GF25795@one.firstfloor.org>
+	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
+	 <1319766293.6759.17.camel@deadeye>
+	 <1319770376.23112.58.camel@edumazet-laptop>
+	 <1319772566.6759.27.camel@deadeye>
+	 <1319777025.23112.67.camel@edumazet-laptop>
+	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
+	 <1319803781.23112.113.camel@edumazet-laptop>
+	 <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
+	 <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
+	 <1319813252.23112.122.camel@edumazet-laptop>
+	 <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 6:07 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 10/23/2011 11:56 AM, Gilad Ben-Yossef wrote:
->>
->> Use a cpumask to track CPUs with per-cpu pages in any zone
->> and only send an IPI requesting CPUs to drain these pages
->> to the buddy allocator if they actually have pages.
->
->> +/* Which CPUs have per cpu pages �*/
->> +cpumask_var_t cpus_with_pcp;
->> +static DEFINE_PER_CPU(unsigned long, total_cpu_pcp_count);
->
-> Does the flushing happen so frequently that it is worth keeping this
-> state on a per-cpu basis, or would it be better to check each CPU's
-> pcp info and assemble a cpumask at flush time like done in patch 5?
->
+Le vendredi 28 octobre 2011 à 07:55 -0700, Linus Torvalds a écrit :
 
-No, I don't  believe it is frequent at all. I will try to re-work the
-patch as suggested.
+> Maybe we should make it a generic helper macro ("ACCESS_AT_MOST_ONCE()")?
+> 
+> Comments? I think I'm open to tested patches..
+> 
 
-Thanks,
-Gilad
-
->
-
->
-> --
-> All rights reversed
->
+I am currently travelling, but can do that Monday/Tuesday if nobody
+beats me ;)
 
 
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"I've seen things you people wouldn't believe. Goto statements used to
-implement co-routines. I watched C structures being stored in
-registers. All those moments will be lost in time... like tears in
-rain... Time to die. "
