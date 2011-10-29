@@ -1,55 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab1J2JLA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 05:11:00 -0400
-Received: from co202.xi-lite.net ([149.6.83.202]:34002 "EHLO co202.xi-lite.net"
+	id S1754937Ab1J2J3P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 05:29:15 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:3260 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932152Ab1J2JK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 05:10:59 -0400
-Date: Sat, 29 Oct 2011 11:09:46 +0200
-From: Ivan Djelic <ivan.djelic@parrot.com>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "mikedunn@newsguy.com" <mikedunn@newsguy.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/13] mtd/docg3: add ECC correction code
-Message-ID: <20111029090946.GB12046@parrot.com>
-References: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>
- <1319824292-11085-13-git-send-email-robert.jarzmik@free.fr>
- <20111029085248.GA12046@parrot.com>
+	id S1752026Ab1J2J3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 05:29:13 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4EABC757.7080505@broadcom.com>
+Date: Sat, 29 Oct 2011 11:28:55 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
+ Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111029085248.GA12046@parrot.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Julian Calaby" <julian.calaby@gmail.com>
+cc: "Julia Lawall" <julia@diku.dk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/5] drivers/net/wireless/brcm80211/brcmsmac/dma.c:
+ eliminate a null pointer dereference
+References: <1319846297-2985-2-git-send-email-julia@diku.dk>
+ <4EAB6495.40707@gmail.com>
+In-Reply-To: <4EAB6495.40707@gmail.com>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=B5E1A116
+X-WSS-ID: 62B516913JW10827114-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 10:52:48AM +0200, Ivan Djelic wrote:
-> Just a side note: if you need to get maximum performance from the BCH library,
-> you can set fixed values for M and T in your Kconfig, with something like:
+On 10/29/2011 04:27 AM, Julian Calaby wrote:
+> On 29/10/11 10:58, Julia Lawall wrote:
+>> From: Julia Lawall <julia@diku.dk>
+>>
+>> Delete di->name from the error reporting code, as it is meaningless if di
+>> is NULL.
+>>
+>> The semantic match that finds this problem is as follows:
+>> (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @r@
+>> expression E, E1;
+>> identifier f;
+>> statement S1,S2,S3;
+>> @@
+>>
+>> if (E == NULL)
+>> {
+>>   ... when != if (E == NULL || ...) S1 else S2
+>>       when != E = E1
+>> *E->f
+>>   ... when any
+>>   return ...;
+>> }
+>> else S3
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <julia@diku.dk>
+>>
+>> ---
+>>  drivers/net/wireless/brcm80211/brcmsmac/dma.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+>> index b56a302..1d66f53 100644
+>> --- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+>> +++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+>> @@ -361,7 +361,7 @@ static uint _dma_ctrlflags(struct dma_info *di, uint mask, uint flags)
+>>  	uint dmactrlflags = di->dma.dmactrlflags;
 > 
->  config MTD_DOCG3
->         tristate "M-Systems Disk-On-Chip G3"
-> 	select BCH
+> If di is null, we've already failed as it's dereferenced here.
+> 
+>>  	if (di == NULL) {
+>> -		DMA_ERROR(("%s: _dma_ctrlflags: NULL dma handle\n", di->name));
+>> +		DMA_ERROR(("_dma_ctrlflags: NULL dma handle\n"));
+>>  		return 0;
+>>  	}
+> 
+> So, a better patch would be something like this:
+> 
+> (apologies if this doesn't apply - I've pretty much built it manually)
+> 
+> ---
+> 
+> Though it's unlikely, di may be null, so we can't dereference
+> di->dma.dmactrlflags until we've checked it.
+> 
+> Move this de-reference after the check, and adjust the error
+> message to not require de-referencing di.
+> 
+> This is based upon Julia's original patch:
+> <1319846297-2985-2-git-send-email-julia@diku.dk>
+> 
+> Reported-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Julian Calaby <julian.calaby@gmail.com>
+> CC: Julia Lawall <julia@diku.dk>
+> 
+> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/dma.c b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+> index b56a302..6ebec8f 100644
+> --- a/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+> +++ b/drivers/net/wireless/brcm80211/brcmsmac/dma.c
+> @@ -358,13 +358,14 @@ static uint nrxdactive(struct dma_info *di, uint h, uint t
+>  
+>  static uint _dma_ctrlflags(struct dma_info *di, uint mask, uint flags)
+>  {
+> -       uint dmactrlflags = di->dma.dmactrlflags;
+> +       uint dmactrlflags;
+>  
+>         if (di == NULL) {
+> -               DMA_ERROR(("%s: _dma_ctrlflags: NULL dma handle\n", di->name));
+> +               DMA_ERROR(("_dma_ctrlflags: NULL dma handle\n"));
+>                 return 0;
+>         }
+>  
+> +       dmactrlflags = di->dma.dmactrlflags;
+>         dmactrlflags &= ~mask;
+>         dmactrlflags |= flags;
+>  
+> 
+> 
+> 
+> 
 
-Oops, just noticed that you would also need to add this line here:
-	select BCH_CONST_PARAMS
+Hi Julian, Julia
 
->         ---help---
->           This provides an MTD device driver for the M-Systems DiskOnChip
->           G3 devices.
-> 
-> if MTD_DOCG3
-> config BCH_CONST_M
-> 	default 14
-> config BCH_CONST_T
-> 	default 4
-> endif
-> 
-> 
-> The only drawback is that it won't work if you select your DOCG3 driver and, at
-> the same time, other MTD drivers that also use fixed, but different parameters.
+That change looks good, but it does not apply on top of our pending
+patches. Probably need to resend those after the merge window. I will
+create a applying patch and send it to John (and resend later if
+needed). Thanks for finding this one.
+
+Gr. AvS
+
