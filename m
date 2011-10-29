@@ -1,53 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933864Ab1J2SaD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 14:30:03 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40059 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932323Ab1J2SaA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 14:30:00 -0400
+	id S933888Ab1J2Spq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 14:45:46 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42092 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933848Ab1J2Spo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 14:45:44 -0400
+Date: Sat, 29 Oct 2011 20:45:37 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: David Herrmann <dh.herrmann@googlemail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/5 v3] drivers/hid/hid-roccat.c: eliminate a null pointer
+ dereference
+In-Reply-To: <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz>
+Message-ID: <Pine.LNX.4.64.1110292045180.10808@ask.diku.dk>
+References: <1319846297-2985-3-git-send-email-julia@diku.dk>
+ <20111029062412.GG14881@longonot.mountain> <4EABC937.60600@broadcom.com>
+ <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
+ <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk> <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20111024.182142.2299822581628382143.davem@davemloft.net>
-References: <1319272916-5541-1-git-send-email-kth3321@gmail.com>
-	<20111024.182142.2299822581628382143.davem@davemloft.net>
-Date: Sun, 30 Oct 2011 03:29:59 +0900
-Message-ID: <CAOkfWjf722hrPs4_Sj2vACHMD_8UaEx7pHN6JaLZ+ysFdaELcg@mail.gmail.com>
-Subject: Re: [PATCH net-next] w5300: add WIZnet W5300 Ethernet driver
-From: Taehun Kim <kth3321@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, romieu@fr.zoreil.com,
-        suhwan@wiznet.co.kr, bongbong@wiznet.co.kr
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/10/25 David Miller <davem@davemloft.net>:
-> From: Taehun Kim <kth3321@gmail.com>
-> Date: Sat, 22 Oct 2011 17:41:56 +0900
->
->> +struct wiz_private {
->> +     void __iomem *base;
->> +     struct net_device *dev;
->> +     u8 rxbuf_conf[MAX_SOCK_NUM];
->> +     u8 txbuf_conf[MAX_SOCK_NUM];
->> +     struct net_device_stats stats;
->> +     struct napi_struct napi;
->> +     spinlock_t lock;
->> +     u32 msg_enable;
->> +};
->
-> You don't need to have a private net_device_stats, just use the
-> one in struct net_device, and then you can also get rid of your
-> private ->ndo_get_stats() method.
->
+>From nobody Sat Oct 29 01:38:55 CEST 2011
+From: Julia Lawall <julia@diku.dk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org,linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5 v3] drivers/hid/hid-roccat.c: eliminate a null pointer dereference
 
-Thank you for your feedback :)
+From: Julia Lawall <julia@diku.dk>
 
-I am working on this drive by referencing other Ethernet drivers.
-I have one question.
+It is not possible to take the lock in device if device is NULL.
+The mutex_lock is thus moved after the NULL test.  New error handling
+labels are added at the end to differentiate between the cases where
+different sets of locks should be unlocks, and between whether or not
+reader should be freed (only on error).
 
-Should I suggest the updated driver patch to this thread or new
-thread?
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@
+
+if (E == NULL)
+{
+  ... when != if (E == NULL || ...) S1 else S2
+      when != E = E1
+*E->f
+  ... when any
+  return ...;
+}
+else S3
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+Moved the error handling code back to the end.
+
+ drivers/hid/hid-roccat.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
+index 2596321..b685b04 100644
+--- a/drivers/hid/hid-roccat.c
++++ b/drivers/hid/hid-roccat.c
+@@ -163,27 +163,27 @@ static int roccat_open(struct inode *inode, struct file *file)
+ 
+ 	device = devices[minor];
+ 
+-	mutex_lock(&device->readers_lock);
+-
+ 	if (!device) {
+ 		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
+ 		error = -ENODEV;
+-		goto exit_err;
++		goto exit_err_devices;
+ 	}
+ 
++	mutex_lock(&device->readers_lock);
++
+ 	if (!device->open++) {
+ 		/* power on device on adding first reader */
+ 		error = hid_hw_power(device->hid, PM_HINT_FULLON);
+ 		if (error < 0) {
+ 			--device->open;
+-			goto exit_err;
++			goto exit_err_readers;
+ 		}
+ 
+ 		error = hid_hw_open(device->hid);
+ 		if (error < 0) {
+ 			hid_hw_power(device->hid, PM_HINT_NORMAL);
+ 			--device->open;
+-			goto exit_err;
++			goto exit_err_readers;
+ 		}
+ 	}
+ 
+@@ -194,13 +194,13 @@ static int roccat_open(struct inode *inode, struct file *file)
+ 	list_add_tail(&reader->node, &device->readers);
+ 	file->private_data = reader;
+ 
+-exit_unlock:
++exit_err_readers:
+ 	mutex_unlock(&device->readers_lock);
++exit_err_devices:
+ 	mutex_unlock(&devices_lock);
++	if (error)
++		kfree(reader);
+ 	return error;
+-exit_err:
+-	kfree(reader);
+-	goto exit_unlock;
+ }
+ 
+ static int roccat_release(struct inode *inode, struct file *file)
