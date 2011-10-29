@@ -1,99 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab1J2XtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:49:16 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41362 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab1J2XtN (ORCPT
+	id S933250Ab1J2Xto (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:49:44 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60791 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932713Ab1J2XtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 19:49:13 -0400
-Date: Sat, 29 Oct 2011 17:12:28 +0200
+	Sat, 29 Oct 2011 19:49:14 -0400
+Date: Sat, 29 Oct 2011 14:07:09 +0200
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 1/2] spi-topcliff-pch: Support new device LAPIS
- Semiconductor ML7831 IOH
-Message-ID: <20111029151228.GC10954@ponder.secretlab.ca>
-References: <1319762122-7019-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] OMAP: SPI: Correct the error path
+Message-ID: <20111029120709.GF22592@ponder.secretlab.ca>
+References: <1319802259-16565-1-git-send-email-shubhrajyoti@ti.com>
+ <1319802259-16565-4-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319762122-7019-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>
+In-Reply-To: <1319802259-16565-4-git-send-email-shubhrajyoti@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 09:35:21AM +0900, Tomoya MORINAGA wrote:
-> ML7831 is companion chip for Intel Atom E6xx series.
+On Fri, Oct 28, 2011 at 05:14:19PM +0530, Shubhrajyoti D wrote:
+> Currently McSPI driver doesnt follow correct failure fallback steps
+> attempting to correct the same.
+> Also
+> -  label names changed  to give meaningful names.
+> - Setting the driver data to NULL in remove
 > 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+> Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 
-Applied both for 3.3, thanks.
+Applied for v3.3, thanks.
 
 g.
 
 > ---
->  drivers/spi/Kconfig            |    6 +++---
->  drivers/spi/spi-topcliff-pch.c |    5 ++++-
->  2 files changed, 7 insertions(+), 4 deletions(-)
+>  drivers/spi/spi-omap2-mcspi.c |   32 ++++++++++++++++++++------------
+>  1 files changed, 20 insertions(+), 12 deletions(-)
 > 
-> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-> index a1fd73d..6168516 100644
-> --- a/drivers/spi/Kconfig
-> +++ b/drivers/spi/Kconfig
-> @@ -346,14 +346,14 @@ config SPI_TI_SSP
->  	  serial port.
+> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+> index 6875a0b..abe2fee 100644
+> --- a/drivers/spi/spi-omap2-mcspi.c
+> +++ b/drivers/spi/spi-omap2-mcspi.c
+> @@ -1115,13 +1115,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
+>  	if (mcspi->wq == NULL) {
+>  		status = -ENOMEM;
+> -		goto err1;
+> +		goto free_master;
+>  	}
 >  
->  config SPI_TOPCLIFF_PCH
-> -	tristate "Intel EG20T PCH/OKI SEMICONDUCTOR ML7213 IOH SPI controller"
-> +	tristate "Intel EG20T PCH/LAPIS Semicon IOH(ML7213/ML7223/ML7831) SPI"
->  	depends on PCI
->  	help
->  	  SPI driver for the Topcliff PCH (Platform Controller Hub) SPI bus
->  	  used in some x86 embedded processors.
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (r == NULL) {
+>  		status = -ENODEV;
+> -		goto err1;
+> +		goto free_master;
+>  	}
+>  	r->start += pdata->regs_offset;
+>  	r->end += pdata->regs_offset;
+> @@ -1129,14 +1129,14 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  	if (!request_mem_region(r->start, resource_size(r),
+>  				dev_name(&pdev->dev))) {
+>  		status = -EBUSY;
+> -		goto err1;
+> +		goto free_master;
+>  	}
 >  
-> -	  This driver also supports the ML7213, a companion chip for the
-> -	  Atom E6xx series and compatible with the Intel EG20T PCH.
-> +	  This driver also supports the ML7213/ML7223/ML7831, a companion chip
-> +	  for the Atom E6xx series and compatible with the Intel EG20T PCH.
+>  	mcspi->base = ioremap(r->start, resource_size(r));
+>  	if (!mcspi->base) {
+>  		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
+>  		status = -ENOMEM;
+> -		goto err2;
+> +		goto release_region;
+>  	}
 >  
->  config SPI_TXX9
->  	tristate "Toshiba TXx9 SPI controller"
-> diff --git a/drivers/spi/spi-topcliff-pch.c b/drivers/spi/spi-topcliff-pch.c
-> index 6a80749..2b1e966 100644
-> --- a/drivers/spi/spi-topcliff-pch.c
-> +++ b/drivers/spi/spi-topcliff-pch.c
-> @@ -95,16 +95,18 @@
->  #define PCH_CLOCK_HZ		50000000
->  #define PCH_MAX_SPBR		1023
+>  	mcspi->dev = &pdev->dev;
+> @@ -1151,7 +1151,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  			GFP_KERNEL);
 >  
-> -/* Definition for ML7213 by OKI SEMICONDUCTOR */
-> +/* Definition for ML7213/ML7831 by OKI SEMICONDUCTOR */
->  #define PCI_VENDOR_ID_ROHM		0x10DB
->  #define PCI_DEVICE_ID_ML7213_SPI	0x802c
->  #define PCI_DEVICE_ID_ML7223_SPI	0x800F
-> +#define PCI_DEVICE_ID_ML7831_SPI	0x8816
+>  	if (mcspi->dma_channels == NULL)
+> -		goto err2;
+> +		goto unmap_io;
 >  
->  /*
->   * Set the number of SPI instance max
->   * Intel EG20T PCH :		1ch
->   * OKI SEMICONDUCTOR ML7213 IOH :	2ch
->   * OKI SEMICONDUCTOR ML7223 IOH :	1ch
-> + * OKI SEMICONDUCTOR ML7831 IOH :	1ch
->  */
->  #define PCH_SPI_MAX_DEV			2
+>  	for (i = 0; i < master->num_chipselect; i++) {
+>  		char dma_ch_name[14];
+> @@ -1181,26 +1181,33 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
+>  	}
 >  
-> @@ -218,6 +220,7 @@ static struct pci_device_id pch_spi_pcidev_id[] = {
->  	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_GE_SPI),    1, },
->  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7213_SPI), 2, },
->  	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7223_SPI), 1, },
-> +	{ PCI_VDEVICE(ROHM, PCI_DEVICE_ID_ML7831_SPI), 1, },
->  	{ }
->  };
+> +	if (status < 0)
+> +		goto dma_chnl_free;
+> +
+>  	pm_runtime_enable(&pdev->dev);
 >  
+>  	if (status || omap2_mcspi_master_setup(mcspi) < 0)
+> -		goto err3;
+> +		goto disable_pm;
+>  
+>  	status = spi_register_master(master);
+>  	if (status < 0)
+> -		goto err4;
+> +		goto err_spi_register;
+>  
+>  	return status;
+>  
+> -err4:
+> +err_spi_register:
+>  	spi_master_put(master);
+> -err3:
+> +disable_pm:
+>  	pm_runtime_disable(&pdev->dev);
+> +dma_chnl_free:
+>  	kfree(mcspi->dma_channels);
+> -err2:
+> -	release_mem_region(r->start, resource_size(r));
+> +unmap_io:
+>  	iounmap(mcspi->base);
+> -err1:
+> +release_region:
+> +	release_mem_region(r->start, resource_size(r));
+> +free_master:
+> +	kfree(master);
+> +	platform_set_drvdata(pdev, NULL);
+>  	return status;
+>  }
+>  
+> @@ -1226,6 +1233,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
+>  	iounmap(base);
+>  	kfree(dma_channels);
+>  	destroy_workqueue(mcspi->wq);
+> +	platform_set_drvdata(pdev, NULL);
+>  
+>  	return 0;
+>  }
 > -- 
-> 1.7.4.4
+> 1.7.1
 > 
+> 
+> ------------------------------------------------------------------------------
+> The demand for IT networking professionals continues to grow, and the
+> demand for specialized networking skills is growing even more rapidly.
+> Take a complimentary Learning@Cisco Self-Assessment and learn 
+> about Cisco certifications, training, and career opportunities. 
+> http://p.sf.net/sfu/cisco-dev2dev
+> _______________________________________________
+> spi-devel-general mailing list
+> spi-devel-general@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
