@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933734Ab1J2Rwu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 13:52:50 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40733 "EHLO
+	id S933753Ab1J2SBq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 14:01:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41128 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933544Ab1J2Rwt (ORCPT
+	with ESMTP id S933606Ab1J2SBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 13:52:49 -0400
+	Sat, 29 Oct 2011 14:01:45 -0400
 MIME-Version: 1.0
-Date: Sat, 29 Oct 2011 19:52:47 +0200
-Message-ID: <CANq1E4SovxjRsuDN3PMqCnjBMMQeHWnvbwreXJWcDj7D7wUxWw@mail.gmail.com>
-Subject: [BUG] kobject module-ref race-condition or unsafe module_put(THIS_MODULE)
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
+X-Originating-IP: [67.170.233.23]
+In-Reply-To: <20111029141323.GA7036@redhat.com>
+References: <1319832688-30336-1-git-send-email-scott@netsplit.com>
+	<20111029141323.GA7036@redhat.com>
+Date: Sat, 29 Oct 2011 11:01:44 -0700
+Message-ID: <CA+bD78hSSDkOBsNTy=VjnzjYSMMtw_B6Gu2hX39G7zp2smGUVg@mail.gmail.com>
+Subject: Re: [PATCH] coredump: wait on the core pattern umh at least once
+From: Scott James Remnant <scott@netsplit.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
+        Neil Horman <nhorman@tuxdriver.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, Oct 29, 2011 at 7:13 AM, Oleg Nesterov <oleg@redhat.com> wrote:
 
-I currently do not understand how kobjects keep a reference to the
-owning module. Lets assume I provide a "release" method via a
-kobj_type for my kobject. I want to go sure my module is still alive
-when this method is called. Otherwise, this "release" method would be
-no longer available and we would jump into invalid memory. Therefore,
-I need to take a reference to my own module. This seems trivial.
-However, how do I release this reference again?
-The most simple solution might be calling module_put(THIS_MODULE) in
-my "release" method. However, if this call drops the module-refcount
-to 0 and immediately removes the module, the module_put() returns to
-my "release" function which now is no longer available.
+> On 10/28, Scott James Remnant wrote:
+> >
+> > If a thread crashes as a result of a signal on the thread group leader
+> > that signal can still be pending,
+>
+> No. do_coredump() clears TIF_SIGPENDING.
+>
+I'm definitely seeing cases where SIGTERM sent to the process group
+that chrome is in results in one of chrome's thread's crashing (not
+your concern, obviously), but at the point it enters this function
+TIF_SIGPENDING is definitely set and the signal is SIGTERM.
 
-It seems quite unlikely that the cleanup of a module is faster than
-two function-returns, however, theoretically there is a race
-condition.
+The SIGTERM is in the shared pending set.
 
-The following example is based on fs/char_dev.c. Lets assume my module
-provides a  kobject structure. On init I take a ref to myself with
-try_module_get(THIS_MODULE).
-I add my own kobj_type with the following release function:
+> I already tried to explain why this signal_pending() was added, but
+> apparently I was not clear. I'll try again in the previous thread.
+>
+Could you add me to the Cc: of that thread?
 
-static void mydev_put(struct mydev *p)
-{
-	if (p) {
-		kobject_put(&p->kobj);
-		module_put(THIS_MODULE);
-	}
-}
-
-How can we go sure that module_put() doesn't free my own module before
-it returns? Isn't a call to module_put(THIS_MODULE) always unsafe
-(unless I own at least two references)?
-
-grep "module_put(THIS_MODULE)" -r ./kernel_src/ | wc -l
-returns 118 results.
-I doubt that all these 118 places can got sure that they own at least
-2 references when calling this, otherwise it would be quite unsafe to
-call this function.
-
-
-Maybe I have missed some important fact here, but this seems quite
-unsafe to me. Adding a "owner" field to a kobj_type would fix that
-issue for kobjects/devices.
-
-Regards
-David
+Scott
