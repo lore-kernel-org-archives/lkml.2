@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753Ab1J2SBq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 14:01:46 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:41128 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933606Ab1J2SBp (ORCPT
+	id S933766Ab1J2SGv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 14:06:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40705 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029Ab1J2SGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 14:01:45 -0400
+	Sat, 29 Oct 2011 14:06:50 -0400
+Message-ID: <4EAC40B5.5060709@earnshaw.org.uk>
+Date: Sat, 29 Oct 2011 19:06:45 +0100
+From: Matt Earnshaw <matt@earnshaw.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Originating-IP: [67.170.233.23]
-In-Reply-To: <20111029141323.GA7036@redhat.com>
-References: <1319832688-30336-1-git-send-email-scott@netsplit.com>
-	<20111029141323.GA7036@redhat.com>
-Date: Sat, 29 Oct 2011 11:01:44 -0700
-Message-ID: <CA+bD78hSSDkOBsNTy=VjnzjYSMMtw_B6Gu2hX39G7zp2smGUVg@mail.gmail.com>
-Subject: Re: [PATCH] coredump: wait on the core pattern umh at least once
-From: Scott James Remnant <scott@netsplit.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: Intermittent hard locks on 3.0.7-1 without information
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 7:13 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+[1.] 3.0.7-1 appears to cause hard locks intermittently, without information
 
-> On 10/28, Scott James Remnant wrote:
-> >
-> > If a thread crashes as a result of a signal on the thread group leader
-> > that signal can still be pending,
->
-> No. do_coredump() clears TIF_SIGPENDING.
->
-I'm definitely seeing cases where SIGTERM sent to the process group
-that chrome is in results in one of chrome's thread's crashing (not
-your concern, obviously), but at the point it enters this function
-TIF_SIGPENDING is definitely set and the signal is SIGTERM.
+[2.] Full description:
+The system occasionally (approx. once or twice an hour) completely locks 
+up, without caps-lock lights or responding to SysRq. Sounds being played 
+loop, graphics output freezes etc. No clues are left in dmesg, or in any 
+of the logs in /var/log. Downgrading to 3.0.6-2 resolves the issue.
 
-The SIGTERM is in the shared pending set.
+[4.1.] Kernel version (from /proc/version):
+(3.0.7-1) Linux version 3.0-ARCH (tobias@T-POWA-LX) (gcc version 4.6.1 
+20110819 (prerelease) (GCC) ) #1 SMP PREEMPT Wed Oct 19 10:27:51 CEST 2011
 
-> I already tried to explain why this signal_pending() was added, but
-> apparently I was not clear. I'll try again in the previous thread.
->
-Could you add me to the Cc: of that thread?
+[4.2.] Kernel .config file:
+http://pastebin.com/XTXmUX8m
 
-Scott
+[5.] Most recent kernel version which did not have the bug:
+3.0.6-2
+
+[8.1.] Software (add the output of the ver_linux script here)
+http://pastebin.com/qw8a9RFH
+
+[8.2.] Processor information (from /proc/cpuinfo):
+http://pastebin.com/AN0Df77y
+
+[8.3.] Module information (from /proc/modules):
+http://pastebin.com/LMThRSmg
+
+[8.4.] Loaded driver and hardware information (/proc/ioports, /proc/iomem)
+ioports: http://pastebin.com/R1aX4H8H
+iomem: http://pastebin.com/z8srsFbD
+
+[8.5.] PCI information ('lspci -vvv' as root)
+http://pastebin.com/GbniVsFm
+
+[8.6.] SCSI information (from /proc/scsi/scsi)
+Attached devices:
+Host: scsi0 Channel: 00 Id: 00 Lun: 00
+   Vendor: ATA      Model: HITACHI HTS72323 Rev: EC2Z
+   Type:   Direct-Access                    ANSI  SCSI revision: 05
+
+[X.] Other notes, patches, fixes, workarounds:
+Refer to https://bugs.archlinux.org/task/26614 for others with what is 
+possibly the same problem.
