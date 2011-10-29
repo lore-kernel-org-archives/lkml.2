@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab1J2RA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 13:00:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53661 "EHLO mx2.suse.de"
+	id S933536Ab1J2RFL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 13:05:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53982 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932930Ab1J2RA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 13:00:27 -0400
-Date: Sat, 29 Oct 2011 19:00:24 +0200 (CEST)
+	id S932930Ab1J2RFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 13:05:10 -0400
+Date: Sat, 29 Oct 2011 19:05:08 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Julia Lawall <julia@diku.dk>
-Cc: David Herrmann <dh.herrmann@googlemail.com>,
-        Arend van Spriel <arend@broadcom.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5 v2] drivers/hid/hid-roccat.c: eliminate a null pointer
- dereference
-In-Reply-To: <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk>
-Message-ID: <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz>
-References: <1319846297-2985-3-git-send-email-julia@diku.dk> <20111029062412.GG14881@longonot.mountain> <4EABC937.60600@broadcom.com> <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com> <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
+Message-ID: <alpine.LNX.2.00.1110291904190.3541@pobox.suse.cz>
+References: <1319645321-9770-1-git-send-email-kys@microsoft.com> <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz> <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com> <20111028200315.GA30918@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,78 +27,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Oct 2011, Julia Lawall wrote:
+On Fri, 28 Oct 2011, KY Srinivasan wrote:
 
-> From: Julia Lawall <julia@diku.dk>
+> > > > >  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
+> > > > >  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
+> > > > >  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
+> > > > > +obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
+> > > >
+> > > > I'd prefer a bit to follow the current naming of the drivers in
+> > > > drivers/hid directory ... all the device-specific (vendor-specific)
+> > > > drivers currently are called hid-<vendor> or similar.
+> > > >
+> > > > We could talk about changing this naming scheme, but before we reach any
+> > > > conclusion on this, I'd prefer this to stay for all drivers if possible.
+> > >
+> > > Do you want the driver module to conform to the naming scheme you have?
+> > > Greg, in the past has resisted changing driver names, but I have no objection
+> > > to conforming to the naming convention you have.
+> > 
+> > I recommend following the proper naming scheme.  As this driver is
+> > auto-loaded when the virtual hardware is seen, the name really doesn't
+> > matter at all.
+> > 
+> > So, how about 'hid-hyperv' or 'hid-hv'?
 > 
-> It is not possible to take the lock in device if device is NULL.
-> The mutex_lock is thus moved after the NULL test, and the relevant part of
-> the shared error handling code is moved up.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> expression E, E1;
-> identifier f;
-> statement S1,S2,S3;
-> @@
-> 
-> if (E == NULL)
-> {
->   ... when != if (E == NULL || ...) S1 else S2
->       when != E = E1
-> *E->f
->   ... when any
->   return ...;
-> }
-> else S3
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> mutex_lock changed to mutex_unlock in error handling code
-> 
->  drivers/hid/hid-roccat.c |    9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
-> index 2596321..36a28b8 100644
-> --- a/drivers/hid/hid-roccat.c
-> +++ b/drivers/hid/hid-roccat.c
-> @@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
->  
->  	device = devices[minor];
->  
-> -	mutex_lock(&device->readers_lock);
-> -
->  	if (!device) {
->  		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
-> -		error = -ENODEV;
-> -		goto exit_err;
-> +		kfree(reader);
-> +		mutex_unlock(&devices_lock);
-> +		return -ENODEV;
->  	}
->  
-> +	mutex_lock(&device->readers_lock);
-> +
->  	if (!device->open++) {
->  		/* power on device on adding first reader */
->  		error = hid_hw_power(device->hid, PM_HINT_FULLON);
+> I will go with hid-hv  if there are no objections.
 
-Julia,
-
-thanks a lot for fixing this.
-
-Could you please redo the patch in a way that it adds second 
-'exit_unlock1' label (and renames 'exit_unlock' to 'exit_unlock2') (or 
-any appropriate variation of the names) and preserve error path using goto 
-instead of mixture of returns and gotos that this patch would introduce?
-
-Thanks,
+OK by me, thanks.
 
 -- 
 Jiri Kosina
