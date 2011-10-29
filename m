@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab1J2XvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:51:06 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52327 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933840Ab1J2XuC (ORCPT
+	id S933929Ab1J2Xvb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:51:31 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60795 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab1J2Xt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 19:50:02 -0400
+	Sat, 29 Oct 2011 19:49:58 -0400
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, vgoyal@redhat.com
 Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/10] block, cfq: move icq cache management to block core
-Date: Sat, 29 Oct 2011 16:49:44 -0700
-Message-Id: <1319932187-7631-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/10] block, cfq: move cfqd->icq_list to request_queue and add request->elv.icq
+Date: Sat, 29 Oct 2011 16:49:42 -0700
+Message-Id: <1319932187-7631-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1319932187-7631-1-git-send-email-tj@kernel.org>
 References: <1319932187-7631-1-git-send-email-tj@kernel.org>
@@ -21,255 +21,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let elevators set ->icq_size and ->icq_align in elevator_type and
-elv_register() and elv_unregister() respectively create and destroy
-kmem_cache for icq.
+Most of icq management is about to be moved out of cfq into blk-ioc.
+This patch prepares for it.
 
-* elv_register() now can return failure.  All callers updated.
+* Move cfqd->icq_list to request_queue->icq_list
 
-* icq caches are automatically named "ELVNAME_io_cq".
+* Make request explicitly point to icq instead of through elevator
+  private data.  ->elevator_private[3] is replaced with sub struct elv
+  which contains icq pointer and priv[2].  cfq is updated accordingly.
 
-* cfq_slab_setup/kill() are collapsed into cfq_init/exit().
+* Meaningless clearing of ->elevator_private[0] removed from
+  elv_set_request().  At that point in code, the field was guaranteed
+  to be %NULL anyway.
 
-* While at it, minor indentation change for iosched_cfq.elevator_name
-  for consistency.
-
-This will help moving icq management to block core.  This doesn't
-introduce any functional change.
+This patch doesn't introduce any functional change.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/cfq-iosched.c      |   48 ++++++++++++++-------------------------------
- block/deadline-iosched.c |    4 +--
- block/elevator.c         |   37 +++++++++++++++++++++++++++++++++-
- block/noop-iosched.c     |    4 +--
- include/linux/elevator.h |   11 +++++++++-
- 5 files changed, 62 insertions(+), 42 deletions(-)
+ block/blk-core.c       |    1 +
+ block/cfq-iosched.c    |   28 +++++++++++-----------------
+ block/elevator.c       |    2 --
+ include/linux/blkdev.h |   10 ++++++++--
+ 4 files changed, 20 insertions(+), 21 deletions(-)
 
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 74b44ab..5315f09 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -492,6 +492,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 		    laptop_mode_timer_fn, (unsigned long) q);
+ 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
+ 	INIT_LIST_HEAD(&q->timeout_list);
++	INIT_LIST_HEAD(&q->icq_list);
+ 	INIT_LIST_HEAD(&q->flush_queue[0]);
+ 	INIT_LIST_HEAD(&q->flush_queue[1]);
+ 	INIT_LIST_HEAD(&q->flush_data_in_flight);
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 048fa69..06e59ab 100644
+index d2f16fc..9bc5ecc 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -3914,34 +3914,6 @@ static void *cfq_init_queue(struct request_queue *q)
- 	return cfqd;
- }
+@@ -54,9 +54,9 @@ static const int cfq_hist_divisor = 4;
+ #define CFQQ_SECT_THR_NONROT	(sector_t)(2 * 32)
+ #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
  
--static void cfq_slab_kill(void)
--{
--	/*
--	 * Caller already ensured that pending RCU callbacks are completed,
--	 * so we should have no busy allocations at this point.
--	 */
--	if (cfq_pool)
--		kmem_cache_destroy(cfq_pool);
--	if (cfq_icq_pool)
--		kmem_cache_destroy(cfq_icq_pool);
--}
--
--static int __init cfq_slab_setup(void)
--{
--	cfq_pool = KMEM_CACHE(cfq_queue, 0);
--	if (!cfq_pool)
--		goto fail;
--
--	cfq_icq_pool = KMEM_CACHE(cfq_io_cq, 0);
--	if (!cfq_icq_pool)
--		goto fail;
--
--	return 0;
--fail:
--	cfq_slab_kill();
--	return -ENOMEM;
--}
--
- /*
-  * sysfs parts below -->
-  */
-@@ -4053,8 +4025,10 @@ static struct elevator_type iosched_cfq = {
- 		.elevator_init_fn =		cfq_init_queue,
- 		.elevator_exit_fn =		cfq_exit_queue,
- 	},
-+	.icq_size	=	sizeof(struct cfq_io_cq),
-+	.icq_align	=	__alignof__(struct cfq_io_cq),
- 	.elevator_attrs =	cfq_attrs,
--	.elevator_name =	"cfq",
-+	.elevator_name	=	"cfq",
- 	.elevator_owner =	THIS_MODULE,
- };
+-#define RQ_CIC(rq)		icq_to_cic((rq)->elevator_private[0])
+-#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private[1])
+-#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private[2])
++#define RQ_CIC(rq)		icq_to_cic((rq)->elv.icq)
++#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elv.priv[0])
++#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elv.priv[1])
  
-@@ -4072,6 +4046,8 @@ static struct blkio_policy_type blkio_policy_cfq;
+ static struct kmem_cache *cfq_pool;
+ static struct kmem_cache *cfq_icq_pool;
+@@ -297,8 +297,6 @@ struct cfq_data {
+ 	unsigned int cfq_group_idle;
+ 	unsigned int cfq_latency;
  
- static int __init cfq_init(void)
- {
-+	int ret;
-+
+-	struct list_head icq_list;
+-
  	/*
- 	 * could be 0 on HZ < 1000 setups
+ 	 * Fallback dummy cfqq for extreme OOM conditions
  	 */
-@@ -4086,10 +4062,17 @@ static int __init cfq_init(void)
- #else
- 		cfq_group_idle = 0;
- #endif
--	if (cfq_slab_setup())
-+	cfq_pool = KMEM_CACHE(cfq_queue, 0);
-+	if (!cfq_pool)
- 		return -ENOMEM;
+@@ -3053,7 +3051,7 @@ static int cfq_create_cic(struct cfq_data *cfqd, gfp_t gfp_mask)
+ 	ret = radix_tree_insert(&ioc->icq_tree, q->id, icq);
+ 	if (likely(!ret)) {
+ 		hlist_add_head(&icq->ioc_node, &ioc->icq_list);
+-		list_add(&icq->q_node, &cfqd->icq_list);
++		list_add(&icq->q_node, &q->icq_list);
+ 		icq = NULL;
+ 	} else if (ret == -EEXIST) {
+ 		/* someone else already did it */
+@@ -3605,12 +3603,10 @@ static void cfq_put_request(struct request *rq)
  
--	elv_register(&iosched_cfq);
-+	ret = elv_register(&iosched_cfq);
-+	if (ret) {
-+		kmem_cache_destroy(cfq_pool);
-+		return ret;
-+	}
-+	cfq_icq_pool = iosched_cfq.icq_cache;
-+
- 	blkio_policy_register(&blkio_policy_cfq);
+ 		put_io_context(RQ_CIC(rq)->icq.ioc, cfqq->cfqd->queue);
  
- 	return 0;
-@@ -4099,8 +4082,7 @@ static void __exit cfq_exit(void)
- {
- 	blkio_policy_unregister(&blkio_policy_cfq);
- 	elv_unregister(&iosched_cfq);
--	rcu_barrier();	/* make sure all cic RCU frees are complete */
--	cfq_slab_kill();
-+	kmem_cache_destroy(cfq_pool);
- }
- 
- module_init(cfq_init);
-diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
-index c644137..7bf12d7 100644
---- a/block/deadline-iosched.c
-+++ b/block/deadline-iosched.c
-@@ -448,9 +448,7 @@ static struct elevator_type iosched_deadline = {
- 
- static int __init deadline_init(void)
- {
--	elv_register(&iosched_deadline);
+-		rq->elevator_private[0] = NULL;
+-		rq->elevator_private[1] = NULL;
 -
--	return 0;
-+	return elv_register(&iosched_deadline);
- }
+ 		/* Put down rq reference on cfqg */
+ 		cfq_put_cfqg(RQ_CFQG(rq));
+-		rq->elevator_private[2] = NULL;
++		rq->elv.priv[0] = NULL;
++		rq->elv.priv[1] = NULL;
  
- static void __exit deadline_exit(void)
+ 		cfq_put_queue(cfqq);
+ 	}
+@@ -3696,9 +3692,9 @@ new_queue:
+ 	cfqq->allocated[rw]++;
+ 
+ 	cfqq->ref++;
+-	rq->elevator_private[0] = &cic->icq;
+-	rq->elevator_private[1] = cfqq;
+-	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
++	rq->elv.icq = &cic->icq;
++	rq->elv.priv[0] = cfqq;
++	rq->elv.priv[1] = cfq_ref_get_cfqg(cfqq->cfqg);
+ 	spin_unlock_irq(q->queue_lock);
+ 	return 0;
+ 
+@@ -3810,8 +3806,8 @@ static void cfq_exit_queue(struct elevator_queue *e)
+ 	if (cfqd->active_queue)
+ 		__cfq_slice_expired(cfqd, cfqd->active_queue, 0);
+ 
+-	while (!list_empty(&cfqd->icq_list)) {
+-		struct io_cq *icq = list_entry(cfqd->icq_list.next,
++	while (!list_empty(&q->icq_list)) {
++		struct io_cq *icq = list_entry(q->icq_list.next,
+ 					       struct io_cq, q_node);
+ 		struct io_context *ioc = icq->ioc;
+ 
+@@ -3922,8 +3918,6 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfqd->oom_cfqq.ref++;
+ 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
+ 
+-	INIT_LIST_HEAD(&cfqd->icq_list);
+-
+ 	cfqd->queue = q;
+ 
+ 	init_timer(&cfqd->idle_slice_timer);
 diff --git a/block/elevator.c b/block/elevator.c
-index c5c6214..cca049f 100644
+index 31ffe76..c5c6214 100644
 --- a/block/elevator.c
 +++ b/block/elevator.c
-@@ -886,15 +886,36 @@ void elv_unregister_queue(struct request_queue *q)
- }
- EXPORT_SYMBOL(elv_unregister_queue);
+@@ -745,8 +745,6 @@ int elv_set_request(struct request_queue *q, struct request *rq, gfp_t gfp_mask)
  
--void elv_register(struct elevator_type *e)
-+int elv_register(struct elevator_type *e)
- {
- 	char *def = "";
- 
-+	/* create icq_cache if requested */
-+	if (e->icq_size) {
-+		if (WARN_ON(e->icq_size < sizeof(struct io_cq)) ||
-+		    WARN_ON(e->icq_align < __alignof__(struct io_cq)))
-+			return -EINVAL;
-+
-+		snprintf(e->icq_cache_name, sizeof(e->icq_cache_name),
-+			 "%s_io_cq", e->elevator_name);
-+		e->icq_cache = kmem_cache_create(e->icq_cache_name, e->icq_size,
-+						 e->icq_align, 0, NULL);
-+		if (!e->icq_cache)
-+			return -ENOMEM;
-+	}
-+
-+	/* register, don't allow duplicate names */
- 	spin_lock(&elv_list_lock);
--	BUG_ON(elevator_find(e->elevator_name));
-+	if (elevator_find(e->elevator_name)) {
-+		spin_unlock(&elv_list_lock);
-+		if (e->icq_cache)
-+			kmem_cache_destroy(e->icq_cache);
-+		return -EBUSY;
-+	}
- 	list_add_tail(&e->list, &elv_list);
- 	spin_unlock(&elv_list_lock);
- 
-+	/* print pretty message */
- 	if (!strcmp(e->elevator_name, chosen_elevator) ||
- 			(!*chosen_elevator &&
- 			 !strcmp(e->elevator_name, CONFIG_DEFAULT_IOSCHED)))
-@@ -902,14 +923,26 @@ void elv_register(struct elevator_type *e)
- 
- 	printk(KERN_INFO "io scheduler %s registered%s\n", e->elevator_name,
- 								def);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(elv_register);
- 
- void elv_unregister(struct elevator_type *e)
- {
-+	/* unregister */
- 	spin_lock(&elv_list_lock);
- 	list_del_init(&e->list);
- 	spin_unlock(&elv_list_lock);
-+
-+	/*
-+	 * Destroy icq_cache if it exists.  icq's are RCU managed.  Make
-+	 * sure all RCU operations are complete before proceeding.
-+	 */
-+	if (e->icq_cache) {
-+		rcu_barrier();
-+		kmem_cache_destroy(e->icq_cache);
-+		e->icq_cache = NULL;
-+	}
- }
- EXPORT_SYMBOL_GPL(elv_unregister);
- 
-diff --git a/block/noop-iosched.c b/block/noop-iosched.c
-index 06389e9..413a0b1 100644
---- a/block/noop-iosched.c
-+++ b/block/noop-iosched.c
-@@ -94,9 +94,7 @@ static struct elevator_type elevator_noop = {
- 
- static int __init noop_init(void)
- {
--	elv_register(&elevator_noop);
+ 	if (e->type->ops.elevator_set_req_fn)
+ 		return e->type->ops.elevator_set_req_fn(q, rq, gfp_mask);
 -
--	return 0;
-+	return elv_register(&elevator_noop);
+-	rq->elevator_private[0] = NULL;
+ 	return 0;
  }
  
- static void __exit noop_exit(void)
-diff --git a/include/linux/elevator.h b/include/linux/elevator.h
-index 04958ef..d3d3e28 100644
---- a/include/linux/elevator.h
-+++ b/include/linux/elevator.h
-@@ -78,10 +78,19 @@ struct elv_fs_entry {
-  */
- struct elevator_type
- {
-+	/* managed by elevator core */
-+	struct kmem_cache *icq_cache;
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index e4c10a0..6c7e09c 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -111,10 +111,14 @@ struct request {
+ 	 * Three pointers are available for the IO schedulers, if they need
+ 	 * more they have to dynamically allocate it.  Flush requests are
+ 	 * never put on the IO scheduler. So let the flush fields share
+-	 * space with the three elevator_private pointers.
++	 * space with the elevator data.
+ 	 */
+ 	union {
+-		void *elevator_private[3];
++		struct {
++			struct io_cq		*icq;
++			void			*priv[2];
++		} elv;
 +
-+	/* fields provided by elevator implementation */
- 	struct elevator_ops ops;
-+	size_t icq_size;
-+	size_t icq_align;
- 	struct elv_fs_entry *elevator_attrs;
- 	char elevator_name[ELV_NAME_MAX];
- 	struct module *elevator_owner;
+ 		struct {
+ 			unsigned int		seq;
+ 			struct list_head	list;
+@@ -357,6 +361,8 @@ struct request_queue {
+ 	struct timer_list	timeout;
+ 	struct list_head	timeout_list;
+ 
++	struct list_head	icq_list;
 +
-+	/* managed by elevator core */
-+	char icq_cache_name[ELV_NAME_MAX + 5];	/* elvname + "_io_cq" */
- 	struct list_head list;
- };
+ 	struct queue_limits	limits;
  
-@@ -127,7 +136,7 @@ extern void elv_drain_elevator(struct request_queue *);
- /*
-  * io scheduler registration
-  */
--extern void elv_register(struct elevator_type *);
-+extern int elv_register(struct elevator_type *);
- extern void elv_unregister(struct elevator_type *);
- 
- /*
+ 	/*
 -- 
 1.7.3.1
 
