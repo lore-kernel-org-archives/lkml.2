@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1J2IiT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 04:38:19 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48312 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754605Ab1J2IiR convert rfc822-to-8bit (ORCPT
+	id S1754658Ab1J2Ipy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 04:45:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56945 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab1J2Ipw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 04:38:17 -0400
+	Sat, 29 Oct 2011 04:45:52 -0400
+Message-ID: <4EABBBD3.5030700@gmail.com>
+Date: Sat, 29 Oct 2011 10:39:47 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <20111006124044.1066.7111.stgit@localhost6.localdomain6>
-References: <20111006124044.1066.7111.stgit@localhost6.localdomain6>
-Date: Sat, 29 Oct 2011 10:38:16 +0200
-X-Google-Sender-Auth: JWJzY_YJ9kNha6pwyoCbDn58KhQ
-Message-ID: <CAMuHMdX-V6FqSZ_mmPm5aW_bTUNMk4sz5cADryX3Xyk627wRdg@mail.gmail.com>
-Subject: Re: [PATCH] of: include errno.h
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-arm-kernel@lists.infradead.org
+CC: Bryan Freed <bfreed@chromium.org>, linux-kernel@vger.kernel.org,
+        sergiu@chromium.org, akpm@linux-foundation.org, msb@chromium.org,
+        seiji.aguchi@hds.com
+Subject: Re: [PATCH] ramoops appears geared to not support ARM
+References: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 6, 2011 at 14:40, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
-> When compiling ath6kl for beagleboard (omap2plus_defconfig plus
-> CONFIG_ATH6KL, CONFIG_OF disable) with current linux-next compilation
-> fails:
+(Added linux-arm)
+
+Il 29/10/2011 01:21, Bryan Freed ha scritto:
+> I had some difficulty in getting ramoops to work on our ARM systems.
+> The driver maps memory with ioremap() which is supposed to map IO memory,
+> not physical RAM.  This happens to work on x86 and apparently some other
+> architectures, but it does not work on ARM.
+> Specifically, I see this comment in __arm_ioremap_pfn_caller():
+> 	Don't allow RAM to be mapped - this causes problems with ARMv6+
 >
-> include/linux/of.h:269: error: 'ENOSYS' undeclared (first use in this function)
-> include/linux/of.h:276: error: 'ENOSYS' undeclared (first use in this function)
-> include/linux/of.h:289: error: 'ENOSYS' undeclared (first use in this function)
-
-And now this build failure (also on m68k) has hit Linus' tree, more
-than 3 weeks after
-its detection in -next...
-
-> Fix this by including errno.h from of.h.
+> So here is a patch that hacks around the issue using page_is_ram() to
+> differentiate between the two.
 >
-> Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
-
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-> ---
->  include/linux/of.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> Am I missing something here?
+> Is ramoops working on any ARM systems yet, and I am just doing something wrong?
 >
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index 9180dc5..219c29d 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -17,6 +17,7 @@
->  */
->  #include <linux/types.h>
->  #include <linux/bitops.h>
-> +#include <linux/errno.h>
->  #include <linux/kref.h>
->  #include <linux/mod_devicetable.h>
->  #include <linux/spinlock.h>
+> My ARM platform reserves a section of RAM for use by ramoops, but it is still
+> mapped along with the rest of main memory.  This is so /dev/mem can find it
+> with xlate_dev_mem_ptr().
+> On x86, I see our BIOS reserves the memory so that it is not counted as main
+> memory, and it is not mapped until ramoops ioremaps it.
+>
+> Bryan Freed (1):
+>    ramoops: Add support for ARM systems.
+>
+>   drivers/char/ramoops.c |   67 +++++++++++++++++++++++++++++++++++++----------
+>   1 files changed, 52 insertions(+), 15 deletions(-)
+>
 
-Gr{oetje,eeting}s,
+Can some ARM guys give an opinion about that?
 
-                        Geert
+Thanks.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Marco
