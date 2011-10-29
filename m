@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab1J2LzX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 07:55:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54372 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754774Ab1J2LzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 07:55:22 -0400
-Date: Sat, 29 Oct 2011 12:55:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, msb@chromium.org,
-        linux-kernel@vger.kernel.org, sergiu@chromium.org,
-        Bryan Freed <bfreed@chromium.org>, akpm@linux-foundation.org,
-        seiji.aguchi@hds.com
-Subject: Re: [PATCH] ramoops appears geared to not support ARM
-Message-ID: <20111029115507.GA19187@n2100.arm.linux.org.uk>
-References: <1319844110-23062-1-git-send-email-bfreed@chromium.org> <4EABBBD3.5030700@gmail.com> <20111029093458.GX19187@n2100.arm.linux.org.uk> <4EABDDBE.5080407@gmail.com>
+	id S932680Ab1J2ML5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 08:11:57 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:57867 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932388Ab1J2MLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 08:11:55 -0400
+Date: Sat, 29 Oct 2011 14:11:47 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Arend van Spriel <arend@broadcom.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5 v2] drivers/hid/hid-roccat.c: eliminate a null pointer
+ dereference
+In-Reply-To: <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk>
+References: <1319846297-2985-3-git-send-email-julia@diku.dk>
+ <20111029062412.GG14881@longonot.mountain> <4EABC937.60600@broadcom.com>
+ <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EABDDBE.5080407@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 01:04:30PM +0200, Marco Stornelli wrote:
-> About the ioremap problem. It seems there is a problem on some ARM arch  
-> to use ioremap (ramoops driver) to remap a piece of RAM even if it's not  
-> used by kernel (reserved at boot with mem option, Bryan can you  
-> confirm?).
+From: Julia Lawall <julia@diku.dk>
 
-It's all very simple.
+It is not possible to take the lock in device if device is NULL.
+The mutex_lock is thus moved after the NULL test, and the relevant part of
+the shared error handling code is moved up.
 
-We have three major 'memory types' - 'normal memory' which must be used
-for things like RAM that we execute code from and use atomic operations
-within.  This can be prefetched and reordered at will.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-'device memory' is for devices, which tighter restrictions on reordering
-and guarantees concerning reads and writes.
+// <smpl>
+@r@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@
 
-'strongly ordered memory' is much like device memory.
+if (E == NULL)
+{
+  ... when != if (E == NULL || ...) S1 else S2
+      when != E = E1
+*E->f
+  ... when any
+  return ...;
+}
+else S3
+// </smpl>
 
-It is absolutely not permitted to map the same physical addresses with
-different types - this is a stronger requirement than getting the cache
-attributes the same.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-System memory is mapped using 'normal memory' - obviously because we need
-to be able to execute code and have working atomic operations throughout
-kernel memory.
+---
+mutex_lock changed to mutex_unlock in error handling code
 
-Now, ioremap creates device memory - because its main function is to
-dynamically map memory regions in devices.
+ drivers/hid/hid-roccat.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-Now think: if we have system memory mapped as 'normal memory', and then
-we try to use ioremap() to remap some of that memory, that will create
-a new 'device memory' mapping with the existing 'normal memory' mapping
-still present.  Now look at the paragraph 'It is absolutely not permitted'
-and realise that the requirements for the architecture are being violated
-if we permitted this to occur.
+diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
+index 2596321..36a28b8 100644
+--- a/drivers/hid/hid-roccat.c
++++ b/drivers/hid/hid-roccat.c
+@@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
+ 
+ 	device = devices[minor];
+ 
+-	mutex_lock(&device->readers_lock);
+-
+ 	if (!device) {
+ 		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
+-		error = -ENODEV;
+-		goto exit_err;
++		kfree(reader);
++		mutex_unlock(&devices_lock);
++		return -ENODEV;
+ 	}
+ 
++	mutex_lock(&device->readers_lock);
++
+ 	if (!device->open++) {
+ 		/* power on device on adding first reader */
+ 		error = hid_hw_power(device->hid, PM_HINT_FULLON);
 
-Also realise that if that condition is violated, 'unpredictable behaviour'
-will occur - not to the extent that the CPU will hang, but it could cause
-data errors which could influence overall system stability.
-
-So, the whole idea of using plain ioremap() with system memory is one
-that is just completely unsupportable on ARM without _first_ removing
-memory from the system mapping, which in turn means updating the page
-tables for every task in the system.
