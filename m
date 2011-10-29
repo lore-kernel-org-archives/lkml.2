@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab1J2NZq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 09:25:46 -0400
+	id S933060Ab1J2NZy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 09:25:54 -0400
 Received: from mail-gy0-f174.google.com ([209.85.160.174]:58669 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932380Ab1J2NZp (ORCPT
+	with ESMTP id S933008Ab1J2NZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 09:25:45 -0400
+	Sat, 29 Oct 2011 09:25:52 -0400
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 1/7] Staging: comedi: fix printk issue in das6402.c
-Date: Sat, 29 Oct 2011 18:55:23 +0530
-Message-Id: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 2/7] Staging: comedi: fix printk issue in serial2002.c
+Date: Sat, 29 Oct 2011 18:55:24 +0530
+Message-Id: <1319894729-1744-2-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
+References: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the das6402.c file that fixes up a printk
+This is a patch to the serial2002.c file that fixes up a printk
 warning found by the checkpatch.pl tool.
 
-Converted printks to dev_version.
-Removed unnecessary printk statements.
+converted printks to dev_version.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/das6402.c |   23 +++++++----------------
- 1 files changed, 7 insertions(+), 16 deletions(-)
+ drivers/staging/comedi/drivers/serial2002.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
-index 6328f52..f256841 100644
---- a/drivers/staging/comedi/drivers/das6402.c
-+++ b/drivers/staging/comedi/drivers/das6402.c
-@@ -171,7 +171,7 @@ static irqreturn_t intr_handler(int irq, void *d)
- 	struct comedi_subdevice *s = dev->subdevices;
- 
- 	if (!dev->attached || devpriv->das6402_ignoreirq) {
--		printk("das6402: BUG: spurious interrupt\n");
-+		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
- 		return IRQ_HANDLED;
- 	}
- #ifdef DEBUG
-@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
- 	 */
- 
- 	devpriv->das6402_ignoreirq = 1;
--#ifdef DEBUG
--	printk("das6402: Stopping acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
- 	devpriv->das6402_ignoreirq = 1;
- 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
-@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
- 			    struct comedi_subdevice *s, comedi_trig * it)
+diff --git a/drivers/staging/comedi/drivers/serial2002.c b/drivers/staging/comedi/drivers/serial2002.c
+index ade2202..d880c2f 100644
+--- a/drivers/staging/comedi/drivers/serial2002.c
++++ b/drivers/staging/comedi/drivers/serial2002.c
+@@ -824,7 +824,7 @@ static int serial2002_attach(struct comedi_device *dev,
  {
- 	devpriv->das6402_ignoreirq = 1;
--
--#ifdef DEBUG
--	printk("das6402: Starting acquisition\n");
--#endif
-+	dev_dbg(dev->hw_dev, "Starting acquisition\n");
- 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
- 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
- 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
-@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
- 	if (iobase == 0)
- 		iobase = 0x300;
+ 	struct comedi_subdevice *s;
  
--	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
--
- 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
--		printk(" I/O port conflict\n");
-+		dev_err(dev->hw_dev, "I/O port conflict\n");
- 		return -EIO;
- 	}
- 	dev->iobase = iobase;
-@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
- 	/* should do a probe here */
+-	printk("comedi%d: serial2002: ", dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: attached\n", dev->minor);
+ 	dev->board_name = thisboard->name;
+ 	if (alloc_private(dev, sizeof(struct serial2002_private)) < 0)
+ 		return -ENOMEM;
+@@ -832,7 +832,8 @@ static int serial2002_attach(struct comedi_device *dev,
+ 	dev->close = serial_2002_close;
+ 	devpriv->port = it->options[0];
+ 	devpriv->speed = it->options[1];
+-	printk("/dev/ttyS%d @ %d\n", devpriv->port, devpriv->speed);
++	dev_dbg(dev->hw_dev, "/dev/ttyS%d @ %d\n", devpriv->port,
++		devpriv->speed);
  
- 	irq = it->options[0];
--	printk(" ( irq = %u )", irq);
-+	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
- 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
--	if (ret < 0) {
--		printk("irq conflict\n");
-+	if (ret < 0)
- 		return ret;
--	}
--	dev->irq = irq;
+ 	if (alloc_subdevices(dev, 5) < 0)
+ 		return -ENOMEM;
+@@ -891,7 +892,7 @@ static int serial2002_detach(struct comedi_device *dev)
+ 	struct comedi_subdevice *s;
+ 	int i;
  
-+	dev->irq = irq;
- 	ret = alloc_private(dev, sizeof(struct das6402_private));
- 	if (ret < 0)
- 		return ret;
+-	printk("comedi%d: serial2002: remove\n", dev->minor);
++	dev_dbg(dev->hw_dev, "comedi%d: remove\n", dev->minor);
+ 	for (i = 0; i < 5; i++) {
+ 		s = &dev->subdevices[i];
+ 		kfree(s->maxdata_list);
 -- 
 1.7.0.4
 
