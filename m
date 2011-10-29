@@ -1,78 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab1J2XtP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:49:15 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:44941 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932455Ab1J2XtL (ORCPT
+	id S933207Ab1J2XtX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:49:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38546 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932455Ab1J2XtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 19:49:11 -0400
-Date: Sat, 29 Oct 2011 13:49:05 +0200
+	Sat, 29 Oct 2011 19:49:15 -0400
+Date: Sat, 29 Oct 2011 14:03:19 +0200
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] dt: add empty of_alias_get_id() for non-dt builds
-Message-ID: <20111029114905.GA22592@ponder.secretlab.ca>
-References: <1319706448-1664-1-git-send-email-nicolas.ferre@atmel.com>
- <4EAAABF6.50803@gmail.com>
+To: Shubhrajyoti D <shubhrajyoti@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Steve Wilkins <steve.wilkins@raymarine.com>
+Subject: Re: [PATCH 1/3] OMAP: SPI: Use a workqueue per omap2_mcspi controller
+Message-ID: <20111029120319.GD22592@ponder.secretlab.ca>
+References: <1319802259-16565-1-git-send-email-shubhrajyoti@ti.com>
+ <1319802259-16565-2-git-send-email-shubhrajyoti@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EAAABF6.50803@gmail.com>
+In-Reply-To: <1319802259-16565-2-git-send-email-shubhrajyoti@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 08:19:50AM -0500, Rob Herring wrote:
-> On 10/27/2011 04:07 AM, Nicolas Ferre wrote:
-> > Add function of_alias_get_id() reporting -ENOSYS
-> > for non-dt builds, so that drivers migrating to dt
-> > can save some '#ifdef CONFIG_OF'.
-> > 
-> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+On Fri, Oct 28, 2011 at 05:14:17PM +0530, Shubhrajyoti D wrote:
+> Currently all the spi controllers share the work queue.
+> This patch allocates a work queue per controller.
 > 
-> Acked-by: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Steve Wilkins <steve.wilkins@raymarine.com>
+> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
 
-Merged, thanks
-
-Rob, for stuff like this, please do pick it up into your git tree and
-reply saying that you've done so.  Then I know I can ignore it because
-I'll be receiving a pull req from you in short order.
-
-Similarly, I reply whenever I pick up a patch, so you'll know if I've
-already delt with it.
+Applied for v3.3, thanks.
 
 g.
 
+> ---
+>  drivers/spi/spi-omap2-mcspi.c |   19 +++++++++++--------
+>  1 files changed, 11 insertions(+), 8 deletions(-)
 > 
-> > ---
-> > Hi Grant,
-> > 
-> > Another empty function for non-dt builds. Can we consider
-> > queuing it for 3.1?
-> > 
-> > Best regards,
-> > 
-> >  include/linux/of.h |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index 92c40a1..34d8338 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -302,6 +302,11 @@ static inline struct device_node *of_parse_phandle(struct device_node *np,
-> >  	return NULL;
-> >  }
-> >  
-> > +static inline int of_alias_get_id(struct device_node *np, const char *stem)
-> > +{
-> > +	return -ENOSYS;
-> > +}
-> > +
-> >  #define of_match_ptr(_ptr)	NULL
-> >  #define of_match_node(_matches, _node)	NULL
-> >  #endif /* CONFIG_OF */
+> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
+> index a8b614b..471b0f3 100644
+> --- a/drivers/spi/spi-omap2-mcspi.c
+> +++ b/drivers/spi/spi-omap2-mcspi.c
+> @@ -121,6 +121,7 @@ struct omap2_mcspi {
+>  	/* SPI1 has 4 channels, while SPI2 has 2 */
+>  	struct omap2_mcspi_dma	*dma_channels;
+>  	struct  device		*dev;
+> +	struct workqueue_struct *wq;
+>  };
+>  
+>  struct omap2_mcspi_cs {
+> @@ -143,8 +144,6 @@ struct omap2_mcspi_regs {
+>  
+>  static struct omap2_mcspi_regs omap2_mcspi_ctx[OMAP2_MCSPI_MAX_CTRL];
+>  
+> -static struct workqueue_struct *omap2_mcspi_wq;
+> -
+>  #define MOD_REG_BIT(val, mask, set) do { \
+>  	if (set) \
+>  		val |= mask; \
+> @@ -1043,7 +1042,7 @@ static int omap2_mcspi_transfer(struct spi_device *spi, struct spi_message *m)
+>  
+>  	spin_lock_irqsave(&mcspi->lock, flags);
+>  	list_add_tail(&m->queue, &mcspi->msg_queue);
+> -	queue_work(omap2_mcspi_wq, &mcspi->work);
+> +	queue_work(mcspi->wq, &mcspi->work);
+>  	spin_unlock_irqrestore(&mcspi->lock, flags);
+>  
+>  	return 0;
+> @@ -1088,6 +1087,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  	struct omap2_mcspi	*mcspi;
+>  	struct resource		*r;
+>  	int			status = 0, i;
+> +	char			wq_name[20];
+>  
+>  	master = spi_alloc_master(&pdev->dev, sizeof *mcspi);
+>  	if (master == NULL) {
+> @@ -1111,6 +1111,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
+>  	mcspi = spi_master_get_devdata(master);
+>  	mcspi->master = master;
+>  
+> +	sprintf(wq_name, "omap2_mcspi/%d", master->bus_num);
+> +	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
+> +	if (mcspi->wq == NULL) {
+> +		status = -ENOMEM;
+> +		goto err1;
+> +	}
+> +
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (r == NULL) {
+>  		status = -ENODEV;
+> @@ -1216,6 +1223,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
+>  	spi_unregister_master(master);
+>  	iounmap(base);
+>  	kfree(dma_channels);
+> +	destroy_workqueue(mcspi->wq);
+>  
+>  	return 0;
+>  }
+> @@ -1274,10 +1282,6 @@ static struct platform_driver omap2_mcspi_driver = {
+>  
+>  static int __init omap2_mcspi_init(void)
+>  {
+> -	omap2_mcspi_wq = create_singlethread_workqueue(
+> -				omap2_mcspi_driver.driver.name);
+> -	if (omap2_mcspi_wq == NULL)
+> -		return -1;
+>  	return platform_driver_probe(&omap2_mcspi_driver, omap2_mcspi_probe);
+>  }
+>  subsys_initcall(omap2_mcspi_init);
+> @@ -1286,7 +1290,6 @@ static void __exit omap2_mcspi_exit(void)
+>  {
+>  	platform_driver_unregister(&omap2_mcspi_driver);
+>  
+> -	destroy_workqueue(omap2_mcspi_wq);
+>  }
+>  module_exit(omap2_mcspi_exit);
+>  
+> -- 
+> 1.7.1
 > 
+> 
+> ------------------------------------------------------------------------------
+> The demand for IT networking professionals continues to grow, and the
+> demand for specialized networking skills is growing even more rapidly.
+> Take a complimentary Learning@Cisco Self-Assessment and learn 
+> about Cisco certifications, training, and career opportunities. 
+> http://p.sf.net/sfu/cisco-dev2dev
+> _______________________________________________
+> spi-devel-general mailing list
+> spi-devel-general@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
