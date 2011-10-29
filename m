@@ -1,121 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab1J2Ixf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 04:53:35 -0400
-Received: from co202.xi-lite.net ([149.6.83.202]:45325 "EHLO co202.xi-lite.net"
+	id S1754851Ab1J2I4l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 04:56:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33931 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab1J2Ixd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 04:53:33 -0400
-Date: Sat, 29 Oct 2011 10:52:48 +0200
-From: Ivan Djelic <ivan.djelic@parrot.com>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "mikedunn@newsguy.com" <mikedunn@newsguy.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/13] mtd/docg3: add ECC correction code
-Message-ID: <20111029085248.GA12046@parrot.com>
-References: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>
- <1319824292-11085-13-git-send-email-robert.jarzmik@free.fr>
+	id S1752026Ab1J2I4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 04:56:40 -0400
+Date: Sat, 29 Oct 2011 10:56:38 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@google.com
+Cc: mm-commits@vger.kernel.org, rientjes@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, kosaki.motohiro@jp.fujitsu.com,
+        oleg@redhat.com, rjw@sisk.pl, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: +
+ oom-thaw-threads-if-oom-killed-thread-is-frozen-before-deferring.patch added
+ to -mm tree
+Message-ID: <20111029085638.GA6368@tiehlicka.suse.cz>
+References: <201110102246.p9AMkPVD004527@hpaq11.eem.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319824292-11085-13-git-send-email-robert.jarzmik@free.fr>
+In-Reply-To: <201110102246.p9AMkPVD004527@hpaq11.eem.corp.google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 06:51:31PM +0100, Robert Jarzmik wrote:
+Sorry for the really late reply.
+
+On Mon 10-10-11 15:46:25, akpm@google.com wrote:
+> From: David Rientjes <rientjes@google.com>
+> Subject: oom: thaw threads if oom killed thread is frozen before deferring
+> 
+> If a thread has been oom killed and is frozen, thaw it before returning to
+> the page allocator.  Otherwise, it can stay frozen indefinitely and no
+> memory will be freed.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> Reported-by: Michal Hocko <mhocko@suse.cz>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: Andrew Morton <akpm@google.com>
+
+Can we still update the tags?
+The issue has been reported by Konstantin Khlebnikov <khlebnikov@openvz.org>
+and I think that we want SOB from Rafael here (he originally SOB the
+previous patch which thawed tasks from oom_kill_task). You can also add
+my Acked-by.
+
+> ---
+> 
+>  mm/oom_kill.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff -puN mm/oom_kill.c~oom-thaw-threads-if-oom-killed-thread-is-frozen-before-deferring mm/oom_kill.c
+> --- a/mm/oom_kill.c~oom-thaw-threads-if-oom-killed-thread-is-frozen-before-deferring
+> +++ a/mm/oom_kill.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/mempolicy.h>
+>  #include <linux/security.h>
+>  #include <linux/ptrace.h>
+> +#include <linux/freezer.h>
 >  
-> +/**
-> + * struct docg3_bch - BCH engine
-> + */
-> +static struct bch_control *docg3_bch;
-
-Why not putting this into your struct docg3, instead of adding a global var ?
-
-> +static int doc_ecc_bch_fix_data(struct docg3 *docg3, void *buf, u8 *calc_ecc)
-> +{
-> +	u8 ecc[DOC_ECC_BCH_T + 1];
-
-Should be 'u8 ecc[DOC_ECC_BCH_SIZE];'
-
-> +	int errorpos[DOC_ECC_BCH_T + 1], i, numerrs;
-
-Using 'errorpos[DOC_ECC_BCH_T]' is fine, no need for '+ 1'.
-
-(...)
-
-> +
-> +	for (i = 0; i < DOC_ECC_BCH_SIZE; i++)
-> +		ecc[i] = bitrev8(calc_ecc[i]);
-> +	numerrs = decode_bch(docg3_bch, NULL, DOC_ECC_BCH_COVERED_BYTES,
-> +			     NULL, ecc, NULL, errorpos);
-> +	if (numerrs < 0)
-> +		return numerrs;
-
-Maybe do something like 'printk(KERN_ERR "ecc unrecoverable error\n");' when
-numerrs < 0 ?
-
-(...)
-
-> +	for (i = 0; i < numerrs; i++)
-> +		change_bit(errorpos[i], buf);
-
-'buf' holds the buffer of read data (512 + 7 + 1 bytes); hence you should
-change the above code into something like:
-
-	for (i = 0; i < numerrs; i++)
-		if (errorpos[i] < DOC_ECC_BCH_COVERED_BYTES*8)
-			/* error is located in data, correct it */
-			change_bit(errorpos[i], buf);
-	        /* else error in ecc bytes, no data change needed */
-
-otherwise 'change_bit' will be out of bounds when a bitflip occurs in ecc
-bytes. Note that we still need to report bitflips in that case, to let upper
-layers scrub them.
-
-(...)
-> +	docg3_bch = init_bch(DOC_ECC_BCH_M, DOC_ECC_BCH_T,
-> +			     DOC_ECC_BCH_PRIMPOLY);
-> +	if (!docg3_bch)
-> +		goto nomem2;
-
-Just a side note: if you need to get maximum performance from the BCH library,
-you can set fixed values for M and T in your Kconfig, with something like:
-
- config MTD_DOCG3
-        tristate "M-Systems Disk-On-Chip G3"
-	select BCH
-        ---help---
-          This provides an MTD device driver for the M-Systems DiskOnChip
-          G3 devices.
-
-if MTD_DOCG3
-config BCH_CONST_M
-	default 14
-config BCH_CONST_T
-	default 4
-endif
-
-
-The only drawback is that it won't work if you select your DOCG3 driver and, at
-the same time, other MTD drivers that also use fixed, but different parameters.
-
-(...)
-> @@ -1660,6 +1717,7 @@ static int __exit docg3_release(struct platform_device *pdev)
->  			doc_release_device(docg3_floors[floor]);
+>  int sysctl_panic_on_oom;
+>  int sysctl_oom_kill_allocating_task;
+> @@ -320,8 +321,11 @@ static struct task_struct *select_bad_pr
+>  		 * blocked waiting for another task which itself is waiting
+>  		 * for memory. Is there a better alternative?
+>  		 */
+> -		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+> +		if (test_tsk_thread_flag(p, TIF_MEMDIE)) {
+> +			if (unlikely(frozen(p)))
+> +				thaw_process(p);
+>  			return ERR_PTR(-1UL);
+> +		}
+>  		if (!p->mm)
+>  			continue;
 >  
->  	kfree(docg3_floors);
-> +	kfree(docg3_bch);
+> _
+> Subject: Subject: oom: thaw threads if oom killed thread is frozen before deferring
+> 
+> Patches currently in -mm which might be from rientjes@google.com are
+> 
+> origin.patch
+> linux-next.patch
+> oom-avoid-killing-kthreads-if-they-assume-the-oom-killed-threads-mm.patch
+> oom-remove-oom_disable_count.patch
+> oom-fix-race-while-temporarily-setting-currents-oom_score_adj.patch
+> mm-avoid-null-pointer-access-in-vm_struct-via-proc-vmallocinfo.patch
+> mm-compaction-make-compact_zone_order-static.patch
+> oom-thaw-threads-if-oom-killed-thread-is-frozen-before-deferring.patch
+> cpusets-avoid-looping-when-storing-to-mems_allowed-if-one-node-remains-set.patch
+> 
 
-This should be 'free_bch(docg3_bch)'.
-
-Otherwise it looks OK to me; did you test BCH correction by simulating
-corruptions (of 1-4 bits, and also 5 bits to trigger failures) in nand data ?
-
-Best Regards,
---
-Ivan
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
