@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab1J2NqA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 09:46:00 -0400
-Received: from re04.intra2net.com ([82.165.46.26]:49923 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932721Ab1J2Np7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 09:45:59 -0400
-Message-ID: <4EAC0394.5000807@intra2net.com>
-Date: Sat, 29 Oct 2011 15:45:56 +0200
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S933097Ab1J2Nty (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 09:49:54 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:48239 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932721Ab1J2Ntx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 09:49:53 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Oct 2011 09:49:53 EDT
+From: Ed Tomlinson <edt@aei.ca>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Date: Sat, 29 Oct 2011 09:43:08 -0400
+Message-ID: <1777884.rjTZT9Wj01@grover>
+Organization: me
+User-Agent: KMail/4.7.2 (Linux/3.1.0-crc+; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix off-by-two in arcs_cmdline buffer size check
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cause is a misplaced bracket.
+On Thursday 27 October 2011 11:52:22 Dan Magenheimer wrote:
+> Hi Linus --
 
-The code
+> SO... Please pull:
+> 
+> git://oss.oracle.com/git/djm/tmem.git #tmem
+> 
 
-    strlen(buf+1)
+My wife has an old PC thats short on memory.  Its got Ubuntu
+running on it.  It also has cleancache and zram enabled.  The
+box works better when using these.  Frontcache would improve 
+things further.  It will balance the tmem vs physical memory
+dynamicily making it a better solution than zram.
 
-will be two bytes less than
+I'd love to see this in the kernel.
 
-    strlen(buf)+1
+Thanks
+Ed Tomlinson
 
-The +1 is in this code to reserve space for an additional space character.
-
-Signed-off-by: Thomas Jarosch <thomas.jarosch@intra2net.com>
----
- arch/mips/pmc-sierra/yosemite/prom.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/pmc-sierra/yosemite/prom.c b/arch/mips/pmc-sierra/yosemite/prom.c
-index cf4c868..a6d5eb3 100644
---- a/arch/mips/pmc-sierra/yosemite/prom.c
-+++ b/arch/mips/pmc-sierra/yosemite/prom.c
-@@ -102,7 +102,7 @@ void __init prom_init(void)
- 
- 	/* Get the boot parameters */
- 	for (i = 1; i < argc; i++) {
--		if (strlen(arcs_cmdline) + strlen(arg[i] + 1) >=
-+		if (strlen(arcs_cmdline) + strlen(arg[i]) + 1 >=
- 		    sizeof(arcs_cmdline))
- 			break;
- 
--- 
-1.7.6.4
-
+PS.  At work we use AIX with memory compression.  With the
+workloads we run compression lets the OS act like it has 30%
+more memory.  It works.  It would be nice to have a similar
+facility in Linux.
