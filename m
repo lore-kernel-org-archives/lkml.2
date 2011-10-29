@@ -1,155 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab1J2Xto (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:49:44 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60791 "EHLO
+	id S933677Ab1J2Xt5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:49:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52327 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713Ab1J2XtO (ORCPT
+	with ESMTP id S932530Ab1J2Xtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 19:49:14 -0400
-Date: Sat, 29 Oct 2011 14:07:09 +0200
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] OMAP: SPI: Correct the error path
-Message-ID: <20111029120709.GF22592@ponder.secretlab.ca>
-References: <1319802259-16565-1-git-send-email-shubhrajyoti@ti.com>
- <1319802259-16565-4-git-send-email-shubhrajyoti@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319802259-16565-4-git-send-email-shubhrajyoti@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 29 Oct 2011 19:49:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, vgoyal@redhat.com
+Cc: ctalbott@google.com, rni@google.com, linux-kernel@vger.kernel.org
+Subject: [PATCHSET block:for-3.2/core] cleanup io_context interface
+Date: Sat, 29 Oct 2011 16:49:37 -0700
+Message-Id: <1319932187-7631-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 05:14:19PM +0530, Shubhrajyoti D wrote:
-> Currently McSPI driver doesnt follow correct failure fallback steps
-> attempting to correct the same.
-> Also
-> -  label names changed  to give meaningful names.
-> - Setting the driver data to NULL in remove
-> 
-> Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
-> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+Hello,
 
-Applied for v3.3, thanks.
+Over time, cfq and io_context has grown into each other and currently
+it isn'tq clear which part belongs where.  Some of cfq internals live
+in io_context code and vice-versa.  This makes the code error-prone,
+difficult to understand.
 
-g.
+With locking simplified, io_context interface can be cleaned up now.
+This patchset moves bulk of io_cq management from cfq to block core.
+This provides clean separation between iosched algorithm
+implementation and ioc / ioc-q association (icq, formerly cic's)
+management which is a bit complex due to the locking requirements.
 
-> ---
->  drivers/spi/spi-omap2-mcspi.c |   32 ++++++++++++++++++++------------
->  1 files changed, 20 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-> index 6875a0b..abe2fee 100644
-> --- a/drivers/spi/spi-omap2-mcspi.c
-> +++ b/drivers/spi/spi-omap2-mcspi.c
-> @@ -1115,13 +1115,13 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->  	mcspi->wq = alloc_workqueue(wq_name, WQ_MEM_RECLAIM, 1);
->  	if (mcspi->wq == NULL) {
->  		status = -ENOMEM;
-> -		goto err1;
-> +		goto free_master;
->  	}
->  
->  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (r == NULL) {
->  		status = -ENODEV;
-> -		goto err1;
-> +		goto free_master;
->  	}
->  	r->start += pdata->regs_offset;
->  	r->end += pdata->regs_offset;
-> @@ -1129,14 +1129,14 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->  	if (!request_mem_region(r->start, resource_size(r),
->  				dev_name(&pdev->dev))) {
->  		status = -EBUSY;
-> -		goto err1;
-> +		goto free_master;
->  	}
->  
->  	mcspi->base = ioremap(r->start, resource_size(r));
->  	if (!mcspi->base) {
->  		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
->  		status = -ENOMEM;
-> -		goto err2;
-> +		goto release_region;
->  	}
->  
->  	mcspi->dev = &pdev->dev;
-> @@ -1151,7 +1151,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->  			GFP_KERNEL);
->  
->  	if (mcspi->dma_channels == NULL)
-> -		goto err2;
-> +		goto unmap_io;
->  
->  	for (i = 0; i < master->num_chipselect; i++) {
->  		char dma_ch_name[14];
-> @@ -1181,26 +1181,33 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->  		mcspi->dma_channels[i].dma_tx_sync_dev = dma_res->start;
->  	}
->  
-> +	if (status < 0)
-> +		goto dma_chnl_free;
-> +
->  	pm_runtime_enable(&pdev->dev);
->  
->  	if (status || omap2_mcspi_master_setup(mcspi) < 0)
-> -		goto err3;
-> +		goto disable_pm;
->  
->  	status = spi_register_master(master);
->  	if (status < 0)
-> -		goto err4;
-> +		goto err_spi_register;
->  
->  	return status;
->  
-> -err4:
-> +err_spi_register:
->  	spi_master_put(master);
-> -err3:
-> +disable_pm:
->  	pm_runtime_disable(&pdev->dev);
-> +dma_chnl_free:
->  	kfree(mcspi->dma_channels);
-> -err2:
-> -	release_mem_region(r->start, resource_size(r));
-> +unmap_io:
->  	iounmap(mcspi->base);
-> -err1:
-> +release_region:
-> +	release_mem_region(r->start, resource_size(r));
-> +free_master:
-> +	kfree(master);
-> +	platform_set_drvdata(pdev, NULL);
->  	return status;
->  }
->  
-> @@ -1226,6 +1233,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
->  	iounmap(base);
->  	kfree(dma_channels);
->  	destroy_workqueue(mcspi->wq);
-> +	platform_set_drvdata(pdev, NULL);
->  
->  	return 0;
->  }
-> -- 
-> 1.7.1
-> 
-> 
-> ------------------------------------------------------------------------------
-> The demand for IT networking professionals continues to grow, and the
-> demand for specialized networking skills is growing even more rapidly.
-> Take a complimentary Learning@Cisco Self-Assessment and learn 
-> about Cisco certifications, training, and career opportunities. 
-> http://p.sf.net/sfu/cisco-dev2dev
-> _______________________________________________
-> spi-devel-general mailing list
-> spi-devel-general@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
+Elevators now can simply set .icq_size and align in elevator_type and
+block layer will automatically manage icq's and guarantee correct
+behavior across ioc, q exits and elevator switches.
+
+Comments are added to iocontext.h to explain the rules for using icq.
+
+ 0001-block-cfq-replace-current_io_context-with-create_io_.patch
+ 0002-block-reorder-elevator-switch-sequence.patch
+ 0003-block-remove-elevator_queue-ops.patch
+ 0004-block-cfq-reorganize-cfq_io_context-into-generic-and.patch
+ 0005-block-cfq-move-cfqd-icq_list-to-request_queue-and-ad.patch
+ 0006-block-cfq-move-io_cq-lookup-to-blk-ioc.c.patch
+ 0007-block-cfq-move-icq-cache-management-to-block-core.patch
+ 0008-block-cfq-move-io_cq-exit-release-to-blk-ioc.c.patch
+ 0009-block-cfq-restructure-io_cq-creation-path-for-io_con.patch
+ 0010-block-cfq-move-icq-creation-and-rq-elv.icq-associati.patch
+
+This patchset is on top of
+
+  block:for-3.2/core 334c2b0b8b "blk-throttle: use queue_is_locked() instead..."
++ [1] patchset "further updates to blk_cleanup_queue(), take#2"
++ [2] patchset "rescue cfq from RCU death spiral"
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ioc
+
+Jens, this patchset is the last of io_context related updates;
+however, as I wrote earlier, I'm thinking about doing similar updates
+to blkcg code which has basically the same issues.  I'll wait for
+reviews on the pending patchsets and then proceed.
+
+diffstat follows.  Added lines are from comments.  Without them total
+LOC is negative.
+
+ block/blk-core.c          |   72 ++++++--
+ block/blk-ioc.c           |  282 ++++++++++++++++++++++---------
+ block/blk-sysfs.c         |    6 
+ block/blk.h               |   49 ++++-
+ block/cfq-iosched.c       |  408 +++++++++++-----------------------------------
+ block/deadline-iosched.c  |    4 
+ block/elevator.c          |  203 ++++++++++++----------
+ block/noop-iosched.c      |    4 
+ include/linux/blkdev.h    |   10 -
+ include/linux/elevator.h  |   23 ++
+ include/linux/iocontext.h |  114 +++++++++---
+ 11 files changed, 630 insertions(+), 545 deletions(-)
+
+Thank you.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1207608
+[2] http://thread.gmane.org/gmane.linux.kernel/1207624
