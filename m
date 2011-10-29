@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab1J2OR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 10:17:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51583 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932565Ab1J2OR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 10:17:58 -0400
-Date: Sat, 29 Oct 2011 16:13:23 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Scott James Remnant <scott@netsplit.com>
-Cc: linux-kernel@vger.kernel.org, Mandeep Singh Baines <msb@chromium.org>,
-        Neil Horman <nhorman@tuxdriver.com>
-Subject: Re: [PATCH] coredump: wait on the core pattern umh at least once
-Message-ID: <20111029141323.GA7036@redhat.com>
-References: <1319832688-30336-1-git-send-email-scott@netsplit.com>
+	id S933261Ab1J2O2W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 10:28:22 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:53742 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430Ab1J2O2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 10:28:21 -0400
+Message-ID: <4EAC0C18.5090602@gmail.com>
+Date: Sat, 29 Oct 2011 16:22:16 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319832688-30336-1-git-send-email-scott@netsplit.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, sergiu@chromium.org,
+        akpm@linux-foundation.org, msb@chromium.org, seiji.aguchi@hds.com
+Subject: Re: [PATCH] ramoops appears geared to not support ARM
+References: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28, Scott James Remnant wrote:
+Il 29/10/2011 01:21, Bryan Freed ha scritto:
+> I had some difficulty in getting ramoops to work on our ARM systems.
+> The driver maps memory with ioremap() which is supposed to map IO memory,
+> not physical RAM.  This happens to work on x86 and apparently some other
+> architectures, but it does not work on ARM.
+> Specifically, I see this comment in __arm_ioremap_pfn_caller():
+> 	Don't allow RAM to be mapped - this causes problems with ARMv6+
 >
-> If a thread crashes as a result of a signal on the thread group leader
-> that signal can still be pending,
-
-No. do_coredump() clears TIF_SIGPENDING.
-
-The problem is, this is obviously not enough and should be fixed.
-
-> While the helper obviously has to deal with that, tweaking this loop
-> so it runs at least one iteration even in that case helps a lot.
-
-I don't understand this patch. It doesn't look right at all.
-
-> @@ -2030,11 +2030,11 @@ static void wait_for_dump_helpers(struct file *file)
->  	pipe->readers++;
->  	pipe->writers--;
+> So here is a patch that hacks around the issue using page_is_ram() to
+> differentiate between the two.
 >
-> -	while ((pipe->readers > 1) && (!signal_pending(current))) {
-> +	do {
->  		wake_up_interruptible_sync(&pipe->wait);
->  		kill_fasync(&pipe->fasync_readers, SIGIO, POLL_IN);
->  		pipe_wait(pipe);
+> Am I missing something here?
+> Is ramoops working on any ARM systems yet, and I am just doing something wrong?
+>
+> My ARM platform reserves a section of RAM for use by ramoops, but it is still
+> mapped along with the rest of main memory.  This is so /dev/mem can find it
+> with xlate_dev_mem_ptr().
+> On x86, I see our BIOS reserves the memory so that it is not counted as main
+> memory, and it is not mapped until ramoops ioremaps it.
+>
+> Bryan Freed (1):
+>    ramoops: Add support for ARM systems.
+>
+>   drivers/char/ramoops.c |   67 +++++++++++++++++++++++++++++++++++++----------
+>   1 files changed, 52 insertions(+), 15 deletions(-)
+>
 
-This can hang forever. We didn't check pipe->readers, it it is zero
-nobody can wakeup us.
+Bryan,
 
-> +	} while ((pipe->readers > 1) && (!signal_pending(current)));
+I think the right thing to do here, it's to reserve in right way the 
+piece of RAM you use according to your arch (see the Russell response).
 
-And, it doesn't make any sense to call pipe_wait() with signal_pending(),
-it won't block. Note that pipe_wait() schedules in TASK_INTERRUPTIBLE.
-
-
-
-I already tried to explain why this signal_pending() was added, but
-apparently I was not clear. I'll try again in the previous thread.
-
-Oleg.
-
+Marco
