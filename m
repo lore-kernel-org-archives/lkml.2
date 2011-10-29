@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab1J2XgL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 19:36:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51214 "EHLO
+	id S932477Ab1J2XqQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 19:46:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56383 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab1J2XgJ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755384Ab1J2XqP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 19:36:09 -0400
+	Sat, 29 Oct 2011 19:46:15 -0400
 MIME-Version: 1.0
 In-Reply-To: <20111029223935.GB3952@suse.de>
 References: <CANq1E4SovxjRsuDN3PMqCnjBMMQeHWnvbwreXJWcDj7D7wUxWw@mail.gmail.com>
 	<20111029223935.GB3952@suse.de>
-Date: Sun, 30 Oct 2011 01:36:08 +0200
-Message-ID: <CANq1E4QwjDOb0x_HcarwY4cM=P5NXoL6351=ivy-NLP9ZnVoJA@mail.gmail.com>
+Date: Sun, 30 Oct 2011 01:46:13 +0200
+Message-ID: <CANq1E4QDmffb_kWycA+HM=1qQPC8Xm5Ft2ZP-p7JJ+U+e7X=oA@mail.gmail.com>
 Subject: Re: [BUG] kobject module-ref race-condition or unsafe module_put(THIS_MODULE)
 From: David Herrmann <dh.herrmann@googlemail.com>
 To: Greg KH <gregkh@suse.de>
@@ -77,37 +77,12 @@ On Sun, Oct 30, 2011 at 12:39 AM, Greg KH <gregkh@suse.de> wrote:
 >
 > What driver are you writing?  Have a pointer to the code somewhere?
 
-Initially, I was looking at hci_dev at net/bluetooth/hci_core.c and
-hci_sysfs.c. It registers a "struct device" with a device_type
-structure and a static release function. I was wondering how I can be
-sure that the "release" function is still available when it is called.
-I couldn't find any module reference in "struct device" nor can I be
-sure that the module is still loaded when the device is freed.
-
-There are several bugfixes in padovan's tree and pending on the ML so
-I can't point you to the source. Reading net/bluetooth/hci* really
-doesn't help here. However, what should I do in the following case:
-
-I provide hci_alloc_dev() which creates a hci_dev with an embedded
-"struct device" and hci_dev_get/put which map to get/put_device(). The
-device is registered with a "device_type" including a "release"
-callback which simply calls kfree() on the hci_dev.
-Now how can I be sure the "release" callback pointing to my function
-is still available when a device is freed? When unloading the
-bluetooth module I cannot wait for all hci_dev structures to be
-freed(). This would make ref-counts useless. What is the recommended
-way to do that?
-
-Also, module_put(THIS_MODULE) is used quite frequently in the tree.
-Some cases use it in error-paths where they actually know they have
-another reference. But quite many places use it the wrong way. See for
-instance drivers/watchdog/softdog.c.
+Or for instance look at drivers/input/input.c at input_dev_release().
+It also calls module_put(THIS_MODULE) and it looks quite unsafe to me.
+However, I really have no idea how to do this right in these cases.
+I think this is the same as the thing I wanted to describe about hci_dev.
 
 > greg k-h
->
-
-I am confused. I don't know how to protect "struct device" structures
-as they don't have an "owner" field.
 
 Regards
 David
