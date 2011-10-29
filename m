@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab1J2JfU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 05:35:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35678 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab1J2JfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 05:35:19 -0400
-Date: Sat, 29 Oct 2011 10:34:58 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, msb@chromium.org,
-        linux-kernel@vger.kernel.org, sergiu@chromium.org,
-        Bryan Freed <bfreed@chromium.org>, akpm@linux-foundation.org,
-        seiji.aguchi@hds.com
-Subject: Re: [PATCH] ramoops appears geared to not support ARM
-Message-ID: <20111029093458.GX19187@n2100.arm.linux.org.uk>
-References: <1319844110-23062-1-git-send-email-bfreed@chromium.org> <4EABBBD3.5030700@gmail.com>
+	id S932321Ab1J2JhP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 05:37:15 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4682 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932178Ab1J2JhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 05:37:13 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4EABC937.60600@broadcom.com>
+Date: Sat, 29 Oct 2011 11:36:55 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
+ Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EABBBD3.5030700@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Dan Carpenter" <dan.carpenter@oracle.com>
+cc: "Julia Lawall" <julia@diku.dk>, "Jiri Kosina" <jkosina@suse.cz>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] drivers/hid/hid-roccat.c: eliminate a null
+ pointer dereference
+References: <1319846297-2985-3-git-send-email-julia@diku.dk>
+ <20111029062412.GG14881@longonot.mountain>
+In-Reply-To: <20111029062412.GG14881@longonot.mountain>
+X-Enigmail-Version: 1.1.2
+OpenPGP: id=B5E1A116
+X-WSS-ID: 62B5154D0EG5983148-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 10:39:47AM +0200, Marco Stornelli wrote:
-> (Added linux-arm)
->
-> Il 29/10/2011 01:21, Bryan Freed ha scritto:
->> I had some difficulty in getting ramoops to work on our ARM systems.
->> The driver maps memory with ioremap() which is supposed to map IO memory,
->> not physical RAM.  This happens to work on x86 and apparently some other
->> architectures, but it does not work on ARM.
->> Specifically, I see this comment in __arm_ioremap_pfn_caller():
->> 	Don't allow RAM to be mapped - this causes problems with ARMv6+
->>
->> So here is a patch that hacks around the issue using page_is_ram() to
->> differentiate between the two.
->>
->> Am I missing something here?
->> Is ramoops working on any ARM systems yet, and I am just doing something wrong?
->>
->> My ARM platform reserves a section of RAM for use by ramoops, but it is still
->> mapped along with the rest of main memory.  This is so /dev/mem can find it
->> with xlate_dev_mem_ptr().
->> On x86, I see our BIOS reserves the memory so that it is not counted as main
->> memory, and it is not mapped until ramoops ioremaps it.
->>
->> Bryan Freed (1):
->>    ramoops: Add support for ARM systems.
->>
->>   drivers/char/ramoops.c |   67 +++++++++++++++++++++++++++++++++++++----------
->>   1 files changed, 52 insertions(+), 15 deletions(-)
->>
->
-> Can some ARM guys give an opinion about that?
+On 10/29/2011 08:24 AM, Dan Carpenter wrote:
+> On Sat, Oct 29, 2011 at 01:58:15AM +0200, Julia Lawall wrote:
+>> diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
+>> index 2596321..36a28b8 100644
+>> --- a/drivers/hid/hid-roccat.c
+>> +++ b/drivers/hid/hid-roccat.c
+>> @@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
+>>  
+>>  	device = devices[minor];
+>>  
+>> -	mutex_lock(&device->readers_lock);
+>> -
+>>  	if (!device) {
+>>  		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
+>> -		error = -ENODEV;
+>> -		goto exit_err;
+>> +		kfree(reader);
+>> +		mutex_lock(&devices_lock);
+> 
+> Typo.  mutex_unlock() instead of mutex_lock().
 
-Opinion about the patch which isn't present in this email (so we can't
-see it) or about the commentry above?
+This is no typo, but simply wrong. Remove the mutex_lock() as we are
+leaving the function here in error flow.
+
+>> +		return -ENODEV;
+>>  	}
+>>  
+>> +	mutex_lock(&device->readers_lock);
+>> +
+>>  	if (!device->open++) {
+>>  		/* power on device on adding first reader */
+>>  		error = hid_hw_power(device->hid, PM_HINT_FULLON);
+>>
+> 
+> regards,
+> dan carpenter
+
+Gr. AvS
+
