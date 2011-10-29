@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab1J2O2W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 10:28:22 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53742 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932430Ab1J2O2V (ORCPT
+	id S933313Ab1J2OfN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 10:35:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62217 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933035Ab1J2OfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 10:28:21 -0400
-Message-ID: <4EAC0C18.5090602@gmail.com>
-Date: Sat, 29 Oct 2011 16:22:16 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	Sat, 29 Oct 2011 10:35:11 -0400
+Message-ID: <4EAC0F01.5070404@mvista.com>
+Date: Sat, 29 Oct 2011 16:34:41 +0200
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Bryan Freed <bfreed@chromium.org>
-CC: linux-kernel@vger.kernel.org, sergiu@chromium.org,
-        akpm@linux-foundation.org, msb@chromium.org, seiji.aguchi@hds.com
-Subject: Re: [PATCH] ramoops appears geared to not support ARM
-References: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
-In-Reply-To: <1319844110-23062-1-git-send-email-bfreed@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: "Robin H. Johnson" <robbat2@gentoo.org>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2/RESEND] mv_sas: OCZ RevoDrive3 & zDrive R4 support
+References: <1318032026-21913-1-git-send-email-robbat2@gentoo.org> <20111024223008.GB3305@orbis-terrarum.net>
+In-Reply-To: <20111024223008.GB3305@orbis-terrarum.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 29/10/2011 01:21, Bryan Freed ha scritto:
-> I had some difficulty in getting ramoops to work on our ARM systems.
-> The driver maps memory with ioremap() which is supposed to map IO memory,
-> not physical RAM.  This happens to work on x86 and apparently some other
-> architectures, but it does not work on ARM.
-> Specifically, I see this comment in __arm_ioremap_pfn_caller():
-> 	Don't allow RAM to be mapped - this causes problems with ARMv6+
->
-> So here is a patch that hacks around the issue using page_is_ram() to
-> differentiate between the two.
->
-> Am I missing something here?
-> Is ramoops working on any ARM systems yet, and I am just doing something wrong?
->
-> My ARM platform reserves a section of RAM for use by ramoops, but it is still
-> mapped along with the rest of main memory.  This is so /dev/mem can find it
-> with xlate_dev_mem_ptr().
-> On x86, I see our BIOS reserves the memory so that it is not counted as main
-> memory, and it is not mapped until ramoops ioremaps it.
->
-> Bryan Freed (1):
->    ramoops: Add support for ARM systems.
->
->   drivers/char/ramoops.c |   67 +++++++++++++++++++++++++++++++++++++----------
->   1 files changed, 52 insertions(+), 15 deletions(-)
->
+Hello.
 
-Bryan,
+On 25.10.2011 0:30, Robin H. Johnson wrote:
 
-I think the right thing to do here, it's to reserve in right way the 
-piece of RAM you use according to your arch (see the Russell response).
+> In the OCZ RevoDrive3/zDrive R4 series, the "OCZ SuperScale Storage
+> Controller" with "Virtualized Controller Architecture 2.0" really seems
+> to be a Marvell 88SE9485 part, with OCZ firmware/BIOS.
+>
+> Developed and tested on OCZ RevoDrive3 120GB [PCI 1b85:1021]
+>
+> Should work on:
+> - OCZ RevoDrive3 (2x SandForce 2281)
+> - OCZ RevoDrive3 X2 (4x SandForce 2281)
+> - OCZ zDrive R4 CM84 (4x SandForce 2281)
+> - OCZ zDrive R4 CM88 (8x SandForce 2281)
+> - OCZ zDrive R4 RM84 (4x SandForce 2582)
+> - OCZ zDrive R4 RM88 (8x SandForce 2582)
+>
+> All of this because a friend recently bought a OCZ RevoDrive3 and was
+> bitten by the lack of Linux support.
+>
+> Notes from testing:
+> -------------------
+> - SMART works.
+> - VPD Device Identification is "OCZ-REVODRIVE3"
+> - Thin provisioning/TRIM seems to be implemented as WRITE SAME UNMAP,
+>    with deterministic (non-zero) read after TRIM, but I'm not sure if it
+>    works 100% in my testing.
+> - Some of the tuning in the firmware seems to ensure much better
+>    performance when in a RAID0 setup than using the two devices
+>    seperately.
+>
+> I have not tested booting from the SSD, because all of this was
+> developed and tested remotely from the actual hardware.
+>
+> Signed-off-by: Robin H. Johnson<robbat2@gentoo.org>
+> Thanks-To: Gordon Pritchard<gordp@sfu.ca>
+[...]
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index ae96bbe..3fe46e9 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2868,3 +2868,5 @@
+>
+>   #define PCI_VENDOR_ID_XEN		0x5853
+>   #define PCI_DEVICE_ID_XEN_PLATFORM	0x0001
+> +
+> +#define PCI_VENDOR_ID_OCZ		0x1b85
 
-Marco
+    The vendor ID macros in this file are sorted by the ID value (except 
+Xen, it seems).
+
+WBR. Sergei
+
