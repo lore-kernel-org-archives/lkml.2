@@ -1,120 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808Ab1J2SJL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 14:09:11 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:35128 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933729Ab1J2SJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 14:09:09 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: netdev@vger.kernel.org, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] net/ethernet: Move mac89x0.c from apple to cirrus
-Date: Sat, 29 Oct 2011 20:09:01 +0200
-Message-Id: <1319911741-9977-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S933832Ab1J2SSe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 14:18:34 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35076 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932323Ab1J2SSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 14:18:33 -0400
+Date: Sat, 29 Oct 2011 20:18:26 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: David Herrmann <dh.herrmann@googlemail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5 v2] drivers/hid/hid-roccat.c: eliminate a null pointer
+ dereference
+In-Reply-To: <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz>
+Message-ID: <Pine.LNX.4.64.1110292016290.10808@ask.diku.dk>
+References: <1319846297-2985-3-git-send-email-julia@diku.dk>
+ <20111029062412.GG14881@longonot.mountain> <4EABC937.60600@broadcom.com>
+ <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
+ <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk> <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Macintosh CS89x0 based ethernet cards use a Crystal Semiconductor (Now
-Cirrus Logic) CS89x0 chip, so the mac89x0 driver should be in
-drivers/net/ethernet/cirrus instead of drivers/net/ethernet/apple.
+On Sat, 29 Oct 2011, Jiri Kosina wrote:
 
-This also fixes a build problem, as the driver needs a header file from the
-cirrus directory:
+> On Sat, 29 Oct 2011, Julia Lawall wrote:
+> 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > It is not possible to take the lock in device if device is NULL.
+> > The mutex_lock is thus moved after the NULL test, and the relevant part of
+> > the shared error handling code is moved up.
+> > 
+> > The semantic match that finds this problem is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @r@
+> > expression E, E1;
+> > identifier f;
+> > statement S1,S2,S3;
+> > @@
+> > 
+> > if (E == NULL)
+> > {
+> >   ... when != if (E == NULL || ...) S1 else S2
+> >       when != E = E1
+> > *E->f
+> >   ... when any
+> >   return ...;
+> > }
+> > else S3
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > mutex_lock changed to mutex_unlock in error handling code
+> > 
+> >  drivers/hid/hid-roccat.c |    9 +++++----
+> >  1 file changed, 5 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
+> > index 2596321..36a28b8 100644
+> > --- a/drivers/hid/hid-roccat.c
+> > +++ b/drivers/hid/hid-roccat.c
+> > @@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
+> >  
+> >  	device = devices[minor];
+> >  
+> > -	mutex_lock(&device->readers_lock);
+> > -
+> >  	if (!device) {
+> >  		pr_emerg("roccat device with minor %d doesn't exist\n", minor);
+> > -		error = -ENODEV;
+> > -		goto exit_err;
+> > +		kfree(reader);
+> > +		mutex_unlock(&devices_lock);
+> > +		return -ENODEV;
+> >  	}
+> >  
+> > +	mutex_lock(&device->readers_lock);
+> > +
+> >  	if (!device->open++) {
+> >  		/* power on device on adding first reader */
+> >  		error = hid_hw_power(device->hid, PM_HINT_FULLON);
+> 
+> Julia,
+> 
+> thanks a lot for fixing this.
+> 
+> Could you please redo the patch in a way that it adds second 
+> 'exit_unlock1' label (and renames 'exit_unlock' to 'exit_unlock2') (or 
+> any appropriate variation of the names) and preserve error path using goto 
+> instead of mixture of returns and gotos that this patch would introduce?
 
-drivers/net/ethernet/apple/mac89x0.c:107:20: error: cs89x0.h: No such file or directory
+OK.  At first I couldn't see how to do this without duplicating the 
+unlocks in the success and failure cases, but perhaps there is a solution 
+by adding more gotos.  I'll try for that.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/net/ethernet/apple/Kconfig               |   12 ------------
- drivers/net/ethernet/apple/Makefile              |    1 -
- drivers/net/ethernet/cirrus/Kconfig              |   14 +++++++++++++-
- drivers/net/ethernet/cirrus/Makefile             |    1 +
- drivers/net/ethernet/{apple => cirrus}/mac89x0.c |    0
- 5 files changed, 14 insertions(+), 14 deletions(-)
- rename drivers/net/ethernet/{apple => cirrus}/mac89x0.c (100%)
-
-diff --git a/drivers/net/ethernet/apple/Kconfig b/drivers/net/ethernet/apple/Kconfig
-index a759d54..1375e2d 100644
---- a/drivers/net/ethernet/apple/Kconfig
-+++ b/drivers/net/ethernet/apple/Kconfig
-@@ -52,18 +52,6 @@ config BMAC
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called bmac.
- 
--config MAC89x0
--	tristate "Macintosh CS89x0 based ethernet cards"
--	depends on MAC
--	---help---
--	  Support for CS89x0 chipset based Ethernet cards.  If you have a
--	  Nubus or LC-PDS network (Ethernet) card of this type, say Y and
--	  read the Ethernet-HOWTO, available from
--	  <http://www.tldp.org/docs.html#howto>.
--
--	  To compile this driver as a module, choose M here. This module will
--	  be called mac89x0.
--
- config MACMACE
- 	bool "Macintosh (AV) onboard MACE ethernet"
- 	depends on MAC
-diff --git a/drivers/net/ethernet/apple/Makefile b/drivers/net/ethernet/apple/Makefile
-index 0d3a591..86eaa17 100644
---- a/drivers/net/ethernet/apple/Makefile
-+++ b/drivers/net/ethernet/apple/Makefile
-@@ -4,5 +4,4 @@
- 
- obj-$(CONFIG_MACE) += mace.o
- obj-$(CONFIG_BMAC) += bmac.o
--obj-$(CONFIG_MAC89x0) += mac89x0.o
- obj-$(CONFIG_MACMACE) += macmace.o
-diff --git a/drivers/net/ethernet/cirrus/Kconfig b/drivers/net/ethernet/cirrus/Kconfig
-index 6cbb81c..1f8648f 100644
---- a/drivers/net/ethernet/cirrus/Kconfig
-+++ b/drivers/net/ethernet/cirrus/Kconfig
-@@ -6,7 +6,7 @@ config NET_VENDOR_CIRRUS
- 	bool "Cirrus devices"
- 	default y
- 	depends on ISA || EISA || MACH_IXDP2351 || ARCH_IXDP2X01 \
--		|| MACH_MX31ADS || MACH_QQ2440 || (ARM && ARCH_EP93XX)
-+		|| MACH_MX31ADS || MACH_QQ2440 || (ARM && ARCH_EP93XX) || MAC
- 	---help---
- 	  If you have a network (Ethernet) card belonging to this class, say Y
- 	  and read the Ethernet-HOWTO, available from
-@@ -47,4 +47,16 @@ config EP93XX_ETH
- 	  This is a driver for the ethernet hardware included in EP93xx CPUs.
- 	  Say Y if you are building a kernel for EP93xx based devices.
- 
-+config MAC89x0
-+	tristate "Macintosh CS89x0 based ethernet cards"
-+	depends on MAC
-+	---help---
-+	  Support for CS89x0 chipset based Ethernet cards.  If you have a
-+	  Nubus or LC-PDS network (Ethernet) card of this type, say Y and
-+	  read the Ethernet-HOWTO, available from
-+	  <http://www.tldp.org/docs.html#howto>.
-+
-+	  To compile this driver as a module, choose M here. This module will
-+	  be called mac89x0.
-+
- endif # NET_VENDOR_CIRRUS
-diff --git a/drivers/net/ethernet/cirrus/Makefile b/drivers/net/ethernet/cirrus/Makefile
-index 14bd77e..ca245e2 100644
---- a/drivers/net/ethernet/cirrus/Makefile
-+++ b/drivers/net/ethernet/cirrus/Makefile
-@@ -4,3 +4,4 @@
- 
- obj-$(CONFIG_CS89x0) += cs89x0.o
- obj-$(CONFIG_EP93XX_ETH) += ep93xx_eth.o
-+obj-$(CONFIG_MAC89x0) += mac89x0.o
-diff --git a/drivers/net/ethernet/apple/mac89x0.c b/drivers/net/ethernet/cirrus/mac89x0.c
-similarity index 100%
-rename from drivers/net/ethernet/apple/mac89x0.c
-rename to drivers/net/ethernet/cirrus/mac89x0.c
--- 
-1.7.0.4
-
+julia
