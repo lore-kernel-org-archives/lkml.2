@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab1J2NEY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 09:04:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59084 "EHLO
+	id S932986Ab1J2NZq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 09:25:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58669 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932252Ab1J2NEX convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932380Ab1J2NZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 09:04:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319532747-3223-1-git-send-email-hamo.by@gmail.com>
-References: <1319532747-3223-1-git-send-email-hamo.by@gmail.com>
-From: Hamo <hamo.by@gmail.com>
-Date: Sat, 29 Oct 2011 21:03:57 +0800
-Message-ID: <CAO_0yfOw77Z7BsOE6Obdzs3N74dx58gkb9Kn2up5pFFqM7_R7A@mail.gmail.com>
-Subject: Re: [PATCH] MAINTAINERS: update gpio subsystem file list
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, joe@perches.com,
-        gregkh@suse.de, davem@davemloft.net
-Cc: grant.likely@secretlab.ca, Yang Bai <hamo.by@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 29 Oct 2011 09:25:45 -0400
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 1/7] Staging: comedi: fix printk issue in das6402.c
+Date: Sat, 29 Oct 2011 18:55:23 +0530
+Message-Id: <1319894729-1744-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 4:52 PM,  <hamo.by@gmail.com> wrote:
-> From: Yang Bai <hamo.by@gmail.com>
->
-> Signed-off-by: Yang Bai <hamo.by@gmail.com>
-> ---
->  MAINTAINERS |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 51a8160..c1029e4 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2851,6 +2851,7 @@ T:        git git://git.secretlab.ca/git/linux-2.6.git
->  F:     Documentation/gpio.txt
->  F:     drivers/gpio/
->  F:     include/linux/gpio*
-> +F:     include/asm-generic/gpio.h
->
->  GRE DEMULTIPLEXER DRIVER
->  M:     Dmitry Kozlov <xeb@mail.ru>
-> --
-> 1.7.7
->
->
+This is a patch to the das6402.c file that fixes up a printk
+warning found by the checkpatch.pl tool.
 
-Ping.
+Converted printks to dev_version.
+Removed unnecessary printk statements.
 
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
+---
+ drivers/staging/comedi/drivers/das6402.c |   23 +++++++----------------
+ 1 files changed, 7 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index 6328f52..f256841 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -171,7 +171,7 @@ static irqreturn_t intr_handler(int irq, void *d)
+ 	struct comedi_subdevice *s = dev->subdevices;
+ 
+ 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+-		printk("das6402: BUG: spurious interrupt\n");
++		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
+ 		return IRQ_HANDLED;
+ 	}
+ #ifdef DEBUG
+@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
+ 	 */
+ 
+ 	devpriv->das6402_ignoreirq = 1;
+-#ifdef DEBUG
+-	printk("das6402: Stopping acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
+ 	devpriv->das6402_ignoreirq = 1;
+ 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s, comedi_trig * it)
+ {
+ 	devpriv->das6402_ignoreirq = 1;
+-
+-#ifdef DEBUG
+-	printk("das6402: Starting acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Starting acquisition\n");
+ 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+ 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
+@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
+ 	if (iobase == 0)
+ 		iobase = 0x300;
+ 
+-	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+-
+ 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+-		printk(" I/O port conflict\n");
++		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
+ 	/* should do a probe here */
+ 
+ 	irq = it->options[0];
+-	printk(" ( irq = %u )", irq);
++	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
+ 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
+-	if (ret < 0) {
+-		printk("irq conflict\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+-	dev->irq = irq;
+ 
++	dev->irq = irq;
+ 	ret = alloc_private(dev, sizeof(struct das6402_private));
+ 	if (ret < 0)
+ 		return ret;
 -- 
-    """
-    Keep It Simple,Stupid.
-    """
+1.7.0.4
 
-Chinese Name: 白杨
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
