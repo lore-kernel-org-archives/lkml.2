@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752173Ab1J3UGp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:06:45 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:32788 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab1J3UGo (ORCPT
+	id S1752212Ab1J3UQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:16:26 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54088 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602Ab1J3UQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:06:44 -0400
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Jonathan Corbet <corbet@lwn.net>
-In-Reply-To: <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
-	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
-	 <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
-	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
-	 <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
-	 <20111028163053.GC1319@redhat.com>
-	 <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
-	 <20138.62532.493295.522948@quad.stoffel.home>
-	 <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default 20139.5644.583790.903531@quad.stoffel.home>
-	 <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 30 Oct 2011 13:06:02 -0700
-Message-ID: <1320005162.15403.14.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11103020-7408-0000-0000-00000075200B
+	Sun, 30 Oct 2011 16:16:25 -0400
+Date: Sun, 30 Oct 2011 13:16:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: David Fries <david@fries.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
+Subject: Re: hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread
+ injection and TCP connection hijacking
+Message-ID: <20111030201618.GA7696@google.com>
+References: <20110806121247.GC23937@htj.dyndns.org>
+ <20111030044821.GA23741@spacedout.fries.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111030044821.GA23741@spacedout.fries.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-10-30 at 12:18 -0700, Dan Magenheimer wrote:
-> > since they're the ones who will have to understand this stuff and know
-> > how to maintain it.  And keeping this maintainable is a key goal.
+(cc'ing Rafael and linux-pm)
+
+On Sat, Oct 29, 2011 at 11:48:21PM -0500, David Fries wrote:
+> I saw the write up on this on lwn.net, pretty creative by the way, and
+> it got me thinking about a different checkpoint/restart problem I've
+> been running into.  Specifically in hibernating to disk.  In the
+> hibernate case active TCP connections hang after resuming, while an
+> idle TCP connection will continue after the system is back up.  My
+> observation is the kernel checkpoints itself to memory, enables
+> devices, writes out that checkpoint image to storage, then powers off.
+> The problem is if TCP packets are received while writing to storage,
+> the kernel will continue to queue and ack those TCP packets, but the
+> running kernel and it's network state is shortly lost.  When the
+> computer resumes, those TCP byte sequences hang the TCP connection for
+> an extended period of time while the resumed computer refuses to
+> acknowledge the data that was received after checkpointing and the now
+> running kernel knew nothing about, and the other computer tries in
+> vain to resend any data that hadn't yet been acknowledged, which is
+> always after the data that was lost, until one of them eventually
+> gives up.
 > 
-> Absolutely agree.  Count the number of frontswap lines that affect
-> the current VM core code and note also how they are very clearly
-> identified.  It really is a very VERY small impact to the core VM
-> code (e.g. in the files swapfile.c and page_io.c). 
+> I've been wondering if it was safe or possible to leave any network
+> interfaces down after the checkpoint, or what the right solution would
+> be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
+> bit just after the kernel checkpoint (for the kernel is walking dead
+> and won't remember anything that happens), and then prevent any TCP
+> acks from being sent for those connections would be the right
+> solution.  I've taken to unplugging the physical lan cable,
+> hibernating to disk, and plugging it back in after the system is down,
+> to avoid the problem.  Any ideas?
 
-Granted, the impact on the core VM in lines of code is small.  But, I
-think the behavioral impact is potentially huge since tmem's hooks add
-non-trivial amounts of framework underneath the VM in core paths.  In
-zcache's case, this means a bunch of allocations and an entirely new
-allocator memory allocator being used in the swap paths.
+Hmmm... sounds like taking down network interfaces before starting
+hibernation sequence should be enough, which shouldn't be too
+difficult to implement from userland.  Rafael, what do you think?
 
-We're certainly still shaking bugs out of the interactions there like
-with zcache_direct_reclaim_lock.  Granted, that's not a
-tmem/frontswap/cleancache bug, but it does speak to the difficulty and
-subtlety of writing one of those frameworks underneath the tmem API.
+Thanks.
 
--- Dave
-
+-- 
+tejun
