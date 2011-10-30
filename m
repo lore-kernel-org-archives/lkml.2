@@ -1,165 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1J3I11 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 04:27:27 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:44119 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752994Ab1J3I1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 04:27:25 -0400
-Date: Sat, 29 Oct 2011 11:27:10 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com, shaohua.li@intel.com,
-        ak@linux.intel.com, mhocko@suse.cz, alex.shi@intel.com, efault@gmx.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
-Message-ID: <20111029182710.GG6160@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111001152514.GA16930@elte.hu>
- <20111003055302.GA23527@elte.hu>
- <20111003161335.GA2403@linux.vnet.ibm.com>
- <20111004074637.GA14061@elte.hu>
- <20111024100501.GA24913@linux.vnet.ibm.com>
- <20111024114806.GA3340@linux.vnet.ibm.com>
- <20111026203020.GA10285@elte.hu>
- <20111027075901.GB2313@linux.vnet.ibm.com>
- <20111027080016.GA16885@elte.hu>
- <4EAA14A1.5060204@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EAA14A1.5060204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11103008-3534-0000-0000-0000010AA511
+	id S1755519Ab1J3Iwr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 04:52:47 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52304 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab1J3Iwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 04:52:45 -0400
+Message-ID: <1319964754.13597.26.camel@edumazet-laptop>
+Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sun, 30 Oct 2011 09:52:34 +0100
+In-Reply-To: <CA+55aFz=sxRjw6u-ww0P=9hhvWaZP=+QJZ68W+B9WtvQqj9Ogg@mail.gmail.com>
+References: <1319764761.23112.14.camel@edumazet-laptop>
+	 <20111028012521.GF25795@one.firstfloor.org>
+	 <CA+55aFy9oJSK99K=brRzSfSnLocO=PuS7yuKkAcw3t5hATJrfw@mail.gmail.com>
+	 <1319766293.6759.17.camel@deadeye>
+	 <1319770376.23112.58.camel@edumazet-laptop>
+	 <1319772566.6759.27.camel@deadeye>
+	 <1319777025.23112.67.camel@edumazet-laptop>
+	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
+	 <1319803781.23112.113.camel@edumazet-laptop>
+	 <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
+	 <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
+	 <1319813252.23112.122.camel@edumazet-laptop>
+	 <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
+	 <CA+55aFz=sxRjw6u-ww0P=9hhvWaZP=+QJZ68W+B9WtvQqj9Ogg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 10:34:09AM +0800, Li Zefan wrote:
-> >>>>
-> >>>> And I cannot reproduce after merging into 3.1.  :-(
-> >>>
-> >>> Here's another one i just got with latest -tip:
-> >>>
-> >>> PM: Adding info for No Bus:vcsa2
-> >>>
-> >>> ===============================
-> >>> [ INFO: suspicious RCU usage. ]
-> >>> -------------------------------
-> >>> include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
-> >>>
-> >>> other info that might help us debug this:
-> >>>
-> >>>
-> >>> rcu_scheduler_active = 1, debug_locks = 0
-> >>> 1 lock held by true/655:
-> >>>  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<810d1bd7>] prepare_bprm_creds+0x27/0x70
-> >>>
-> >>> stack backtrace:
-> >>> Pid: 655, comm: true Not tainted 3.1.0-tip-01868-g1271bd2-dirty #161079
-> >>> Call Trace:
-> >>>  [<81abe239>] ? printk+0x18/0x1a
-> >>>  [<81064920>] lockdep_rcu_suspicious+0xc0/0xd0
-> >>>  [<8108aa02>] perf_event_enable_on_exec+0x1d2/0x1e0
-> >>>  [<81063764>] ? __lock_release+0x54/0xb0
-> >>>  [<8108cca8>] perf_event_comm+0x18/0x60
-> >>>  [<810d1abd>] ? set_task_comm+0x5d/0x80
+Le samedi 29 octobre 2011 à 10:34 -0700, Linus Torvalds a écrit :
+> On Fri, Oct 28, 2011 at 7:55 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Comments? I think I'm open to tested patches..
 > 
-> void set_task_comm(struct task_struct *tsk, char *buf)
-> {
->         task_lock(tsk);
-> 	...
->         task_unlock(tsk);
->         perf_event_comm(tsk);
-> }
+> Here's a *untested* patch.
 > 
-> see, perf_event_comm() is called after releasing task_lock.
+> In particular, I worry that I'd need to add a "#include
+> <linux/compiler.h>" to some header file, although I suspect it gets
+> included some way regardless.
 > 
-> perf_event_comm()
->   perf_event_enable_on_exec()
->     perf_cgroup_sched_out()
->       perf_cgroup_from_task()
->         task_subsys_state()
+> And when I say "untested", I mean it. I verified that this makes
+> *some* difference to the generated code, but I didn't actually check
+> if it really matters, or if it actually compiles and works in general.
 > 
-> No proper lock is held, hence the warning.
+> Caveat tester,
+> 
 
-Thank you for the analysis.  Does the following patch fix this problem?
+Since jetlag strikes me again, I took your patch and had to change it a
+bit, since :
 
-							Thanx, Paul
+1) x86 uses its own atomic_read() definition in
+arch/x86/include/asm/atomic.h
 
-------------------------------------------------------------------------
+2) We can use a const pointer in ACCESS_AT_MOST_ONCE(*ptr), so I had to
+change a bit your implementation, I hope I did not mess it.
 
-fs: Add RCU protection in set_task_comm()
+Tested (built/booted) on x86 and x86_64
 
-Running "perf stat true" results in the following RCU-lockdep splat:
+We could logically split this patch in three parts, but hey, maybe I can
+try to sleep after all ;)
 
-===============================
-[ INFO: suspicious RCU usage. ]
--------------------------------
-include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
+Thanks
 
-other info that might help us debug this:
+[PATCH] atomic: introduce ACCESS_AT_MOST_ONCE() helper
 
-rcu_scheduler_active = 1, debug_locks = 0
-1 lock held by true/655:
-#0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<810d1bd7>] prepare_bprm_creds+0x27/0x70
+In commit 4e60c86bd9e (gcc-4.6: mm: fix unused but set warnings)
+Andi forced VM_BUG_ON(cond) to evaluate cond, even if CONFIG_DEBUG_VM is
+not set :
 
-stack backtrace:
-Pid: 655, comm: true Not tainted 3.1.0-tip-01868-g1271bd2-dirty #161079
-Call Trace:
-[<81abe239>] ? printk+0x18/0x1a
-[<81064920>] lockdep_rcu_suspicious+0xc0/0xd0
-[<8108aa02>] perf_event_enable_on_exec+0x1d2/0x1e0
-[<81063764>] ? __lock_release+0x54/0xb0
-[<8108cca8>] perf_event_comm+0x18/0x60
-[<810d1abd>] ? set_task_comm+0x5d/0x80
-[<81af622d>] ? _raw_spin_unlock+0x1d/0x40
-[<810d1ac4>] set_task_comm+0x64/0x80
-[<810d25fd>] setup_new_exec+0xbd/0x1d0
-[<810d1b61>] ? flush_old_exec+0x81/0xa0
-[<8110753e>] load_elf_binary+0x28e/0xa00
-[<810d2101>] ? search_binary_handler+0xd1/0x1d0
-[<81063764>] ? __lock_release+0x54/0xb0
-[<811072b0>] ? load_elf_library+0x260/0x260
-[<810d2108>] search_binary_handler+0xd8/0x1d0
-[<810d2060>] ? search_binary_handler+0x30/0x1d0
-[<810d242f>] do_execve_common+0x22f/0x2a0
-[<810d24b2>] do_execve+0x12/0x20
-[<81009592>] sys_execve+0x32/0x70
-[<81af7752>] ptregs_execve+0x12/0x20
-[<81af76d4>] ? sysenter_do_call+0x12/0x36
+#ifdef CONFIG_DEBUG_VM
+#define VM_BUG_ON(cond) BUG_ON(cond)
+#else
+#define VM_BUG_ON(cond) do { (void)(cond); } while (0)
+#endif
 
-Li Zefan noted that this is due to set_task_comm() dropping the task
-lock before invoking perf_event_comm(), which could in fact result in
-the task being freed up before perf_event_comm() completed tracing in
-the case where one task invokes set_task_comm() on another task -- which
-actually does occur via comm_write(), which can be invoked via /proc.
+As a side effect, get_page()/put_page_testzero() are performing more bus
+transactions on contended cache line on some workloads (tcp_sendmsg()
+for example, where a page is acting as a shared buffer)
 
-This commit fixes this problem by entering an RCU read-side critical
-section before acquiring the task lock and exiting this critical section
-after perf_event_comm() returns.
+0,05 :  ffffffff815e4775:       je     ffffffff815e4970 <tcp_sendmsg+0xc80>
+0,05 :  ffffffff815e477b:       mov    0x1c(%r9),%eax    // useless                  
+3,32 :  ffffffff815e477f:       mov    (%r9),%rax        // useless                  
+0,51 :  ffffffff815e4782:       lock incl 0x1c(%r9)                        
+3,87 :  ffffffff815e4787:       mov    (%r9),%rax                          
+0,00 :  ffffffff815e478a:       test   $0x80,%ah                           
+0,00 :  ffffffff815e478d:       jne    ffffffff815e49f2 <tcp_sendmsg+0xd02>      
 
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Thats because both atomic_read() and constant_test_bit() use a volatile
+attribute and thus compiler is forced to perform a read, even if the
+result is optimized away.
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 25dcbe5..fb928d3 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1056,6 +1056,7 @@ EXPORT_SYMBOL_GPL(get_task_comm);
- 
- void set_task_comm(struct task_struct *tsk, char *buf)
+Linus suggested using an asm("") trick and place it in a variant of
+ACCESS_ONCE(), allowing compiler to omit reading memory if result is
+unused.
+
+This patch introduces ACCESS_AT_MOST_ONCE() helper and use it in the x86
+implementation of atomic_read() and constant_test_bit()
+
+on x86_64, we thus reduce vmlinux text a bit (if CONFIG_DEBUG_VM=n)
+
+# size vmlinux.old vmlinux.new
+   text	   data	    bss	    dec	    hex	filename
+10706848	2894216	1540096	15141160	 e70928	vmlinux.old
+10704680	2894216	1540096	15138992	 e700b0	vmlinux.new
+
+Based on a prior patch from Linus
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ arch/x86/include/asm/atomic.h |    2 +-
+ arch/x86/include/asm/bitops.h |    7 +++++--
+ include/asm-generic/atomic.h  |    2 +-
+ include/linux/compiler.h      |   10 ++++++++++
+ 4 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
+index 58cb6d4..b1f0c6b 100644
+--- a/arch/x86/include/asm/atomic.h
++++ b/arch/x86/include/asm/atomic.h
+@@ -22,7 +22,7 @@
+  */
+ static inline int atomic_read(const atomic_t *v)
  {
-+	rcu_read_lock(); /* protect task pointer through tracing. */
- 	task_lock(tsk);
- 
- 	/*
-@@ -1069,6 +1070,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
- 	strlcpy(tsk->comm, buf, sizeof(tsk->comm));
- 	task_unlock(tsk);
- 	perf_event_comm(tsk);
-+	rcu_read_unlock();
+-	return (*(volatile int *)&(v)->counter);
++	return ACCESS_AT_MOST_ONCE(v->counter);
  }
  
- int flush_old_exec(struct linux_binprm * bprm)
+ /**
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 1775d6e..e30a190 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -308,8 +308,11 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
+ 
+ static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
+ {
+-	return ((1UL << (nr % BITS_PER_LONG)) &
+-		(addr[nr / BITS_PER_LONG])) != 0;
++	const unsigned long *word = (const unsigned long *)addr +
++				    (nr / BITS_PER_LONG);
++	unsigned long bit = 1UL << (nr % BITS_PER_LONG);
++
++	return (bit & ACCESS_AT_MOST_ONCE(*word)) != 0;
+ }
+ 
+ static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
+diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+index e37963c..c05e21f 100644
+--- a/include/asm-generic/atomic.h
++++ b/include/asm-generic/atomic.h
+@@ -39,7 +39,7 @@
+  * Atomically reads the value of @v.
+  */
+ #ifndef atomic_read
+-#define atomic_read(v)	(*(volatile int *)&(v)->counter)
++#define atomic_read(v)	ACCESS_AT_MOST_ONCE((v)->counter)
+ #endif
+ 
+ /**
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index 320d6c9..21f102d 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -308,4 +308,14 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+  */
+ #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
+ 
++/*
++ * Like ACCESS_ONCE, but can be optimized away if nothing uses the value,
++ * and/or merged with previous non-ONCE accesses.
++ */
++#define ACCESS_AT_MOST_ONCE(x)			\
++	({	unsigned long __y;		\
++		asm("":"=r" (__y):"0" (x));	\
++		(__force __typeof__(x)) __y;	\
++	})
++
+ #endif /* __LINUX_COMPILER_H */
+
 
