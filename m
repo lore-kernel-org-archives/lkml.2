@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab1J3UDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:03:43 -0400
-Received: from smtprelay0177.b.hostedemail.com ([64.98.42.177]:40343 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750868Ab1J3UDm (ORCPT
+	id S1752080Ab1J3UGY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:06:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36351 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab1J3UGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:03:42 -0400
-X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 16:03:42 EDT
-X-Panda: scanned!
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 2206
-Date: Sun, 30 Oct 2011 19:57:12 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-Subject: HT (Hyper Threading) aware process scheduling doesn't work as it
- should
+	Sun, 30 Oct 2011 16:06:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.147.51.36]
+X-Originating-IP: [93.173.21.55]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 30 Oct 2011 22:06:00 +0200
+Message-ID: <CAK=WgbZso1qk5XUTjB1bLXYbezv80SbgyEXJ3Q32U28+cQMfZA@mail.gmail.com>
+Subject: [GIT PULL] hwspinlock changes for 3.2
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
+        linux-omap@vger.kernel.org, "Gutierrez, Juan" <jgutierrez@ti.com>,
+        Mathieu Poirier <mathieu.poirier@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Linus,
 
-It's known that if you want to reach maximum performance on HT enabled Intel CPUs you
-should distribute the load evenly between physical cores, and when you have loaded all
-of them you should then load the remaining virtual cores.
+Please pull from
 
-For example, if you have 4 physical cores and 8 virtual CPUs then if you have just four
-tasks consuming 100% of CPU time you should load four CPU pairs:
+git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git for-linus
 
-VCPUs: {1,2} - one task running
+To receive hwspinlock updates for 3.2.
 
-VCPUs: {3,4} - one task running
+The only noticeable change is a new hwspinlock driver for
+ST-Ericsson's u8500 platform by Mathieu; the rest of the changes are
+either cleanups or trivial fixes (one of the fixes also trivially
+changes a mach-omap2 file, and is Acked by Tony).
 
-VCPUs: {5,6} - one task running
+All of the patches have been tested in linux-next and currently there
+are no merge conflicts, though I expect one to happen with the arm-sco
+tree, as reported (and fixed) by Stephen earlier this month (see
+http://www.spinics.net/lists/linux-next/msg16931.html).
 
-VCPUs: {7,8} - one task running
+I've flagged one of the fixes as stable material (the one from Juan).
+Normally I would only send you stable-worthy patches during the rc
+cycle and not wait until the merge window, but since the hwspinlock
+tree and its upstream path have only materialized quite late in the
+cycle (see https://lkml.org/lkml/2011/9/21/249), I've decided this
+time to wait for the merge window.
 
-It's absolutely detrimental to performance to bind two tasks to e.g. two physical cores
-{1,2} {3,4} and then the remaining two tasks to e.g. the third core 5,6:
+Hope it's ok; please tell me if there are any issues.
 
-VCPUs: {1,2} - one task running
+Thanks,
+Ohad.
 
-VCPUs: {3,4} - one task running
+The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
 
-VCPUs: {5,6} - *two* task runnings
+  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
 
-VCPUs: {7,8} - no tasks running
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git for-linus
 
-I've found out that even on Linux 3.0.8 the process scheduler doesn't correctly distributes
-the load amongst virtual CPUs. E.g. on a 4-core system (8 total virtual CPUs) the process
-scheduler often run some instances of four different tasks on the same physical CPU.
+Juan Gutierrez (1):
+      hwspinlock/core: use a mutex to protect the radix tree
 
-Maybe I shouldn't trust top/htop output on this matter but the same test carried out on
-Microsoft XP OS shows that it indeed distributes the load correctly, running tasks on different
-physical cores whenever possible.
+Mathieu J. Poirier (1):
+      hwspinlock/u8500: add hwspinlock driver
 
-Any thoughts? comments? I think this is quite a serious problem.
+Ohad Ben-Cohen (8):
+      hwspinlock/core: simplify Kconfig
+      hwspinlock/core: simplify 'owner' handling
+      hwspinlock/omap: simplify allocation scheme
+      hwspinlock/core/omap: fix id issues on multiple hwspinlock devices
+      hwspinlock/core: remove stubs for register/unregister
+      hwspinlock/core: register a bank of hwspinlocks in a single API call
+      hwspinlock/omap: omap_hwspinlock_remove should be __devexit
+      hwspinlock: add MAINTAINERS entries
 
-Best wishes,
-
-Artem
+ Documentation/hwspinlock.txt             |   74 +++++++-----
+ MAINTAINERS                              |   14 ++
+ arch/arm/mach-omap2/hwspinlock.c         |    8 +-
+ drivers/hwspinlock/Kconfig               |   27 +++--
+ drivers/hwspinlock/Makefile              |    1 +
+ drivers/hwspinlock/hwspinlock_core.c     |  204 +++++++++++++++++++-----------
+ drivers/hwspinlock/hwspinlock_internal.h |   40 ++++--
+ drivers/hwspinlock/omap_hwspinlock.c     |  127 +++++++------------
+ drivers/hwspinlock/u8500_hsem.c          |  198 +++++++++++++++++++++++++++++
+ include/linux/hwspinlock.h               |   46 +++++--
+ 10 files changed, 514 insertions(+), 225 deletions(-)
+ create mode 100644 drivers/hwspinlock/u8500_hsem.c
