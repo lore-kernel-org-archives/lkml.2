@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934256Ab1J3QiP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 12:38:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41902 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934235Ab1J3QiM convert rfc822-to-8bit (ORCPT
+	id S934249Ab1J3QnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 12:43:16 -0400
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:60569 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755686Ab1J3QnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 12:38:12 -0400
-Date: Sun, 30 Oct 2011 09:42:34 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: gregkh@suse.de
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] tty: remove the (now) unused tty_default_fops()
- function
-Message-ID: <20111030094234.276fb8aa@infradead.org>
-In-Reply-To: <20111030094038.7046d529@infradead.org>
-References: <20111030094038.7046d529@infradead.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 30 Oct 2011 12:43:14 -0400
+Message-ID: <4EAD7E9F.6050709@xenotime.net>
+Date: Sun, 30 Oct 2011 09:43:11 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RESEND] media: tea5764: reconcile Kconfig symbol and
+ macro
+References: <1319976530.14409.17.camel@x61.thuisdomein>
+In-Reply-To: <1319976530.14409.17.camel@x61.thuisdomein>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0e52df366ca86e54b8dec9bf6617cee065c9f359 Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sat, 29 Oct 2011 10:48:37 -0700
-Subject: [PATCH 3/3] tty: remove the (now) unused tty_default_fops() function
+On 10/30/11 05:08, Paul Bolle wrote:
+> The Kconfig symbol RADIO_TEA5764_XTAL is unused. The code does use a
+> RADIO_TEA5764_XTAL macro, but does that rather peculiar. But there seems
+> to be a way to keep both. (The easiest way out would be to rip out both
+> the Kconfig symbol and the macro.)
+> 
+> Note there's also a module parameter 'use_xtal' to influence all this.
 
-Now that the pty code uses compile time initialization for its
-ptmx file operations structure, the tty_default_fops() is completely
-unused.
-This patch removes it.
+It's curious that the module parameter is only available when the driver
+is builtin (=y) but not built as a loadable module (=m):
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
----
- drivers/tty/tty_io.c |    5 -----
- include/linux/tty.h  |    1 -
- 2 files changed, 0 insertions(+), 6 deletions(-)
+config RADIO_TEA5764_XTAL
+	bool "TEA5764 crystal reference"
+	depends on RADIO_TEA5764=y
+	default y
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 1f79760..0eb1df5 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -3201,11 +3201,6 @@ struct tty_struct *get_current_tty(void)
- }
- EXPORT_SYMBOL_GPL(get_current_tty);
- 
--void tty_default_fops(struct file_operations *fops)
--{
--	*fops = tty_fops;
--}
--
- /*
-  * Initialize the console device. This is called *early*, so
-  * we can't necessarily depend on lots of kernel help here.
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index f1ba6c1..1831c24 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -472,7 +472,6 @@ extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
- extern dev_t tty_devnum(struct tty_struct *tty);
- extern void proc_clear_tty(struct task_struct *p);
- extern struct tty_struct *get_current_tty(void);
--extern void tty_default_fops(struct file_operations *fops);
- extern struct tty_struct *alloc_tty_struct(void);
- extern int tty_add_file(struct tty_struct *tty, struct file *file);
- extern void free_tty_struct(struct tty_struct *tty);
+> 
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> I didn't dare to submit this a trivial patch. This is still untested. By
+> the way, is xtal a common abbreviation of crystal?
+
+Yes, it is.
+
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+Thanks.
+
+>  drivers/media/radio/radio-tea5764.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/media/radio/radio-tea5764.c b/drivers/media/radio/radio-tea5764.c
+> index 95ddcc4..db20904 100644
+> --- a/drivers/media/radio/radio-tea5764.c
+> +++ b/drivers/media/radio/radio-tea5764.c
+> @@ -128,8 +128,10 @@ struct tea5764_write_regs {
+>  	u16 rdsbbl;				/* PAUSEDET & RDSBBL */
+>  } __attribute__ ((packed));
+>  
+> -#ifndef RADIO_TEA5764_XTAL
+> +#ifdef CONFIG_RADIO_TEA5764_XTAL
+>  #define RADIO_TEA5764_XTAL 1
+> +#else
+> +#define RADIO_TEA5764_XTAL 0
+>  #endif
+>  
+>  static int radio_nr = -1;
+
+
 -- 
-1.7.6
-
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
