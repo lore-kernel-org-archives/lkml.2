@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934345Ab1J3R76 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 13:59:58 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52892 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934247Ab1J3R74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 13:59:56 -0400
-Message-ID: <1319997593.13597.76.camel@edumazet-laptop>
-Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Sun, 30 Oct 2011 18:59:53 +0100
-In-Reply-To: <CA+55aFz-mp8k7qdF3LaOjgX19TbzrCirGuCmGwqVMq9SwQ8yvw@mail.gmail.com>
-References: <1319772566.6759.27.camel@deadeye>
-	 <1319777025.23112.67.camel@edumazet-laptop>
-	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
-	 <1319803781.23112.113.camel@edumazet-laptop>
-	 <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
-	 <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
-	 <1319813252.23112.122.camel@edumazet-laptop>
-	 <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
-	 <CA+55aFz=sxRjw6u-ww0P=9hhvWaZP=+QJZ68W+B9WtvQqj9Ogg@mail.gmail.com>
-	 <1319964754.13597.26.camel@edumazet-laptop>
-	 <20111030095918.GA19676@one.firstfloor.org>
-	 <1319987765.13597.60.camel@edumazet-laptop>
-	 <CA+55aFyGEhBMv31QXN7q9PJc36TVtHLOvdFYB1+6NTo+nKSkbQ@mail.gmail.com>
-	 <1319996494.13597.69.camel@edumazet-laptop>
-	 <CA+55aFz-mp8k7qdF3LaOjgX19TbzrCirGuCmGwqVMq9SwQ8yvw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
+	id S934347Ab1J3SFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 14:05:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:57205 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934313Ab1J3SFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 14:05:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Andy Moreton <andrewjmoreton@gmail.com>
+Subject: Re: time: Improve documentation of timekeeeping_adjust()
+Date: Sun, 30 Oct 2011 17:14:12 +0000
+Message-ID: <82mxcijtaz.fsf@gmail.com>
+References: <1319764362-32367-1-git-send-email-john.stultz@linaro.org>
+	<20111028060534.GB1957@netboy.at.omicron.at>
+	<1319785345.23224.75.camel@work-vm>
 Mime-Version: 1.0
+Content-Type: text/plain
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 82-69-64-228.dsl.in-addr.zen.co.uk
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.90 (windows-nt)
+Cancel-Lock: sha1:by0MDsI9a+P7dCu6Aklv1bvz24s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 30 octobre 2011 à 10:48 -0700, Linus Torvalds a écrit :
-> On Sun, Oct 30, 2011 at 10:41 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > Changing atomic_read(const atomic_t *v) prototype to
-> > atomic_read(atomic_t *v) is not an option.
-> 
-> Why not?
-> 
->     #define atomic_read(v)     ACCESS_AT_MOST_ONCE((v)->counter)
-> 
-> seems to be the cleanest thing.
-> 
+On Fri 28 Oct 2011, John Stultz wrote:
 
-As I said, because v can be a const pointer provided by the caller.
+> On Fri, 2011-10-28 at 08:05 +0200, Richard Cochran wrote:
+>> On Thu, Oct 27, 2011 at 06:12:42PM -0700, John Stultz wrote:
+>> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+>> > index a5846a8..de8737e 100644
+>> > --- a/kernel/time/timekeeping.c
+>> > +++ b/kernel/time/timekeeping.c
+>> > @@ -802,14 +802,44 @@ static void timekeeping_adjust(s64 offset)
+>> >  	s64 error, interval = timekeeper.cycle_interval;
+>> >  	int adj;
+>> >  
+>> > +	/*
+>> > +	 * The point of this is to check if the error is greater then half
+>> > +	 * an interval.
+>> > +	 *
+>> > +	 * First we shift it down from NTP_SHIFT to clocksource->shifted nsecs.
+>> > +	 *
+>> > +	 * Note we subtract one in the shift, so that error is really error*2.
+>> > +	 * This "saves" dividing(shifting) intererval twice, but keeps the
+>> > +	 * (error > interval) comparision as still measuring if error is
+>> > +	 * larger then half an interval.
+>> > +	 *
+>> > +	 * Note: It does not "save" on aggrivation when reading the code.
+>> 
+>> ... or on "aggravation" either :)
+>
+> Sigh. I do need to start using an editor with built in spell checking.
+> I'm so poor of a speller (and a typist) its really amazing its not
+> worse.
+>
+> Thanks for catching that.
+> -john
 
-Try it yourself and you'll discover hundred of call sites doing
+s/intererval/interval/
 
-.... some_function(const struct *xxx, ...)
-{
-	if (atomic_read(&xxx->refcnt) <= 0)
-		do_something();
-	else
-		do_otherthing();
-}
-
-> And if you don't think this is "an option", I really can't see why you
-> care about the extra instructions in the code stream either.
-> 
-
-Not an option if we have to change all callers that expected to be able
-to use a const atomic_t pointer.
-
-OK, I now have to leave the net.
-
+    AndyM
 
