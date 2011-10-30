@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab1J3WIU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 18:08:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43720 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab1J3WIT (ORCPT
+	id S1753278Ab1J3WSv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 18:18:51 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59760 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753021Ab1J3WSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 18:08:19 -0400
-Date: Sun, 30 Oct 2011 15:12:56 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-Message-ID: <20111030151256.27b2b20e@infradead.org>
-In-Reply-To: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 30 Oct 2011 18:18:50 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Mike Dunn <mikedunn@newsguy.com>
+Subject: Re: [PATCH 00/13]  DocG3 fixes and write support
+Date: Sun, 30 Oct 2011 23:18:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>, linux-mtd@lists.infradead.org,
+        dwmw2@infradead.org, dedekind1@gmail.com, linux-kernel@vger.kernel.org,
+        tcech@suse.cz
+References: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr> <87bosy6eab.fsf@free.fr> <4EADC4F5.2050201@newsguy.com>
+In-Reply-To: <4EADC4F5.2050201@newsguy.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201110302318.47617.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Oct 2011 19:57:12 +0000 (GMT)
-"Artem S. Tashkinov" <t.artem@lycos.com> wrote:
-
-> Hello,
+> Hi guys,
 > 
-> It's known that if you want to reach maximum performance on HT
-> enabled Intel CPUs you should distribute the load evenly between
-> physical cores, and when you have loaded all of them you should then
-> load the remaining virtual cores.
+> On 10/30/2011 02:04 AM, Robert Jarzmik wrote:
+> > Marek Vasut <marek.vasut@gmail.com> writes:
+> >> Hi,
+> >> 
+> >> can you sum up the situation about the another (docg4) driver for us not
+> >> watching this too tightly? Was there any improvement/progress/... ?
+> > 
+> > The review is underway, my comments should be dealt with, and a V2 of the
+> > patch should be sent. It's not in my hands.
+> 
+> I've been busy working on this, and should post a patch within the next few
+> days.  Progress has been very good.  I still want to run the mtd tests in
+> the kernel before posting the patch (except the torture test - I'm not
+> ready to sacrifice my development Treo), but it continues to pass the
+> nandtest userspace utility (part of mtd-utils) flawlessly, and a ubifs
+> still appears to be working well.  The code is now in a much cleaner
+> state.
 
-this is a bold statement, and patently false if you have to threads of
-one process that heavily share data between eachother...
-(but true for more independent workloads)
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+CCing Tomas Cech, we might be able to get you a spare device if really 
+necessary.
+> 
+> > The global view we have with Mike is that chips are different, and each
+> > one deserves its own driver. Several registers are common, and the
+> > docg3.h could become common.
+> 
+> Actually, I'm open on this.  My opinion is that they should share a header
+> file for sure, because the register set largely overlaps.  To that end, my
+> upcoming patch will adopt Robert's register #defines, with just a few
+> additional ones that are G4 specific.
+> 
+> On the broader question of combined or separate drivers... a combined
+> driver is certainly doable.  Each device would have to use its own set of
+> low-level functions, but I think there's merit in combining them because
+> it would provide a consistent interface with the mtd nand infrastructure
+> code, which is rather messy.  But before that discussion can take place,
+> the more fundamental question of whether or not the drivers should use the
+> nand interface needs to be resolved.  I used the nand interface when I
+> started on the G4 driver, because it *is* a nand device, and the legacy
+> diskonchip.c driver was updated not long ago from a stand-alone driver to
+> the nand interface.  I'm not knowledgeable enough of the mtd subsystem to
+> argue for or against the nand interface, but the end result (once I
+> invested the time slogging through nand_base.c) is fairly clean, with just
+> a couple minor hacks to get around the fact that it doesnt have a
+> "standard" nand controller.
+> 
+> Hopefully some mtd experts can share an opinion on this.
+> 
+> Thanks,
+> Mike
