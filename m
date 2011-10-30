@@ -1,104 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab1J3TSg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 15:18:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35253 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab1J3TSf (ORCPT
+	id S1751829Ab1J3TTb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 15:19:31 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:53384 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab1J3TT3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 15:18:35 -0400
-Message-ID: <4EADA32E.6030200@googlemail.com>
-Date: Sun, 30 Oct 2011 20:19:10 +0100
-From: =?ISO-8859-15?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 30 Oct 2011 15:19:29 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: kernel panic on device removal when using a workqueue and delayed_work
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
+Date: Sun, 30 Oct 2011 12:18:56 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: John Stoffel <john@stoffel.org>
+Cc: Johannes Weiner <jweiner@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+ <20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+ <20138.62532.493295.522948@quad.stoffel.home>
+ <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default
+ 20139.5644.583790.903531@quad.stoffel.home>
+In-Reply-To: <20139.5644.583790.903531@quad.stoffel.home>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090206.4EADA328.002E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> From: John Stoffel [mailto:john@stoffel.org]
+> Dan> Thanks for taking the time to read the LWN article and sending
+> Dan> some feedback.  I admit that, after being immersed in the topic
+> Dan> for three years, it's difficult to see it from the perspective of
+> Dan> a new reader, so I apologize if I may have left out important
+> Dan> stuff.  I hope you'll take the time to read this long reply.
+> 
+> Will do.  But I'm not the person you need to convince here about the
+> usefulness of this code and approach, it's the core VM developers,
 
-with the following simple kernel module, I have a good chance to get a 
-kernel panic when I unplug the device:
+True, but you are the one providing useful suggestions while
+the core VM developers are mostly silent (except for saying things
+like "don't like it much").  So thank you for your feedback
+and for taking the time to provide it and for indulging my replies.
 
+I/we will need to act on your suggestions, but I need to
+answer a couple of points/questions you've raised.
 
-#include <linux/workqueue.h>
-#include <linux/usb.h>
-#include <linux/module.h>
+> since they're the ones who will have to understand this stuff and know
+> how to maintain it.  And keeping this maintainable is a key goal.
 
-MODULE_AUTHOR("Nobody");
-MODULE_DESCRIPTION("example driver for causing kernel panic");
-MODULE_LICENSE("GPL");
+Absolutely agree.  Count the number of frontswap lines that affect
+the current VM core code and note also how they are very clearly
+identified.  It really is a very VERY small impact to the core VM
+code (e.g. in the files swapfile.c and page_io.c).
 
-static struct delayed_work poll_work;
+(And it's worth noting, and I'm not arguing that it is conclusive,
+just relevant, that my company has stood up and claimed responsibility
+to maintain it.)
 
-static void poll(struct work_struct *work)
-{
-     schedule_delayed_work(&poll_work,
-                   msecs_to_jiffies(100));
-}
+> Ok, so why not just a targetted swap compression function instead?
+> Why is your method superior?
 
-static int test_probe(struct usb_interface *intf,
-               const struct usb_device_id *id)
-{
-     INIT_DELAYED_WORK(&poll_work, poll);
-     schedule_delayed_work(&poll_work,
-                   msecs_to_jiffies(100));
-     return 0;
-}
+The designer/implementor of zram (which is the closest thing to
+"targetted swap compression" in the kernel today) has stated
+elsewhere on this thread that frontswap has advantages
+over his own zram code.
 
-static void test_disconnect(struct usb_interface *intf)
-{
-     cancel_delayed_work_sync(&poll_work);
-}
+And the frontswap patchset (did I mention how small the impact is?)
+provides a lot more than just a foundation for compression (zcache).
 
-static const struct usb_device_id device_table[] = {
-     {USB_DEVICE(0x1234, 0x5678)},
-     {}
-};
+> But that's besides the point.  How much overhead does TMEM incur when
+> it's not being used, but when it's avaiable?
 
-MODULE_DEVICE_TABLE(usb, device_table);
+This is answered in frontswap.txt in the patchset, but:
 
-static struct usb_driver test_driver = {
-     .name       = "test",
-     .id_table   = device_table,
-     .probe      = test_probe,
-     .disconnect = test_disconnect,
-};
+ZERO overhead if CONFIG_FRONTSWAP=n.  All the hooks compile into no-ops.
 
-static int __init test_mod_init(void)
-{
-     return usb_register(&test_driver);
-}
+If CONFIG_FRONTSWAP=y and no "tmem backend" registers to use it at
+runtime, the overhead is one "compare pointer against NULL" for
+every page actually swapped in or out, which is about as close to ZERO
+overhead as any code can be.
 
-static void __exit test_mod_exit(void)
-{
-     usb_deregister(&test_driver);
-}
+If CONFIG_FRONTSWAP=y AND a "tmem backend" does register, the
+answer depends on which tmem backend and what it is doing (and
+yes I agree more numbers are needed), but the overhead is
+incurred only in the case where a page would otherwise have
+actually been swapped in or out and can replace the horrible
+cost of swapping pages.
 
-module_init(test_mod_init);
-module_exit(test_mod_exit);
+> Dan> Frontswap is the last missing piece.  Why so much resistance?
+> 
+> Because you haven't sold it well with numbers to show how much
+> overhead it has?
+>
+> I'm being negative because I see no reason to use it.  And because I
+> think you can do a better job of selling it and showing the benefits
+> with real numbers.
 
+In your environment where RAM is essentially infinite, and swapping
+never occurs, I agree there would be no reason for you to enable it.
+In which case there is no overhead to you.
 
+Received loud and clear on the "need more real numbers" though
+personally I don't have any machines with more than 4GB RAM so
+I won't personally be testing any EDA environments with 144GB :-}
 
+So, in the context of "costs nothing if you don't need it and has
+very VERY small core code impact", and given that various kernel
+developers and real users and real distros and real products say
+on this thread that they DO need it, and given that there
+are "some" real numbers (for one user, Xen, and agree that some
+are needed for zcache)... and assuming that the core VM developers
+bother to read the documentation already provided that addresses
+the above, let me ask again...
 
-A picture of the backtrace (the machine immediately turns off without 
-saving a backtrace) can be found at
+Why so much resistance?
 
-http://imageshack.us/photo/my-images/823/img075gv.jpg
+Thanks,
+Dan
 
-Kernel version is 3.1.0.
+Oops, one more (but I have to use the X-word)...
 
+> Load up a XEN box, have a VM spike it's memory usage and show how TMEM
+> helps.  Compare it to a non-TMEM setup with the same load.
 
-This is the first time I'm using a workqueue, so there is a good chance 
-that I missed something...
-Or is this a kernel bug ?
-
-
-Regards,
-Frank Schaefer
-
+Yep, that's what the presentation URL I provided (for Xen) measures.
+Overcommitment (more VMs than otherwise could fit in the physical
+RAM) AND about a 8% performance improvement on all VMs doing
+a kernel compile simultaneously.  Pretty impressive.
