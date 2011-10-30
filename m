@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934281Ab1J3RH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 13:07:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42745 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934231Ab1J3RH6 (ORCPT
+	id S934283Ab1J3RJm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 13:09:42 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50302 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934231Ab1J3RJl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 13:07:58 -0400
+	Sun, 30 Oct 2011 13:09:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <1319987765.13597.60.camel@edumazet-laptop>
-References: <1319772566.6759.27.camel@deadeye> <1319777025.23112.67.camel@edumazet-laptop>
- <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
- <1319803781.23112.113.camel@edumazet-laptop> <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
- <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
- <1319813252.23112.122.camel@edumazet-laptop> <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
- <CA+55aFz=sxRjw6u-ww0P=9hhvWaZP=+QJZ68W+B9WtvQqj9Ogg@mail.gmail.com>
- <1319964754.13597.26.camel@edumazet-laptop> <20111030095918.GA19676@one.firstfloor.org>
- <1319987765.13597.60.camel@edumazet-laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 30 Oct 2011 10:07:36 -0700
-X-Google-Sender-Auth: XjEflSyPa8HPA-XQZxllkqufXro
-Message-ID: <CA+55aFyGEhBMv31QXN7q9PJc36TVtHLOvdFYB1+6NTo+nKSkbQ@mail.gmail.com>
-Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <201106161340.16117.arnd@arndb.de>
+References: <1308163895-5963-1-git-send-email-segoon@openwall.com>
+	<201106161050.27716.arnd@arndb.de>
+	<20110616085842.GB3215@albatros>
+	<201106161340.16117.arnd@arndb.de>
+Date: Sun, 30 Oct 2011 18:09:40 +0100
+Message-ID: <CAFLxGvxSBV9yF2AjXR5A3e-yLDXqMpS+GUFip1JhtzUc5Q0org@mail.gmail.com>
+Subject: Re: [RFC 0/5 v4] procfs: introduce hidepid=, hidenet=, gid= mount options
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, linux-kernel@vger.kernel.org,
+        kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "David S. Miller" <davem@davemloft.net>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 30, 2011 at 8:16 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, Jun 16, 2011 at 12:40 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 16 June 2011, Vasiliy Kulikov wrote:
+>> > I have no opinion on whether it's a good idea to include the feature or not.
+>>
+>> Why not?  Have you some specific complains where it can be perhaps too
+>> strong/insufficient/non-configurable?
 >
-> Because it doesnt work if x is const.
+> No, not at all. I just haven't had the need for this myself, and I'm not
+> enough of a security person to judge whether the vulnerability addressed
+> by the patch is a relevant one. E.g. if all the sensitive information
+> you are hiding in procfs is still available through netlink, your patch
+> is pointless. Similarly if there is no recorded case of an attack that
+> relies on any of the information in procfs.
+>
 
-Just remove the const. Problem solved.
+Is this interface somewhere documented?
+IOW how is it possible to get all processes via netlink?
 
-Both cases of 'const' are totally arbitrary and useless. The
-test_bit() one is literally a cast to const (admittedly also *from*
-const, but nobody cares), and the atomic_read() one is just because it
-uses a silly inline function where a macro would be simpler.
-
-                              Linus
+-- 
+Thanks,
+//richard
