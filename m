@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933798Ab1J3Dab (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 23:30:31 -0400
-Received: from mga14.intel.com ([143.182.124.37]:39564 "EHLO mga14.intel.com"
+	id S933877Ab1J3Dbj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 23:31:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30439 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933352Ab1J3Daa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 23:30:30 -0400
+	id S933352Ab1J3Dbi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 23:31:38 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,425,1315206000"; 
-   d="scan'208";a="68442740"
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208,223";a="68974691"
 Subject: Re: 3.1.0+ (Linus GIT tree) - BUG: scheduling while atomic:
  cat/3303/0x00000102
 From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
@@ -17,15 +17,24 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Intel Linux Wireless <ilw@linux.intel.com>
 In-Reply-To: <CAHFgRy93yyBh9KfOYKLP0+qr0oh8JQSO5YvOLZaauR-OSHap_w@mail.gmail.com>
 References: <CAHFgRy93yyBh9KfOYKLP0+qr0oh8JQSO5YvOLZaauR-OSHap_w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 29 Oct 2011 19:38:11 -0700
-Message-ID: <1319942291.31823.100.camel@wwguy-huron>
+Content-Type: multipart/mixed; boundary="=-HxuJHzPsrkhaXxSOoHTr"
+Date: Sat, 29 Oct 2011 19:39:26 -0700
+Message-ID: <1319942366.31823.102.camel@wwguy-huron>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+
+--=-HxuJHzPsrkhaXxSOoHTr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Please try following patch
+
+thanks
+Wey
 
 On Sat, 2011-10-29 at 19:03 -0700, Miles Lane wrote:
 > iwlwifi 0000:03:00.0: Error sending POWER_TABLE_CMD: time out after 2000ms.
@@ -172,4 +181,79 @@ On Sat, 2011-10-29 at 19:03 -0700, Miles Lane wrote:
 >  [<ffffffff8141063b>] system_call_fastpath+0x16/0x1b
 > iwlwifi 0000:03:00.0: HCMD_ACTIVE already clear for command REPLY_ECHO
 
+
+--=-HxuJHzPsrkhaXxSOoHTr
+Content-Type: application/mbox; name*0="[PATCH_1_1]_iwlwifi:_don_t_perform__echo_test__when_cmd_queue_stu"; name*1="ck"
+Content-Disposition: attachment; filename*0="[PATCH_1_1]_iwlwifi:_don_t_perform__echo_test__when_cmd_queue"; filename*1="_stuck"
+Content-Transfer-Encoding: 7bit
+
+>From wey-yi.w.guy@intel.com Thu Oct 27 18:33:38 2011
+Received: from orsmga001.jf.intel.com (10.7.209.18) by
+ orsmsx601-2.jf.intel.com (10.22.226.227) with Microsoft SMTP Server id
+ 8.2.255.0; Thu, 27 Oct 2011 18:33:38 -0700
+Received: from wwguy-ubuntu.jf.intel.com (HELO localhost.localdomain)
+ ([134.134.163.140])  by orsmga001.jf.intel.com with ESMTP; 27 Oct 2011
+ 18:33:37 -0700
+From: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
+To: "internal-wifi-devel@linux.intel.com" <internal-wifi-devel@linux.intel.com>
+CC: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>
+Date: Thu, 27 Oct 2011 18:27:37 -0700
+Subject: [PATCH 1/1] iwlwifi: don't perform "echo test" when cmd queue stuck
+Thread-Topic: [PATCH 1/1] iwlwifi: don't perform "echo test" when cmd queue
+ stuck
+Thread-Index: AcyVEZ0ZiK9yfGaFSzWWZs6J/t6gXg==
+Message-ID: <1319765257-24424-1-git-send-email-wey-yi.w.guy@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Exchange-Organization-AuthAs: Internal
+X-MS-Exchange-Organization-AuthMechanism: 10
+X-MS-Exchange-Organization-AuthSource: orsmsx601.amr.corp.intel.com
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-ironport-av: E=Sophos;i="4.67,352,1309762800";   
+ d="scan'208";a="68757522"
+x-extloop1: 1
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+X-Evolution-Source: imap://wwguy@imapmail.intel.com/
+Content-Transfer-Encoding: 8bit
+
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+
+Perform "echo test" when cmd queue stuck detected, somethime it will cause
+calltrace. I am not sure how to fix it yet, just remove the action now until
+find a better way to handle it.
+
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-core.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/wireless/iwlwifi/iwl-core.c b/drivers/net/wireless/iwlwifi/iwl-core.c
+index a779024..8efa10f 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -1450,16 +1450,6 @@ static inline int iwl_check_stuck_queue(struct iwl_priv *priv, int txq)
+ {
+ 	if (iwl_trans_check_stuck_queue(trans(priv), txq)) {
+ 		int ret;
+-		if (txq == priv->shrd->cmd_queue) {
+-			/*
+-			 * validate command queue still working
+-			 * by sending "ECHO" command
+-			 */
+-			if (!iwl_cmd_echo_test(priv))
+-				return 0;
+-			else
+-				IWL_DEBUG_HC(priv, "echo testing fail\n");
+-		}
+ 		ret = iwl_force_reset(priv, IWL_FW_RESET, false);
+ 		return (ret == -EAGAIN) ? 0 : 1;
+ 	}
+-- 
+1.7.0.4
+
+
+
+--=-HxuJHzPsrkhaXxSOoHTr--
 
