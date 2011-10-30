@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934268Ab1J3QiR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 12:38:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41901 "EHLO
+	id S934256Ab1J3QiP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 12:38:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41902 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934217Ab1J3QiL convert rfc822-to-8bit (ORCPT
+	with ESMTP id S934235Ab1J3QiM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 12:38:11 -0400
-Date: Sun, 30 Oct 2011 09:41:42 -0700
+	Sun, 30 Oct 2011 12:38:12 -0400
+Date: Sun, 30 Oct 2011 09:42:34 -0700
 From: Arjan van de Ven <arjan@infradead.org>
 To: gregkh@suse.de
 Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] tty: make the ptmx_fops initialized at compile time
-Message-ID: <20111030094142.06da0eb6@infradead.org>
+Subject: [PATCH 3/3] tty: remove the (now) unused tty_default_fops()
+ function
+Message-ID: <20111030094234.276fb8aa@infradead.org>
 In-Reply-To: <20111030094038.7046d529@infradead.org>
 References: <20111030094038.7046d529@infradead.org>
 Organization: Intel
@@ -26,54 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0d4c4ba964e65485fe87c4ce439522588956133c Mon Sep 17 00:00:00 2001
+>From 0e52df366ca86e54b8dec9bf6617cee065c9f359 Mon Sep 17 00:00:00 2001
 From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sat, 29 Oct 2011 10:43:57 -0700
-Subject: [PATCH 2/3] tty: make the ptmx_fops initialized at compile time
+Date: Sat, 29 Oct 2011 10:48:37 -0700
+Subject: [PATCH 3/3] tty: remove the (now) unused tty_default_fops() function
 
-Now that the tty file operations functions are no longer static,
-the pty code can do compile time initialization of the ptmx_fops
-struct, which then also allows it to be marked "const".
+Now that the pty code uses compile time initialization for its
+ptmx file operations structure, the tty_default_fops() is completely
+unused.
+This patch removes it.
 
 Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 ---
- drivers/tty/pty.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/tty/tty_io.c |    5 -----
+ include/linux/tty.h  |    1 -
+ 2 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index e809e9d..54e0e56 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -713,7 +713,18 @@ out:
- 	return retval;
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 1f79760..0eb1df5 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -3201,11 +3201,6 @@ struct tty_struct *get_current_tty(void)
  }
+ EXPORT_SYMBOL_GPL(get_current_tty);
  
--static struct file_operations ptmx_fops;
-+static const struct file_operations ptmx_fops = 
-+{
-+	.llseek		= no_llseek,
-+	.read		= tty_read,
-+	.write		= tty_write,
-+	.poll		= tty_poll,
-+	.unlocked_ioctl	= tty_ioctl,
-+	.compat_ioctl	= tty_compat_ioctl,
-+	.open		= ptmx_open,
-+	.release	= tty_release,
-+	.fasync		= tty_fasync,
-+};
- 
- static void __init unix98_pty_init(void)
- {
-@@ -767,9 +778,6 @@ static void __init unix98_pty_init(void)
- 	register_sysctl_table(pty_root_table);
- 
- 	/* Now create the /dev/ptmx special device */
--	tty_default_fops(&ptmx_fops);
--	ptmx_fops.open = ptmx_open;
+-void tty_default_fops(struct file_operations *fops)
+-{
+-	*fops = tty_fops;
+-}
 -
- 	cdev_init(&ptmx_cdev, &ptmx_fops);
- 	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
- 	    register_chrdev_region(MKDEV(TTYAUX_MAJOR, 2), 1, "/dev/ptmx") < 0)
+ /*
+  * Initialize the console device. This is called *early*, so
+  * we can't necessarily depend on lots of kernel help here.
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index f1ba6c1..1831c24 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -472,7 +472,6 @@ extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
+ extern dev_t tty_devnum(struct tty_struct *tty);
+ extern void proc_clear_tty(struct task_struct *p);
+ extern struct tty_struct *get_current_tty(void);
+-extern void tty_default_fops(struct file_operations *fops);
+ extern struct tty_struct *alloc_tty_struct(void);
+ extern int tty_add_file(struct tty_struct *tty, struct file *file);
+ extern void free_tty_struct(struct tty_struct *tty);
 -- 
 1.7.6
 
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
