@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933186Ab1J3ALS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Oct 2011 20:11:18 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45167 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932547Ab1J3ALR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Oct 2011 20:11:17 -0400
-Message-ID: <4EAC94E1.9030603@gmail.com>
-Date: Sun, 30 Oct 2011 02:05:53 +0200
-From: Etienne DADA <dadabox@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111004 Icedove/3.0.11
-MIME-Version: 1.0
+	id S932896Ab1J3AfI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Oct 2011 20:35:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:34254 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932547Ab1J3AfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Oct 2011 20:35:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
-Subject: scsi/sr - Impossible to write CDs/DVDs simultaneously (since BKL
- removal ?)
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+From: Trulan Martin <trulanm@gmail.com>
+Subject: Re: PROBLEM: Intermittent hard locks on 3.0.7-1 without information
+Date: Sun, 30 Oct 2011 00:33:04 +0000 (UTC)
+Message-ID: <loom.20111030T022518-383@post.gmane.org>
+References: <4EAC40B5.5060709@earnshaw.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 71.200.26.42 (Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20100101 Firefox/7.0.1 Iceweasel/7.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When burning multiple CDs/DVDs in parallel with multiple SATA drives, 
-you can notice that :
-- the process is abnormaly slow using cdrskin or wodim (top shows lots 
-of I/O wait),
-- the discs are burnt one after each other using cdrecord.
+Matt Earnshaw <matt <at> earnshaw.org.uk> writes:
 
-A simpler way to touch the problem is running :
-$ eject /dev/sr0 & eject /dev/sr1
-drives ejects sequentialy, rather than simultaneously as we were used to.
+> 
+> [1.] 3.0.7-1 appears to cause hard locks intermittently, without information
+> 
+It sounds like the problem addressed by this patch:
+https://lkml.org/lkml/2011/10/18/100
+Try either that patch or 3.0.8.
 
-
-I think this problem arose after the Big Kernel Lock removal.
-As far as I can understand the new "sr_mutex" private mutex in 
-drivers/scsi/sr.c generates a per-driver locking, where a per-device 
-locking would have been far better. I also think other drivers like sg 
-are impacted by the same problem.
-
-I am absolutely unable to arrange this, and would be pleased if someone 
-competent could work on this.
+-Trulan
 
 
-Please CC me when answering as I'm not subscribing to the list.
-
-Yours,
-Étienne DADA
