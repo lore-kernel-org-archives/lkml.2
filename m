@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab1J3UGY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:06:24 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36351 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751881Ab1J3UGX (ORCPT
+	id S1752173Ab1J3UGp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:06:45 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:32788 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876Ab1J3UGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:06:23 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.173.21.55]
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 30 Oct 2011 22:06:00 +0200
-Message-ID: <CAK=WgbZso1qk5XUTjB1bLXYbezv80SbgyEXJ3Q32U28+cQMfZA@mail.gmail.com>
-Subject: [GIT PULL] hwspinlock changes for 3.2
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, "Gutierrez, Juan" <jgutierrez@ti.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 30 Oct 2011 16:06:44 -0400
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Jonathan Corbet <corbet@lwn.net>
+In-Reply-To: <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
+	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+	 <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+	 <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+	 <20111028163053.GC1319@redhat.com>
+	 <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+	 <20138.62532.493295.522948@quad.stoffel.home>
+	 <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default 20139.5644.583790.903531@quad.stoffel.home>
+	 <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 30 Oct 2011 13:06:02 -0700
+Message-ID: <1320005162.15403.14.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+x-cbid: 11103020-7408-0000-0000-00000075200B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, 2011-10-30 at 12:18 -0700, Dan Magenheimer wrote:
+> > since they're the ones who will have to understand this stuff and know
+> > how to maintain it.  And keeping this maintainable is a key goal.
+> 
+> Absolutely agree.  Count the number of frontswap lines that affect
+> the current VM core code and note also how they are very clearly
+> identified.  It really is a very VERY small impact to the core VM
+> code (e.g. in the files swapfile.c and page_io.c). 
 
-Please pull from
+Granted, the impact on the core VM in lines of code is small.  But, I
+think the behavioral impact is potentially huge since tmem's hooks add
+non-trivial amounts of framework underneath the VM in core paths.  In
+zcache's case, this means a bunch of allocations and an entirely new
+allocator memory allocator being used in the swap paths.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git for-linus
+We're certainly still shaking bugs out of the interactions there like
+with zcache_direct_reclaim_lock.  Granted, that's not a
+tmem/frontswap/cleancache bug, but it does speak to the difficulty and
+subtlety of writing one of those frameworks underneath the tmem API.
 
-To receive hwspinlock updates for 3.2.
+-- Dave
 
-The only noticeable change is a new hwspinlock driver for
-ST-Ericsson's u8500 platform by Mathieu; the rest of the changes are
-either cleanups or trivial fixes (one of the fixes also trivially
-changes a mach-omap2 file, and is Acked by Tony).
-
-All of the patches have been tested in linux-next and currently there
-are no merge conflicts, though I expect one to happen with the arm-sco
-tree, as reported (and fixed) by Stephen earlier this month (see
-http://www.spinics.net/lists/linux-next/msg16931.html).
-
-I've flagged one of the fixes as stable material (the one from Juan).
-Normally I would only send you stable-worthy patches during the rc
-cycle and not wait until the merge window, but since the hwspinlock
-tree and its upstream path have only materialized quite late in the
-cycle (see https://lkml.org/lkml/2011/9/21/249), I've decided this
-time to wait for the merge window.
-
-Hope it's ok; please tell me if there are any issues.
-
-Thanks,
-Ohad.
-
-The following changes since commit b6fd41e29dea9c6753b1843a77e50433e6123bcb:
-
-  Linux 3.1-rc6 (2011-09-12 14:02:02 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/hwspinlock.git for-linus
-
-Juan Gutierrez (1):
-      hwspinlock/core: use a mutex to protect the radix tree
-
-Mathieu J. Poirier (1):
-      hwspinlock/u8500: add hwspinlock driver
-
-Ohad Ben-Cohen (8):
-      hwspinlock/core: simplify Kconfig
-      hwspinlock/core: simplify 'owner' handling
-      hwspinlock/omap: simplify allocation scheme
-      hwspinlock/core/omap: fix id issues on multiple hwspinlock devices
-      hwspinlock/core: remove stubs for register/unregister
-      hwspinlock/core: register a bank of hwspinlocks in a single API call
-      hwspinlock/omap: omap_hwspinlock_remove should be __devexit
-      hwspinlock: add MAINTAINERS entries
-
- Documentation/hwspinlock.txt             |   74 +++++++-----
- MAINTAINERS                              |   14 ++
- arch/arm/mach-omap2/hwspinlock.c         |    8 +-
- drivers/hwspinlock/Kconfig               |   27 +++--
- drivers/hwspinlock/Makefile              |    1 +
- drivers/hwspinlock/hwspinlock_core.c     |  204 +++++++++++++++++++-----------
- drivers/hwspinlock/hwspinlock_internal.h |   40 ++++--
- drivers/hwspinlock/omap_hwspinlock.c     |  127 +++++++------------
- drivers/hwspinlock/u8500_hsem.c          |  198 +++++++++++++++++++++++++++++
- include/linux/hwspinlock.h               |   46 +++++--
- 10 files changed, 514 insertions(+), 225 deletions(-)
- create mode 100644 drivers/hwspinlock/u8500_hsem.c
