@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933667Ab1J3JwE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 05:52:04 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:48301 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932481Ab1J3JwB convert rfc822-to-8bit
+	id S933882Ab1J3Jwk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 05:52:40 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:42629 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932481Ab1J3Jwj convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 05:52:01 -0400
+	Sun, 30 Oct 2011 05:52:39 -0400
 From: Philip Rakity <prakity@marvell.com>
 To: "linux-kernel@vger.kernel.org Mailing List" 
 	<linux-kernel@vger.kernel.org>
-CC: "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+CC: "adharmap@codeaurora.org" <adharmap@codeaurora.org>,
+        "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
         Anton Vorontsov <cbouatmailru@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Mark Brown <mark.brown314@gmail.com>
-Date: Sun, 30 Oct 2011 02:51:52 -0700
-Subject: [PATCH] power: max8925 - Enable power change notifications   --
- RESEND
-Thread-Topic: [PATCH] power: max8925 - Enable power change notifications
-   -- RESEND
-Thread-Index: AcyW6Y0MaqoF4Q+KQmSwJ/t4smzz8Q==
-Message-ID: <E4D0EFE3-91AD-425F-90C7-3AF4E065BFDC@marvell.com>
-References: <03653C9B-09A4-40D0-B63F-ABDDDC0124D9@marvell.com>
-In-Reply-To: <03653C9B-09A4-40D0-B63F-ABDDDC0124D9@marvell.com>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Eric Miao <eric.y.miao@gmail.com>
+Date: Sun, 30 Oct 2011 02:52:26 -0700
+Subject: [PATCH 1/3]  power: add two properties: charge_to_use and
+  voltage_to_use  -- RESEND
+Thread-Topic: [PATCH 1/3]  power: add two properties: charge_to_use and
+  voltage_to_use  -- RESEND
+Thread-Index: AcyW6aJRlKnDM7a2R76X9TXV7yqAlA==
+Message-ID: <56FE6DED-5A93-48BE-B731-062571A54349@marvell.com>
+References: <B6E06046-954B-4598-93B8-4D4B8112AC8B@marvell.com>
+In-Reply-To: <B6E06046-954B-4598-93B8-4D4B8112AC8B@marvell.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,62 +37,65 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Resend
-
-On Aug 29, 2011, at 9:32 AM, Philip Rakity wrote:
+RESEND 
+On Aug 29, 2011, at 10:03 AM, Philip Rakity wrote:
 
 > 
-> The power core infrastructure allow external power change
-> events to be passed to drivers what are listed in the
-> supplied_to call back field.  Enable this feature by
-> allowing the supplied_to field to be passed to the driver.
+> Add two new properties
+> a) POWER_SUPPLY_PROP_VOLTAGE_TO_USE
+> b) POWER_SUPPLY_PROP_CHARGE_TO_USE
 > 
-> This feature will enable drivers named in the supplied_to field that have a
-> external_power_changed callback to be notified when power
-> was been turned on or off.
+> These 2 properties can be returned by the battery to
+> tell the charger what voltage and charge to use.
 > 
 > Signed-off-by: Philip Rakity <prakity@marvell.com>
 > ---
-> drivers/power/max8925_power.c |    5 +++++
-> include/linux/mfd/max8925.h   |    2 ++
-> 2 files changed, 7 insertions(+), 0 deletions(-)
+> drivers/power/power_supply_sysfs.c |    2 ++
+> include/linux/power_supply.h       |    4 ++++
+> 2 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
-> index fd32c08..29b5d2c 100644
-> --- a/drivers/power/max8925_power.c
-> +++ b/drivers/power/max8925_power.c
-> @@ -455,6 +455,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
-> 	info->ac.properties = max8925_ac_props;
-> 	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
-> 	info->ac.get_property = max8925_ac_get_prop;
-> +	info->ac.supplied_to = pdata->supplied_to;
-> +	info->ac.num_supplicants = pdata->num_supplicants;
-> 	ret = power_supply_register(&pdev->dev, &info->ac);
-> 	if (ret)
-> 		goto out;
-> @@ -465,6 +467,9 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
-> 	info->usb.properties = max8925_usb_props;
-> 	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
-> 	info->usb.get_property = max8925_usb_get_prop;
-> +	info->usb.supplied_to = pdata->supplied_to;
-> +	info->usb.num_supplicants = pdata->num_supplicants;
-> +
-> 	ret = power_supply_register(&pdev->dev, &info->usb);
-> 	if (ret)
-> 		goto out_usb;
-> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-> index e742e04..008f807 100644
-> --- a/include/linux/mfd/max8925.h
-> +++ b/include/linux/mfd/max8925.h
-> @@ -225,6 +225,8 @@ struct max8925_power_pdata {
-> 	unsigned	fast_charge:3;	/* charge current */
-> 	unsigned	no_temp_support:1; /* set if no temperature detect */
-> 	unsigned	no_insert_detect:1; /* set if no ac insert detect */
-> +	char		**supplied_to;
-> +	int		num_supplicants;
-> };
-> 
-> /*
+> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+> index c9e9479..bffc67b 100644
+> --- a/drivers/power/power_supply_sysfs.c
+> +++ b/drivers/power/power_supply_sysfs.c
+> @@ -167,6 +167,8 @@ static struct device_attribute power_supply_attrs[] = {
+> 	POWER_SUPPLY_ATTR(time_to_full_now),
+> 	POWER_SUPPLY_ATTR(time_to_full_avg),
+> 	POWER_SUPPLY_ATTR(type),
+> +	POWER_SUPPLY_ATTR(charge_to_use),
+> +	POWER_SUPPLY_ATTR(voltage_to_use),
+> 	/* Properties of type `const char *' */
+> 	POWER_SUPPLY_ATTR(model_name),
+> 	POWER_SUPPLY_ATTR(manufacturer),
+> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> index 204c18d..a41b510 100644
+> --- a/include/linux/power_supply.h
+> +++ b/include/linux/power_supply.h
+> @@ -116,6 +116,8 @@ enum power_supply_property {
+> 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
+> 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
+> 	POWER_SUPPLY_PROP_TYPE, /* use power_supply.type instead */
+> +	POWER_SUPPLY_PROP_CHARGE_TO_USE,
+> +	POWER_SUPPLY_PROP_VOLTAGE_TO_USE,
+> 	/* Properties of type `const char *' */
+> 	POWER_SUPPLY_PROP_MODEL_NAME,
+> 	POWER_SUPPLY_PROP_MANUFACTURER,
+> @@ -228,6 +230,7 @@ static inline bool power_supply_is_amp_property(enum power_supply_property psp)
+> 	case POWER_SUPPLY_PROP_CURRENT_MAX:
+> 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+> 	case POWER_SUPPLY_PROP_CURRENT_AVG:
+> +	case POWER_SUPPLY_PROP_CHARGE_TO_USE:
+> 		return 1;
+> 	default:
+> 		break;
+> @@ -252,6 +255,7 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
+> 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+> 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
+> 	case POWER_SUPPLY_PROP_POWER_NOW:
+> +	case POWER_SUPPLY_PROP_VOLTAGE_TO_USE:
+> 		return 1;
+> 	default:
+> 		break;
 > -- 
 > 1.7.6
 > 
