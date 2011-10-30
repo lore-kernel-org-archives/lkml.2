@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934150Ab1J3OlD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 10:41:03 -0400
+	id S934168Ab1J3OlN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 10:41:13 -0400
 Received: from mail-wy0-f174.google.com ([74.125.82.174]:46260 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934036Ab1J3Ok7 (ORCPT
+	with ESMTP id S934127Ab1J3OlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 10:40:59 -0400
+	Sun, 30 Oct 2011 10:41:02 -0400
 From: Stefan Hajnoczi <stefanha@gmail.com>
 To: <grabner@icg.tugraz.at>
 Cc: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [PATCH 1/2] staging: line6: accept all MIDI channels by default
-Date: Sun, 30 Oct 2011 14:40:40 +0000
-Message-Id: <1319985641-25648-2-git-send-email-stefanha@gmail.com>
+Subject: [PATCH 2/2] staging: line6: add Pod HD300 support
+Date: Sun, 30 Oct 2011 14:40:41 +0000
+Message-Id: <1319985641-25648-3-git-send-email-stefanha@gmail.com>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1319985641-25648-1-git-send-email-stefanha@gmail.com>
 References: <1319985641-25648-1-git-send-email-stefanha@gmail.com>
@@ -21,36 +21,353 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MIDI messages can be filtered by channel so that multiple devices can
-coexist on the same MIDI bus.  By default all channels should be
-accepted; this is important because Line6 devices seem to have different
-default channels.
+The Pod HD device family uses new MIDI SysEx messages and therefore
+cannot reuse the existing Pod code.  Instead of hardcoding Pod HD MIDI
+messages into the driver, leave MIDI up to userspace.  This driver
+simply presents MIDI and pcm ALSA devices.
 
-Accept all MIDI messages by default to avoid confusing users when
-messages are silently filtered out.  If filtering is necessary due to
-multiple devices on the bus, users can set the midi_mask_transmit and
-midi_mask_receive sysfs attributes.
+This device is similar to the Pod except that it has 48 kHz audio and
+does not respond to Pod SysEx messages.
 
 Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
 ---
- drivers/staging/line6/midi.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/line6/Makefile  |    3 +-
+ drivers/staging/line6/driver.c  |   24 ++++++-
+ drivers/staging/line6/pcm.c     |    1 +
+ drivers/staging/line6/podhd.c   |  158 +++++++++++++++++++++++++++++++++++++++
+ drivers/staging/line6/podhd.h   |   30 ++++++++
+ drivers/staging/line6/usbdefs.h |    2 +
+ 6 files changed, 216 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/staging/line6/podhd.c
+ create mode 100644 drivers/staging/line6/podhd.h
 
-diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
-index e554a2d..2d81d2a 100644
---- a/drivers/staging/line6/midi.c
-+++ b/drivers/staging/line6/midi.c
-@@ -399,8 +399,8 @@ int line6_init_midi(struct usb_line6 *line6)
- 		return err;
+diff --git a/drivers/staging/line6/Makefile b/drivers/staging/line6/Makefile
+index de6bd12..34a2dda 100644
+--- a/drivers/staging/line6/Makefile
++++ b/drivers/staging/line6/Makefile
+@@ -12,4 +12,5 @@ line6usb-y := 		\
+ 		playback.o	\
+ 		pod.o		\
+ 		toneport.o	\
+-		variax.o
++		variax.o	\
++		podhd.o
+diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
+index 851b762..a71a5af 100644
+--- a/drivers/staging/line6/driver.c
++++ b/drivers/staging/line6/driver.c
+@@ -21,6 +21,7 @@
+ #include "midi.h"
+ #include "playback.h"
+ #include "pod.h"
++#include "podhd.h"
+ #include "revision.h"
+ #include "toneport.h"
+ #include "usbdefs.h"
+@@ -49,6 +50,7 @@ static const struct usb_device_id line6_id_table[] = {
+ 	{USB_DEVICE(LINE6_VENDOR_ID, LINE6_DEVID_TONEPORT_UX1)},
+ 	{USB_DEVICE(LINE6_VENDOR_ID, LINE6_DEVID_TONEPORT_UX2)},
+ 	{USB_DEVICE(LINE6_VENDOR_ID, LINE6_DEVID_VARIAX)},
++	{USB_DEVICE(LINE6_VENDOR_ID, LINE6_DEVID_PODHD300)},
+ 	{},
+ };
  
- 	line6midi->line6 = line6;
--	line6midi->midi_mask_transmit = 1;
--	line6midi->midi_mask_receive = 4;
-+	line6midi->midi_mask_transmit = 0xffff;
-+	line6midi->midi_mask_receive = 0xffff;
- 	line6->line6midi = line6midi;
+@@ -72,7 +74,8 @@ static struct line6_properties line6_properties_table[] = {
+ 	{ "TonePortGX",    "TonePort GX",      LINE6_BIT_TONEPORT_GX,   LINE6_BIT_PCM               },
+ 	{ "TonePortUX1",   "TonePort UX1",     LINE6_BIT_TONEPORT_UX1,  LINE6_BIT_PCM               },
+ 	{ "TonePortUX2",   "TonePort UX2",     LINE6_BIT_TONEPORT_UX2,  LINE6_BIT_PCM               },
+-	{ "Variax",        "Variax Workbench", LINE6_BIT_VARIAX,        LINE6_BIT_CONTROL           }
++	{ "Variax",        "Variax Workbench", LINE6_BIT_VARIAX,        LINE6_BIT_CONTROL           },
++	{ "PODHD300",      "POD HD300",        LINE6_BIT_PODHD300,      LINE6_BIT_CONTROL_PCM_HWMON },
+ };
+ /* *INDENT-ON* */
  
- 	err = snd_device_new(line6->card, SNDRV_DEV_RAWMIDI, line6midi,
+@@ -437,6 +440,9 @@ static void line6_data_received(struct urb *urb)
+ 						  line6);
+ 			break;
+ 
++		case LINE6_DEVID_PODHD300:
++			break; /* let userspace handle MIDI */
++
+ 		case LINE6_DEVID_PODXTLIVE:
+ 			switch (line6->interface_number) {
+ 			case PODXTLIVE_INTERFACE_POD:
+@@ -812,6 +818,7 @@ static int line6_probe(struct usb_interface *interface,
+ 	case LINE6_DEVID_BASSPODXTPRO:
+ 	case LINE6_DEVID_PODXT:
+ 	case LINE6_DEVID_PODXTPRO:
++	case LINE6_DEVID_PODHD300:
+ 		alternate = 5;
+ 		break;
+ 
+@@ -865,6 +872,12 @@ static int line6_probe(struct usb_interface *interface,
+ 		ep_write = 0x03;
+ 		break;
+ 
++	case LINE6_DEVID_PODHD300:
++		size = sizeof(struct usb_line6_podhd);
++		ep_read = 0x84;
++		ep_write = 0x03;
++		break;
++
+ 	case LINE6_DEVID_POCKETPOD:
+ 		size = sizeof(struct usb_line6_pod);
+ 		ep_read = 0x82;
+@@ -1017,6 +1030,11 @@ static int line6_probe(struct usb_interface *interface,
+ 		ret = line6_pod_init(interface, (struct usb_line6_pod *)line6);
+ 		break;
+ 
++	case LINE6_DEVID_PODHD300:
++		ret = line6_podhd_init(interface,
++				       (struct usb_line6_podhd *)line6);
++		break;
++
+ 	case LINE6_DEVID_PODXTLIVE:
+ 		switch (interface_number) {
+ 		case PODXTLIVE_INTERFACE_POD:
+@@ -1139,6 +1157,10 @@ static void line6_disconnect(struct usb_interface *interface)
+ 			line6_pod_disconnect(interface);
+ 			break;
+ 
++		case LINE6_DEVID_PODHD300:
++			line6_podhd_disconnect(interface);
++			break;
++
+ 		case LINE6_DEVID_PODXTLIVE:
+ 			switch (interface_number) {
+ 			case PODXTLIVE_INTERFACE_POD:
+diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
+index 9d4c8a6..f56c642 100644
+--- a/drivers/staging/line6/pcm.c
++++ b/drivers/staging/line6/pcm.c
+@@ -403,6 +403,7 @@ int line6_init_pcm(struct usb_line6 *line6,
+ 	case LINE6_DEVID_PODXT:
+ 	case LINE6_DEVID_PODXTLIVE:
+ 	case LINE6_DEVID_PODXTPRO:
++	case LINE6_DEVID_PODHD300:
+ 		ep_read = 0x82;
+ 		ep_write = 0x01;
+ 		break;
+diff --git a/drivers/staging/line6/podhd.c b/drivers/staging/line6/podhd.c
+new file mode 100644
+index 0000000..6c0f7f2
+--- /dev/null
++++ b/drivers/staging/line6/podhd.c
+@@ -0,0 +1,158 @@
++/*
++ * Line6 Pod HD
++ *
++ * Copyright (C) 2011 Stefan Hajnoczi <stefanha@gmail.com>
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License as
++ *	published by the Free Software Foundation, version 2.
++ *
++ */
++
++#include <sound/core.h>
++#include <sound/pcm.h>
++
++#include "audio.h"
++#include "driver.h"
++#include "pcm.h"
++#include "podhd.h"
++
++#define PODHD_BYTES_PER_FRAME 6	/* 24bit audio (stereo) */
++
++static struct snd_ratden podhd_ratden = {
++	.num_min = 48000,
++	.num_max = 48000,
++	.num_step = 1,
++	.den = 1,
++};
++
++static struct line6_pcm_properties podhd_pcm_properties = {
++	.snd_line6_playback_hw = {
++				  .info = (SNDRV_PCM_INFO_MMAP |
++					   SNDRV_PCM_INFO_INTERLEAVED |
++					   SNDRV_PCM_INFO_BLOCK_TRANSFER |
++					   SNDRV_PCM_INFO_MMAP_VALID |
++					   SNDRV_PCM_INFO_PAUSE |
++#ifdef CONFIG_PM
++					   SNDRV_PCM_INFO_RESUME |
++#endif
++					   SNDRV_PCM_INFO_SYNC_START),
++				  .formats = SNDRV_PCM_FMTBIT_S24_3LE,
++				  .rates = SNDRV_PCM_RATE_48000,
++				  .rate_min = 48000,
++				  .rate_max = 48000,
++				  .channels_min = 2,
++				  .channels_max = 2,
++				  .buffer_bytes_max = 60000,
++				  .period_bytes_min = 64,
++				  .period_bytes_max = 8192,
++				  .periods_min = 1,
++				  .periods_max = 1024},
++	.snd_line6_capture_hw = {
++				 .info = (SNDRV_PCM_INFO_MMAP |
++					  SNDRV_PCM_INFO_INTERLEAVED |
++					  SNDRV_PCM_INFO_BLOCK_TRANSFER |
++					  SNDRV_PCM_INFO_MMAP_VALID |
++#ifdef CONFIG_PM
++					  SNDRV_PCM_INFO_RESUME |
++#endif
++					  SNDRV_PCM_INFO_SYNC_START),
++				 .formats = SNDRV_PCM_FMTBIT_S24_3LE,
++				 .rates = SNDRV_PCM_RATE_48000,
++				 .rate_min = 48000,
++				 .rate_max = 48000,
++				 .channels_min = 2,
++				 .channels_max = 2,
++				 .buffer_bytes_max = 60000,
++				 .period_bytes_min = 64,
++				 .period_bytes_max = 8192,
++				 .periods_min = 1,
++				 .periods_max = 1024},
++	.snd_line6_rates = {
++			    .nrats = 1,
++			    .rats = &podhd_ratden},
++	.bytes_per_frame = PODHD_BYTES_PER_FRAME
++};
++
++/*
++	POD HD destructor.
++*/
++static void podhd_destruct(struct usb_interface *interface)
++{
++	struct usb_line6_podhd *podhd = usb_get_intfdata(interface);
++	struct usb_line6 *line6;
++
++	if (podhd == NULL)
++		return;
++	line6 = &podhd->line6;
++	if (line6 == NULL)
++		return;
++	line6_cleanup_audio(line6);
++}
++
++/*
++	Try to init POD HD device.
++*/
++static int podhd_try_init(struct usb_interface *interface,
++			  struct usb_line6_podhd *podhd)
++{
++	int err;
++	struct usb_line6 *line6 = &podhd->line6;
++
++	if ((interface == NULL) || (podhd == NULL))
++		return -ENODEV;
++
++	/* initialize audio system: */
++	err = line6_init_audio(line6);
++	if (err < 0)
++		return err;
++
++	/* initialize MIDI subsystem: */
++	err = line6_init_midi(line6);
++	if (err < 0)
++		return err;
++
++	/* initialize PCM subsystem: */
++	err = line6_init_pcm(line6, &podhd_pcm_properties);
++	if (err < 0)
++		return err;
++
++	/* register USB audio system: */
++	err = line6_register_audio(line6);
++	return err;
++}
++
++/*
++	Init POD HD device (and clean up in case of failure).
++*/
++int line6_podhd_init(struct usb_interface *interface,
++		     struct usb_line6_podhd *podhd)
++{
++	int err = podhd_try_init(interface, podhd);
++
++	if (err < 0)
++		podhd_destruct(interface);
++
++	return err;
++}
++
++/*
++	POD HD device disconnected.
++*/
++void line6_podhd_disconnect(struct usb_interface *interface)
++{
++	struct usb_line6_podhd *podhd;
++
++	if (interface == NULL)
++		return;
++	podhd = usb_get_intfdata(interface);
++
++	if (podhd != NULL) {
++		struct snd_line6_pcm *line6pcm = podhd->line6.line6pcm;
++
++		if (line6pcm != NULL)
++			line6_pcm_disconnect(line6pcm);
++	}
++
++	podhd_destruct(interface);
++}
+diff --git a/drivers/staging/line6/podhd.h b/drivers/staging/line6/podhd.h
+new file mode 100644
+index 0000000..652f740
+--- /dev/null
++++ b/drivers/staging/line6/podhd.h
+@@ -0,0 +1,30 @@
++/*
++ * Line6 Pod HD
++ *
++ * Copyright (C) 2011 Stefan Hajnoczi <stefanha@gmail.com>
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License as
++ *	published by the Free Software Foundation, version 2.
++ *
++ */
++
++#ifndef PODHD_H
++#define PODHD_H
++
++#include <linux/usb.h>
++
++#include "driver.h"
++
++struct usb_line6_podhd {
++	/**
++		Generic Line6 USB data.
++	*/
++	struct usb_line6 line6;
++};
++
++extern void line6_podhd_disconnect(struct usb_interface *interface);
++extern int line6_podhd_init(struct usb_interface *interface,
++			    struct usb_line6_podhd *podhd);
++
++#endif /* PODHD_H */
+diff --git a/drivers/staging/line6/usbdefs.h b/drivers/staging/line6/usbdefs.h
+index c6dffe6..4e13364 100644
+--- a/drivers/staging/line6/usbdefs.h
++++ b/drivers/staging/line6/usbdefs.h
+@@ -36,6 +36,7 @@
+ #define LINE6_DEVID_TONEPORT_UX1  0x4141
+ #define LINE6_DEVID_TONEPORT_UX2  0x4142
+ #define LINE6_DEVID_VARIAX        0x534d
++#define LINE6_DEVID_PODHD300      0x5057
+ 
+ #define LINE6_BIT_BASSPODXT       (1 <<  0)
+ #define LINE6_BIT_BASSPODXTLIVE   (1 <<  1)
+@@ -54,6 +55,7 @@
+ #define LINE6_BIT_TONEPORT_UX1    (1 << 14)
+ #define LINE6_BIT_TONEPORT_UX2    (1 << 15)
+ #define LINE6_BIT_VARIAX          (1 << 16)
++#define LINE6_BIT_PODHD300        (1 << 17)
+ 
+ #define LINE6_BITS_PRO		(LINE6_BIT_BASSPODXTPRO | \
+ 				 LINE6_BIT_PODXTPRO)
 -- 
 1.7.7
 
