@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab1J3EtL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 00:49:11 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:50546 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839Ab1J3EtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 00:49:09 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Mikulas Patocka <mpatocka@redhat.com>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-References: <20111025.063206.2273357152859701628.davem@davemloft.net>
-	<CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com>
-	<20111025131315.GA1899@suse.de> <4EAC8642.3050309@suse.cz>
-Date: Sat, 29 Oct 2011 21:49:47 -0700
-In-Reply-To: <4EAC8642.3050309@suse.cz> (Jiri Slaby's message of "Sun, 30 Oct
-	2011 01:03:30 +0200")
-Message-ID: <m11utvytg4.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751267Ab1J3FEs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 01:04:48 -0400
+Received: from mga03.intel.com ([143.182.124.21]:46040 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751066Ab1J3FEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 01:04:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,425,1315206000"; 
+   d="scan'208";a="68452528"
+Date: Sun, 30 Oct 2011 06:04:43 +0100
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: USB list <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        v4mp <gaigo88@hotmail.it>
+Subject: Re: Question about error from xhci-hcd
+Message-ID: <20111030050443.GC4535@xanatos>
+References: <4EAC3C5C.5000209@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/fG3XtiRegWdpDTe4P87mG0RVSlVkaiIA=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *;Jiri Slaby <jslaby@suse.cz>
-X-Spam-Relay-Country: **
-Subject: Re: Broken link in /sys/class/net/ [was: [GIT] Networking]
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <4EAC3C5C.5000209@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Slaby <jslaby@suse.cz> writes:
+On Sat, Oct 29, 2011 at 12:48:12PM -0500, Larry Finger wrote:
+> Sarah,
+> 
+> Pardon the intrusion, but I'm trying to fix a problem for v4mp, a
+> user of the rtl8192cu driver on an Alfa AWUS036NHR. I have one of
+> the devices, and it works on a USB 2.0 hub, but fails with 3.0
+> hardware with lots of
+> 
+> xhci_hcd 0000:05:00.0: ERROR no room on ep ring
+> 
+> messages logged.
 
-> On 10/25/2011 03:13 PM, Greg KH wrote:
->> On Tue, Oct 25, 2011 at 01:46:11PM +0200, Linus Torvalds wrote:
->>> Anyway, after that rant about really bad practices, let me say that I
->>> did fix up the conflict and I think it's right. But I won't guarantee
->>> it, so please check the changes to fs/sysfs/dir.c.
->> 
->> I think it looks ok, I've booted the merge result, and am typing and
->> sending this from the new kernel, and it hasn't crashed yet :)
->
-> Hi, maybe this was not caused by the merge, but the patch[1] causes this
-> mess in /sys/class/net/ for me:
-> l????????? ? ?    ?    ?             ? eth1
->
-> This happens after one renames a net device -- the new name is eth1 here.
->
-> [1] 4f72c0cab40 (sysfs: use rb-tree for name lookups)
+The xHCI driver allocates a fixed-size endpoint ring, and only so much
+data can fit on it.  If the driver is allocating many URBs or many URBs
+with a lot of data, then you will see these messages and the URBs will
+fail to be submitted.  Now if neither of those conditions are true, then
+it's possible we just have a bug in the xHCI driver.
 
-This looks pretty fixable but today sysfs_rename does not do anything
-with the to move a renamed entry to a different position in the rbtree.
+There is a patchset in the works to dynamically expand the endpoint
+rings, but it's still going through revisions:
 
-If the directory itself changes sysfs_rename should be fine, and it
-looks like a trivial patch to always apply the directory rename logic
-in sysfs_rename. 
+http://marc.info/?l=linux-usb&m=131918645424329&w=2
 
-I think all we need is something like the untested patch below to fix
-the network device rename problem.
+It might be done for the 3.3 kernel, but until then the driver is just
+going to be broken, sorry. :(
 
-Eric
+> The device works with an out-of-kernel driver available from the
+> Alfa or Realtek web sites, but I want to fix rtl8192cu.
+> 
+> What condition leads to the above message? The user's dmesg buffer
+> has wrapped, thus I don't see the beginning of the failure. He is
+> using a canned distro kernel, thus he cannot include any extra
+> debugging info such as a stack dump when the errors occur. As he
+> uses the compat-wireless package, I think I can incorporate a new
+> copy of xhci-hcd with it, but I have not done so yet.
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 48ffbdf..a294068 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -865,14 +865,13 @@ int sysfs_rename(struct sysfs_dirent *sd,
- 		sd->s_name = new_name;
- 	}
- 
--	/* Remove from old parent's list and insert into new parent's list. */
--	if (sd->s_parent != new_parent_sd) {
--		sysfs_unlink_sibling(sd);
--		sysfs_get(new_parent_sd);
--		sysfs_put(sd->s_parent);
--		sd->s_parent = new_parent_sd;
--		sysfs_link_sibling(sd);
--	}
-+	/* Move to the appropriate place in the appropriate directories rbtree. */
-+	sysfs_unlink_sibling(sd);
-+	sysfs_get(new_parent_sd);
-+	sysfs_put(sd->s_parent);
-+	sd->s_parent = new_parent_sd;
-+	sysfs_link_sibling(sd);
-+
- 	sd->s_ns = new_ns;
- 
- 	error = 0;
+Which distro?  Several of the distros are based on 2.6.32, which only
+had minimal support for xHCI.  Updating just the xHCI driver with a
+more recent one isn't going to be possible with that old of a kernel,
+since later changes also touched the USB core as well.
 
+Sarah Sharp
