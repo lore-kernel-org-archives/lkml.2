@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab1J3W30 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 18:29:26 -0400
-Received: from smtprelay0230.b.hostedemail.com ([64.98.42.230]:37619 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753021Ab1J3W3Z (ORCPT
+	id S1753248Ab1J3We7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 18:34:59 -0400
+Received: from fsmtp-01.mc.mweb.net ([196.2.16.182]:58547 "EHLO
+	fsmtp-01.mc.mweb.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab1J3We5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 18:29:25 -0400
-X-Panda: scanned!
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 1767
-Date: Sun, 30 Oct 2011 22:29:23 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: arjan@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <1179048211.51348.1320013764432.JavaMail.mail@webmail17>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111030151256.27b2b20e@infradead.org>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
- as it should
+	Sun, 30 Oct 2011 18:34:57 -0400
+Message-ID: <20111031003340.15091ak8c25mzutc@41.134.111.202>
+Date: Mon, 31 Oct 2011 00:33:40 +0200
+From: "Mrs Mellisa Lewis." <bjmfirm1@msn.com>
+Reply-to: bjmfirm1@fengv.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
 Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.147.51.36]
+User-Agent: Internet Messaging Program (IMP) 4.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Oct 31, 2011, Arjan van de Ven wrote:
->
-> On Sun, 30 Oct 2011 19:57:12 +0000 (GMT)
-> "Artem S. Tashkinov" wrote:
->
-> > Hello,
-> >
-> > It's known that if you want to reach maximum performance on HT
-> > enabled Intel CPUs you should distribute the load evenly between
-> > physical cores, and when you have loaded all of them you should then
-> > load the remaining virtual cores.
->
-> this is a bold statement, and patently false if you have to threads of
-> one process that heavily share data between eachother...
-> (but true for more independent workloads)
 
-In my initial message I was talking about completely unrelated tasks/
-processes which share no data/instructions/whatever else. You don't
-need to trust my test case as you can carry out this test on your own.
 
-I have asked quite a lot of people to do that and a lot of them see this
-unfortunate pattern. 
+Contact My Lawyer For More Details,!! Barr jay mchenry for  
+$14,258,000.00 tell him that i have will this money to  
+you.Ref:(JJ/MMS/953/5015/GwrI/316us/uk For charity organization in  
+your country.Email:(bjmfirm@fengv.com) Tel: +44703 183 9543,God Bless  
+You Mrs Mellisa Lewis.
