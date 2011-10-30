@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049Ab1J3TQe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 15:16:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61461 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab1J3TQb (ORCPT
+	id S1752221Ab1J3TSg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 15:18:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:35253 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab1J3TSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 15:16:31 -0400
-Message-ID: <4EADA289.8040200@mvista.com>
-Date: Sun, 30 Oct 2011 21:16:25 +0200
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 30 Oct 2011 15:18:35 -0400
+Message-ID: <4EADA32E.6030200@googlemail.com>
+Date: Sun, 30 Oct 2011 20:19:10 +0100
+From: =?ISO-8859-15?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: JiSheng Zhang <jszhang3@gmail.com>
-CC: jgarzik@pobox.com, linux-ide@vger.kernel.org, avorontsov@mvista.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ahci_platform: add suspend & resume support
-References: <20111030142122.560216e2@ustc>
-In-Reply-To: <20111030142122.560216e2@ustc>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: linux-kernel@vger.kernel.org
+Subject: kernel panic on device removal when using a workqueue and delayed_work
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi,
 
-On 30.10.2011 8:21, JiSheng Zhang wrote:
+with the following simple kernel module, I have a good chance to get a 
+kernel panic when I unplug the device:
 
-> Signed-off-by: JiSheng Zhang<jszhang3@gmail.com>
-> ---
->   drivers/ata/ahci_platform.c |   54 +++++++++++++++++++++++++++++++++++++++++++
->   1 files changed, 54 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index c03277d..60ff9eb 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -202,12 +202,66 @@ static int __devexit ahci_remove(struct platform_device *pdev)
->   	return 0;
->   }
->
-> +#ifdef CONFIG_PM
-> +static int ahci_suspend(struct platform_device *pdev, pm_message_t mesg)
-> +{
-> +	struct ata_host *host = dev_get_drvdata(&pdev->dev);
 
-    You can also call platform_get_drvdata(pdev).
+#include <linux/workqueue.h>
+#include <linux/usb.h>
+#include <linux/module.h>
 
-> +static int ahci_resume(struct platform_device *pdev)
-> +{
-> +	struct device *dev =&pdev->dev;
-> +	struct ahci_platform_data *pdata = dev->platform_data;
+MODULE_AUTHOR("Nobody");
+MODULE_DESCRIPTION("example driver for causing kernel panic");
+MODULE_LICENSE("GPL");
 
-    There's dev_get_platdata().
+static struct delayed_work poll_work;
 
-WBR, Sergei
+static void poll(struct work_struct *work)
+{
+     schedule_delayed_work(&poll_work,
+                   msecs_to_jiffies(100));
+}
+
+static int test_probe(struct usb_interface *intf,
+               const struct usb_device_id *id)
+{
+     INIT_DELAYED_WORK(&poll_work, poll);
+     schedule_delayed_work(&poll_work,
+                   msecs_to_jiffies(100));
+     return 0;
+}
+
+static void test_disconnect(struct usb_interface *intf)
+{
+     cancel_delayed_work_sync(&poll_work);
+}
+
+static const struct usb_device_id device_table[] = {
+     {USB_DEVICE(0x1234, 0x5678)},
+     {}
+};
+
+MODULE_DEVICE_TABLE(usb, device_table);
+
+static struct usb_driver test_driver = {
+     .name       = "test",
+     .id_table   = device_table,
+     .probe      = test_probe,
+     .disconnect = test_disconnect,
+};
+
+static int __init test_mod_init(void)
+{
+     return usb_register(&test_driver);
+}
+
+static void __exit test_mod_exit(void)
+{
+     usb_deregister(&test_driver);
+}
+
+module_init(test_mod_init);
+module_exit(test_mod_exit);
+
+
+
+
+A picture of the backtrace (the machine immediately turns off without 
+saving a backtrace) can be found at
+
+http://imageshack.us/photo/my-images/823/img075gv.jpg
+
+Kernel version is 3.1.0.
+
+
+This is the first time I'm using a workqueue, so there is a good chance 
+that I missed something...
+Or is this a kernel bug ?
+
+
+Regards,
+Frank Schaefer
 
