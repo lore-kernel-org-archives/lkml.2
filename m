@@ -1,74 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab1J3V0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 17:26:51 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35410 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752516Ab1J3V0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 17:26:50 -0400
-X-Sasl-enc: xqkMVvtN9QvOVw/zvLiadxz+BxMp5ulVLe8d40R+kq4B 1320010009
-Date: Sun, 30 Oct 2011 19:26:45 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-Message-ID: <20111030212644.GA7106@khazad-dum.debian.net>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+	id S1752902Ab1J3Vs2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 17:48:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42299 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752276Ab1J3Vs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 17:48:27 -0400
+Date: Sun, 30 Oct 2011 22:47:48 +0100
+From: Johannes Weiner <jweiner@redhat.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Message-ID: <20111030214748.GB3650@redhat.com>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org>
+ <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
-> I've found out that even on Linux 3.0.8 the process scheduler doesn't correctly distributes
-> the load amongst virtual CPUs. E.g. on a 4-core system (8 total virtual CPUs) the process
-> scheduler often run some instances of four different tasks on the same physical CPU.
+On Fri, Oct 28, 2011 at 10:07:12AM -0700, Dan Magenheimer wrote:
+> 
+> > From: Johannes Weiner [mailto:jweiner@redhat.com]
+> > Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> > 
+> > On Fri, Oct 28, 2011 at 06:36:03PM +0300, Pekka Enberg wrote:
+> > > On Fri, Oct 28, 2011 at 6:21 PM, Dan Magenheimer
+> > > <dan.magenheimer@oracle.com> wrote:
+> > > Looking at your patches, there's no trace that anyone outside your own
+> > > development team even looked at the patches. Why do you feel that it's
+> > > OK to ask Linus to pull them?
+> > 
+> > People did look at it.
+> > 
+> > In my case, the handwavy benefits did not convince me.  The handwavy
+> > 'this is useful' from just more people of the same company does not
+> > help, either.
+> > 
+> > I want to see a usecase that tangibly gains from this, not just more
+> > marketing material.  Then we can talk about boring infrastructure and
+> > adding hooks to the VM.
+> > 
+> > Convincing the development community of the problem you are trying to
+> > solve is the undocumented part of the process you fail to follow.
+> 
+> Hi Johannes --
+> 
+> First, there are several companies and several unaffiliated kernel
+> developers contributing here, building on top of frontswap.  I happen
+> to be spearheading it, and my company is backing me up.  (It
+> might be more appropriate to note that much of the resistance comes
+> from people of your company... but please let's keep our open-source
+> developer hats on and have a technical discussion rather than one
+> which pleases our respective corporate overlords.)
 
-Please check how your sched_mc_power_savings and sched_smt_power_savings
-tunables.   Here's the doc from lesswats.org:
+I didn't mean to start a mud fight about this, I only mentioned the
+part about your company because I already assume it sees value in tmem
+- it probably wouldn't fund its development otherwise.  I just tend to
+not care too much about Acks from the same company as the patch itself
+and I believe other people do the same.
 
-'sched_mc_power_savings' tunable under /sys/devices/system/cpu/ controls
-the Multi-core related tunable. By default, this is set to '0' (for
-optimal performance). By setting this to '1', under light load
-scenarios, the process load is distributed such that all the cores in a
-processor package are busy before distributing the process load to other
-processor packages.
+> Second, have you read http://lwn.net/Articles/454795/ ?
+> If not, please do.  If yes, please explain what you don't
+> see as convincing or tangible or documented.  All of this
+> exists today as working publicly available code... it's
+> not marketing material.
 
-[...]
+I remember answering this to you in private already some time ago when
+discussing frontswap.
 
-'sched_smt_power_savings' tunable under /sys/devices/system/cpu/
-controls the multi-threading related tunable. By default, this is set to
-'0' (for optimal performance). By setting this to '1', under light load
-scenarios, the process load is distributed such that all the threads in
-a core and all the cores in a processor package are busy before
-distributing the process load to threads and cores, in other processor
-packages. 
+You keep proposing a bridge and I keep asking for proof that this is
+not a bridge to nowhere.  Unless that question is answered, I am not
+interested in discussing the bridge's design.
 
-Please make sure both are set to 0.  If they were not 0 at the time you
-ran your tests, please retest and report back.
+According to the LWN article, there are the following backends:
 
-You also want to make sure you _do_ have the SMT scheduler compiled in
-whatever kernel you're using, just in case.
+1. Zcache: allow swapping into compressed memory
 
-It is certainly possible that there is a bug in the scheduler, but it is
-best to make sure it is not something else, first.
+This sets aside a portion of memory which the kernel will swap
+compressed pages into upon pressure.  Now, obviously, reserving memory
+from the system for this increases the pressure in the first place,
+eating away on what space we have for anonymous memory and page cache.
 
-You may also want to refer to: http://oss.intel.com/pdfs/mclinux.pdf and
-to the irqbalance and hwloc[1] utilities, since you're apparently
-interested in SMP/SMT/NUMA scheduler performance.
+Do you auto-size that region depending on workload?
 
-[1] http://www.open-mpi.org/projects/hwloc/
+If so, how?  If not, is it documented how to size it manually?
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Where are the performance numbers for various workloads, including
+both those that benefit from every bit of page cache and those that
+would fit into memory without zcache occupying space?
+
+However, looking at the zcache code, it seems it wants to allocate
+storage pages only when already trying to swap out.  Are you sure this
+works in reality?
+
+2. RAMster: allow swapping between machines in a cluster
+
+Are there people using it?  It, too, sounds like a good idea but I
+don't see any proof it actually works as intended.
+
+3. Xen: allow guests to swap into the host.
+
+The article mentions that there is code to put the guests under
+pressure and let them swap to host memory when the pressure is too
+high.  This sounds useful.
+
+Where is the code that controls the amount of pressure put on the
+guests?
+
+Where are the performance numbers?  Surely you can construct a case
+where the initial machine sizes are not quite right and then collect
+data that demonstrates the machines are rebalancing as expected?
+
+4. kvm: same as Xen
+
+Apart from the questions that already apply to Xen, I remember KVM
+people in particular complaining about the synchroneous single-page
+interface that results in a hypercall per swapped page.  What happened
+to this concern?
+
+---
+
+I would really appreciate if you could pick one of those backends and
+present them as a real and practical solution to real and practical
+problems.  With documentation on configuration and performance data of
+real workloads.  We can discuss implementation details like how memory
+is exchanged between source and destination when we come to it.
+
+I am not asking for just more code that uses your interface, I want to
+know the real value for real people of the combination of all that
+stuff.  With proof, not just explanations of how it's supposed to
+work.
+
+Until you can accept that, please include
+
+	Nacked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+on all further stand-alone submissions of tmem core code and/or hooks
+in the VM.  Thanks.
