@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934219Ab1J3QN4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 12:13:56 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52741 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933439Ab1J3QNz (ORCPT
+	id S934225Ab1J3QQu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 12:16:50 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:3050 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934172Ab1J3QQt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 12:13:55 -0400
+	Sun, 30 Oct 2011 12:16:49 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Index: AQHMk/Yfbv94uVs6kUmFh5QHJPmlm5WSkYKA//+MPrCAAIjtgP//i45QgAHVAwCAAAn/AA==
+Date: Sun, 30 Oct 2011 16:16:47 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA544DA@TK5EX14MBXC122.redmond.corp.microsoft.com>
+References: <1319645321-9770-1-git-send-email-kys@microsoft.com>
+ <alpine.LNX.2.00.1110282026360.3541@pobox.suse.cz>
+ <6E21E5352C11B742B20C142EB499E0481AA531D4@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <20111028200315.GA30918@suse.de>
+ <6E21E5352C11B742B20C142EB499E0481AA53219@TK5EX14MBXC122.redmond.corp.microsoft.com>
+ <alpine.LNX.2.00.1110291904190.3541@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1110291904190.3541@pobox.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Originating-IP: [109.84.197.238]
-In-Reply-To: <CANvSZQ_h1QbSCWs2tBmOA9FXY=DTcgsom+WG9JJqm8-dm+aNyg@mail.gmail.com>
-References: <CANvSZQ_h1QbSCWs2tBmOA9FXY=DTcgsom+WG9JJqm8-dm+aNyg@mail.gmail.com>
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
-Date: Sun, 30 Oct 2011 17:13:28 +0100
-Message-ID: <CANvSZQ-9gAhxWbYKjh3M-Rb1=j8-rFrYKmwNjK6QaDLPGc8TXg@mail.gmail.com>
-Subject: Re: Sporadic kernel panic on Lenovo T420s resume from S3
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
 
-On Mon, Oct 10, 2011 at 21:08, Thilo-Alexander Ginkel <thilo@ginkel.com> wrote:
-> recently, my Lenovo ThinkPad T420s has been sporadically crashing
-> after waking up the machine from ACPI S3. The system locks up hard,
-> i.e., MagicSysRq no longer works, but at least a dump is printed to
-> the console. The process that is crashing is a kworker process, the
-> topmost method on the call stack is "wq_worker_sleeping".
->
-> The remaining call stack is available (as a photograph) at:
-> https://secure.tgbyte.de/dropbox/ieNiema6.jpg
->
-> Unfortunately, the top of the panic is not visible and scrolling back
-> does not work.
 
-The issue is still happening with a mainline 3.1 kernel (same dump as
-above). Is there anyting I can do to capture more details? The machine
-locks up completely, so MagicSysRq does not help when trying to
-preserve the error log. Are there any mechanisms to persist some error
-information when regular file systems are not available (RTC will
-probably not suffice). Netconsole will be tricky to use as I am
-typically on the road when using my laptop with no additional log sink
-available.
+> -----Original Message-----
+> From: Jiri Kosina [mailto:jkosina@suse.cz]
+> Sent: Saturday, October 29, 2011 1:05 PM
+> To: KY Srinivasan
+> Cc: Greg KH; linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; ohering@suse.com; Dmitry Torokhov
+> Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+> 
+> On Fri, 28 Oct 2011, KY Srinivasan wrote:
+> 
+> > > > > >  obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
+> > > > > >  obj-$(CONFIG_HID_WALTOP)	+= hid-waltop.o
+> > > > > >  obj-$(CONFIG_HID_WIIMOTE)	+= hid-wiimote.o
+> > > > > > +obj-$(CONFIG_HYPERV_MOUSE)	+= hv_mouse.o
+> > > > >
+> > > > > I'd prefer a bit to follow the current naming of the drivers in
+> > > > > drivers/hid directory ... all the device-specific (vendor-specific)
+> > > > > drivers currently are called hid-<vendor> or similar.
+> > > > >
+> > > > > We could talk about changing this naming scheme, but before we reach
+> any
+> > > > > conclusion on this, I'd prefer this to stay for all drivers if possible.
+> > > >
+> > > > Do you want the driver module to conform to the naming scheme you
+> have?
+> > > > Greg, in the past has resisted changing driver names, but I have no
+> objection
+> > > > to conforming to the naming convention you have.
+> > >
+> > > I recommend following the proper naming scheme.  As this driver is
+> > > auto-loaded when the virtual hardware is seen, the name really doesn't
+> > > matter at all.
+> > >
+> > > So, how about 'hid-hyperv' or 'hid-hv'?
+> >
+> > I will go with hid-hv  if there are no objections.
+> 
+> OK by me, thanks.
 
-Thanks,
-Thilo
+I am sorry I changed my mind and named it hid-hyperv. The patch I sent out
+has this name. I hope it is ok with you.
+
+Regards,
+
+K. Y
+
