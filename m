@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab1J3Utr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:49:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37153 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752100Ab1J3Utp (ORCPT
+	id S1752843Ab1J3V0v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 17:26:51 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35410 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752516Ab1J3V0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:49:45 -0400
-Message-ID: <4EADB864.3060702@suse.cz>
-Date: Sun, 30 Oct 2011 21:49:40 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Sun, 30 Oct 2011 17:26:50 -0400
+X-Sasl-enc: xqkMVvtN9QvOVw/zvLiadxz+BxMp5ulVLe8d40R+kq4B 1320010009
+Date: Sun, 30 Oct 2011 19:26:45 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
+ it should
+Message-ID: <20111030212644.GA7106@khazad-dum.debian.net>
+References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, Greg KH <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Mikulas Patocka <mpatocka@redhat.com>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Broken link in /sys/class/net/ [was: [GIT] Networking]
-References: <20111025.063206.2273357152859701628.davem@davemloft.net> <CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com> <20111025131315.GA1899@suse.de> <4EAC8642.3050309@suse.cz> <m11utvytg4.fsf@fess.ebiederm.org>
-In-Reply-To: <m11utvytg4.fsf@fess.ebiederm.org>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/30/2011 05:49 AM, Eric W. Biederman wrote:
-> Jiri Slaby <jslaby@suse.cz> writes:
-> 
->> On 10/25/2011 03:13 PM, Greg KH wrote:
->>> On Tue, Oct 25, 2011 at 01:46:11PM +0200, Linus Torvalds wrote:
->>>> Anyway, after that rant about really bad practices, let me say that I
->>>> did fix up the conflict and I think it's right. But I won't guarantee
->>>> it, so please check the changes to fs/sysfs/dir.c.
->>>
->>> I think it looks ok, I've booted the merge result, and am typing and
->>> sending this from the new kernel, and it hasn't crashed yet :)
->>
->> Hi, maybe this was not caused by the merge, but the patch[1] causes this
->> mess in /sys/class/net/ for me:
->> l????????? ? ?    ?    ?             ? eth1
->>
->> This happens after one renames a net device -- the new name is eth1 here.
->>
->> [1] 4f72c0cab40 (sysfs: use rb-tree for name lookups)
-> 
-> This looks pretty fixable but today sysfs_rename does not do anything
-> with the to move a renamed entry to a different position in the rbtree.
-> 
-> If the directory itself changes sysfs_rename should be fine, and it
-> looks like a trivial patch to always apply the directory rename logic
-> in sysfs_rename. 
-> 
-> I think all we need is something like the untested patch below to fix
-> the network device rename problem.
+On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
+> I've found out that even on Linux 3.0.8 the process scheduler doesn't correctly distributes
+> the load amongst virtual CPUs. E.g. on a 4-core system (8 total virtual CPUs) the process
+> scheduler often run some instances of four different tasks on the same physical CPU.
 
-Looks like it works. Thanks.
+Please check how your sched_mc_power_savings and sched_smt_power_savings
+tunables.   Here's the doc from lesswats.org:
 
-> diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> index 48ffbdf..a294068 100644
-> --- a/fs/sysfs/dir.c
-> +++ b/fs/sysfs/dir.c
-> @@ -865,14 +865,13 @@ int sysfs_rename(struct sysfs_dirent *sd,
->  		sd->s_name = new_name;
->  	}
->  
-> -	/* Remove from old parent's list and insert into new parent's list. */
-> -	if (sd->s_parent != new_parent_sd) {
-> -		sysfs_unlink_sibling(sd);
-> -		sysfs_get(new_parent_sd);
-> -		sysfs_put(sd->s_parent);
-> -		sd->s_parent = new_parent_sd;
-> -		sysfs_link_sibling(sd);
-> -	}
-> +	/* Move to the appropriate place in the appropriate directories rbtree. */
-> +	sysfs_unlink_sibling(sd);
-> +	sysfs_get(new_parent_sd);
-> +	sysfs_put(sd->s_parent);
-> +	sd->s_parent = new_parent_sd;
-> +	sysfs_link_sibling(sd);
-> +
->  	sd->s_ns = new_ns;
->  
->  	error = 0;
-> 
+'sched_mc_power_savings' tunable under /sys/devices/system/cpu/ controls
+the Multi-core related tunable. By default, this is set to '0' (for
+optimal performance). By setting this to '1', under light load
+scenarios, the process load is distributed such that all the cores in a
+processor package are busy before distributing the process load to other
+processor packages.
 
+[...]
+
+'sched_smt_power_savings' tunable under /sys/devices/system/cpu/
+controls the multi-threading related tunable. By default, this is set to
+'0' (for optimal performance). By setting this to '1', under light load
+scenarios, the process load is distributed such that all the threads in
+a core and all the cores in a processor package are busy before
+distributing the process load to threads and cores, in other processor
+packages. 
+
+Please make sure both are set to 0.  If they were not 0 at the time you
+ran your tests, please retest and report back.
+
+You also want to make sure you _do_ have the SMT scheduler compiled in
+whatever kernel you're using, just in case.
+
+It is certainly possible that there is a bug in the scheduler, but it is
+best to make sure it is not something else, first.
+
+You may also want to refer to: http://oss.intel.com/pdfs/mclinux.pdf and
+to the irqbalance and hwloc[1] utilities, since you're apparently
+interested in SMP/SMT/NUMA scheduler performance.
+
+[1] http://www.open-mpi.org/projects/hwloc/
 
 -- 
-js
-suse labs
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
