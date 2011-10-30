@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212Ab1J3UQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:16:26 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54088 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab1J3UQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:16:25 -0400
-Date: Sun, 30 Oct 2011 13:16:18 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Fries <david@fries.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
-Subject: Re: hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread
- injection and TCP connection hijacking
-Message-ID: <20111030201618.GA7696@google.com>
-References: <20110806121247.GC23937@htj.dyndns.org>
- <20111030044821.GA23741@spacedout.fries.net>
+	id S1752290Ab1J3USN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:18:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51425 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752012Ab1J3USM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 16:18:12 -0400
+Message-ID: <4EADAF69.80008@zytor.com>
+Date: Sun, 30 Oct 2011 13:11:21 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111030044821.GA23741@spacedout.fries.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "Ted Ts'o" <tytso@mit.edu>, Kyle Moffett <kyle@moffetthome.net>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        harald@redhat.com, david@fubar.dk, greg@kroah.com,
+        Linux Containers <containers@lists.osdl.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <paul@paulmenage.org>
+Subject: Re: Detecting if you are running in a container
+References: <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org> <20111012175702.GA23231@fieldses.org> <CAGZ=bqJxadNqaPCW3HufrMmQ57x082=pCDa6-mWLsdtfxHgdPw@mail.gmail.com> <20111012190452.GA23845@fieldses.org> <CAGZ=bqJjgmtBfyXJ2eK1C0PfzkgBVWFTjkTYkC211ZT+-5f-UQ@mail.gmail.com> <20111014155406.GC13119@thunk.org> <m17h478n5k.fsf@fess.ebiederm.org> <4E98B088.5030400@zytor.com> <m1ipnpl1c9.fsf@fess.ebiederm.org>
+In-Reply-To: <m1ipnpl1c9.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Rafael and linux-pm)
-
-On Sat, Oct 29, 2011 at 11:48:21PM -0500, David Fries wrote:
-> I saw the write up on this on lwn.net, pretty creative by the way, and
-> it got me thinking about a different checkpoint/restart problem I've
-> been running into.  Specifically in hibernating to disk.  In the
-> hibernate case active TCP connections hang after resuming, while an
-> idle TCP connection will continue after the system is back up.  My
-> observation is the kernel checkpoints itself to memory, enables
-> devices, writes out that checkpoint image to storage, then powers off.
-> The problem is if TCP packets are received while writing to storage,
-> the kernel will continue to queue and ack those TCP packets, but the
-> running kernel and it's network state is shortly lost.  When the
-> computer resumes, those TCP byte sequences hang the TCP connection for
-> an extended period of time while the resumed computer refuses to
-> acknowledge the data that was received after checkpointing and the now
-> running kernel knew nothing about, and the other computer tries in
-> vain to resend any data that hadn't yet been acknowledged, which is
-> always after the data that was lost, until one of them eventually
-> gives up.
+On 10/16/2011 02:42 AM, Eric W. Biederman wrote:
+>>
+>> Something based on UUIDs, perhaps?
+>>
+>> UUIDs are kind of exactly this, after all... a single namespace designed
+>> to be large and random enough to be globally unique without a central
+>> registration authority.
 > 
-> I've been wondering if it was safe or possible to leave any network
-> interfaces down after the checkpoint, or what the right solution would
-> be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
-> bit just after the kernel checkpoint (for the kernel is walking dead
-> and won't remember anything that happens), and then prevent any TCP
-> acks from being sent for those connections would be the right
-> solution.  I've taken to unplugging the physical lan cable,
-> hibernating to disk, and plugging it back in after the system is down,
-> to avoid the problem.  Any ideas?
+> mount --bind /proc/self/ns/net /var/run/netns/<name>
+> 
+> When we want to refer to the namespace in syscalls we pass a file
+> descriptor we received from opening the namespace reference object.
+> 
+> That moves the entire naming problem into the file namespace.
+> 
 
-Hmmm... sounds like taking down network interfaces before starting
-hibernation sequence should be enough, which shouldn't be too
-difficult to implement from userland.  Rafael, what do you think?
+That doesn't solve what I think of as the *real* problem.
 
-Thanks.
+The real problem is just another instance of what I sometimes refer to
+as the "alien metadata problem": the alien metadata problem (which crops
+up in *all kinds* of contexts, including containers, namespaces, virtual
+machines, building distribution disk images, and backups) is the fact
+that you would like to be able to store, manipulate and preserve, on
+disk and in a mounted filesystem, a set of metadata which may not be the
+"currently active" metadata.
+
+There are two forms of "solutions" to this: one where the filesystem
+still only contains one set of metadata, but it is not currently active,
+and one where the filesystem contains multiple sets of metadata for the
+same files at the same time, any one of which can be active (and
+different ones may be active for different namespaces.)
+
+	-hpa
 
 -- 
-tejun
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
