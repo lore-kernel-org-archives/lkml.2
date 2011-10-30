@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab1J3VvT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 17:51:19 -0400
-Received: from smtprelay0118.b.hostedemail.com ([64.98.42.118]:51871 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752800Ab1J3VvS (ORCPT
+	id S1753071Ab1J3Vxs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 17:53:48 -0400
+Received: from smtp1.newsguy.com ([74.209.136.71]:56615 "EHLO
+	smtp1.newsguy.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752865Ab1J3Vxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 17:51:18 -0400
-X-Panda: scanned!
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 2448
-Date: Sun, 30 Oct 2011 21:51:17 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: hmh@hmh.eng.br
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <815860869.50724.1320011477430.JavaMail.mail@webmail17>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111030212644.GA7106@khazad-dum.debian.net>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
- as it should
+	Sun, 30 Oct 2011 17:53:47 -0400
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 17:53:47 EDT
+Message-ID: <4EADC4F5.2050201@newsguy.com>
+Date: Sun, 30 Oct 2011 14:43:17 -0700
+From: Mike Dunn <mikedunn@newsguy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.20) Gecko/20110917 Lightning/1.0b3pre Thunderbird/3.1.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+CC: Marek Vasut <marek.vasut@gmail.com>, linux-mtd@lists.infradead.org,
+        dwmw2@infradead.org, dedekind1@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/13]  DocG3 fixes and write support
+References: <1319824292-11085-1-git-send-email-robert.jarzmik@free.fr>	<201110300241.39534.marek.vasut@gmail.com> <87bosy6eab.fsf@free.fr>
+In-Reply-To: <87bosy6eab.fsf@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.147.51.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Oct 31, 2011, Henrique de Moraes Holschuh wrote: 
+Hi guys,
+
+
+On 10/30/2011 02:04 AM, Robert Jarzmik wrote:
+> Marek Vasut <marek.vasut@gmail.com> writes:
 >
-> On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
-> > I've found out that even on Linux 3.0.8 the process scheduler doesn't correctly distributes
-> > the load amongst virtual CPUs. E.g. on a 4-core system (8 total virtual CPUs) the process
-> > scheduler often run some instances of four different tasks on the same physical CPU.
-> 
-> Please check how your sched_mc_power_savings and sched_smt_power_savings
-> tunables.   Here's the doc from lesswats.org:
-> 
-> [cut]
-> 
-> Please make sure both are set to 0.  If they were not 0 at the time you
-> ran your tests, please retest and report back.
-> 
-> You also want to make sure you _do_ have the SMT scheduler compiled in
-> whatever kernel you're using, just in case.
-> 
-> It is certainly possible that there is a bug in the scheduler, but it is
-> best to make sure it is not something else, first.
-> 
-> You may also want to refer to: http://oss.intel.com/pdfs/mclinux.pdf and
-> to the irqbalance and hwloc[1] utilities, since you're apparently
-> interested in SMP/SMT/NUMA scheduler performance.
+>> Hi,
+>>
+>> can you sum up the situation about the another (docg4) driver for us not 
+>> watching this too tightly? Was there any improvement/progress/... ?
+> The review is underway, my comments should be dealt with, and a V2 of the patch
+> should be sent. It's not in my hands.
 
-That's 0 & 0 for me.
 
-And people running standard desktop Linux distributions (like Arch Linux and Ubuntu
-11.10) report that this issue also applies to them and by default (in the mentioned
-distros) both these variables are set to 0 (that is unchanged).
+I've been busy working on this, and should post a patch within the next few
+days.  Progress has been very good.  I still want to run the mtd tests in the
+kernel before posting the patch (except the torture test - I'm not ready to
+sacrifice my development Treo), but it continues to pass the nandtest userspace
+utility (part of mtd-utils) flawlessly, and a ubifs still appears to be working
+well.  The code is now in a much cleaner state.
 
-So, there's nothing to retest.
 
-I have another major pet peeve concerning the Linux process scheduler but I
-want to start a new thread on that topic.
+> The global view we have with Mike is that chips are different, and each one
+> deserves its own driver. Several registers are common, and the docg3.h could
+> become common.
+>
 
-Best wishes,
+Actually, I'm open on this.  My opinion is that they should share a header file
+for sure, because the register set largely overlaps.  To that end, my upcoming
+patch will adopt Robert's register #defines, with just a few additional ones
+that are G4 specific.
 
-Artem
+On the broader question of combined or separate drivers... a combined driver is
+certainly doable.  Each device would have to use its own set of low-level
+functions, but I think there's merit in combining them because it would provide
+a consistent interface with the mtd nand infrastructure code, which is rather
+messy.  But before that discussion can take place, the more fundamental question
+of whether or not the drivers should use the nand interface needs to be
+resolved.  I used the nand interface when I started on the G4 driver, because it
+*is* a nand device, and the legacy diskonchip.c driver was updated not long ago
+from a stand-alone driver to the nand interface.  I'm not knowledgeable enough
+of the mtd subsystem to argue for or against the nand interface, but the end
+result (once I invested the time slogging through nand_base.c) is fairly clean,
+with just a couple minor hacks to get around the fact that it doesnt have a
+"standard" nand controller.
 
+Hopefully some mtd experts can share an opinion on this.
+
+Thanks,
+Mike
 
