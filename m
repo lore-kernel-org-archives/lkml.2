@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933695Ab1J3Jju (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 05:39:50 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:60690 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932481Ab1J3Jjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 05:39:49 -0400
-X-Greylist: delayed 809 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 05:39:49 EDT
-X-ClientAddr: 85.127.182.195
-Date: Sun, 30 Oct 2011 10:23:31 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+	id S933667Ab1J3JwE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 05:52:04 -0400
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:48301 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932481Ab1J3JwB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 05:52:01 -0400
+From: Philip Rakity <prakity@marvell.com>
+To: "linux-kernel@vger.kernel.org Mailing List" 
+	<linux-kernel@vger.kernel.org>
+CC: "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
         Eric Miao <eric.y.miao@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH] [TRIVIAL] ARM: pxa: Fix typo
- 'CONFIG_BACKLIGHT_PWM__MODULE'
-Message-ID: <20111030102331.682dfd6e@absol.kitzblitz>
-In-Reply-To: <201110300035.27985.marek.vasut@gmail.com>
-References: <1318347115.5754.3.camel@x61.thuisdomein>
-	<alpine.LNX.2.00.1110292127320.3541@pobox.suse.cz>
-	<201110300035.27985.marek.vasut@gmail.com>
-Organization: -
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwAQMAAABtzGvEAAAAAXNSR0IArs4c6QAAAAZQTFRF
- AJnV/f/88sgWwwAAAKNJREFUGNM10LENwyAQheFHKCgZgTVSRHI2gy5reROTDSiREvnyHhdXnwXS+
- T+ACJgBYTiGSmDDOTdR7XDeTi9ksxEcoKFcTOCJLO7kC5SWFjPZCR69nI9+x5u6OJM1RN5UYUiNKa
- ZRpHHUoqh1v8hKEZ1FSGCrYOvgVmxd9DIXcSJwLTycm7bj0e4wkJGB48w/FckAwUKl/OGDZAcqItk
- BU+wHXLqKsjYyPeMAAAAASUVORK5CYII=
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-m2soft-MailScanner-Information: Please contact the ISP for more information
-X-m2soft-MailScanner-ID: p9U9NXWd015892
-X-m2soft-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-m2soft-MailScanner-From: nikai@nikai.net
+        Mark Brown <mark.brown314@gmail.com>
+Date: Sun, 30 Oct 2011 02:51:52 -0700
+Subject: [PATCH] power: max8925 - Enable power change notifications   --
+ RESEND
+Thread-Topic: [PATCH] power: max8925 - Enable power change notifications
+   -- RESEND
+Thread-Index: AcyW6Y0MaqoF4Q+KQmSwJ/t4smzz8Q==
+Message-ID: <E4D0EFE3-91AD-425F-90C7-3AF4E065BFDC@marvell.com>
+References: <03653C9B-09A4-40D0-B63F-ABDDDC0124D9@marvell.com>
+In-Reply-To: <03653C9B-09A4-40D0-B63F-ABDDDC0124D9@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marek Vasut <marek.vasut@gmail.com>:
-> > On Tue, 11 Oct 2011, Paul Bolle wrote:
-> > > Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> > > ---
-> > > Untested (I don't think I've got the hardware, nor have I got the
-> > > toolchain at hand, etc.).
-> > > 
-> > >  arch/arm/mach-pxa/colibri-pxa270-income.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c
-> > > b/arch/arm/mach-pxa/colibri-pxa270-income.c index 80538b8..248804b
-> > > 100644
-> > > --- a/arch/arm/mach-pxa/colibri-pxa270-income.c
-> > > +++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
-> > > @@ -183,7 +183,7 @@ static inline void income_lcd_init(void) {}
-> > > 
-> > >  /***********************************************************************
-> > >  *******
-> > >  
-> > >   * Backlight
-> > >   ***********************************************************************
-> > >   *******/
-> > > 
-> > > -#if defined(CONFIG_BACKLIGHT_PWM) ||
-> > > defined(CONFIG_BACKLIGHT_PWM__MODULE) +#if defined(CONFIG_BACKLIGHT_PWM)
-> > > || defined(CONFIG_BACKLIGHT_PWM_MODULE)
-> > > 
-> > >  static struct platform_pwm_backlight_data income_backlight_data = {
-> > >  
-> > >  	.pwm_id		= 0,
-> > >  	.max_brightness	= 0x3ff,
-> > 
-> > I'd like to have this at least compile-tested, adding some CCs.
+
+Resend
+
+On Aug 29, 2011, at 9:32 AM, Philip Rakity wrote:
+
 > 
-> The change is visually ok, add my:
+> The power core infrastructure allow external power change
+> events to be passed to drivers what are listed in the
+> supplied_to call back field.  Enable this feature by
+> allowing the supplied_to field to be passed to the driver.
 > 
-> Acked-by: Marek Vasut <marek.vasut@gmail.com>
+> This feature will enable drivers named in the supplied_to field that have a
+> external_power_changed callback to be notified when power
+> was been turned on or off.
+> 
+> Signed-off-by: Philip Rakity <prakity@marvell.com>
+> ---
+> drivers/power/max8925_power.c |    5 +++++
+> include/linux/mfd/max8925.h   |    2 ++
+> 2 files changed, 7 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index fd32c08..29b5d2c 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -455,6 +455,8 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+> 	info->ac.properties = max8925_ac_props;
+> 	info->ac.num_properties = ARRAY_SIZE(max8925_ac_props);
+> 	info->ac.get_property = max8925_ac_get_prop;
+> +	info->ac.supplied_to = pdata->supplied_to;
+> +	info->ac.num_supplicants = pdata->num_supplicants;
+> 	ret = power_supply_register(&pdev->dev, &info->ac);
+> 	if (ret)
+> 		goto out;
+> @@ -465,6 +467,9 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+> 	info->usb.properties = max8925_usb_props;
+> 	info->usb.num_properties = ARRAY_SIZE(max8925_usb_props);
+> 	info->usb.get_property = max8925_usb_get_prop;
+> +	info->usb.supplied_to = pdata->supplied_to;
+> +	info->usb.num_supplicants = pdata->num_supplicants;
+> +
+> 	ret = power_supply_register(&pdev->dev, &info->usb);
+> 	if (ret)
+> 		goto out_usb;
+> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+> index e742e04..008f807 100644
+> --- a/include/linux/mfd/max8925.h
+> +++ b/include/linux/mfd/max8925.h
+> @@ -225,6 +225,8 @@ struct max8925_power_pdata {
+> 	unsigned	fast_charge:3;	/* charge current */
+> 	unsigned	no_temp_support:1; /* set if no temperature detect */
+> 	unsigned	no_insert_detect:1; /* set if no ac insert detect */
+> +	char		**supplied_to;
+> +	int		num_supplicants;
+> };
+> 
+> /*
+> -- 
+> 1.7.6
+> 
+> 
 
-I now remember you already acked this change last year:
-https://lkml.org/lkml/2010/12/4/41
-
-Sorry that I forgot to resend the patch.
-
-Best regards,
-Nicolas Kaiser
