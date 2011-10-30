@@ -1,85 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab1J3UfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:35:12 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:47052 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab1J3UfK (ORCPT
+	id S1752549Ab1J3Unf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:43:35 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:51256 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752100Ab1J3Une (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:35:10 -0400
-Date: Sun, 30 Oct 2011 13:35:03 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Matthijs Kooijman <matthijs@stdin.nl>
-Cc: Gaudenz Steinlin <gaudenz@debian.org>, linux-kernel@vger.kernel.org,
-        Jameson Graef Rollins <jrollins@finestructure.net>,
-        Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
-        Martin Pitt <martin.pitt@ubuntu.com>
-Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
- (Re: [PATCH 1/2] cdrom: always check_disk_change() on open)
-Message-ID: <20111030203503.GB7696@google.com>
-References: <20110903221456.GA2877@elie>
- <20110904024244.GB3083@htj.dyndns.org>
- <87y5y37o7h.fsf@servo.factory.finestructure.net>
- <20110906174524.GN18425@mtj.dyndns.org>
- <20110907085037.GX10237@login.drsnuggles.stderr.nl>
- <20110911040826.GP29319@htj.dyndns.org>
- <87r5222l40.fsf@meteor.durcheinandertal.local.i-did-not-set--mail-host-address--so-tickle-me>
- <20111026182650.GL14392@login.drsnuggles.stderr.nl>
- <20111026222510.GK24261@google.com>
- <20111028134743.GU14392@login.drsnuggles.stderr.nl>
+	Sun, 30 Oct 2011 16:43:34 -0400
+Date: Sun, 30 Oct 2011 15:43:18 -0500
+From: David Fries <david@fries.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
+Subject: Re: hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread
+ injection and TCP connection hijacking
+Message-ID: <20111030204318.GZ24999@spacedout.fries.net>
+References: <20110806121247.GC23937@htj.dyndns.org>
+ <20111030044821.GA23741@spacedout.fries.net>
+ <20111030201618.GA7696@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111028134743.GU14392@login.drsnuggles.stderr.nl>
+In-Reply-To: <20111030201618.GA7696@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sun, 30 Oct 2011 15:43:21 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Oct 30, 2011 at 01:16:18PM -0700, Tejun Heo wrote:
+> (cc'ing Rafael and linux-pm)
+> 
+> On Sat, Oct 29, 2011 at 11:48:21PM -0500, David Fries wrote:
+> > I saw the write up on this on lwn.net, pretty creative by the way, and
+> > it got me thinking about a different checkpoint/restart problem I've
+> > been running into.  Specifically in hibernating to disk.  In the
+> > hibernate case active TCP connections hang after resuming, while an
+> > idle TCP connection will continue after the system is back up.  My
+> > observation is the kernel checkpoints itself to memory, enables
+> > devices, writes out that checkpoint image to storage, then powers off.
+> > The problem is if TCP packets are received while writing to storage,
+> > the kernel will continue to queue and ack those TCP packets, but the
+> > running kernel and it's network state is shortly lost.  When the
+> > computer resumes, those TCP byte sequences hang the TCP connection for
+> > an extended period of time while the resumed computer refuses to
+> > acknowledge the data that was received after checkpointing and the now
+> > running kernel knew nothing about, and the other computer tries in
+> > vain to resend any data that hadn't yet been acknowledged, which is
+> > always after the data that was lost, until one of them eventually
+> > gives up.
+> > 
+> > I've been wondering if it was safe or possible to leave any network
+> > interfaces down after the checkpoint, or what the right solution would
+> > be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
+> > bit just after the kernel checkpoint (for the kernel is walking dead
+> > and won't remember anything that happens), and then prevent any TCP
+> > acks from being sent for those connections would be the right
+> > solution.  I've taken to unplugging the physical lan cable,
+> > hibernating to disk, and plugging it back in after the system is down,
+> > to avoid the problem.  Any ideas?
+> 
+> Hmmm... sounds like taking down network interfaces before starting
+> hibernation sequence should be enough, which shouldn't be too
+> difficult to implement from userland.  Rafael, what do you think?
 
-On Fri, Oct 28, 2011 at 03:47:43PM +0200, Matthijs Kooijman wrote:
-> I'm not sure if the FRAME_POINTER option actually works, though, since I
-> couldn't find any obvious differences in the format of the stack traces?
+What I observe is the kernel prints out "Preallocating image memory",
+then when the screen goes blank the network link light also goes out,
+then the screen comes back on with "Compressing and saving" along with
+the link light comes on, until it has been saved and the system shuts
+down.  So the kernel is already brining the network down, it just
+needs to keep it there until the original check pointed kernel is back
+up.
 
-The lines w/o leading "?" are from stack frames discovered by
-following frame pointer.  The ones w/ "?" are from dumb stack
-scanning.  w/o FP, it wouldn't be possible to tell between the actual
-ones from the spurious ones.
-
-So, the following kworker is what the scsi_id is waiting for in
-flush_work().
-
- kworker/2:1     D ffff880206054830     0 10775      2 0x00000000
-  ffff880206067aa0 0000000000000046 ffff880206067a50 ffffffff8105476d
-  ffff88022ed58140 ffff880206067fd8 ffff880206067fd8 0000000000012f40
-  ffff880206054830 ffff88022ed58140 ffff880200000002 0000000000000286
- Call Trace:
-  [<ffffffff8134c996>] schedule+0x55/0x57
-  [<ffffffff8134cc9f>] schedule_timeout+0xa2/0xd9
-  [<ffffffff8134c832>] wait_for_common+0x9e/0x115
-  [<ffffffff8134c925>] wait_for_completion_timeout+0xe/0x10
-  [<ffffffff8119c502>] blk_execute_rq+0xb7/0xf9
-  [<ffffffffa0043044>] scsi_execute+0xf5/0x14d [scsi_mod]
-  [<ffffffffa004311e>] scsi_execute_req+0x82/0xb4 [scsi_mod]
-  [<ffffffffa00bb2d9>] sr_check_events+0x92/0x21e [sr_mod]
-  [<ffffffffa009d04b>] cdrom_check_events+0x14/0x29 [cdrom]
-  [<ffffffffa00bb696>] sr_block_check_events+0x14/0x16 [sr_mod]
-  [<ffffffff8119ea7b>] disk_events_workfn+0x3b/0xd7
-  [<ffffffff8105dcc9>] process_one_work+0x165/0x27a
-  [<ffffffff8105ed4f>] worker_thread+0xce/0x152
-  [<ffffffff81061f6c>] kthread+0x7f/0x87
-  [<ffffffff81355034>] kernel_thread_helper+0x4/0x10
-
-The kworker submitted request but it got lost during queue destruction
-and blk_execute_rq() hangs.  There have been a number of recent
-changes in block devel tree to address this issue.  Can you please
-test the following branch?
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ref
-
-Thanks.
+Userspace bringing the network interfaces down is problematic.  As an
+example one of my systems is running hostapd as an access point and
+bridging that to the wired ethernet, that's not a trivial task to
+setup and take down (the Debian ifup can set it up, but I've not
+figured out yet how to get ifdown to take everything down cleanly, and
+I sometimes manually run hostapd if I'm troubleshooting).  Any
+manually added routes would go away, good luck in setting everything
+back up the way it was before for all the different configurations out
+there in userspace.  Add to those issues programs would now have a
+time when networking is down that they wouldn't have otherwise seen.
 
 -- 
-tejun
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
