@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab1J3FFC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 01:05:02 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:37235 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066Ab1J3FE7 (ORCPT
+	id S1751687Ab1J3GH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 02:07:27 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab1J3GH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 01:04:59 -0400
-X-Greylist: delayed 859 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 01:04:59 EDT
-Date: Sat, 29 Oct 2011 23:48:21 -0500
-From: David Fries <david@fries.net>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread injection
- and TCP connection hijacking
-Message-ID: <20111030044821.GA23741@spacedout.fries.net>
-References: <20110806121247.GC23937@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110806121247.GC23937@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 29 Oct 2011 23:48:22 -0500 (CDT)
+	Sun, 30 Oct 2011 02:07:26 -0400
+Date: Sun, 30 Oct 2011 14:21:22 +0800
+From: JiSheng Zhang <jszhang3@gmail.com>
+To: jgarzik@pobox.com
+Cc: linux-ide@vger.kernel.org, avorontsov@mvista.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ahci_platform: add suspend & resume support
+Message-ID: <20111030142122.560216e2@ustc>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 06, 2011 at 02:12:47PM +0200, Tejun Heo wrote:
-> Hello, guys.
-> 
-> So, here's transparent TCP connection hijacking (ie. checkpointing in
-> one process and restoring in another) which adds only relatively small
-> pieces to the kernel.  It's by no means complete but already works
-> rather reliably in my test setup even with heavy delay induced with
-> tc.
 
-I saw the write up on this on lwn.net, pretty creative by the way, and
-it got me thinking about a different checkpoint/restart problem I've
-been running into.  Specifically in hibernating to disk.  In the
-hibernate case active TCP connections hang after resuming, while an
-idle TCP connection will continue after the system is back up.  My
-observation is the kernel checkpoints itself to memory, enables
-devices, writes out that checkpoint image to storage, then powers off.
-The problem is if TCP packets are received while writing to storage,
-the kernel will continue to queue and ack those TCP packets, but the
-running kernel and it's network state is shortly lost.  When the
-computer resumes, those TCP byte sequences hang the TCP connection for
-an extended period of time while the resumed computer refuses to
-acknowledge the data that was received after checkpointing and the now
-running kernel knew nothing about, and the other computer tries in
-vain to resend any data that hadn't yet been acknowledged, which is
-always after the data that was lost, until one of them eventually
-gives up.
+Signed-off-by: JiSheng Zhang <jszhang3@gmail.com>
+---
+ drivers/ata/ahci_platform.c |   54 +++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 54 insertions(+), 0 deletions(-)
 
-I've been wondering if it was safe or possible to leave any network
-interfaces down after the checkpoint, or what the right solution would
-be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
-bit just after the kernel checkpoint (for the kernel is walking dead
-and won't remember anything that happens), and then prevent any TCP
-acks from being sent for those connections would be the right
-solution.  I've taken to unplugging the physical lan cable,
-hibernating to disk, and plugging it back in after the system is down,
-to avoid the problem.  Any ideas?
-
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index c03277d..60ff9eb 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -202,12 +202,66 @@ static int __devexit ahci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int ahci_suspend(struct platform_device *pdev, pm_message_t mesg)
++{
++	struct ata_host *host = dev_get_drvdata(&pdev->dev);
++	struct ahci_host_priv *hpriv = host->private_data;
++	void __iomem *mmio = hpriv->mmio;
++	u32 ctl;
++
++	if (mesg.event & PM_EVENT_SLEEP) {
++		/* AHCI spec rev1.1 section 8.3.3:
++		 * Software must disable interrupts prior to requesting a
++		 * transition of the HBA to D3 state.
++		 */
++		ctl = readl(mmio + HOST_CTL);
++		ctl &= ~HOST_IRQ_EN;
++		writel(ctl, mmio + HOST_CTL);
++		readl(mmio + HOST_CTL); /* flush */
++	}
++
++	return ata_host_suspend(host, mesg);
++}
++
++static int ahci_resume(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct ahci_platform_data *pdata = dev->platform_data;
++	struct ata_host *host = dev_get_drvdata(dev);
++	struct ahci_host_priv *hpriv = host->private_data;
++	int rc;
++
++	if (pdata && pdata->init) {
++		rc = pdata->init(dev, hpriv->mmio);
++		if (rc)
++			return rc;
++	}
++
++	if (pdev->dev.power.power_state.event == PM_EVENT_SUSPEND) {
++		rc = ahci_reset_controller(host);
++		if (rc)
++			return rc;
++
++		ahci_init_controller(host);
++	}
++
++	ata_host_resume(host);
++
++	return 0;
++}
++#endif
++
+ static struct platform_driver ahci_driver = {
+ 	.remove = __devexit_p(ahci_remove),
+ 	.driver = {
+ 		.name = "ahci",
+ 		.owner = THIS_MODULE,
+ 	},
++#ifdef CONFIG_PM
++	.suspend = ahci_suspend,
++	.resume = ahci_resume,
++#endif
+ 	.id_table	= ahci_devtype,
+ };
+ 
 -- 
-David Fries <david@fries.net>    PGP pub CB1EE8F0
-http://fries.net/~david/
+1.7.6.3
+
