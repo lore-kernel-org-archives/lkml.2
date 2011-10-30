@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729Ab1J3T7q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 15:59:46 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53683 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1J3T7p (ORCPT
+	id S1751934Ab1J3UDn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:03:43 -0400
+Received: from smtprelay0177.b.hostedemail.com ([64.98.42.177]:40343 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750868Ab1J3UDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 15:59:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [GIT PULL] at91 device tree basics
-Date: Sun, 30 Oct 2011 21:57:06 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <4EA69BC9.8040402@atmel.com>
-In-Reply-To: <4EA69BC9.8040402@atmel.com>
+	Sun, 30 Oct 2011 16:03:42 -0400
+X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 16:03:42 EDT
+X-Panda: scanned!
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 2206
+Date: Sun, 30 Oct 2011 19:57:12 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+Subject: HT (Hyper Threading) aware process scheduling doesn't work as it
+ should
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110302057.06620.arnd@arndb.de>
-X-Provags-ID: V02:K0:EcpbR2M49mfUzqD5SU0Pkyoe5MfFz1KkSn1uCAOyFiF
- p4GpX1x+i7JKmiT566bGR1DBisBFEo4RHO0OGIuUb/V6bbEzB4
- aQYL1XlL6ltVVoSDYprWj/vr2oDhCIiDEaOLf7+SpI1aH2WLZc
- Fek7zLxhVedshANuutvk0CHCo8fHOxoUWTSwsm5BBdz8jC6kfl
- oL6j/5ljevuuePuNG0XILuD2HkdBxkYyU76DtkVcHsHOVxivhi
- +0crZ3fyzSZ/jnbk+O985WHWNykRLSU8xfiVZ9mKaiJLbN8/8r
- y5LX65yvD3WzEagOn+3GqFRDi1U79NTjax6hucuVkw1KtQbIvd
- tPrVqvVfSV3VpRWN0G58=
+X-Mailer: Webmail
+X-Originating-IP: [46.147.51.36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 October 2011, Nicolas Ferre wrote:
-> The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
-> 
->   Linux 3.1 (2011-10-24 09:10:05 +0200)
-> 
-> are available in the git repository at:
->   git://github.com/at91linux/linux-at91.git for-arnd/at91-dt
-> 
-> They cover the basic device tree work done during the last moths around both 
-> at91sam9g45 and at91sam9g20 based board. They have been review by Grant and
-> Rob. More device tree related stuff is comming ;-)
+Hello,
 
-Hi Nicolas,
+It's known that if you want to reach maximum performance on HT enabled Intel CPUs you
+should distribute the load evenly between physical cores, and when you have loaded all
+of them you should then load the remaining virtual cores.
 
-I've pulled it into the next/dt branch, it looks all good but please try to
-send stuff like this before the merge window next time, ideally much before
-the merge window.
+For example, if you have 4 physical cores and 8 virtual CPUs then if you have just four
+tasks consuming 100% of CPU time you should load four CPU pairs:
 
-	Arnd
+VCPUs: {1,2} - one task running
+
+VCPUs: {3,4} - one task running
+
+VCPUs: {5,6} - one task running
+
+VCPUs: {7,8} - one task running
+
+It's absolutely detrimental to performance to bind two tasks to e.g. two physical cores
+{1,2} {3,4} and then the remaining two tasks to e.g. the third core 5,6:
+
+VCPUs: {1,2} - one task running
+
+VCPUs: {3,4} - one task running
+
+VCPUs: {5,6} - *two* task runnings
+
+VCPUs: {7,8} - no tasks running
+
+I've found out that even on Linux 3.0.8 the process scheduler doesn't correctly distributes
+the load amongst virtual CPUs. E.g. on a 4-core system (8 total virtual CPUs) the process
+scheduler often run some instances of four different tasks on the same physical CPU.
+
+Maybe I shouldn't trust top/htop output on this matter but the same test carried out on
+Microsoft XP OS shows that it indeed distributes the load correctly, running tasks on different
+physical cores whenever possible.
+
+Any thoughts? comments? I think this is quite a serious problem.
+
+Best wishes,
+
+Artem
