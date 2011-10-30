@@ -1,152 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab1J3TTb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 15:19:31 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:53384 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1J3TT3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 15:19:29 -0400
+	id S1751467Ab1J3T3F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 15:29:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab1J3T3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 15:29:03 -0400
+Date: Sun, 30 Oct 2011 21:29:59 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <tj@kernel.org>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCHv4] virtio-blk: use ida to allocate disk index
+Message-ID: <20111030192959.GA31143@redhat.com>
 MIME-Version: 1.0
-Message-ID: <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
-Date: Sun, 30 Oct 2011 12:18:56 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: John Stoffel <john@stoffel.org>
-Cc: Johannes Weiner <jweiner@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
- <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
- <20111028163053.GC1319@redhat.com>
- <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
- <20138.62532.493295.522948@quad.stoffel.home>
- <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default
- 20139.5644.583790.903531@quad.stoffel.home>
-In-Reply-To: <20139.5644.583790.903531@quad.stoffel.home>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4EADA328.002E,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: John Stoffel [mailto:john@stoffel.org]
-> Dan> Thanks for taking the time to read the LWN article and sending
-> Dan> some feedback.  I admit that, after being immersed in the topic
-> Dan> for three years, it's difficult to see it from the perspective of
-> Dan> a new reader, so I apologize if I may have left out important
-> Dan> stuff.  I hope you'll take the time to read this long reply.
-> 
-> Will do.  But I'm not the person you need to convince here about the
-> usefulness of this code and approach, it's the core VM developers,
+Based on a patch by Mark Wu <dwu@redhat.com>
 
-True, but you are the one providing useful suggestions while
-the core VM developers are mostly silent (except for saying things
-like "don't like it much").  So thank you for your feedback
-and for taking the time to provide it and for indulging my replies.
+Current index allocation in virtio-blk is based on a monotonically
+increasing variable "index". This means we'll run out of numbers
+after a while.  It also could cause confusion about the disk
+name in the case of hot-plugging disks.
+Change virtio-blk to use ida to allocate index, instead.
 
-I/we will need to act on your suggestions, but I need to
-answer a couple of points/questions you've raised.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> since they're the ones who will have to understand this stuff and know
-> how to maintain it.  And keeping this maintainable is a key goal.
+Changes from Mark's versions:
+ use the new ida_simple_get
+ error handling cleanup
+ fix user after free
 
-Absolutely agree.  Count the number of frontswap lines that affect
-the current VM core code and note also how they are very clearly
-identified.  It really is a very VERY small impact to the core VM
-code (e.g. in the files swapfile.c and page_io.c).
+Works fine for me.
 
-(And it's worth noting, and I'm not arguing that it is conclusive,
-just relevant, that my company has stood up and claimed responsibility
-to maintain it.)
+Jens, could you merge this for 3.2?
+That is, unless Rusty complains shortly ...
 
-> Ok, so why not just a targetted swap compression function instead?
-> Why is your method superior?
+ drivers/block/virtio_blk.c |   30 ++++++++++++++++++++++++------
+ 1 files changed, 24 insertions(+), 6 deletions(-)
 
-The designer/implementor of zram (which is the closest thing to
-"targetted swap compression" in the kernel today) has stated
-elsewhere on this thread that frontswap has advantages
-over his own zram code.
-
-And the frontswap patchset (did I mention how small the impact is?)
-provides a lot more than just a foundation for compression (zcache).
-
-> But that's besides the point.  How much overhead does TMEM incur when
-> it's not being used, but when it's avaiable?
-
-This is answered in frontswap.txt in the patchset, but:
-
-ZERO overhead if CONFIG_FRONTSWAP=n.  All the hooks compile into no-ops.
-
-If CONFIG_FRONTSWAP=y and no "tmem backend" registers to use it at
-runtime, the overhead is one "compare pointer against NULL" for
-every page actually swapped in or out, which is about as close to ZERO
-overhead as any code can be.
-
-If CONFIG_FRONTSWAP=y AND a "tmem backend" does register, the
-answer depends on which tmem backend and what it is doing (and
-yes I agree more numbers are needed), but the overhead is
-incurred only in the case where a page would otherwise have
-actually been swapped in or out and can replace the horrible
-cost of swapping pages.
-
-> Dan> Frontswap is the last missing piece.  Why so much resistance?
-> 
-> Because you haven't sold it well with numbers to show how much
-> overhead it has?
->
-> I'm being negative because I see no reason to use it.  And because I
-> think you can do a better job of selling it and showing the benefits
-> with real numbers.
-
-In your environment where RAM is essentially infinite, and swapping
-never occurs, I agree there would be no reason for you to enable it.
-In which case there is no overhead to you.
-
-Received loud and clear on the "need more real numbers" though
-personally I don't have any machines with more than 4GB RAM so
-I won't personally be testing any EDA environments with 144GB :-}
-
-So, in the context of "costs nothing if you don't need it and has
-very VERY small core code impact", and given that various kernel
-developers and real users and real distros and real products say
-on this thread that they DO need it, and given that there
-are "some" real numbers (for one user, Xen, and agree that some
-are needed for zcache)... and assuming that the core VM developers
-bother to read the documentation already provided that addresses
-the above, let me ask again...
-
-Why so much resistance?
-
-Thanks,
-Dan
-
-Oops, one more (but I have to use the X-word)...
-
-> Load up a XEN box, have a VM spike it's memory usage and show how TMEM
-> helps.  Compare it to a non-TMEM setup with the same load.
-
-Yep, that's what the presentation URL I provided (for Xen) measures.
-Overcommitment (more VMs than otherwise could fit in the physical
-RAM) AND about a 8% performance improvement on all VMs doing
-a kernel compile simultaneously.  Pretty impressive.
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 079c088..e7a5750 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -8,10 +8,13 @@
+ #include <linux/scatterlist.h>
+ #include <linux/string_helpers.h>
+ #include <scsi/scsi_cmnd.h>
++#include <linux/idr.h>
+ 
+ #define PART_BITS 4
+ 
+-static int major, index;
++static int major;
++static DEFINE_IDA(vd_index_ida);
++
+ struct workqueue_struct *virtblk_wq;
+ 
+ struct virtio_blk
+@@ -35,6 +38,9 @@ struct virtio_blk
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
+ 
++	/* Ida index - used to track minor number allocations. */
++	int index;
++
+ 	/* Scatterlist: can be too big for stack. */
+ 	struct scatterlist sg[/*sg_elems*/];
+ };
+@@ -276,6 +282,11 @@ static int index_to_minor(int index)
+ 	return index << PART_BITS;
+ }
+ 
++static int minor_to_index(int minor)
++{
++	return minor >> PART_BITS;
++}
++
+ static ssize_t virtblk_serial_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -341,14 +352,17 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ {
+ 	struct virtio_blk *vblk;
+ 	struct request_queue *q;
+-	int err;
++	int err, index;
+ 	u64 cap;
+ 	u32 v, blk_size, sg_elems, opt_io_size;
+ 	u16 min_io_size;
+ 	u8 physical_block_exp, alignment_offset;
+ 
+-	if (index_to_minor(index) >= 1 << MINORBITS)
+-		return -ENOSPC;
++	err = ida_simple_get(&vd_index_ida, 0, minor_to_index(1 << MINORBITS),
++			     GFP_KERNEL);
++	if (err < 0)
++		goto out;
++	index = err;
+ 
+ 	/* We need to know how many segments before we allocate. */
+ 	err = virtio_config_val(vdev, VIRTIO_BLK_F_SEG_MAX,
+@@ -365,7 +379,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 				    sizeof(vblk->sg[0]) * sg_elems, GFP_KERNEL);
+ 	if (!vblk) {
+ 		err = -ENOMEM;
+-		goto out;
++		goto out_free_index;
+ 	}
+ 
+ 	INIT_LIST_HEAD(&vblk->reqs);
+@@ -421,7 +435,7 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 	vblk->disk->private_data = vblk;
+ 	vblk->disk->fops = &virtblk_fops;
+ 	vblk->disk->driverfs_dev = &vdev->dev;
+-	index++;
++	vblk->index = index;
+ 
+ 	/* configure queue flush support */
+ 	if (virtio_has_feature(vdev, VIRTIO_BLK_F_FLUSH))
+@@ -516,6 +530,8 @@ out_free_vq:
+ 	vdev->config->del_vqs(vdev);
+ out_free_vblk:
+ 	kfree(vblk);
++out_free_index:
++	ida_simple_remove(&vd_index_ida, index);
+ out:
+ 	return err;
+ }
+@@ -523,6 +539,7 @@ out:
+ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ {
+ 	struct virtio_blk *vblk = vdev->priv;
++	int index = vblk->index;
+ 
+ 	flush_work(&vblk->config_work);
+ 
+@@ -538,6 +555,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	mempool_destroy(vblk->pool);
+ 	vdev->config->del_vqs(vdev);
+ 	kfree(vblk);
++	ida_simple_remove(&vd_index_ida, index);
+ }
+ 
+ static const struct virtio_device_id id_table[] = {
+-- 
+1.7.5.53.gc233e
