@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934106Ab1J3OeL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 10:34:11 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48300 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934035Ab1J3OeJ (ORCPT
+	id S934120Ab1J3Ok6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 10:40:58 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46260 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934036Ab1J3Ok5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 10:34:09 -0400
-X-Sasl-enc: 671MbQl5Exw817Er/3aK5lWYcZs971FzAMEahZW+nEVc 1319985248
-Date: Sun, 30 Oct 2011 07:34:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Add CHAR and MISC driver maintainer entry
-Message-ID: <20111030143404.GA31841@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 30 Oct 2011 10:40:57 -0400
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: <grabner@icg.tugraz.at>
+Cc: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [PATCH 0/2] staging: line6: add Pod HD300 support
+Date: Sun, 30 Oct 2011 14:40:39 +0000
+Message-Id: <1319985641-25648-1-git-send-email-stefanha@gmail.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, is the patch below ok with you?  I'll create the git tree when
-3.2-rc1 is out and start adding stuff when needed for the 3.3 merge (and
-for 3.2-final if there are any needed bug fixes.
+These patches add Pod HD300 support to the line6usb driver.  The Pod HD family
+is the current generation of devices from Line6.  It works along the same lines
+as the Pod xt but introduces new MIDI SysEx messages and is not compatible with
+Pod xt messages.
 
-thanks,
+These patches make Pod HD300 work out-of-the-box and provide both MIDI and pcm
+interfaces.  I have tested playback and capture successfully with Audacity and
+native ALSA applications going through PulseAudio.  I have tested MIDI using
+amidi(1) to store SysEx dumps sent from the device and to adjust controller
+parameters.
 
-greg k-h
+Patch 1 sets a saner default for MIDI masks because the default value drops
+messages from the Pod HD300, which operates on Channel 1.
 
-------
-From: Greg Kroah-Hartman <gregkh@suse.de>
-Subject: MAINTAINERS: add CHAR and MISC driver maintainers
+Patch 2 adds the Pod HD300 USB IDs and Pod HD functionality based on stripped
+down Pod xt code.
 
-Yes, we are fools, but humor us.
+If we moved the hardcoded Pod xt MIDI messages into a userspace library then it
+would be possible to unify pod.c and podhd.c.  I don't have a Pod xt device to
+test against so it's hard for me to make this change without help.
 
+Stefan Hajnoczi (2):
+  staging: line6: accept all MIDI channels by default
+  staging: line6: add Pod HD300 support
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+ drivers/staging/line6/Makefile  |    3 +-
+ drivers/staging/line6/driver.c  |   24 ++++++-
+ drivers/staging/line6/midi.c    |    4 +-
+ drivers/staging/line6/pcm.c     |    1 +
+ drivers/staging/line6/podhd.c   |  158 +++++++++++++++++++++++++++++++++++++++
+ drivers/staging/line6/podhd.h   |   30 ++++++++
+ drivers/staging/line6/usbdefs.h |    2 +
+ 7 files changed, 218 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/staging/line6/podhd.c
+ create mode 100644 drivers/staging/line6/podhd.h
 
+-- 
+1.7.7
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 07e5dbd..dbd65f7 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1751,6 +1751,14 @@ F:	include/net/cfg80211.h
- F:	net/wireless/*
- X:	net/wireless/wext*
- 
-+CHAR and MISC DRIVERS
-+M:	Arnd Bergmann <arnd@arndb.de>
-+M:	Greg Kroah-Hartman <greg@kroah.com>
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char.git
-+S:	Maintained
-+F:	drivers/char/*
-+F:	drivers/misc/*
-+
- CHECKPATCH
- M:	Andy Whitcroft <apw@canonical.com>
- S:	Supported
