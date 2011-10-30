@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933921Ab1J3Jxo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 05:53:44 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:54428 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932481Ab1J3Jxn convert rfc822-to-8bit
+	id S933940Ab1J3J5t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 05:57:49 -0400
+Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:58322 "EHLO
+	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932481Ab1J3J5s convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 05:53:43 -0400
+	Sun, 30 Oct 2011 05:57:48 -0400
 From: Philip Rakity <prakity@marvell.com>
 To: "linux-kernel@vger.kernel.org Mailing List" 
 	<linux-kernel@vger.kernel.org>
-CC: "adharmap@codeaurora.org" <adharmap@codeaurora.org>,
-        "cbou@mail.ru" <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Eric Miao <eric.y.miao@gmail.com>
-Date: Sun, 30 Oct 2011 02:53:29 -0700
-Subject: [PATCH 3/3]  power: max17042:  allow battery to return
- charge/voltage  to use -- RESEND
-Thread-Topic: [PATCH 3/3]  power: max17042:  allow battery to return
- charge/voltage  to use -- RESEND
-Thread-Index: AcyW6chkA1/B3YV6TlOM53FkHJ6Hvw==
-Message-ID: <6D3094CD-73AD-4C21-B1C5-9D3ADA5E81D5@marvell.com>
-References: <B2B81E54-40A9-4A70-B258-D5E031893264@marvell.com>
-In-Reply-To: <B2B81E54-40A9-4A70-B258-D5E031893264@marvell.com>
+CC: Eric Miao <eric.y.miao@gmail.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>
+Date: Sun, 30 Oct 2011 02:57:44 -0700
+Subject: Re: [PATCH] power: max8925_power:  No temperature interrupts if
+  temperature not connected (RESEND)
+Thread-Topic: [PATCH] power: max8925_power:  No temperature interrupts if
+  temperature not connected (RESEND)
+Thread-Index: AcyW6mAF7N8xPq70S7+5QrusdPkxUA==
+Message-ID: <C5176C36-6AE7-446B-A07A-F1F651C1B6EF@marvell.com>
+References: <991AD77B-B073-4B05-8F23-5EF9A569483C@marvell.com>
+In-Reply-To: <991AD77B-B073-4B05-8F23-5EF9A569483C@marvell.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -37,187 +34,87 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Resend
 
-On Aug 29, 2011, at 10:04 AM, Philip Rakity wrote:
+RESEND
+
+On Aug 24, 2011, at 2:45 PM, Philip Rakity wrote:
 
 > 
-> implement the properties
-> POWER_SUPPLY_PROP_CHARGE_TO_USE
-> POWER_SUPPLY_PROP_VOLTAGE_TO_USE
+> Brownstone does not have temperature reading circuit hooked up.
+> This leads to spurious interrupts.
 > 
-> these properties return to the caller the voltage and current
-> to use to charge the battery.  The calculation is handled
-> by board specific functions otherwise 0 voltage/current is returned.
-> 
-> In our implementation the intersil charger is told it is supplying
-> power to the max17042 using the supplied_to field.  The intersil
-> driver will ask the battery what power and charge to use.
-> 
-> Similarly the max8925 is told it is supplying power to the intersil
-> driver using the supplied_to field.  The intersil driver implements
-> the external_power_changed callback to know if you should ask
-> the battery what charge to supply.
+> Allow the platform layer to indicate no temperature circuit
+> and do not activate interrupts if no temperature control is set
 > 
 > Signed-off-by: Philip Rakity <prakity@marvell.com>
 > ---
-> drivers/power/max17042_battery.c       |   88 +++++++++++++++++++++++++++----
-> include/linux/power/max17042_battery.h |    4 ++
-> 2 files changed, 80 insertions(+), 12 deletions(-)
+> drivers/power/max8925_power.c |   12 ++++++++----
+> include/linux/mfd/max8925.h   |    1 +
+> 2 files changed, 9 insertions(+), 4 deletions(-)
 > 
-> diff --git a/drivers/power/max17042_battery.c b/drivers/power/max17042_battery.c
-> index 9a85f90..ab69849 100644
-> --- a/drivers/power/max17042_battery.c
-> +++ b/drivers/power/max17042_battery.c
-> @@ -75,10 +75,74 @@ static enum power_supply_property max17042_battery_props[] = {
-> 	POWER_SUPPLY_PROP_CAPACITY,
-> 	POWER_SUPPLY_PROP_CHARGE_FULL,
-> 	POWER_SUPPLY_PROP_TEMP,
-> +	POWER_SUPPLY_PROP_CHARGE_TO_USE,
-> +	POWER_SUPPLY_PROP_VOLTAGE_TO_USE,
-> 	POWER_SUPPLY_PROP_CURRENT_NOW,
-> 	POWER_SUPPLY_PROP_CURRENT_AVG,
+> diff --git a/drivers/power/max8925_power.c b/drivers/power/max8925_power.c
+> index a70e16d..dba07f3 100644
+> --- a/drivers/power/max8925_power.c
+> +++ b/drivers/power/max8925_power.c
+> @@ -78,6 +78,7 @@ struct max8925_power_info {
+> 	unsigned		batt_detect:1;	/* detecing MB by ID pin */
+> 	unsigned		topoff_threshold:2;
+> 	unsigned		fast_charge:3;
+> +	unsigned		no_temp_support:1;
+> 
+> 	int (*set_charger) (int);
+> };
+> @@ -116,7 +117,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
+> 	case MAX8925_IRQ_VCHG_DC_F:
+> 		info->ac_online = 0;
+> 		__set_charger(info, 0);
+> -		dev_dbg(chip->dev, "Adapter is removal\n");
+> +		dev_dbg(chip->dev, "Adapter removed\n");
+> 		break;
+> 	case MAX8925_IRQ_VCHG_USB_R:
+> 		info->usb_online = 1;
+> @@ -126,7 +127,7 @@ static irqreturn_t max8925_charger_handler(int irq, void *data)
+> 	case MAX8925_IRQ_VCHG_USB_F:
+> 		info->usb_online = 0;
+> 		__set_charger(info, 0);
+> -		dev_dbg(chip->dev, "USB is removal\n");
+> +		dev_dbg(chip->dev, "USB removed\n");
+> 		break;
+> 	case MAX8925_IRQ_VCHG_THM_OK_F:
+> 		/* Battery is not ready yet */
+> @@ -370,8 +371,10 @@ static __devinit int max8925_init_charger(struct max8925_chip *chip,
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_OVP, "usb-ovp");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_F, "usb-remove");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_USB_R, "usb-insert");
+> -	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
+> -	REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
+> +	if (!info->no_temp_support) {
+> +		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_R, "batt-temp-in-range");
+> +		REQUEST_IRQ(MAX8925_IRQ_VCHG_THM_OK_F, "batt-temp-out-range");
+> +	}
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_F, "vsys-high");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_SYSLOW_R, "vsys-low");
+> 	REQUEST_IRQ(MAX8925_IRQ_VCHG_RST, "charger-reset");
+> @@ -478,6 +481,7 @@ static __devinit int max8925_power_probe(struct platform_device *pdev)
+> 	info->topoff_threshold = pdata->topoff_threshold;
+> 	info->fast_charge = pdata->fast_charge;
+> 	info->set_charger = pdata->set_charger;
+> +	info->no_temp_support = pdata->no_temp_support;
+> 
+> 	max8925_init_charger(chip, info);
+> 	return 0;
+> diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+> index 5259dfe..69ec8f0 100644
+> --- a/include/linux/mfd/max8925.h
+> +++ b/include/linux/mfd/max8925.h
+> @@ -223,6 +223,7 @@ struct max8925_power_pdata {
+> 	unsigned	batt_detect:1;
+> 	unsigned	topoff_threshold:2;
+> 	unsigned	fast_charge:3;	/* charge current */
+> +	unsigned	no_temp_support:1; /* set if no temperature detect */
 > };
 > 
-> +static int max17042_get_voltage(struct max17042_chip *chip)
-> +{
-> +	int temp;
-> +
-> +	temp = max17042_read_reg(chip->client,
-> +			MAX17042_VCELL) * 625 / 8; /* mV */
-> +	return temp;
-> +}
-> +
-> +static int max17042_get_temperature(struct max17042_chip *chip)
-> +{
-> +	int temp;
-> +
-> +	temp = max17042_read_reg(chip->client,
-> +			MAX17042_TEMP);
-> +	/* The value is signed. */
-> +	if (temp & 0x8000) {
-> +		temp = (0x7fff & ~temp) + 1;
-> +		temp *= -1;
-> +	}
-> +	/* The value is converted into deci-centigrade scale */
-> +	/* Units of LSB = 1 / 256 degree Celsius */
-> +	temp = temp * 10 / 256;
-> +	pr_debug("%s: temperature = %d\n", __func__, temp);
-> +	return temp;
-> +}
-> +
-> +static int max17042_get_charge_to_use(struct max17042_chip *chip)
-> +{
-> +	int voltage;
-> +	int charge;
-> +
-> +	if (max17042_get_temperature(chip) >
-> +			chip->pdata->max_temperature) {
-> +		charge = 0;	/* no charge - temp too high */
-> +		pr_debug("%s: Temp too high to charge\n", __func__);
-> +	} else {
-> +		voltage = max17042_get_voltage(chip);
-> +		if (chip->pdata->charge_to_use)
-> +			charge = chip->pdata->charge_to_use(voltage);
-> +		else
-> +			charge = 0;
-> +	}
-> +	pr_debug("%s: charge_to_use = %d\n", __func__, charge);
-> +	return charge;
-> +}
-> +
-> +static int max17042_get_voltage_to_use(struct max17042_chip *chip)
-> +{
-> +	int voltage;
-> +	int charge;
-> +
-> +	charge = max17042_get_charge_to_use(chip);
-> +	if (chip->pdata->voltage_to_use)
-> +		voltage = chip->pdata->voltage_to_use(charge);
-> +	else
-> +		voltage = 0;
-> +
-> +	pr_debug("%s: voltage_to_use = %d\n", __func__, voltage);
-> +	return voltage;
-> +}
-> +
-> static int max17042_get_property(struct power_supply *psy,
-> 			    enum power_supply_property psp,
-> 			    union power_supply_propval *val)
-> @@ -112,8 +176,7 @@ static int max17042_get_property(struct power_supply *psy,
-> 		val->intval *= 10000; /* Units of LSB = 10mV */
-> 		break;
-> 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-> -		val->intval = max17042_read_reg(chip->client, MAX17042_VCELL)
-> -			    * 625 / 8;
-> +		val->intval = max17042_get_voltage(chip);
-> 		break;
-> 	case POWER_SUPPLY_PROP_VOLTAGE_AVG:
-> 		val->intval = max17042_read_reg(chip->client, MAX17042_AvgVCELL)
-> @@ -132,16 +195,7 @@ static int max17042_get_property(struct power_supply *psy,
-> 			val->intval = 0;
-> 		break;
-> 	case POWER_SUPPLY_PROP_TEMP:
-> -		val->intval = max17042_read_reg(chip->client,
-> -				MAX17042_TEMP);
-> -		/* The value is signed. */
-> -		if (val->intval & 0x8000) {
-> -			val->intval = (0x7fff & ~val->intval) + 1;
-> -			val->intval *= -1;
-> -		}
-> -		/* The value is converted into deci-centigrade scale */
-> -		/* Units of LSB = 1 / 256 degree Celsius */
-> -		val->intval = val->intval * 10 / 256;
-> +		val->intval = max17042_get_temperature(chip);
-> 		break;
-> 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-> 		if (chip->pdata->enable_current_sense) {
-> @@ -173,6 +227,13 @@ static int max17042_get_property(struct power_supply *psy,
-> 			return -EINVAL;
-> 		}
-> 		break;
-> +
-> +	case POWER_SUPPLY_PROP_CHARGE_TO_USE:
-> +		val->intval = max17042_get_charge_to_use(chip);
-> +		break;
-> +	case POWER_SUPPLY_PROP_VOLTAGE_TO_USE:
-> +		val->intval =  max17042_get_voltage_to_use(chip);
-> +		break;
-> 	default:
-> 		return -EINVAL;
-> 	}
-> @@ -212,6 +273,9 @@ static int __devinit max17042_probe(struct i2c_client *client,
-> 	if (chip->pdata->r_sns == 0)
-> 		chip->pdata->r_sns = MAX17042_DEFAULT_SNS_RESISTOR;
-> 
-> +	if (chip->pdata->max_temperature == 0)
-> +		chip->pdata->max_temperature = MAX17042_MAX_TEMP_NO_CHARGE;
-> +
-> 	ret = power_supply_register(&client->dev, &chip->battery);
-> 	if (ret) {
-> 		dev_err(&client->dev, "failed: power supply register\n");
-> diff --git a/include/linux/power/max17042_battery.h b/include/linux/power/max17042_battery.h
-> index fe99211..e924363 100644
-> --- a/include/linux/power/max17042_battery.h
-> +++ b/include/linux/power/max17042_battery.h
-> @@ -26,6 +26,7 @@
-> #define MAX17042_STATUS_BattAbsent	(1 << 3)
-> #define MAX17042_BATTERY_FULL	(100)
-> #define MAX17042_DEFAULT_SNS_RESISTOR	(10000)
-> +#define MAX17042_MAX_TEMP_NO_CHARGE	(450)  /* 45 C */
-> 
-> enum max17042_register {
-> 	MAX17042_STATUS		= 0x00,
-> @@ -116,6 +117,9 @@ struct max17042_platform_data {
-> 	 * the datasheet although it can be changed by board designers.
-> 	 */
-> 	unsigned int r_sns;
-> +	unsigned int max_temperature;  /* do not charge above this */
-> +	int (*charge_to_use) (int voltage);
-> +	int (*voltage_to_use)(int charge);
-> };
-> 
-> #endif /* __MAX17042_BATTERY_H_ */
+> /*
 > -- 
 > 1.7.6
 > 
