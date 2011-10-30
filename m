@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab1J3FEs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 01:04:48 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46040 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab1J3FEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 01:04:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,425,1315206000"; 
-   d="scan'208";a="68452528"
-Date: Sun, 30 Oct 2011 06:04:43 +0100
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: USB list <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        v4mp <gaigo88@hotmail.it>
-Subject: Re: Question about error from xhci-hcd
-Message-ID: <20111030050443.GC4535@xanatos>
-References: <4EAC3C5C.5000209@lwfinger.net>
+	id S1751657Ab1J3FFC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 01:05:02 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:37235 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066Ab1J3FE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 01:04:59 -0400
+X-Greylist: delayed 859 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 01:04:59 EDT
+Date: Sat, 29 Oct 2011 23:48:21 -0500
+From: David Fries <david@fries.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread injection
+ and TCP connection hijacking
+Message-ID: <20111030044821.GA23741@spacedout.fries.net>
+References: <20110806121247.GC23937@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EAC3C5C.5000209@lwfinger.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110806121247.GC23937@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.7 (SpacedOut.fries.net [127.0.0.1]); Sat, 29 Oct 2011 23:48:22 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 12:48:12PM -0500, Larry Finger wrote:
-> Sarah,
+On Sat, Aug 06, 2011 at 02:12:47PM +0200, Tejun Heo wrote:
+> Hello, guys.
 > 
-> Pardon the intrusion, but I'm trying to fix a problem for v4mp, a
-> user of the rtl8192cu driver on an Alfa AWUS036NHR. I have one of
-> the devices, and it works on a USB 2.0 hub, but fails with 3.0
-> hardware with lots of
-> 
-> xhci_hcd 0000:05:00.0: ERROR no room on ep ring
-> 
-> messages logged.
+> So, here's transparent TCP connection hijacking (ie. checkpointing in
+> one process and restoring in another) which adds only relatively small
+> pieces to the kernel.  It's by no means complete but already works
+> rather reliably in my test setup even with heavy delay induced with
+> tc.
 
-The xHCI driver allocates a fixed-size endpoint ring, and only so much
-data can fit on it.  If the driver is allocating many URBs or many URBs
-with a lot of data, then you will see these messages and the URBs will
-fail to be submitted.  Now if neither of those conditions are true, then
-it's possible we just have a bug in the xHCI driver.
+I saw the write up on this on lwn.net, pretty creative by the way, and
+it got me thinking about a different checkpoint/restart problem I've
+been running into.  Specifically in hibernating to disk.  In the
+hibernate case active TCP connections hang after resuming, while an
+idle TCP connection will continue after the system is back up.  My
+observation is the kernel checkpoints itself to memory, enables
+devices, writes out that checkpoint image to storage, then powers off.
+The problem is if TCP packets are received while writing to storage,
+the kernel will continue to queue and ack those TCP packets, but the
+running kernel and it's network state is shortly lost.  When the
+computer resumes, those TCP byte sequences hang the TCP connection for
+an extended period of time while the resumed computer refuses to
+acknowledge the data that was received after checkpointing and the now
+running kernel knew nothing about, and the other computer tries in
+vain to resend any data that hadn't yet been acknowledged, which is
+always after the data that was lost, until one of them eventually
+gives up.
 
-There is a patchset in the works to dynamically expand the endpoint
-rings, but it's still going through revisions:
+I've been wondering if it was safe or possible to leave any network
+interfaces down after the checkpoint, or what the right solution would
+be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
+bit just after the kernel checkpoint (for the kernel is walking dead
+and won't remember anything that happens), and then prevent any TCP
+acks from being sent for those connections would be the right
+solution.  I've taken to unplugging the physical lan cable,
+hibernating to disk, and plugging it back in after the system is down,
+to avoid the problem.  Any ideas?
 
-http://marc.info/?l=linux-usb&m=131918645424329&w=2
-
-It might be done for the 3.3 kernel, but until then the driver is just
-going to be broken, sorry. :(
-
-> The device works with an out-of-kernel driver available from the
-> Alfa or Realtek web sites, but I want to fix rtl8192cu.
-> 
-> What condition leads to the above message? The user's dmesg buffer
-> has wrapped, thus I don't see the beginning of the failure. He is
-> using a canned distro kernel, thus he cannot include any extra
-> debugging info such as a stack dump when the errors occur. As he
-> uses the compat-wireless package, I think I can incorporate a new
-> copy of xhci-hcd with it, but I have not done so yet.
-
-Which distro?  Several of the distros are based on 2.6.32, which only
-had minimal support for xHCI.  Updating just the xHCI driver with a
-more recent one isn't going to be possible with that old of a kernel,
-since later changes also touched the USB core as well.
-
-Sarah Sharp
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
