@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290Ab1J3USN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 16:18:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51425 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab1J3USM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 16:18:12 -0400
-Message-ID: <4EADAF69.80008@zytor.com>
-Date: Sun, 30 Oct 2011 13:11:21 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1752412Ab1J3UfM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 16:35:12 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:47052 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752033Ab1J3UfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 16:35:10 -0400
+Date: Sun, 30 Oct 2011 13:35:03 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Matthijs Kooijman <matthijs@stdin.nl>
+Cc: Gaudenz Steinlin <gaudenz@debian.org>, linux-kernel@vger.kernel.org,
+        Jameson Graef Rollins <jrollins@finestructure.net>,
+        Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>
+Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
+ (Re: [PATCH 1/2] cdrom: always check_disk_change() on open)
+Message-ID: <20111030203503.GB7696@google.com>
+References: <20110903221456.GA2877@elie>
+ <20110904024244.GB3083@htj.dyndns.org>
+ <87y5y37o7h.fsf@servo.factory.finestructure.net>
+ <20110906174524.GN18425@mtj.dyndns.org>
+ <20110907085037.GX10237@login.drsnuggles.stderr.nl>
+ <20110911040826.GP29319@htj.dyndns.org>
+ <87r5222l40.fsf@meteor.durcheinandertal.local.i-did-not-set--mail-host-address--so-tickle-me>
+ <20111026182650.GL14392@login.drsnuggles.stderr.nl>
+ <20111026222510.GK24261@google.com>
+ <20111028134743.GU14392@login.drsnuggles.stderr.nl>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "Ted Ts'o" <tytso@mit.edu>, Kyle Moffett <kyle@moffetthome.net>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        harald@redhat.com, david@fubar.dk, greg@kroah.com,
-        Linux Containers <containers@lists.osdl.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: Detecting if you are running in a container
-References: <20111011013201.GA7948@thunk.org> <20111011020530.GG16723@count0.beaverton.ibm.com> <20111011032523.GB7948@thunk.org> <m1ty7ghvvn.fsf@fess.ebiederm.org> <203BBB0D-293D-4BFB-A57B-41C56F58F9B3@mit.edu> <m17h4bfcuv.fsf@fess.ebiederm.org> <20111012175702.GA23231@fieldses.org> <CAGZ=bqJxadNqaPCW3HufrMmQ57x082=pCDa6-mWLsdtfxHgdPw@mail.gmail.com> <20111012190452.GA23845@fieldses.org> <CAGZ=bqJjgmtBfyXJ2eK1C0PfzkgBVWFTjkTYkC211ZT+-5f-UQ@mail.gmail.com> <20111014155406.GC13119@thunk.org> <m17h478n5k.fsf@fess.ebiederm.org> <4E98B088.5030400@zytor.com> <m1ipnpl1c9.fsf@fess.ebiederm.org>
-In-Reply-To: <m1ipnpl1c9.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111028134743.GU14392@login.drsnuggles.stderr.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/16/2011 02:42 AM, Eric W. Biederman wrote:
->>
->> Something based on UUIDs, perhaps?
->>
->> UUIDs are kind of exactly this, after all... a single namespace designed
->> to be large and random enough to be globally unique without a central
->> registration authority.
-> 
-> mount --bind /proc/self/ns/net /var/run/netns/<name>
-> 
-> When we want to refer to the namespace in syscalls we pass a file
-> descriptor we received from opening the namespace reference object.
-> 
-> That moves the entire naming problem into the file namespace.
-> 
+Hello,
 
-That doesn't solve what I think of as the *real* problem.
+On Fri, Oct 28, 2011 at 03:47:43PM +0200, Matthijs Kooijman wrote:
+> I'm not sure if the FRAME_POINTER option actually works, though, since I
+> couldn't find any obvious differences in the format of the stack traces?
 
-The real problem is just another instance of what I sometimes refer to
-as the "alien metadata problem": the alien metadata problem (which crops
-up in *all kinds* of contexts, including containers, namespaces, virtual
-machines, building distribution disk images, and backups) is the fact
-that you would like to be able to store, manipulate and preserve, on
-disk and in a mounted filesystem, a set of metadata which may not be the
-"currently active" metadata.
+The lines w/o leading "?" are from stack frames discovered by
+following frame pointer.  The ones w/ "?" are from dumb stack
+scanning.  w/o FP, it wouldn't be possible to tell between the actual
+ones from the spurious ones.
 
-There are two forms of "solutions" to this: one where the filesystem
-still only contains one set of metadata, but it is not currently active,
-and one where the filesystem contains multiple sets of metadata for the
-same files at the same time, any one of which can be active (and
-different ones may be active for different namespaces.)
+So, the following kworker is what the scsi_id is waiting for in
+flush_work().
 
-	-hpa
+ kworker/2:1     D ffff880206054830     0 10775      2 0x00000000
+  ffff880206067aa0 0000000000000046 ffff880206067a50 ffffffff8105476d
+  ffff88022ed58140 ffff880206067fd8 ffff880206067fd8 0000000000012f40
+  ffff880206054830 ffff88022ed58140 ffff880200000002 0000000000000286
+ Call Trace:
+  [<ffffffff8134c996>] schedule+0x55/0x57
+  [<ffffffff8134cc9f>] schedule_timeout+0xa2/0xd9
+  [<ffffffff8134c832>] wait_for_common+0x9e/0x115
+  [<ffffffff8134c925>] wait_for_completion_timeout+0xe/0x10
+  [<ffffffff8119c502>] blk_execute_rq+0xb7/0xf9
+  [<ffffffffa0043044>] scsi_execute+0xf5/0x14d [scsi_mod]
+  [<ffffffffa004311e>] scsi_execute_req+0x82/0xb4 [scsi_mod]
+  [<ffffffffa00bb2d9>] sr_check_events+0x92/0x21e [sr_mod]
+  [<ffffffffa009d04b>] cdrom_check_events+0x14/0x29 [cdrom]
+  [<ffffffffa00bb696>] sr_block_check_events+0x14/0x16 [sr_mod]
+  [<ffffffff8119ea7b>] disk_events_workfn+0x3b/0xd7
+  [<ffffffff8105dcc9>] process_one_work+0x165/0x27a
+  [<ffffffff8105ed4f>] worker_thread+0xce/0x152
+  [<ffffffff81061f6c>] kthread+0x7f/0x87
+  [<ffffffff81355034>] kernel_thread_helper+0x4/0x10
+
+The kworker submitted request but it got lost during queue destruction
+and blk_execute_rq() hangs.  There have been a number of recent
+changes in block devel tree to address this issue.  Can you please
+test the following branch?
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ref
+
+Thanks.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+tejun
