@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab1JaNVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 09:21:35 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56037 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab1JaNVe (ORCPT
+	id S1754906Ab1JaNVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 09:21:51 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:59248 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab1JaNVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 09:21:34 -0400
-Message-ID: <4EAEA0DA.208@monstr.eu>
-Date: Mon, 31 Oct 2011 14:21:30 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze changes for 3.2
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 31 Oct 2011 09:21:50 -0400
+Message-ID: <1320067306.2796.34.camel@br98xy6r>
+Subject: [PATCH v2] kdump: Add udev events for memory online/offline
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, Dave Hansen <haveblue@us.ibm.com>
+Date: Mon, 31 Oct 2011 14:21:46 +0100
+In-Reply-To: <20111028154630.77c7b96c.akpm@linux-foundation.org>
+References: <1319645292.3321.24.camel@br98xy6r>
+	 <20111026192449.GE355@redhat.com>
+	 <20111027073058.GA2422@osiris.boeblingen.de.ibm.com>
+	 <1319707965.2830.1.camel@br98xy6r>
+	 <20111028154630.77c7b96c.akpm@linux-foundation.org>
+Organization: IBM
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2011-10-28 at 15:46 -0700, Andrew Morton wrote:
+> On Thu, 27 Oct 2011 11:32:45 +0200
 
-please pull the following changes.
+[snip]
 
-Thanks,
-Michal
+> I think a safer place from which to send the uevent is
+> memory_block_change_state() or even memory_block_action().  Because if
+> either of those functions later gets new callers, those callers might
+> forget to send the uevent?
 
-The following changes since commit e9308cfd5ab4ade3d81cf591c7599c3a05a21b04:
-   Linus Torvalds (1):
-         Merge branch 'gpio/merge' of git://git.secretlab.ca/git/linux-2.6
+Ok fine. I put the code into memory_block_change_state(). This also has
+the advantage that we are serialized by "mem->state_mutex". Not sure if
+we need that, but for CPU hotplug the udev events are also serialized
+with a lock. See  "drivers/base/cpu.c" -> cpu_hotplug_driver_lock()
 
-are available in the git repository at:
+Do you think the following patch is acceptable?
+---
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-   git://git.monstr.eu/linux-2.6-microblaze.git next
+Currently no udev events for memory hotplug "online" and "offline" are
+generated:
 
-Edgar E. Iglesias (2):
-       microblaze: Switch ELF_ARCH code to 189
-       microblaze: Raise SIGFPE/FPE_INTDIV for div by zero
+# udevadm monitor
+# echo offline > /sys/devices/system/memory/memory4/state
+==> No event
 
-Eli Billauer (2):
-       microblaze: Moved __dma_sync() to dma-mapping.h
-       microblaze: Added DMA sync operations
+When kdump is loaded, kexec detects the current memory configuration and
+stores it in the pre-allocated ELF core header. Therefore, for kdump it is
+necessary to reload the kdump kernel with kexec when the memory
+configuration changes (e.g. for online/offline hotplug memory).
 
-Michal Simek (11):
-       microblaze: Clear top bit from cnt32_to_63
-       microblaze: Change label name in copy_tofrom_user
-       microblaze: Separate fixup section definition
-       microblaze: Change label names - copy_tofrom_user
-       microblaze: Simplify logic for unaligned byte copying
-       microblaze: Add loop unrolling for PAGE in copy_tofrom_user
-       microblaze: Fix access_ok macro
-       microblaze: Add PVR for Microblaze v8.20.a
-       microblaze: Add __ucmpdi2() helper function
-       microblaze: Remove NET_IP_ALIGN from system.h
-       microblaze: Use delay slot in __strnlen_user, __strncpy_user
+In order to do this automatically, udev rules should be used. This kernel
+patch adds udev events for "online" and "offline". Together with this kernel
+patch, the following udev rules for online/offline have to be added to
+"/etc/udev/rules.d/98-kexec.rules":
 
-Peter Zijlstra (1):
-       microblaze: Remove __ARCH_WANT_INTERRUPTS_ON_CTXSW usage
+SUBSYSTEM=="memory", ACTION=="online", PROGRAM="/etc/init.d/kdump restart"
+SUBSYSTEM=="memory", ACTION=="offline", PROGRAM="/etc/init.d/kdump restart"
 
-  arch/microblaze/include/asm/dma-mapping.h |   20 ++++-
-  arch/microblaze/include/asm/elf.h         |    8 +-
-  arch/microblaze/include/asm/system.h      |    9 --
-  arch/microblaze/include/asm/uaccess.h     |    2 +-
-  arch/microblaze/kernel/cpu/cpuinfo.c      |    1 +
-  arch/microblaze/kernel/dma.c              |   82 +++++++++++++++-----
-  arch/microblaze/kernel/exceptions.c       |    2 +-
-  arch/microblaze/kernel/process.c          |    1 +
-  arch/microblaze/kernel/ptrace.c           |    2 +-
-  arch/microblaze/kernel/timer.c            |    3 +-
-  arch/microblaze/lib/Makefile              |    1 +
-  arch/microblaze/lib/uaccess_old.S         |  123 +++++++++++++++++++++++++----
-  arch/microblaze/lib/ucmpdi2.c             |   20 +++++
-  13 files changed, 220 insertions(+), 54 deletions(-)
-  create mode 100644 arch/microblaze/lib/ucmpdi2.c
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ drivers/base/memory.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -291,11 +291,22 @@ static int memory_block_change_state(str
+ 
+ 	ret = memory_block_action(mem->start_section_nr, to_state);
+ 
+-	if (ret)
++	if (ret) {
+ 		mem->state = from_state_req;
+-	else
+-		mem->state = to_state;
++		goto out;
++	}
+ 
++	mem->state = to_state;
++	switch (mem->state) {
++	case MEM_OFFLINE:
++		kobject_uevent(&mem->sysdev.kobj, KOBJ_OFFLINE);
++		break;
++	case MEM_ONLINE:
++		kobject_uevent(&mem->sysdev.kobj, KOBJ_ONLINE);
++		break;
++	default:
++		break;
++	}
+ out:
+ 	mutex_unlock(&mem->state_mutex);
+ 	return ret;
 
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
