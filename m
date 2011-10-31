@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab1JaJR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:17:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34101 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932260Ab1JaJRz convert rfc822-to-8bit (ORCPT
+	id S932489Ab1JaJUQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:20:16 -0400
+Received: from mail-wy0-f180.google.com ([74.125.82.180]:39661 "EHLO
+	mail-wy0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932260Ab1JaJUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:17:55 -0400
+	Mon, 31 Oct 2011 05:20:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111031074836.GB4910@ubuntu.corp.ad>
-References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
-	<20111031074836.GB4910@ubuntu.corp.ad>
-Date: Mon, 31 Oct 2011 14:47:54 +0530
-Message-ID: <CAJw04pAxDrKHieQGbQRc2L9wyisZKTyW7SnDdNWBRYV4ptwuAg@mail.gmail.com>
-Subject: Re: powerpc 476, Little-endian, pte fault
-From: Santosh Kumar <santoshkumar.a@gmail.com>
-To: Shan Hai <haishan.bai@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAGXxSxXmgzxN361Cko1fY_+oWwfgjXLhS61gtvqB8YYXHXZVyw@mail.gmail.com>
+References: <CAGXxSxXmgzxN361Cko1fY_+oWwfgjXLhS61gtvqB8YYXHXZVyw@mail.gmail.com>
+Date: Mon, 31 Oct 2011 17:20:13 +0800
+Message-ID: <CAM2zO=CodQLE05ZNOOba3jv_qJ5XuZj3yrnS0aHCOj+cp_24Xw@mail.gmail.com>
+Subject: Re: [MIPS]clocks_calc_mult_shift() may gen a too big mult value
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Chen Jie <chenj@lemote.com>
+Cc: linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
+        johnstul@us.ibm.com, tglx@linutronix.de, yanhua <yanh@lemote.com>,
+        =?UTF-8?B?6aG55a6H?= <xiangy@lemote.com>, zhangfx <zhangfx@lemote.com>,
+        =?UTF-8?B?5a2Z5rW35YuH?= <sunhy@lemote.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i tried this but the fixup_user_fault is called as the path followed
-is different. Also i see that the flags passed to handle_mm_fault is 0
-i.e the fault is not on a write access. Please let me know if i have
-to use this fix some where else too.
-
-thanks
-Santosh Kumar .A
-
-Vision without Action is a daydream... Action without Vision is a nightmare...
-
-
-
-On 31 October 2011 13:18, Shan Hai <haishan.bai@gmail.com> wrote:
-> On Mon, Oct 31, 2011 at 11:00:14AM +0530, Santosh Kumar wrote:
->> KERNEL: linux 2.6.39.4
->> POWERPC: 476, little endian.
->>
->> I am trying to get linux 2.6.39.4 up on PPC 476 i have done done
->> Big-endian to little endian Changes in:
->> 1) bitops header file.
->> 2) while reading the device tree.
->> 3) the PTE read/computed in head_32.S
->> 4) added E bit in the TLB entries.
->>
->> with all the above changes the kernel_init is done but and inited is mounted.
->>
->> But while spawning init process the kernel continuously hits pte
->> faults at address 0x100000fc and never comes out. Please let me know
->> where i should be looking into.
->>
+On Mon, Oct 31, 2011 at 5:00 PM, Chen Jie <chenj@lemote.com> wrote:
+> Hi all,
 >
-> Please check whether the following commit is there in your tree.
-> 2efaca927f5cd7ecd0f1554b8f9b6a9a2c329c03
+> On MIPS, with maxsec=4, clocks_calc_mult_shift() may generate a very
+> big mult, which may easily cause timekeeper.mult overflow within
+> timekeeping jobs.
+
+Hmmm, why not use clocksource_register_hz()/clocksource_register_khz()
+instead? it's more convenient.
+
+Thanks,
+Yong
+
 >
-> Cheers
-> Shan Hai
+> e.g. when clock freq was 250000500(i.e. mips_hpt_frequency=250000500,
+> and the CPU Freq will be 250000500*2=500001000), mult will be
+> 0xffffde72
 >
->> -
->> Thanks
->> Santosh Kumar .A
->>
->> Vision without Action is a daydream... Action without Vision is a nightmare...
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Attachment is a script that calculates mult values for CPU Freq
+> between 400050000 and 500050000, with 1KHz step. It outputs mult
+> values greater than 0xf0000000:
+> CPU Freq:500001000, mult:0xffffde72, shift:30
+> CPU Freq:500002000, mult:0xffffbce4, shift:30
+> CPU Freq:500003000, mult:0xffff9b56, shift:30
+> CPU Freq:500004000, mult:0xffff79c9, shift:30
+> ...
 >
+> The peak value appears around CPU_freq=500001000.
+>
+> To avoid this, it may need:
+> 1. Supply a bigger maxsec value?
+> 2. In clocks_calc_mult_shift(), pick next mult/shift pair if mult is
+> too big? Then maxsec will not be strictly obeyed.
+> 3. Change timekeeper.mult to u64?
+> 4. ...
+>
+> Any idea?
+>
+>
+>
+> --
+> Regards,
+> - Chen Jie
+>
+
+
+
+-- 
+Only stand for myself
