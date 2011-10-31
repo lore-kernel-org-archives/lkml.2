@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934864Ab1KAASV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:18:21 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60416 "EHLO
+	id S934876Ab1KAASy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:18:54 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60395 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934110Ab1KAASS (ORCPT
+	with ESMTP id S934841Ab1KAASP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:18 -0400
-Message-Id: <093448$3uejvv@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599807"
+	Mon, 31 Oct 2011 20:18:15 -0400
+Message-Id: <093448$3uejvk@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599796"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:56:59 -0500
-Subject: [PATCH v5 36/36] Add extra arch overrides to asm-generic/checksum.h
+Date: Mon, 31 Oct 2011 18:56:19 -0500
+Subject: [PATCH v5 34/36] Hexagon: Add basic stacktrace functionality for Hexagon architecture.
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are plausible reasons for architectures to provide their own
-versions of csum_partial_copy_nocheck and csum_tcpudp_magic.
-By protecting these, the architecture can still re-use the
-asm-generic checksum.h, instead of copying it.
-
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- include/asm-generic/checksum.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/hexagon/kernel/stacktrace.c |   66 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 66 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/kernel/stacktrace.c
 
-diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
-index 4647c76..c084767 100644
---- a/include/asm-generic/checksum.h
-+++ b/include/asm-generic/checksum.h
-@@ -33,8 +33,10 @@ extern __wsum csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
- extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
- 					int len, __wsum sum, int *csum_err);
- 
-+#ifndef csum_partial_copy_nocheck
- #define csum_partial_copy_nocheck(src, dst, len, sum)	\
- 	csum_partial_copy((src), (dst), (len), (sum))
-+#endif
- 
- /*
-  * This is a version of ip_compute_csum() optimized for IP headers,
-@@ -63,12 +65,14 @@ csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
- 		unsigned short proto, __wsum sum);
- #endif
- 
-+#ifndef csum_tcpudp_magic
- static inline __sum16
- csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
- 		  unsigned short proto, __wsum sum)
- {
- 	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
- }
-+#endif
- 
- /*
-  * this routine is used for miscellaneous IP-like checksums, mainly
+diff --git a/arch/hexagon/kernel/stacktrace.c b/arch/hexagon/kernel/stacktrace.c
+new file mode 100644
+index 0000000..11c597b
+--- /dev/null
++++ b/arch/hexagon/kernel/stacktrace.c
+@@ -0,0 +1,66 @@
++/*
++ * Stacktrace support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/sched.h>
++#include <linux/stacktrace.h>
++#include <linux/thread_info.h>
++#include <linux/module.h>
++
++register unsigned long current_frame_pointer asm("r30");
++
++struct stackframe {
++	unsigned long fp;
++	unsigned long rets;
++};
++
++/*
++ * Save stack-backtrace addresses into a stack_trace buffer.
++ */
++void save_stack_trace(struct stack_trace *trace)
++{
++	unsigned long low, high;
++	unsigned long fp;
++	struct stackframe *frame;
++	int skip = trace->skip;
++
++	low = (unsigned long)task_stack_page(current);
++	high = low + THREAD_SIZE;
++	fp = current_frame_pointer;
++
++	while (fp >= low && fp <= (high - sizeof(*frame))) {
++		frame = (struct stackframe *)fp;
++
++		if (skip) {
++			skip--;
++		} else {
++			trace->entries[trace->nr_entries++] = frame->rets;
++			if (trace->nr_entries >= trace->max_entries)
++				break;
++		}
++
++		/*
++		 * The next frame must be at a higher address than the
++		 * current frame.
++		 */
++		low = fp + sizeof(*frame);
++		fp = frame->fp;
++	}
++}
++EXPORT_SYMBOL_GPL(save_stack_trace);
 -- 
 1.7.1
 
