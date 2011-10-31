@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1KAAR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:17:26 -0400
+	id S933949Ab1KAAZd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:25:33 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:35201 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753756Ab1KAARU (ORCPT
+	with ESMTP id S1753487Ab1KAARY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:17:20 -0400
-Message-Id: <093448$3uejr0@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599648"
+	Mon, 31 Oct 2011 20:17:24 -0400
+Message-Id: <093448$3uejr9@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599657"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:27:45 -0500
-Subject: [PATCH v5 03/36] Hexagon: Add bitops support
+Date: Mon, 31 Oct 2011 18:35:16 -0500
+Subject: [PATCH v5 05/36] Hexagon: Add syscalls
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/bitops.h |  301 +++++++++++++++++++++++++++++++++++++
- 1 files changed, 301 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/bitops.h
+ arch/hexagon/include/asm/syscall.h |   54 +++++++++++++++++++++
+ arch/hexagon/include/asm/unistd.h  |   36 ++++++++++++++
+ arch/hexagon/kernel/syscall.c      |   90 ++++++++++++++++++++++++++++++++++++
+ arch/hexagon/kernel/syscalltab.c   |   32 +++++++++++++
+ 4 files changed, 212 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/syscall.h
+ create mode 100644 arch/hexagon/include/asm/unistd.h
+ create mode 100644 arch/hexagon/kernel/syscall.c
+ create mode 100644 arch/hexagon/kernel/syscalltab.c
 
-diff --git a/arch/hexagon/include/asm/bitops.h b/arch/hexagon/include/asm/bitops.h
+diff --git a/arch/hexagon/include/asm/syscall.h b/arch/hexagon/include/asm/syscall.h
 new file mode 100644
-index 0000000..d23461e
+index 0000000..3e7d61d
 --- /dev/null
-+++ b/arch/hexagon/include/asm/bitops.h
-@@ -0,0 +1,301 @@
++++ b/arch/hexagon/include/asm/syscall.h
+@@ -0,0 +1,54 @@
 +/*
-+ * Bit operations for the Hexagon architecture
++ * Syscall support for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -51,286 +57,216 @@ index 0000000..d23461e
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_BITOPS_H
-+#define _ASM_BITOPS_H
++#ifndef _ASM_HEXAGON_SYSCALL_H
++#define _ASM_HEXAGON_SYSCALL_H
 +
-+#include <linux/compiler.h>
-+#include <asm/byteorder.h>
-+#include <asm/system.h>
-+#include <asm/atomic.h>
++typedef long (*syscall_fn)(unsigned long, unsigned long,
++	unsigned long, unsigned long,
++	unsigned long, unsigned long);
 +
-+#ifdef __KERNEL__
++asmlinkage int sys_execve(char __user *ufilename, char __user * __user *argv,
++			  char __user * __user *envp);
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 unsigned long parent_tidp, unsigned long child_tidp);
 +
-+#define smp_mb__before_clear_bit()	barrier()
-+#define smp_mb__after_clear_bit()	barrier()
++#define sys_execve	sys_execve
++#define sys_clone	sys_clone
++
++#include <asm-generic/syscalls.h>
++
++extern void *sys_call_table[];
++
++static inline long syscall_get_nr(struct task_struct *task,
++				  struct pt_regs *regs)
++{
++	return regs->r06;
++}
++
++static inline void syscall_get_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 unsigned long *args)
++{
++	BUG_ON(i + n > 6);
++	memcpy(args, &(&regs->r00)[i], n * sizeof(args[0]));
++}
++#endif
+diff --git a/arch/hexagon/include/asm/unistd.h b/arch/hexagon/include/asm/unistd.h
+new file mode 100644
+index 0000000..4d0ecde
+--- /dev/null
++++ b/arch/hexagon/include/asm/unistd.h
+@@ -0,0 +1,36 @@
++/*
++ * Syscall support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#if !defined(_ASM_HEXAGON_UNISTD_H) || defined(__SYSCALL)
++#define _ASM_HEXAGON_UNISTD_H
 +
 +/*
-+ * The offset calculations for these are based on BITS_PER_LONG == 32
-+ * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
-+ * mask by 0x0000001F)
++ *  The kernel pulls this unistd.h in three different ways:
++ *  1.  the "normal" way which gets all the __NR defines
++ *  2.  with __SYSCALL defined to produce function declarations
++ *  3.  with __SYSCALL defined to produce syscall table initialization
++ *  See also:  syscalltab.c
++ */
++
++#define sys_mmap2 sys_mmap_pgoff
++
++#include <asm-generic/unistd.h>
++
++#endif
+diff --git a/arch/hexagon/kernel/syscall.c b/arch/hexagon/kernel/syscall.c
+new file mode 100644
+index 0000000..620dd18
+--- /dev/null
++++ b/arch/hexagon/kernel/syscall.c
+@@ -0,0 +1,90 @@
++/*
++ * Hexagon system calls
 + *
-+ * Typically, R10 is clobbered for address, R11 bit nr, and R12 is temp
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+/**
-+ * test_and_clear_bit - clear a bit and return its old value
-+ * @nr:  bit number to clear
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_clear_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = clrbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
-+}
-+
-+/**
-+ * test_and_set_bit - set a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_set_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = setbit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+
-+	return oldval;
-+
-+}
-+
-+/**
-+ * test_and_change_bit - toggle a bit and return its old value
-+ * @nr:  bit number to set
-+ * @addr:  pointer to memory
-+ */
-+static inline int test_and_change_bit(int nr, volatile void *addr)
-+{
-+	int oldval;
-+
-+	__asm__ __volatile__ (
-+	"	{R10 = %1; R11 = asr(%2,#5); }\n"
-+	"	{R10 += asl(R11,#2); R11 = and(%2,#0x1f)}\n"
-+	"1:	R12 = memw_locked(R10);\n"
-+	"	{ P0 = tstbit(R12,R11); R12 = togglebit(R12,R11); }\n"
-+	"	memw_locked(R10,P1) = R12;\n"
-+	"	{if !P1 jump 1b; %0 = mux(P0,#1,#0);}\n"
-+	: "=&r" (oldval)
-+	: "r" (addr), "r" (nr)
-+	: "r10", "r11", "r12", "p0", "p1", "memory"
-+	);
-+
-+	return oldval;
-+
-+}
++#include <linux/file.h>
++#include <linux/fs.h>
++#include <linux/linkage.h>
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/syscalls.h>
++#include <linux/unistd.h>
++#include <asm/mman.h>
++#include <asm/registers.h>
 +
 +/*
-+ * Atomic, but doesn't care about the return value.
-+ * Rewrite later to save a cycle or two.
++ * System calls with architecture-specific wrappers.
++ * See signal.c for signal-related system call wrappers.
 + */
 +
-+static inline void clear_bit(int nr, volatile void *addr)
++asmlinkage int sys_execve(char __user *ufilename,
++			  const char __user *const __user *argv,
++			  const char __user *const __user *envp)
 +{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void set_bit(int nr, volatile void *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void change_bit(int nr, volatile void *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+
-+/*
-+ * These are allowed to be non-atomic.  In fact the generic flavors are
-+ * in non-atomic.h.  Would it be better to use intrinsics for this?
-+ *
-+ * OK, writes in our architecture do not invalidate LL/SC, so this has to
-+ * be atomic, particularly for things like slab_lock and slab_unlock.
-+ *
-+ */
-+static inline void __clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_clear_bit(nr, addr);
-+}
-+
-+static inline void __set_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_set_bit(nr, addr);
-+}
-+
-+static inline void __change_bit(int nr, volatile unsigned long *addr)
-+{
-+	test_and_change_bit(nr, addr);
-+}
-+
-+/*  Apparently, at least some of these are allowed to be non-atomic  */
-+static inline int __test_and_clear_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_clear_bit(nr, addr);
-+}
-+
-+static inline int __test_and_set_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_set_bit(nr, addr);
-+}
-+
-+static inline int __test_and_change_bit(int nr, volatile unsigned long *addr)
-+{
-+	return test_and_change_bit(nr, addr);
-+}
-+
-+static inline int __test_bit(int nr, const volatile unsigned long *addr)
-+{
++	struct pt_regs *pregs = current_thread_info()->regs;
++	char *filename;
 +	int retval;
 +
-+	asm volatile(
-+	"{P0 = tstbit(%1,%2); if (P0.new) %0 = #1; if (!P0.new) %0 = #0;}\n"
-+	: "=&r" (retval)
-+	: "r" (addr[BIT_WORD(nr)]), "r" (nr % BITS_PER_LONG)
-+	: "p0"
-+	);
++	filename = getname(ufilename);
++	retval = PTR_ERR(filename);
++	if (IS_ERR(filename))
++		return retval;
++
++	retval = do_execve(filename, argv, envp, pregs);
++	putname(filename);
 +
 +	return retval;
 +}
 +
-+#define test_bit(nr, addr) __test_bit(nr, addr)
-+
-+/*
-+ * ffz - find first zero in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no zero exists, so code should check against ~0UL first.
-+ */
-+static inline long ffz(int x)
++asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
++			 unsigned long parent_tidp, unsigned long child_tidp)
 +{
-+	int r;
++	struct pt_regs *pregs = current_thread_info()->regs;
 +
-+	asm("%0 = ct1(%1);\n"
-+		: "=&r" (r)
-+		: "r" (x));
-+	return r;
++	if (!newsp)
++		newsp = pregs->SP;
++	return do_fork(clone_flags, newsp, pregs, 0, (int __user *)parent_tidp,
++		       (int __user *)child_tidp);
 +}
 +
 +/*
-+ * fls - find last (most-significant) bit set
-+ * @x: the word to search
-+ *
-+ * This is defined the same way as ffs.
-+ * Note fls(0) = 0, fls(1) = 1, fls(0x80000000) = 32.
++ * Do a system call from the kernel, so as to have a proper pt_regs
++ * and recycle the sys_execvpe infrustructure.
 + */
-+static inline long fls(int x)
++int kernel_execve(const char *filename,
++		  const char *const argv[], const char *const envp[])
 +{
-+	int r;
++	register unsigned long __a0 asm("r0") = (unsigned long) filename;
++	register unsigned long __a1 asm("r1") = (unsigned long) argv;
++	register unsigned long __a2 asm("r2") = (unsigned long) envp;
++	int retval;
 +
-+	asm("{ %0 = cl0(%1);}\n"
-+		"%0 = sub(#32,%0);\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
++	__asm__ volatile(
++		"	R6 = #%4;\n"
++		"	trap0(#1);\n"
++		"	%0 = R0;\n"
++		: "=r" (retval)
++		: "r" (__a0), "r" (__a1), "r" (__a2), "i" (__NR_execve)
++	);
 +
-+	return r;
++	return retval;
 +}
-+
++EXPORT_SYMBOL(kernel_execve);
+diff --git a/arch/hexagon/kernel/syscalltab.c b/arch/hexagon/kernel/syscalltab.c
+new file mode 100644
+index 0000000..c550f41
+--- /dev/null
++++ b/arch/hexagon/kernel/syscalltab.c
+@@ -0,0 +1,32 @@
 +/*
-+ * ffs - find first bit set
-+ * @x: the word to search
++ * System call table for Hexagon
 + *
-+ * This is defined the same way as
-+ * the libc and compiler builtin ffs routines, therefore
-+ * differs in spirit from the above ffz (man ffs).
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+static inline long ffs(int x)
-+{
-+	int r;
 +
-+	asm("{ P0 = cmp.eq(%1,#0); %0 = ct0(%1);}\n"
-+		"{ if P0 %0 = #0; if !P0 %0 = add(%0,#1);}\n"
-+		: "=&r" (r)
-+		: "r" (x)
-+		: "p0");
++#include <linux/syscalls.h>
++#include <linux/signal.h>
++#include <linux/unistd.h>
 +
-+	return r;
-+}
++#include <asm/syscall.h>
 +
-+/*
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ *
-+ * bits_per_long assumed to be 32
-+ * numbering starts at 0 I think (instead of 1 like ffs)
-+ */
-+static inline unsigned long __ffs(unsigned long word)
-+{
-+	int num;
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (call),
 +
-+	asm("%0 = ct0(%1);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+/*
-+ * __fls - find last (most-significant) set bit in a long word
-+ * @word: the word to search
-+ *
-+ * Undefined if no set bit exists, so code should check against 0 first.
-+ * bits_per_long assumed to be 32
-+ */
-+static inline unsigned long __fls(unsigned long word)
-+{
-+	int num;
-+
-+	asm("%0 = cl0(%1);\n"
-+		"%0 = sub(#31,%0);\n"
-+		: "=&r" (num)
-+		: "r" (word));
-+
-+	return num;
-+}
-+
-+#include <asm-generic/bitops/lock.h>
-+#include <asm-generic/bitops/find.h>
-+
-+#include <asm-generic/bitops/fls64.h>
-+#include <asm-generic/bitops/sched.h>
-+#include <asm-generic/bitops/hweight.h>
-+
-+#include <asm-generic/bitops/le.h>
-+#include <asm-generic/bitops/ext2-atomic.h>
-+
-+#endif /* __KERNEL__ */
-+#endif
++void *sys_call_table[__NR_syscalls] = {
++#include <asm/unistd.h>
++};
 -- 
 1.7.1
 
