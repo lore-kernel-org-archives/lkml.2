@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab1JaVri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 17:47:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55020 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab1JaVrh convert rfc822-to-8bit (ORCPT
+	id S1753166Ab1JaWAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:00:02 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38706 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752020Ab1JaWAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 17:47:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111031210951.GK16825@thunk.org>
-References: <CAF78GY1_HwP2QZsMLqHeJechjps44Jq2o1VDSFC0TriXB1riPQ@mail.gmail.com>
-	<20111031210951.GK16825@thunk.org>
-Date: Mon, 31 Oct 2011 22:47:36 +0100
-Message-ID: <CAF78GY3CnUiuKRQkdTAWFYDcXMwaZcnWUhyenkJKqZuaQVtYtg@mail.gmail.com>
-Subject: =?windows-1252?Q?Re=3A_ext4_bug_=3F_=22Intel_320_SSD_write_performance_=96_?=
-	=?windows-1252?Q?contd=2E=22?=
-From: Vincent Pelletier <plr.vincent@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 31 Oct 2011 18:00:00 -0400
+Date: Mon, 31 Oct 2011 17:57:43 -0400 (EDT)
+Message-Id: <20111031.175743.115974002318620455.davem@davemloft.net>
+To: joe@perches.com
+Cc: bharrosh@panasas.com, jbaron@redhat.com, philb@gnu.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        randy.dunlap@oracle.com, sfr@canb.auug.org.au
+Subject: Re: [PATCH] 3c505: Fix compile breakage
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1320097524.4399.8.camel@Joe-Laptop>
+References: <4EAF0F34.4070702@panasas.com>
+	<1320097524.4399.8.camel@Joe-Laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 31 Oct 2011 14:57:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 10:09 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> So I (and the distributions) don't want to make it the default, since
-> if you buy crap drives and then mke2fs turns them into bricks, who are
-> you likely to blame?  The crap SSD manufacturer?  Yourself for trying
-> to buy SSD's on the cheap?  Or the program that issued the TRIM
-> command?
+From: Joe Perches <joe@perches.com>
+Date: Mon, 31 Oct 2011 23:45:24 +0200
 
-Thanks for the explanation. I don't know much about SSDs so far: I indeed
-heard about bricks, but not because of TRIM.
-And I thank you (and distributions) for staying on the safe side.
+> The joys of preprocessor games with c90 named initializers.
+> 
+> commit 07613b0b5ef8
+> ("dynamic_debug: consolidate repetitive struct _ddebug descriptor definitions")
+> uses a ".filename" named initializer.
+> 
+> When filename is also a #define this fails to compile.
+> 
+> Remove #define filename from 3c505.c
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Regards,
--- 
-Vincent Pelletier
+Andrew Morton submitted a fix for this earlier today.
+
+http://marc.info/?l=linux-netdev&m=132009089027792&w=2
