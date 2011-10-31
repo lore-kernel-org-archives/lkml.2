@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933090Ab1JaKMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 06:12:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58796 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932508Ab1JaKMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 06:12:33 -0400
-Date: Mon, 31 Oct 2011 11:12:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH] [TRIVIAL] ARM: imx: Fix typo
- 'MACH_MX31_3DS_MXC_NAND_USE_BBT'
-In-Reply-To: <1318421062.2336.4.camel@x61.thuisdomein>
-Message-ID: <alpine.LNX.2.00.1110311110370.3541@pobox.suse.cz>
-References: <1318421062.2336.4.camel@x61.thuisdomein>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933170Ab1JaKRX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 06:17:23 -0400
+Received: from home.kolivas.org ([59.167.196.135]:55304 "EHLO mine.kolivas.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932508Ab1JaKRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 06:17:22 -0400
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 06:17:22 EDT
+From: Con Kolivas <con@kolivas.org>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as it should
+Date: Mon, 31 Oct 2011 21:06:29 +1100
+Message-ID: <1479015.f2tEjKr9vR@quad>
+User-Agent: KMail/4.7.2 (Linux/2.6.38.4-ck1; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Oct 2011, Paul Bolle wrote:
+On Sun, 30 Oct 2011 07:57:12 PM Artem S. Tashkinov wrote:
+> I've found out that even on Linux 3.0.8 the process scheduler doesn't
+> correctly distributes the load amongst virtual CPUs. E.g. on a 4-core
+> system (8 total virtual CPUs) the process scheduler often run some
+> instances of four different tasks on the same physical CPU.
 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> This is trivial because this is what apparently was intended. On the
-> other hand this should open code paths that were hidden until now. So
-> perhaps this needs the maintainer's approval. (I cannot meaningfully
-> test this.)
+> Any thoughts? comments? I think this is quite a serious problem.
 
-I'd like to have this tested by some relevant people before taking it 
-myself (added some CCs).
+Intense cache locality logic, power saving concepts, cpu frequency governor 
+behaviour and separate runqueues per CPU within the current CPU process 
+scheduler in the current mainline linux kernel will ocasionally do this. Some 
+workloads will be better, while others will be worse. Feel free to try my BFS 
+cpu scheduler if you wish a CPU process scheduler that spreads work more 
+evenly across CPUs. 
 
-> 
->  arch/arm/mach-imx/mach-mx31_3ds.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
-> index c20be75..5750ca5 100644
-> --- a/arch/arm/mach-imx/mach-mx31_3ds.c
-> +++ b/arch/arm/mach-imx/mach-mx31_3ds.c
-> @@ -542,7 +542,7 @@ static const struct mxc_nand_platform_data
->  mx31_3ds_nand_board_info __initconst = {
->  	.width		= 1,
->  	.hw_ecc		= 1,
-> -#ifdef MACH_MX31_3DS_MXC_NAND_USE_BBT
-> +#ifdef CONFIG_MACH_MX31_3DS_MXC_NAND_USE_BBT
->  	.flash_bbt	= 1,
->  #endif
->  };
-> -- 
-> 1.7.4.4
-> 
-> 
-> 
+Alas the last version I synced up with will not apply cleanly past about 3.0.6 
+I believe:
+
+http://ck.kolivas.org/patches/bfs/3.0.0/3.0-sched-bfs-413.patch
+
+Regards,
+Con Kolivas
 
 -- 
-Jiri Kosina
-SUSE Labs
+-ck
