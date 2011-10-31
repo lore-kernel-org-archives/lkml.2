@@ -1,218 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932394Ab1JaQgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 12:36:36 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21423 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753732Ab1JaQgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 12:36:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="69417817"
-Subject: Re: 3.1+ iwlwifi lockup
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111031143408.GA17152@redhat.com>
-References: <20111031143408.GA17152@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Oct 2011 08:44:08 -0700
-Message-ID: <1320075848.31823.117.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932615Ab1JaQkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 12:40:10 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:31799 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab1JaQkI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 12:40:08 -0400
+MIME-Version: 1.0
+Message-ID: <ef778e79-72d0-4c58-99e8-3b36d85fa30d@default>
+Date: Mon, 31 Oct 2011 09:38:12 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default
+ 20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090204.4EAECEFD.00F5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 07:34 -0700, Dave Jones wrote:
-> I just got this trace, and a driver lockup that caused me to have to
-> unload & reload the iwlwifi module to get networking back.
-> hardware is..
-> 04:00.0 Network controller: Intel Corporation Ultimate N WiFi Link 5300
+> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+
+Hi Kame --
+
+Thanks for your reply and for your earlier reviews of frontswap,
+and my apologies that I accidentally left you off of the Cc list \
+for the basenote of this git-pull request.
+
+> I don't have heavy concerns to the codes itself but this process as bypassing -mm
+> or linux-next seems ugly.
+
+First, frontswap IS in linux-next and it has been since June 3
+and v11 has been in linux-next since September 23.  This
+is stated in the base git-pull request.
+ 
+> Why bypass -mm tree ?
 > 
-> This is new as of 3.1+  (This kernel was Linus' tree as of last night)
-> 
+> I think you planned to merge this via -mm tree and, then, posted patches
+> to linux-mm with CC -mm guys.
 
-this is cause by an command queue bug and we will looking into it now.
+Hmmm... the mm process is not clear or well-documented.
+I am a relative newbie here.  Linus has repeatedly spoken
+of ensuring that code is in linux-next, and there is no
+(last I checked) current -mm git tree.  I was aware that
+the mm tree still existed, but thought it was for shaking
+out major features, not for adding a handful of hooks.
+I was aware that akpm's blessing was highly desirable,
+but his (offlist) reply was essentially "I'm not interested,
+I don't have time to deal with this, and I don't think anyone
+will use it."  I explained about all the users (many of whom
+have replied to this thread to support frontswap), but got
+no further reply.  I was advised by several people that, in
+the case of disagreement, Linus will decide, so I pushed
+forward.  This is the same as the process I used for
+cleancache, which Linus merged.
 
-Wey
+I have been instructed offlist and onlist that this was a big
+mistake, that it appears that I am subverting the process,
+and that I am probably insulting akpm.  If so, I am
+truly sorry and would be happy to take instruction
+on how to proceed correctly.  However, in turn, I hope
+that those driving the process aren't blocking useful
+code simply due to lack of time.
 
->         Dave
-> 
-> [ 2669.712377] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712381] Hardware name: Adamo 13
-> [ 2669.712384] wrong command queue 0 (should be 4), sequence 0x0 readp=54 writep=54
-> [ 2669.712386] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712493] Pid: 2332, comm: firefox Not tainted 3.1.0+ #9
-> [ 2669.712495] Call Trace:
-> [ 2669.712497]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712509]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712519]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712529]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712535]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712539]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712544]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712549]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712553]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712557]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712561]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712563]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712570] ---[ end trace e86fa0935f9dc7a5 ]---
-> [ 2669.712573] iwl data: 00000000: 00 00 55 55 00 00 00 00 08 53 e0 00 00 00 00 00  ..UU.....S......
-> [ 2669.712577] iwl data: 00000010: 00 00 00 00 7e 04 19 00 05 00 04 00 94 07 02 00  ....~...........
-> [ 2669.712619] ------------[ cut here ]------------
-> [ 2669.712628] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712631] Hardware name: Adamo 13
-> [ 2669.712634] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.712636] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712729] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.712731] Call Trace:
-> [ 2669.712733]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712743]  [<ffffffff8164de90>] ? _raw_spin_unlock_irqrestore+0x40/0x90
-> [ 2669.712747]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712753]  [<ffffffff810c189f>] ? trace_hardirqs_on_caller+0x1f/0x1b0
-> [ 2669.712762]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712772]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712777]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712781]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712785]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712789]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712792]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712796]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712800]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712802]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712808] ---[ end trace e86fa0935f9dc7a6 ]---
-> [ 2669.712811] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.712815] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2669.712818] ------------[ cut here ]------------
-> [ 2669.712826] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712829] Hardware name: Adamo 13
-> [ 2669.712832] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.712834] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712925] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.712928] Call Trace:
-> [ 2669.712930]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712938]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712948]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712958]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712963]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712967]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712971]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712975]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712979]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712982]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712986]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712988]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712994] ---[ end trace e86fa0935f9dc7a7 ]---
-> [ 2669.712997] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.713018] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2669.713136] ------------[ cut here ]------------
-> [ 2669.713146] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.713150] Hardware name: Adamo 13
-> [ 2669.713153] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.713157] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.713292] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.713295] Call Trace:
-> [ 2669.713297]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.713308]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.713319]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.713331]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.713337]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.713342]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.713347]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.713353]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.713357]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.713362]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.713367]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.713369]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.713377] ---[ end trace e86fa0935f9dc7a8 ]---
-> [ 2669.713380] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.713385] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2670.784424] iwlwifi 0000:04:00.0: Microcode SW error detected.  Restarting 0x2000000.
-> [ 2670.784431] iwlwifi 0000:04:00.0: Loaded firmware version: 8.83.5.1 build 33692
-> [ 2670.784556] iwlwifi 0000:04:00.0: Start IWL Error Log Dump:
-> [ 2670.784559] iwlwifi 0000:04:00.0: Status: 0x000412E4, count: 5
-> [ 2670.784562] iwlwifi 0000:04:00.0: 0x00000005 | SYSASSERT
-> [ 2670.784565] iwlwifi 0000:04:00.0: 0x000024EC | uPc
-> [ 2670.784568] iwlwifi 0000:04:00.0: 0x000024C8 | branchlink1
-> [ 2670.784570] iwlwifi 0000:04:00.0: 0x000024C8 | branchlink2
-> [ 2670.784573] iwlwifi 0000:04:00.0: 0x00000916 | interruptlink1
-> [ 2670.784576] iwlwifi 0000:04:00.0: 0x00000000 | interruptlink2
-> [ 2670.784578] iwlwifi 0000:04:00.0: 0x000000FF | data1
-> [ 2670.784580] iwlwifi 0000:04:00.0: 0x00000489 | data2
-> [ 2670.784583] iwlwifi 0000:04:00.0: 0x00000489 | line
-> [ 2670.784585] iwlwifi 0000:04:00.0: 0x1A41414C | beacon time
-> [ 2670.784588] iwlwifi 0000:04:00.0: 0x54956EB4 | tsf low
-> [ 2670.784591] iwlwifi 0000:04:00.0: 0x000004FB | tsf hi
-> [ 2670.784593] iwlwifi 0000:04:00.0: 0x00000000 | time gp1
-> [ 2670.784596] iwlwifi 0000:04:00.0: 0x9D4D53F1 | time gp2
-> [ 2670.784598] iwlwifi 0000:04:00.0: 0x00000000 | time gp3
-> [ 2670.784601] iwlwifi 0000:04:00.0: 0x00010853 | uCode version
-> [ 2670.784603] iwlwifi 0000:04:00.0: 0x00000024 | hw version
-> [ 2670.784606] iwlwifi 0000:04:00.0: 0x00480302 | board version
-> [ 2670.784609] iwlwifi 0000:04:00.0: 0x0B15001C | hcmd
-> [ 2670.784611] iwlwifi 0000:04:00.0: CSR values:
-> [ 2670.784614] iwlwifi 0000:04:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
-> [ 2670.784641] iwlwifi 0000:04:00.0:        CSR_HW_IF_CONFIG_REG: 0X00480302
-> [ 2670.784666] iwlwifi 0000:04:00.0:          CSR_INT_COALESCING: 0X00000040
-> [ 2670.784691] iwlwifi 0000:04:00.0:                     CSR_INT: 0X00000000
-> [ 2670.784715] iwlwifi 0000:04:00.0:                CSR_INT_MASK: 0X00000000
-> [ 2670.784740] iwlwifi 0000:04:00.0:           CSR_FH_INT_STATUS: 0X00000000
-> [ 2670.784765] iwlwifi 0000:04:00.0:                 CSR_GPIO_IN: 0X00000000
-> [ 2670.784790] iwlwifi 0000:04:00.0:                   CSR_RESET: 0X00000000
-> [ 2670.784814] iwlwifi 0000:04:00.0:                CSR_GP_CNTRL: 0X080403c5
-> [ 2670.784839] iwlwifi 0000:04:00.0:                  CSR_HW_REV: 0X00000024
-> [ 2670.784864] iwlwifi 0000:04:00.0:              CSR_EEPROM_REG: 0X00000000
-> [ 2670.784889] iwlwifi 0000:04:00.0:               CSR_EEPROM_GP: 0X90000004
-> [ 2670.784914] iwlwifi 0000:04:00.0:              CSR_OTP_GP_REG: 0X00060000
-> [ 2670.784938] iwlwifi 0000:04:00.0:                 CSR_GIO_REG: 0X00080042
-> [ 2670.784963] iwlwifi 0000:04:00.0:            CSR_GP_UCODE_REG: 0X00007c71
-> [ 2670.784988] iwlwifi 0000:04:00.0:           CSR_GP_DRIVER_REG: 0X00000000
-> [ 2670.785012] iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
-> [ 2670.785037] iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
-> [ 2670.785062] iwlwifi 0000:04:00.0:                 CSR_LED_REG: 0X00000058
-> [ 2670.785086] iwlwifi 0000:04:00.0:        CSR_DRAM_INT_TBL_REG: 0X8811a5a0
-> [ 2670.785111] iwlwifi 0000:04:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
-> [ 2670.785136] iwlwifi 0000:04:00.0:             CSR_ANA_PLL_CFG: 0X00880300
-> [ 2670.785161] iwlwifi 0000:04:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
-> [ 2670.785186] iwlwifi 0000:04:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0000
-> [ 2670.785188] iwlwifi 0000:04:00.0: FH register values:
-> [ 2670.785224] iwlwifi 0000:04:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X1174de00
-> [ 2670.785243] iwlwifi 0000:04:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X012abbb0
-> [ 2670.785261] iwlwifi 0000:04:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000048
-> [ 2670.785280] iwlwifi 0000:04:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X80819104
-> [ 2670.785300] iwlwifi 0000:04:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
-> [ 2670.785343] iwlwifi 0000:04:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X02630000
-> [ 2670.785362] iwlwifi 0000:04:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
-> [ 2670.785380] iwlwifi 0000:04:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
-> [ 2670.785389] iwlwifi 0000:04:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
-> [ 2670.785389] iwlwifi 0000:04:00.0: Start IWL Event Log Dump: display last 20 entries
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638087993:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088265:0x00000113:0106
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088266:0x00000000:0302
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088289:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088453:0x00000113:0106
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088455:0x00000000:0302
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088478:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088750:0x0b15001c:0206
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088752:0x00000001:0204
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088755:0x00000001:0214
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088756:0x01002111:0209
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089055:0x00000000:0210
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089065:0x00000000:0207
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089067:0x01002111:0211
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089072:0x00000000:0212
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090106:0x00000000:0215
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090108:0x00000008:0220
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090127:0x00000000:0301
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090315:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2639090696:0x00000000:0125
-> [ 2670.795643] ieee80211 phy0: Hardware restart was requested
-> [ 2670.795729] iwlwifi 0000:04:00.0: L1 Enabled; Disabling L0S
-> [ 2670.798779] iwlwifi 0000:04:00.0: Radio type=0x0-0x2-0x0
-> 
+> I think you posted 2011/09/16 at the last time, v10. But no further submission
+> to gather acks/reviews from Mel, Johannes, Andrew, Hugh etc.. and no inclusion
+> request to -mm or -next. _AND_, IIUC, at v10, the number of posted pathces was 6.
+> Why now 8 ? Just because it's simple changes ?
 
+See https://lkml.org/lkml/2011/9/21/373.  Konrad Wilk
+helped me to reorganize the patches (closer to what you
+suggested I think), but there were no code changes between
+v10 and v11, just dividing up the patches differently
+as Konrad thought there should be more smaller commits.
+So no code change between v10 and v11 but the number of
+patches went from 6 to 8.
 
+My last line in that post should also make it clear that
+I thought I was done and ready for the 3.2 window, so there
+was no evil intent on my part to subvert a process.
+It would have been nice if someone had told me there
+were uncompleted steps in the -mm process or, even better,
+pointed me to a (non-existent?) document where I could see
+for myself if I was missing steps!
+
+So... now what?
+
+Thanks,
+Dan
+
+P.S. It appears that this excerpt from the LWN KS2011 report
+might be related to the problem?
+
+  "Andrew complained about the acceptance of entirely new
+   features into the kernel. Those features often land on
+   his doorstep without much justification, forcing him to
+   ask the developers to explain their motivations. The kernel
+   community, he complained, is not supporting him well. Who
+   can tell him if a given patch makes sense? Mistakes have
+   been made in the past; bad features have been merged and
+   good stuff has been lost. How, he asked, can he find
+   people who know better about the desirability of
+   specific patches?"
