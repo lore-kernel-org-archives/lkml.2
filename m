@@ -1,313 +1,766 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab1JaE5H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 00:57:07 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33754 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab1JaE5F convert rfc822-to-8bit (ORCPT
+	id S1752337Ab1JaFAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 01:00:39 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:62670 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab1JaFAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 00:57:05 -0400
+	Mon, 31 Oct 2011 01:00:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=wGD2jXCgUzAVszYNB13
+	XItdIbv6AO8T/IrX92w1gk/vqO28U7BqTO2ts/tHJc0UH7+kPd8VKtzQ3Rj0x2Xc
+	QFk21FewWJpeNLYn6twCpnV16b4ulsrFQO358IDz/VLH5iPAA7xQ5rivyAOOQRlr
+	zXND64G5laFgfND1HXFuFqZk=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.8.rc0
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 30 Oct 2011 22:00:31 -0700
+Message-ID: <7vfwi9rc0g.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1110310045120.1603@hytron.hytron.net>
-References: <Pine.LNX.4.64.1110300257510.32513@hytron.hytron.net>
-	<20111030190548.2febafc0@notabene.brown>
-	<Pine.LNX.4.64.1110301833180.1168@hytron.hytron.net>
-	<CAGBYx2b62skKsU8c2A8GepVQxj+7_NJSFTDFwJ+9cU8jstU_6A@mail.gmail.com>
-	<Pine.LNX.4.64.1110310045120.1603@hytron.hytron.net>
-Date: Mon, 31 Oct 2011 12:57:03 +0800
-Message-ID: <CAGBYx2bN7Gxm1PWJwm3Vf0-yikyo9H_xnCiGNetLVQagMRJbTQ@mail.gmail.com>
-Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk failure
-From: Yongqiang Yang <xiaoqiangnk@gmail.com>
-To: Darko <darko@hytron.net>
-Cc: NeilBrown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 42FD4F8A-037D-11E1-BDBE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 12:51 PM, Darko <darko@hytron.net> wrote:
-> Hi Yongqiang,
->
-> I am using kernel version 3.0.8. Looking through the file super.c, the file
-> already has the code mentioned on the web. I also noticed the date of the
-> post (http://lists.openwall.net/linux-ext4/2011/03/29/5) is back from March
-> of 2011. I think the bug I reported here was not fixed by that patch since
-> the kernel version I am using is much newer than March 2011.
-Could you post out the dmesg log printed by 3.0.8 or 3.1?
+A release candidate Git 1.7.8.rc0 is available for testing.
 
-Yongqiang.
->
-> I am not sure if I understand what you mean by "commit 0449641130 ext4"?
->
-> Thanks,
->
-> Darko
->
->
-> On Mon, 31 Oct 2011, Yongqiang Yang wrote:
->
->> Date: Mon, 31 Oct 2011 12:25:18 +0800
->> From: Yongqiang Yang <xiaoqiangnk@gmail.com>
->> To: Darko <darko@hytron.net>
->> Cc: NeilBrown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
->> † †linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
->> Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk
->> failure
->>
->> Hi Darko,
->>
->> The bug has been fixed by commit 0449641130 ext4: Init timer earlier
->> to avoid a kernel panic in __save_error_info.
->> http://lists.openwall.net/linux-ext4/2011/03/29/5
->>
->>
->> I suspect you mounted ext2/3 partition using ext4 module.
->>
->>
->> Yongqiang.
->>
->> On Mon, Oct 31, 2011 at 11:13 AM, Darko <darko@hytron.net> wrote:
->>>
->>> Thank you for your reply!
->>>
->>> I wanted to add to this that I was able to replicate the problem with
->>> ext3
->>> and ext2 file systems as well. They both hard lock the system, and the
->>> only
->>> way to recovery is to push the reset button. I can see the trace error on
->>> the screen, but I am unable to do anything with it, since it goes by so
->>> fast
->>> that the portion which says "kernel BUG" is invisible. I assume they both
->>> have similar issues with the code in kernel/timer.c
->>>
->>> On the other hand, I tried using raiserfs 3.5 tonight, and I got
->>> input/output error as expected. The system did not crash. Just another
->>> proof
->>> that a bug is laying somewhere in the ext2/3/4 file system.
->>>
->>> When someone comes up with a patch, I am willing to try it out and feed
->>> you
->>> back with the report.
->>>
->>> Hope this helps.
->>>
->>> Thank You,
->>>
->>> Darko Kraus
->>>
->>>
->>> On Sun, 30 Oct 2011, NeilBrown wrote:
->>>
->>>> Date: Sun, 30 Oct 2011 19:05:48 +1100
->>>> From: NeilBrown <neilb@suse.de>
->>>> To: Darko <darko@hytron.net>
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
->>>> † †linux-ext4@vger.kernel.org
->>>> Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk
->>>> failure
->>>>
->>>> On Sun, 30 Oct 2011 03:27:28 -0400 (EDT) Darko <darko@hytron.net> wrote:
->>>>
->>>>> Hello,
->>>>>
->>>>> I have been doing some testing with the md RAID driver and I think I
->>>>> discovered a problem with it.
->>>>> Everything was performed on a system with a single hard drive using
->>>>> loop
->>>>> devices as virtual raid devices.
->>>>> So here is the setup:
->>>>> /dev/sdc is my main drive that hold entire Linux OS and has one
->>>>> partition.
->>>>> in the /tmp I created 7 files, 100MB each and associated them with loop
->>>>> devices:
->>>>>
->>>>> losetup -a
->>>>> /dev/loop0: [0821]:294820 (/var/tmp/raid-0)
->>>>> /dev/loop1: [0821]:294857 (/var/tmp/raid-1)
->>>>> /dev/loop2: [0821]:300120 (/var/tmp/raid-2)
->>>>> /dev/loop3: [0821]:301073 (/var/tmp/raid-3)
->>>>> /dev/loop4: [0821]:301074 (/var/tmp/raid-4)
->>>>> /dev/loop5: [0821]:301075 (/var/tmp/raid-5)
->>>>> /dev/loop6: [0821]:301076 (/var/tmp/raid-6)
->>>>>
->>>>> The next step was, created an RAID6 array:
->>>>> mdadm --create /dev/md10 --level=6 -raid-deviced=7 /dev/loop[0-6]
->>>>>
->>>>> Here is how it looks so far:
->>>>>
->>>>> cat /proc/mdstat
->>>>> Personalities : [raid0] [raid1] [raid10] [raid6] [raid5] [raid4]
->>>>> md10 : active raid6 loop6[6] loop5[5] loop4[4] loop3[3] loop2[2]
->>>>> loop1[1]
->>>>> loop0[0]
->>>>> † † † 499200 blocks super 1.2 level 6, 512k chunk, algorithm 2 [7/7]
->>>>> [UUUUUUU]
->>>>>
->>>>>
->>>>> Then the filesystem...
->>>>> mkfs.ext4 -b 4096 -i 4096 -m 0 /dev/md10
->>>>>
->>>>> Mounting the file system to a folder called 'A' right in the root of my
->>>>> system:
->>>>>
->>>>> mount /dev/md10 /A
->>>>>
->>>>> Then I copied a few files on that file system. So far everything is
->>>>> good.
->>>>>
->>>>> Then I purposly failed 2 drives:
->>>>> mdadm --manage /dev/md10 --fail /dev/loop0
->>>>> mdadm --manage /dev/md10 --fail /dev/loop1
->>>>>
->>>>> The array continues to run fine in degraded mode. I was wondering what
->>>>> would happen if another drive fails. So while I was doing a write
->>>>> operating right in that filesystem (/dev/md10) using:
->>>>> dd if=/dev/zero of=testfile bs=1k count=360000 †...
->>>>>
->>>>> ...quickly switched to a different console and entered the command:
->>>>> mdadm --manage /dev/md10 --fail /dev/loop2
->>>>>
->>>>> ...which made 3 failed drives and the array can no longer work...
->>>>>
->>>>> Well I would be happy to see just the array not working, but kernel
->>>>> panic
->>>>> in both versions 2.6.37.4 and 3.0.8 made me worry that it is serious
->>>>> bug
->>>>> and appears to be in older and newer kernels as well.
->>>>> I repeated this several times, and mostly the machine gets locked up
->>>>> with
->>>>> kernel panic. But once I was able to get it not to lock up all the way,
->>>>> and that is how I have dmesg output.
->>>>>
->>>>> The attached files include dmesg from the system startup until the bug
->>>>> trace, and some additional information regarding my system that might
->>>>> be
->>>>> helpful.
->>>>>
->>>>> For any additional question, please feel free to contact me!
->>>>>
->>>>> I hope this info helps someone find and resolve the problem in the
->>>>> code.
->>>>>
->>>>
->>>> The important part of your kernel log message is:
->>>>
->>>>
->>>> [ 1227.766202] ------------[ cut here ]------------
->>>> [ 1227.766259] kernel BUG at kernel/timer.c:681!
->>>> [ 1227.766311] invalid opcode: 0000 [#1] SMP
->>>> [ 1227.766365] last sysfs file: /sys/devices/virtual/block/md10/dev
->>>> [ 1227.766419] Modules linked in:
->>>> [ 1227.766471]
->>>> [ 1227.766520] Pid: 1507, comm: mount Not tainted 2.6.37.6-v5.0 #7
->>>> MICRO-STAR INTERNATIONAL CO., LTD MS-7142/MS-7142
->>>> [ 1227.766633] EIP: 0060:[<c104f960>] EFLAGS: 00010246 CPU: 0
->>>> [ 1227.766690] EIP is at mod_timer+0x210/0x250
->>>> [ 1227.766742] EAX: 00000000 EBX: f5494e1c ECX: 00000000 EDX: 00000000
->>>> [ 1227.766796] ESI: 00000000 EDI: 05348416 EBP: f54a3c90 ESP: f54a3c74
->>>> [ 1227.766851] †DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
->>>> [ 1227.766904] Process mount (pid: 1507, ti=f54a2000 task=f2068880
->>>> task.ti=f54a2000)
->>>> [ 1227.767002] Stack:
->>>> [ 1227.767003] †f2068880 f54b159c 00000010 00000000 f1f8e400 f4efc57c
->>>> 0000128d f54a3ca8
->>>> [ 1227.767003] †c11cb7ba c17d4e52 f4efc400 00000124 00000000 f54a3cb4
->>>> c11ce4e6 ecee6318
->>>> [ 1227.767003] †f54a3cdc c11cf7cc ecec7578 00000124 00000000 f4efc400
->>>> f54a3cd4 00000124
->>>> [ 1227.767003] Call Trace:
->>>> [ 1227.767003] †[<c11cb7ba>] ? __save_error_info.clone.61+0x7a/0xf0
->>>> [ 1227.767003] †[<c11ce4e6>] ? save_error_info+0x16/0x30
->>>> [ 1227.767003] †[<c11cf7cc>] ? ext4_error_inode+0x4c/0xf0
->>>> [ 1227.767003] †[<c11b57e1>] ? __ext4_get_inode_loc+0x201/0x410
->>>> [ 1227.767003] †[<c110b62a>] ? inode_init_always+0x1aa/0x1c0
->>>> [ 1227.767003] †[<c11b72f9>] ? ext4_iget+0x59/0x6f0
->>>> [ 1227.767003] †[<c11d2716>] ? ext4_fill_super+0x1ab6/0x2c70
->>>> [ 1227.767003] †[<c114896f>] ? disk_name+0xbf/0xd0
->>>> [ 1227.767003] †[<c10fa119>] ? mount_bdev+0x179/0x1c0
->>>> [ 1227.767003] †[<c11d0c60>] ? ext4_fill_super+0x0/0x2c70
->>>> [ 1227.767003] †[<c11ca17f>] ? ext4_mount+0x1f/0x30
->>>> [ 1227.767003] †[<c11d0c60>] ? ext4_fill_super+0x0/0x2c70
->>>> [ 1227.767003] †[<c10f9835>] ? vfs_kern_mount+0x75/0x250
->>>> [ 1227.767003] †[<c110df03>] ? get_fs_type+0x33/0xb0
->>>> [ 1227.767003] †[<c11ca160>] ? ext4_mount+0x0/0x30
->>>> [ 1227.767003] †[<c10f9a6e>] ? do_kern_mount+0x3e/0xe0
->>>> [ 1227.767003] †[<c111080f>] ? do_mount+0x35f/0x6b0
->>>> [ 1227.767003] †[<c10d47c9>] ? strndup_user+0x49/0x70
->>>> [ 1227.767003] †[<c1110e0b>] ? sys_mount+0x6b/0xa0
->>>> [ 1227.767003] †[<c17b550c>] ? syscall_call+0x7/0xb
->>>> [ 1227.767003] Code: fe ff ff 8b 0e 89 4d e4 8b 46 04 83 c6 08 89 f9 89
->>>> da
->>>> ff 55 e4 8b 06 85 c0 89 45 e4 75 ea e9 aa fe ff ff 8b 75 ec e9 ee fe ff
->>>> ff
->>>> <0f> 0b 8b 55 04 89 d8 e8 34 f9 ff ff e9 2a fe ff ff 8b 35 30 b8
->>>> [ 1227.767003] EIP: [<c104f960>] mod_timer+0x210/0x250 SS:ESP
->>>> 0068:f54a3c74
->>>> [ 1227.770073] ---[ end trace d7b3d7a67954d202 ]---
->>>>
->>>>
->>>> which happens after:
->>>>
->>>> [ 1137.167043] Aborting journal on device md10-8.
->>>> [ 1137.167058] Buffer I/O error on device md10, logical block 139265
->>>> [ 1137.167060] lost page write due to I/O error on md10
->>>> [ 1137.167065] JBD2: I/O error detected when updating journal superblock
->>>> for md10-8.
->>>> [ 1137.660922] Buffer I/O error on device md10, logical block 1
->>>> [ 1137.660926] lost page write due to I/O error on md10
->>>> [ 1137.660932] EXT4-fs error (device md10): ext4_journal_start_sb:260:
->>>> Detected aborted journal
->>>> [ 1137.661046] EXT4-fs (md10): Remounting filesystem read-only
->>>> [ 1137.661103] EXT4-fs (md10): previous I/O error to superblock detected
->>>> [ 1137.661313] Buffer I/O error on device md10, logical block 1
->>>> [ 1137.661315] lost page write due to I/O error on md10
->>>> [ 1219.891363] EXT4-fs (md10): previous I/O error to superblock detected
->>>> [ 1220.050654] Buffer I/O error on device md10, logical block 1
->>>> [ 1220.050657] lost page write due to I/O error on md10
->>>> [ 1220.050663] EXT4-fs error (device md10): ext4_put_super:728: Couldn't
->>>> clean up the journal
->>>>
->>>> and some more "Buffer I/O error"s.
->>>>
->>>> So it looks like an ext4 issue.
->>>>
->>>> I have Cc:ed the appropriate list.
->>>>
->>>> Thanks for the report.
->>>>
->>>> NeilBrown
->>>>
->>>>
->>>
->>>
->>> --
->>> Darko Kraus
->>> Enterprise Network Administrator
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->>> in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at †http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at †http://www.tux.org/lkml/
->>>
->>
->>
->>
->> --
->> Best Wishes
->> Yongqiang Yang
->>
->
->
-> --
-> Darko Kraus
-> Enterprise Network Administrator
+The release tarballs are found at:
+
+    http://code.google.com/p/git-core/downloads/list
+
+and their SHA-1 checksums are:
+
+4c437ecb17ba7d1b69cecd06eae9543ad35be7a6  git-1.7.8.rc0.tar.gz
+5fc490a7ab29bf020a8f46eecfdb421d970b6235  git-htmldocs-1.7.8.rc0.tar.gz
+856259f71c10b21620caa27dbc74c3794f0c6854  git-manpages-1.7.8.rc0.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.8.rc0
+tag and the master branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+There are a few topics that I would further merge down before -rc1 but
+this should be pretty much it for the upcoming release, as far as "new
+features" are concerned. Please test thoroughly to hunt for regressions.
+
+Hopefully we can have something reasonable by late November before many in
+the US will stop working and start stuffing themselves.
 
 
+Git v1.7.8 Release Notes (draft)
+================================
 
--- 
-Best Wishes
-Yongqiang Yang
+Updates since v1.7.7
+--------------------
+
+ * Some git-svn, git-gui, git-p4 (in contrib) and msysgit updates.
+
+ * Updates to bash completion scripts.
+
+ * The build procedure has been taught to take advantage of computed
+   dependency automatically when the complier supports it.
+
+ * The date parser now accepts timezone designators that lack minutes
+   part and also has a colon between "hh:mm".
+
+ * The contents of the /etc/mailname file, if exists, is used as the
+   default value of the hostname part of the committer/author e-mail.
+
+ * "git am" learned how to read from patches generated by Hg.
+
+ * "git archive" talking with a remote repository can report errors
+   from the remote side in a more informative way.
+
+ * "git branch" learned an explicit --list option to ask for branches
+   listed, optionally with a glob matching pattern to limit its output.
+
+ * "git check-attr" learned "--cached" option to look at .gitattributes
+   files from the index, not from the working tree.
+
+ * Variants of "git cherry-pick" and "git revert" that take multiple
+   commits learned to "--continue".
+
+ * "git daemon" gives more human readble error messages to clients
+   using ERR packets when appropriate.
+
+ * Errors at the network layer is logged by "git daemon".
+
+ * "git diff" learned "--minimal" option to spend extra cycles to come
+   up with a minimal patch output.
+
+ * "git diff" learned "--function-context" option to show the whole
+   function as context that was affected by a change.
+
+ * "git difftool" can be told to skip launching the tool for a path by
+   answering 'n' to its prompt.
+
+ * "git fetch" learned to honor transfer.fsckobjects configuration to
+   validate the objects that were received from the other end, just like
+   "git receive-pack" (the receiving end of "git push") does.
+
+ * "git fetch" makes sure that the set of objects it received from the
+   other end actually completes the history before updating the refs.
+   "git receive-pack" (the receiving end of "git push") learned to do the
+   same.
+
+ * "git fetch" learned that fetching/cloning from a regular file on the
+   filesystem is not necessarily a request to unpack a bundle file; the
+   file could be ".git" with "gitdir: <path>" in it.
+
+ * "git for-each-ref" learned "%(contents:subject)", "%(contents:body)"
+   and "%(contents:signature)". The last one is useful for signed tags.
+
+ * "git grep" used to incorrectly pay attention to .gitignore files
+   scattered in the directory it was working in even when "--no-index"
+   option was used. It no longer does this. The "--exclude-standard"
+   option needs to be given to explicitly activate the ignore
+   mechanism.
+
+ * "git grep" learned "--untracked" option, where given patterns are
+    searched in untracked (but not ignored) files as well as tracked
+    files in the working tree, so that matches in new but not yet
+    added files do not get missed.
+
+ * The recursive merge backend no longer looks for meaningless
+   existing merges in submodules unless in the outermost merge.
+
+ * "git log" and friends learned "--children" option.
+
+ * "git ls-remote" learned to respond to "-h"(elp) requests.
+
+ * "git merge" learned the "--edit" option to allow users to edit the
+   merge commit log message.
+
+ * "git rebase -i" can be told to use special purpose editor suitable
+   only for its insn sheet via sequence.editor configuration variable.
+
+ * "git send-email" learned to respond to "-h"(elp) requests.
+
+ * "git send-email" allows the value given to sendemail.aliasfile to begin
+   with "~/" to refer to the $HOME directory.
+
+ * "git send-email" forces use of Authen::SASL::Perl to work around
+   issues between Authen::SASL::Cyrus and AUTH PLAIN/LOGIN.
+
+ * "git stash" learned "--include-untracked" option to stash away
+   untracked/ignored cruft from the working tree.
+
+ * "git submodule clone" does not leak an error message to the UI
+   level unnecessarily anymore.
+
+ * "git submodule update" learned to honor "none" as the value for
+   submodule.<name>.update to specify that the named submodule should
+   not be checked out by default.
+
+ * When populating a new submodule directory with "git submodule init",
+   the $GIT_DIR metainformation directory for submodules is created inside
+   $GIT_DIR/modules/<name>/ directory of the superproject and referenced
+   via the gitfile mechanism. This is to make it possible to switch
+   between commits in the superproject that has and does not have the
+   submodule in the tree without re-cloning.
+
+ * "mediawiki" remote helper can interact with (surprise!) MediaWiki
+   with "git fetch" & "git push".
+
+ * "gitweb" leaked unescaped control characters from syntax hiliter
+   outputs.
+
+ * "gitweb" can be told to give custom string at the end of the HTML
+   HEAD element.
+
+ * "gitweb" now has its own manual pages.
+
+
+Also contains other documentation updates and minor code cleanups.
+
+
+Fixes since v1.7.7
+------------------
+
+Unless otherwise noted, all fixes in the 1.7.7.X maintenance track are
+included in this release.
+
+ * We used to drop error messages from libcurl on certain kinds of
+   errors.
+   (merge be22d92eac8 jn/maint-http-error-message later to maint).
+
+ * Error report from smart HTTP transport, when the connection was
+   broken in the middle of a transfer, showed a useless message on
+   a corrupt packet.
+   (merge 6cdf022 sp/smart-http-failure later to maint).
+
+ * HTTP transport did not use pushurl correctly, and also did not tell
+   what host it is trying to authenticate with when asking for
+   credentials.
+   (merge deba493 jk/http-auth later to maint).
+
+ * "git branch -m/-M" advertised to update RENAME_REF ref in the
+   commit log message that introduced the feature but not anywhere in
+   the documentation, and never did update such a ref anyway. This
+   undocumented misfeature that did not exist has been excised.
+   (merge b0eab01 jc/maint-remove-renamed-ref later to maint).
+
+ * Adding many refs to the local repository in one go (e.g. "git fetch"
+   that fetches many tags) and looking up a ref by name in a repository
+   with too many refs were unnecessarily slow.
+   (merge 17d68a54d jp/get-ref-dir-unsorted later to maint).
+
+ * "git fetch --prune" was unsafe when used with refspecs from the
+   command line.
+   (merge e8c1e6c cn/fetch-prune later to maint).
+
+ * Report from "git commit" on untracked files was confused under
+   core.ignorecase option.
+   (merge 2548183b jk/name-hash-dirent later to maint).
+
+ * The attribute mechanism did not use case insensitive match when
+   core.ignorecase was set.
+   (merge 6eba621 bc/attr-ignore-case later to maint).
+
+ * "git bisect" did not notice when it failed to update the working tree
+   to the next commit to be tested.
+   (merge 1acf11717 js/bisect-no-checkout later to maint).
+
+ * "git config --bool --get-regexp" failed to separate the variable name
+   and its value "true" when the variable is defined without "= true".
+   (merge 880e3cc mm/maint-config-explicit-bool-display later to maint).
+
+ * "git remote rename $a $b" were not careful to match the remote name
+   against $a (i.e. source side of the remote nickname).
+   (merge b52d00aed mz/remote-rename later to maint).
+
+ * "git diff --[num]stat" used to use the number of lines of context
+   different from the default, potentially giving different results from
+   "git diff | diffstat" and confusing the users.
+   (merge f01cae918 jc/maint-diffstat-numstat-context later to maint).
+
+ * "git merge" did not understand ":/<pattern>" as a way to name a commit.
+
+ * "git mergetool" learned to use its arguments as pathspec, not a path to
+   the file that may not even have any conflict.
+   (merge 6d9990a jm/mergetool-pathspec later to maint).
+
+ * "git pull" and "git rebase" did not work well even when GIT_WORK_TREE is
+   set correctly with GIT_DIR if the current directory is outside the working
+   tree.
+   (merge 035b5bf jk/pull-rebase-with-work-tree later to maint).
+
+ " "git push" on the receiving end used to call post-receive and post-update
+   hooks for attempted removal of non-existing refs.
+   (merge 160b81ed ph/push-to-delete-nothing later to maint).
+
+ * "git send-email" did not honor the configured hostname when restarting
+   the HELO/EHLO exchange after switching TLS on.
+   (merge 155b940 md/smtp-tls-hello-again later to maint).
+
+ * "gitweb" used to produce a non-working link while showing the contents
+   of a blob, when JavaScript actions are enabled.
+   (merge 2b07ff3ff ps/gitweb-js-with-lineno later to maint).
+
+ * The logic to filter out forked projects in the project list in
+   "gitweb" was broken for some time.
+   (merge 53c632f jm/maint-gitweb-filter-forks-fix later to maint).
+
+----------------------------------------------------------------
+
+Changes since v1.7.7 are as follows:
+
+Bert Wesarg (7):
+      grep: do not use --index in the short usage output
+      grep --no-index: don't use git standard exclusions
+      git-gui: search and linenumber input are mutual exclusive in the blame view
+      git-gui: only accept numbers in the goto-line input
+      git-gui: clear the goto line input when hiding
+      git-gui: incremental goto line in blame view
+      grep: fix the error message that mentions --exclude
+
+Brad King (3):
+      rev-list: Demonstrate breakage with --ancestry-path --all
+      submodule: Demonstrate known breakage during recursive merge
+      submodule: Search for merges only at end of recursive merge
+
+Brandon Casey (13):
+      t/t3905: use the name 'actual' for test output, swap arguments to test_cmp
+      git-stash.sh: fix typo in error message
+      t/t3905: add missing '&&' linkage
+      git-stash: remove untracked/ignored directories when stashed
+      attr.c: avoid inappropriate access to strbuf "buf" member
+      cleanup: use internal memory allocation wrapper functions everywhere
+      builtin/mv.c: plug miniscule memory leak
+      refs.c: ensure struct whose member may be passed to realloc is initialized
+      refs.c: abort ref search if ref array is empty
+      refs.c: free duplicate entries in the ref array instead of leaking them
+      attr.c: respect core.ignorecase when matching attribute patterns
+      strbuf.c: remove unnecessary strbuf_grow() from strbuf_getwholeline()
+      t/t3000-ls-files-others.sh: use $SHELL_PATH to run git-new-workdir script
+
+Carlos Mart√≠n Nieto (7):
+      Remove 'working copy' from the documentation and C code
+      fetch: free all the additional refspecs
+      t5510: add tests for fetch --prune
+      remote: separate out the remote_find_tracking logic into query_refspecs
+      fetch: honor the user-provided refspecs when pruning refs
+      fetch: treat --tags like refs/tags/*:refs/tags/* when pruning
+      Documentation: update [section.subsection] to reflect what git does
+
+Chris Packham (1):
+      git-web--browse: avoid the use of eval
+
+Christian Couder (1):
+      bisect: fix exiting when checkout failed in bisect_start()
+
+Christoffer Pettersson (1):
+      git-gui: Corrected a typo in the Swedish translation of 'Continue'
+
+Clemens Buchacher (5):
+      remove prefix argument from pathspec_prefix
+      rename pathspec_prefix() to common_prefix() and move to dir.[ch]
+      send-email: add option -h
+      use -h for synopsis and --help for manpage consistently
+      use test number as port number
+
+Cord Seele (3):
+      Add Git::config_path()
+      use new Git::config_path() for aliasesfile
+      send-email: Fix %config_path_settings handling
+
+Dan McGee (2):
+      tree-walk: drop unused parameter from match_dir_prefix
+      tree-walk: micro-optimization in tree_entry_interesting
+
+David Aguilar (1):
+      Makefile: Improve compiler header dependency check
+
+David Fries (2):
+      git-gui: Enable jumping to a specific line number in blame view.
+      git-gui: Add keyboard shortcuts for search and goto commands in blame view.
+
+Dmitry Ivankov (3):
+      Fix typo: existant->existent
+      fast-import: don't allow to tag empty branch
+      fast-import: don't allow to note on empty branch
+
+Drew Northup (1):
+      gitweb: Add gitweb.conf(5) manpage for gitweb configuration files
+
+Erik Faye-Lund (2):
+      enter_repo: do not modify input
+      mingw: avoid using strbuf in syslog
+
+Fredrik Gustafsson (2):
+      rev-parse: add option --resolve-git-dir <path>
+      Move git-dir for submodules
+
+Fredrik Kuivinen (1):
+      Makefile: Use computed header dependencies if the compiler supports it
+
+Fr√©d√©ric Heitzmann (1):
+      git svn dcommit: new option --interactive.
+
+Giuseppe Bilotta (1):
+      am: preliminary support for hg patches
+
+Haitao Li (1):
+      date.c: Support iso8601 timezone formats
+
+Heiko Voigt (4):
+      git-gui: warn when trying to commit on a detached head
+      submodule: move update configuration variable further up
+      add update 'none' flag to disable update of submodule by default
+      git-gui: deal with unknown files when pressing the "Stage Changed" button
+
+Hui Wang (1):
+      sha1_file: normalize alt_odb path before comparing and storing
+
+Ilari Liusvaara (1):
+      Support ERR in remote archive like in fetch/push
+
+Jakub Narebski (6):
+      gitweb: Strip non-printable characters from syntax highlighter output
+      gitweb: Add gitweb(1) manpage for gitweb itself
+      Documentation: Link to gitweb(1) and gitweb.conf(5) in other manpages
+      Documentation: Add gitweb config variables to git-config(1)
+      gitweb: Add gitweb manpages to 'gitweb' package in git.spec
+      Add simple test for Git::config_path() in t/t9700-perl-git.sh
+
+Jay Soffian (6):
+      Teach '--cached' option to check-attr
+      log --children
+      merge-one-file: fix "expr: non-numeric argument"
+      revert.c: defer writing CHERRY_PICK_HEAD till it is safe to do so
+      cherry-pick: do not give irrelevant advice when cherry-pick punted
+      Teach merge the '[-e|--edit]' option
+
+Jeff King (30):
+      url: decode buffers that are not NUL-terminated
+      improve httpd auth tests
+      remote-curl: don't retry auth failures with dumb protocol
+      http: retry authentication failures for all http requests
+      t7004: factor out gpg setup
+      t6300: add more body-parsing tests
+      for-each-ref: refactor subject and body placeholder parsing
+      for-each-ref: handle multiline subjects like --pretty
+      fetch: avoid quadratic loop checking for updated submodules
+      t3200: clean up checks for file existence
+      add sha1_array API docs
+      quote.h: fix bogus comment
+      refactor argv_array into generic code
+      quote: provide sq_dequote_to_argv_array
+      bisect: use argv_array API
+      checkout: use argv_array API
+      run_hook: use argv_array API
+      filter-branch: use require_clean_work_tree
+      fix phantom untracked files when core.ignorecase is set
+      t1300: put git invocations inside test function
+      t1300: test mixed-case variable retrieval
+      pull,rebase: handle GIT_WORK_TREE better
+      pack-objects: protect against disappearing packs
+      downgrade "packfile cannot be accessed" errors to warnings
+      daemon: give friendlier error messages to clients
+      http_init: accept separate URL parameter
+      contrib: add diff highlight script
+      tests: add missing executable bits
+      contrib: add git-jump script
+      completion: match ctags symbol names in grep patterns
+
+Jeremie Nikaes (1):
+      Add a remote helper to interact with mediawiki (fetch & push)
+
+Jim Meyering (2):
+      fix "git apply --index ..." not to deref NULL
+      make the sample pre-commit hook script reject names with newlines, too
+
+Johannes Schindelin (5):
+      Fix is_gitfile() for files too small or larger than PATH_MAX to be a gitfile
+      t1020: disable the pwd test on MinGW
+      t9001: do not fail only due to CR/LF issues
+      t9300: do not run --cat-blob-fd related tests on MinGW
+      git grep: be careful to use mutexes only when they are initialized
+
+Johannes Sixt (2):
+      t1402-check-ref-format: skip tests of refs beginning with slash on Windows
+      t1300: attempting to remove a non-existent .git/config is not an error
+
+Jonathan Nieder (7):
+      http: remove extra newline in error message
+      http: avoid empty error messages for some curl errors
+      ident: check /etc/mailname if email is unknown
+      Makefile: do not set setgid bit on directories on GNU/kFreeBSD
+      ident: do not retrieve default ident when unnecessary
+      Makefile: fix permissions of mergetools/ checked out with permissive umask
+      RelNotes/1.7.7.1: setgid bit patch is about fixing "git init" via Makefile setting
+
+Jonathon Mah (1):
+      mergetool: Use args as pathspec to unmerged files
+
+Julian Phillips (2):
+      Don't sort ref_list too early
+      refs: Use binary search to lookup refs faster
+
+Julien Muchembled (1):
+      gitweb: fix regression when filtering out forks
+
+Junio C Hamano (66):
+      rev-list: fix finish_object() call
+      revision.c: add show_object_with_name() helper function
+      revision.c: update show_object_with_name() without using malloc()
+      revision: keep track of the end-user input from the command line
+      revision: do not include sibling history in --ancestry-path output
+      rebase -i: notice and warn if "exec $cmd" modifies the index or the working tree
+      traverse_trees(): allow pruning with pathspec
+      unpack-trees: allow pruning with pathspec
+      diff-index: pass pathspec down to unpack-trees machinery
+      list-objects: pass callback data to show_objects()
+      rev-list --verify-object
+      fetch: verify we have everything we need before updating our ref
+      fetch.fsckobjects: verify downloaded objects
+      transfer.fsckobjects: unify fetch/receive.fsckobjects
+      test: fetch/receive with fsckobjects
+      consolidate pathspec_prefix and common_prefix
+      fetch: verify we have everything we need before updating our ref
+      check_everything_connected(): refactor to use an iterator
+      check_everything_connected(): libify
+      receive-pack: check connectivity before concluding "git push"
+      builtin/revert.c: make commit_list_append() static
+      refs.c: make create_cached_refs() static
+      fsck: do not abort upon finding an empty blob
+      send-pack: typofix error message
+      refactor run_receive_hook()
+      rename "match_refs()" to "match_push_refs()"
+      Allow git merge ":/<pattern>"
+      ls-remote: a lone "-h" is asking for help
+      Teach progress eye-candy to fetch_refs_from_bundle()
+      diff: teach --stat/--numstat to honor -U$num
+      t0003: remove extra whitespaces
+      mergetool: no longer need to save standard input
+      apply --whitespace=error: correctly report new blank lines at end
+      parse-options: deprecate OPT_BOOLEAN
+      archive.c: use OPT_BOOL()
+      checkout $tree $path: do not clobber local changes in $path not in $tree
+      url.c: simplify is_url()
+      diff: resurrect XDF_NEED_MINIMAL with --minimal
+      grep: teach --untracked and --exclude-standard options
+      Post 1.7.7 first wave
+      attr: read core.attributesfile from git_default_core_config
+      Update draft release notes to 1.7.8
+      branch -m/-M: remove undocumented RENAMED-REF
+      refs.c: move dwim_ref()/dwim_log() from sha1_name.c
+      Update draft release notes to 1.7.8
+      bundle: allowing to read from an unseekable fd
+      bundle: add parse_bundle_header() helper function
+      Update draft release notes to 1.7.8
+      t7800: avoid arithmetic expansion notation
+      Prepare for 1.7.7.1
+      Update draft release notes to 1.7.8
+      resolve_gitlink_packed_ref(): fix mismerge
+      Update draft release notes to 1.7.8
+      Makefile: ask "ls-files" to list source files if available
+      libperl-git: refactor Git::config_*
+      Update draft release notes to 1.7.8
+      resolve_ref(): expose REF_ISBROKEN flag
+      resolve_ref(): report breakage to the caller without warning
+      Almost ready for 1.7.7.1
+      Update draft release notes to 1.7.8
+      Git 1.7.7.1
+      builtin/grep: make lock/unlock into static inline functions
+      builtin/grep: simplify lock_and_read_sha1_file()
+      Update draft release notes to 1.7.8
+      Update draft release notes to 1.7.8
+      Git 1.7.8-rc0
+
+Luke Diamand (1):
+      git-p4: handle files with shell metacharacters
+
+L√©na√Øc Huard (1):
+      gitweb: provide a way to customize html headers
+
+Martin von Zweigbergk (4):
+      remote: write correct fetch spec when renaming remote 'remote'
+      remote: "rename o foo" should not rename ref "origin/bar"
+      remote rename: warn when refspec was not updated
+      remote: only update remote-tracking branch if updating refspec
+
+Matthew Daley (1):
+      send-email: Honour SMTP domain when using TLS
+
+Matthieu Moy (8):
+      rebase -i: clean error message for --continue after failed exec
+      git-remote-mediawiki: allow push to set MediaWiki metadata
+      git-remote-mediawiki: trivial fixes
+      git-remote-mediawiki: set 'basetimestamp' to let the wiki handle conflicts
+      git-remote-mediawiki: obey advice.pushNonFastForward
+      git-remote-mediawiki: allow a domain to be set for authentication
+      config: display key_delim for config --bool --get-regexp
+      git-remote-mediawiki: don't include HTTP login/password in author
+
+Michael Haggerty (37):
+      Extract a function clear_cached_refs()
+      Access reference caches only through new function get_cached_refs()
+      Change the signature of read_packed_refs()
+      Allocate cached_refs objects dynamically
+      Store the submodule name in struct cached_refs
+      Retain caches of submodule refs
+      notes_merge_commit(): do not pass temporary buffer to other function
+      get_sha1_hex(): do not read past a NUL character
+      t1402: add some more tests
+      git check-ref-format: add options --allow-onelevel and --refspec-pattern
+      Change bad_ref_char() to return a boolean value
+      Change check_ref_format() to take a flags argument
+      Refactor check_refname_format()
+      Do not allow ".lock" at the end of any refname component
+      Make collapse_slashes() allocate memory for its result
+      Inline function refname_format_print()
+      Change check_refname_format() to reject unnormalized refnames
+      resolve_ref(): explicitly fail if a symlink is not readable
+      resolve_ref(): use prefixcmp()
+      resolve_ref(): only follow a symlink that contains a valid, normalized refname
+      resolve_ref(): turn buffer into a proper string as soon as possible
+      resolve_ref(): extract a function get_packed_ref()
+      resolve_ref(): do not follow incorrectly-formatted symbolic refs
+      remote: use xstrdup() instead of strdup()
+      remote: avoid passing NULL to read_ref()
+      resolve_ref(): verify that the input refname has the right format
+      resolve_ref(): emit warnings for improperly-formatted references
+      resolve_ref(): also treat a too-long SHA1 as invalid
+      resolve_ref(): expand documentation
+      add_ref(): verify that the refname is formatted correctly
+      invalidate_ref_cache(): rename function from invalidate_cached_refs()
+      invalidate_ref_cache(): take the submodule as parameter
+      invalidate_ref_cache(): expose this function in the refs API
+      clear_ref_cache(): rename parameter
+      clear_ref_cache(): extract two new functions
+      write_ref_sha1(): only invalidate the loose ref cache
+      clear_ref_cache(): inline function
+
+Michael J Gruber (10):
+      t6040: test branch -vv
+      git-tag: introduce long forms for the options
+      git-branch: introduce missing long forms for the options
+      branch: introduce --list option
+      branch: allow pattern arguments
+      branch: -v does not automatically imply --list
+      unpack-trees: print "Aborting" to stderr
+      git-read-tree.txt: language and typography fixes
+      git-read-tree.txt: correct sparse-checkout and skip-worktree description
+      http: use hostname in credential description
+
+Michael Schubert (1):
+      patch-id.c: use strbuf instead of a fixed buffer
+
+Michael W. Olson (1):
+      git-svn: Allow certain refs to be ignored
+
+Micha≈Ç G√≥rny (1):
+      for-each-ref: add split message parts to %(contents:*).
+
+Nguy·ªÖn Th√°i Ng·ªçc Duy (12):
+      merge: keep stash[] a local variable
+      merge: use return value of resolve_ref() to determine if HEAD is invalid
+      merge: remove global variable head[]
+      Accept tags in HEAD or MERGE_HEAD
+      sparse checkout: show error messages when worktree shaping fails
+      Add explanation why we do not allow to sparse checkout to empty working tree
+      git-read-tree.txt: update sparse checkout examples
+      pack-protocol: document "ERR" line
+      daemon: return "access denied" if a service is not allowed
+      daemon: log errors if we could not use some sockets
+      t5403: convert leading spaces to tabs
+      Reindent closing bracket using tab instead of spaces
+
+Nicolas Morey-Chaisemartin (1):
+      grep: Fix race condition in delta_base_cache
+
+Pang Yan Han (1):
+      receive-pack: don't pass non-existent refs to post-{receive,update} hooks
+
+Pat Thoyts (6):
+      git-gui: updated translator README for current procedures.
+      Fix tooltip display with multiple monitors on windows.
+      git-gui: drop the 'n' and 'Shift-n' bindings from the last patch.
+      mergetools: use the correct tool for Beyond Compare 3 on Windows
+      mingw: ensure sockets are initialized before calling gethostname
+      t9901: fix line-ending dependency on windows
+
+Pete Wyckoff (5):
+      git-p4 tests: refactor and cleanup
+      git-p4: handle utf16 filetype properly
+      git-p4: recognize all p4 filetypes
+      git-p4: stop ignoring apple filetype
+      git-p4: keyword flattening fixes
+
+Peter Oberndorfer (1):
+      "rebase -i": support special-purpose editor to edit insn sheet
+
+Peter Stuge (1):
+      gitweb: Fix links to lines in blobs when javascript-actions are enabled
+
+Phil Hord (3):
+      Learn to handle gitfiles in enter_repo
+      Teach transport about the gitfile mechanism
+      Add test showing git-fetch groks gitfiles
+
+Ramkumar Ramachandra (18):
+      advice: Introduce error_resolve_conflict
+      config: Introduce functions to write non-standard file
+      revert: Simplify and inline add_message_to_msg
+      revert: Don't check lone argument in get_encoding
+      revert: Rename no_replay to record_origin
+      revert: Eliminate global "commit" variable
+      revert: Introduce struct to keep command-line options
+      revert: Separate cmdline parsing from functional code
+      revert: Don't create invalid replay_opts in parse_args
+      revert: Save data for continuing after conflict resolution
+      revert: Save command-line options for continuing operation
+      revert: Make pick_commits functionally act on a commit list
+      revert: Introduce --reset to remove sequencer state
+      reset: Make reset remove the sequencer state
+      revert: Remove sequencer state when no commits are pending
+      revert: Don't implicitly stomp pending sequencer operation
+      revert: Introduce --continue to continue the operation
+      revert: Propagate errors upwards from do_pick_commit
+
+Ramsay Allan Jones (6):
+      Makefile: Make dependency directory creation less noisy
+      sparse: Fix an "Using plain integer as NULL pointer" warning
+      obstack.c: Fix some sparse warnings
+      t9159-*.sh: skip for mergeinfo test for svn <= 1.4
+      Fix some "variable might be used uninitialized" warnings
+      gitweb/Makefile: Remove static/gitweb.js in the clean target
+
+Ren√© Scharfe (26):
+      Revert removal of multi-match discard heuristic in 27af01
+      parseopt: add OPT_NOOP_NOARG
+      revert: use OPT_NOOP_NOARG
+      apply: use OPT_NOOP_NOARG
+      checkout: check for "Previous HEAD" notice in t2020
+      revision: factor out add_pending_sha1
+      checkout: use add_pending_{object,sha1} in orphan check
+      revision: add leak_pending flag
+      bisect: use leak_pending flag
+      bundle: use leak_pending flag
+      checkout: use leak_pending flag
+      commit: factor out clear_commit_marks_for_object_array
+      test-ctype: macrofy
+      test-ctype: add test for is_pathspec_magic
+      name-rev: split usage string
+      pickaxe: plug diff filespec leak with empty needle
+      pickaxe: plug regex leak
+      pickaxe: plug regex/kws leak
+      pickaxe: factor out has_changes
+      pickaxe: pass diff_options to contains and has_changes
+      pickaxe: give diff_grep the same signature as has_changes
+      pickaxe: factor out pickaxe
+      xdiff: factor out get_func_line()
+      diff: add option to show whole functions as context
+      t1304: fall back to $USER if $LOGNAME is not defined
+      read-cache.c: fix index memory allocation
+
+Richard Hartmann (1):
+      clone: Quote user supplied path in a single quote pair
+
+SZEDER G√°bor (2):
+      completion: unite --reuse-message and --reedit-message for 'notes'
+      completion: unite --format and --pretty for 'log' and 'show'
+
+Sebastian Schuberth (2):
+      git-svn: On MSYS, escape and quote SVN_SSH also if set by the user
+      inet_ntop.c: Work around GCC 4.6's detection of uninitialized variables
+
+Shawn O. Pearce (1):
+      remote-curl: Fix warning after HTTP failure
+
+Sitaram Chamarty (1):
+      git-difftool: allow skipping file by typing 'n' at prompt
+
+Stefan Naewe (2):
+      Documentation/git-update-index: refer to 'ls-files'
+      completion: fix issue with process substitution not working on Git for Windows
+
+Tay Ray Chuan (3):
+      fetch: plug two leaks on error exit in store_updated_refs
+      submodule: whitespace fix
+      submodule::module_clone(): silence die() message from module_name()
+
+Teemu Matilainen (3):
+      completion: unite --reuse-message and --reedit-message handling
+      completion: commit --fixup and --squash
+      completion: push --set-upstream
+
+Thomas Rast (3):
+      Symlink mergetools scriptlets into valgrind wrappers
+      Documentation: basic configuration of notes.rewriteRef
+      t6019: avoid refname collision on case-insensitive systems
+
+Zbigniew Jƒôdrzejewski-Szmek (1):
+      send-email: auth plain/login fix
+
