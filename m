@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932892Ab1JaOgY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 10:36:24 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:15018 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755027Ab1JaOgW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 10:36:22 -0400
-Date: Mon, 31 Oct 2011 09:36:06 -0500
-From: scameron@beardog.cce.hp.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        mikem@beardog.cce.hp.com, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH 4/5] hpsa: fix potential array overflow in hpsa_update_scsi_devices
-Message-ID: <20111031143606.GQ6635@beardog.cce.hp.com>
-References: <20111026212006.15570.26229.stgit@beardog.cce.hp.com> <20111026212112.15570.72971.stgit@beardog.cce.hp.com> <1319969782.5215.23.camel@dabdike>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933184Ab1JaPDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:03:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933083Ab1JaPDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 11:03:22 -0400
+Date: Mon, 31 Oct 2011 17:03:43 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111031160342.GB2225@redhat.com>
+References: <20111029171554.GA16596@nomi.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1319969782.5215.23.camel@dabdike>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111029171554.GA16596@nomi.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 30, 2011 at 02:16:22PM +0400, James Bottomley wrote:
-> On Wed, 2011-10-26 at 16:21 -0500, Stephen M. Cameron wrote:
-> > From: Scott Teel <scott.teel@hp.com>
-> > 
-> > The currentsd[] array in hpsa_update_scsi_devices had room for
-> > 256 devices.  The code was iterating over however many physical
-> > and logical devices plus an additional number of possible external
-> > MSA2XXX controllers, which together could potentially exceed 256.
-> > 
-> > We increased the size of the currentsd array to 1024 + 1024 + 32 + 1
-> > elements to reflect a reasonable maximum possible number of devices
-> > which might be encountered.  We also don't just walk off the end
-> > of the array if the array controller reports more devices than we
-> > are prepared to handle, we just ignore the excessive devices.
-> > 
-> > Signed-off-by: Scott Teel <scott.teel@hp.com>
-> > Acked-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> 
-> This should be Signed-off-by not Acked-by.  The reason is that the
-> signoffs track whose hands the patch passes through.  If you send
-> Scott's patch to me, it must have your signoff.  If Scott sends the
-> patch directly to me and then you OK it on the list, then I'll add
-> Acked-by.  I've assumed your acquiescence to correcting this in my tree.
-> 
-> James
-> 
+On Sat, Oct 29, 2011 at 07:15:54PM +0200, Tomáš Janoušek wrote:
+> Is there anything I can do to track this down? Perhaps try some experimental
+> uCode or something?
 
-Thanks James.  
+You may try debugging patches I posted a while ago:
+http://marc.info/?l=linux-mm&m=131914560820378&w=2
+http://marc.info/?l=linux-mm&m=131914560820293&w=2
+http://marc.info/?l=linux-mm&m=131914560820317&w=2
 
-I don't often have patches from other people to forward, so I tend to
-forget how it's supposed to work.   I'll try to remember that for next time.
+With a bit of luck, kernel should panic and dump call-trace when
+bad code start to write at memory addresses where is not suppose
+to.
 
--- steve
+You have to compile kernel with CONFIG_DEBUG_PAGEALLOC and add
+corrupt_dbg=1 to catch memory corruption. However that may not
+work if you have small amount of memory.
 
+Also would be good to enable other debug options:
+
+CONFIG_DEBUG_OBJECTS=y
+CONFIG_DEBUG_OBJECTS_FREE=y
+CONFIG_DEBUG_OBJECTS_TIMERS=y
+CONFIG_DEBUG_OBJECTS_WORK=y
+CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
+CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+
+CONFIG_DEBUG_SG=y
+
+CONFIG_DEBUG_LIST=y
+
+Stanislaw
