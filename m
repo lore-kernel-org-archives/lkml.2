@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab1JaOTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 10:19:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23519 "EHLO mx1.redhat.com"
+	id S932373Ab1JaO1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 10:27:05 -0400
+Received: from mail96.atlas.de ([194.156.172.86]:14264 "EHLO mail96.atlas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711Ab1JaOTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 10:19:37 -0400
-From: Weiping Pan <wpan@redhat.com>
-To: netdev@vger.kernel.org
-Cc: fubar@us.ibm.com, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        Weiping Pan <wpan@redhat.com>
-Subject: [PATCH] bonding:update speed/duplex for NETDEV_CHANGE
-Date: Mon, 31 Oct 2011 22:19:41 +0800
-Message-Id: <e00468a2cbb8a25d7a89028e876769449454309f.1320070684.git.wpan@redhat.com>
-In-Reply-To: <4EAE0D9A.9060408@gmail.com>
-References: <4EAE0D9A.9060408@gmail.com>
+	id S1754831Ab1JaO1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 10:27:04 -0400
+X-Greylist: delayed 545 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 10:27:04 EDT
+Message-ID: <4EAEAE13.50101@atlas-elektronik.com>
+Date: Mon, 31 Oct 2011 15:17:55 +0100
+From: =?UTF-8?B?U3RlZmFuIE7DpHdl?= <stefan.naewe@atlas-elektronik.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Junio C Hamano <gitster@pobox.com>
+Cc: "git@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.8.rc0
+References: <7vfwi9rc0g.fsf@alter.siamese.dyndns.org>
+In-Reply-To: <7vfwi9rc0g.fsf@alter.siamese.dyndns.org>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zheng Liang(lzheng@redhat.com) found a bug that if we config bonding with
-arp monitor, sometimes bonding driver cannot get the speed and duplex from
-its slaves, it will assume them to be 100Mb/sec and Full, please see
-/proc/net/bonding/bond0.
-But there is no such problem when uses miimon.
+Am 31.10.2011 06:00, schrieb Junio C Hamano:
+> A release candidate Git 1.7.8.rc0 is available for testing.
+> 
+> [...]
+> 
+> 
+> Git v1.7.8 Release Notes (draft)
+> ================================
+> 
+> Updates since v1.7.7
+> --------------------
+> 
+> [...]
+> 
+>  * HTTP transport did not use pushurl correctly, and also did not tell
+>    what host it is trying to authenticate with when asking for
+>    credentials.
+>    (merge deba493 jk/http-auth later to maint).
 
-(Take igb for example)
-I find that the reason is that after dev_open() in bond_enslave(),
-bond_update_speed_duplex() will call igb_get_settings()
-, but in that function,
-it runs ethtool_cmd_speed_set(ecmd, -1); ecmd->duplex = -1;
-because igb get an error value of status.
-So even dev_open() is called, but the device is not really ready to get its
-settings.
+This seems to break pushing with https for me.
+It never uses values from my '~/.netrc'.
+I'll come up with a detailed scenario later.
 
-Maybe it is safe for us to call igb_get_settings() only after
-this message shows up, that is "igb: p4p1 NIC Link is Up 1000 Mbps Full Duplex,
-Flow Control: RX".
-
-So I prefer to update the speed and duplex for a slave when reseices
-NETDEV_CHANGE/NETDEV_UP event.
-
-Signed-off-by: Weiping Pan <wpan@redhat.com>
----
- drivers/net/bonding/bond_main.c |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index c34cc1e..f5458eb 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3220,6 +3220,7 @@ static int bond_slave_netdev_event(unsigned long event,
- {
- 	struct net_device *bond_dev = slave_dev->master;
- 	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave = NULL;
  
- 	switch (event) {
- 	case NETDEV_UNREGISTER:
-@@ -3230,20 +3231,16 @@ static int bond_slave_netdev_event(unsigned long event,
- 				bond_release(bond_dev, slave_dev);
- 		}
- 		break;
-+	case NETDEV_UP:
- 	case NETDEV_CHANGE:
--		if (bond->params.mode == BOND_MODE_8023AD || bond_is_lb(bond)) {
--			struct slave *slave;
--
--			slave = bond_get_slave_by_dev(bond, slave_dev);
--			if (slave) {
--				u32 old_speed = slave->speed;
--				u8  old_duplex = slave->duplex;
--
--				bond_update_speed_duplex(slave);
-+		slave = bond_get_slave_by_dev(bond, slave_dev);
-+		if (slave) {
-+			u32 old_speed = slave->speed;
-+			u8  old_duplex = slave->duplex;
- 
--				if (bond_is_lb(bond))
--					break;
-+			bond_update_speed_duplex(slave);
- 
-+			if (bond->params.mode == BOND_MODE_8023AD) {
- 				if (old_speed != slave->speed)
- 					bond_3ad_adapter_speed_changed(slave);
- 				if (old_duplex != slave->duplex)
+Stefan
 -- 
-1.7.4
-
+----------------------------------------------------------------
+/dev/random says: Justice is incidental to law and order.
+python -c "print '73746566616e2e6e616577654061746c61732d656c656b74726f6e696b2e636f6d'.decode('hex')"
