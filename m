@@ -1,164 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934506Ab1JaPkI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:40:08 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:22313 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933356Ab1JaPkG convert rfc822-to-8bit (ORCPT
+	id S934524Ab1JaPoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:44:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50761 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933392Ab1JaPop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:40:06 -0400
-MIME-Version: 1.0
-Message-ID: <424e9e3a-670d-4835-914f-83e99a11991a@default>
-Date: Mon, 31 Oct 2011 08:39:32 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
- <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
- <20111028163053.GC1319@redhat.com>
- <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
- <20138.62532.493295.522948@quad.stoffel.home>
- <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default
- 1320048767.8283.13.camel@dabdike>
-In-Reply-To: <1320048767.8283.13.camel@dabdike>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4EAEC13A.0051,ss=1,re=0.000,fgs=0
+	Mon, 31 Oct 2011 11:44:45 -0400
+X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=nDqYd8iKHsYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=D19gQVrFAAAA:8 a=8lJELL_dshy6mX-vN1EA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320075882.4793.4.camel@gandalf.stny.rr.com>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Date: Mon, 31 Oct 2011 11:44:42 -0400
+In-Reply-To: <20111031121951.GM6160@linux.vnet.ibm.com>
+References: <20111031082634.GA10348@localhost>
+	 <20111031095152.GL6160@linux.vnet.ibm.com>
+	 <20111031104325.GA25808@localhost> <20111031114142.GA32555@localhost>
+	 <20111031121951.GM6160@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-
-Hi James --
-
-Thanks for the reply.  You raise some good points but
-I hope you will read what I believe are reasonable though
-long-winded answers.
- 
-> On Fri, 2011-10-28 at 13:19 -0700, Dan Magenheimer wrote:
-> > For those who "hack on the VM", I can't imagine why the handful
-> > of lines in the swap subsystem, which is probably the most stable
-> > and barely touched subsystem in Linux or any OS on the planet,
-> > is going to be a burden or much of a cost.
+On Mon, 2011-10-31 at 05:19 -0700, Paul E. McKenney wrote:
+> On Mon, Oct 31, 2011 at 07:41:42PM +0800, Wu Fengguang wrote:
+> > On Mon, Oct 31, 2011 at 06:43:25PM +0800, Wu Fengguang wrote:
+> > > On Mon, Oct 31, 2011 at 05:51:52PM +0800, Paul E. McKenney wrote:
+> > > > On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
+> > > > > Hi Paul,
+> > > > >
+> > > > > I got two warnings in rcutree.c. The last working kernels are
+> > > > > linux-next 20111014 and linux v3.1.
+> > > > 
+> > > > Interesting.  Could you please enable RCU event tracing at boot?
+> > > 
+> > > Sorry I cannot...possibly due to another ftrace bug.
+> > > 
+> > > > The RCU event tracing is at tracing/events/rcu/enable relative to
+> > > > the debugfs mount point at runtime, if that helps.
+> > > 
+> > > It's exactly that linux next 20111025 (comparing to 20111014) no
+> > > longer produces all the trace events that made me looking into the
+> > > dmesg and find the warning from RCU (rather than the expected warning
+> > > from ftrace).
+> > > 
+> > > The trace output is now:
+> > > 
+> > >         # tracer: nop
+> > >         #
+> > >         # WARNING: FUNCTION TRACING IS CORRUPTED
+> > >         #          MAY BE MISSING FUNCTION EVENTS
+> > >         #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> > >         #              | |       |          |         |
+> > > (nothing more)
+> > 
+> > I checked the other test box and got the same warnings. Below is the
+> > full dmesg.
+> > 
+> > No single trace output again..
 > 
-> Saying things like this doesn't encourage anyone to trust you.  The
-> whole of the MM is a complex, highly interacting system.  The recent
-> issues we've had with kswapd and the shrinker code gives a nice
-> demonstration of this ... and that was caused by well tested code
-> updates.
+> Hmmm...  I wonder if it is too early during boot for tracing to work
+> correctly.
+> 
+> Gah!  I have rcu/next set ahead to commits that are not supposed to go
+> upstream yet.  I reset it back to match the stuff that is targeted for
+> the current merge window.  Still need to find the bug, of course.
+> 
+> Anyone have any idea why the kworker thread might be trying to enter
+> the idle loop?  The idle_cpu(smp_processor_id()) call believes that
+> this is not the idle task.  Or does x86 allow non-idle tasks to enter
+> the idle loop?  Or to be migrated off-CPU?
 
-I do understand that.  My point was that the hooks are
-placed _statically_ in largely stable code so it's not
-going to constantly get in the way of VM developers
-adding new features and fixing bugs, particularly
-any developers that don't care about whether frontswap
-works or not.  I do think that is a very relevant
-point about maintenance... do you disagree?
 
-Runtime interactions can only occur if the code is
-config'ed and, if config'ed, only if a tmem backend (e.g.
-Xen or zcache) enables it also at runtime.  When
-both are enabled, runtime interactions do occur
-and absolutely must be fully tested.  My point was
-that any _users_ who don't care about whether frontswap
-works or not don't need to have any concerns about
-VM system runtime interactions.  I think this is also
-a very relevant point about maintenance... do you
-disagree?
+It's not. Carsten Emde noticed what looked like a bug in ftrace last
+week at LinuxCon, and looking deeper at it, I found that the swapper
+task for all but CPU0 is named kworker.  That's because kworker creates
+the idle task for all other CPUs besides CPU 0 and the idle task takes
+on kworker name.
 
-> You can't hand wave away the need for benchmarks and
-> performance tests.
+Carsten posted a patch last week too:
 
-I'm not.  Conclusive benchmarks are available for one user
-(Xen) but not (yet) for other users.  I've already acknowledged
-the feedback desiring benchmarking for zcache, but zcache
-is already merged (albeit in  staging), and Xen tmem
-is already merged in both Linux and the Xen hypervisor,
-and cleancache (the alter ego of frontswap) is already
-merged.
+https://lkml.org/lkml/2011/10/26/313
 
-So the question is not whether benchmarks are waived,
-but whether one accepts (1) conclusive benchmarks for Xen;
-PLUS (2) insufficiently benchmarked zcache; PLUS (3) at
-least two other interesting-but-not-yet-benchmarkable users;
-as sufficient for adding this small set of hooks into
-swap code.
+I'm glad that this bug shows up outside of just ftrace :)
 
-I understand that some kernel developers (mostly from one
-company) continue to completely discount Xen, and
-thus won't even look at the Xen results.  IMHO
-that is mudslinging.
+-- Steve
 
-> You have also answered all questions about inactive cost by saying "the
-> code has zero cost when it's compiled out"  This also is a non starter.
-> For the few use cases it has, this code has to be compiled in.  I
-> suspect even Oracle isn't going to ship separate frontswap and
-> non-frontswap kernels in its distro.  So you have to quantify what the
-> performance impact is when this code is compiled in but not used.
-> Please do so.
 
-First, no, Oracle is not going to ship separate frontswap and
-non-frontswap kernels.  It IS going to ship a frontswap-enabled
-kernel and this can be seen in Oracle's publicly-available
-kernel git tree (the next release, now in Beta).  Frontswap is
-compiled in, but still must be enabled at runtime (e.g. for
-a Xen guest, either manually by the guest's administrator
-or automagically by the Oracle VM product's management layer).
 
-I did fully quantify the performance impact elsewhere in
-this thread.  The performance impact with CONFIG_FRONTSWAP=n
-(which is ZERO) is relevant for distros which choose to
-ignore it entirely.  The performance impact for CONFIG_FRONTSWAP=y
-but not-enabled-at-runtume is one compare-pointer-against-NULL
-per page actually swapped in or out (essentially ZERO);
-this is relevant for distros which choose to configure it
-enabled in case they wish to enable it at runtime in
-the future.
-
-So the remaining question is the performance impact when
-compile-time AND runtime enabled; this is in the published
-Xen presentation I've referenced -- the impact is much much
-less than the performance gain.  IMHO benchmark results can
-be easily manipulated so I prefer to discuss the theoretical
-underpinnings which, in short, is that just about anything
-a tmem backend does (hypercall, compression, deduplication,
-even moving data across a fast network) is a helluva lot
-faster than swapping a page to disk.
-
-Are there corner cases and probably even real workloads
-where the cost exceeds the benefits?  Probably... though
-less likely for frontswap than for cleancache because ONLY
-pages that would actually be swapped out/in use frontswap.
-
-But I have never suggested that every kernel should always
-unconditionally compile-time-enable and run-time-enable
-frontswap... simply that it should be in-tree so those
-who wish to enable it are able to enable it.
-
-Thanks,
-Dan
