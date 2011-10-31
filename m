@@ -1,86 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab1JaPip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:38:45 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:60672 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933175Ab1JaPin (ORCPT
+	id S934506Ab1JaPkI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:40:08 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:22313 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933356Ab1JaPkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:38:43 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: t-kristo@ti.com
-Cc: "Munegowda, Keshava" <keshava_mgowda@ti.com>,
-        Paul Walmsley <paul@pwsan.com>, "Cousson, Benoit" <b-cousson@ti.com>,
-        "Basak, Partha" <p-basak2@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
-        parthab@india.ti.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gadiyar, Anand" <gadiyar@ti.com>, sameo@linux.intel.com,
-        tony@atomide.com, "Hilman, Kevin" <khilman@ti.com>,
-        johnstul@us.ibm.com, "Sripathy, Vishwanath" <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 2/5 v11] arm: omap: usb: ehci and ohci hwmod structures for omap3
-In-Reply-To: Your message of "Fri, 28 Oct 2011 15:03:36 +0300."
-             <1319803416.12919.2.camel@sokoban>
-From: Valdis.Kletnieks@vt.edu
-References: <1316691479-1849-1-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-2-git-send-email-keshava_mgowda@ti.com> <1316691479-1849-3-git-send-email-keshava_mgowda@ti.com> <alpine.DEB.2.00.1109221115320.10719@utopia.booyaka.com> <CAP05o4+Zc2z6sBOX_rQeoDQ9PneypcLRCyBbaaB2m+ZjeXZnaw@mail.gmail.com> <alpine.DEB.2.00.1109240020510.22872@utopia.booyaka.com> <CAP05o4Lwk2uUz5ou84GQsrsBdjW-FEYP-55pBzH+a74hP4g1Dw@mail.gmail.com> <cbad72cea703d117067f7c628f7db806@mail.gmail.com> <1317127327.3820.31.camel@sokoban> <CAP05o4J75jGLTH8prOGD79Mte4DOg9ukgwe3V-KHFnB1Q-fi4w@mail.gmail.com> <CAP05o4K2EzAKDgC9EdfEURCfcM=M7TRJdBuAtRafL2RHg+qTag@mail.gmail.com> <1318505283.23199.4.camel@sokoban> <CAP05o4LUpo=H9_2sXswYzk_vkgyvm2F2qT3Pdo6cqSzMKMYi5A@mail.gmail.com>
-            <1319803416.12919.2.camel@sokoban>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1320075479_32791P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 31 Oct 2011 11:37:59 -0400
-Message-ID: <152227.1320075479@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4EAEC0DE.0141,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 31 Oct 2011 11:40:06 -0400
+MIME-Version: 1.0
+Message-ID: <424e9e3a-670d-4835-914f-83e99a11991a@default>
+Date: Mon, 31 Oct 2011 08:39:32 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+ <20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+ <20138.62532.493295.522948@quad.stoffel.home>
+ <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default
+ 1320048767.8283.13.camel@dabdike>
+In-Reply-To: <1320048767.8283.13.camel@dabdike>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4EAEC13A.0051,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1320075479_32791P
-Content-Type: text/plain; charset=us-ascii
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
 
-On Fri, 28 Oct 2011 15:03:36 +0300, Tero Kristo said:
-> Hi Again,
+Hi James --
 
-> I created a new version of the patch which should be better than this
-> hack, I'll send it as an RFC to the l-o list in a bit.
-> On Thu, 2011-10-13 at 13:49 +0200, Munegowda, Keshava wrote:
-> > On Thu, Oct 13, 2011 at 4:58 PM, Tero Kristo <t-kristo@ti.com> wrote:
-> > > On Thu, 2011-10-13 at 09:12 +0200, Munegowda, Keshava wrote:
-> > >> On Tue, Sep 27, 2011 at 6:48 PM, Munegowda, Keshava
-> > >> <keshava_mgowda@ti.com> wrote:
-> > >> > On Tue, Sep 27, 2011 at 6:12 PM, Tero Kristo <t-kristo@ti.com> wrote:
-> > >> >> On Tue, 2011-09-27 at 08:04 +0200, Basak, Partha wrote:
-> > >> >> Texas Instruments Oy, Tekniikantie 12, 02150 Espoo. Y-tunnus: 0115040-6. Kotipaikka: Helsinki
-> > > Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
-> Texas Instruments Oy, Porkkalankatu 22, 00180 Helsinki, Finland. Business ID: 0115040-6. Domicile: Helsinki
+Thanks for the reply.  You raise some good points but
+I hope you will read what I believe are reasonable though
+long-winded answers.
+ 
+> On Fri, 2011-10-28 at 13:19 -0700, Dan Magenheimer wrote:
+> > For those who "hack on the VM", I can't imagine why the handful
+> > of lines in the swap subsystem, which is probably the most stable
+> > and barely touched subsystem in Linux or any OS on the planet,
+> > is going to be a burden or much of a cost.
+> 
+> Saying things like this doesn't encourage anyone to trust you.  The
+> whole of the MM is a complex, highly interacting system.  The recent
+> issues we've had with kswapd and the shrinker code gives a nice
+> demonstration of this ... and that was caused by well tested code
+> updates.
 
-Moral: Just leave current street addresses out of it. :)
+I do understand that.  My point was that the hooks are
+placed _statically_ in largely stable code so it's not
+going to constantly get in the way of VM developers
+adding new features and fixing bugs, particularly
+any developers that don't care about whether frontswap
+works or not.  I do think that is a very relevant
+point about maintenance... do you disagree?
 
-And can we *please* trim irrelevant stuff?  You top-posted a 2 line reply,
-followed by the entire note, which a bunch of kernel developers got to scroll
-through and wonder if they missed an in-line comment. *Especially* after the
-top part had one line that it wasn't clear if it was a top-posted sig line gone
-wrong, or 3 attempts to get an address right for inclusion in a patch.
+Runtime interactions can only occur if the code is
+config'ed and, if config'ed, only if a tmem backend (e.g.
+Xen or zcache) enables it also at runtime.  When
+both are enabled, runtime interactions do occur
+and absolutely must be fully tested.  My point was
+that any _users_ who don't care about whether frontswap
+works or not don't need to have any concerns about
+VM system runtime interactions.  I think this is also
+a very relevant point about maintenance... do you
+disagree?
 
+> You can't hand wave away the need for benchmarks and
+> performance tests.
 
---==_Exmh_1320075479_32791P
-Content-Type: application/pgp-signature
+I'm not.  Conclusive benchmarks are available for one user
+(Xen) but not (yet) for other users.  I've already acknowledged
+the feedback desiring benchmarking for zcache, but zcache
+is already merged (albeit in  staging), and Xen tmem
+is already merged in both Linux and the Xen hypervisor,
+and cleancache (the alter ego of frontswap) is already
+merged.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+So the question is not whether benchmarks are waived,
+but whether one accepts (1) conclusive benchmarks for Xen;
+PLUS (2) insufficiently benchmarked zcache; PLUS (3) at
+least two other interesting-but-not-yet-benchmarkable users;
+as sufficient for adding this small set of hooks into
+swap code.
 
-iD8DBQFOrsDXcC3lWbTT17ARAjfaAKDcIcwP1SUqRa0i9EgwPlKai6OKXwCgiDvp
-Mp4qAd/UEGsFBldTRFKjxEM=
-=bLst
------END PGP SIGNATURE-----
+I understand that some kernel developers (mostly from one
+company) continue to completely discount Xen, and
+thus won't even look at the Xen results.  IMHO
+that is mudslinging.
 
---==_Exmh_1320075479_32791P--
+> You have also answered all questions about inactive cost by saying "the
+> code has zero cost when it's compiled out"  This also is a non starter.
+> For the few use cases it has, this code has to be compiled in.  I
+> suspect even Oracle isn't going to ship separate frontswap and
+> non-frontswap kernels in its distro.  So you have to quantify what the
+> performance impact is when this code is compiled in but not used.
+> Please do so.
 
+First, no, Oracle is not going to ship separate frontswap and
+non-frontswap kernels.  It IS going to ship a frontswap-enabled
+kernel and this can be seen in Oracle's publicly-available
+kernel git tree (the next release, now in Beta).  Frontswap is
+compiled in, but still must be enabled at runtime (e.g. for
+a Xen guest, either manually by the guest's administrator
+or automagically by the Oracle VM product's management layer).
+
+I did fully quantify the performance impact elsewhere in
+this thread.  The performance impact with CONFIG_FRONTSWAP=n
+(which is ZERO) is relevant for distros which choose to
+ignore it entirely.  The performance impact for CONFIG_FRONTSWAP=y
+but not-enabled-at-runtume is one compare-pointer-against-NULL
+per page actually swapped in or out (essentially ZERO);
+this is relevant for distros which choose to configure it
+enabled in case they wish to enable it at runtime in
+the future.
+
+So the remaining question is the performance impact when
+compile-time AND runtime enabled; this is in the published
+Xen presentation I've referenced -- the impact is much much
+less than the performance gain.  IMHO benchmark results can
+be easily manipulated so I prefer to discuss the theoretical
+underpinnings which, in short, is that just about anything
+a tmem backend does (hypercall, compression, deduplication,
+even moving data across a fast network) is a helluva lot
+faster than swapping a page to disk.
+
+Are there corner cases and probably even real workloads
+where the cost exceeds the benefits?  Probably... though
+less likely for frontswap than for cleancache because ONLY
+pages that would actually be swapped out/in use frontswap.
+
+But I have never suggested that every kernel should always
+unconditionally compile-time-enable and run-time-enable
+frontswap... simply that it should be in-tree so those
+who wish to enable it are able to enable it.
+
+Thanks,
+Dan
