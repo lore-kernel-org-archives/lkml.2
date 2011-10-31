@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933860Ab1JaSYz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 14:24:55 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:52713 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933659Ab1JaSYy (ORCPT
+	id S933876Ab1JaS2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 14:28:38 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:37696 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933659Ab1JaS2h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 14:24:54 -0400
-Date: Mon, 31 Oct 2011 11:24:37 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Chase Douglas <chase.douglas@canonical.com>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] Input: ALPS - Remove assumptions about packet size
-Message-ID: <20111031182437.GA10551@core.coreip.homeip.net>
-References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
- <1319663681-11244-5-git-send-email-seth.forshee@canonical.com>
- <4EAD6EF3.50109@canonical.com>
- <20111031181702.GB12205@thinkpad-t410>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031181702.GB12205@thinkpad-t410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 31 Oct 2011 14:28:37 -0400
+X-IronPort-AV: E=Sophos;i="4.69,433,1315206000"; 
+   d="scan'208";a="593935403"
+Subject: Re: [PATCH] nfs: Fix unused variable warning.
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        akpm@linux-foundation.org
+Date: Mon, 31 Oct 2011 14:28:36 -0400
+In-Reply-To: <CADZ9YHgR=WHzCfJf7_T_WjHJJHzOnWZsM2bWSACwLHEcHy+h-g@mail.gmail.com>
+References: <1319798192.26450.1.camel@localhost.localdomain>
+	 <1320074323.4714.2.camel@lade.trondhjem.org>
+	 <CADZ9YHhq91+Td03OjWbX0rwHwb6Y7QhicsuDqqAUSy2O8=05BA@mail.gmail.com>
+	 <1320083034.4714.24.camel@lade.trondhjem.org>
+	 <CADZ9YHgR=WHzCfJf7_T_WjHJJHzOnWZsM2bWSACwLHEcHy+h-g@mail.gmail.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1320085716.4714.52.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 31 Oct 2011 18:28:37.0057 (UTC) FILETIME=[E7A06B10:01CC97FA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 02:17:02PM -0400, Seth Forshee wrote:
-> On Sun, Oct 30, 2011 at 11:36:19AM -0400, Chase Douglas wrote:
-> > On 10/26/2011 05:14 PM, Seth Forshee wrote:
-> > > In preparation for version 4 protocol support, which has 8-byte
-> > > data packets, remove all hard-coded assumptions about packet size
-> > > and use psmouse->pktsize instead.
-> > > 
-> > > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> > > ---
-> > >  drivers/input/mouse/alps.c |   27 ++++++++++++++++++---------
-> > >  1 files changed, 18 insertions(+), 9 deletions(-)
-> > > 
-> > > diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-> > > index 572cb21..14d1f64 100644
-> > > --- a/drivers/input/mouse/alps.c
-> > > +++ b/drivers/input/mouse/alps.c
-> > > @@ -315,7 +315,7 @@ static void alps_flush_packet(unsigned long data)
-> > >  
-> > >  	serio_pause_rx(psmouse->ps2dev.serio);
-> > >  
-> > > -	if (psmouse->pktcnt == 6) {
-> > > +	if (psmouse->pktcnt == psmouse->pktsize) {
-> > >  
-> > >  		/*
-> > >  		 * We did not any more data in reasonable amount of time.
-> > > @@ -365,15 +365,15 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
-> > >  		return PSMOUSE_BAD_DATA;
-> > >  	}
-> > >  
-> > > -	/* Bytes 2 - 6 should have 0 in the highest bit */
-> > > -	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= 6 &&
-> > > +	/* Bytes 2 - pktsize should have 0 in the highest bit */
-> > > +	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
-> > >  	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
-> > >  		dbg("refusing packet[%i] = %x\n",
-> > >  		    psmouse->pktcnt - 1, psmouse->packet[psmouse->pktcnt - 1]);
-> > >  		return PSMOUSE_BAD_DATA;
-> > >  	}
-> > >  
-> > > -	if (psmouse->pktcnt == 6) {
-> > > +	if (psmouse->pktcnt == psmouse->pktsize) {
-> > >  		alps_process_packet(psmouse);
-> > >  		return PSMOUSE_FULL_PACKET;
-> > >  	}
-> > > @@ -531,8 +531,13 @@ static int alps_tap_mode(struct psmouse *psmouse, int enable)
-> > >  static int alps_poll(struct psmouse *psmouse)
-> > >  {
-> > >  	struct alps_data *priv = psmouse->private;
-> > > -	unsigned char buf[6];
-> > > +	unsigned char *buf;
-> > >  	bool poll_failed;
-> > > +	int ret = -1;
-> > > +
-> > > +	buf = kmalloc(psmouse->pktsize, GFP_KERNEL);
-> > > +	if (!buf)
-> > > +		return -1;
-> > 
-> > Can we preallocate a buffer somewhere instead of allocating every time
-> > we enter the function? If we know the maximum packet size we could
-> > allocate on the stack instead.
+On Tue, 2011-11-01 at 00:16 +0600, Rakib Mullick wrote: 
+> On Mon, Oct 31, 2011 at 11:43 PM, Trond Myklebust
+> <Trond.Myklebust@netapp.com> wrote:
+> > On Mon, 2011-10-31 at 23:12 +0600, Rakib Mullick wrote:
+> >> On Mon, Oct 31, 2011 at 9:18 PM, Trond Myklebust
+> >> <Trond.Myklebust@netapp.com> wrote:
+> >> > On Fri, 2011-10-28 at 16:36 +0600, Rakib Mullick wrote:
+> >> +                             data->inode->nfs_client->cl_hostname,
+> >                                 ^^^^^^^^^^^^
+> > NFS_SERVER(data->inode)->nfs_client....
 > 
-> Thanks for pointing that out; I had meant to come back and do something
-> about this but forgot. I was hoping to avoid having to hard-code an
-> assumed maximum packet size. I'll take a look at it.
+> Opss. Sorry, should've more careful, rather doing it quickly :(.
+> data->inode has nothing inside named nfs_client, but didn't even
+> complain. I'll resend it.
+> 
+> Anyway, I found the two following warning in nfs/file.c
+> 
+> fs/nfs/file.c: In function ‘nfs_file_release’:
+> fs/nfs/file.c:140:17: warning: unused variable ‘dentry’
+> fs/nfs/file.c: In function ‘nfs_file_read’:
+> fs/nfs/file.c:237:9: warning: unused variable ‘count’
+> 
+> I'm wanting to send one patch to cleanup all these unused variable
+> issues. Shall I? Or, should I send separate patches?
 
-probably doing something like
+Please send 2 patches: the stuff in fs/nfs/file.c looks as if it
+predates the linux-3.1 release, and so we might want to keep those fixes
+in a separate patch.
 
-	unsigned char buf[sizeof(psmouse->packet)];
-
-will cover it.
+Cheers
+  Trond
 
 -- 
-Dmitry
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
