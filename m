@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab1JaJXK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:23:10 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4523 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932260Ab1JaJXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:23:08 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Message-ID: <4EAE68ED.9070406@broadcom.com>
-Date: Mon, 31 Oct 2011 10:22:53 +0100
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23)
- Gecko/20110922 Thunderbird/3.1.15
+	id S932537Ab1JaJ20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:28:26 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:42784 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab1JaJ2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 05:28:25 -0400
+Date: Mon, 31 Oct 2011 10:28:12 +0100
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Gaudenz Steinlin <gaudenz@debian.org>, linux-kernel@vger.kernel.org,
+        Jameson Graef Rollins <jrollins@finestructure.net>,
+        Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+        Martin Pitt <martin.pitt@ubuntu.com>
+Subject: Re: [regression] CD-ROM polling blocks suspend on some machines
+	(Re: [PATCH 1/2] cdrom: always check_disk_change() on open)
+Message-ID: <20111031092812.GD14392@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Matthijs Kooijman <matthijs@stdin.nl>,
+	Tejun Heo <tj@kernel.org>, Gaudenz Steinlin <gaudenz@debian.org>,
+	linux-kernel@vger.kernel.org,
+	Jameson Graef Rollins <jrollins@finestructure.net>,
+	Jonathan Nieder <jrnieder@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+	Amit Shah <amit.shah@redhat.com>, David Zeuthen <zeuthen@gmail.com>,
+	Martin Pitt <martin.pitt@ubuntu.com>
+References: <20110904024244.GB3083@htj.dyndns.org> <87y5y37o7h.fsf@servo.factory.finestructure.net> <20110906174524.GN18425@mtj.dyndns.org> <20110907085037.GX10237@login.drsnuggles.stderr.nl> <20110911040826.GP29319@htj.dyndns.org> <87r5222l40.fsf@meteor.durcheinandertal.local.i-did-not-set--mail-host-address--so-tickle-me> <20111026182650.GL14392@login.drsnuggles.stderr.nl> <20111026222510.GK24261@google.com> <20111028134743.GU14392@login.drsnuggles.stderr.nl> <20111030203503.GB7696@google.com>
 MIME-Version: 1.0
-To: "David Herrmann" <dh.herrmann@googlemail.com>
-cc: "Dan Carpenter" <dan.carpenter@oracle.com>, "Julia Lawall" <julia@diku.dk>,
-        "Jiri Kosina" <jkosina@suse.cz>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] drivers/hid/hid-roccat.c: eliminate a null
- pointer dereference
-References: <1319846297-2985-3-git-send-email-julia@diku.dk>
- <20111029062412.GG14881@longonot.mountain>
- <4EABC937.60600@broadcom.com>
- <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
-In-Reply-To: <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-OpenPGP: id=B5E1A116
-X-WSS-ID: 62B0B5125IS24622932-01-01
-Content-Type: text/plain;
- charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GOwiEbRXzl4NAN9g"
+Content-Disposition: inline
+In-Reply-To: <20111030203503.GB7696@google.com>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/29/2011 12:53 PM, David Herrmann wrote:
-> On Sat, Oct 29, 2011 at 11:36 AM, Arend van Spriel <arend@broadcom.com> wrote:
->> On 10/29/2011 08:24 AM, Dan Carpenter wrote:
->>> On Sat, Oct 29, 2011 at 01:58:15AM +0200, Julia Lawall wrote:
->>>> diff --git a/drivers/hid/hid-roccat.c b/drivers/hid/hid-roccat.c
->>>> index 2596321..36a28b8 100644
->>>> --- a/drivers/hid/hid-roccat.c
->>>> +++ b/drivers/hid/hid-roccat.c
->>>> @@ -163,14 +163,15 @@ static int roccat_open(struct inode *inode, struct file *file)
->>>>
->>>>      device = devices[minor];
->>>>
->>>> -    mutex_lock(&device->readers_lock);
->>>> -
->>>>      if (!device) {
->>>>              pr_emerg("roccat device with minor %d doesn't exist\n", minor);
->>>> -            error = -ENODEV;
->>>> -            goto exit_err;
->>>> +            kfree(reader);
->>>> +            mutex_lock(&devices_lock);
->>>
->>> Typo.  mutex_unlock() instead of mutex_lock().
->>
->> This is no typo, but simply wrong. Remove the mutex_lock() as we are
->> leaving the function here in error flow.
-> 
-> No, this one is definitely needed. Its devices_lock, not
-> device->readers_lock! And devices_lock is locked before so we need to
-> unlock it if we return in this branch.
 
-You are right. I missed that. As usual Dan's eye is sharper ;-)
+--GOwiEbRXzl4NAN9g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Gr. AvS
+Hi Tejun,
 
+> The kworker submitted request but it got lost during queue destruction
+> and blk_execute_rq() hangs.  There have been a number of recent
+> changes in block devel tree to address this issue.  Can you please
+> test the following branch?
+>=20
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git block-ref
+I'm running this kernel now and the problem seems to have disappeared.
+I've done a dozen or so undocks and suspends, without any problems.
+Also, the "udisks-daemon" process in ps now says "not polling any
+devices" after undocking, where it would continue to say "polling sr0"
+before.
 
+I'll continue running this kernel for a while and inform you if the
+problem resurfaces.
+
+Any other tests I should be doing?
+
+Thanks,
+
+Matthijs
+
+--GOwiEbRXzl4NAN9g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAk6uaiwACgkQz0nQ5oovr7x0kACgiXQ0FN+gq4NceFVOyXYWdah7
+zD8Anj+ia9EkSBvAnLu4RYtXXsR2sqnH
+=g70g
+-----END PGP SIGNATURE-----
+
+--GOwiEbRXzl4NAN9g--
