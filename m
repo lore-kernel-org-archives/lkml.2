@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1JaFbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 01:31:14 -0400
-Received: from mga03.intel.com ([143.182.124.21]:65343 "EHLO mga03.intel.com"
+	id S1753289Ab1JaFvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 01:51:19 -0400
+Received: from ozlabs.org ([203.10.76.45]:45406 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752742Ab1JaFbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 01:31:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,429,1315206000"; 
-   d="scan'208";a="68685010"
-Subject: Re: Multi-partition block layer behaviour
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tiju Jacob <jacobtiju@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
-References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
-	 <CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
-	 <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
-	 <1319676161.22361.148.camel@sli10-conroe>
-	 <CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Oct 2011 13:39:24 +0800
-Message-ID: <1320039564.22361.178.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752676Ab1JaFvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 01:51:18 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Santosh Kumar <santoshkumar.a@gmail.com>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Tony Breeds <tony@bakeyournoodle.com>
+Subject: Re: powerpc 476, Little-endian, pte fault
+In-reply-to: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
+References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
+Comments: In-reply-to Santosh Kumar <santoshkumar.a@gmail.com>
+   message dated "Mon, 31 Oct 2011 11:00:14 +0530."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.3.1
+Date: Mon, 31 Oct 2011 16:51:16 +1100
+Message-ID: <12144.1320040276@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 12:35 +0800, Tiju Jacob wrote:
-> On Thu, Oct 27, 2011 at 6:12 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> > On Wed, 2011-10-26 at 18:10 +0800, Tiju Jacob wrote:
-> >> >> 1. When an I/O request is made to the filesystem, process 'A' acquires
-> >> >> a mutex FS lock and a mutex block driver lock.
-> >> >>
-> >> >> 2. Process 'B' tries to acquire the mutex FS lock, which is not
-> >> >> available. Hence, it goes to sleep. Due to the new plugging mechanism,
-> >> >> before going to sleep, shcedule() is invoked which disables preemption
-> >> >> and the context becomes atomic. In schedule(), the newly added
-> >> >> blk_flush_plug_list() is invoked which unplugs the block driver.
-> >> >>
-> >> >> 3) During unplug operation the block driver tries to acquire the mutex
-> >> >> lock which fails, because the lock was held by process 'A'. Previous
-> >> >> invocation of scheudle() in step 2 has already made the context as
-> >> >> atomic, hence the error "Schedule while atomic" occured.
-> >> > if blk_flush_plug_list() is called in schedule(), it will use
-> >> > blk_run_queue_async
-> >> > to unplug the queue. This runs in a workqueue. So how could this happen?
-> >> >
-> >>
-> >> The call stack goes as follows:
-> >>
-> >> From schedule() it calls blk_schedule_flush_plug()  and
-> >> blk_flush_plug_list() gets invoked.
-> >>
-> >> In blk_flush_plug_list() queue_unplugged() does not get invoked. Hence
-> >>  blk_run_queue_async is not called.
-> >> Instead __elv_add_request() is invoked with ELEVATOR_INSERT_SORT_MERGE
-> >> flag and the flag gets reassigned to ELEVATOR_INSERT_BACK.
-> >>
-> >> In ELEVATOR_INSERT_BACK, __blk_run_queue() gets invoked and calls request_fn().
-> 
-> > This doesn't make sense. why the flag is changed from
-> > ELEVATOR_INSERT_SORT_MERGE to ELEVATOR_INSERT_BACK?
-> 
-> In  __elv_add_request() "where" gets reassigned as follows:
-> 
-> 	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
-> 		    (where == ELEVATOR_INSERT_SORT ||
-> 		     where == ELEVATOR_INSERT_SORT_MERGE))
-> 		where = ELEVATOR_INSERT_BACK;
-> 
-ok, thanks. So this means the elevator is switching in the test. How
-about below patch:
+Adding linuxppc-dev list to the CC
 
-diff --git a/block/elevator.c b/block/elevator.c
-index a3b64bc..e14824a 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -683,8 +683,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- 		 * - Usually, back inserted requests won't be merged
- 		 *   with anything.  There's no point in delaying queue
- 		 *   processing.
-+		 * If elevator is switching, doesn't need run the queue.
-+		 * elevator switching will run it anyway. And this could
-+		 * cause warning since the code might run in atomic
-+		 * environment(blk_flush_plug_list() callbed in schedule())
- 		 */
--		__blk_run_queue(q);
-+		if (!test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags))
-+			__blk_run_queue(q);
- 		break;
- 
- 	case ELEVATOR_INSERT_SORT_MERGE:
+> KERNEL: linux 2.6.39.4
+> POWERPC: 476, little endian.
+> 
+> I am trying to get linux 2.6.39.4 up on PPC 476 i have done done
+> Big-endian to little endian Changes in:
 
+Can you explain what you are trying to do in more detail?  What does "i
+have done Big-endian to little endian Changes" mean?
+
+> 1) bitops header file.
+> 2) while reading the device tree.
+> 3) the PTE read/computed in head_32.S
+> 4) added E bit in the TLB entries.
+> 
+> with all the above changes the kernel_init is done but and inited is
+> mounted.
+
+Can you post your patch?
+
+Are you trying to boot the kernel in little endian or just run userspace
+in little endian?  
+
+> But while spawning init process the kernel continuously hits pte
+> faults at address 0x100000fc and never comes out. Please let me know
+> where i should be looking into.
+
+Is this the very first userspace instruction?
+
+Mikey
 
