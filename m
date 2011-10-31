@@ -1,104 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1JaUOu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 16:14:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37541 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab1JaUOt (ORCPT
+	id S934208Ab1JaUYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 16:24:46 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:33264 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755400Ab1JaUYo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 16:14:49 -0400
-Date: Mon, 31 Oct 2011 13:14:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: add free_hot_cold_page_list helper
-Message-Id: <20111031131448.c6d6d458.akpm@linux-foundation.org>
-In-Reply-To: <CAEwNFnBFNzrPoen-oM7DdB1QA5-cmUqAFABO7WxzZpiQacA7Fg@mail.gmail.com>
-References: <20110729075837.12274.58405.stgit@localhost6>
-	<CAEwNFnBFNzrPoen-oM7DdB1QA5-cmUqAFABO7WxzZpiQacA7Fg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Mon, 31 Oct 2011 16:24:44 -0400
+Date: Mon, 31 Oct 2011 13:24:37 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, linux-fbdev@vger.kernel.org,
+        linaro-dev@lists.linaro.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Archit Taneja <archit@ti.com>, Rob Clark <rob@ti.com>
+Subject: Re: Proposal for a low-level Linux display framework
+Message-ID: <20111031132437.23eae6b8@jbarnes-desktop>
+In-Reply-To: <20110917212529.6b452bf2@lxorguk.ukuu.org.uk>
+References: <1316088425.11294.78.camel@lappyti>
+	<yunboul7sx7.fsf@aiko.keithp.com>
+	<1316100594.23214.65.camel@deskari>
+	<yun8vpp7qk7.fsf@aiko.keithp.com>
+	<4E72320B.6020000@gmx.de>
+	<CADnq5_NnzLtJmSzOgyppnBtv96DRTJ71u6ZSrs56KJ-F5CC-mw@mail.gmail.com>
+	<4E724659.5080709@gmx.de>
+	<20110915195804.4e6d965b@lxorguk.ukuu.org.uk>
+	<CAMP44s1ywhCV+FaudnwjwJUvj5Cf3_oz1M++kjXxRDGQpJ6-0w@mail.gmail.com>
+	<CAF6AEGu2-O+2KuCrQPJ6-xejg8TCScrFVZSimgkAV_5Xs-bgkg@mail.gmail.com>
+	<4E74C6C3.2000704@gmx.de>
+	<CAPM=9twmPVrBPmUuEuTYHSzjDGHtfsmiVX6cozpAFYEaV-NcCg@mail.gmail.com>
+	<4E74E3D6.8080401@gmx.de>
+	<CAPM=9txHu7mzH8p8g=FmHsjvmAT-aMy-xEFj4odXEvnbs-bhMw@mail.gmail.com>
+	<20110917212529.6b452bf2@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/5KDHxCc=pf2uSdbbooXRJUj"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Aug 2011 16:48:46 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+--Sig_/5KDHxCc=pf2uSdbbooXRJUj
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> On Fri, Jul 29, 2011 at 4:58 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org> wrote:
-> > This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
-> > It frees pages directly from list without temporary page-vector.
-> > It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
-> >
-> > bloat-o-meter:
-> >
-> > add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
-> > function                                     old     new   delta
-> > free_hot_cold_page_list                        -     264    +264
-> > get_page_from_freelist                      2129    2132      +3
-> >  pagevec_free                               243     239      -4
-> > split_free_page                              380     373      -7
-> > release_pages                                606     510     -96
-> > free_page_list                               188       -    -188
-> >
-> > Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> > ---
-> >  include/linux/gfp.h |    1 +
-> >  mm/page_alloc.c     |   12 ++++++++++++
-> >  mm/swap.c           |   14 +++-----------
-> >  mm/vmscan.c         |   20 +-------------------
-> >  4 files changed, 17 insertions(+), 30 deletions(-)
-> >
-> > diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> > index cb40892..dd7b9cc 100644
-> > --- a/include/linux/gfp.h
-> > +++ b/include/linux/gfp.h
-> > @@ -358,6 +358,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
-> >  extern void  free_pages(struct page *page, unsigned int order);
-> >  extern void free_pages(unsigned long addr, unsigned int order);
-> >  extern void free_hot_cold_page(struct page *page, int cold);
-> > +extern void free_hot_cold_page_list(struct list_head *list, int cold);
-> >
-> >  #define  free_page(page)  free_pages((page), 0)
-> >  #define free_page(addr) free_pages((addr), 0)
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 1dbcf88..af486e4 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -1209,6 +1209,18 @@ out:
-> >        local_irq_restore(flags);
-> >  }
-> >
-> > +void free_hot_cold_page_list(struct list_head *list, int cold)
-> > +{
-> > +       struct page *page, *next;
-> > +
-> > +       list_for_each_entry_safe(page, next, list, lru) {
-> > +               trace_mm_pagevec_free(page, cold);
-> 
-> 
-> I understand you want to minimize changes without breaking current ABI
-> with trace tools.
-> But apparently, It's not a pagvec_free. It just hurts readability.
-> As I take a look at the code, mm_pagevec_free isn't related to pagevec
-> but I guess it can represent 0-order pages free because 0-order pages
-> are freed only by pagevec until now.
-> So, how about renaming it with mm_page_free or mm_page_free_zero_order?
-> If you do, you need to do s/MM_PAGEVEC_FREE/MM_FREE_FREE/g in
-> trace-pagealloc-postprocess.pl.
-> 
-> 
-> > +               free_hot_cold_page(page, cold);
-> > +       }
-> > +
-> > +       INIT_LIST_HEAD(list);
-> 
-> Why do we need it?
+On Sat, 17 Sep 2011 21:25:29 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-My email has been horrid for a couple of months (fixed now), so I might
-have missed any reply to Minchin's review comments?
+> > Just tell the X driver to not use acceleration, and it you won't get
+> > any acceleration used, then you get complete stability. If a driver
+> > writer wants to turn off all accel in the kernel driver, it can, its
+>=20
+> In fact one thing we actually need really is a "dumb" KMS X server to
+> replace the fbdev X server that unaccel stuff depends upon and which
+> can't do proper mode handling, multi-head or resizing as a result. A dumb
+> fb generic request for a back to front copy might also be useful for
+> shadowfb, or at least indicators so you know what the cache behaviour is
+> so the X server can pick the right policy.
+>=20
+> > We've fixed this in KMS, we don't pass direct mappings to userspace
+> > that we can't tear down and refault. We only provide objects via
+> > handles. The only place its a problem is where we expose fbdev legacy
+> > emulation, since we have to fix the pages.
+>=20
+> Which is doable. Horrible but doable. The usb framebuffer code has to
+> play games like this with the virtual framebuffer in order to track
+> changes by faulting.
+>=20
+> There are still some architectural screwups however. DRM continues the
+> fbdev worldview that outputs, memory and accelerators are tied together
+> in lumps we call video cards. That isn't really true for all cases and
+> with capture/overlay it gets even less true.
 
+Sorry for re-opening this ancient thread; I'm catching up from the past
+2 months of travel & misc.
+
+I definitely agree about the PC card centric architecture of DRM KMS
+(and before it, X).  But we have a path out of it now, and lots of
+interest from vendors and developers, so I don't think it's an
+insurmountable problem by any means.
+
+I definitely understand Florian's worries about DRM vs fb.  If nothing
+else, there's certainly a perception that fb is simpler and easier to
+get right.  But really, as others have pointed out, it's solving a
+different set of problems than the DRM layer.  The latter is actually
+trying to expose the features of contemporary hardware in a way that's
+as portable as possible.  That portability comes at a cost though: the
+APIs we add need to get lots of review, and there's no doubt we'll need
+to add more as newer, weirder hardware comes along.
+
+Really, I see no reason why fb and DRM can't continue to live side by
+side.  If a vendor really only needs the features provided by the fb
+layer, they're free to stick with a simple fb driver.  However, I
+expect most vendors making phones, tablets, notebooks, etc will need
+and want an architecture that looks a lot like the DRM layer, with
+authentication for rendering clients, an command submission ioctl for
+acceleration, and memory management, so I expect most of the driver
+growth to be in DRM in the near future.
+
+And I totally agree with Dave about having a kmscon.  I really wish
+someone would implement it so I could have my VTs spinning on a cube.
+
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/5KDHxCc=pf2uSdbbooXRJUj
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOrwQFAAoJEIEoDkX4Qk9h9gUP/1z1Cg073nOfPG8acxdk00jX
+wn30vGUwDutNIdi0et+flDOJQtaoiCtgTPDmZLykXmxLBuyl5VdHk5dg2LdEiQWB
+lpPQ5S1VM/Zd1N0AYI5H2TP+UwiXElW7e75F8y+18EZdVGuFAL5b98T+oUtoT4Xw
+iENJc5fKpyxWEnCdWIIr1SIB2hSSAdyiOvCC62jxMtC2PQg7FzYYi9DMoZO2//Qg
+pDnR/aJMnAR+nldK/t084gpWJHMKvVgIQjepu2b8qC+YEoTxEDuTHpBsAGwLEi3R
+p/vWstJ3H+ISvnHHEzme5b59e+RA+iCwgJJadoe8GtZ+6hYDx4wx5bxoUz381Ssf
+3+2PPjuXxOVMXgHHJysAccVhmgNzQMvidUTHI42s3DrI/lfxQblQAiMKPaLTvuc/
+eq0j9SRl4qz1tz3EvEUKXOxlsAGTxKlGyOHeFbrJTPFswvC1JCYcGjFUV10HFI3X
+4KBLFgNNGeOefC9tqkUXhrKW/XdN3uZEGbq9htlSlHjPoAsgbvEXvzY1VUZq1eLL
+EPFmlJ1XdMfUp9oUDK1YxkONz4Ve0io6eiskw8U9vK7WCZo9vWODfeQoObPIEyS1
+1gPiYuzRTxSPEj8jl4lTwBppdd1SHXdJ4OIiG8Tysjcs+ntB7Les3JtfAqZn6Re6
+F41UUvgeOZfHx2+vA7BU
+=nSsT
+-----END PGP SIGNATURE-----
+
+--Sig_/5KDHxCc=pf2uSdbbooXRJUj--
