@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab1JaJkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:40:05 -0400
-Received: from smtprelay0212.b.hostedemail.com ([64.98.42.212]:60160 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932359Ab1JaJkD (ORCPT
+	id S932742Ab1JaJpR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:45:17 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:53041 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932359Ab1JaJpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:40:03 -0400
-X-Panda: scanned!
-X-Spam-Summary: 2,-1.05263,0,7c8438a5d6fc5942,d41d8cd98f00b204,t.artem@lycos.com,hmh@hmh.eng.br:linux-kernel@vger.kernel.org,RULES_HIT:152:355:379:541:582:599:601:945:973:988:989:1152:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1540:1593:1594:1676:1711:1730:1747:1766:1792:2393:2553:2559:2562:2691:2692:3027:3138:3352:3865:3867:3868:3869:3870:3871:3873:3874:4250:5007:6261:7688:7901:7903:10004:10016:10400:11658:11914,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:none,DNSBL:none,Custom_rules:0:0:0
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 1843
-Date: Mon, 31 Oct 2011 09:40:01 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: hmh@hmh.eng.br
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <574299906.69412.1320054001912.JavaMail.mail@webmail05>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111030212644.GA7106@khazad-dum.debian.net>
- <815860869.50724.1320011477430.JavaMail.mail@webmail17>
- <20111031091607.GB7106@khazad-dum.debian.net>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
- as it should
+	Mon, 31 Oct 2011 05:45:16 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzz8275bhz32i2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+Message-ID: <4EAE6DDF.6010608@analog.com>
+Date: Mon, 31 Oct 2011 10:43:59 +0100
+From: Michael Hennerich <michael.hennerich@analog.com>
+Reply-To: <michael.hennerich@analog.com>
+Organization: Analog Devices Inc.
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH] mfd: adp5520: Ensure setting bits if new value is different
+ from the old value
+References: <1320030006.2690.8.camel@phoenix>
+In-Reply-To: <1320030006.2690.8.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.125.4]
+X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Oct 31, 2011, Henrique de Moraes Holschuh  wrote: 
-> 
-> On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
-> > > Please make sure both are set to 0.  If they were not 0 at the time you
-> > > ran your tests, please retest and report back.
-> > 
-> > That's 0 & 0 for me.
-> 
-> How idle is your system during the test?
+On 10/31/2011 04:00 AM, Axel Lin wrote:
+> Current code checks if all the bit_mask bits are all zero is wrong.
+> We need to write new value if the bit mask fields of new value is
+> not equal to old value.
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
 
-load average: 0.00, 0.00, 0.00
+Right - the da903x suffers the same problem.
 
-As I've mentioned great many times I run this test on a completely idle system
-(i.e. I even `init 3` in advance to avoid any unexpected CPU usage spikes
-caused by unrelated processed).
+> ---
+>   drivers/mfd/adp5520.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
+> index f1d8848..8d816cc 100644
+> --- a/drivers/mfd/adp5520.c
+> +++ b/drivers/mfd/adp5520.c
+> @@ -109,7 +109,7 @@ int adp5520_set_bits(struct device *dev, int reg, uint8_t bit_mask)
+>
+>   	ret = __adp5520_read(chip->client, reg,&reg_val);
+>
+> -	if (!ret&&  ((reg_val&  bit_mask) == 0)) {
+> +	if (!ret&&  ((reg_val&  bit_mask) != bit_mask)) {
+>   		reg_val |= bit_mask;
+>   		ret = __adp5520_write(chip->client, reg, reg_val);
+>   	}
 
-I have to insist that people conduct this test on their own without trusting my
-words. Probably there's something I overlook or don't fully understand but from
-what I see, there's a serious issue here (at least Microsoft XP and 7 work exactly
-the way I believe an OS should handle such a load).
 
-Artem
+-- 
+Greetings,
+Michael
+
+--
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368;
+Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin,
+Margaret Seif
+
+
