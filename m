@@ -1,69 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934629Ab1JaWhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 18:37:39 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:48778 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934573Ab1JaWhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 18:37:37 -0400
-Date: Mon, 31 Oct 2011 23:37:29 +0100
-From: Nico Schottelius <nico-linux-20111017@schottelius.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Keyboard and mouse issues on MacBook Air (4,2)
-Message-ID: <20111031223729.GB26627@ethz.ch>
-Mail-Followup-To: Nico Schottelius <nico-linux-20111017@schottelius.org>,
-	Jiri Kosina <jkosina@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-References: <20111017175906.GA3461@schottelius.org>
- <alpine.LRH.2.00.1110172015050.3869@twin.jikos.cz>
- <20111017214050.GA1408@schottelius.org>
- <20111019150122.GA6157@schottelius.org>
- <alpine.LNX.2.00.1110191702470.3541@pobox.suse.cz>
- <20111019210742.GA2432@schottelius.org>
- <20111022020205.GA26724@schottelius.org>
- <20111022102427.GB26724@schottelius.org>
- <alpine.LNX.2.00.1110281745290.3541@pobox.suse.cz>
+	id S934671Ab1JaWhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:37:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46745 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934573Ab1JaWhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 18:37:48 -0400
+Date: Mon, 31 Oct 2011 23:37:17 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Message-ID: <20111031223717.GI3466@redhat.com>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org>
+ <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
+ <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1110281745290.3541@pobox.suse.cz>
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.0-ARCH x86_64)
+In-Reply-To: <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Kosina [Fri, Oct 28, 2011 at 05:46:29PM +0200]:
-> On Sat, 22 Oct 2011, Nico Schottelius wrote:
-> 
-> > The missing bit to correct my previous patch: To which device IDs do the 
-> > devices named above match to? I.e. is USB_DEVICE_ID_APPLE_WELLSPRING6_* 
-> > the MacBook Air 4,2?
-> 
-> You need to check the USB IDs (lsusb will tell you) to see which quirk / 
-> translation table is getting used.
+On Mon, Oct 31, 2011 at 01:58:39PM -0700, Dan Magenheimer wrote:
+> Hmmm... not sure I understand this one.  It IS copy-based
+> so is not zerocopy; the page of data is actually moving out
 
-Alright, will prepare a better patch the next weeks (currently no access
-to a 4,2 air). So far I've found three different keyboard layouts on the
-Air:
+copy-based is my main problem, being synchronous is no big deal I
+agree.
 
-2,1 has all keys from F1-F12 mapped, same as 4,2
-3,1 has the quirk with missing F5 mapping
+I mean, I don't see why you have to make one copy before you start
+compressing and then you write to disk the output of the compression
+algorithm. To me it looks like this API forces on zcache one more copy
+than necessary.
 
-I've the usb ids for 2,1 and 4,2 right now and will try to get it
-from 3,1 as well.
+I can't see why this copy is necessary and why zcache isn't working on
+"struct page" on core kernel structures instead of moving the memory
+off to a memory object invisible to the core VM.
 
-If anyone with a MacBook Air 3,2 or 4,1 (or any other version not listed
-above) is reading this, can you send me an email with the output of
-lsusb (or the system profiler from macosx) and which multimedia keys are
-mapped to which F1-F12 keys?
+> TRUE.  Tell me again why a vmexit/vmenter per 4K page is
+> "impossible"?  Again you are assuming (1) the CPU had some
 
-Cheers,
+It's sure not impossible, it's just impossible we want it as it'd be
+too slow.
 
-Nico
+> real work to do instead and (2) that vmexit/vmenter is horribly
 
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
+Sure the CPU has another 1000 VM to schedule. This is like saying
+virtio-blk isn't needed on desktop virt becauase the desktop isn't
+doing much I/O. Absurd argument, there are another 1000 desktops doing
+I/O at the same time of course.
+
+> slow.  Even if vmexit/vmenter is thousands of cycles, it is still
+> orders of magnitude faster than a disk access.  And vmexit/vmenter
+
+I fully agree tmem is faster for Xen than no tmem. That's not the
+point, we don't need such an articulate hack hiding pages from the
+guest OS in order to share pagecache, our hypervisor is just a bit
+more powerful and has a function called file_read_actor that does what
+your tmem copy does...
+
+> is about the same order of magnitude as page copy, and much
+> faster than compression/decompression, both of which still
+> result in a nice win.
+
+Saying it's a small overhead, is not like saying it is _needed_. Why
+not add a udelay(1) in it too? Sure it won't be noticeable.
+
+> You are also assuming that frontswap puts/gets are highly
+> frequent.  By definition they are not, because they are
+> replacing single-page disk reads/writes due to swapping.
+
+They'll be as frequent as the highmem bounce buffers...
+
+> That said, the API/ABI is very extensible, so if it were
+> proven that batching was sufficiently valuable, it could
+> be added later... but I don't see it as a showstopper.
+> Really do you?
+
+That's fine with me... but like ->writepages it'll take ages for the
+fs to switch from writepage to writepages. Considering this is a new
+API I don't think it's unreasonable to ask at least it to handle
+immediately zerocopy behavior. So showing the userland mapping to the
+tmem layer so it can avoid the copy and read from the userland
+address. Xen will badly choke if ever tries to do that, but zcache
+should be ok with that.
+
+Now there may be algorithms where the page must be stable, but others
+will be perfectly fine even if the page is changing under the
+compression, and in that case the page won't be discarded and it'll be
+marked dirty again. So even if a wrong data goes on disk, we'll
+rewrite later. I see no reason why there has always to be a copy
+before starting any compression/encryption as long as the algorithm
+will not crash its input data isn't changing under it.
+
+The ideal API would be to send down page pointers (and handling
+compound pages too), not to copy. Maybe with a flag where you can also
+specify offsets so you can send down partial pages too down to a byte
+granularity. The "copy input data before anything else can happen"
+looks flawed to me. It is not flawed for Xen because Xen has no
+knowledge of the guest "struct page" but her I'm talking about the
+not-virt usages.
+
+> So, please, all the other parts necessary for tmem are
+> already in-tree, why all the resistance about frontswap?
+
+Well my comments are generic not specific to frontswap.
