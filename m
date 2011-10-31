@@ -1,233 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934853Ab1KAAVz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:21:55 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38593 "EHLO
+	id S1755826Ab1KAAWP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:22:15 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:1448 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934207Ab1KAARy (ORCPT
+	with ESMTP id S934038Ab1KAARw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:17:54 -0400
-Message-Id: <e97c6e$3uab0s@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459548"
+	Mon, 31 Oct 2011 20:17:52 -0400
+Message-Id: <e97c6e$3uab0r@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459547"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:47:33 -0500
-Subject: [PATCH v5 22/36] Hexagon: Add locking types and functions
+Date: Mon, 31 Oct 2011 18:46:34 -0500
+Subject: [PATCH v5 21/36] Hexagon: Add SMP support
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/hexagon/include/asm/spinlock.h       |  186 +++++++++++++++++++++++++++++
- arch/hexagon/include/asm/spinlock_types.h |   42 +++++++
- include/asm-generic/rwsem.h               |  132 ++++++++++++++++++++
- 3 files changed, 360 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/spinlock.h
- create mode 100644 arch/hexagon/include/asm/spinlock_types.h
- create mode 100644 include/asm-generic/rwsem.h
+ arch/hexagon/include/asm/smp.h |   44 +++++++
+ arch/hexagon/kernel/smp.c      |  276 ++++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/kernel/topology.c |   52 ++++++++
+ 3 files changed, 372 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/smp.h
+ create mode 100644 arch/hexagon/kernel/smp.c
+ create mode 100644 arch/hexagon/kernel/topology.c
 
-diff --git a/arch/hexagon/include/asm/spinlock.h b/arch/hexagon/include/asm/spinlock.h
+diff --git a/arch/hexagon/include/asm/smp.h b/arch/hexagon/include/asm/smp.h
 new file mode 100644
-index 0000000..168a920
+index 0000000..87c869a
 --- /dev/null
-+++ b/arch/hexagon/include/asm/spinlock.h
-@@ -0,0 +1,186 @@
++++ b/arch/hexagon/include/asm/smp.h
+@@ -0,0 +1,44 @@
 +/*
-+ * Spinlock support for the Hexagon architecture
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_SPINLOCK_H
-+#define _ASM_SPINLOCK_H
-+
-+#include <asm/irqflags.h>
-+
-+/*
-+ * This file is pulled in for SMP builds.
-+ * Really need to check all the barrier stuff for "true" SMP
-+ */
-+
-+/*
-+ * Read locks:
-+ * - load the lock value
-+ * - increment it
-+ * - if the lock value is still negative, go back and try again.
-+ * - unsuccessful store is unsuccessful.  Go back and try again.  Loser.
-+ * - successful store new lock value if positive -> lock acquired
-+ */
-+static inline void arch_read_lock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	{ P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+static inline void arch_read_unlock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	R6 = add(R6,#-1);\n"
-+		"	memw_locked(%0,P3) = R6\n"
-+		"	if !P3 jump 1b;\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+/*  I think this returns 0 on fail, 1 on success.  */
-+static inline int arch_read_trylock(arch_rwlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1);\n"
-+		"	{ %0 = #0; P3 = cmp.ge(R6,#0); R6 = add(R6,#1);}\n"
-+		"	{ if !P3 jump 1f; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	{ %0 = P3 }\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+}
-+
-+static inline int arch_read_can_lock(arch_rwlock_t *rwlock)
-+{
-+	return rwlock->lock == 0;
-+}
-+
-+static inline int arch_write_can_lock(arch_rwlock_t *rwlock)
-+{
-+	return rwlock->lock == 0;
-+}
-+
-+/*  Stuffs a -1 in the lock value?  */
-+static inline void arch_write_lock(arch_rwlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0)\n"
-+		"	{ P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+}
-+
-+
-+static inline int arch_write_trylock(arch_rwlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1)\n"
-+		"	{ %0 = #0; P3 = cmp.eq(R6,#0);  R6 = #-1;}\n"
-+		"	{ if !P3 jump 1f; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	%0 = P3;\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+
-+}
-+
-+static inline void arch_write_unlock(arch_rwlock_t *lock)
-+{
-+	smp_mb();
-+	lock->lock = 0;
-+}
-+
-+static inline void arch_spin_lock(arch_spinlock_t *lock)
-+{
-+	__asm__ __volatile__(
-+		"1:	R6 = memw_locked(%0);\n"
-+		"	P3 = cmp.eq(R6,#0);\n"
-+		"	{ if !P3 jump 1b; R6 = #1; }\n"
-+		"	memw_locked(%0,P3) = R6;\n"
-+		"	{ if !P3 jump 1b; }\n"
-+		:
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+
-+}
-+
-+static inline void arch_spin_unlock(arch_spinlock_t *lock)
-+{
-+	smp_mb();
-+	lock->lock = 0;
-+}
-+
-+static inline unsigned int arch_spin_trylock(arch_spinlock_t *lock)
-+{
-+	int temp;
-+	__asm__ __volatile__(
-+		"	R6 = memw_locked(%1);\n"
-+		"	P3 = cmp.eq(R6,#0);\n"
-+		"	{ if !P3 jump 1f; R6 = #1; %0 = #0; }\n"
-+		"	memw_locked(%1,P3) = R6;\n"
-+		"	%0 = P3;\n"
-+		"1:\n"
-+		: "=&r" (temp)
-+		: "r" (&lock->lock)
-+		: "memory", "r6", "p3"
-+	);
-+	return temp;
-+}
-+
-+/*
-+ * SMP spinlocks are intended to allow only a single CPU at the lock
-+ */
-+#define arch_spin_lock_flags(lock, flags) arch_spin_lock(lock)
-+#define arch_spin_unlock_wait(lock) \
-+	do {while (arch_spin_is_locked(lock)) cpu_relax(); } while (0)
-+#define arch_spin_is_locked(x) ((x)->lock != 0)
-+
-+#define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
-+#define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/spinlock_types.h b/arch/hexagon/include/asm/spinlock_types.h
-new file mode 100644
-index 0000000..5e937af
---- /dev/null
-+++ b/arch/hexagon/include/asm/spinlock_types.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Spinlock support for the Hexagon architecture
++ * SMP definitions for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -246,166 +56,370 @@ index 0000000..5e937af
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_SPINLOCK_TYPES_H
-+#define _ASM_SPINLOCK_TYPES_H
++#ifndef __ASM_SMP_H
++#define __ASM_SMP_H
 +
-+#include <linux/version.h>
++#include <linux/cpumask.h>
 +
-+#ifndef __LINUX_SPINLOCK_TYPES_H
-+# error "please don't include this file directly"
++#define raw_smp_processor_id() (current_thread_info()->cpu)
++
++enum ipi_message_type {
++	IPI_NOP = 0,
++	IPI_RESCHEDULE = 1,
++	IPI_CALL_FUNC,
++	IPI_CALL_FUNC_SINGLE,
++	IPI_CPU_STOP,
++	IPI_TIMER,
++};
++
++extern void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg);
++extern void smp_start_cpus(void);
++extern void arch_send_call_function_single_ipi(int cpu);
++extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
++
++extern void smp_vm_unmask_irq(void *info);
++
 +#endif
-+
-+typedef struct {
-+	volatile unsigned int lock;
-+} arch_spinlock_t;
-+
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+
-+typedef struct {
-+	volatile unsigned int lock;
-+} arch_rwlock_t;
-+
-+#define __ARCH_RW_LOCK_UNLOCKED		{ 0 }
-+
-+#endif
-diff --git a/include/asm-generic/rwsem.h b/include/asm-generic/rwsem.h
+diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
 new file mode 100644
-index 0000000..bb1e2cd
+index 0000000..c871a2c
 --- /dev/null
-+++ b/include/asm-generic/rwsem.h
-@@ -0,0 +1,132 @@
-+#ifndef _ASM_POWERPC_RWSEM_H
-+#define _ASM_POWERPC_RWSEM_H
-+
-+#ifndef _LINUX_RWSEM_H
-+#error "Please don't include <asm/rwsem.h> directly, use <linux/rwsem.h> instead."
-+#endif
-+
-+#ifdef __KERNEL__
-+
++++ b/arch/hexagon/kernel/smp.c
+@@ -0,0 +1,276 @@
 +/*
-+ * R/W semaphores for PPC using the stuff in lib/rwsem.c.
-+ * Adapted largely from include/asm-i386/rwsem.h
-+ * by Paul Mackerras <paulus@samba.org>.
++ * SMP support for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+/*
-+ * the semaphore definition
-+ */
-+#ifdef CONFIG_PPC64
-+# define RWSEM_ACTIVE_MASK		0xffffffffL
-+#else
-+# define RWSEM_ACTIVE_MASK		0x0000ffffL
-+#endif
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/module.h>
++#include <linux/percpu.h>
++#include <linux/sched.h>
++#include <linux/smp.h>
++#include <linux/spinlock.h>
 +
-+#define RWSEM_UNLOCKED_VALUE		0x00000000L
-+#define RWSEM_ACTIVE_BIAS		0x00000001L
-+#define RWSEM_WAITING_BIAS		(-RWSEM_ACTIVE_MASK-1)
-+#define RWSEM_ACTIVE_READ_BIAS		RWSEM_ACTIVE_BIAS
-+#define RWSEM_ACTIVE_WRITE_BIAS		(RWSEM_WAITING_BIAS + RWSEM_ACTIVE_BIAS)
++#include <asm/system.h>  /*  xchg  */
++#include <asm/time.h>    /*  timer_interrupt  */
++#include <asm/hexagon_vm.h>
++
++#define BASE_IPI_IRQ 26
 +
 +/*
-+ * lock for reading
++ * cpu_possible_map needs to be filled out prior to setup_per_cpu_areas
++ * (which is prior to any of our smp_prepare_cpu crap), in order to set
++ * up the...  per_cpu areas.
 + */
-+static inline void __down_read(struct rw_semaphore *sem)
++
++struct ipi_data {
++	unsigned long bits;
++};
++
++static DEFINE_PER_CPU(struct ipi_data, ipi_data);
++
++static inline void __handle_ipi(unsigned long *ops, struct ipi_data *ipi,
++				int cpu)
 +{
-+	if (unlikely(atomic_long_inc_return((atomic_long_t *)&sem->count) <= 0))
-+		rwsem_down_read_failed(sem);
++	unsigned long msg = 0;
++	do {
++		msg = find_next_bit(ops, BITS_PER_LONG, msg+1);
++
++		switch (msg) {
++
++		case IPI_TIMER:
++			ipi_timer();
++			break;
++
++		case IPI_CALL_FUNC:
++			generic_smp_call_function_interrupt();
++			break;
++
++		case IPI_CALL_FUNC_SINGLE:
++			generic_smp_call_function_single_interrupt();
++			break;
++
++		case IPI_CPU_STOP:
++			/*
++			 * call vmstop()
++			 */
++			__vmstop();
++			break;
++
++		case IPI_RESCHEDULE:
++			scheduler_ipi();
++			break;
++		}
++	} while (msg < BITS_PER_LONG);
 +}
 +
-+static inline int __down_read_trylock(struct rw_semaphore *sem)
++/*  Used for IPI call from other CPU's to unmask int  */
++void smp_vm_unmask_irq(void *info)
 +{
-+	long tmp;
++	__vmintop_locen((long) info);
++}
 +
-+	while ((tmp = sem->count) >= 0) {
-+		if (tmp == cmpxchg(&sem->count, tmp,
-+				   tmp + RWSEM_ACTIVE_READ_BIAS)) {
-+			return 1;
++
++/*
++ * This is based on Alpha's IPI stuff.
++ * Supposed to take (int, void*) as args now.
++ * Specifically, first arg is irq, second is the irq_desc.
++ */
++
++irqreturn_t handle_ipi(int irq, void *desc)
++{
++	int cpu = smp_processor_id();
++	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
++	unsigned long ops;
++
++	while ((ops = xchg(&ipi->bits, 0)) != 0)
++		__handle_ipi(&ops, ipi, cpu);
++	return IRQ_HANDLED;
++}
++
++void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
++{
++	unsigned long flags;
++	unsigned long cpu;
++	unsigned long retval;
++
++	local_irq_save(flags);
++
++	for_each_cpu(cpu, cpumask) {
++		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
++
++		set_bit(msg, &ipi->bits);
++		/*  Possible barrier here  */
++		retval = __vmintop_post(BASE_IPI_IRQ+cpu);
++
++		if (retval != 0) {
++			printk(KERN_ERR "interrupt %ld not configured?\n",
++				BASE_IPI_IRQ+cpu);
 +		}
 +	}
++
++	local_irq_restore(flags);
++}
++
++static struct irqaction ipi_intdesc = {
++	.handler = handle_ipi,
++	.flags = IRQF_TRIGGER_RISING,
++	.name = "ipi_handler"
++};
++
++void __init smp_prepare_boot_cpu(void)
++{
++}
++
++/*
++ * interrupts should already be disabled from the VM
++ * SP should already be correct; need to set THREADINFO_REG
++ * to point to current thread info
++ */
++
++void __cpuinit start_secondary(void)
++{
++	unsigned int cpu;
++	unsigned long thread_ptr;
++
++	/*  Calculate thread_info pointer from stack pointer  */
++	__asm__ __volatile__(
++		"%0 = SP;\n"
++		: "=r" (thread_ptr)
++	);
++
++	thread_ptr = thread_ptr & ~(THREAD_SIZE-1);
++
++	__asm__ __volatile__(
++		QUOTED_THREADINFO_REG " = %0;\n"
++		:
++		: "r" (thread_ptr)
++	);
++
++	/*  Set the memory struct  */
++	atomic_inc(&init_mm.mm_count);
++	current->active_mm = &init_mm;
++
++	cpu = smp_processor_id();
++
++	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
++
++	/*  Register the clock_event dummy  */
++	setup_percpu_clockdev();
++
++	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
++
++	set_cpu_online(cpu, true);
++	while (!cpumask_test_cpu(cpu, cpu_active_mask))
++		cpu_relax();
++	local_irq_enable();
++
++	cpu_idle();
++}
++
++
++/*
++ * called once for each present cpu
++ * apparently starts up the CPU and then
++ * maintains control until "cpu_online(cpu)" is set.
++ */
++
++int __cpuinit __cpu_up(unsigned int cpu)
++{
++	struct task_struct *idle;
++	struct thread_info *thread;
++	void *stack_start;
++
++	/*  Create new init task for the CPU  */
++	idle = fork_idle(cpu);
++	if (IS_ERR(idle))
++		panic(KERN_ERR "fork_idle failed\n");
++
++	thread = (struct thread_info *)idle->stack;
++	thread->cpu = cpu;
++
++	/*  Boot to the head.  */
++	stack_start =  ((void *) thread) + THREAD_SIZE;
++	__vmstart(start_secondary, stack_start);
++
++	while (!cpu_isset(cpu, cpu_online_map))
++		barrier();
++
 +	return 0;
 +}
 +
++void __init smp_cpus_done(unsigned int max_cpus)
++{
++}
++
++void __init smp_prepare_cpus(unsigned int max_cpus)
++{
++	int i;
++
++	/*
++	 * should eventually have some sort of machine
++	 * descriptor that has this stuff
++	 */
++
++	/*  Right now, let's just fake it. */
++	for (i = 0; i < max_cpus; i++)
++		cpu_set(i, cpu_present_map);
++
++	/*  Also need to register the interrupts for IPI  */
++	if (max_cpus > 1)
++		setup_irq(BASE_IPI_IRQ, &ipi_intdesc);
++}
++
++void smp_send_reschedule(int cpu)
++{
++	send_ipi(cpumask_of(cpu), IPI_RESCHEDULE);
++}
++
++void smp_send_stop(void)
++{
++	struct cpumask targets;
++	cpumask_copy(&targets, cpu_online_mask);
++	cpumask_clear_cpu(smp_processor_id(), &targets);
++	send_ipi(&targets, IPI_CPU_STOP);
++}
++
++void arch_send_call_function_single_ipi(int cpu)
++{
++	send_ipi(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
++}
++
++void arch_send_call_function_ipi_mask(const struct cpumask *mask)
++{
++	send_ipi(mask, IPI_CALL_FUNC);
++}
++
++int setup_profiling_timer(unsigned int multiplier)
++{
++	return -EINVAL;
++}
++
++void smp_start_cpus(void)
++{
++	int i;
++
++	for (i = 0; i < NR_CPUS; i++)
++		cpu_set(i, cpu_possible_map);
++}
+diff --git a/arch/hexagon/kernel/topology.c b/arch/hexagon/kernel/topology.c
+new file mode 100644
+index 0000000..ba44751
+--- /dev/null
++++ b/arch/hexagon/kernel/topology.c
+@@ -0,0 +1,52 @@
 +/*
-+ * lock for writing
++ * CPU topology for Hexagon
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
-+static inline void __down_write_nested(struct rw_semaphore *sem, int subclass)
-+{
-+	long tmp;
 +
-+	tmp = atomic_long_add_return(RWSEM_ACTIVE_WRITE_BIAS,
-+				     (atomic_long_t *)&sem->count);
-+	if (unlikely(tmp != RWSEM_ACTIVE_WRITE_BIAS))
-+		rwsem_down_write_failed(sem);
++#include <linux/cpu.h>
++#include <linux/cpumask.h>
++#include <linux/init.h>
++#include <linux/node.h>
++#include <linux/nodemask.h>
++#include <linux/percpu.h>
++
++/*  Swiped from MIPS.  */
++
++static DEFINE_PER_CPU(struct cpu, cpu_devices);
++
++static int __init topology_init(void)
++{
++	int i, ret;
++
++	for_each_present_cpu(i) {
++
++		/*
++		 * register_cpu takes a per_cpu pointer and
++		 * just points it at another per_cpu struct...
++		 */
++
++		ret = register_cpu(&per_cpu(cpu_devices, i), i);
++		if (ret)
++			printk(KERN_WARNING "topology_init: register_cpu %d "
++			       "failed (%d)\n", i, ret);
++	}
++
++	return 0;
 +}
 +
-+static inline void __down_write(struct rw_semaphore *sem)
-+{
-+	__down_write_nested(sem, 0);
-+}
-+
-+static inline int __down_write_trylock(struct rw_semaphore *sem)
-+{
-+	long tmp;
-+
-+	tmp = cmpxchg(&sem->count, RWSEM_UNLOCKED_VALUE,
-+		      RWSEM_ACTIVE_WRITE_BIAS);
-+	return tmp == RWSEM_UNLOCKED_VALUE;
-+}
-+
-+/*
-+ * unlock after reading
-+ */
-+static inline void __up_read(struct rw_semaphore *sem)
-+{
-+	long tmp;
-+
-+	tmp = atomic_long_dec_return((atomic_long_t *)&sem->count);
-+	if (unlikely(tmp < -1 && (tmp & RWSEM_ACTIVE_MASK) == 0))
-+		rwsem_wake(sem);
-+}
-+
-+/*
-+ * unlock after writing
-+ */
-+static inline void __up_write(struct rw_semaphore *sem)
-+{
-+	if (unlikely(atomic_long_sub_return(RWSEM_ACTIVE_WRITE_BIAS,
-+				 (atomic_long_t *)&sem->count) < 0))
-+		rwsem_wake(sem);
-+}
-+
-+/*
-+ * implement atomic add functionality
-+ */
-+static inline void rwsem_atomic_add(long delta, struct rw_semaphore *sem)
-+{
-+	atomic_long_add(delta, (atomic_long_t *)&sem->count);
-+}
-+
-+/*
-+ * downgrade write lock to read lock
-+ */
-+static inline void __downgrade_write(struct rw_semaphore *sem)
-+{
-+	long tmp;
-+
-+	tmp = atomic_long_add_return(-RWSEM_WAITING_BIAS,
-+				     (atomic_long_t *)&sem->count);
-+	if (tmp < 0)
-+		rwsem_downgrade_wake(sem);
-+}
-+
-+/*
-+ * implement exchange and add functionality
-+ */
-+static inline long rwsem_atomic_update(long delta, struct rw_semaphore *sem)
-+{
-+	return atomic_long_add_return(delta, (atomic_long_t *)&sem->count);
-+}
-+
-+#endif	/* __KERNEL__ */
-+#endif	/* _ASM_POWERPC_RWSEM_H */
++subsys_initcall(topology_init);
 -- 
 1.7.1
 
