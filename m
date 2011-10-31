@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934571Ab1JaP7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:59:51 -0400
-Received: from mailout08.t-online.de ([194.25.134.20]:33861 "EHLO
-	mailout08.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934538Ab1JaP7u (ORCPT
+	id S934576Ab1JaQCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 12:02:00 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:23761 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934538Ab1JaQB7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:59:50 -0400
-Message-ID: <4EAEC5EB.9030004@t-online.de>
-Date: Mon, 31 Oct 2011 16:59:39 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	Mon, 31 Oct 2011 12:01:59 -0400
+Date: Mon, 31 Oct 2011 12:01:45 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs: add block plug for .writepages
+Message-ID: <20111031160145.GD4468@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org
+References: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [BUG] kernel 3.1.0 possible circular locking dependency detected
-References: <4EAE5DE3.2020205@t-online.de> <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
-In-Reply-To: <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ID: S3MzD4ZrohN8iFR-QLMTJLFBa0dDS5Qf+uKC8uu6Gc3NkjxZs3OToqkdzEadu5ZQ70
-X-TOI-MSGID: b0c7f1ba-5e4f-4d70-b49f-aa5c921b58e0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EAEC675.01E6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.10.2011 16:08, schrieb Linus Torvalds:
-> [ Added a few more people to the cc ]
->
-> On Mon, Oct 31, 2011 at 1:35 AM, Knut Petersen
-> <Knut_Petersen@t-online.de>  wrote:
->> After a " rm -r /verybigdir" (about 12G on a 25G reiserfs 3.6partition)
->> I found the following report about a circular locking dependency in
->> kernel 3.1.0
-> Heh. There is even a comment about the ordering violation:
->
-> /* We use I_MUTEX_CHILD here to silence lockdep. It's safe because xattr
->   * mutation ops aren't called during rename or splace, which are the
->   * only other users of I_MUTEX_CHILD. It violates the ordering, but that's
->   * better than allocating another subclass just for this code. */
->
-> and apparently the comment is wrong: we *do* end up looking up xattrs
-> during splice, due to the security_inode_need_killpriv() thing.
->
-> So I think this needs a suid (or sgid) file that has xattrs and is removed.
+On Tue, Nov 01, 2011 at 12:45:07AM +0900, Namjae Jeon wrote:
+> Add block plug for btrfs .writepages. Block plug is helpful to reduce block lock contention.
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  fs/btrfs/extent_io.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+> index d418164..8f2d6bd 100644
+> --- a/fs/btrfs/extent_io.c
+> +++ b/fs/btrfs/extent_io.c
+> @@ -2388,6 +2388,7 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+>  	pgoff_t end;		/* Inclusive */
+>  	int scanned = 0;
+>  	int tag;
+> +	struct blk_plug plug;
+>  
+>  	pagevec_init(&pvec, 0);
+>  	if (wbc->range_cyclic) {
+> @@ -2405,6 +2406,8 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+>  retry:
+>  	if (wbc->sync_mode == WB_SYNC_ALL)
+>  		tag_pages_for_writeback(mapping, index, end);
+> +
+> +	blk_start_plug(&plug);
+>  	while (!done && !nr_to_write_done && (index <= end) &&
+>  	       (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
+>  			min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1))) {
+> @@ -2468,6 +2471,7 @@ retry:
+>  		pagevec_release(&pvec);
+>  		cond_resched();
+>  	}
+> +	blk_finish_plug(&plug);
+>  	if (!scanned && !done) {
+>  		/*
+>  		 * We hit the last page and there is more work to be done: wrap
 
-Well, after rm -r  /some_small_dir_with_suid_and_sgid_files
-there was no warning in dmesg.
+Thanks for the patch, but we actually do this at a lower level in btrfs.
+The actual IO can be done to multiple block devices, so we try to plug
+for each device individually.
 
-I restored a copy of /verybigdir and searched for sgid/suid files with
-find /test -type f -perm +6000 -exec ls -l {} \;
-
-Result: not a singe suid/sgid file in /verybigdir
-
-But  rm -r /verybigdir triggered the warning again ...
-
-knut
-
-> That said, I suspect this is a false positive, because the actual
-> unlink can never happen while somebody is splicing to/from the same
-> file at the same time (because then the iput wouldn't be the last one
-> for the inode, and the file removal would be delayed until the file
-> has been closed for the last time).
->
-> But the hacky use of "I_MUTEX_CHILD" is basically not the proper way
-> to silence the lockdep splat.
->
-> Anybody?
->
->                    Linus
->
+-chris
 
