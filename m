@@ -1,143 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934455Ab1JaMeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 08:34:25 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:48224 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934434Ab1JaMeY (ORCPT
+	id S934460Ab1JaMhx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 08:37:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49541 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934434Ab1JaMhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 08:34:24 -0400
-Message-ID: <1320064459.2796.26.camel@br98xy6r>
-Subject: [PATCH v2] kdump: Fix crash_kexec - smp_send_stop race in panic
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Cc: heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
-        Vivek Goyal <vgoyal@redhat.com>
-Date: Mon, 31 Oct 2011 13:34:19 +0100
-In-Reply-To: <20111031033948.a0edb7f3.akpm@linux-foundation.org>
-References: <1319639649.3321.11.camel@br98xy6r>
-	 <20111028161143.e5ebf617.akpm@linux-foundation.org>
-	 <1320055036.2796.8.camel@br98xy6r>
-	 <20111031033948.a0edb7f3.akpm@linux-foundation.org>
-Organization: IBM
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 31 Oct 2011 08:37:52 -0400
+Date: Mon, 31 Oct 2011 12:37:50 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 2/2] ASoC: wm8711: Add proper mask for wm8711_set_dai_fmt
+Message-ID: <20111031123749.GA10217@opensource.wolfsonmicro.com>
+References: <1319771281.3944.1.camel@phoenix>
+ <1319771527.3944.4.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319771527.3944.4.camel@phoenix>
+X-Cookie: Beware the one behind you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew, hello linux-arch,
+On Fri, Oct 28, 2011 at 11:12:07AM +0800, Axel Lin wrote:
+> Add mask for BIT[3:2] (the Input Audio Data Bit Length Select)
+> of WM8711_IFACE(07h) register.
+> Otherwise, BIT[3:2] will be always set to 0b00 here.
 
-On Mon, 2011-10-31 at 03:39 -0700, Andrew Morton wrote:
-> On Mon, 31 Oct 2011 10:57:16 +0100 Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
-> 
-> > > Should this be done earlier in the function?  As it stands we'll have
-> > > multiple CPUs scribbling on buf[] at the same time and all trying to
-> > > print the same thing at the same time, dumping their stacks, etc. 
-> > > Perhaps it would be better to single-thread all that stuff
-> > 
-> > My fist patch took the spinlock at the beginning of panic(). But then
-> > Eric asked, if it wouldn't be better to get both panic printk's and I
-> > agreed.
-> 
-> Hm, why?  It will make a big mess.
+Your changelog here isn't terribly clear and doesn't really correspond
+to the change well.  Here you say you're masking something but...
 
-@Andrew:
+> -	u16 iface = 0;
+> +	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0x000c;
 
-I thought it would be good to have both messages and it would be good to
-change the panic behavior as less as possible...
-
-But ok, I have no problem with getting the lock at the beginning of
-panic(). Below, I attached the updated patch.
-
-> > > Also...  this patch affects all CPU architectures, all configs, etc. 
-> > > So we're expecting that every architecture's smp_send_stop() is able to
-> > > stop a CPU which is spinning in spin_lock(), possibly with local
-> > > interrupts disabled.  Will this work?
-> > 
-> > At least on s390 it will work. If there are architectures that can't
-> > stop disabled CPUs then this problem is already there without this
-> > patch.
-> > 
-> > Example:
-> > 
-> > 1. 1st CPU gets lock X and panics
-> > 2. 2nd CPU is disabled and gets lock X
-> 
-> (irq-disabled)
-> 
-> > 3. 1st CPU calls smp_send_stop()
-> >    -> 2nd CPU loops disabled and can't be stopped
-> 
-> Well OK.  Maybe some architectures do have this problem - who would
-> notice?  If that is the case, we just made the failure cases much more
-> common.  Could you check, please?
-
-@linux-arch: 
-
-This patch introduces a spinlock to prevent parallel execution of the
-panic code. Andrew pointed out that this might be a problem for
-architectures that can't do smp_send_stop() on remote CPUs that have
-interrupts disabled. When irq-disabled CPUs execute panic() in parallel,
-we then would have looping CPUs.
-
-So please speak up if somebody has a problem with this patch!
-
-Michael
----
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Subject: kdump: fix crash_kexec()/smp_send_stop() race in panic
-
-When two CPUs call panic at the same time there is a possible race
-condition that can stop kdump.  The first CPU calls crash_kexec() and the
-second CPU calls smp_send_stop() in panic() before crash_kexec() finished
-on the first CPU.  So the second CPU stops the first CPU and therefore
-kdump fails:
-
-1st CPU:
-panic()->crash_kexec()->mutex_trylock(&kexec_mutex)-> do kdump
-
-2nd CPU:
-panic()->crash_kexec()->kexec_mutex already held by 1st CPU
-       ->smp_send_stop()-> stop 1st CPU (stop kdump)
-
-This patch fixes the problem by introducing a spinlock in panic that
-allows only one CPU to process crash_kexec() and the subsequent panic
-code.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
----
- kernel/panic.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -59,6 +59,7 @@ EXPORT_SYMBOL(panic_blink);
-  */
- NORET_TYPE void panic(const char * fmt, ...)
- {
-+	static DEFINE_SPINLOCK(panic_lock);
- 	static char buf[1024];
- 	va_list args;
- 	long i, i_next = 0;
-@@ -68,8 +69,12 @@ NORET_TYPE void panic(const char * fmt,
- 	 * It's possible to come here directly from a panic-assertion and
- 	 * not have preempt disabled. Some functions called from here want
- 	 * preempt to be disabled. No point enabling it later though...
-+	 *
-+	 * Only one CPU is allowed to execute the panic code from here. For
-+	 * multiple parallel invocations of panic all other CPUs will wait on
-+	 * the panic_lock. They are stopped afterwards by smp_send_stop().
- 	 */
--	preempt_disable();
-+	spin_lock_irq(&panic_lock);
- 
- 	console_verbose();
- 	bust_spinlocks(1);
-
-
+...what you're actually doing is preserving the existing values of some
+register bits.  Nevertheless the change looks good so applied.
