@@ -1,77 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933815Ab1JaSWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 14:22:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49172 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933655Ab1JaSWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 14:22:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=aRNb+LsTlxLRBEZq6epukQig/PF7S3ae/BXXrYSlYiVWih+6niA4im4VPuLyQFqK6
-	ZmwrlwXrj+NY+kUD5RQZQ==
-Date: Mon, 31 Oct 2011 11:22:42 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Frantisek Hrbata <fhrbata@redhat.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        stable@kernel.org, eteo@redhat.com, pmatouse@redhat.com
-Subject: Re: [PATCH v2] oom: fix integer overflow of points in oom_badness
-In-Reply-To: <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
-Message-ID: <alpine.DEB.2.00.1110311120280.7271@chino.kir.corp.google.com>
-References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com> <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S933849Ab1JaSYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 14:24:00 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33217 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933655Ab1JaSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 14:23:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=AGV89KeEbTkMf/FVW8HITBJSoxmGLa2V
+	Mlh+ogcFQJ77YiFbqDUfLEuEhYxM6IjNpeS43Pp/1WXqqbhfLYUQukgC2kVzHDZP
+	ThJ7veNoG3CcLJGuB+3mSzp2YEQptj+Y63Yil6MGJKuGFQIRYDWwyvMlWX0wnNc8
+	ns44jDo/908=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+References: <20111026202235.GA20928@havoc.gtf.org>
+ <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike>
+ <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+Date: Mon, 31 Oct 2011 11:23:55 -0700
+In-Reply-To: <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> (Linus
+ Torvalds's message of "Mon, 31 Oct 2011 08:53:59 -0700")
+Message-ID: <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 7ECE85F4-03ED-11E1-88EE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Oct 2011, Frantisek Hrbata wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> An integer overflow will happen on 64bit archs if task's sum of rss, swapents
-> and nr_ptes exceeds (2^31)/1000 value. This was introduced by commit
-> 
-> f755a04 oom: use pte pages in OOM score
-> 
+> For the people who use "git request-pull", I'm attaching a trivial
+> patch to make it add this kind of signature if you give it the "-s"
+> flag. It basically just adds a hunk like the appended crazy example to
+> the pull request, and it's small enough and simple enough that it
+> makes verification simple too with just the above kind of trivial
+> cut-and-paste thing.
+>
+> (Junio cc'd, I think he had something more complicated in mind)
 
-This commit was introduced in 2.6.39 but also backported to stable since 
-2.6.36, so presumably we'd need to mark this for stable as well going back 
-that far.
+You have misread me this time.
 
-> where the oom score computation was divided into several steps and it's no
-> longer computed as one expression in unsigned long(rss, swapents, nr_pte are
-> unsigned long), where the result value assigned to points(int) is in
-> range(1..1000). So there could be an int overflow while computing
-> 
-> 176          points *= 1000;
-> 
-> and points may have negative value. Meaning the oom score for a mem hog task
-> will be one.
-> 
-> 196          if (points <= 0)
-> 197                  return 1;
-> 
-> For example:
-> [ 3366]     0  3366 35390480 24303939   5       0             0 oom01
-> Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
-> 
-> Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
-> memory, but it's oom score is one.
-> 
-> In this situation the mem hog task is skipped and oom killer kills another and
-> most probably innocent task with oom score greater than one.
-> 
-> The points variable should be of type long instead of int to prevent the int
-> overflow.
-> 
-> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+I think the minimalistic "paste this line to your 'git pull' command line
+and expect to get history leading to this commit" like you did in your
+patch would be the solution that is the least painful and still useful,
+which is an important criterion for wide adoption.
 
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: stable@kernel.org [2.6.36+]
+> Now, admittedly it would be *even nicer* if this gpg-signed block was
+> instead uploaded as a signed tag automatically, and "git pull" would
+> notice such a signed tag (tagname the same as the branch name + date
+> or something) and would download and verify the tag as I pull. Then I
+> wouldn't even need to actually do the cut-and-paste at all. But this
+> is the *really* simple approach that gets up 95% of the way there.
+
+I however have a small trouble with "lieutenants use signed tags in order
+to prove who they are to Linus", depending on the details.
+
+It certainly lets you run "git tag --verify" after you pulled and will
+give you assurance that you pulled the right thing from the right person,
+but what do you plan to do to the tag from your lieutenants after you
+fetched and verified?  I count 379 merges by you between 3.0 (2011-07-21)
+and 3.1 (2011-10-24), which would mean you would see 4-5 tags per day on
+average.  Will these tags be pushed out to your public history?
+
+On one hand, we (not just you but the consumers of "Linus kernel") can
+consider these tags are of ephemeral nature. Once they are used for _you_
+to verify the authenticity, they are not needed anymore. The consumers of
+"Linus kernel" by definition trusts what you publish, so as long as they
+have a way to verify the tip commit you push out, they _should_ be happy.
+If you take this stance, you would not push these tags out so that you do
+not have to contaminate the tags namespace with them, and you might even
+choose to discard them once you pulled and verified the lieutenants' tips
+to avoid contamination of your own refs namespace.
+
+On the other hand, the consumers of "Linus kernel" may want to say that
+they trust your tree and your tags because they can verify them with your
+GPG signature, but also they can independently verify the lieutenants'
+trees you pulled from are genuine. Keeping signed tags and publishing them
+is one way to make it possible, but 400 extra tags in 3 months feels like
+an approach with too much downside (i.e. noise) for that benefit.
+
+On Git mailing list, we have been toying with a couple of ideas. The
+simplest one (cooking in next) is to allow committers to add gpg signature
+in an additional header of the commit objects. "git show" and friends are
+taught how to verify these signatures when asked.
+
+This might have a potential downside on the lieutenants' workflow; after
+integrating the work by their sub-lieutenants and by themselves, they
+would test and review the result to convince themselves that it is worth
+asking you to pull, and then they have to either
+
+    (1) "commit --amend --gpg-signature" the tip; or
+
+    (2) "commit --allow-empty --gpg-signature" to add an empty commit
+        whose sole purpose is to hold the signature (and avoid amending
+        the tip)
+
+before pushing it out, asking you to pull.
+
+An alternative we have discussed was to store gpg signature for the commit
+("push certificate") somewhere in notes tree and push that out, certifying
+that the commit indeed came from the pusher, but that would:
+
+ (1) require upstreams to fetch (and possibly suffer from merge conflicts
+     in notes tree) push certificate whenever they pull from their
+     lieutenants; and
+
+ (2) require downstreams to also fetch the notes tree for "push
+     certificates" (especially when the central repository is shared among
+     multiple people) before adding their own signature and then push it
+     back (and possiblly suffer from "non-fast-forward" in notes tree).
+
+both of which are downsides coming from "notes" being not a very good
+match for what these signatures are trying to achieve.
+
+Namely, the current "notes" mechanism is designed to keep track of history
+of changes made to notes attached to commits, but for the signature
+application, we do not care about the order that signatures came to two
+separate commits. "Non-fast-forward" conflicts while pushing, or having to
+fetch and merge before adding one's own signature, are unwanted burden
+imposed only by choosing to use "notes" for storing and conveying the
+signature.
+
+Also the "notes" approach would end up mixing "push certificates" for
+different branches (this won't be an issue in your repository where there
+is only one branch) into a single "notes" tree. We would want to use
+something that behaves more like the "auto-following" semantics of tag
+objects. You would want to fetch only signatures that are attached to the
+commits you are fetching. Use of signed tags, or commit objects that can
+be signed in-place, have this property, but storing signature in notes
+tree does not give it to us.
+
+I think further discussions on this should continue on the git mailing
+list.
