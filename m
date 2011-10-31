@@ -1,88 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1JaFQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 01:16:58 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:45666 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752093Ab1JaFQ5 (ORCPT
+	id S1752866Ab1JaFaR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 01:30:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39701 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab1JaFaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 01:16:57 -0400
-Message-ID: <4EAE2F42.1010906@ti.com>
-Date: Mon, 31 Oct 2011 10:46:50 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Mon, 31 Oct 2011 01:30:16 -0400
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: spi-devel-general@lists.sourceforge.net,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] OMAP: SPI: call pm_runtime_disable in error path
- and remove
-References: <1319802259-16565-1-git-send-email-shubhrajyoti@ti.com> <1319802259-16565-3-git-send-email-shubhrajyoti@ti.com> <20111029120655.GE22592@ponder.secretlab.ca>
-In-Reply-To: <20111029120655.GE22592@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 31 Oct 2011 11:00:14 +0530
+Message-ID: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
+Subject: powerpc 476, Little-endian, pte fault
+From: Santosh Kumar <santoshkumar.a@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 29 October 2011 05:36 PM, Grant Likely wrote:
-> On Fri, Oct 28, 2011 at 05:14:18PM +0530, Shubhrajyoti D wrote:
->> omap mcspi probe() doesnt call pm_runtime  disable functions
->> in case of failure. remove() doesnt call pm_runtime disable. This could
->> lead to warnings as below on subsequent insmod.
->>
->> ~# insmod spi-omap2-mcspi.ko
->> [  255.383671] omap2_mcspi omap2_mcspi.1: Unbalanced pm_runtime_enable!
->> ...
->>
->> This patch adds the pm_runtime disable() at appropriate stages.
->>
->> Signed-off-by: Hebbar, Gururaja<gururaja.hebbar@ti.com>
->> Signed-off-by: Shubhrajyoti D<shubhrajyoti@ti.com>
-> Nitpick: please use the format "spi/<device>: ...." for the subject
-> line of spi patches.  It's just a consistency thing that I like.
-Henceforth I will take care
-> Picked up for v3.3, thanks.
->
-> g.
->
->> ---
->>   drivers/spi/spi-omap2-mcspi.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
->> index 471b0f3..6875a0b 100644
->> --- a/drivers/spi/spi-omap2-mcspi.c
->> +++ b/drivers/spi/spi-omap2-mcspi.c
->> @@ -1195,6 +1195,7 @@ static int __init omap2_mcspi_probe(struct platform_device *pdev)
->>   err4:
->>   	spi_master_put(master);
->>   err3:
->> +	pm_runtime_disable(&pdev->dev);
->>   	kfree(mcspi->dma_channels);
->>   err2:
->>   	release_mem_region(r->start, resource_size(r));
->> @@ -1216,6 +1217,7 @@ static int __exit omap2_mcspi_remove(struct platform_device *pdev)
->>   	dma_channels = mcspi->dma_channels;
->>
->>   	omap2_mcspi_disable_clocks(mcspi);
->> +	pm_runtime_disable(&pdev->dev);
->>   	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>   	release_mem_region(r->start, resource_size(r));
->>
->> -- 
->> 1.7.1
->>
->>
->> ------------------------------------------------------------------------------
->> The demand for IT networking professionals continues to grow, and the
->> demand for specialized networking skills is growing even more rapidly.
->> Take a complimentary Learning@Cisco Self-Assessment and learn
->> about Cisco certifications, training, and career opportunities.
->> http://p.sf.net/sfu/cisco-dev2dev
->> _______________________________________________
->> spi-devel-general mailing list
->> spi-devel-general@lists.sourceforge.net
->> https://lists.sourceforge.net/lists/listinfo/spi-devel-general
+KERNEL: linux 2.6.39.4
+POWERPC: 476, little endian.
 
+I am trying to get linux 2.6.39.4 up on PPC 476 i have done done
+Big-endian to little endian Changes in:
+1) bitops header file.
+2) while reading the device tree.
+3) the PTE read/computed in head_32.S
+4) added E bit in the TLB entries.
+
+with all the above changes the kernel_init is done but and inited is mounted.
+
+But while spawning init process the kernel continuously hits pte
+faults at address 0x100000fc and never comes out. Please let me know
+where i should be looking into.
+
+-
+Thanks
+Santosh Kumar .A
+
+Vision without Action is a daydream... Action without Vision is a nightmare...
