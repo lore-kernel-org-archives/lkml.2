@@ -1,109 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab1JaRMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 13:12:53 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:40701 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab1JaRMv (ORCPT
+	id S933313Ab1JaRM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:12:56 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:48601 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932932Ab1JaRMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 13:12:51 -0400
+	Mon, 31 Oct 2011 13:12:54 -0400
+Subject: [RFC PATCH v3 08/10] fadump: Invalidate registration and release
+	reserved memory for general use.
+To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: Haren Myneni <hbabu@us.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Amerigo Wang <amwang@redhat.com>, Milton Miller <miltonm@bga.com>,
+        Anton Blanchard <anton@samba.org>
+Date: Mon, 31 Oct 2011 22:41:58 +0530
+Message-ID: <20111031171158.12259.16461.stgit@mars.in.ibm.com>
+In-Reply-To: <20111031170200.12259.27663.stgit@mars.in.ibm.com>
+References: <20111031170200.12259.27663.stgit@mars.in.ibm.com>
+User-Agent: StGit/0.15-1-ged5e-dirty
 MIME-Version: 1.0
-In-Reply-To: <1320074323.4714.2.camel@lade.trondhjem.org>
-References: <1319798192.26450.1.camel@localhost.localdomain>
-	<1320074323.4714.2.camel@lade.trondhjem.org>
-Date: Mon, 31 Oct 2011 23:12:50 +0600
-Message-ID: <CADZ9YHhq91+Td03OjWbX0rwHwb6Y7QhicsuDqqAUSy2O8=05BA@mail.gmail.com>
-Subject: Re: [PATCH] nfs: Fix unused variable warning.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        akpm@linux-foundation.org
-Content-Type: multipart/mixed; boundary=e89a8f64782347e77104b09b593c
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f64782347e77104b09b593c
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-On Mon, Oct 31, 2011 at 9:18 PM, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> On Fri, 2011-10-28 at 16:36 +0600, Rakib Mullick wrote:
->
-> This will still cause a warning if you compile without RPC_DEBUG (e.g.
-> if CONFIG_SYSCTL isn't defined).
->
-I didn't get any warning with CONFIG_SYSCTL=3Dn.
+This patch introduces an sysfs interface '/sys/kernel/fadump_release_mem' to
+invalidate the last fadump registration, invalidate '/proc/vmcore', release
+the reserved memory for general use and re-register for future kernel dump.
+Once the dump is copied to the disk, the userspace tool will echo 1 to
+'/sys/kernel/fadump_release_mem'.
 
-> Since there is only one user, it seems better to just open-code the
-> NFS_SERVER(data->inode) in the dprintk()...
+Release the reserved memory region excluding the size of the memory required
+for future kernel dump registration.
 
-Okay, it seems reasonable. We can simply remove 'server'. Please
-consider the following patch (also attached, might have some white
-space issue).
+Change in v3:
+- Syncronize the fadump invalidation step to handle simultaneous writes to
+  /sys/kernel/fadump_release_mem.
 
+Change in v2:
+- Introduced cpu_notes_buf_free() function to free memory allocated for
+  cpu notes buffer.
+
+Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
+ arch/powerpc/include/asm/fadump.h |    3 +
+ arch/powerpc/kernel/fadump.c      |  170 ++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 169 insertions(+), 4 deletions(-)
 
- When CONFIG_NFS=3Dy and CONFIG_NFS_V3_{,V4}=3Dn we get the following warni=
-ng.
-=09
-	fs/nfs/write.c: In function =91nfs_writeback_done=92:
-	fs/nfs/write.c:1246:21: warning: unused variable =91server=92
+diff --git a/arch/powerpc/include/asm/fadump.h b/arch/powerpc/include/asm/fadump.h
+index 4a7d63e..2d983e8 100644
+--- a/arch/powerpc/include/asm/fadump.h
++++ b/arch/powerpc/include/asm/fadump.h
+@@ -196,6 +196,9 @@ extern int fadump_reserve_mem(void);
+ extern int setup_fadump(void);
+ extern int is_fadump_active(void);
+ extern void crash_fadump(struct pt_regs *, const char *);
++extern void fadump_cleanup(void);
++
++extern void vmcore_cleanup(void);
+ #else	/* CONFIG_FA_DUMP */
+ static inline int is_fadump_active(void) { return 0; }
+ #endif
+diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
+index 4d42fe5..ecdf81b 100644
+--- a/arch/powerpc/kernel/fadump.c
++++ b/arch/powerpc/kernel/fadump.c
+@@ -33,6 +33,8 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/crash_dump.h>
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
+ 
+ #include <asm/page.h>
+ #include <asm/prom.h>
+@@ -560,6 +562,19 @@ static void *cpu_notes_buf_alloc(unsigned long size)
+ 	return vaddr;
+ }
+ 
++static void cpu_notes_buf_free(unsigned long vaddr, unsigned long size)
++{
++	struct page *page;
++	unsigned long order, count, i;
++
++	order = get_order(size);
++	count = 1 << order;
++	page = virt_to_page(vaddr);
++	for (i = 0; i < count; i++)
++		ClearPageReserved(page + i);
++	__free_pages(page, order);
++}
++
+ /*
+  * Read CPU state dump data and convert it into ELF notes.
+  * The CPU dump starts with magic number "REGSAVE". NumCpusOffset should be
+@@ -944,6 +959,131 @@ static int fadump_unregister_dump(struct fadump_mem_struct *fdm)
+ 	return 0;
+ }
+ 
++static int fadump_invalidate_dump(struct fadump_mem_struct *fdm)
++{
++	int rc = 0;
++	unsigned int wait_time;
++
++	pr_debug("Invalidating firmware-assisted dump registration\n");
++
++	/* TODO: Add upper time limit for the delay */
++	do {
++		rc = rtas_call(fw_dump.ibm_configure_kernel_dump, 3, 1, NULL,
++			FADUMP_INVALIDATE, fdm,
++			sizeof(struct fadump_mem_struct));
++
++		wait_time = rtas_busy_delay_time(rc);
++		if (wait_time)
++			mdelay(wait_time);
++	} while (wait_time);
++
++	if (rc) {
++		printk(KERN_ERR "Failed to invalidate firmware-assisted dump "
++			"rgistration. unexpected error(%d).\n", rc);
++		return rc;
++	}
++	fw_dump.dump_active = 0;
++	fdm_active = NULL;
++	return 0;
++}
++
++void fadump_cleanup(void)
++{
++	/* Invalidate the registration only if dump is active. */
++	if (fw_dump.dump_active) {
++		init_fadump_mem_struct(&fdm,
++			fdm_active->cpu_state_data.destination_address);
++		fadump_invalidate_dump(&fdm);
++	}
++}
++
++/*
++ * Release the memory that was reserved in early boot to preserve the memory
++ * contents. The released memory will be available for general use.
++ */
++static void fadump_release_memory(unsigned long begin, unsigned long end)
++{
++	unsigned long addr;
++	unsigned long ra_start, ra_end;
++
++	ra_start = fw_dump.reserve_dump_area_start;
++	ra_end = ra_start + fw_dump.reserve_dump_area_size;
++
++	for (addr = begin; addr < end; addr += PAGE_SIZE) {
++		/*
++		 * exclude the dump reserve area. Will reuse it for next
++		 * fadump registration.
++		 */
++		if (addr <= ra_end && ((addr + PAGE_SIZE) > ra_start))
++			continue;
++
++		ClearPageReserved(pfn_to_page(addr >> PAGE_SHIFT));
++		init_page_count(pfn_to_page(addr >> PAGE_SHIFT));
++		free_page((unsigned long)__va(addr));
++		totalram_pages++;
++	}
++}
++
++static void fadump_invalidate_release_mem(void)
++{
++	unsigned long reserved_area_start, reserved_area_end;
++	unsigned long destination_address;
++
++	mutex_lock(&fadump_mutex);
++	if (!fw_dump.dump_active) {
++		mutex_unlock(&fadump_mutex);
++		return;
++	}
++
++	destination_address = fdm_active->cpu_state_data.destination_address;
++	fadump_cleanup();
++	mutex_unlock(&fadump_mutex);
++
++	/*
++	 * Save the current reserved memory bounds we will require them
++	 * later for releasing the memory for general use.
++	 */
++	reserved_area_start = fw_dump.reserve_dump_area_start;
++	reserved_area_end = reserved_area_start +
++			fw_dump.reserve_dump_area_size;
++	/*
++	 * Setup reserve_dump_area_start and its size so that we can
++	 * reuse this reserved memory for Re-registration.
++	 */
++	fw_dump.reserve_dump_area_start = destination_address;
++	fw_dump.reserve_dump_area_size = get_dump_area_size();
++
++	fadump_release_memory(reserved_area_start, reserved_area_end);
++	if (fw_dump.cpu_notes_buf) {
++		cpu_notes_buf_free((unsigned long)__va(fw_dump.cpu_notes_buf),
++					fw_dump.cpu_notes_buf_size);
++		fw_dump.cpu_notes_buf = 0;
++		fw_dump.cpu_notes_buf_size = 0;
++	}
++	/* Initialize the kernel dump memory structure for FAD registration. */
++	init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
++}
++
++static ssize_t fadump_release_memory_store(struct kobject *kobj,
++					struct kobj_attribute *attr,
++					const char *buf, size_t count)
++{
++	if (!fw_dump.dump_active)
++		return -EPERM;
++
++	if (buf[0] == '1') {
++		/*
++		 * Take away the '/proc/vmcore'. We are releasing the dump
++		 * memory, hence it will not be valid anymore.
++		 */
++		vmcore_cleanup();
++		fadump_invalidate_release_mem();
++
++	} else
++		return -EINVAL;
++	return count;
++}
++
+ static ssize_t fadump_enabled_show(struct kobject *kobj,
+ 					struct kobj_attribute *attr,
+ 					char *buf)
+@@ -1003,10 +1143,13 @@ static int fadump_region_show(struct seq_file *m, void *private)
+ 	if (!fw_dump.fadump_enabled)
+ 		return 0;
+ 
++	mutex_lock(&fadump_mutex);
+ 	if (fdm_active)
+ 		fdm_ptr = fdm_active;
+-	else
++	else {
++		mutex_unlock(&fadump_mutex);
+ 		fdm_ptr = &fdm;
++	}
+ 
+ 	seq_printf(m,
+ 			"CPU : [%#016llx-%#016llx] %#llx bytes, "
+@@ -1036,7 +1179,7 @@ static int fadump_region_show(struct seq_file *m, void *private)
+ 	if (!fdm_active ||
+ 		(fw_dump.reserve_dump_area_start ==
+ 		fdm_ptr->cpu_state_data.destination_address))
+-		return 0;
++		goto out;
+ 
+ 	/* Dump is active. Show reserved memory region. */
+ 	seq_printf(m,
+@@ -1048,9 +1191,15 @@ static int fadump_region_show(struct seq_file *m, void *private)
+ 			fw_dump.reserve_dump_area_start,
+ 			fdm_ptr->cpu_state_data.destination_address -
+ 			fw_dump.reserve_dump_area_start);
++out:
++	if (fdm_active)
++		mutex_unlock(&fadump_mutex);
+ 	return 0;
+ }
+ 
++static struct kobj_attribute fadump_release_attr = __ATTR(fadump_release_mem,
++						0200, NULL,
++						fadump_release_memory_store);
+ static struct kobj_attribute fadump_attr = __ATTR(fadump_enabled,
+ 						0444, fadump_enabled_show,
+ 						NULL);
+@@ -1091,6 +1240,13 @@ static void fadump_init_files(void)
+ 	if (!debugfs_file)
+ 		printk(KERN_ERR "fadump: unable to create debugfs file"
+ 				" fadump_region\n");
++
++	if (fw_dump.dump_active) {
++		rc = sysfs_create_file(kernel_kobj, &fadump_release_attr.attr);
++		if (rc)
++			printk(KERN_ERR "fadump: unable to create sysfs file"
++				" fadump_release_mem (%d)\n", rc);
++	}
+ 	return;
+ }
+ 
+@@ -1110,8 +1266,14 @@ int __init setup_fadump(void)
+ 	 * If dump data is available then see if it is valid and prepare for
+ 	 * saving it to the disk.
+ 	 */
+-	if (fw_dump.dump_active)
+-		process_fadump(fdm_active);
++	if (fw_dump.dump_active) {
++		/*
++		 * if dump process fails then invalidate the registration
++		 * and release memory before proceeding for re-registration.
++		 */
++		if (process_fadump(fdm_active) < 0)
++			fadump_invalidate_release_mem();
++	}
+ 	/* Initialize the kernel dump memory structure for FAD registration. */
+ 	else if (fw_dump.reserve_dump_area_size)
+ 		init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
 
- Remove the variable 'server' to fix the above warning.
-
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
-
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 2219c88..a2e4b27 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1243,7 +1243,6 @@ void nfs_writeback_done(struct rpc_task *task,
-struct nfs_write_data *data)
- {
- 	struct nfs_writeargs	*argp =3D &data->args;
- 	struct nfs_writeres	*resp =3D &data->res;
--	struct nfs_server	*server =3D NFS_SERVER(data->inode);
- 	int status;
-
- 	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
-@@ -1277,7 +1276,7 @@ void nfs_writeback_done(struct rpc_task *task,
-struct nfs_write_data *data)
- 		if (time_before(complain, jiffies)) {
- 			dprintk("NFS:       faulty NFS server %s:"
- 				" (committed =3D %d) !=3D (stable =3D %d)\n",
--				server->nfs_client->cl_hostname,
-+				data->inode->nfs_client->cl_hostname,
- 				resp->verf->committed, argp->stable);
- 			complain =3D jiffies + 300 * HZ;
- 		}
-
---e89a8f64782347e77104b09b593c
-Content-Type: application/octet-stream; name="nfs_unused_var_fix.patch"
-Content-Disposition: attachment; filename="nfs_unused_var_fix.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gufq54km0
-
-IFdoZW4gQ09ORklHX05GUz15IGFuZCBDT05GSUdfTkZTX1YzX3ssVjR9PW4gd2UgZ2V0IHRoZSBm
-b2xsb3dpbmcgd2FybmluZy4KCQoJZnMvbmZzL3dyaXRlLmM6IEluIGZ1bmN0aW9uIOKAmG5mc193
-cml0ZWJhY2tfZG9uZeKAmToKCWZzL25mcy93cml0ZS5jOjEyNDY6MjE6IHdhcm5pbmc6IHVudXNl
-ZCB2YXJpYWJsZSDigJhzZXJ2ZXLigJkKCiBSZW1vdmUgdGhlIHZhcmlhYmxlICdzZXJ2ZXInIHRv
-IGZpeCB0aGUgYWJvdmUgd2FybmluZy4KCgpTaWduZWQtb2ZmLWJ5OiBSYWtpYiBNdWxsaWNrIDxy
-YWtpYi5tdWxsaWNrQGdtYWlsLmNvbT4KLS0tCgpkaWZmIC0tZ2l0IGEvZnMvbmZzL3dyaXRlLmMg
-Yi9mcy9uZnMvd3JpdGUuYwppbmRleCAyMjE5Yzg4Li5hMmU0YjI3IDEwMDY0NAotLS0gYS9mcy9u
-ZnMvd3JpdGUuYworKysgYi9mcy9uZnMvd3JpdGUuYwpAQCAtMTI0Myw3ICsxMjQzLDYgQEAgdm9p
-ZCBuZnNfd3JpdGViYWNrX2RvbmUoc3RydWN0IHJwY190YXNrICp0YXNrLCBzdHJ1Y3QgbmZzX3dy
-aXRlX2RhdGEgKmRhdGEpCiB7CiAJc3RydWN0IG5mc193cml0ZWFyZ3MJKmFyZ3AgPSAmZGF0YS0+
-YXJnczsKIAlzdHJ1Y3QgbmZzX3dyaXRlcmVzCSpyZXNwID0gJmRhdGEtPnJlczsKLQlzdHJ1Y3Qg
-bmZzX3NlcnZlcgkqc2VydmVyID0gTkZTX1NFUlZFUihkYXRhLT5pbm9kZSk7CiAJaW50IHN0YXR1
-czsKIAogCWRwcmludGsoIk5GUzogJTV1IG5mc193cml0ZWJhY2tfZG9uZSAoc3RhdHVzICVkKVxu
-IiwKQEAgLTEyNzcsNyArMTI3Niw3IEBAIHZvaWQgbmZzX3dyaXRlYmFja19kb25lKHN0cnVjdCBy
-cGNfdGFzayAqdGFzaywgc3RydWN0IG5mc193cml0ZV9kYXRhICpkYXRhKQogCQlpZiAodGltZV9i
-ZWZvcmUoY29tcGxhaW4sIGppZmZpZXMpKSB7CiAJCQlkcHJpbnRrKCJORlM6ICAgICAgIGZhdWx0
-eSBORlMgc2VydmVyICVzOiIKIAkJCQkiIChjb21taXR0ZWQgPSAlZCkgIT0gKHN0YWJsZSA9ICVk
-KVxuIiwKLQkJCQlzZXJ2ZXItPm5mc19jbGllbnQtPmNsX2hvc3RuYW1lLAorCQkJCWRhdGEtPmlu
-b2RlLT5uZnNfY2xpZW50LT5jbF9ob3N0bmFtZSwKIAkJCQlyZXNwLT52ZXJmLT5jb21taXR0ZWQs
-IGFyZ3AtPnN0YWJsZSk7CiAJCQljb21wbGFpbiA9IGppZmZpZXMgKyAzMDAgKiBIWjsKIAkJfQo=
---e89a8f64782347e77104b09b593c--
