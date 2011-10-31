@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826Ab1KAAWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:22:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:1448 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934038Ab1KAARw (ORCPT
+	id S934126Ab1KAARs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:17:48 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56443 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933935Ab1KAARp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:17:52 -0400
-Message-Id: <e97c6e$3uab0r@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459547"
+	Mon, 31 Oct 2011 20:17:45 -0400
+Message-Id: <093448$3uejs9@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599689"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:46:34 -0500
-Subject: [PATCH v5 21/36] Hexagon: Add SMP support
+Date: Mon, 31 Oct 2011 18:42:51 -0500
+Subject: [PATCH v5 17/36] Hexagon: Add interrupts
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -19,26 +19,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
 Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/smp.h |   44 +++++++
- arch/hexagon/kernel/smp.c      |  276 ++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/kernel/topology.c |   52 ++++++++
- 3 files changed, 372 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/smp.h
- create mode 100644 arch/hexagon/kernel/smp.c
- create mode 100644 arch/hexagon/kernel/topology.c
+ arch/hexagon/include/asm/irq.h |   36 ++++++++++++++++
+ arch/hexagon/kernel/irq_cpu.c  |   90 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 126 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/irq.h
+ create mode 100644 arch/hexagon/kernel/irq_cpu.c
 
-diff --git a/arch/hexagon/include/asm/smp.h b/arch/hexagon/include/asm/smp.h
+diff --git a/arch/hexagon/include/asm/irq.h b/arch/hexagon/include/asm/irq.h
 new file mode 100644
-index 0000000..87c869a
+index 0000000..ded8c15
 --- /dev/null
-+++ b/arch/hexagon/include/asm/smp.h
-@@ -0,0 +1,44 @@
++++ b/arch/hexagon/include/asm/irq.h
+@@ -0,0 +1,36 @@
 +/*
-+ * SMP definitions for the Hexagon architecture
-+ *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -56,40 +52,34 @@ index 0000000..87c869a
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_SMP_H
-+#define __ASM_SMP_H
++#ifndef _ASM_IRQ_H_
++#define _ASM_IRQ_H_
 +
-+#include <linux/cpumask.h>
++/* Number of first-level interrupts associated with the CPU core. */
++#define HEXAGON_CPUINTS 32
 +
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
++/*
++ * Must define NR_IRQS before including <asm-generic/irq.h>
++ * 64 == the two SIRC's, 176 == the two gpio's
++ *
++ * IRQ configuration is still in flux; defining this to a comfortably
++ * large number.
++ */
++#define NR_IRQS 512
 +
-+enum ipi_message_type {
-+	IPI_NOP = 0,
-+	IPI_RESCHEDULE = 1,
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_CPU_STOP,
-+	IPI_TIMER,
-+};
-+
-+extern void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg);
-+extern void smp_start_cpus(void);
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-+
-+extern void smp_vm_unmask_irq(void *info);
++#include <asm-generic/irq.h>
 +
 +#endif
-diff --git a/arch/hexagon/kernel/smp.c b/arch/hexagon/kernel/smp.c
+diff --git a/arch/hexagon/kernel/irq_cpu.c b/arch/hexagon/kernel/irq_cpu.c
 new file mode 100644
-index 0000000..c871a2c
+index 0000000..d4416a1
 --- /dev/null
-+++ b/arch/hexagon/kernel/smp.c
-@@ -0,0 +1,276 @@
++++ b/arch/hexagon/kernel/irq_cpu.c
+@@ -0,0 +1,90 @@
 +/*
-+ * SMP support for Hexagon
++ * First-level interrupt controller model for Hexagon.
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2010-2011 Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -106,320 +96,76 @@ index 0000000..c871a2c
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/errno.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/percpu.h>
-+#include <linux/sched.h>
-+#include <linux/smp.h>
-+#include <linux/spinlock.h>
-+
-+#include <asm/system.h>  /*  xchg  */
-+#include <asm/time.h>    /*  timer_interrupt  */
++#include <asm/irq.h>
 +#include <asm/hexagon_vm.h>
 +
-+#define BASE_IPI_IRQ 26
++static void mask_irq(struct irq_data *data)
++{
++	__vmintop_locdis((long) data->irq);
++}
 +
-+/*
-+ * cpu_possible_map needs to be filled out prior to setup_per_cpu_areas
-+ * (which is prior to any of our smp_prepare_cpu crap), in order to set
-+ * up the...  per_cpu areas.
++static void mask_irq_num(unsigned int irq)
++{
++	__vmintop_locdis((long) irq);
++}
++
++static void unmask_irq(struct irq_data *data)
++{
++	__vmintop_locen((long) data->irq);
++}
++
++/*  This is actually all we need for handle_fasteoi_irq  */
++static void eoi_irq(struct irq_data *data)
++{
++	__vmintop_globen((long) data->irq);
++}
++
++/* Power mamangement wake call. We don't need this, however,
++ * if this is absent, then an -ENXIO error is returned to the
++ * msm_serial driver, and it fails to correctly initialize.
++ * This is a bug in the msm_serial driver, but, for now, we
++ * work around it here, by providing this bogus handler.
++ * XXX FIXME!!! remove this when msm_serial is fixed.
 + */
-+
-+struct ipi_data {
-+	unsigned long bits;
-+};
-+
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data);
-+
-+static inline void __handle_ipi(unsigned long *ops, struct ipi_data *ipi,
-+				int cpu)
++static int set_wake(struct irq_data *data, unsigned int on)
 +{
-+	unsigned long msg = 0;
-+	do {
-+		msg = find_next_bit(ops, BITS_PER_LONG, msg+1);
-+
-+		switch (msg) {
-+
-+		case IPI_TIMER:
-+			ipi_timer();
-+			break;
-+
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
-+			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		case IPI_CPU_STOP:
-+			/*
-+			 * call vmstop()
-+			 */
-+			__vmstop();
-+			break;
-+
-+		case IPI_RESCHEDULE:
-+			scheduler_ipi();
-+			break;
-+		}
-+	} while (msg < BITS_PER_LONG);
-+}
-+
-+/*  Used for IPI call from other CPU's to unmask int  */
-+void smp_vm_unmask_irq(void *info)
-+{
-+	__vmintop_locen((long) info);
-+}
-+
-+
-+/*
-+ * This is based on Alpha's IPI stuff.
-+ * Supposed to take (int, void*) as args now.
-+ * Specifically, first arg is irq, second is the irq_desc.
-+ */
-+
-+irqreturn_t handle_ipi(int irq, void *desc)
-+{
-+	int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	unsigned long ops;
-+
-+	while ((ops = xchg(&ipi->bits, 0)) != 0)
-+		__handle_ipi(&ops, ipi, cpu);
-+	return IRQ_HANDLED;
-+}
-+
-+void send_ipi(const struct cpumask *cpumask, enum ipi_message_type msg)
-+{
-+	unsigned long flags;
-+	unsigned long cpu;
-+	unsigned long retval;
-+
-+	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, cpumask) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+
-+		set_bit(msg, &ipi->bits);
-+		/*  Possible barrier here  */
-+		retval = __vmintop_post(BASE_IPI_IRQ+cpu);
-+
-+		if (retval != 0) {
-+			printk(KERN_ERR "interrupt %ld not configured?\n",
-+				BASE_IPI_IRQ+cpu);
-+		}
-+	}
-+
-+	local_irq_restore(flags);
-+}
-+
-+static struct irqaction ipi_intdesc = {
-+	.handler = handle_ipi,
-+	.flags = IRQF_TRIGGER_RISING,
-+	.name = "ipi_handler"
-+};
-+
-+void __init smp_prepare_boot_cpu(void)
-+{
-+}
-+
-+/*
-+ * interrupts should already be disabled from the VM
-+ * SP should already be correct; need to set THREADINFO_REG
-+ * to point to current thread info
-+ */
-+
-+void __cpuinit start_secondary(void)
-+{
-+	unsigned int cpu;
-+	unsigned long thread_ptr;
-+
-+	/*  Calculate thread_info pointer from stack pointer  */
-+	__asm__ __volatile__(
-+		"%0 = SP;\n"
-+		: "=r" (thread_ptr)
-+	);
-+
-+	thread_ptr = thread_ptr & ~(THREAD_SIZE-1);
-+
-+	__asm__ __volatile__(
-+		QUOTED_THREADINFO_REG " = %0;\n"
-+		:
-+		: "r" (thread_ptr)
-+	);
-+
-+	/*  Set the memory struct  */
-+	atomic_inc(&init_mm.mm_count);
-+	current->active_mm = &init_mm;
-+
-+	cpu = smp_processor_id();
-+
-+	setup_irq(BASE_IPI_IRQ + cpu, &ipi_intdesc);
-+
-+	/*  Register the clock_event dummy  */
-+	setup_percpu_clockdev();
-+
-+	printk(KERN_INFO "%s cpu %d\n", __func__, current_thread_info()->cpu);
-+
-+	set_cpu_online(cpu, true);
-+	while (!cpumask_test_cpu(cpu, cpu_active_mask))
-+		cpu_relax();
-+	local_irq_enable();
-+
-+	cpu_idle();
-+}
-+
-+
-+/*
-+ * called once for each present cpu
-+ * apparently starts up the CPU and then
-+ * maintains control until "cpu_online(cpu)" is set.
-+ */
-+
-+int __cpuinit __cpu_up(unsigned int cpu)
-+{
-+	struct task_struct *idle;
-+	struct thread_info *thread;
-+	void *stack_start;
-+
-+	/*  Create new init task for the CPU  */
-+	idle = fork_idle(cpu);
-+	if (IS_ERR(idle))
-+		panic(KERN_ERR "fork_idle failed\n");
-+
-+	thread = (struct thread_info *)idle->stack;
-+	thread->cpu = cpu;
-+
-+	/*  Boot to the head.  */
-+	stack_start =  ((void *) thread) + THREAD_SIZE;
-+	__vmstart(start_secondary, stack_start);
-+
-+	while (!cpu_isset(cpu, cpu_online_map))
-+		barrier();
-+
 +	return 0;
 +}
 +
-+void __init smp_cpus_done(unsigned int max_cpus)
-+{
-+}
++static struct irq_chip hexagon_irq_chip = {
++	.name		= "HEXAGON",
++	.irq_mask	= mask_irq,
++	.irq_unmask	= unmask_irq,
++	.irq_set_wake	= set_wake,
++	.irq_eoi	= eoi_irq
++};
 +
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	int i;
-+
-+	/*
-+	 * should eventually have some sort of machine
-+	 * descriptor that has this stuff
-+	 */
-+
-+	/*  Right now, let's just fake it. */
-+	for (i = 0; i < max_cpus; i++)
-+		cpu_set(i, cpu_present_map);
-+
-+	/*  Also need to register the interrupts for IPI  */
-+	if (max_cpus > 1)
-+		setup_irq(BASE_IPI_IRQ, &ipi_intdesc);
-+}
-+
-+void smp_send_reschedule(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_RESCHEDULE);
-+}
-+
-+void smp_send_stop(void)
-+{
-+	struct cpumask targets;
-+	cpumask_copy(&targets, cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), &targets);
-+	send_ipi(&targets, IPI_CPU_STOP);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	send_ipi(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	send_ipi(mask, IPI_CALL_FUNC);
-+}
-+
-+int setup_profiling_timer(unsigned int multiplier)
-+{
-+	return -EINVAL;
-+}
-+
-+void smp_start_cpus(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < NR_CPUS; i++)
-+		cpu_set(i, cpu_possible_map);
-+}
-diff --git a/arch/hexagon/kernel/topology.c b/arch/hexagon/kernel/topology.c
-new file mode 100644
-index 0000000..ba44751
---- /dev/null
-+++ b/arch/hexagon/kernel/topology.c
-@@ -0,0 +1,52 @@
-+/*
-+ * CPU topology for Hexagon
++/**
++ * The hexagon core comes with a first-level interrupt controller
++ * with 32 total possible interrupts.  When the core is embedded
++ * into different systems/platforms, it is typically wrapped by
++ * macro cells that provide one or more second-level interrupt
++ * controllers that are cascaded into one or more of the first-level
++ * interrupts handled here. The precise wiring of these other
++ * irqs varies from platform to platform, and are set up & configured
++ * in the platform-specific files.
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
++ * The first-level interrupt controller is wrapped by the VM, which
++ * virtualizes the interrupt controller for us.  It provides a very
++ * simple, fast & efficient API, and so the fasteoi handler is
++ * appropriate for this case.
 + */
-+
-+#include <linux/cpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/init.h>
-+#include <linux/node.h>
-+#include <linux/nodemask.h>
-+#include <linux/percpu.h>
-+
-+/*  Swiped from MIPS.  */
-+
-+static DEFINE_PER_CPU(struct cpu, cpu_devices);
-+
-+static int __init topology_init(void)
++void __init init_IRQ(void)
 +{
-+	int i, ret;
++	int irq;
 +
-+	for_each_present_cpu(i) {
-+
-+		/*
-+		 * register_cpu takes a per_cpu pointer and
-+		 * just points it at another per_cpu struct...
-+		 */
-+
-+		ret = register_cpu(&per_cpu(cpu_devices, i), i);
-+		if (ret)
-+			printk(KERN_WARNING "topology_init: register_cpu %d "
-+			       "failed (%d)\n", i, ret);
++	for (irq = 0; irq < HEXAGON_CPUINTS; irq++) {
++		mask_irq_num(irq);
++		irq_set_chip_and_handler(irq, &hexagon_irq_chip,
++						 handle_fasteoi_irq);
 +	}
-+
-+	return 0;
 +}
-+
-+subsys_initcall(topology_init);
 -- 
 1.7.1
 
