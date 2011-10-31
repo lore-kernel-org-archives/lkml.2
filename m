@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934180Ab1JaTRe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 15:17:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37551 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933236Ab1JaTRd (ORCPT
+	id S932664Ab1JaTaG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 15:30:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35282 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab1JaTaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 15:17:33 -0400
-Date: Mon, 31 Oct 2011 17:18:09 -0200
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: "Cho, Yu-Chen" <acho@suse.com>
-Cc: marcel@holtmann.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acho@novell.com, jlee@novell.com,
-        oneukum@suse.com
-Subject: Re: [PATCH 1/2] add device entry for Broadcom Valentine combo card
-Message-ID: <20111031191809.GB10164@joana>
-Mail-Followup-To: "Cho, Yu-Chen" <acho@suse.com>, marcel@holtmann.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-	acho@novell.com, jlee@novell.com, oneukum@suse.com
-References: <2eb6d1b761a3fddea28294959bde7e9c7ef88043.1319086508.git.acho@suse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2eb6d1b761a3fddea28294959bde7e9c7ef88043.1319086508.git.acho@suse.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 31 Oct 2011 15:30:04 -0400
+From: Ciaran McCormick <ciaranmccormick@gmail.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com
+Cc: linux-kernel@vger.kernel.org, Ciaran McCormick <ciaranmccormick@gmail.com>
+Subject: [PATCH] dma: fix spacing for method declaration, coding style issue in iop-adma.c
+Date: Mon, 31 Oct 2011 19:29:26 +0000
+Message-Id: <1320089366-13300-1-git-send-email-ciaranmccormick@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+Signed-off-by: Ciaran McCormick <ciaranmccormick@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yu-Chen,
+From: Ciaran McCormick <ciaranmccormick@gmail.com>
 
-* Cho, Yu-Chen <acho@suse.com> [2011-10-20 12:58:29 +0800]:
+---
+ drivers/dma/iop-adma.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> This device declares itself to be vendor specific
-> It therefore needs to be added to the device table
-> to make btusb bind.
+diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
+index e03f811..686dc76 100644
+--- a/drivers/dma/iop-adma.c
++++ b/drivers/dma/iop-adma.c
+@@ -1746,12 +1746,12 @@ static struct platform_driver iop_adma_driver = {
+ 	},
+ };
+ 
+-static int __init iop_adma_init (void)
++static int __init iop_adma_init(void)
+ {
+ 	return platform_driver_register(&iop_adma_driver);
+ }
+ 
+-static void __exit iop_adma_exit (void)
++static void __exit iop_adma_exit(void)
+ {
+ 	platform_driver_unregister(&iop_adma_driver);
+ 	return;
+-- 
+1.7.5.4
 
-It would be good to have the output of usb-devices for this specific device in
-the commit message.
-
-	Gustavo
