@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab1JaJGx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:06:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50632 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab1JaJGv (ORCPT
+	id S932406Ab1JaJQM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:16:12 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54517 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932260Ab1JaJQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:06:51 -0400
-From: Ilya Dryomov <idryomov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, idryomov@gmail.com
-Subject: [PATCH] tracing: fix event_subsystem ref counting
-Date: Mon, 31 Oct 2011 11:07:42 +0200
-Message-Id: <1320052062-7846-1-git-send-email-idryomov@gmail.com>
-X-Mailer: git-send-email 1.7.6.3
+	Mon, 31 Oct 2011 05:16:11 -0400
+X-Sasl-enc: X3MrnY/tPEhfjL9V4hhoTGRrUgbA7igVIrzK45Cptcp/ 1320052570
+Date: Mon, 31 Oct 2011 07:16:07 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
+ it should
+Message-ID: <20111031091607.GB7106@khazad-dum.debian.net>
+References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+ <20111030212644.GA7106@khazad-dum.debian.net>
+ <815860869.50724.1320011477430.JavaMail.mail@webmail17>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <815860869.50724.1320011477430.JavaMail.mail@webmail17>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
-ever being released.
+On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
+> > Please make sure both are set to 0.  If they were not 0 at the time you
+> > ran your tests, please retest and report back.
+> 
+> That's 0 & 0 for me.
 
-Ref_count was added to keep track of subsystem users, not for counting
-events.  Subsystem is created with ref_count = 1, so there is no need to
-increment it for every event, we have nr_events for that.  Fix this by
-touching ref_count only when we actually have a new user -
-subsystem_open().
+How idle is your system during the test?
 
-Signed-off-by: Ilya Dryomov <idryomov@gmail.com>
----
- kernel/trace/trace_events.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 581876f..c212a7f 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1078,7 +1078,6 @@ event_subsystem_dir(const char *name, struct dentry *d_events)
- 	/* First see if we did not already create this dir */
- 	list_for_each_entry(system, &event_subsystems, list) {
- 		if (strcmp(system->name, name) == 0) {
--			__get_system(system);
- 			system->nr_events++;
- 			return system->entry;
- 		}
 -- 
-1.7.6.3
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
