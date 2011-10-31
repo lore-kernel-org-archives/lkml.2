@@ -1,73 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934676Ab1JaWlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 18:41:05 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36126 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934573Ab1JaWlD (ORCPT
+	id S934685Ab1JaWlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:41:45 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:36239 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934441Ab1JaWln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 18:41:03 -0400
-Date: Mon, 31 Oct 2011 15:40:57 -0700
-From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, matthltc@us.ibm.com
-Subject: [PATCHSET UPDATED pm] freezer: fix various bugs and simplify
- implementation, take#2
-Message-ID: <20111031224057.GG18855@google.com>
-References: <1320087928-32307-1-git-send-email-tj@kernel.org>
+	Mon, 31 Oct 2011 18:41:43 -0400
+Subject: Re: [PATCH] bonding:update speed/duplex for NETDEV_CHANGE
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Jay Vosburgh <fubar@us.ibm.com>
+CC: Weiping Pan <wpan@redhat.com>, <netdev@vger.kernel.org>,
+        <andy@greyhouse.net>, <linux-kernel@vger.kernel.org>
+In-Reply-To: <16441.1320096188@death>
+References: <4EAE0D9A.9060408@gmail.com>
+	 <e00468a2cbb8a25d7a89028e876769449454309f.1320070684.git.wpan@redhat.com>
+	 <1320084906.2735.9.camel@bwh-desktop> <14973.1320093129@death>
+	 <1320094108.2735.15.camel@bwh-desktop>  <16441.1320096188@death>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Mon, 31 Oct 2011 22:41:39 +0000
+Message-ID: <1320100899.2735.19.camel@bwh-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320087928-32307-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18482.005
+X-TM-AS-Result: No--27.914400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 31 Oct 2011 22:41:43.0392 (UTC) FILETIME=[43633E00:01CC981E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 2011-10-31 at 14:23 -0700, Jay Vosburgh wrote:
+> Ben Hutchings <bhutchings@solarflare.com> wrote:
+> 
+> >On Mon, 2011-10-31 at 13:32 -0700, Jay Vosburgh wrote:
+> >[...]
+> >> 	This particular case arises only during enslavement.  The call
+> >> to bond_update_speed_duplex call has failed, but the device is marked by
+> >> bonding to be up.  Bonding complains that the device isn't down, but it
+> >> cannot get speed and duplex, and therefore is assuming them to be
+> >> 100/Full.
+> >> 
+> >> 	The catch is that this happens only for the ARP monitor, because
+> >> it initially presumes a slave to be up regardless of actual carrier
+> >> state (for historical reasons related to very old 10 or 10/100 drivers,
+> >> prior to the introduction of netif_carrier_*).
+> >
+> >Right, I gathered that.  Is there any reason to use the ARP monitor when
+> >all slaves support link state notification?  Maybe the bonding
+> >documentation should recommend miimon in section 7, not just in section
+> >2.
+> 
+> 	The ARP monitor can validate that traffic actually flows from
+> the slave to some destination in the switch domain (and back), so, for
+> example, it's useful in cases that multiple switch hops exist between
+> the host and the local router.  A link failure in the middle of the path
+> won't affect carrier on the local device, but still may cause a
+> communications break.
 
-On Mon, Oct 31, 2011 at 12:05:11PM -0700, Tejun Heo wrote:
->  0001-freezer-fix-current-state-restoration-race-in-refrig.patch
->  0002-freezer-don-t-unnecessarily-set-PF_NOFREEZE-explicit.patch
->  0003-freezer-unexport-refrigerator-and-update-try_to_free.patch
->  0004-freezer-implement-and-use-kthread_freezable_should_s.patch
->  0005-freezer-rename-thaw_process-to-__thaw_task-and-simpl.patch
->  0006-freezer-remove-racy-clear_freeze_flag-and-set-PF_NOF.patch
->  0007-freezer-don-t-distinguish-nosig-tasks-on-thaw.patch
->  0008-freezer-use-dedicated-lock-instead-of-task_lock-memo.patch
->  0009-freezer-make-freezing-indicate-freeze-condition-in-e.patch
->  0010-freezer-test-freezable-conditions-while-holding-free.patch
->  0011-freezer-kill-PF_FREEZING.patch
->  0012-freezer-clean-up-freeze_processes-failure-path.patch
->  0013-cgroup_freezer-prepare-for-removal-of-TIF_FREEZE.patch
->  0014-freezer-make-freezing-test-freeze-conditions-in-effe.patch
->  0015-freezer-remove-now-unused-TIF_FREEZE.patch
->  0016-freezer-remove-should_send_signal-and-update-frozen.patch
->  0017-freezer-fix-set_freezable-_with_signal-race.patch
+Then the ARP monitor should gracefully handle the case where a new slave
+has link down, as proposed.
 
-I completely forgot about the second patchset[1] fixing problems of
-the first one.  The first two are folded into respective patches in
-the series (0013 and 0014 updated).  The following three patches have
-been appended to the series.
-
-0018-freezer-restructure-__refrigerator.patch
-0019-freezer-use-lock_task_sighand-in-fake_signal_wake_up.patch
-0020-freezer-remove-unused-sig_only-from-freeze_task.patch
-
-There still are three more patches which got lost.  I'll repost them
-later.
-
-The git branch has been updated to reflect the changes.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer
-
-The new HEAD is efb69700c8 "freezer: remove unused @sig_only from
-freeze_task()".
-
-Thanks.
+Ben.
 
 -- 
-tejun
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-[1] http://thread.gmane.org/gmane.linux.kernel/1187553
