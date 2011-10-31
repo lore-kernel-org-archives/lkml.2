@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934491Ab1JaP1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:27:40 -0400
-Received: from usmamail.tilera.com ([206.83.70.75]:49074 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933175Ab1JaP1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:27:39 -0400
-Message-ID: <4EAEBE69.9080806@tilera.com>
-Date: Mon, 31 Oct 2011 11:27:37 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S934509Ab1JaPc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:32:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933175Ab1JaPc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 11:32:59 -0400
+Date: Mon, 31 Oct 2011 16:28:33 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+Cc: rientjes@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, stable@kernel.org, eteo@redhat.com,
+        pmatouse@redhat.com
+Subject: Re: [PATCH] oom: fix integer overflow of points in oom_badness
+Message-ID: <20111031152833.GA31904@redhat.com>
+References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com>
 MIME-Version: 1.0
-To: Myron Stowe <myron.stowe@redhat.com>
-CC: <jbarnes@virtuousgeek.org>, <linux-pci@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <vapier@gentoo.org>, <dhowells@redhat.com>,
-        <ysato@users.sourceforge.jp>, <tony.luck@intel.com>,
-        <fenghua.yu@intel.com>, <monstr@monstr.eu>, <ralf@linux-mips.org>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>, <lethal@linux-sh.org>,
-        <davem@davemloft.net>, <gxt@mprc.pku.edu.cn>, <tglx@linutronix.de>,
-        <mingo@redhat.com>, <chris@zankel.net>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 07/16] PCI: TILE: convert pcibios_set_master() to
- a non-inlined function
-References: <20111028214726.20088.30551.stgit@amt.stowe> <20111028214817.20088.15009.stgit@amt.stowe>
-In-Reply-To: <20111028214817.20088.15009.stgit@amt.stowe>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320048865-13175-1-git-send-email-fhrbata@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/28/2011 5:48 PM, Myron Stowe wrote:
-> From: Myron Stowe <mstowe@redhat.com>
+On 10/31, Frantisek Hrbata wrote:
 >
-> This patch converts TILE's architecture-specific 'pcibios_set_master()'
-> routine to a non-inlined function.  This will allow follow on patches
-> to create a generic 'pcibios_set_master()' function using the '__weak'
-> attribute which can be used by all architectures as a default which,
-> if necessary, can then be over-ridden by architecture-specific code.
->
-> Converting 'pci_bios_set_master()' to a non-inlined function will
-> allow TILE's 'pcibios_set_master()' implementation to remain
-> architecture-specific after the generic version is introduced and
-> thus, not change current behavior.
->
-> No functional change.
->
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+> My understanding is that we may just change the type of points variable from int
+> to long and keep the current imho clearer(better readable) computation. There
+> should not be an overflow on 32bit and there is a plenty of space for 64bit.
+> If you like this solution better I will post the patch as v2.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Up to maintainer, but personally I think the simple s/int/long/ looks better.
+Everything like get_mm_*/nr_ptes returns long.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Anyway good catch. Imho stable needs the fix too.
+
+Cosmetic nit,
+
+> -	points = get_mm_rss(p->mm) + p->mm->nr_ptes;
+> -	points += get_mm_counter(p->mm, MM_SWAPENTS);
+> +	points = (int)((get_mm_rss(p->mm) + get_mm_counter(p->mm, MM_SWAPENTS) +
+                 ^^^^^
+
+Why do we need the explicit typecast? It buys nothing and looks a bit confusing.
+
+And, if you prefer "int", perhaps something like
+
+	- 	points *= 1000;
+	-	points /= totalpages;
+	+	/* avoid the possible overflow */
+	+	points = points * 1000L / totalpages;
+
+looks a bit more readable with the same effect. But I won't insist, this is
+up to you and David.
+
+Oleg.
 
