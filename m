@@ -1,96 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588Ab1JaRn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 13:43:57 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:13418 "EHLO mx2.netapp.com"
+	id S933596Ab1JaRrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933499Ab1JaRn4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 13:43:56 -0400
-X-IronPort-AV: E=Sophos;i="4.69,433,1315206000"; 
-   d="scan'208";a="593920157"
-Subject: Re: [PATCH] nfs: Fix unused variable warning.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        akpm@linux-foundation.org
-Date: Mon, 31 Oct 2011 13:43:54 -0400
-In-Reply-To: <CADZ9YHhq91+Td03OjWbX0rwHwb6Y7QhicsuDqqAUSy2O8=05BA@mail.gmail.com>
-References: <1319798192.26450.1.camel@localhost.localdomain>
-	 <1320074323.4714.2.camel@lade.trondhjem.org>
-	 <CADZ9YHhq91+Td03OjWbX0rwHwb6Y7QhicsuDqqAUSy2O8=05BA@mail.gmail.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1320083034.4714.24.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 31 Oct 2011 17:43:54.0963 (UTC) FILETIME=[A8F95A30:01CC97F4]
+	id S933322Ab1JaRrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 13:47:02 -0400
+Date: Mon, 31 Oct 2011 18:42:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frantisek Hrbata <fhrbata@redhat.com>
+Cc: rientjes@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, stable@kernel.org, eteo@redhat.com,
+        pmatouse@redhat.com
+Subject: Re: [PATCH v2] oom: fix integer overflow of points in oom_badness
+Message-ID: <20111031174238.GA7344@redhat.com>
+References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com> <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 23:12 +0600, Rakib Mullick wrote: 
-> On Mon, Oct 31, 2011 at 9:18 PM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
-> > On Fri, 2011-10-28 at 16:36 +0600, Rakib Mullick wrote:
-> >
-> > This will still cause a warning if you compile without RPC_DEBUG (e.g.
-> > if CONFIG_SYSCTL isn't defined).
-> >
-> I didn't get any warning with CONFIG_SYSCTL=n.
-> 
-> > Since there is only one user, it seems better to just open-code the
-> > NFS_SERVER(data->inode) in the dprintk()...
-> 
-> Okay, it seems reasonable. We can simply remove 'server'. Please
-> consider the following patch (also attached, might have some white
-> space issue).
-> 
-> ---
-> 
->  When CONFIG_NFS=y and CONFIG_NFS_V3_{,V4}=n we get the following warning.
-> 	
-> 	fs/nfs/write.c: In function ‘nfs_writeback_done’:
-> 	fs/nfs/write.c:1246:21: warning: unused variable ‘server’
-> 
->  Remove the variable 'server' to fix the above warning.
-> 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
-> 
-> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-> index 2219c88..a2e4b27 100644
-> --- a/fs/nfs/write.c
-> +++ b/fs/nfs/write.c
-> @@ -1243,7 +1243,6 @@ void nfs_writeback_done(struct rpc_task *task,
-> struct nfs_write_data *data)
+On 10/31, Frantisek Hrbata wrote:
+>
+>  unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+>  		      const nodemask_t *nodemask, unsigned long totalpages)
 >  {
->  	struct nfs_writeargs	*argp = &data->args;
->  	struct nfs_writeres	*resp = &data->res;
-> -	struct nfs_server	*server = NFS_SERVER(data->inode);
->  	int status;
-> 
->  	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
-> @@ -1277,7 +1276,7 @@ void nfs_writeback_done(struct rpc_task *task,
-> struct nfs_write_data *data)
->  		if (time_before(complain, jiffies)) {
->  			dprintk("NFS:       faulty NFS server %s:"
->  				" (committed = %d) != (stable = %d)\n",
-> -				server->nfs_client->cl_hostname,
-> +				data->inode->nfs_client->cl_hostname,
-				 ^^^^^^^^^^^^
-NFS_SERVER(data->inode)->nfs_client....
+> -	int points;
+> +	long points;
 
-> 				resp->verf->committed, argp->stable);
->  			complain = jiffies + 300 * HZ;
->  		}
+Good catch. Imho this is the stable material.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Acked-by: Oleg Nesterov <oleg@redhat.com>
 
