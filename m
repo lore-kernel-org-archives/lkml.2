@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab1JaUJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 16:09:12 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:47643 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752254Ab1JaUHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 16:07:34 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: mingo@redhat.com, x86@kernel.org, hpa@zytor.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com,
-        aliguori@us.ibm.com, Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 5/6 V2] Add check for suspended vm in softlockup detector
-Date: Mon, 31 Oct 2011 16:07:29 -0400
-Message-Id: <1320091650-24682-6-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1320091650-24682-1-git-send-email-emunson@mgebm.net>
-References: <1320091650-24682-1-git-send-email-emunson@mgebm.net>
+	id S1755397Ab1JaUM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 16:12:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755176Ab1JaUM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 16:12:26 -0400
+Date: Mon, 31 Oct 2011 13:12:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 1/2] vmscan: promote shared file mapped pages
+Message-Id: <20111031131224.79ca1a2c.akpm@linux-foundation.org>
+In-Reply-To: <20110808110658.31053.55013.stgit@localhost6>
+References: <20110808110658.31053.55013.stgit@localhost6>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A suspended VM can cause spurious soft lockup warnings.  To avoid these, the
-watchdog now checks if the kernel knows it was stopped by the host and skips
-the warning if so.
+On Mon, 8 Aug 2011 15:06:58 +0400
+Konstantin Khlebnikov <khlebnikov@openvz.org> wrote:
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- kernel/watchdog.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+> Commit v2.6.33-5448-g6457474 (vmscan: detect mapped file pages used only once)
+> greatly decreases lifetime of single-used mapped file pages.
+> Unfortunately it also decreases life time of all shared mapped file pages.
+> Because after commit v2.6.28-6130-gbf3f3bc (mm: don't mark_page_accessed in fault path)
+> page-fault handler does not mark page active or even referenced.
+> 
+> Thus page_check_references() activates file page only if it was used twice while
+> it stays in inactive list, meanwhile it activates anon pages after first access.
+> Inactive list can be small enough, this way reclaimer can accidentally
+> throw away any widely used page if it wasn't used twice in short period.
+> 
+> After this patch page_check_references() also activate file mapped page at first
+> inactive list scan if this page is already used multiple times via several ptes.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index d680381..ff86cae 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -25,6 +25,7 @@
- #include <linux/sysctl.h>
- 
- #include <asm/irq_regs.h>
-+#include <asm/pvclock.h>
- #include <linux/perf_event.h>
- 
- int watchdog_enabled = 1;
-@@ -292,6 +293,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	 */
- 	duration = is_softlockup(touch_ts);
- 	if (unlikely(duration)) {
-+		/*
-+		 * If a virtual machine is stopped by the host it can look to
-+		 * the watchdog like a soft lockup, check to see if the host
-+		 * stopped the vm before we issue the warning
-+		 */
-+		if (kvm_check_and_clear_host_stopped(smp_processor_id()))
-+			return HRTIMER_RESTART;
-+
- 		/* only warn once */
- 		if (__this_cpu_read(soft_watchdog_warn) == true)
- 			return HRTIMER_RESTART;
--- 
-1.7.5.4
+We have quite a few acks on these two patches, but everyone wants to
+see detailed performance testing.  That hasn't happened, and caution
+dictates that I hold these patches out of linux-3.2, pending that
+testing.
+
+Of course, you're not the only person who can undertake that testing (hint).
 
