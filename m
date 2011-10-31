@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933184Ab1JaPDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:03:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933083Ab1JaPDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:03:22 -0400
-Date: Mon, 31 Oct 2011 17:03:43 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20111031160342.GB2225@redhat.com>
-References: <20111029171554.GA16596@nomi.cz>
+	id S933198Ab1JaPJT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:09:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49966 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932449Ab1JaPJR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 11:09:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111029171554.GA16596@nomi.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4EAE5DE3.2020205@t-online.de>
+References: <4EAE5DE3.2020205@t-online.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 31 Oct 2011 08:08:55 -0700
+X-Google-Sender-Auth: yjvE_5J67IiF2XEruUl3tlyatdc
+Message-ID: <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
+Subject: Re: [BUG] kernel 3.1.0 possible circular locking dependency detected
+To: Knut Petersen <Knut_Petersen@t-online.de>
+Cc: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@lst.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 07:15:54PM +0200, Tomáš Janoušek wrote:
-> Is there anything I can do to track this down? Perhaps try some experimental
-> uCode or something?
+[ Added a few more people to the cc ]
 
-You may try debugging patches I posted a while ago:
-http://marc.info/?l=linux-mm&m=131914560820378&w=2
-http://marc.info/?l=linux-mm&m=131914560820293&w=2
-http://marc.info/?l=linux-mm&m=131914560820317&w=2
+On Mon, Oct 31, 2011 at 1:35 AM, Knut Petersen
+<Knut_Petersen@t-online.de> wrote:
+> After a " rm -r /verybigdir" (about 12G on a 25G reiserfs 3.6partition)
+> I found the following report about a circular locking dependency in
+> kernel 3.1.0
 
-With a bit of luck, kernel should panic and dump call-trace when
-bad code start to write at memory addresses where is not suppose
-to.
+Heh. There is even a comment about the ordering violation:
 
-You have to compile kernel with CONFIG_DEBUG_PAGEALLOC and add
-corrupt_dbg=1 to catch memory corruption. However that may not
-work if you have small amount of memory.
+/* We use I_MUTEX_CHILD here to silence lockdep. It's safe because xattr
+ * mutation ops aren't called during rename or splace, which are the
+ * only other users of I_MUTEX_CHILD. It violates the ordering, but that's
+ * better than allocating another subclass just for this code. */
 
-Also would be good to enable other debug options:
+and apparently the comment is wrong: we *do* end up looking up xattrs
+during splice, due to the security_inode_need_killpriv() thing.
 
-CONFIG_DEBUG_OBJECTS=y
-CONFIG_DEBUG_OBJECTS_FREE=y
-CONFIG_DEBUG_OBJECTS_TIMERS=y
-CONFIG_DEBUG_OBJECTS_WORK=y
-CONFIG_DEBUG_OBJECTS_RCU_HEAD=y
-CONFIG_DEBUG_OBJECTS_ENABLE_DEFAULT=1
+So I think this needs a suid (or sgid) file that has xattrs and is removed.
 
-CONFIG_DEBUG_SG=y
+That said, I suspect this is a false positive, because the actual
+unlink can never happen while somebody is splicing to/from the same
+file at the same time (because then the iput wouldn't be the last one
+for the inode, and the file removal would be delayed until the file
+has been closed for the last time).
 
-CONFIG_DEBUG_LIST=y
+But the hacky use of "I_MUTEX_CHILD" is basically not the proper way
+to silence the lockdep splat.
 
-Stanislaw
+Anybody?
+
+                  Linus
