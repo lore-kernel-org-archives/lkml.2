@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab1JaDAQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 23:00:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40500 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945Ab1JaDAO (ORCPT
+	id S1754022Ab1JaDLq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 23:11:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33631 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab1JaDLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 23:00:14 -0400
-Message-ID: <1320030006.2690.8.camel@phoenix>
-Subject: [PATCH] mfd: adp5520: Ensure setting bits if new value is different
- from the old value
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        device-drivers-devel@blackfin.uclinux.org
-Date: Mon, 31 Oct 2011 11:00:06 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 30 Oct 2011 23:11:45 -0400
+Date: Mon, 31 Oct 2011 11:11:36 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Frank =?utf-8?B?U2No77+9ZmVy?= <fschaefer.oss@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel panic on device removal when using a workqueue and
+ delayed_work
+Message-ID: <20111031031136.GA18057@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <4EADA32E.6030200@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EADA32E.6030200@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code checks if all the bit_mask bits are all zero is wrong.
-We need to write new value if the bit mask fields of new value is
-not equal to old value.
+On Sun, Oct 30, 2011 at 08:19:10PM +0100, Frank Sch�fer wrote:
+> Hi,
+> 
+> with the following simple kernel module, I have a good chance to get
+> a kernel panic when I unplug the device:
+> 
+> 
+> #include <linux/workqueue.h>
+> #include <linux/usb.h>
+> #include <linux/module.h>
+> 
+> MODULE_AUTHOR("Nobody");
+> MODULE_DESCRIPTION("example driver for causing kernel panic");
+> MODULE_LICENSE("GPL");
+> 
+> static struct delayed_work poll_work;
+> 
+> static void poll(struct work_struct *work)
+> {
+>     schedule_delayed_work(&poll_work,
+>                   msecs_to_jiffies(100));
+> }
+> 
+> static int test_probe(struct usb_interface *intf,
+>               const struct usb_device_id *id)
+> {
+>     INIT_DELAYED_WORK(&poll_work, poll);
+>     schedule_delayed_work(&poll_work,
+>                   msecs_to_jiffies(100));
+>     return 0;
+> }
+> 
+> static void test_disconnect(struct usb_interface *intf)
+> {
+>     cancel_delayed_work_sync(&poll_work);
+> }
+> 
+> static const struct usb_device_id device_table[] = {
+>     {USB_DEVICE(0x1234, 0x5678)},
+>     {}
+> };
+> 
+> MODULE_DEVICE_TABLE(usb, device_table);
+> 
+> static struct usb_driver test_driver = {
+>     .name       = "test",
+>     .id_table   = device_table,
+>     .probe      = test_probe,
+>     .disconnect = test_disconnect,
+> };
+> 
+> static int __init test_mod_init(void)
+> {
+>     return usb_register(&test_driver);
+> }
+> 
+> static void __exit test_mod_exit(void)
+> {
+>     usb_deregister(&test_driver);
+> }
+> 
+> module_init(test_mod_init);
+> module_exit(test_mod_exit);
+> 
+> 
+> 
+> 
+> A picture of the backtrace (the machine immediately turns off
+> without saving a backtrace) can be found at
+> 
+> http://imageshack.us/photo/my-images/823/img075gv.jpg
+> 
+> Kernel version is 3.1.0.
+> 
+> 
+> This is the first time I'm using a workqueue, so there is a good
+> chance that I missed something...
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/adp5520.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+You should cancel the work you have armed before exit.
+See cancel_delayed_work().
 
-diff --git a/drivers/mfd/adp5520.c b/drivers/mfd/adp5520.c
-index f1d8848..8d816cc 100644
---- a/drivers/mfd/adp5520.c
-+++ b/drivers/mfd/adp5520.c
-@@ -109,7 +109,7 @@ int adp5520_set_bits(struct device *dev, int reg, uint8_t bit_mask)
- 
- 	ret = __adp5520_read(chip->client, reg, &reg_val);
- 
--	if (!ret && ((reg_val & bit_mask) == 0)) {
-+	if (!ret && ((reg_val & bit_mask) != bit_mask)) {
- 		reg_val |= bit_mask;
- 		ret = __adp5520_write(chip->client, reg, reg_val);
- 	}
--- 
-1.7.5.4
+> Or is this a kernel bug ?
 
+I don't think so.
 
-
+Thanks,
+Yong
