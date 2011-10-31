@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab1JaJsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:48:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48657 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932359Ab1JaJsh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:48:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1320028441.2690.3.camel@phoenix>
-References: <1320028441.2690.3.camel@phoenix>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Mon, 31 Oct 2011 17:48:14 +0800
-Message-ID: <CAMPhdO9+40_E=7LaoMTU6BfG8P6LKP8021tMUu+kZNkNnkez_A@mail.gmail.com>
-Subject: Re: [PATCH] mfd: Add missed free_irq in da903x_remove
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Mike Rapoport <mike@compulab.co.il>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S932805Ab1JaJtu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:49:50 -0400
+Received: from ozlabs.org ([203.10.76.45]:45649 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932221Ab1JaJtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 05:49:49 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: Santosh Kumar <santoshkumar.a@gmail.com>
+cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Tony Breeds <tony@bakeyournoodle.com>,
+        Ian Munsie <ianmunsi@au1.ibm.com>
+Subject: Re: powerpc 476, Little-endian, pte fault
+In-reply-to: <CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
+References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com> <12144.1320040276@neuling.org> <CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
+Comments: In-reply-to Santosh Kumar <santoshkumar.a@gmail.com>
+   message dated "Mon, 31 Oct 2011 12:05:28 +0530."
+Date: Mon, 31 Oct 2011 20:49:48 +1100
+Message-ID: <20440.1320054588@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 10:34 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> I have built a cross compiler for ppc440 in little endian mode and
+> using it to build the kernel.
+> 
+> Yes i am running Linux in Little-Endian. This is the first user space
+> process. I wrote the below program and running it as init from
+> /sbin/init. I have also set the permissions with chmod +s.
+> 
+> main()
+> {
+> 
+> while(1){
+> printf("hello world");
+> sleep(1);
+>  }
+> }
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+Does libc even support little endian on PPC?
 
-> ---
->  drivers/mfd/da903x.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mfd/da903x.c b/drivers/mfd/da903x.c
-> index 1b79c37..62ce685 100644
-> --- a/drivers/mfd/da903x.c
-> +++ b/drivers/mfd/da903x.c
-> @@ -549,6 +549,7 @@ static int __devexit da903x_remove(struct i2c_client *client)
->        struct da903x_chip *chip = i2c_get_clientdata(client);
->
->        da903x_remove_subdevs(chip);
-> +       free_irq(client->irq, chip);
->        kfree(chip);
->        return 0;
->  }
-> --
-> 1.7.5.4
->
->
->
->
+> I have attached the patch.
+
+This is a pretty huge patch:
+
+ 115 files changed, 44479 insertions(+), 7398 deletions(-)
+
+It seems to include a new platform as well as a bunch of unrelated junk.
+
+I suggest you need to break this down into something more digestible.
+Like remove all the junk in the patch.  Then add the support for the new
+platform (invader? platform).  Then start looking at little endian.
+Unless you do this, it's unlikely anyone here is going to be able to
+help.
+
+When you get to the little endian work, you might want to take a look at
+this patch series from Ian Munsie:
+
+http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-October/086165.html
+
+Mikey
