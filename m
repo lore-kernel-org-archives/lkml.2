@@ -1,370 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933502Ab1KAAT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:19:26 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60405 "EHLO
+	id S934858Ab1KAAUu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:20:50 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60395 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934837Ab1KAASO (ORCPT
+	with ESMTP id S934825Ab1KAASM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:14 -0400
-Message-Id: <093448$3uejv7@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599783"
+	Mon, 31 Oct 2011 20:18:12 -0400
+Message-Id: <093448$3uejt0@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599712"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:55:58 -0500
-Subject: [PATCH v5 33/36] Hexagon: Add configuration and makefiles for the Hexagon architecture.
+Date: Mon, 31 Oct 2011 18:50:51 -0500
+Subject: [PATCH v5 25/36] Hexagon: Implement basic cache-flush support
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/Kconfig              |  220 +++++++++++++++++++++++++++++++++++++
- arch/hexagon/Makefile             |   59 ++++++++++
- arch/hexagon/kernel/Makefile      |   19 +++
- arch/hexagon/kernel/asm-offsets.c |  104 +++++++++++++++++
- arch/hexagon/kernel/vmlinux.lds.S |   93 ++++++++++++++++
- arch/hexagon/lib/Makefile         |    4 +
- arch/hexagon/mm/Makefile          |    7 +
- 7 files changed, 506 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/Kconfig
- create mode 100644 arch/hexagon/Makefile
- create mode 100644 arch/hexagon/kernel/Makefile
- create mode 100644 arch/hexagon/kernel/asm-offsets.c
- create mode 100644 arch/hexagon/kernel/vmlinux.lds.S
- create mode 100644 arch/hexagon/lib/Makefile
- create mode 100644 arch/hexagon/mm/Makefile
+ arch/hexagon/include/asm/cache.h      |   34 +++++++++
+ arch/hexagon/include/asm/cacheflush.h |   99 +++++++++++++++++++++++++
+ arch/hexagon/mm/cache.c               |  128 +++++++++++++++++++++++++++++++++
+ 3 files changed, 261 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/cache.h
+ create mode 100644 arch/hexagon/include/asm/cacheflush.h
+ create mode 100644 arch/hexagon/mm/cache.c
 
-diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
+diff --git a/arch/hexagon/include/asm/cache.h b/arch/hexagon/include/asm/cache.h
 new file mode 100644
-index 0000000..02513c2
+index 0000000..0f01de2
 --- /dev/null
-+++ b/arch/hexagon/Kconfig
-@@ -0,0 +1,220 @@
-+# Hexagon configuration
-+comment "Linux Kernel Configuration for Hexagon"
-+
-+config HEXAGON
-+	def_bool y
-+	select HAVE_OPROFILE
-+	select USE_GENERIC_SMP_HELPERS if SMP
-+	# Other pending projects/to-do items.
-+	# select HAVE_REGS_AND_STACK_ACCESS_API
-+	# select HAVE_HW_BREAKPOINT if PERF_EVENTS
-+	# select ARCH_HAS_CPU_IDLE_WAIT
-+	# select ARCH_WANT_OPTIONAL_GPIOLIB
-+	# select ARCH_REQUIRE_GPIOLIB
-+	# select HAVE_CLK
-+	# select IRQ_PER_CPU
-+	select HAVE_IRQ_WORK
-+	# select GENERIC_PENDING_IRQ if SMP
-+	select GENERIC_ATOMIC64
-+	select HAVE_PERF_EVENTS
-+	select HAVE_GENERIC_HARDIRQS
-+	select GENERIC_HARDIRQS_NO__DO_IRQ
-+	select GENERIC_HARDIRQS_NO_DEPRECATED
-+	# GENERIC_ALLOCATOR is used by dma_alloc_coherent()
-+	select GENERIC_ALLOCATOR
-+	select GENERIC_IRQ_SHOW
-+	select HAVE_ARCH_KGDB
-+	select HAVE_ARCH_TRACEHOOK
-+	select NO_IOPORT
-+	# mostly generic routines, with some accelerated ones
-+	---help---
-+	  Qualcomm Hexagon is a processor architecture designed for high
-+	  performance and low power across a wide variety of applications.
-+
-+config HEXAGON_ARCH_V1
-+	bool
-+
-+config HEXAGON_ARCH_V2
-+	bool
-+
-+config HEXAGON_ARCH_V3
-+	bool
-+
-+config HEXAGON_ARCH_V4
-+	bool
-+
-+config FRAME_POINTER
-+	def_bool y
-+
-+config LOCKDEP_SUPPORT
-+	def_bool y
-+
-+config PCI
-+	def_bool n
-+
-+config EARLY_PRINTK
-+	def_bool y
-+
-+config KTIME_SCALAR
-+	def_bool y
-+
-+config MMU
-+	def_bool y
-+
-+config TRACE_IRQFLAGS_SUPPORT
-+	def_bool y
-+
-+config GENERIC_CSUM
-+	def_bool y
-+
-+#
-+# Use the generic interrupt handling code in kernel/irq/:
-+#
-+config GENERIC_IRQ_PROBE
-+	def_bool y
-+
-+config GENERIC_IOMAP
-+	def_bool y
-+
-+#config ZONE_DMA
-+#	bool
-+#	default y
-+
-+config HAS_DMA
-+	bool
-+	select HAVE_DMA_ATTRS
-+	default y
-+
-+config NEED_SG_DMA_LENGTH
-+	def_bool y
-+
-+config RWSEM_GENERIC_SPINLOCK
-+	def_bool n
-+
-+config RWSEM_XCHGADD_ALGORITHM
-+	def_bool y
-+
-+config GENERIC_FIND_NEXT_BIT
-+	def_bool y
-+
-+config GENERIC_HWEIGHT
-+	def_bool y
-+
-+config GENERIC_TIME
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS
-+	def_bool y
-+
-+config GENERIC_CLOCKEVENTS_BROADCAST
-+	def_bool y
-+
-+config STACKTRACE_SUPPORT
-+	def_bool y
-+	select STACKTRACE
-+
-+config GENERIC_BUG
-+	def_bool y
-+	depends on BUG
-+
-+config BUG
-+	def_bool y
-+
-+menu "Machine selection"
-+
-+choice
-+	prompt "System type"
-+	default HEXAGON_ARCH_V2
-+
-+config HEXAGON_COMET
-+	bool "Comet Board"
-+	select HEXAGON_ARCH_V2
-+	---help---
-+	  Support for the Comet platform.
-+
-+endchoice
-+
-+config HEXAGON_VM
-+	def_bool y
-+
-+config CMDLINE
-+	string "Default kernel command string"
-+	default ""
-+	help
-+	  On some platforms, there is currently no way for the boot loader
-+	  to pass arguments to the kernel. For these, you should supply some
-+	  command-line options at build time by entering them here.  At a
-+	  minimum, you should specify the memory size and the root device
-+	  (e.g., mem=64M root=/dev/nfs).
-+
-+config HEXAGON_ANGEL_TRAPS
-+	bool "Use Angel Traps"
-+	default n
-+	---help---
-+	  Enable angel debug traps (for printk's).
-+
-+config SMP
-+	bool "Multi-Processing support"
-+	---help---
-+	  Enables SMP support in the kernel.  If unsure, say "Y"
-+
-+config NR_CPUS
-+	int "Maximum number of CPUs" if SMP
-+	range 2 6 if SMP
-+	default "1" if !SMP
-+	default "6" if SMP
-+	---help---
-+	  This allows you to specify the maximum number of CPUs which this
-+	  kernel will support.  The maximum supported value is 6 and the
-+	  minimum value which makes sense is 2.
-+
-+	  This is purely to save memory - each supported CPU adds
-+	  approximately eight kilobytes to the kernel image.
-+
-+choice
-+	prompt "Kernel page size"
-+	default PAGE_SIZE_4KB
-+	---help---
-+	  Changes the default page size; use with caution.
-+
-+config PAGE_SIZE_4KB
-+	bool "4KB"
-+
-+config PAGE_SIZE_16KB
-+	bool "16KB"
-+
-+config PAGE_SIZE_64KB
-+	bool "64KB"
-+
-+config PAGE_SIZE_256KB
-+	bool "256KB"
-+
-+endchoice
-+
-+source "mm/Kconfig"
-+
-+source "kernel/Kconfig.hz"
-+source "kernel/time/Kconfig"
-+
-+config GENERIC_GPIO
-+	bool "Generic GPIO support"
-+	default n
-+
-+endmenu
-+
-+source "init/Kconfig"
-+source "drivers/Kconfig"
-+source "fs/Kconfig"
-+
-+menu "Executable File Formats"
-+source "fs/Kconfig.binfmt"
-+endmenu
-+
-+source "net/Kconfig"
-+source "security/Kconfig"
-+source "crypto/Kconfig"
-+source "lib/Kconfig"
-+
-+menu "Kernel hacking"
-+source "lib/Kconfig.debug"
-+endmenu
-diff --git a/arch/hexagon/Makefile b/arch/hexagon/Makefile
-new file mode 100644
-index 0000000..7ce9563
---- /dev/null
-+++ b/arch/hexagon/Makefile
-@@ -0,0 +1,59 @@
-+#  Makefile for the Hexagon arch
-+
-+KBUILD_DEFCONFIG = comet_defconfig
-+
-+# Do not use GP-relative jumps
-+KBUILD_CFLAGS += -G0
-+LDFLAGS_vmlinux += -G0
-+
-+# Do not use single-byte enums; these will overflow.
-+KBUILD_CFLAGS += -fno-short-enums
-+
-+# Modules must use either long-calls, or use pic/plt.
-+# Use long-calls for now, it's easier.  And faster.
-+# CFLAGS_MODULE += -fPIC
-+# LDFLAGS_MODULE += -shared
-+CFLAGS_MODULE += -mlong-calls
-+
-+cflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
-+cflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
-+cflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
-+cflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
-+
-+aflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
-+aflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
-+aflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
-+aflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
-+
-+ldflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
-+ldflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
-+ldflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
-+ldflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
-+
-+KBUILD_CFLAGS += $(cflags-y)
-+KBUILD_AFLAGS += $(aflags-y)
-+
-+#  no KBUILD_LDFLAGS?
-+LDFLAGS += $(ldflags-y)
-+
-+# Thread-info register will be r19.  This value is not configureable;
-+# it is hard-coded in several files.
-+TIR_NAME := r19
-+KBUILD_CFLAGS += -ffixed-$(TIR_NAME) -DTHREADINFO_REG=$(TIR_NAME) -D__linux__
-+KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_NAME)
-+
-+LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
-+libs-y += $(LIBGCC)
-+
-+head-y := arch/hexagon/kernel/head.o \
-+	arch/hexagon/kernel/init_task.o
-+
-+core-y += arch/hexagon/kernel/ \
-+	arch/hexagon/mm/ \
-+	arch/hexagon/lib/
-+
-+#	arch/hexagon/platform/common/
-+#
-+#core-$(CONFIG_HEXAGON_COMET)		+= arch/hexagon/platform/comet/
-+#machine-$(CONFIG_HEXAGON_COMET)		:= comet
-+
-diff --git a/arch/hexagon/kernel/Makefile b/arch/hexagon/kernel/Makefile
-new file mode 100644
-index 0000000..27be2f6
---- /dev/null
-+++ b/arch/hexagon/kernel/Makefile
-@@ -0,0 +1,19 @@
-+extra-y := head.o vmlinux.lds init_task.o
-+
-+obj-$(CONFIG_SMP) += smp.o topology.o
-+
-+obj-y += setup.o irq_cpu.o traps.o syscalltab.o signal.o time.o
-+obj-y += process.o syscall.o trampoline.o reset.o ptrace.o
-+obj-y += vdso.o
-+
-+obj-$(CONFIG_KGDB)    += kgdb.o
-+obj-$(CONFIG_MODULES) += module.o hexagon_ksyms.o
-+
-+# Modules required to work with the Hexagon Virtual Machine
-+obj-y += vm_entry.o vm_events.o vm_switch.o vm_ops.o vm_init_segtable.o
-+obj-y += vm_vectors.o
-+
-+obj-$(CONFIG_HAS_DMA) += dma.o
-+
-+obj-$(CONFIG_STACKTRACE) += stacktrace.o
-+
-diff --git a/arch/hexagon/kernel/asm-offsets.c b/arch/hexagon/kernel/asm-offsets.c
-new file mode 100644
-index 0000000..89ffa51
---- /dev/null
-+++ b/arch/hexagon/kernel/asm-offsets.c
-@@ -0,0 +1,104 @@
++++ b/arch/hexagon/include/asm/cache.h
+@@ -0,0 +1,34 @@
 +/*
-+ * Copyright (C) 1996 David S. Miller
-+ * Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003 Ralf Baechle
-+ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
-+ * Kevin Kissell, kevink@mips.com and Carsten Langgaard, carstenl@mips.com
-+ * Copyright (C) 2000 MIPS Technologies, Inc.
++ * Cache definitions for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -383,94 +54,133 @@ index 0000000..89ffa51
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/compat.h>
-+#include <linux/types.h>
-+#include <linux/sched.h>
++#ifndef __ASM_CACHE_H
++#define __ASM_CACHE_H
++
++/* Bytes per L1 cache line */
++#define L1_CACHE_SHIFT		(5)
++#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
++
++#define __cacheline_aligned	__aligned(L1_CACHE_BYTES)
++#define ____cacheline_aligned	__aligned(L1_CACHE_BYTES)
++
++/* See http://kerneltrap.org/node/15100  */
++#define __read_mostly
++
++#endif
+diff --git a/arch/hexagon/include/asm/cacheflush.h b/arch/hexagon/include/asm/cacheflush.h
+new file mode 100644
+index 0000000..6865c1b
+--- /dev/null
++++ b/arch/hexagon/include/asm/cacheflush.h
+@@ -0,0 +1,99 @@
++/*
++ * Cache flush operations for the Hexagon architecture
++ *
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_CACHEFLUSH_H
++#define _ASM_CACHEFLUSH_H
++
++#include <linux/cache.h>
 +#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <linux/kbuild.h>
-+#include <asm/ptrace.h>
-+#include <asm/processor.h>
++#include <asm/string.h>
++#include <asm-generic/cacheflush.h>
 +
-+/*  This file is used to produce asm/linkerscript constants from header
-+    files typically used in c.  Specifically, it generates asm-offsets.h  */
++/* Cache flushing:
++ *
++ *  - flush_cache_all() flushes entire cache
++ *  - flush_cache_mm(mm) flushes the specified mm context's cache lines
++ *  - flush_cache_page(mm, vmaddr, pfn) flushes a single page
++ *  - flush_cache_range(vma, start, end) flushes a range of pages
++ *  - flush_icache_range(start, end) flush a range of instructions
++ *  - flush_dcache_page(pg) flushes(wback&invalidates) a page for dcache
++ *  - flush_icache_page(vma, pg) flushes(invalidates) a page for icache
++ *
++ *  Need to doublecheck which one is really needed for ptrace stuff to work.
++ */
++#define LINESIZE	32
++#define LINEBITS	5
 +
-+int main(void)
-+{
-+	COMMENT("This is a comment.");
-+	/*  might get these from somewhere else.  */
-+	DEFINE(_PAGE_SIZE, PAGE_SIZE);
-+	DEFINE(_PAGE_SHIFT, PAGE_SHIFT);
-+	BLANK();
-+
-+	COMMENT("Hexagon pt_regs definitions");
-+	OFFSET(_PT_SYSCALL_NR, pt_regs, syscall_nr);
-+	OFFSET(_PT_UGPGP, pt_regs, ugpgp);
-+	OFFSET(_PT_R3130, pt_regs, r3130);
-+	OFFSET(_PT_R2928, pt_regs, r2928);
-+	OFFSET(_PT_R2726, pt_regs, r2726);
-+	OFFSET(_PT_R2524, pt_regs, r2524);
-+	OFFSET(_PT_R2322, pt_regs, r2322);
-+	OFFSET(_PT_R2120, pt_regs, r2120);
-+	OFFSET(_PT_R1918, pt_regs, r1918);
-+	OFFSET(_PT_R1716, pt_regs, r1716);
-+	OFFSET(_PT_R1514, pt_regs, r1514);
-+	OFFSET(_PT_R1312, pt_regs, r1312);
-+	OFFSET(_PT_R1110, pt_regs, r1110);
-+	OFFSET(_PT_R0908, pt_regs, r0908);
-+	OFFSET(_PT_R0706, pt_regs, r0706);
-+	OFFSET(_PT_R0504, pt_regs, r0504);
-+	OFFSET(_PT_R0302, pt_regs, r0302);
-+	OFFSET(_PT_R0100, pt_regs, r0100);
-+	OFFSET(_PT_LC0SA0, pt_regs, lc0sa0);
-+	OFFSET(_PT_LC1SA1, pt_regs, lc1sa1);
-+	OFFSET(_PT_M1M0, pt_regs, m1m0);
-+	OFFSET(_PT_PREDSUSR, pt_regs, predsusr);
-+	OFFSET(_PT_EVREC, pt_regs, hvmer);
-+	OFFSET(_PT_ER_VMEL, pt_regs, hvmer.vmel);
-+	OFFSET(_PT_ER_VMEST, pt_regs, hvmer.vmest);
-+	OFFSET(_PT_ER_VMPSP, pt_regs, hvmer.vmpsp);
-+	OFFSET(_PT_ER_VMBADVA, pt_regs, hvmer.vmbadva);
-+	DEFINE(_PT_REGS_SIZE, sizeof(struct pt_regs));
-+	BLANK();
-+
-+	COMMENT("Hexagon thread_info definitions");
-+	OFFSET(_THREAD_INFO_FLAGS, thread_info, flags);
-+	OFFSET(_THREAD_INFO_PT_REGS, thread_info, regs);
-+	OFFSET(_THREAD_INFO_SP, thread_info, sp);
-+	DEFINE(_THREAD_SIZE, THREAD_SIZE);
-+	BLANK();
-+
-+	COMMENT("Hexagon hexagon_switch_stack definitions");
-+	OFFSET(_SWITCH_R1716, hexagon_switch_stack, r1716);
-+	OFFSET(_SWITCH_R1918, hexagon_switch_stack, r1918);
-+	OFFSET(_SWITCH_R2120, hexagon_switch_stack, r2120);
-+	OFFSET(_SWITCH_R2322, hexagon_switch_stack, r2322);
-+
-+	OFFSET(_SWITCH_R2524, hexagon_switch_stack, r2524);
-+	OFFSET(_SWITCH_R2726, hexagon_switch_stack, r2726);
-+	OFFSET(_SWITCH_FP, hexagon_switch_stack, fp);
-+	OFFSET(_SWITCH_LR, hexagon_switch_stack, lr);
-+	DEFINE(_SWITCH_STACK_SIZE, sizeof(struct hexagon_switch_stack));
-+	BLANK();
-+
-+	COMMENT("Hexagon task_struct definitions");
-+	OFFSET(_TASK_THREAD_INFO, task_struct, stack);
-+	OFFSET(_TASK_STRUCT_THREAD, task_struct, thread);
-+
-+	COMMENT("Hexagon thread_struct definitions");
-+	OFFSET(_THREAD_STRUCT_SWITCH_SP, thread_struct, switch_sp);
-+
-+	return 0;
-+}
-diff --git a/arch/hexagon/kernel/vmlinux.lds.S b/arch/hexagon/kernel/vmlinux.lds.S
-new file mode 100644
-index 0000000..362742f
---- /dev/null
-+++ b/arch/hexagon/kernel/vmlinux.lds.S
-@@ -0,0 +1,93 @@
 +/*
-+ * Linker script for Hexagon kernel
++ * Flush Dcache range through current map.
++ */
++extern void flush_dcache_range(unsigned long start, unsigned long end);
++
++/*
++ * Flush Icache range through current map.
++ */
++#undef flush_icache_range
++extern void flush_icache_range(unsigned long start, unsigned long end);
++
++/*
++ * Memory-management related flushes are there to ensure in non-physically
++ * indexed cache schemes that stale lines belonging to a given ASID aren't
++ * in the cache to confuse things.  The prototype Hexagon Virtual Machine
++ * only uses a single ASID for all user-mode maps, which should
++ * mean that they aren't necessary.  A brute-force, flush-everything
++ * implementation, with the name xxxxx_hexagon() is present in
++ * arch/hexagon/mm/cache.c, but let's not wire it up until we know
++ * it is needed.
++ */
++extern void flush_cache_all_hexagon(void);
++
++/*
++ * This may or may not ever have to be non-null, depending on the
++ * virtual machine MMU.  For a native kernel, it's definitiely  a no-op
++ *
++ * This is also the place where deferred cache coherency stuff seems
++ * to happen, classically...  but instead we do it like ia64 and
++ * clean the cache when the PTE is set.
++ *
++ */
++static inline void update_mmu_cache(struct vm_area_struct *vma,
++					unsigned long address, pte_t *ptep)
++{
++	/*  generic_ptrace_pokedata doesn't wind up here, does it?  */
++}
++
++#undef copy_to_user_page
++static inline void copy_to_user_page(struct vm_area_struct *vma,
++					     struct page *page,
++					     unsigned long vaddr,
++					     void *dst, void *src, int len)
++{
++	memcpy(dst, src, len);
++	if (vma->vm_flags & VM_EXEC) {
++		flush_icache_range((unsigned long) dst,
++		(unsigned long) dst + len);
++	}
++}
++
++
++extern void hexagon_inv_dcache_range(unsigned long start, unsigned long end);
++extern void hexagon_clean_dcache_range(unsigned long start, unsigned long end);
++
++#endif
+diff --git a/arch/hexagon/mm/cache.c b/arch/hexagon/mm/cache.c
+new file mode 100644
+index 0000000..c5cf6ee
+--- /dev/null
++++ b/arch/hexagon/mm/cache.c
+@@ -0,0 +1,128 @@
++/*
++ * Cache management functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -489,102 +199,114 @@ index 0000000..362742f
 + * 02110-1301, USA.
 + */
 +
-+#define LOAD_OFFSET PAGE_OFFSET
++#include <linux/mm.h>
++#include <asm/cacheflush.h>
++#include <asm/hexagon_vm.h>
 +
-+#include <asm-generic/vmlinux.lds.h>
-+#include <asm/asm-offsets.h>	/*  Most of the kernel defines are here  */
-+#include <asm/mem-layout.h>	/*  except for page_offset  */
-+#include <asm/cache.h>		/*  and now we're pulling cache line size  */
-+OUTPUT_ARCH(hexagon)
-+ENTRY(stext)
++#define spanlines(start, end) \
++	(((end - (start & ~(LINESIZE - 1))) >> LINEBITS) + 1)
 +
-+jiffies = jiffies_64;
-+
-+/*
-+See asm-generic/vmlinux.lds.h for expansion of some of these macros.
-+See asm-generic/sections.h for seemingly required labels.
-+*/
-+
-+#define PAGE_SIZE _PAGE_SIZE
-+
-+/*  This LOAD_OFFSET is temporary for debugging on the simulator; it may change
-+    for hypervisor pseudo-physical memory.  */
-+
-+
-+SECTIONS
++void flush_dcache_range(unsigned long start, unsigned long end)
 +{
-+	. = PAGE_OFFSET + LOAD_ADDRESS;
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
 +
-+	__init_begin = .;
-+	HEAD_TEXT_SECTION
-+	INIT_TEXT_SECTION(PAGE_SIZE)
-+	PERCPU_SECTION(L1_CACHE_BYTES)
-+	__init_end = .;
++	start &= ~(LINESIZE - 1);
 +
-+        . = ALIGN(_PAGE_SIZE);
-+	_stext = .;
-+	.text : AT(ADDR(.text) - LOAD_OFFSET) {
-+		_text = .;
-+		TEXT_TEXT
-+		SCHED_TEXT
-+		LOCK_TEXT
-+		KPROBES_TEXT
-+		*(.fixup)
++	local_irq_save(flags);
++
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++		"	dccleaninva(%0);	"
++		:
++		: "r" (start)
++		);
++		start += LINESIZE;
 +	}
-+	_etext = .;
++	local_irq_restore(flags);
++}
 +
-+	INIT_DATA_SECTION(PAGE_SIZE)
++void flush_icache_range(unsigned long start, unsigned long end)
++{
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
 +
-+	_sdata = .;
-+		RW_DATA_SECTION(32,PAGE_SIZE,PAGE_SIZE)
-+		RO_DATA_SECTION(PAGE_SIZE)
-+	_edata = .;
++	start &= ~(LINESIZE - 1);
 +
-+	EXCEPTION_TABLE(16)
-+	NOTES
++	local_irq_save(flags);
 +
-+	BSS_SECTION(_PAGE_SIZE, _PAGE_SIZE, _PAGE_SIZE)
-+
-+	_end = .;
-+
-+	/DISCARD/ : {
-+		EXIT_TEXT
-+		EXIT_DATA
-+		EXIT_CALL
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++			"	dccleana(%0); "
++			"	icinva(%0);	"
++			:
++			: "r" (start)
++		);
++		start += LINESIZE;
 +	}
++	__asm__ __volatile__ (
++		"isync"
++	);
++	local_irq_restore(flags);
++}
 +
-+	STABS_DEBUG
-+	DWARF_DEBUG
++void hexagon_clean_dcache_range(unsigned long start, unsigned long end)
++{
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
 +
++	start &= ~(LINESIZE - 1);
++
++	local_irq_save(flags);
++
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++		"	dccleana(%0);	"
++		:
++		: "r" (start)
++		);
++		start += LINESIZE;
++	}
++	local_irq_restore(flags);
++}
++
++void hexagon_inv_dcache_range(unsigned long start, unsigned long end)
++{
++	unsigned long lines = spanlines(start, end-1);
++	unsigned long i, flags;
++
++	start &= ~(LINESIZE - 1);
++
++	local_irq_save(flags);
++
++	for (i = 0; i < lines; i++) {
++		__asm__ __volatile__ (
++		"	dcinva(%0);	"
++		:
++		: "r" (start)
++		);
++		start += LINESIZE;
++	}
++	local_irq_restore(flags);
 +}
 +
 +
 +
 +
-+
-diff --git a/arch/hexagon/lib/Makefile b/arch/hexagon/lib/Makefile
-new file mode 100644
-index 0000000..874655e
---- /dev/null
-+++ b/arch/hexagon/lib/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Makefile for hexagon-specific library files.
-+#
-+obj-y = checksum.o io.o memcpy.o memset.o
-diff --git a/arch/hexagon/mm/Makefile b/arch/hexagon/mm/Makefile
-new file mode 100644
-index 0000000..018be76
---- /dev/null
-+++ b/arch/hexagon/mm/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for Hexagon memory management subsystem
-+#
-+
-+obj-y := init.o pgalloc.o ioremap.o uaccess.o vm_fault.o cache.o
-+obj-y += copy_to_user.o copy_from_user.o strnlen_user.o vm_tlb.o
-+
++/*
++ * This is just really brutal and shouldn't be used anyways,
++ * especially on V2.  Left here just in case.
++ */
++void flush_cache_all_hexagon(void)
++{
++	unsigned long flags;
++	local_irq_save(flags);
++	__vmcache_ickill();
++	__vmcache_dckill();
++	__vmcache_l2kill();
++	local_irq_restore(flags);
++	mb();
++}
 -- 
 1.7.1
 
