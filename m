@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934823Ab1JaXRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 19:17:37 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50890 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934704Ab1JaXRf (ORCPT
+	id S933377Ab1JaXST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 19:18:19 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47807 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932477Ab1JaXSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 19:17:35 -0400
-Date: Mon, 31 Oct 2011 16:17:30 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Layton <jlayton@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        Steve French <sfrench@samba.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111031231730.GH18855@google.com>
-References: <20111031221743.GA18855@google.com>
+	Mon, 31 Oct 2011 19:18:18 -0400
+X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 19:18:18 EDT
+Message-ID: <4EAF28B6.6080802@fb.com>
+Date: Mon, 31 Oct 2011 16:01:10 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031221743.GA18855@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Rientjes <rientjes@google.com>
+CC: Pekka Enberg <penberg@kernel.org>, <x86@kernel.org>,
+        <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [RFC/PATCH 4/7] x86, mm: Wrap ZONE_DMA32 with CONFIG_ZONE_DMA32
+References: <1319811801-1725-1-git-send-email-penberg@kernel.org> <1319811801-1725-4-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1110311551290.22237@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1110311551290.22237@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.18.252]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
+ definitions=2011-10-31_05:2011-10-31,2011-10-31,1970-01-01 signatures=0
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 03:17:43PM -0700, Tejun Heo wrote:
-> Commit 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake
-> TASK_KILLABLE tasks too" made freezer wake up tasks in TASK_KILLABLE
-> sleep too citing non-interruptible but killable sleeps in cifs and
-> nfs.
-> 
-> I don't think we can do this.  We should not send spurious unsolicited
-> non-interruptible wakeups.  Most synchornization constructs are built
-> to cope with spurious wakeups and any INTERRUPTIBLE sleep must be able
-> to handle spurious wakeups but that's not true for KILLABLE sleeps -
-> KILLABLE condition cannot be cancelled.
-> 
-> This is probably okay for most cases but circumventing fundamental
-> wakeup condition like this is asking for trouble.  Furthermore, I'm
-> not sure the behavior change brought on by this change - breaking
-> nfs/cifs uninterruptible operation guarantee - is correct.  If such
-> behavior is desirable, the right thing to do is using intr mount
-> option, not circumventing it from PM layer.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Jeff Layton <jlayton@redhat.com>
-> ---
-> Neil, Steve, do the network filesystems need a way to indicate "I can
-> either be killed or enter freezer"?
+On 10/31/11 3:52 PM, David Rientjes wrote:
+> On Fri, 28 Oct 2011, Pekka Enberg wrote:
+>
+>> In preparation for unifying 32-bit and 64-bit zone_sizes_init() make sure
+>> ZONE_DMA32 is wrapped in CONFIG_ZONE_DMA32.
+>>
+>> Cc: Tejun Heo<tj@kernel.org>
+>> Cc: Yinghai Lu<yinghai@kernel.org>
+>> Cc: H. Peter Anvin<hpa@linux.intel.com>
+>> Cc: David Rientjes<rientjes@google.com>
+>> Signed-off-by: Pekka Enberg<penberg@kernel.org>
+>
+> Acked-by: David Rientjes<rientjes@google.com>
+>
+> Adding Arun Sharma to the cc, he was interested in disabling
+> CONFIG_ZONE_DMA32 and I believe carries this patch internally (as we do).
+>
 
-Hmm... okay, so commit f06ac72e929 "cifs, freezer: add
-wait_event_freezekillable and have cifs use it" added freezable &
-killable sleep.  If this is necessary, the right thing to do is adding
-another waking state, not modifying existing one's behavior.
+Yes we do.
 
-But, before going there, is this *really* necessary?  Do we really
-have to choose among different combinations of interruptible, killable
-and freezable?  If something doesn't want to be bothered than being
-killed, assuming it doesn't want to go hibernating is kinda natural.
+Acked-by: Arun Sharma <asharma@fb.com>
 
-IOW, can we please update cifs, if it wants to allow hibernation, to
-use interruptible sleep in wait_for_response() than trying to modify
-basic sleep mechanism?
-
-Thank you.
-
--- 
-tejun
