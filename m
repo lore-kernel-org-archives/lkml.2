@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934775Ab1JaW4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 18:56:34 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45561 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934719Ab1JaW4d (ORCPT
+	id S934796Ab1JaW47 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:56:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:59691 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934704Ab1JaW45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 18:56:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
-	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=Dt/5aQbn0lcsWgzncb0haJkxFpCzFsHUSU9BVlGv5fv4Cbt3edF9rNTEUCGHcgfa5
-	AxWNJUvAoWAk1tLxC6Y0g==
-Date: Mon, 31 Oct 2011 15:56:28 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: x86@kernel.org, linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [RFC/PATCH 6/7] x86, mm: Prepare zone_sizes_init() for
- unification
-In-Reply-To: <1319811801-1725-6-git-send-email-penberg@kernel.org>
-Message-ID: <alpine.DEB.2.00.1110311554580.22237@chino.kir.corp.google.com>
-References: <1319811801-1725-1-git-send-email-penberg@kernel.org> <1319811801-1725-6-git-send-email-penberg@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 31 Oct 2011 18:56:57 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <7vvcr4ojvp.fsf@alter.siamese.dyndns.org>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <4EAF1F40.3030907@zytor.com> <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
+ <4EAF2245.90308@zytor.com> <CA+55aFzedaAzzWfzhqVf8y8ZW0jeb56hZwdV3UodSp8Q_Qhc2A@mail.gmail.com>
+ <7vvcr4ojvp.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 31 Oct 2011 15:56:35 -0700
+X-Google-Sender-Auth: ttY3rzU154frN_-764RPAb-6eOo
+Message-ID: <CA+55aFyKWLUMQFfaeKJKGFPV_7kfOGjf+pSZ1Y8afzkT4OYQ9Q@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: Junio C Hamano <gitster@pobox.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Oct 2011, Pekka Enberg wrote:
+On Mon, Oct 31, 2011 at 3:51 PM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> Some cut-and-paste (or piping the e-mail to a command) would be necessary
+> evil, though, as you would have GPG keys from more than one trusted person
+> in your keyring, and when you are responding to a pull-request from person
+> A, finding a valid commit signed by person B should not be a success, but
+> at least should raise a warning.
 
-> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-> index 6101894..12274fb 100644
-> --- a/arch/x86/mm/init_32.c
-> +++ b/arch/x86/mm/init_32.c
-> @@ -677,10 +677,14 @@ void __init initmem_init(void)
->  static void __init zone_sizes_init(void)
->  {
->  	unsigned long max_zone_pfns[MAX_NR_ZONES];
-> +
->  	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
->  #ifdef CONFIG_ZONE_DMA
->  	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
->  #endif
-> +#ifdef CONFIG_ZONE_DMA32
-> +        max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
-> +#endif
->  	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
->  #ifdef CONFIG_HIGHMEM
->  	max_zone_pfns[ZONE_HIGHMEM] = max_pfn;
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index f6b1f08..06c4360 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -624,6 +624,9 @@ static void __init zone_sizes_init(void)
->  	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
->  #endif
->  	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
-> +#ifdef CONFIG_HIGHMEM
-> +	max_zone_pfns[ZONE_HIGHMEM] = max_pfn;
-> +#endif
->  
->  	free_area_init_nodes(max_zone_pfns);
->  }
+Why?
 
-I'd just fold patch 7 into this, it doesn't make much sense to have add 
-CONFIG_HIGHMEM code for 64-bit, for example, just to make the next patch 
-simpler.
+The signer of the message needs to be printed out *anyway*. I can
+match that up with the pull request, the same way I already match up
+diffstat information.
+
+So any extra cut-and-paste is (a) stupid, (b) unnecessary and (c) annoying.
+
+It's also "bad user interface". The whole point is that we should make
+the user interface *good*. Which means that the pushing side should
+only need to add a "-s" to ask for signing, have to type his
+passphrase (and even that would go away when using gpg-agent or
+something), and perhaps a message (which would not be about the
+signing, but about something that could be added to the merge commit.
+
+And the receiving side would just do the "git pull" and automatically
+just get notified that "Yes, this push has been signed by key Xyz
+Abcdef"
+
+                     Linus
