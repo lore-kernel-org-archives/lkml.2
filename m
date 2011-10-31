@@ -1,144 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933849Ab1JaSYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 14:24:00 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:33217 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933655Ab1JaSX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 14:23:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=AGV89KeEbTkMf/FVW8HITBJSoxmGLa2V
-	Mlh+ogcFQJ77YiFbqDUfLEuEhYxM6IjNpeS43Pp/1WXqqbhfLYUQukgC2kVzHDZP
-	ThJ7veNoG3CcLJGuB+3mSzp2YEQptj+Y63Yil6MGJKuGFQIRYDWwyvMlWX0wnNc8
-	ns44jDo/908=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <20111026202235.GA20928@havoc.gtf.org>
- <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike>
- <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
-Date: Mon, 31 Oct 2011 11:23:55 -0700
-In-Reply-To: <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> (Linus
- Torvalds's message of "Mon, 31 Oct 2011 08:53:59 -0700")
-Message-ID: <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S933860Ab1JaSYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 14:24:55 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:52713 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933659Ab1JaSYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 14:24:54 -0400
+Date: Mon, 31 Oct 2011 11:24:37 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chase Douglas <chase.douglas@canonical.com>,
+        Alessandro Rubini <rubini@cvml.unipv.it>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/7] Input: ALPS - Remove assumptions about packet size
+Message-ID: <20111031182437.GA10551@core.coreip.homeip.net>
+References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
+ <1319663681-11244-5-git-send-email-seth.forshee@canonical.com>
+ <4EAD6EF3.50109@canonical.com>
+ <20111031181702.GB12205@thinkpad-t410>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 7ECE85F4-03ED-11E1-88EE-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <20111031181702.GB12205@thinkpad-t410>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Mon, Oct 31, 2011 at 02:17:02PM -0400, Seth Forshee wrote:
+> On Sun, Oct 30, 2011 at 11:36:19AM -0400, Chase Douglas wrote:
+> > On 10/26/2011 05:14 PM, Seth Forshee wrote:
+> > > In preparation for version 4 protocol support, which has 8-byte
+> > > data packets, remove all hard-coded assumptions about packet size
+> > > and use psmouse->pktsize instead.
+> > > 
+> > > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> > > ---
+> > >  drivers/input/mouse/alps.c |   27 ++++++++++++++++++---------
+> > >  1 files changed, 18 insertions(+), 9 deletions(-)
+> > > 
+> > > diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
+> > > index 572cb21..14d1f64 100644
+> > > --- a/drivers/input/mouse/alps.c
+> > > +++ b/drivers/input/mouse/alps.c
+> > > @@ -315,7 +315,7 @@ static void alps_flush_packet(unsigned long data)
+> > >  
+> > >  	serio_pause_rx(psmouse->ps2dev.serio);
+> > >  
+> > > -	if (psmouse->pktcnt == 6) {
+> > > +	if (psmouse->pktcnt == psmouse->pktsize) {
+> > >  
+> > >  		/*
+> > >  		 * We did not any more data in reasonable amount of time.
+> > > @@ -365,15 +365,15 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
+> > >  		return PSMOUSE_BAD_DATA;
+> > >  	}
+> > >  
+> > > -	/* Bytes 2 - 6 should have 0 in the highest bit */
+> > > -	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= 6 &&
+> > > +	/* Bytes 2 - pktsize should have 0 in the highest bit */
+> > > +	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
+> > >  	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
+> > >  		dbg("refusing packet[%i] = %x\n",
+> > >  		    psmouse->pktcnt - 1, psmouse->packet[psmouse->pktcnt - 1]);
+> > >  		return PSMOUSE_BAD_DATA;
+> > >  	}
+> > >  
+> > > -	if (psmouse->pktcnt == 6) {
+> > > +	if (psmouse->pktcnt == psmouse->pktsize) {
+> > >  		alps_process_packet(psmouse);
+> > >  		return PSMOUSE_FULL_PACKET;
+> > >  	}
+> > > @@ -531,8 +531,13 @@ static int alps_tap_mode(struct psmouse *psmouse, int enable)
+> > >  static int alps_poll(struct psmouse *psmouse)
+> > >  {
+> > >  	struct alps_data *priv = psmouse->private;
+> > > -	unsigned char buf[6];
+> > > +	unsigned char *buf;
+> > >  	bool poll_failed;
+> > > +	int ret = -1;
+> > > +
+> > > +	buf = kmalloc(psmouse->pktsize, GFP_KERNEL);
+> > > +	if (!buf)
+> > > +		return -1;
+> > 
+> > Can we preallocate a buffer somewhere instead of allocating every time
+> > we enter the function? If we know the maximum packet size we could
+> > allocate on the stack instead.
+> 
+> Thanks for pointing that out; I had meant to come back and do something
+> about this but forgot. I was hoping to avoid having to hard-code an
+> assumed maximum packet size. I'll take a look at it.
 
-> For the people who use "git request-pull", I'm attaching a trivial
-> patch to make it add this kind of signature if you give it the "-s"
-> flag. It basically just adds a hunk like the appended crazy example to
-> the pull request, and it's small enough and simple enough that it
-> makes verification simple too with just the above kind of trivial
-> cut-and-paste thing.
->
-> (Junio cc'd, I think he had something more complicated in mind)
+probably doing something like
 
-You have misread me this time.
+	unsigned char buf[sizeof(psmouse->packet)];
 
-I think the minimalistic "paste this line to your 'git pull' command line
-and expect to get history leading to this commit" like you did in your
-patch would be the solution that is the least painful and still useful,
-which is an important criterion for wide adoption.
+will cover it.
 
-> Now, admittedly it would be *even nicer* if this gpg-signed block was
-> instead uploaded as a signed tag automatically, and "git pull" would
-> notice such a signed tag (tagname the same as the branch name + date
-> or something) and would download and verify the tag as I pull. Then I
-> wouldn't even need to actually do the cut-and-paste at all. But this
-> is the *really* simple approach that gets up 95% of the way there.
-
-I however have a small trouble with "lieutenants use signed tags in order
-to prove who they are to Linus", depending on the details.
-
-It certainly lets you run "git tag --verify" after you pulled and will
-give you assurance that you pulled the right thing from the right person,
-but what do you plan to do to the tag from your lieutenants after you
-fetched and verified?  I count 379 merges by you between 3.0 (2011-07-21)
-and 3.1 (2011-10-24), which would mean you would see 4-5 tags per day on
-average.  Will these tags be pushed out to your public history?
-
-On one hand, we (not just you but the consumers of "Linus kernel") can
-consider these tags are of ephemeral nature. Once they are used for _you_
-to verify the authenticity, they are not needed anymore. The consumers of
-"Linus kernel" by definition trusts what you publish, so as long as they
-have a way to verify the tip commit you push out, they _should_ be happy.
-If you take this stance, you would not push these tags out so that you do
-not have to contaminate the tags namespace with them, and you might even
-choose to discard them once you pulled and verified the lieutenants' tips
-to avoid contamination of your own refs namespace.
-
-On the other hand, the consumers of "Linus kernel" may want to say that
-they trust your tree and your tags because they can verify them with your
-GPG signature, but also they can independently verify the lieutenants'
-trees you pulled from are genuine. Keeping signed tags and publishing them
-is one way to make it possible, but 400 extra tags in 3 months feels like
-an approach with too much downside (i.e. noise) for that benefit.
-
-On Git mailing list, we have been toying with a couple of ideas. The
-simplest one (cooking in next) is to allow committers to add gpg signature
-in an additional header of the commit objects. "git show" and friends are
-taught how to verify these signatures when asked.
-
-This might have a potential downside on the lieutenants' workflow; after
-integrating the work by their sub-lieutenants and by themselves, they
-would test and review the result to convince themselves that it is worth
-asking you to pull, and then they have to either
-
-    (1) "commit --amend --gpg-signature" the tip; or
-
-    (2) "commit --allow-empty --gpg-signature" to add an empty commit
-        whose sole purpose is to hold the signature (and avoid amending
-        the tip)
-
-before pushing it out, asking you to pull.
-
-An alternative we have discussed was to store gpg signature for the commit
-("push certificate") somewhere in notes tree and push that out, certifying
-that the commit indeed came from the pusher, but that would:
-
- (1) require upstreams to fetch (and possibly suffer from merge conflicts
-     in notes tree) push certificate whenever they pull from their
-     lieutenants; and
-
- (2) require downstreams to also fetch the notes tree for "push
-     certificates" (especially when the central repository is shared among
-     multiple people) before adding their own signature and then push it
-     back (and possiblly suffer from "non-fast-forward" in notes tree).
-
-both of which are downsides coming from "notes" being not a very good
-match for what these signatures are trying to achieve.
-
-Namely, the current "notes" mechanism is designed to keep track of history
-of changes made to notes attached to commits, but for the signature
-application, we do not care about the order that signatures came to two
-separate commits. "Non-fast-forward" conflicts while pushing, or having to
-fetch and merge before adding one's own signature, are unwanted burden
-imposed only by choosing to use "notes" for storing and conveying the
-signature.
-
-Also the "notes" approach would end up mixing "push certificates" for
-different branches (this won't be an issue in your repository where there
-is only one branch) into a single "notes" tree. We would want to use
-something that behaves more like the "auto-following" semantics of tag
-objects. You would want to fetch only signatures that are attached to the
-commits you are fetching. Use of signed tags, or commit objects that can
-be signed in-place, have this property, but storing signature in notes
-tree does not give it to us.
-
-I think further discussions on this should continue on the git mailing
-list.
+-- 
+Dmitry
