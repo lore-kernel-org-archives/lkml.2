@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752156Ab1JaXTj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 19:19:39 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:36731 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab1JaXTi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 19:19:38 -0400
-Date: Tue, 1 Nov 2011 10:19:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux-next@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: git tree URL for IEEE 1394 (FireWire) kernel subsystem
-Message-Id: <20111101101930.e12ca55cc07324b42cf01564@canb.auug.org.au>
-In-Reply-To: <20111031185701.5c8771c6@stein>
-References: <20110917194757.2f561324@stein>
-	<20110918215144.f33db78e54224626c6ee408e@canb.auug.org.au>
-	<20111031185701.5c8771c6@stein>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS"
+	id S1752024Ab1JaXVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 19:21:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42345 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab1JaXVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 19:21:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@samba.org>
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Date: Tue, 1 Nov 2011 00:24:16 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
+References: <20111031221743.GA18855@google.com>
+In-Reply-To: <20111031221743.GA18855@google.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111010024.16659.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday, October 31, 2011, Tejun Heo wrote:
+> Commit 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake
+> TASK_KILLABLE tasks too" made freezer wake up tasks in TASK_KILLABLE
+> sleep too citing non-interruptible but killable sleeps in cifs and
+> nfs.
+> 
+> I don't think we can do this.  We should not send spurious unsolicited
+> non-interruptible wakeups.  Most synchornization constructs are built
+> to cope with spurious wakeups and any INTERRUPTIBLE sleep must be able
+> to handle spurious wakeups but that's not true for KILLABLE sleeps -
+> KILLABLE condition cannot be cancelled.
+> 
+> This is probably okay for most cases but circumventing fundamental
+> wakeup condition like this is asking for trouble.  Furthermore, I'm
+> not sure the behavior change brought on by this change - breaking
+> nfs/cifs uninterruptible operation guarantee - is correct.  If such
+> behavior is desirable, the right thing to do is using intr mount
+> option, not circumventing it from PM layer.
 
-Hi Stefan,
+Do you have any specific examples of breakage, or is it just that you _think_
+it's not quite right?
 
-On Mon, 31 Oct 2011 18:57:01 +0100 Stefan Richter <stefanr@s5r6.in-berlin.d=
-e> wrote:
->
-> please switch the ieee1394/for-next URL once more, now to
->=20
->     git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git =
-for-next
->=20
-> which is meant to be permanent.  (-2.6 suffix of the former name
-> dropped).  Current content is identical with my pull request to
-> Linus today.
+One patch depending on that change has been merged already and I have two
+more in the queue, so I'd like to clarify this ASAP.  Jeff, Steve?
 
-I have switched to that from today.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Jeff Layton <jlayton@redhat.com>
+> ---
+> Neil, Steve, do the network filesystems need a way to indicate "I can
+> either be killed or enter freezer"?
+> 
+> Thanks.
+> 
+>  kernel/freezer.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index 66a594e..7b01de9 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -67,7 +67,7 @@ static void fake_signal_wake_up(struct task_struct *p)
+>  	unsigned long flags;
+>  
+>  	spin_lock_irqsave(&p->sighand->siglock, flags);
+> -	signal_wake_up(p, 1);
+> +	signal_wake_up(p, 0);
+>  	spin_unlock_irqrestore(&p->sighand->siglock, flags);
+>  }
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOry0CAAoJEECxmPOUX5FEO7MP/jIbya2nARtVTHyPjLUhtK2Q
-s7JdXFBSQjlFCkWCvOZP31d2mPvu29MGJ30OWow3tfQlvXwuwV2MFEsBBTTGCwy/
-3Gm2T7V2wCXeWnIQDa7aQ1PL7NE0OqXtESccM1dVLN/Gu2P3K+8hNaNcQQo+Z+WN
-ELQ5DrF/zkFW6PKtwh8fwqRHJlKhoXKUUq6+zT8zCU8REw4mLrAriW6hRdVPKOfM
-QKDz9C5T+TJoPt1XMoZXI7JyID2epNHSftGMJ0JtGc3XFBsg8eUFYmS6b4cu5FkK
-chEdeO1bo1WBSGVC5O5DpK1GMbN/B3M6tQkbvWV/7RCfkjrnaIdt0Yo0TAwiLTL4
-iH+6l+VjYKmCN0TUa1cxCfN2PXI8Zp04p2lVGpgkwU7ZYNHHp437bEtljuKr2Pm0
-EyzFgDEh0ghHAhu81WW2LOLWkXofl6WE+yHtdYm9r7976jTtkRWq2D2SlZUViImL
-YUDN7iRFLio8Iu2qTcAwDq4WSUSWZsyed0DGbB7Nq9NAKf+uRfKsjJGeGqqo5wui
-rgkSnHfskfHrS4b8zikIkiyeIJADPNm8MjVoOX6C/8a+qsp7dSXHS8rZBJOqO61e
-5gzCOd7qC8KedMvlS2b3fVQxw8oekOD3xGz9M/VQtqEtEoQAdTYGtofVMTzE1GwP
-62hLeHNkwisivPjOk9Nf
-=Ce/R
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS--
+Thanks,
+Rafael
