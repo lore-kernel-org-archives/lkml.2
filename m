@@ -1,96 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1JaHdU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 03:33:20 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:42531 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab1JaHdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 03:33:18 -0400
-Message-ID: <4EAE4F0B.2050500@linux.vnet.ibm.com>
-Date: Mon, 31 Oct 2011 13:02:27 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1754181Ab1JaHiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 03:38:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36116 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab1JaHiL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 03:38:11 -0400
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@linux.intel.com>
-CC: khilman@ti.com, venki@google.com, ak@linux.intel.com, len.brown@intel.com,
-        peterz@infradead.org, rjw@sisk.pl, santosh.shilimkar@ti.com,
-        lenb@kernel.org, linux-pm@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v9 2/4] cpuidle: Remove CPUIDLE_FLAG_IGNORE and dev->prepare()
-References: <20111028104945.7520.83828.stgit@localhost6.localdomain6> <20111028105020.7520.68014.stgit@localhost6.localdomain6> <4EAABB07.3000305@linux.intel.com>
-In-Reply-To: <4EAABB07.3000305@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-x-cbid: 11103107-8974-0000-0000-000001428B6F
+In-Reply-To: <CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
+References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
+	<12144.1320040276@neuling.org>
+	<CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
+Date: Mon, 31 Oct 2011 13:08:09 +0530
+Message-ID: <CAJw04pC6ZPpO8xvybjLH0ya9eKBKAkpf8N3gDTMpFnpTuhJs2A@mail.gmail.com>
+Subject: Re: powerpc 476, Little-endian, pte fault
+From: Santosh Kumar <santoshkumar.a@gmail.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Tony Breeds <tony@bakeyournoodle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 October 2011 07:54 PM, Arjan van de Ven wrote:
-> 
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> On 10/28/2011 3:50 AM, Deepthi Dharwar wrote:
->> The cpuidle_device->prepare() mechanism causes updates to the
->> cpuidle_state[].flags, setting and clearing CPUIDLE_FLAG_IGNORE
->> to tell the governor not to chose a state on a per-cpu basis at
->> run-time. State demotion is now handled by the driver and it returns
->> the actual state entered. Hence, this mechanism is not required.
->> Also this removes per-cpu flags from cpuidle_state enabling
->> it to be made global.
+This is not the first user-space instruction. While executing this
+process kernel has added two TLB entries with TID(process id) 1. while
+trying to map 0x100000fc it is raising pte faults .
+
+Santosh Kumar .A
+
+Vision without Action is a daydream... Action without Vision is a nightmare...
+
+
+
+On 31 October 2011 12:05, Santosh Kumar <santoshkumar.a@gmail.com> wrote:
+> I have built a cross compiler for ppc440 in little endian mode and
+> using it to build the kernel.
+>
+> Yes i am running Linux in Little-Endian. This is the first user space
+> process. I wrote the below program and running it as init from
+> /sbin/init. I have also set the permissions with chmod +s.
+>
+> main()
+> {
+>
+> while(1){
+> printf("hello world");
+> sleep(1);
+>  }
+> }
+>
+> I have attached the patch.
+>
+> -
+> Santosh Kumar .A
+>
+> Vision without Action is a daydream... Action without Vision is a nightmare...
+>
+>
+>
+> On 31 October 2011 11:21, Michael Neuling <mikey@neuling.org> wrote:
+>> Adding linuxppc-dev list to the CC
 >>
-> 
-> having worked on some newer platforms....
-> this one is really still needed. doing this inside the actual states
-> does not work,
-> because if the deepest 3 states are invalid, the same (somewhat
-> expensive) test would have to be done 3 times,
-> and each of the states would have to fail before the 4th one gets chosen.
-> that's just not going to work
-> 
-> (in the state handler you can't know what other state to fall back to,
-> and especially not how to enter such a fallback state)
-> 
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.17 (MingW32)
-> 
-> iQEcBAEBAgAGBQJOqrsGAAoJEEHdSxh4DVnEu7EH/i5lEJctBAIubJOcZz/tvBFp
-> XYmAe/HqNtSXeHOVsJkTf8y4ppE8487exF7xxMik4GRN0CZNCtkyMezqDVu+eDim
-> O/UUbScsAc5cSY6mkjOFXLFup+mi1nkRUnAbxXEyTMhWwcbfr2OvcuO7l7TmATML
-> hu87P3PVEafEop3q2+uWMc57fFxnNFfEDqRx6N9V+OJKV5dHrRYL4G4E01fYGFLo
-> xTR0IW7nB15L0C29zk9uk/Dqow8SoJZA83c7p7AieP5zdntb6p7noIf03qmdp19f
-> fulwMwembCHivo+pLO+jAMhKD1T6VYoCyiYW0LHrQ2E07fayBhFJCxlazgKFcl0=
-> =FL6o
-> -----END PGP SIGNATURE-----
-> 
-Hi Arjan,
-
-Thanks for the review. 
-
-We retain the dev->prepare() routine and CPUIDLE_FLAG_IGNORE 
-but still allow the dev->enter() to return index ? 
-So by retaining it, transition to the idle states
-would be much quicker in case one more states are invalid.
-
-Also to note is that in the newer design, we have split the 
-cpuidle_state structure. One global struct, cpuidle_states[] that
-contains all the state related information including flags, and 
-the other cpuidle_device that contain statistics and other data 
-that are per-cpu basis. 
-So the flags are not per cpu per state basis but 
-maintained globally as per state basis. 
-
-So if we have to enable CPUIDLE_FLAG_IGNORE flag in this 
-current new design, then I am thinking if we needed to have this 
-on a per-cpu basis. If so, then flags have to be moved into cpuidle_device 
-struct rather than cpuidle_state struct. 
-
-Is it a good idea to retain these flags as global (part of cpuidle_states) 
-or make it per-cpu basis ? 
-
--Thanks
-Deepthi   
-
+>>> KERNEL: linux 2.6.39.4
+>>> POWERPC: 476, little endian.
+>>>
+>>> I am trying to get linux 2.6.39.4 up on PPC 476 i have done done
+>>> Big-endian to little endian Changes in:
+>>
+>> Can you explain what you are trying to do in more detail?  What does "i
+>> have done Big-endian to little endian Changes" mean?
+>>
+>>> 1) bitops header file.
+>>> 2) while reading the device tree.
+>>> 3) the PTE read/computed in head_32.S
+>>> 4) added E bit in the TLB entries.
+>>>
+>>> with all the above changes the kernel_init is done but and inited is
+>>> mounted.
+>>
+>> Can you post your patch?
+>>
+>> Are you trying to boot the kernel in little endian or just run userspace
+>> in little endian?
+>>
+>>> But while spawning init process the kernel continuously hits pte
+>>> faults at address 0x100000fc and never comes out. Please let me know
+>>> where i should be looking into.
+>>
+>> Is this the very first userspace instruction?
+>>
+>> Mikey
+>>
+>>
+>
