@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934471Ab1JaM7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 08:59:32 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34175 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934340Ab1JaM7b (ORCPT
+	id S934478Ab1JaNAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 09:00:33 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:50553 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934340Ab1JaNAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 08:59:31 -0400
-Date: Mon, 31 Oct 2011 12:59:29 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v8 3/3] ASoC: da7210: Add support for line
- input and mic
-Message-ID: <20111031125928.GC10217@opensource.wolfsonmicro.com>
-References: <1319204398.24621.274.camel@matrix>
- <20111022093836.GD3316@opensource.wolfsonmicro.com>
- <1320053139.4064.8.camel@matrix>
+	Mon, 31 Oct 2011 09:00:31 -0400
+Date: Mon, 31 Oct 2011 14:00:04 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        Mike Snitzer <snitzer@redhat.com>, gmuelas@de.ibm.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+Message-ID: <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+References: <4E96E2FF.6070601@linux.vnet.ibm.com>
+ <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
+ <4E9BEB68.1050707@ce.jp.nec.com>
+ <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
+ <4E9D7FA8.9000000@ce.jp.nec.com>
+ <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
+ <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com>
+ <20111031100557.GA2621@osiris.boeblingen.de.ibm.com>
+ <1320057746.2964.1.camel@dabdike>
+ <4EAE8A7E.8000504@ce.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320053139.4064.8.camel@matrix>
-X-Cookie: Beware the one behind you.
+In-Reply-To: <4EAE8A7E.8000504@ce.jp.nec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 02:55:39PM +0530, Ashish Chavan wrote:
+On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
+> Hm, dm_softirq_done is generic completion code of original
+> request in dm-multipath.
+> So oops here might be another manifestation of use-after-free.
+> 
+> Do you always hit the oops at the same address?
 
-> Is this really applied? I am looking at both for-3.2 and for-3.3
-> branches of linux-2.6-asoc.git and can only see commits till previous
-> one (i.e. ASoC: da7210: Add support for line out and DAC). I couldn't
-> find commit corresponding to this patch!
+I think we saw this bug the first time. But before that the scsi
+logging level was higher. Gonzalo is trying to recreate it with
+the same (old) scsi logging level.
+Afterwards we will try with barrier=0.
 
-> Is there any other place to look for?
+Both on v3.0.7 btw.
 
-No, it mustn't have got out of my application queue for some reason.
+> Could you find corresponding source code line for
+> the crashed address, dm_softirq_done+0x72/0x140,
+> and which pointer was invalid?
+
+It crashes in the inlined function dm_done() when trying to
+dereference tio (aka clone->end_io_data):
+
+static void dm_done(struct request *clone, int error, bool mapped)
+{
+        int r = error;
+        struct dm_rq_target_io *tio = clone->end_io_data;
+        dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
