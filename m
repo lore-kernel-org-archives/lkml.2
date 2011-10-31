@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933906Ab1JaSeX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 14:34:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:54577 "EHLO mga02.intel.com"
+	id S933937Ab1JaSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 14:35:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26947 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932711Ab1JaSeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 14:34:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="69708458"
-From: <tony.luck@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Arjan van de Ven" <arjan@linux.intel.com>
-Subject: [PATCH] Stop mce-inject writing to mce_chrdev_ops
-Date: Mon, 31 Oct 2011 11:34:21 -0700
-Message-Id: <4eaeea2d17118d40b4@agluck-desktop.sc.intel.com>
+	id S932485Ab1JaSfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 14:35:15 -0400
+Date: Mon, 31 Oct 2011 19:34:23 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Johannes Weiner <jweiner@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Message-ID: <20111031183423.GG3466@redhat.com>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org>
+ <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arjan would like to make struct file_operations const, but mce-inject
-directly writes to the mce_chrdev_ops to install its write handler.
-In an ideal world mce-inject would have its own character device, but
-we have a sizable legacy of test scripts that hardwire "/dev/mcelog",
-so it would be painful to switch to a separate device now. Instead,
-this patch switches to a stub function in the mce code, with a
-registration helper that mce-inject can call when it is loaded.
+On Fri, Oct 28, 2011 at 10:07:12AM -0700, Dan Magenheimer wrote:
+> First, there are several companies and several unaffiliated kernel
+> developers contributing here, building on top of frontswap.  I happen
+> to be spearheading it, and my company is backing me up.  (It
+> might be more appropriate to note that much of the resistance comes
+> from people of your company... but please let's keep our open-source
+> developer hats on and have a technical discussion rather than one
+> which pleases our respective corporate overlords.)
 
-Note that this would also allow for a sane process to allow mce-inject
-to be unloaded again (with an unregister function, and appropriate
-module_{get,put}() calls), but that is left for potential future patches.
+Fair enough to want an independent review but I'd be interesting to
+also know how many of the several companies and unaffiliated kernel
+developers are contributing to it that aren't using tmem with
+Xen. Obviously bounce buffers 4k vmexits are still faster than
+Xen-paravirt-I/O on disk platter...
 
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Note, Hugh is working for another company... and they're using cgroups
+not KVM nor Xen, so I suggests he'd be a fair reviewer from a non-virt
+standpoint, if he hopefully has the time to weight in.
 
----
-
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index c9321f3..22cc0eb 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -201,7 +201,10 @@ int mce_notify_irq(void);
- void mce_notify_process(void);
- 
- DECLARE_PER_CPU(struct mce, injectm);
--extern struct file_operations mce_chrdev_ops;
-+
-+extern void register_mce_write_hook(ssize_t (*)(struct file *filp,
-+				    const char __user *ubuf,
-+				    size_t usize, loff_t *off));
- 
- /*
-  * Exception handler
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index 0ed633c..a18c2c8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -215,7 +215,7 @@ static int inject_init(void)
- 	if (!alloc_cpumask_var(&mce_inject_cpumask, GFP_KERNEL))
- 		return -ENOMEM;
- 	printk(KERN_INFO "Machine check injector initialized\n");
--	mce_chrdev_ops.write = mce_write;
-+	register_mce_write_hook(mce_write);
- 	register_die_notifier(&mce_raise_nb);
- 	return 0;
- }
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 08363b0..e24468d 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1628,16 +1628,35 @@ static long mce_chrdev_ioctl(struct file *f, unsigned int cmd,
- 	}
- }
- 
-+static ssize_t (*mce_write)(struct file *filp, const char __user *ubuf,
-+                         size_t usize, loff_t *off);
-+
-+void register_mce_write_hook(ssize_t (*fn)(struct file *filp, const char __user *ubuf,
-+                         size_t usize, loff_t *off))
-+{
-+	mce_write = fn;
-+}
-+EXPORT_SYMBOL_GPL(register_mce_write_hook);
-+
-+ssize_t mce_chrdev_write(struct file *filp, const char __user *ubuf,
-+                         size_t usize, loff_t *off)
-+{
-+	if (mce_write)
-+		return mce_write(filp, ubuf, usize, off);
-+	else
-+		return -ENODEV;
-+}
-+
- /* Modified in mce-inject.c, so not static or const */
- struct file_operations mce_chrdev_ops = {
- 	.open			= mce_chrdev_open,
- 	.release		= mce_chrdev_release,
- 	.read			= mce_chrdev_read,
-+	.write			= mce_chrdev_write,
- 	.poll			= mce_chrdev_poll,
- 	.unlocked_ioctl		= mce_chrdev_ioctl,
- 	.llseek			= no_llseek,
- };
--EXPORT_SYMBOL_GPL(mce_chrdev_ops);
- 
- static struct miscdevice mce_chrdev_device = {
- 	MISC_MCELOG_MINOR,
+However keep in mind if we'd see something that can allow KVM to run
+even faster, we'd be quite silly in not taking advantage of it too, to
+beat our own SPECvirt record. The whole design idea of KVM (unlike
+Xen) is to reuse the kernel improvements as much as possible so when
+the guest runs faster the hypervisor also runs faster with the exact
+same code. Problem a vmexit doing a bounce buffer every 4k doesn't mix
+well into SPECvirt in my view and that probably is what has kept us
+from making any attempt to use tmem API anywhere.
