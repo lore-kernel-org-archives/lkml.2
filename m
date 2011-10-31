@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab1JaGYi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 02:24:38 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55419 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab1JaGYh (ORCPT
+	id S1753943Ab1JaG21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 02:28:27 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:46760 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750894Ab1JaG20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 02:24:37 -0400
-Message-ID: <1320042270.5683.3.camel@phoenix>
-Subject: [PATCH 2/2] mfd: tps6586x: Ensure setting bits if new value is
- different from the old value
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Rapoport <mike@compulab.co.il>, Eric Miao <eric.y.miao@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Mon, 31 Oct 2011 14:24:30 +0800
-In-Reply-To: <1320042183.5683.1.camel@phoenix>
-References: <1320042183.5683.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
+	Mon, 31 Oct 2011 02:28:26 -0400
+Message-ID: <4EAE3FF7.9000302@st.com>
+Date: Mon, 31 Oct 2011 11:58:07 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <greg@kroah.com>
+Subject: Re: [PATCH] pcie-gadget-spear: Add "platform:" prefix for platform
+ modalias
+References: <1320027628.2690.1.camel@phoenix>
+In-Reply-To: <1320027628.2690.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It does not make sense to write new value only when all the bit_mask
-bits are zero.
-We need to write new value if the bit mask fields of new value is
-not equal to old value.
+On 10/31/2011 7:50 AM, Axel Lin wrote:
+> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+> with "platform:"), the platform modalias is prefixed with "platform:".
+>
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
+> ---
+>   drivers/misc/spear13xx_pcie_gadget.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
+> index cfbddbe..43d073b 100644
+> --- a/drivers/misc/spear13xx_pcie_gadget.c
+> +++ b/drivers/misc/spear13xx_pcie_gadget.c
+> @@ -903,6 +903,6 @@ static void __exit spear_pcie_gadget_exit(void)
+>   }
+>   module_exit(spear_pcie_gadget_exit);
+>
+> -MODULE_ALIAS("pcie-gadget-spear");
+> +MODULE_ALIAS("platform:pcie-gadget-spear");
+>   MODULE_AUTHOR("Pratyush Anand");
+>   MODULE_LICENSE("GPL");
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/tps6586x.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index bba26d9..a5ddf31 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -197,7 +197,7 @@ int tps6586x_set_bits(struct device *dev, int reg, uint8_t bit_mask)
- 	if (ret)
- 		goto out;
- 
--	if ((reg_val & bit_mask) == 0) {
-+	if ((reg_val & bit_mask) != bit_mask) {
- 		reg_val |= bit_mask;
- 		ret = __tps6586x_write(to_i2c_client(dev), reg, reg_val);
- 	}
--- 
-1.7.5.4
-
-
-
+Acked-by: Pratyush Anand<pratyush.anand@st.com>
