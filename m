@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934858Ab1KAAUu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:20:50 -0400
+	id S934879Ab1KAAVH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:21:07 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:60395 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934825Ab1KAASM (ORCPT
+	with ESMTP id S934814Ab1KAASL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:12 -0400
-Message-Id: <093448$3uejt0@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599712"
+	Mon, 31 Oct 2011 20:18:11 -0400
+Message-Id: <093448$3uejst@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599709"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:50:51 -0500
-Subject: [PATCH v5 25/36] Hexagon: Implement basic cache-flush support
+Date: Mon, 31 Oct 2011 18:48:50 -0500
+Subject: [PATCH v5 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/cache.h      |   34 +++++++++
- arch/hexagon/include/asm/cacheflush.h |   99 +++++++++++++++++++++++++
- arch/hexagon/mm/cache.c               |  128 +++++++++++++++++++++++++++++++++
- 3 files changed, 261 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/cache.h
- create mode 100644 arch/hexagon/include/asm/cacheflush.h
- create mode 100644 arch/hexagon/mm/cache.c
+ arch/hexagon/include/asm/io.h |  326 +++++++++++++++++++++++++++++++++++++++++
+ arch/hexagon/lib/io.c         |   91 ++++++++++++
+ 2 files changed, 417 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/io.h
+ create mode 100644 arch/hexagon/lib/io.c
 
-diff --git a/arch/hexagon/include/asm/cache.h b/arch/hexagon/include/asm/cache.h
+diff --git a/arch/hexagon/include/asm/io.h b/arch/hexagon/include/asm/io.h
 new file mode 100644
-index 0000000..0f01de2
+index 0000000..b3acc2c
 --- /dev/null
-+++ b/arch/hexagon/include/asm/cache.h
-@@ -0,0 +1,34 @@
++++ b/arch/hexagon/include/asm/io.h
+@@ -0,0 +1,326 @@
 +/*
-+ * Cache definitions for the Hexagon architecture
++ * IO definitions for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -54,133 +53,320 @@ index 0000000..0f01de2
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_CACHE_H
-+#define __ASM_CACHE_H
++#ifndef _ASM_IO_H
++#define _ASM_IO_H
 +
-+/* Bytes per L1 cache line */
-+#define L1_CACHE_SHIFT		(5)
-+#define L1_CACHE_BYTES		(1 << L1_CACHE_SHIFT)
++#ifdef __KERNEL__
 +
-+#define __cacheline_aligned	__aligned(L1_CACHE_BYTES)
-+#define ____cacheline_aligned	__aligned(L1_CACHE_BYTES)
-+
-+/* See http://kerneltrap.org/node/15100  */
-+#define __read_mostly
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/cacheflush.h b/arch/hexagon/include/asm/cacheflush.h
-new file mode 100644
-index 0000000..6865c1b
---- /dev/null
-+++ b/arch/hexagon/include/asm/cacheflush.h
-@@ -0,0 +1,99 @@
-+/*
-+ * Cache flush operations for the Hexagon architecture
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_CACHEFLUSH_H
-+#define _ASM_CACHEFLUSH_H
-+
-+#include <linux/cache.h>
-+#include <linux/mm.h>
++#include <linux/types.h>
++#include <linux/delay.h>
++#include <linux/vmalloc.h>
 +#include <asm/string.h>
-+#include <asm-generic/cacheflush.h>
-+
-+/* Cache flushing:
-+ *
-+ *  - flush_cache_all() flushes entire cache
-+ *  - flush_cache_mm(mm) flushes the specified mm context's cache lines
-+ *  - flush_cache_page(mm, vmaddr, pfn) flushes a single page
-+ *  - flush_cache_range(vma, start, end) flushes a range of pages
-+ *  - flush_icache_range(start, end) flush a range of instructions
-+ *  - flush_dcache_page(pg) flushes(wback&invalidates) a page for dcache
-+ *  - flush_icache_page(vma, pg) flushes(invalidates) a page for icache
-+ *
-+ *  Need to doublecheck which one is really needed for ptrace stuff to work.
-+ */
-+#define LINESIZE	32
-+#define LINEBITS	5
++#include <asm/mem-layout.h>
++#include <asm/iomap.h>
++#include <asm/page.h>
++#include <asm/cacheflush.h>
++#include <asm/tlbflush.h>
 +
 +/*
-+ * Flush Dcache range through current map.
++ * We don't have PCI yet.
++ * _IO_BASE is pointing at what should be unused virtual space.
 + */
-+extern void flush_dcache_range(unsigned long start, unsigned long end);
++#define IO_SPACE_LIMIT 0xffff
++#define _IO_BASE ((void __iomem *)0xfe000000)
++
++extern int remap_area_pages(unsigned long start, unsigned long phys_addr,
++				unsigned long end, unsigned long flags);
++
++extern void __iounmap(const volatile void __iomem *addr);
++
++/* Defined in lib/io.c, needed for smc91x driver. */
++extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
++
++extern void __raw_readsl(const void __iomem *addr, void *data, int wordlen);
++extern void __raw_writesl(void __iomem *addr, const void *data, int wordlen);
++
++#define readsw(p, d, l)	__raw_readsw(p, d, l)
++#define writesw(p, d, l) __raw_writesw(p, d, l)
++
++#define readsl(p, d, l)   __raw_readsl(p, d, l)
++#define writesl(p, d, l)  __raw_writesl(p, d, l)
 +
 +/*
-+ * Flush Icache range through current map.
++ * virt_to_phys - map virtual address to physical
++ * @address:  address to map
 + */
-+#undef flush_icache_range
-+extern void flush_icache_range(unsigned long start, unsigned long end);
-+
-+/*
-+ * Memory-management related flushes are there to ensure in non-physically
-+ * indexed cache schemes that stale lines belonging to a given ASID aren't
-+ * in the cache to confuse things.  The prototype Hexagon Virtual Machine
-+ * only uses a single ASID for all user-mode maps, which should
-+ * mean that they aren't necessary.  A brute-force, flush-everything
-+ * implementation, with the name xxxxx_hexagon() is present in
-+ * arch/hexagon/mm/cache.c, but let's not wire it up until we know
-+ * it is needed.
-+ */
-+extern void flush_cache_all_hexagon(void);
-+
-+/*
-+ * This may or may not ever have to be non-null, depending on the
-+ * virtual machine MMU.  For a native kernel, it's definitiely  a no-op
-+ *
-+ * This is also the place where deferred cache coherency stuff seems
-+ * to happen, classically...  but instead we do it like ia64 and
-+ * clean the cache when the PTE is set.
-+ *
-+ */
-+static inline void update_mmu_cache(struct vm_area_struct *vma,
-+					unsigned long address, pte_t *ptep)
++static inline unsigned long virt_to_phys(volatile void *address)
 +{
-+	/*  generic_ptrace_pokedata doesn't wind up here, does it?  */
++	return __pa(address);
 +}
 +
-+#undef copy_to_user_page
-+static inline void copy_to_user_page(struct vm_area_struct *vma,
-+					     struct page *page,
-+					     unsigned long vaddr,
-+					     void *dst, void *src, int len)
++/*
++ * phys_to_virt - map physical address to virtual
++ * @address: address to map
++ */
++static inline void *phys_to_virt(unsigned long address)
 +{
-+	memcpy(dst, src, len);
-+	if (vma->vm_flags & VM_EXEC) {
-+		flush_icache_range((unsigned long) dst,
-+		(unsigned long) dst + len);
++	return __va(address);
++}
++
++/*
++ * convert a physical pointer to a virtual kernel pointer for
++ * /dev/mem access.
++ */
++#define xlate_dev_kmem_ptr(p)    __va(p)
++#define xlate_dev_mem_ptr(p)    __va(p)
++
++/*
++ * IO port access primitives.  Hexagon doesn't have special IO access
++ * instructions; all I/O is memory mapped.
++ *
++ * in/out are used for "ports", but we don't have "port instructions",
++ * so these are really just memory mapped too.
++ */
++
++/*
++ * readb - read byte from memory mapped device
++ * @addr:  pointer to memory
++ *
++ * Operates on "I/O bus memory space"
++ */
++static inline u8 readb(const volatile void __iomem *addr)
++{
++	u8 val;
++	asm volatile(
++		"%0 = memb(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u16 readw(const volatile void __iomem *addr)
++{
++	u16 val;
++	asm volatile(
++		"%0 = memh(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++static inline u32 readl(const volatile void __iomem *addr)
++{
++	u32 val;
++	asm volatile(
++		"%0 = memw(%1);"
++		: "=&r" (val)
++		: "r" (addr)
++	);
++	return val;
++}
++
++/*
++ * writeb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  pointer to memory
++ *
++ */
++static inline void writeb(u8 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memb(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++static inline void writew(u16 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memh(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++
++}
++
++static inline void writel(u32 data, volatile void __iomem *addr)
++{
++	asm volatile(
++		"memw(%0) = %1;"
++		:
++		: "r" (addr), "r" (data)
++		: "memory"
++	);
++}
++
++#define __raw_writeb writeb
++#define __raw_writew writew
++#define __raw_writel writel
++
++#define __raw_readb readb
++#define __raw_readw readw
++#define __raw_readl readl
++
++/*
++ * Need an mtype somewhere in here, for cache type deals?
++ * This is probably too long for an inline.
++ */
++void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size);
++
++static inline void __iomem *ioremap(unsigned long phys_addr, unsigned long size)
++{
++	return ioremap_nocache(phys_addr, size);
++}
++
++static inline void iounmap(volatile void __iomem *addr)
++{
++	__iounmap(addr);
++}
++
++#define __raw_writel writel
++
++static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
++	int count)
++{
++	memcpy(dst, (void *) src, count);
++}
++
++static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
++	int count)
++{
++	memcpy((void *) dst, src, count);
++}
++
++#define PCI_IO_ADDR	(volatile void __iomem *)
++
++/*
++ * inb - read byte from I/O port or something
++ * @port:  address in I/O space
++ *
++ * Operates on "I/O bus I/O space"
++ */
++static inline u8 inb(unsigned long port)
++{
++	return readb(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u16 inw(unsigned long port)
++{
++	return readw(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline u32 inl(unsigned long port)
++{
++	return readl(_IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++/*
++ * outb - write a byte to a memory location
++ * @data: data to write to
++ * @addr:  address in I/O space
++ */
++static inline void outb(u8 data, unsigned long port)
++{
++	writeb(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outw(u16 data, unsigned long port)
++{
++	writew(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++static inline void outl(u32 data, unsigned long port)
++{
++	writel(data, _IO_BASE + (port & IO_SPACE_LIMIT));
++}
++
++#define outb_p outb
++#define outw_p outw
++#define outl_p outl
++
++#define inb_p inb
++#define inw_p inw
++#define inl_p inl
++
++static inline void insb(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u8 *buf = buffer;
++		do {
++			u8 x = inb(port);
++			*buf++ = x;
++		} while (--count);
 +	}
 +}
 +
++static inline void insw(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u16 *buf = buffer;
++		do {
++			u16 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
 +
-+extern void hexagon_inv_dcache_range(unsigned long start, unsigned long end);
-+extern void hexagon_clean_dcache_range(unsigned long start, unsigned long end);
++static inline void insl(unsigned long port, void *buffer, int count)
++{
++	if (count) {
++		u32 *buf = buffer;
++		do {
++			u32 x = inw(port);
++			*buf++ = x;
++		} while (--count);
++	}
++}
++
++static inline void outsb(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u8 *buf = buffer;
++		do {
++			outb(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsw(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u16 *buf = buffer;
++		do {
++			outw(*buf++, port);
++		} while (--count);
++	}
++}
++
++static inline void outsl(unsigned long port, const void *buffer, int count)
++{
++	if (count) {
++		const u32 *buf = buffer;
++		do {
++			outl(*buf++, port);
++		} while (--count);
++	}
++}
++
++#define flush_write_buffers() do { } while (0)
++
++#endif /* __KERNEL__ */
 +
 +#endif
-diff --git a/arch/hexagon/mm/cache.c b/arch/hexagon/mm/cache.c
+diff --git a/arch/hexagon/lib/io.c b/arch/hexagon/lib/io.c
 new file mode 100644
-index 0000000..c5cf6ee
+index 0000000..8ae47ba
 --- /dev/null
-+++ b/arch/hexagon/mm/cache.c
-@@ -0,0 +1,128 @@
++++ b/arch/hexagon/lib/io.c
+@@ -0,0 +1,91 @@
 +/*
-+ * Cache management functions for Hexagon
++ * I/O access functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -199,113 +385,76 @@ index 0000000..c5cf6ee
 + * 02110-1301, USA.
 + */
 +
-+#include <linux/mm.h>
-+#include <asm/cacheflush.h>
-+#include <asm/hexagon_vm.h>
++#include <asm/io.h>
 +
-+#define spanlines(start, end) \
-+	(((end - (start & ~(LINESIZE - 1))) >> LINEBITS) + 1)
-+
-+void flush_dcache_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long lines = spanlines(start, end-1);
-+	unsigned long i, flags;
-+
-+	start &= ~(LINESIZE - 1);
-+
-+	local_irq_save(flags);
-+
-+	for (i = 0; i < lines; i++) {
-+		__asm__ __volatile__ (
-+		"	dccleaninva(%0);	"
-+		:
-+		: "r" (start)
-+		);
-+		start += LINESIZE;
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+void flush_icache_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long lines = spanlines(start, end-1);
-+	unsigned long i, flags;
-+
-+	start &= ~(LINESIZE - 1);
-+
-+	local_irq_save(flags);
-+
-+	for (i = 0; i < lines; i++) {
-+		__asm__ __volatile__ (
-+			"	dccleana(%0); "
-+			"	icinva(%0);	"
-+			:
-+			: "r" (start)
-+		);
-+		start += LINESIZE;
-+	}
-+	__asm__ __volatile__ (
-+		"isync"
-+	);
-+	local_irq_restore(flags);
-+}
-+
-+void hexagon_clean_dcache_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long lines = spanlines(start, end-1);
-+	unsigned long i, flags;
-+
-+	start &= ~(LINESIZE - 1);
-+
-+	local_irq_save(flags);
-+
-+	for (i = 0; i < lines; i++) {
-+		__asm__ __volatile__ (
-+		"	dccleana(%0);	"
-+		:
-+		: "r" (start)
-+		);
-+		start += LINESIZE;
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+void hexagon_inv_dcache_range(unsigned long start, unsigned long end)
-+{
-+	unsigned long lines = spanlines(start, end-1);
-+	unsigned long i, flags;
-+
-+	start &= ~(LINESIZE - 1);
-+
-+	local_irq_save(flags);
-+
-+	for (i = 0; i < lines; i++) {
-+		__asm__ __volatile__ (
-+		"	dcinva(%0);	"
-+		:
-+		: "r" (start)
-+		);
-+		start += LINESIZE;
-+	}
-+	local_irq_restore(flags);
-+}
-+
-+
-+
++/*  These are all FIFO routines!  */
 +
 +/*
-+ * This is just really brutal and shouldn't be used anyways,
-+ * especially on V2.  Left here just in case.
++ * __raw_readsw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
 + */
-+void flush_cache_all_hexagon(void)
++void __raw_readsw(const void __iomem *addr, void *data, int len)
 +{
-+	unsigned long flags;
-+	local_irq_save(flags);
-+	__vmcache_ickill();
-+	__vmcache_dckill();
-+	__vmcache_l2kill();
-+	local_irq_restore(flags);
-+	mb();
++	const volatile short int *src = (short int *) addr;
++	short int *dst = (short int *) data;
++
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to readsw");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
++}
++
++/*
++ * __raw_writesw - read words a short at a time
++ * @addr:  source address
++ * @data:  data address
++ * @len: number of shorts to read
++ */
++void __raw_writesw(void __iomem *addr, const void *data, int len)
++{
++	const short int *src = (short int *)data;
++	volatile short int *dst = (short int *)addr;
++
++	if ((u32)data & 0x1)
++		panic("unaligned pointer to writesw");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
++}
++
++/*  Pretty sure len is pre-adjusted for the length of the access already */
++void __raw_readsl(const void __iomem *addr, void *data, int len)
++{
++	const volatile long *src = (long *) addr;
++	long *dst = (long *) data;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to readsl");
++
++	while (len-- > 0)
++		*dst++ = *src;
++
++
++}
++
++void __raw_writesl(void __iomem *addr, const void *data, int len)
++{
++	const long *src = (long *)data;
++	volatile long *dst = (long *)addr;
++
++	if ((u32)data & 0x3)
++		panic("unaligned pointer to writesl");
++
++	while (len-- > 0)
++		*dst = *src++;
++
++
 +}
 -- 
 1.7.1
