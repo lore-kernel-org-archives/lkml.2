@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab1JaKRX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 06:17:23 -0400
-Received: from home.kolivas.org ([59.167.196.135]:55304 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932508Ab1JaKRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 06:17:22 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 06:17:22 EDT
-From: Con Kolivas <con@kolivas.org>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as it should
-Date: Mon, 31 Oct 2011 21:06:29 +1100
-Message-ID: <1479015.f2tEjKr9vR@quad>
-User-Agent: KMail/4.7.2 (Linux/2.6.38.4-ck1; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+	id S933318Ab1JaKVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 06:21:04 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45348 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932675Ab1JaKVC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 06:21:02 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <CANejiEVxdX7KC6MFqBZ2azPtETmwJXML6v1L5-kq+UrRTmf+Tg@mail.gmail.com>
+References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
+	<CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
+	<CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
+	<1319676161.22361.148.camel@sli10-conroe>
+	<CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
+	<1320039564.22361.178.camel@sli10-conroe>
+	<CANejiEVxdX7KC6MFqBZ2azPtETmwJXML6v1L5-kq+UrRTmf+Tg@mail.gmail.com>
+Date: Mon, 31 Oct 2011 15:51:02 +0530
+Message-ID: <CADAg6uwi8bgo3gQuWPeTHeD44biRR4=0E0BjvZradQMtfMCigA@mail.gmail.com>
+Subject: Re: Multi-partition block layer behaviour
+From: Tiju Jacob <jacobtiju@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Oct 2011 07:57:12 PM Artem S. Tashkinov wrote:
-> I've found out that even on Linux 3.0.8 the process scheduler doesn't
-> correctly distributes the load amongst virtual CPUs. E.g. on a 4-core
-> system (8 total virtual CPUs) the process scheduler often run some
-> instances of four different tasks on the same physical CPU.
+>> ok, thanks. So this means the elevator is switching in the test. How
+>> about below patch:
+>>
+>> diff --git a/block/elevator.c b/block/elevator.c
+>> index a3b64bc..e14824a 100644
+>> --- a/block/elevator.c
+>> +++ b/block/elevator.c
+>> @@ -683,8 +683,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+>>                 * - Usually, back inserted requests won't be merged
+>>                 *   with anything.  There's no point in delaying queue
+>>                 *   processing.
+>> +                * If elevator is switching, doesn't need run the queue.
+>> +                * elevator switching will run it anyway. And this could
+>> +                * cause warning since the code might run in atomic
+>> +                * environment(blk_flush_plug_list() callbed in schedule())
+>>                 */
+>> -               __blk_run_queue(q);
+>> +               if (!test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags))
+>> +                       __blk_run_queue(q);
+>>                break;
+>>
+>>        case ELEVATOR_INSERT_SORT_MERGE:
+>>
+>>
+> oh, wait. We should have no this issue with latest kernel, because
+> blk_schedule_flush_plug is moved out of schedule atomic environment. please
+> try a latest kernel, for example, 3.1.
+>
 
-> Any thoughts? comments? I think this is quite a serious problem.
+Even after applying the above patch, I am getting the same error. We
+have to use the linux 3.0.* kernel series. So is there a fix for the
+3.0 series?
+We'll defenetly check with the 3.1 kernel and let know.
 
-Intense cache locality logic, power saving concepts, cpu frequency governor 
-behaviour and separate runqueues per CPU within the current CPU process 
-scheduler in the current mainline linux kernel will ocasionally do this. Some 
-workloads will be better, while others will be worse. Feel free to try my BFS 
-cpu scheduler if you wish a CPU process scheduler that spreads work more 
-evenly across CPUs. 
-
-Alas the last version I synced up with will not apply cleanly past about 3.0.6 
-I believe:
-
-http://ck.kolivas.org/patches/bfs/3.0.0/3.0-sched-bfs-413.patch
-
-Regards,
-Con Kolivas
-
--- 
--ck
+Thanks,
+--TJ
