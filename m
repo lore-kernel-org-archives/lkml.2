@@ -1,113 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755240Ab1JaUBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 16:01:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56089 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752324Ab1JaUBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 16:01:23 -0400
-Date: Mon, 31 Oct 2011 16:01:18 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/7] Input: ALPS - Remove assumptions about packet size
-Message-ID: <20111031200118.GC12205@thinkpad-t410>
-Mail-Followup-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Chase Douglas <chase.douglas@canonical.com>,
-	Alessandro Rubini <rubini@cvml.unipv.it>,
-	Henrik Rydberg <rydberg@euromail.se>,
-	Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1319663681-11244-1-git-send-email-seth.forshee@canonical.com>
- <1319663681-11244-5-git-send-email-seth.forshee@canonical.com>
- <4EAD6EF3.50109@canonical.com>
- <20111031181702.GB12205@thinkpad-t410>
- <20111031182437.GA10551@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031182437.GA10551@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934518Ab1JaUHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 16:07:40 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:47636 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab1JaUHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 16:07:33 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: mingo@redhat.com, x86@kernel.org, hpa@zytor.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com,
+        aliguori@us.ibm.com, Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH 3/6 V2] Add ioctl for KVM_GUEST_STOPPED
+Date: Mon, 31 Oct 2011 16:07:27 -0400
+Message-Id: <1320091650-24682-4-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1320091650-24682-1-git-send-email-emunson@mgebm.net>
+References: <1320091650-24682-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 11:24:37AM -0700, Dmitry Torokhov wrote:
-> On Mon, Oct 31, 2011 at 02:17:02PM -0400, Seth Forshee wrote:
-> > On Sun, Oct 30, 2011 at 11:36:19AM -0400, Chase Douglas wrote:
-> > > On 10/26/2011 05:14 PM, Seth Forshee wrote:
-> > > > In preparation for version 4 protocol support, which has 8-byte
-> > > > data packets, remove all hard-coded assumptions about packet size
-> > > > and use psmouse->pktsize instead.
-> > > > 
-> > > > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> > > > ---
-> > > >  drivers/input/mouse/alps.c |   27 ++++++++++++++++++---------
-> > > >  1 files changed, 18 insertions(+), 9 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-> > > > index 572cb21..14d1f64 100644
-> > > > --- a/drivers/input/mouse/alps.c
-> > > > +++ b/drivers/input/mouse/alps.c
-> > > > @@ -315,7 +315,7 @@ static void alps_flush_packet(unsigned long data)
-> > > >  
-> > > >  	serio_pause_rx(psmouse->ps2dev.serio);
-> > > >  
-> > > > -	if (psmouse->pktcnt == 6) {
-> > > > +	if (psmouse->pktcnt == psmouse->pktsize) {
-> > > >  
-> > > >  		/*
-> > > >  		 * We did not any more data in reasonable amount of time.
-> > > > @@ -365,15 +365,15 @@ static psmouse_ret_t alps_process_byte(struct psmouse *psmouse)
-> > > >  		return PSMOUSE_BAD_DATA;
-> > > >  	}
-> > > >  
-> > > > -	/* Bytes 2 - 6 should have 0 in the highest bit */
-> > > > -	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= 6 &&
-> > > > +	/* Bytes 2 - pktsize should have 0 in the highest bit */
-> > > > +	if (psmouse->pktcnt >= 2 && psmouse->pktcnt <= psmouse->pktsize &&
-> > > >  	    (psmouse->packet[psmouse->pktcnt - 1] & 0x80)) {
-> > > >  		dbg("refusing packet[%i] = %x\n",
-> > > >  		    psmouse->pktcnt - 1, psmouse->packet[psmouse->pktcnt - 1]);
-> > > >  		return PSMOUSE_BAD_DATA;
-> > > >  	}
-> > > >  
-> > > > -	if (psmouse->pktcnt == 6) {
-> > > > +	if (psmouse->pktcnt == psmouse->pktsize) {
-> > > >  		alps_process_packet(psmouse);
-> > > >  		return PSMOUSE_FULL_PACKET;
-> > > >  	}
-> > > > @@ -531,8 +531,13 @@ static int alps_tap_mode(struct psmouse *psmouse, int enable)
-> > > >  static int alps_poll(struct psmouse *psmouse)
-> > > >  {
-> > > >  	struct alps_data *priv = psmouse->private;
-> > > > -	unsigned char buf[6];
-> > > > +	unsigned char *buf;
-> > > >  	bool poll_failed;
-> > > > +	int ret = -1;
-> > > > +
-> > > > +	buf = kmalloc(psmouse->pktsize, GFP_KERNEL);
-> > > > +	if (!buf)
-> > > > +		return -1;
-> > > 
-> > > Can we preallocate a buffer somewhere instead of allocating every time
-> > > we enter the function? If we know the maximum packet size we could
-> > > allocate on the stack instead.
-> > 
-> > Thanks for pointing that out; I had meant to come back and do something
-> > about this but forgot. I was hoping to avoid having to hard-code an
-> > assumed maximum packet size. I'll take a look at it.
-> 
-> probably doing something like
-> 
-> 	unsigned char buf[sizeof(psmouse->packet)];
-> 
-> will cover it.
+Now that we have a flag that will tell the guest it was suspended, create an
+interface for that communication using a KVM ioctl.
 
-Yes, that will work great. I'll incorporate that into the next version
-of the patches. Thanks.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+---
+Changes from V1:
+ Add kvm_set_host_stopped to arch/x86/jvm/x86.c instead of kvmclock.c
+ Rename KVM_PAUSE_GUEST to KVM_GUEST_PAUSED
+
+ arch/x86/include/asm/pvclock.h |    3 +++
+ arch/x86/kvm/x86.c             |   16 ++++++++++++++++
+ include/linux/kvm.h            |    2 ++
+ 3 files changed, 21 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
+index 7d3ba41..9312814 100644
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/clocksource.h>
+ #include <asm/pvclock-abi.h>
++#include <linux/kvm_host.h>
+ 
+ /* some helper functions for xen and kvm pv clock sources */
+ cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
+@@ -13,6 +14,8 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+ 			    struct timespec *ts);
+ void pvclock_resume(void);
+ 
++void kvm_set_host_stopped(struct kvm_vcpu *vcpu);
++
+ bool kvm_check_and_clear_host_stopped(int cpu);
+ 
+ /*
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index c38efd7..592ac3b 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3295,6 +3295,11 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+ 
+ 		goto out;
+ 	}
++	case KVM_GUEST_PAUSED: {
++		r = 0;
++		kvm_set_host_stopped(vcpu);
++		break;
++	}
+ 	default:
+ 		r = -EINVAL;
+ 	}
+@@ -6117,6 +6122,17 @@ int kvm_task_switch(struct kvm_vcpu *vcpu, u16 tss_selector, int reason,
+ }
+ EXPORT_SYMBOL_GPL(kvm_task_switch);
+ 
++/*
++ * kvm_set_host_stopped() indicates to the guest kernel that it has been
++ * stopped by the hypervisor.  This function will be called from the host only.
++ */
++void kvm_set_host_stopped(struct kvm_vcpu *vcpu)
++{
++	struct pvclock_vcpu_time_info *src = &vcpu->arch.hv_clock;
++	src->flags |= PVCLOCK_GUEST_STOPPED;
++}
++EXPORT_SYMBOL_GPL(kvm_set_host_stopped);
++
+ int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+ 				  struct kvm_sregs *sregs)
+ {
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index f47fcd3..87cab0d 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -763,6 +763,8 @@ struct kvm_clock_data {
+ #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
+ /* Available with KVM_CAP_RMA */
+ #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
++/* VM is being stopped by host */
++#define KVM_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
+ 
+ #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1 << 0)
+ 
+-- 
+1.7.5.4
+
