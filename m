@@ -1,49 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab1KAAR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:17:59 -0400
+	id S934832Ab1KAASM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:18:12 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:43327 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934197Ab1KAARz (ORCPT
+	with ESMTP id S934802Ab1KAASJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:17:55 -0400
-Message-Id: <e97c6e$3uab0u@wolverine02.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459550"
+	Mon, 31 Oct 2011 20:18:09 -0400
+Message-Id: <e97c6e$3uab20@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459584"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:48:07 -0500
-Subject: [PATCH v5 23/36] Hexagon: Add user access functions
+Date: Mon, 31 Oct 2011 18:54:43 -0500
+Subject: [PATCH v5 31/36] Hexagon: kgdb support files
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/uaccess.h   |  116 +++++++++++++++++++++
- arch/hexagon/mm/copy_from_user.S     |  114 +++++++++++++++++++++
- arch/hexagon/mm/copy_to_user.S       |   92 +++++++++++++++++
- arch/hexagon/mm/copy_user_template.S |  185 ++++++++++++++++++++++++++++++++++
- arch/hexagon/mm/strnlen_user.S       |  140 +++++++++++++++++++++++++
- arch/hexagon/mm/uaccess.c            |   59 +++++++++++
- 6 files changed, 706 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/uaccess.h
- create mode 100644 arch/hexagon/mm/copy_from_user.S
- create mode 100644 arch/hexagon/mm/copy_to_user.S
- create mode 100644 arch/hexagon/mm/copy_user_template.S
- create mode 100644 arch/hexagon/mm/strnlen_user.S
- create mode 100644 arch/hexagon/mm/uaccess.c
+ arch/hexagon/include/asm/kgdb.h |   43 +++++++
+ arch/hexagon/kernel/kgdb.c      |  255 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 298 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/kgdb.h
+ create mode 100644 arch/hexagon/kernel/kgdb.c
 
-diff --git a/arch/hexagon/include/asm/uaccess.h b/arch/hexagon/include/asm/uaccess.h
+diff --git a/arch/hexagon/include/asm/kgdb.h b/arch/hexagon/include/asm/kgdb.h
 new file mode 100644
-index 0000000..7e706ea
+index 0000000..9e87797
 --- /dev/null
-+++ b/arch/hexagon/include/asm/uaccess.h
-@@ -0,0 +1,116 @@
++++ b/arch/hexagon/include/asm/kgdb.h
+@@ -0,0 +1,43 @@
 +/*
-+ * User memory access support for Hexagon
++ * arch/hexagon/include/asm/kgdb.h - Hexagon KGDB Support
 + *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -60,722 +52,290 @@ index 0000000..7e706ea
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_UACCESS_H
-+#define _ASM_UACCESS_H
-+/*
-+ * User space memory access functions
-+ */
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <asm/segment.h>
-+#include <asm/sections.h>
++#ifndef __HEXAGON_KGDB_H__
++#define __HEXAGON_KGDB_H__
 +
-+/*
-+ * access_ok: - Checks if a user space pointer is valid
-+ * @type: Type of access: %VERIFY_READ or %VERIFY_WRITE.  Note that
-+ *        %VERIFY_WRITE is a superset of %VERIFY_READ - if it is safe
-+ *        to write to a block, it is always safe to read from it.
-+ * @addr: User space pointer to start of block to check
-+ * @size: Size of block to check
-+ *
-+ * Context: User context only.  This function may sleep.
-+ *
-+ * Checks if a pointer to a block of memory in user space is valid.
-+ *
-+ * Returns true (nonzero) if the memory block *may* be valid, false (zero)
-+ * if it is definitely invalid.
-+ *
-+ * User address space in Hexagon, like x86, goes to 0xbfffffff, so the
-+ * simple MSB-based tests used by MIPS won't work.  Some further
-+ * optimization is probably possible here, but for now, keep it
-+ * reasonably simple and not *too* slow.  After all, we've got the
-+ * MMU for backup.
-+ */
-+#define VERIFY_READ     0
-+#define VERIFY_WRITE    1
++#define BREAK_INSTR_SIZE 4
++#define CACHE_FLUSH_IS_SAFE   1
++#define BUFMAX       ((NUMREGBYTES * 2) + 512)
 +
-+#define __access_ok(addr, size) \
-+	((get_fs().seg == KERNEL_DS.seg) || \
-+	(((unsigned long)addr < get_fs().seg) && \
-+	  (unsigned long)size < (get_fs().seg - (unsigned long)addr)))
-+
-+/*
-+ * When a kernel-mode page fault is taken, the faulting instruction
-+ * address is checked against a table of exception_table_entries.
-+ * Each entry is a tuple of the address of an instruction that may
-+ * be authorized to fault, and the address at which execution should
-+ * be resumed instead of the faulting instruction, so as to effect
-+ * a workaround.
-+ */
-+
-+/*  Assembly somewhat optimized copy routines  */
-+unsigned long __copy_from_user_hexagon(void *to, const void __user *from,
-+				     unsigned long n);
-+unsigned long __copy_to_user_hexagon(void __user *to, const void *from,
-+				   unsigned long n);
-+
-+#define __copy_from_user(to, from, n) __copy_from_user_hexagon(to, from, n)
-+#define __copy_to_user(to, from, n) __copy_to_user_hexagon(to, from, n)
-+
-+/*
-+ * XXX todo: some additonal performance gain is possible by
-+ * implementing __copy_to/from_user_inatomic, which is much
-+ * like __copy_to/from_user, but performs slightly less checking.
-+ */
-+
-+__kernel_size_t __clear_user_hexagon(void __user *dest, unsigned long count);
-+#define __clear_user(a, s) __clear_user_hexagon((a), (s))
-+
-+#define __strncpy_from_user(dst, src, n) hexagon_strncpy_from_user(dst, src, n)
-+
-+/*  get around the ifndef in asm-generic/uaccess.h  */
-+#define __strnlen_user __strnlen_user
-+
-+extern long __strnlen_user(const char __user *src, long n);
-+
-+static inline long hexagon_strncpy_from_user(char *dst, const char __user *src,
-+					     long n);
-+
-+#include <asm-generic/uaccess.h>
-+
-+/*  Todo:  an actual accelerated version of this.  */
-+static inline long hexagon_strncpy_from_user(char *dst, const char __user *src,
-+					     long n)
++static inline void arch_kgdb_breakpoint(void)
 +{
-+	long res = __strnlen_user(src, n);
-+
-+	/* return from strnlen can't be zero -- that would be rubbish. */
-+
-+	if (res > n) {
-+		copy_from_user(dst, src, n);
-+		return n;
-+	} else {
-+		copy_from_user(dst, src, res);
-+		return res-1;
-+	}
++	asm("trap0(#0xDB)");
 +}
 +
++/* Registers:
++ * 32 gpr + sa0/1 + lc0/1 + m0/1 + gp + ugp + pred + pc = 42 total.
++ * vm regs = psp+elr+est+badva = 4
++ * syscall+restart = 2 more
++ * so 48 = 42 +4 + 2
++ */
++#define DBG_USER_REGS 42
++#define DBG_MAX_REG_NUM (DBG_USER_REGS + 6)
++#define NUMREGBYTES  (DBG_MAX_REG_NUM*4)
++
++#endif /* __HEXAGON_KGDB_H__ */
+diff --git a/arch/hexagon/kernel/kgdb.c b/arch/hexagon/kernel/kgdb.c
+new file mode 100644
+index 0000000..38ab0ea
+--- /dev/null
++++ b/arch/hexagon/kernel/kgdb.c
+@@ -0,0 +1,255 @@
++/*
++ * arch/hexagon/kernel/kgdb.c - Hexagon KGDB Support
++ *
++ * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#include <linux/kdebug.h>
++#include <linux/kgdb.h>
++
++/* All registers are 4 bytes, for now */
++#define GDB_SIZEOF_REG 4
++
++/* The register names are used during printing of the regs;
++ * Keep these at three letters to pretty-print. */
++struct dbg_reg_def_t dbg_reg_def[DBG_MAX_REG_NUM] = {
++	{ " r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, r00)},
++	{ " r1", GDB_SIZEOF_REG, offsetof(struct pt_regs, r01)},
++	{ " r2", GDB_SIZEOF_REG, offsetof(struct pt_regs, r02)},
++	{ " r3", GDB_SIZEOF_REG, offsetof(struct pt_regs, r03)},
++	{ " r4", GDB_SIZEOF_REG, offsetof(struct pt_regs, r04)},
++	{ " r5", GDB_SIZEOF_REG, offsetof(struct pt_regs, r05)},
++	{ " r6", GDB_SIZEOF_REG, offsetof(struct pt_regs, r06)},
++	{ " r7", GDB_SIZEOF_REG, offsetof(struct pt_regs, r07)},
++	{ " r8", GDB_SIZEOF_REG, offsetof(struct pt_regs, r08)},
++	{ " r9", GDB_SIZEOF_REG, offsetof(struct pt_regs, r09)},
++	{ "r10", GDB_SIZEOF_REG, offsetof(struct pt_regs, r10)},
++	{ "r11", GDB_SIZEOF_REG, offsetof(struct pt_regs, r11)},
++	{ "r12", GDB_SIZEOF_REG, offsetof(struct pt_regs, r12)},
++	{ "r13", GDB_SIZEOF_REG, offsetof(struct pt_regs, r13)},
++	{ "r14", GDB_SIZEOF_REG, offsetof(struct pt_regs, r14)},
++	{ "r15", GDB_SIZEOF_REG, offsetof(struct pt_regs, r15)},
++	{ "r16", GDB_SIZEOF_REG, offsetof(struct pt_regs, r16)},
++	{ "r17", GDB_SIZEOF_REG, offsetof(struct pt_regs, r17)},
++	{ "r18", GDB_SIZEOF_REG, offsetof(struct pt_regs, r18)},
++	{ "r19", GDB_SIZEOF_REG, offsetof(struct pt_regs, r19)},
++	{ "r20", GDB_SIZEOF_REG, offsetof(struct pt_regs, r20)},
++	{ "r21", GDB_SIZEOF_REG, offsetof(struct pt_regs, r21)},
++	{ "r22", GDB_SIZEOF_REG, offsetof(struct pt_regs, r22)},
++	{ "r23", GDB_SIZEOF_REG, offsetof(struct pt_regs, r23)},
++	{ "r24", GDB_SIZEOF_REG, offsetof(struct pt_regs, r24)},
++	{ "r25", GDB_SIZEOF_REG, offsetof(struct pt_regs, r25)},
++	{ "r26", GDB_SIZEOF_REG, offsetof(struct pt_regs, r26)},
++	{ "r27", GDB_SIZEOF_REG, offsetof(struct pt_regs, r27)},
++	{ "r28", GDB_SIZEOF_REG, offsetof(struct pt_regs, r28)},
++	{ "r29", GDB_SIZEOF_REG, offsetof(struct pt_regs, r29)},
++	{ "r30", GDB_SIZEOF_REG, offsetof(struct pt_regs, r30)},
++	{ "r31", GDB_SIZEOF_REG, offsetof(struct pt_regs, r31)},
++
++	{ "usr", GDB_SIZEOF_REG, offsetof(struct pt_regs, usr)},
++	{ "preds", GDB_SIZEOF_REG, offsetof(struct pt_regs, preds)},
++	{ " m0", GDB_SIZEOF_REG, offsetof(struct pt_regs, m0)},
++	{ " m1", GDB_SIZEOF_REG, offsetof(struct pt_regs, m1)},
++	{ "sa0", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa0)},
++	{ "sa1", GDB_SIZEOF_REG, offsetof(struct pt_regs, sa1)},
++	{ "lc0", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc0)},
++	{ "lc1", GDB_SIZEOF_REG, offsetof(struct pt_regs, lc1)},
++	{ " gp", GDB_SIZEOF_REG, offsetof(struct pt_regs, gp)},
++	{ "ugp", GDB_SIZEOF_REG, offsetof(struct pt_regs, ugp)},
++	{ "psp", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmpsp)},
++	{ "elr", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmel)},
++	{ "est", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmest)},
++	{ "badva", GDB_SIZEOF_REG, offsetof(struct pt_regs, hvmer.vmbadva)},
++	{ "restart_r0", GDB_SIZEOF_REG, offsetof(struct pt_regs, restart_r0)},
++	{ "syscall_nr", GDB_SIZEOF_REG, offsetof(struct pt_regs, syscall_nr)},
++};
++
++struct kgdb_arch arch_kgdb_ops = {
++	/* trap0(#0xDB) 0x0cdb0054 */
++	.gdb_bpt_instr = {0x54, 0x00, 0xdb, 0x0c},
++};
++
++char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
++{
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return NULL;
++
++	*((unsigned long *) mem) = *((unsigned long *) ((void *)regs +
++		dbg_reg_def[regno].offset));
++
++	return dbg_reg_def[regno].name;
++}
++
++int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
++{
++	if (regno >= DBG_MAX_REG_NUM || regno < 0)
++		return -EINVAL;
++
++	*((unsigned long *) ((void *)regs + dbg_reg_def[regno].offset)) =
++		*((unsigned long *) mem);
++
++	return 0;
++}
++
++void kgdb_arch_set_pc(struct pt_regs *regs, unsigned long pc)
++{
++	instruction_pointer(regs) = pc;
++}
++
++#ifdef CONFIG_SMP
++
++/**
++ * kgdb_roundup_cpus - Get other CPUs into a holding pattern
++ * @flags: Current IRQ state
++ *
++ * On SMP systems, we need to get the attention of the other CPUs
++ * and get them be in a known state.  This should do what is needed
++ * to get the other CPUs to call kgdb_wait(). Note that on some arches,
++ * the NMI approach is not used for rounding up all the CPUs. For example,
++ * in case of MIPS, smp_call_function() is used to roundup CPUs. In
++ * this case, we have to make sure that interrupts are enabled before
++ * calling smp_call_function(). The argument to this function is
++ * the flags that will be used when restoring the interrupts. There is
++ * local_irq_save() call before kgdb_roundup_cpus().
++ *
++ * On non-SMP systems, this is not called.
++ */
++
++static void hexagon_kgdb_nmi_hook(void *ignored)
++{
++	kgdb_nmicallback(raw_smp_processor_id(), get_irq_regs());
++}
++
++void kgdb_roundup_cpus(unsigned long flags)
++{
++	local_irq_enable();
++	smp_call_function(hexagon_kgdb_nmi_hook, NULL, 0);
++	local_irq_disable();
++}
 +#endif
-diff --git a/arch/hexagon/mm/copy_from_user.S b/arch/hexagon/mm/copy_from_user.S
-new file mode 100644
-index 0000000..8eb1d4d
---- /dev/null
-+++ b/arch/hexagon/mm/copy_from_user.S
-@@ -0,0 +1,114 @@
-+/*
-+ * User memory copy functions for kernel
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ * The right way to do this involves valignb
-+ * The easy way to do this is only speed up src/dest similar alignment.
-+ */
-+
-+/*
-+ * Copy to/from user are the same, except that for packets with a load and
-+ * a store, I don't know how to tell which kind of exception we got.
-+ * Therefore, we duplicate the function, and handle faulting addresses
-+ * differently for each function
-+ */
-+
-+/*
-+ * copy from user: loads can fault
-+ */
-+#define src_sav r13
-+#define dst_sav r12
-+#define src_dst_sav r13:12
-+#define d_dbuf r15:14
-+#define w_dbuf r15
-+
-+#define dst r0
-+#define src r1
-+#define bytes r2
-+#define loopcount r5
-+
-+#define FUNCNAME __copy_from_user_hexagon
-+#include "copy_user_template.S"
-+
-+	/* LOAD FAULTS from COPY_FROM_USER */
-+
-+	/* Alignment loop.  r2 has been updated. Return it. */
-+	.falign
-+1009:
-+2009:
-+4009:
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+	/* Normal copy loops. Do epilog. Use src-src_sav to compute distance */
-+	/* X - (A - B) == X + B - A */
-+	.falign
-+8089:
-+	{
-+		memd(dst) = d_dbuf
-+		r2 += sub(src_sav,src)
-+	}
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+	.falign
-+4089:
-+	{
-+		memw(dst) = w_dbuf
-+		r2 += sub(src_sav,src)
-+	}
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+	.falign
-+2089:
-+	{
-+		memh(dst) = w_dbuf
-+		r2 += sub(src_sav,src)
-+	}
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+	.falign
-+1089:
-+	{
-+		memb(dst) = w_dbuf
-+		r2 += sub(src_sav,src)
-+	}
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+
-+	/* COPY FROM USER: only loads can fail */
-+
-+	.section __ex_table,"a"
-+	.long 1000b,1009b
-+	.long 2000b,2009b
-+	.long 4000b,4009b
-+	.long 8080b,8089b
-+	.long 4080b,4089b
-+	.long 2080b,2089b
-+	.long 1080b,1089b
-+	.previous
-diff --git a/arch/hexagon/mm/copy_to_user.S b/arch/hexagon/mm/copy_to_user.S
-new file mode 100644
-index 0000000..cb9740e
---- /dev/null
-+++ b/arch/hexagon/mm/copy_to_user.S
-@@ -0,0 +1,92 @@
-+/*
-+ * User memory copying routines for the Hexagon Kernel
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/* The right way to do this involves valignb
-+ * The easy way to do this is only speed up src/dest similar alignment.
-+ */
-+
-+/*
-+ * Copy to/from user are the same, except that for packets with a load and
-+ * a store, I don't know how to tell which kind of exception we got.
-+ * Therefore, we duplicate the function, and handle faulting addresses
-+ * differently for each function
-+ */
-+
-+/*
-+ * copy to user: stores can fault
-+ */
-+#define src_sav r13
-+#define dst_sav r12
-+#define src_dst_sav r13:12
-+#define d_dbuf r15:14
-+#define w_dbuf r15
-+
-+#define dst r0
-+#define src r1
-+#define bytes r2
-+#define loopcount r5
-+
-+#define FUNCNAME __copy_to_user_hexagon
-+#include "copy_user_template.S"
-+
-+	/* STORE FAULTS from COPY_TO_USER */
-+	.falign
-+1109:
-+2109:
-+4109:
-+	/* Alignment loop.  r2 has been updated.  Return it. */
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+	/* Normal copy loops.  Use dst-dst_sav to compute distance */
-+	/* dst holds best write, no need to unwind any loops */
-+	/* X - (A - B) == X + B - A */
-+	.falign
-+8189:
-+8199:
-+4189:
-+4199:
-+2189:
-+2199:
-+1189:
-+1199:
-+	{
-+		r2 += sub(dst_sav,dst)
-+	}
-+	{
-+		r0 = r2
-+		jumpr r31
-+	}
-+
-+	/* COPY TO USER: only stores can fail */
-+	.section __ex_table,"a"
-+	.long 1100b,1109b
-+	.long 2100b,2109b
-+	.long 4100b,4109b
-+	.long 8180b,8189b
-+	.long 8190b,8199b
-+	.long 4180b,4189b
-+	.long 4190b,4199b
-+	.long 2180b,2189b
-+	.long 2190b,2199b
-+	.long 1180b,1189b
-+	.long 1190b,1199b
-+	.previous
-diff --git a/arch/hexagon/mm/copy_user_template.S b/arch/hexagon/mm/copy_user_template.S
-new file mode 100644
-index 0000000..08d7d7b
---- /dev/null
-+++ b/arch/hexagon/mm/copy_user_template.S
-@@ -0,0 +1,185 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/* Numerology:
-+ * WXYZ
-+ * W: width in bytes
-+ * X: Load=0, Store=1
-+ * Y: Location 0=preamble,8=loop,9=epilog
-+ * Z: Location=0,handler=9
-+ */
-+	.text
-+	.global FUNCNAME
-+	.type FUNCNAME, @function
-+	.p2align 5
-+FUNCNAME:
-+	{
-+		p0 = cmp.gtu(bytes,#0)
-+		if (!p0.new) jump:nt .Ldone
-+		r3 = or(dst,src)
-+		r4 = xor(dst,src)
-+	}
-+	{
-+		p1 = cmp.gtu(bytes,#15)
-+		p0 = bitsclr(r3,#7)
-+		if (!p0.new) jump:nt .Loop_not_aligned_8
-+		src_dst_sav = combine(src,dst)
-+	}
-+
-+	{
-+		loopcount = lsr(bytes,#3)
-+		if (!p1) jump .Lsmall
-+	}
-+	p3=sp1loop0(.Loop8,loopcount)
-+.Loop8:
-+8080:
-+8180:
-+	{
-+		if (p3) memd(dst++#8) = d_dbuf
-+		d_dbuf = memd(src++#8)
-+	}:endloop0
-+8190:
-+	{
-+		memd(dst++#8) = d_dbuf
-+		bytes -= asl(loopcount,#3)
-+		jump .Lsmall
-+	}
-+
-+.Loop_not_aligned_8:
-+	{
-+		p0 = bitsclr(r4,#7)
-+		if (p0.new) jump:nt .Lalign
-+	}
-+	{
-+		p0 = bitsclr(r3,#3)
-+		if (!p0.new) jump:nt .Loop_not_aligned_4
-+		p1 = cmp.gtu(bytes,#7)
-+	}
-+
-+	{
-+		if (!p1) jump .Lsmall
-+		loopcount = lsr(bytes,#2)
-+	}
-+	p3=sp1loop0(.Loop4,loopcount)
-+.Loop4:
-+4080:
-+4180:
-+	{
-+		if (p3) memw(dst++#4) = w_dbuf
-+		w_dbuf = memw(src++#4)
-+	}:endloop0
-+4190:
-+	{
-+		memw(dst++#4) = w_dbuf
-+		bytes -= asl(loopcount,#2)
-+		jump .Lsmall
-+	}
-+
-+.Loop_not_aligned_4:
-+	{
-+		p0 = bitsclr(r3,#1)
-+		if (!p0.new) jump:nt .Loop_not_aligned
-+		p1 = cmp.gtu(bytes,#3)
-+	}
-+
-+	{
-+		if (!p1) jump .Lsmall
-+		loopcount = lsr(bytes,#1)
-+	}
-+	p3=sp1loop0(.Loop2,loopcount)
-+.Loop2:
-+2080:
-+2180:
-+	{
-+		if (p3) memh(dst++#2) = w_dbuf
-+		w_dbuf = memuh(src++#2)
-+	}:endloop0
-+2190:
-+	{
-+		memh(dst++#2) = w_dbuf
-+		bytes -= asl(loopcount,#1)
-+		jump .Lsmall
-+	}
-+
-+.Loop_not_aligned: /* Works for as small as one byte */
-+	p3=sp1loop0(.Loop1,bytes)
-+.Loop1:
-+1080:
-+1180:
-+	{
-+		if (p3) memb(dst++#1) = w_dbuf
-+		w_dbuf = memub(src++#1)
-+	}:endloop0
-+	/* Done */
-+1190:
-+	{
-+		memb(dst) = w_dbuf
-+		jumpr r31
-+		r0 = #0
-+	}
-+
-+.Lsmall:
-+	{
-+		p0 = cmp.gtu(bytes,#0)
-+		if (p0.new) jump:nt .Loop_not_aligned
-+	}
-+.Ldone:
-+	{
-+		r0 = #0
-+		jumpr r31
-+	}
-+	.falign
-+.Lalign:
-+1000:
-+	{
-+		if (p0.new) w_dbuf = memub(src)
-+		p0 = tstbit(src,#0)
-+		if (!p1) jump .Lsmall
-+	}
-+1100:
-+	{
-+		if (p0) memb(dst++#1) = w_dbuf
-+		if (p0) bytes = add(bytes,#-1)
-+		if (p0) src = add(src,#1)
-+	}
-+2000:
-+	{
-+		if (p0.new) w_dbuf = memuh(src)
-+		p0 = tstbit(src,#1)
-+		if (!p1) jump .Lsmall
-+	}
-+2100:
-+	{
-+		if (p0) memh(dst++#2) = w_dbuf
-+		if (p0) bytes = add(bytes,#-2)
-+		if (p0) src = add(src,#2)
-+	}
-+4000:
-+	{
-+		if (p0.new) w_dbuf = memw(src)
-+		p0 = tstbit(src,#2)
-+		if (!p1) jump .Lsmall
-+	}
-+4100:
-+	{
-+		if (p0) memw(dst++#4) = w_dbuf
-+		if (p0) bytes = add(bytes,#-4)
-+		if (p0) src = add(src,#4)
-+		jump FUNCNAME
-+	}
-+	.size FUNCNAME,.-FUNCNAME
-diff --git a/arch/hexagon/mm/strnlen_user.S b/arch/hexagon/mm/strnlen_user.S
-new file mode 100644
-index 0000000..324ff54
---- /dev/null
-+++ b/arch/hexagon/mm/strnlen_user.S
-@@ -0,0 +1,140 @@
-+/*
-+ * User string length functions for kernel
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#define isrc	r0
-+#define max	r1	/*  Do not change!  */
-+
-+#define end	r2
-+#define tmp1	r3
-+
-+#define obo	r6	/*  off-by-one  */
-+#define start	r7
-+#define mod8	r8
-+#define dbuf    r15:14
-+#define dcmp	r13:12
-+
-+/*
-+ * The vector mask version of this turned out *really* badly.
-+ * The hardware loop version also turned out *really* badly.
-+ * Seems straight pointer arithmetic basically wins here.
-+ */
-+
-+#define fname __strnlen_user
-+
-+	.text
-+	.global fname
-+	.type fname, @function
-+	.p2align 5  /*  why?  */
-+fname:
-+	{
-+		mod8 = and(isrc,#7);
-+		end = add(isrc,max);
-+		start = isrc;
-+	}
-+	{
-+		P0 = cmp.eq(mod8,#0);
-+		mod8 = and(end,#7);
-+		dcmp = #0;
-+		if (P0.new) jump:t dw_loop;	/*  fire up the oven  */
-+	}
-+
-+alignment_loop:
-+fail_1:	{
-+		tmp1 = memb(start++#1);
-+	}
-+	{
-+		P0 = cmp.eq(tmp1,#0);
-+		if (P0.new) jump:nt exit_found;
-+		P1 = cmp.gtu(end,start);
-+		mod8 = and(start,#7);
-+	}
-+	{
-+		if (!P1) jump exit_error;  /*  hit the end  */
-+		P0 = cmp.eq(mod8,#0);
-+	}
-+	{
-+		if (!P0) jump alignment_loop;
-+	}
 +
 +
-+
-+dw_loop:
-+fail_2:	{
-+		dbuf = memd(start);
-+		obo = add(start,#1);
-+	}
-+	{
-+		P0 = vcmpb.eq(dbuf,dcmp);
-+	}
-+	{
-+		tmp1 = P0;
-+		P0 = cmp.gtu(end,start);
-+	}
-+	{
-+		tmp1 = ct0(tmp1);
-+		mod8 = and(end,#7);
-+		if (!P0) jump end_check;
-+	}
-+	{
-+		P0 = cmp.eq(tmp1,#32);
-+		if (!P0.new) jump:nt exit_found;
-+		if (!P0.new) start = add(obo,tmp1);
-+	}
-+	{
-+		start = add(start,#8);
-+		jump dw_loop;
-+	}	/*  might be nice to combine these jumps...   */
-+
-+
-+end_check:
-+	{
-+		P0 = cmp.gt(tmp1,mod8);
-+		if (P0.new) jump:nt exit_error;	/*  neverfound!  */
-+		start = add(obo,tmp1);
-+	}
-+
-+exit_found:
-+	{
-+		R0 = sub(start,isrc);
-+		jumpr R31;
-+	}
-+
-+exit_error:
-+	{
-+		R0 = add(max,#1);
-+		jumpr R31;
-+	}
-+
-+	/*  Uh, what does the "fixup" return here?  */
-+	.falign
-+fix_1:
-+	{
-+		R0 = #0;
-+		jumpr R31;
-+	}
-+
-+	.size fname,.-fname
-+
-+
-+.section __ex_table,"a"
-+.long fail_1,fix_1
-+.long fail_2,fix_1
-+.previous
-+
-diff --git a/arch/hexagon/mm/uaccess.c b/arch/hexagon/mm/uaccess.c
-new file mode 100644
-index 0000000..e748108
---- /dev/null
-+++ b/arch/hexagon/mm/uaccess.c
-@@ -0,0 +1,59 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+/*
-+ * Support for user memory access from kernel.  This will
-+ * probably be inlined for performance at some point, but
-+ * for ease of debug, and to a lesser degree for code size,
-+ * we implement here as subroutines.
-+ */
-+#include <linux/types.h>
-+#include <asm/uaccess.h>
-+#include <asm/pgtable.h>
-+
-+/*
-+ * For clear_user(), exploit previously defined copy_to_user function
-+ * and the fact that we've got a handy zero page defined in kernel/head.S
-+ *
-+ * dczero here would be even faster.
-+ */
-+__kernel_size_t __clear_user_hexagon(void __user *dest, unsigned long count)
++/*  Not yet working  */
++void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs,
++				 struct task_struct *task)
 +{
-+	long uncleared;
++	struct pt_regs *thread_regs;
 +
-+	while (count > PAGE_SIZE) {
-+		uncleared = __copy_to_user_hexagon(dest, &empty_zero_page,
-+						PAGE_SIZE);
-+		if (uncleared)
-+			return count - (PAGE_SIZE - uncleared);
-+		count -= PAGE_SIZE;
-+		dest += PAGE_SIZE;
-+	}
-+	if (count)
-+		count = __copy_to_user_hexagon(dest, &empty_zero_page, count);
++	if (task == NULL)
++		return;
 +
-+	return count;
++	/* Initialize to zero */
++	memset(gdb_regs, 0, NUMREGBYTES);
++
++	/* Otherwise, we have only some registers from switch_to() */
++	thread_regs = task_pt_regs(task);
++	gdb_regs[0] = thread_regs->r00;
 +}
 +
-+unsigned long clear_user_hexagon(void __user *dest, unsigned long count)
++/**
++ * kgdb_arch_handle_exception - Handle architecture specific GDB packets.
++ * @vector: The error vector of the exception that happened.
++ * @signo: The signal number of the exception that happened.
++ * @err_code: The error code of the exception that happened.
++ * @remcom_in_buffer: The buffer of the packet we have read.
++ * @remcom_out_buffer: The buffer of %BUFMAX bytes to write a packet into.
++ * @regs: The &struct pt_regs of the current process.
++ *
++ * This function MUST handle the 'c' and 's' command packets,
++ * as well packets to set / remove a hardware breakpoint, if used.
++ * If there are additional packets which the hardware needs to handle,
++ * they are handled here.  The code should return -1 if it wants to
++ * process more packets, and a %0 or %1 if it wants to exit from the
++ * kgdb callback.
++ *
++ * Not yet working.
++ */
++int kgdb_arch_handle_exception(int vector, int signo, int err_code,
++			       char *remcom_in_buffer, char *remcom_out_buffer,
++			       struct pt_regs *linux_regs)
 +{
-+	if (!access_ok(VERIFY_WRITE, dest, count))
-+		return count;
-+	else
-+		return __clear_user_hexagon(dest, count);
++	switch (remcom_in_buffer[0]) {
++	case 's':
++	case 'c':
++		return 0;
++	}
++	/* Stay in the debugger. */
++	return -1;
 +}
++
++static int __kgdb_notify(struct die_args *args, unsigned long cmd)
++{
++	/* cpu roundup */
++	if (atomic_read(&kgdb_active) != -1) {
++		kgdb_nmicallback(smp_processor_id(), args->regs);
++		return NOTIFY_STOP;
++	}
++
++	if (user_mode(args->regs))
++		return NOTIFY_DONE;
++
++	if (kgdb_handle_exception(args->trapnr & 0xff, args->signr, args->err,
++				    args->regs))
++		return NOTIFY_DONE;
++
++	return NOTIFY_STOP;
++}
++
++static int
++kgdb_notify(struct notifier_block *self, unsigned long cmd, void *ptr)
++{
++	unsigned long flags;
++	int ret;
++
++	local_irq_save(flags);
++	ret = __kgdb_notify(ptr, cmd);
++	local_irq_restore(flags);
++
++	return ret;
++}
++
++static struct notifier_block kgdb_notifier = {
++	.notifier_call = kgdb_notify,
++
++	/*
++	 * Lowest-prio notifier priority, we want to be notified last:
++	 */
++	.priority = -INT_MAX,
++};
++
++/**
++ * kgdb_arch_init - Perform any architecture specific initalization.
++ *
++ * This function will handle the initalization of any architecture
++ * specific callbacks.
++ */
++int kgdb_arch_init(void)
++{
++	return register_die_notifier(&kgdb_notifier);
++}
++
++/**
++ * kgdb_arch_exit - Perform any architecture specific uninitalization.
++ *
++ * This function will handle the uninitalization of any architecture
++ * specific callbacks, for dynamic registration and unregistration.
++ */
++void kgdb_arch_exit(void)
++{
++	unregister_die_notifier(&kgdb_notifier);
++}
++
 -- 
 1.7.1
 
