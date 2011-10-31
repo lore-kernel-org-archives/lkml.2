@@ -1,44 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934886Ab1KAATd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:19:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60395 "EHLO
+	id S933502Ab1KAAT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:19:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:60405 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934802Ab1KAASN (ORCPT
+	with ESMTP id S934837Ab1KAASO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:13 -0400
-Message-Id: <093448$3uejul@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599765"
+	Mon, 31 Oct 2011 20:18:14 -0400
+Message-Id: <093448$3uejv7@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599783"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:54:08 -0500
-Subject: [PATCH v5 30/36] Hexagon: Add page-fault support.
+Date: Mon, 31 Oct 2011 18:55:58 -0500
+Subject: [PATCH v5 33/36] Hexagon: Add configuration and makefiles for the Hexagon architecture.
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/mem-layout.h |  112 +++++++++++++
- arch/hexagon/include/asm/vm_fault.h   |   26 +++
- arch/hexagon/mm/init.c                |  276 +++++++++++++++++++++++++++++++++
- arch/hexagon/mm/vm_fault.c            |  187 ++++++++++++++++++++++
- 4 files changed, 601 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/mem-layout.h
- create mode 100644 arch/hexagon/include/asm/vm_fault.h
- create mode 100644 arch/hexagon/mm/init.c
- create mode 100644 arch/hexagon/mm/vm_fault.c
+ arch/hexagon/Kconfig              |  220 +++++++++++++++++++++++++++++++++++++
+ arch/hexagon/Makefile             |   59 ++++++++++
+ arch/hexagon/kernel/Makefile      |   19 +++
+ arch/hexagon/kernel/asm-offsets.c |  104 +++++++++++++++++
+ arch/hexagon/kernel/vmlinux.lds.S |   93 ++++++++++++++++
+ arch/hexagon/lib/Makefile         |    4 +
+ arch/hexagon/mm/Makefile          |    7 +
+ 7 files changed, 506 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/Kconfig
+ create mode 100644 arch/hexagon/Makefile
+ create mode 100644 arch/hexagon/kernel/Makefile
+ create mode 100644 arch/hexagon/kernel/asm-offsets.c
+ create mode 100644 arch/hexagon/kernel/vmlinux.lds.S
+ create mode 100644 arch/hexagon/lib/Makefile
+ create mode 100644 arch/hexagon/mm/Makefile
 
-diff --git a/arch/hexagon/include/asm/mem-layout.h b/arch/hexagon/include/asm/mem-layout.h
+diff --git a/arch/hexagon/Kconfig b/arch/hexagon/Kconfig
 new file mode 100644
-index 0000000..72e5dcd
+index 0000000..02513c2
 --- /dev/null
-+++ b/arch/hexagon/include/asm/mem-layout.h
-@@ -0,0 +1,112 @@
++++ b/arch/hexagon/Kconfig
+@@ -0,0 +1,220 @@
++# Hexagon configuration
++comment "Linux Kernel Configuration for Hexagon"
++
++config HEXAGON
++	def_bool y
++	select HAVE_OPROFILE
++	select USE_GENERIC_SMP_HELPERS if SMP
++	# Other pending projects/to-do items.
++	# select HAVE_REGS_AND_STACK_ACCESS_API
++	# select HAVE_HW_BREAKPOINT if PERF_EVENTS
++	# select ARCH_HAS_CPU_IDLE_WAIT
++	# select ARCH_WANT_OPTIONAL_GPIOLIB
++	# select ARCH_REQUIRE_GPIOLIB
++	# select HAVE_CLK
++	# select IRQ_PER_CPU
++	select HAVE_IRQ_WORK
++	# select GENERIC_PENDING_IRQ if SMP
++	select GENERIC_ATOMIC64
++	select HAVE_PERF_EVENTS
++	select HAVE_GENERIC_HARDIRQS
++	select GENERIC_HARDIRQS_NO__DO_IRQ
++	select GENERIC_HARDIRQS_NO_DEPRECATED
++	# GENERIC_ALLOCATOR is used by dma_alloc_coherent()
++	select GENERIC_ALLOCATOR
++	select GENERIC_IRQ_SHOW
++	select HAVE_ARCH_KGDB
++	select HAVE_ARCH_TRACEHOOK
++	select NO_IOPORT
++	# mostly generic routines, with some accelerated ones
++	---help---
++	  Qualcomm Hexagon is a processor architecture designed for high
++	  performance and low power across a wide variety of applications.
++
++config HEXAGON_ARCH_V1
++	bool
++
++config HEXAGON_ARCH_V2
++	bool
++
++config HEXAGON_ARCH_V3
++	bool
++
++config HEXAGON_ARCH_V4
++	bool
++
++config FRAME_POINTER
++	def_bool y
++
++config LOCKDEP_SUPPORT
++	def_bool y
++
++config PCI
++	def_bool n
++
++config EARLY_PRINTK
++	def_bool y
++
++config KTIME_SCALAR
++	def_bool y
++
++config MMU
++	def_bool y
++
++config TRACE_IRQFLAGS_SUPPORT
++	def_bool y
++
++config GENERIC_CSUM
++	def_bool y
++
++#
++# Use the generic interrupt handling code in kernel/irq/:
++#
++config GENERIC_IRQ_PROBE
++	def_bool y
++
++config GENERIC_IOMAP
++	def_bool y
++
++#config ZONE_DMA
++#	bool
++#	default y
++
++config HAS_DMA
++	bool
++	select HAVE_DMA_ATTRS
++	default y
++
++config NEED_SG_DMA_LENGTH
++	def_bool y
++
++config RWSEM_GENERIC_SPINLOCK
++	def_bool n
++
++config RWSEM_XCHGADD_ALGORITHM
++	def_bool y
++
++config GENERIC_FIND_NEXT_BIT
++	def_bool y
++
++config GENERIC_HWEIGHT
++	def_bool y
++
++config GENERIC_TIME
++	def_bool y
++
++config GENERIC_CLOCKEVENTS
++	def_bool y
++
++config GENERIC_CLOCKEVENTS_BROADCAST
++	def_bool y
++
++config STACKTRACE_SUPPORT
++	def_bool y
++	select STACKTRACE
++
++config GENERIC_BUG
++	def_bool y
++	depends on BUG
++
++config BUG
++	def_bool y
++
++menu "Machine selection"
++
++choice
++	prompt "System type"
++	default HEXAGON_ARCH_V2
++
++config HEXAGON_COMET
++	bool "Comet Board"
++	select HEXAGON_ARCH_V2
++	---help---
++	  Support for the Comet platform.
++
++endchoice
++
++config HEXAGON_VM
++	def_bool y
++
++config CMDLINE
++	string "Default kernel command string"
++	default ""
++	help
++	  On some platforms, there is currently no way for the boot loader
++	  to pass arguments to the kernel. For these, you should supply some
++	  command-line options at build time by entering them here.  At a
++	  minimum, you should specify the memory size and the root device
++	  (e.g., mem=64M root=/dev/nfs).
++
++config HEXAGON_ANGEL_TRAPS
++	bool "Use Angel Traps"
++	default n
++	---help---
++	  Enable angel debug traps (for printk's).
++
++config SMP
++	bool "Multi-Processing support"
++	---help---
++	  Enables SMP support in the kernel.  If unsure, say "Y"
++
++config NR_CPUS
++	int "Maximum number of CPUs" if SMP
++	range 2 6 if SMP
++	default "1" if !SMP
++	default "6" if SMP
++	---help---
++	  This allows you to specify the maximum number of CPUs which this
++	  kernel will support.  The maximum supported value is 6 and the
++	  minimum value which makes sense is 2.
++
++	  This is purely to save memory - each supported CPU adds
++	  approximately eight kilobytes to the kernel image.
++
++choice
++	prompt "Kernel page size"
++	default PAGE_SIZE_4KB
++	---help---
++	  Changes the default page size; use with caution.
++
++config PAGE_SIZE_4KB
++	bool "4KB"
++
++config PAGE_SIZE_16KB
++	bool "16KB"
++
++config PAGE_SIZE_64KB
++	bool "64KB"
++
++config PAGE_SIZE_256KB
++	bool "256KB"
++
++endchoice
++
++source "mm/Kconfig"
++
++source "kernel/Kconfig.hz"
++source "kernel/time/Kconfig"
++
++config GENERIC_GPIO
++	bool "Generic GPIO support"
++	default n
++
++endmenu
++
++source "init/Kconfig"
++source "drivers/Kconfig"
++source "fs/Kconfig"
++
++menu "Executable File Formats"
++source "fs/Kconfig.binfmt"
++endmenu
++
++source "net/Kconfig"
++source "security/Kconfig"
++source "crypto/Kconfig"
++source "lib/Kconfig"
++
++menu "Kernel hacking"
++source "lib/Kconfig.debug"
++endmenu
+diff --git a/arch/hexagon/Makefile b/arch/hexagon/Makefile
+new file mode 100644
+index 0000000..7ce9563
+--- /dev/null
++++ b/arch/hexagon/Makefile
+@@ -0,0 +1,59 @@
++#  Makefile for the Hexagon arch
++
++KBUILD_DEFCONFIG = comet_defconfig
++
++# Do not use GP-relative jumps
++KBUILD_CFLAGS += -G0
++LDFLAGS_vmlinux += -G0
++
++# Do not use single-byte enums; these will overflow.
++KBUILD_CFLAGS += -fno-short-enums
++
++# Modules must use either long-calls, or use pic/plt.
++# Use long-calls for now, it's easier.  And faster.
++# CFLAGS_MODULE += -fPIC
++# LDFLAGS_MODULE += -shared
++CFLAGS_MODULE += -mlong-calls
++
++cflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
++cflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
++cflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
++cflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
++
++aflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
++aflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
++aflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
++aflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
++
++ldflags-$(CONFIG_HEXAGON_ARCH_V1) += $(call cc-option,-mv1)
++ldflags-$(CONFIG_HEXAGON_ARCH_V2) += $(call cc-option,-mv2)
++ldflags-$(CONFIG_HEXAGON_ARCH_V3) += $(call cc-option,-mv3)
++ldflags-$(CONFIG_HEXAGON_ARCH_V4) += $(call cc-option,-mv4)
++
++KBUILD_CFLAGS += $(cflags-y)
++KBUILD_AFLAGS += $(aflags-y)
++
++#  no KBUILD_LDFLAGS?
++LDFLAGS += $(ldflags-y)
++
++# Thread-info register will be r19.  This value is not configureable;
++# it is hard-coded in several files.
++TIR_NAME := r19
++KBUILD_CFLAGS += -ffixed-$(TIR_NAME) -DTHREADINFO_REG=$(TIR_NAME) -D__linux__
++KBUILD_AFLAGS += -DTHREADINFO_REG=$(TIR_NAME)
++
++LIBGCC := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
++libs-y += $(LIBGCC)
++
++head-y := arch/hexagon/kernel/head.o \
++	arch/hexagon/kernel/init_task.o
++
++core-y += arch/hexagon/kernel/ \
++	arch/hexagon/mm/ \
++	arch/hexagon/lib/
++
++#	arch/hexagon/platform/common/
++#
++#core-$(CONFIG_HEXAGON_COMET)		+= arch/hexagon/platform/comet/
++#machine-$(CONFIG_HEXAGON_COMET)		:= comet
++
+diff --git a/arch/hexagon/kernel/Makefile b/arch/hexagon/kernel/Makefile
+new file mode 100644
+index 0000000..27be2f6
+--- /dev/null
++++ b/arch/hexagon/kernel/Makefile
+@@ -0,0 +1,19 @@
++extra-y := head.o vmlinux.lds init_task.o
++
++obj-$(CONFIG_SMP) += smp.o topology.o
++
++obj-y += setup.o irq_cpu.o traps.o syscalltab.o signal.o time.o
++obj-y += process.o syscall.o trampoline.o reset.o ptrace.o
++obj-y += vdso.o
++
++obj-$(CONFIG_KGDB)    += kgdb.o
++obj-$(CONFIG_MODULES) += module.o hexagon_ksyms.o
++
++# Modules required to work with the Hexagon Virtual Machine
++obj-y += vm_entry.o vm_events.o vm_switch.o vm_ops.o vm_init_segtable.o
++obj-y += vm_vectors.o
++
++obj-$(CONFIG_HAS_DMA) += dma.o
++
++obj-$(CONFIG_STACKTRACE) += stacktrace.o
++
+diff --git a/arch/hexagon/kernel/asm-offsets.c b/arch/hexagon/kernel/asm-offsets.c
+new file mode 100644
+index 0000000..89ffa51
+--- /dev/null
++++ b/arch/hexagon/kernel/asm-offsets.c
+@@ -0,0 +1,104 @@
 +/*
-+ * Memory layout definitions for the Hexagon architecture
++ * Copyright (C) 1996 David S. Miller
++ * Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003 Ralf Baechle
++ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
++ * Kevin Kissell, kevink@mips.com and Carsten Langgaard, carstenl@mips.com
++ * Copyright (C) 2000 MIPS Technologies, Inc.
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -57,422 +383,96 @@ index 0000000..72e5dcd
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_HEXAGON_MEM_LAYOUT_H
-+#define _ASM_HEXAGON_MEM_LAYOUT_H
-+
-+#include <linux/const.h>
-+
-+/*
-+ * Have to do this for ginormous numbers, else they get printed as
-+ * negative numbers, which the linker no likey when you try to
-+ * assign it to the location counter.
-+ */
-+
-+#define PAGE_OFFSET			_AC(0xc0000000, UL)
-+
-+/*
-+ * LOAD_ADDRESS is the physical/linear address of where in memory
-+ * the kernel gets loaded. The 12 least significant bits must be zero (0)
-+ * due to limitations on setting the EVB
-+ *
-+ */
-+
-+#ifndef LOAD_ADDRESS
-+#define LOAD_ADDRESS			0x00000000
-+#endif
-+
-+#define TASK_SIZE			(PAGE_OFFSET)
-+
-+/*  not sure how these are used yet  */
-+#define STACK_TOP			TASK_SIZE
-+#define STACK_TOP_MAX			TASK_SIZE
-+
-+#ifndef __ASSEMBLY__
-+enum fixed_addresses {
-+	FIX_KMAP_BEGIN,
-+	FIX_KMAP_END,  /*  check for per-cpuism  */
-+	__end_of_fixed_addresses
-+};
-+
-+#define MIN_KERNEL_SEG 0x300   /* From 0xc0000000 */
-+extern int max_kernel_seg;
-+
-+/*
-+ * Start of vmalloc virtual address space for kernel;
-+ * supposed to be based on the amount of physical memory available
-+ */
-+
-+#define VMALLOC_START (PAGE_OFFSET + VMALLOC_OFFSET + \
-+	(unsigned long)high_memory)
-+
-+/* Gap between physical ram and vmalloc space for guard purposes. */
-+#define VMALLOC_OFFSET PAGE_SIZE
-+
-+/*
-+ * Create the space between VMALLOC_START and FIXADDR_TOP backwards
-+ * from the ... "top".
-+ *
-+ * Permanent IO mappings will live at 0xfexx_xxxx
-+ * Hypervisor occupies the last 16MB page at 0xffxxxxxx
-+ */
-+
-+#define FIXADDR_TOP     0xfe000000
-+#define FIXADDR_SIZE    (__end_of_fixed_addresses << PAGE_SHIFT)
-+#define FIXADDR_START   (FIXADDR_TOP - FIXADDR_SIZE)
-+
-+/*
-+ * "permanent kernel mappings", defined as long-lasting mappings of
-+ * high-memory page frames into the kernel address space.
-+ */
-+
-+#define LAST_PKMAP	PTRS_PER_PTE
-+#define LAST_PKMAP_MASK	(LAST_PKMAP - 1)
-+#define PKMAP_NR(virt)	((virt - PKMAP_BASE) >> PAGE_SHIFT)
-+#define PKMAP_ADDR(nr)	(PKMAP_BASE + ((nr) << PAGE_SHIFT))
-+
-+/*
-+ * To the "left" of the fixed map space is the kmap space
-+ *
-+ * "Permanent Kernel Mappings"; fancy (or less fancy) PTE table
-+ * that looks like it's actually walked.
-+ * Need to check the alignment/shift usage; some archs use
-+ * PMD_MASK on this value
-+ */
-+#define PKMAP_BASE (FIXADDR_START-PAGE_SIZE*LAST_PKMAP)
-+
-+/*
-+ * 2 pages of guard gap between where vmalloc area ends
-+ * and pkmap_base begins.
-+ */
-+#define VMALLOC_END (PKMAP_BASE-PAGE_SIZE*2)
-+#endif /*  !__ASSEMBLY__  */
-+
-+
-+#endif /* _ASM_HEXAGON_MEM_LAYOUT_H */
-diff --git a/arch/hexagon/include/asm/vm_fault.h b/arch/hexagon/include/asm/vm_fault.h
-new file mode 100644
-index 0000000..cacda36
---- /dev/null
-+++ b/arch/hexagon/include/asm/vm_fault.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_HEXAGON_VM_FAULT_H
-+#define _ASM_HEXAGON_VM_FAULT_H
-+
-+extern void execute_protection_fault(struct pt_regs *);
-+extern void write_protection_fault(struct pt_regs *);
-+extern void read_protection_fault(struct pt_regs *);
-+
-+#endif
-diff --git a/arch/hexagon/mm/init.c b/arch/hexagon/mm/init.c
-new file mode 100644
-index 0000000..b57d741
---- /dev/null
-+++ b/arch/hexagon/mm/init.c
-@@ -0,0 +1,276 @@
-+/*
-+ * Memory subsystem initialization for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <linux/init.h>
++#include <linux/compat.h>
++#include <linux/types.h>
++#include <linux/sched.h>
 +#include <linux/mm.h>
-+#include <linux/bootmem.h>
-+#include <asm/atomic.h>
-+#include <linux/highmem.h>
-+#include <asm/tlb.h>
-+#include <asm/sections.h>
-+#include <asm/vm_mmu.h>
++#include <linux/interrupt.h>
++#include <linux/kbuild.h>
++#include <asm/ptrace.h>
++#include <asm/processor.h>
 +
-+/*
-+ * Define a startpg just past the end of the kernel image and a lastpg
-+ * that corresponds to the end of real or simulated platform memory.
-+ */
-+#define bootmem_startpg (PFN_UP(((unsigned long) _end) - PAGE_OFFSET))
++/*  This file is used to produce asm/linkerscript constants from header
++    files typically used in c.  Specifically, it generates asm-offsets.h  */
 +
-+unsigned long bootmem_lastpg;  /*  Should be set by platform code  */
-+
-+/*  Set as variable to limit PMD copies  */
-+int max_kernel_seg = 0x303;
-+
-+/*  think this should be (page_size-1) the way it's used...*/
-+unsigned long zero_page_mask;
-+
-+/*  indicate pfn's of high memory  */
-+unsigned long highstart_pfn, highend_pfn;
-+
-+/* struct mmu_gather defined in asm-generic.h;  */
-+DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
-+
-+/* Default cache attribute for newly created page tables */
-+unsigned long _dflt_cache_att = CACHEDEF;
-+
-+/*
-+ * The current "generation" of kernel map, which should not roll
-+ * over until Hell freezes over.  Actual bound in years needs to be
-+ * calculated to confirm.
-+ */
-+DEFINE_SPINLOCK(kmap_gen_lock);
-+
-+/*  checkpatch says don't init this to 0.  */
-+unsigned long long kmap_generation;
-+
-+/*
-+ * mem_init - initializes memory
-+ *
-+ * Frees up bootmem
-+ * Fixes up more stuff for HIGHMEM
-+ * Calculates and displays memory available/used
-+ */
-+void __init mem_init(void)
++int main(void)
 +{
-+	/*  No idea where this is actually declared.  Seems to evade LXR.  */
-+	totalram_pages += free_all_bootmem();
-+	num_physpages = bootmem_lastpg;	/*  seriously, what?  */
++	COMMENT("This is a comment.");
++	/*  might get these from somewhere else.  */
++	DEFINE(_PAGE_SIZE, PAGE_SIZE);
++	DEFINE(_PAGE_SHIFT, PAGE_SHIFT);
++	BLANK();
 +
-+	printk(KERN_INFO "totalram_pages = %ld\n", totalram_pages);
++	COMMENT("Hexagon pt_regs definitions");
++	OFFSET(_PT_SYSCALL_NR, pt_regs, syscall_nr);
++	OFFSET(_PT_UGPGP, pt_regs, ugpgp);
++	OFFSET(_PT_R3130, pt_regs, r3130);
++	OFFSET(_PT_R2928, pt_regs, r2928);
++	OFFSET(_PT_R2726, pt_regs, r2726);
++	OFFSET(_PT_R2524, pt_regs, r2524);
++	OFFSET(_PT_R2322, pt_regs, r2322);
++	OFFSET(_PT_R2120, pt_regs, r2120);
++	OFFSET(_PT_R1918, pt_regs, r1918);
++	OFFSET(_PT_R1716, pt_regs, r1716);
++	OFFSET(_PT_R1514, pt_regs, r1514);
++	OFFSET(_PT_R1312, pt_regs, r1312);
++	OFFSET(_PT_R1110, pt_regs, r1110);
++	OFFSET(_PT_R0908, pt_regs, r0908);
++	OFFSET(_PT_R0706, pt_regs, r0706);
++	OFFSET(_PT_R0504, pt_regs, r0504);
++	OFFSET(_PT_R0302, pt_regs, r0302);
++	OFFSET(_PT_R0100, pt_regs, r0100);
++	OFFSET(_PT_LC0SA0, pt_regs, lc0sa0);
++	OFFSET(_PT_LC1SA1, pt_regs, lc1sa1);
++	OFFSET(_PT_M1M0, pt_regs, m1m0);
++	OFFSET(_PT_PREDSUSR, pt_regs, predsusr);
++	OFFSET(_PT_EVREC, pt_regs, hvmer);
++	OFFSET(_PT_ER_VMEL, pt_regs, hvmer.vmel);
++	OFFSET(_PT_ER_VMEST, pt_regs, hvmer.vmest);
++	OFFSET(_PT_ER_VMPSP, pt_regs, hvmer.vmpsp);
++	OFFSET(_PT_ER_VMBADVA, pt_regs, hvmer.vmbadva);
++	DEFINE(_PT_REGS_SIZE, sizeof(struct pt_regs));
++	BLANK();
 +
-+	/*
-+	 *  To-Do:  someone somewhere should wipe out the bootmem map
-+	 *  after we're done?
-+	 */
++	COMMENT("Hexagon thread_info definitions");
++	OFFSET(_THREAD_INFO_FLAGS, thread_info, flags);
++	OFFSET(_THREAD_INFO_PT_REGS, thread_info, regs);
++	OFFSET(_THREAD_INFO_SP, thread_info, sp);
++	DEFINE(_THREAD_SIZE, THREAD_SIZE);
++	BLANK();
 +
-+	/*
-+	 * This can be moved to some more virtual-memory-specific
-+	 * initialization hook at some point.  Set the init_mm
-+	 * descriptors "context" value to point to the initial
-+	 * kernel segment table's physical address.
-+	 */
-+	init_mm.context.ptbase = __pa(init_mm.pgd);
-+}
++	COMMENT("Hexagon hexagon_switch_stack definitions");
++	OFFSET(_SWITCH_R1716, hexagon_switch_stack, r1716);
++	OFFSET(_SWITCH_R1918, hexagon_switch_stack, r1918);
++	OFFSET(_SWITCH_R2120, hexagon_switch_stack, r2120);
++	OFFSET(_SWITCH_R2322, hexagon_switch_stack, r2322);
 +
-+/*
-+ * free_initmem - frees memory used by stuff declared with __init
-+ *
-+ * Todo:  free pages between __init_begin and __init_end; possibly
-+ * some devtree related stuff as well.
-+ */
-+void __init_refok free_initmem(void)
-+{
-+}
++	OFFSET(_SWITCH_R2524, hexagon_switch_stack, r2524);
++	OFFSET(_SWITCH_R2726, hexagon_switch_stack, r2726);
++	OFFSET(_SWITCH_FP, hexagon_switch_stack, fp);
++	OFFSET(_SWITCH_LR, hexagon_switch_stack, lr);
++	DEFINE(_SWITCH_STACK_SIZE, sizeof(struct hexagon_switch_stack));
++	BLANK();
 +
-+/*
-+ * free_initrd_mem - frees...  initrd memory.
-+ * @start - start of init memory
-+ * @end - end of init memory
-+ *
-+ * Apparently has to be passed the address of the initrd memory.
-+ *
-+ * Wrapped by #ifdef CONFIG_BLKDEV_INITRD
-+ */
-+void free_initrd_mem(unsigned long start, unsigned long end)
-+{
-+}
++	COMMENT("Hexagon task_struct definitions");
++	OFFSET(_TASK_THREAD_INFO, task_struct, stack);
++	OFFSET(_TASK_STRUCT_THREAD, task_struct, thread);
 +
-+void sync_icache_dcache(pte_t pte)
-+{
-+	unsigned long addr;
-+	struct page *page;
-+
-+	page = pte_page(pte);
-+	addr = (unsigned long) page_address(page);
-+
-+	__vmcache_idsync(addr, PAGE_SIZE);
-+}
-+
-+/*
-+ * In order to set up page allocator "nodes",
-+ * somebody has to call free_area_init() for UMA.
-+ *
-+ * In this mode, we only have one pg_data_t
-+ * structure: contig_mem_data.
-+ */
-+void __init paging_init(void)
-+{
-+	unsigned long zones_sizes[MAX_NR_ZONES] = {0, };
-+
-+	/*
-+	 *  This is not particularly well documented anywhere, but
-+	 *  give ZONE_NORMAL all the memory, including the big holes
-+	 *  left by the kernel+bootmem_map which are already left as reserved
-+	 *  in the bootmem_map; free_area_init should see those bits and
-+	 *  adjust accordingly.
-+	 */
-+
-+	zones_sizes[ZONE_NORMAL] = max_low_pfn;
-+
-+	free_area_init(zones_sizes);  /*  sets up the zonelists and mem_map  */
-+
-+	/*
-+	 * Start of high memory area.  Will probably need something more
-+	 * fancy if we...  get more fancy.
-+	 */
-+	high_memory = (void *)((bootmem_lastpg + 1) << PAGE_SHIFT);
-+}
-+
-+#ifndef DMA_RESERVE
-+#define DMA_RESERVE		(4)
-+#endif
-+
-+#define DMA_CHUNKSIZE		(1<<22)
-+#define DMA_RESERVED_BYTES	(DMA_RESERVE * DMA_CHUNKSIZE)
-+
-+/*
-+ * Pick out the memory size.  We look for mem=size,
-+ * where size is "size[KkMm]"
-+ */
-+static int __init early_mem(char *p)
-+{
-+	unsigned long size;
-+	char *endp;
-+
-+	size = memparse(p, &endp);
-+
-+	bootmem_lastpg = PFN_DOWN(size);
++	COMMENT("Hexagon thread_struct definitions");
++	OFFSET(_THREAD_STRUCT_SWITCH_SP, thread_struct, switch_sp);
 +
 +	return 0;
 +}
-+early_param("mem", early_mem);
-+
-+size_t hexagon_coherent_pool_size = (size_t) (DMA_RESERVE << 22);
-+
-+void __init setup_arch_memory(void)
-+{
-+	int bootmap_size;
-+	/*  XXX Todo: this probably should be cleaned up  */
-+	u32 *segtable = (u32 *) &swapper_pg_dir[0];
-+	u32 *segtable_end;
-+
-+	/*
-+	 * Set up boot memory allocator
-+	 *
-+	 * The Gorman book also talks about these functions.
-+	 * This needs to change for highmem setups.
-+	 */
-+
-+	/* Memory size needs to be a multiple of 16M */
-+	bootmem_lastpg = PFN_DOWN((bootmem_lastpg << PAGE_SHIFT) &
-+		~((BIG_KERNEL_PAGE_SIZE) - 1));
-+
-+	/*
-+	 * Reserve the top DMA_RESERVE bytes of RAM for DMA (uncached)
-+	 * memory allocation
-+	 */
-+	bootmap_size = init_bootmem(bootmem_startpg, bootmem_lastpg -
-+				    PFN_DOWN(DMA_RESERVED_BYTES));
-+
-+	printk(KERN_INFO "bootmem_startpg:  0x%08lx\n", bootmem_startpg);
-+	printk(KERN_INFO "bootmem_lastpg:  0x%08lx\n", bootmem_lastpg);
-+	printk(KERN_INFO "bootmap_size:  %d\n", bootmap_size);
-+	printk(KERN_INFO "max_low_pfn:  0x%08lx\n", max_low_pfn);
-+
-+	/*
-+	 * The default VM page tables (will be) populated with
-+	 * VA=PA+PAGE_OFFSET mapping.  We go in and invalidate entries
-+	 * higher than what we have memory for.
-+	 */
-+
-+	/*  this is pointer arithmetic; each entry covers 4MB  */
-+	segtable = segtable + (PAGE_OFFSET >> 22);
-+
-+	/*  this actually only goes to the end of the first gig  */
-+	segtable_end = segtable + (1<<(30-22));
-+
-+	/*  Move forward to the start of empty pages  */
-+	segtable += bootmem_lastpg >> (22-PAGE_SHIFT);
-+
-+	{
-+	    int i;
-+
-+	    for (i = 1 ; i <= DMA_RESERVE ; i++)
-+		segtable[-i] = ((segtable[-i] & __HVM_PTE_PGMASK_4MB)
-+				| __HVM_PTE_R | __HVM_PTE_W | __HVM_PTE_X
-+				| __HEXAGON_C_UNC << 6
-+				| __HVM_PDE_S_4MB);
-+	}
-+
-+	printk(KERN_INFO "clearing segtable from %p to %p\n", segtable,
-+		segtable_end);
-+	while (segtable < (segtable_end-8))
-+		*(segtable++) = __HVM_PDE_S_INVALID;
-+	/* stop the pointer at the device I/O 4MB page  */
-+
-+	printk(KERN_INFO "segtable = %p (should be equal to _K_io_map)\n",
-+		segtable);
-+
-+#if 0
-+	/*  Other half of the early device table from vm_init_segtable. */
-+	printk(KERN_INFO "&_K_init_devicetable = 0x%08x\n",
-+		(unsigned long) _K_init_devicetable-PAGE_OFFSET);
-+	*segtable = ((u32) (unsigned long) _K_init_devicetable-PAGE_OFFSET) |
-+		__HVM_PDE_S_4KB;
-+	printk(KERN_INFO "*segtable = 0x%08x\n", *segtable);
-+#endif
-+
-+	/*
-+	 * Free all the memory that wasn't taken up by the bootmap, the DMA
-+	 * reserve, or kernel itself.
-+	 */
-+	free_bootmem(PFN_PHYS(bootmem_startpg)+bootmap_size,
-+		     PFN_PHYS(bootmem_lastpg - bootmem_startpg) - bootmap_size -
-+		     DMA_RESERVED_BYTES);
-+
-+	/*
-+	 *  The bootmem allocator seemingly just lives to feed memory
-+	 *  to the paging system
-+	 */
-+	printk(KERN_INFO "PAGE_SIZE=%lu\n", PAGE_SIZE);
-+	paging_init();  /*  See Gorman Book, 2.3  */
-+
-+	/*
-+	 *  At this point, the page allocator is kind of initialized, but
-+	 *  apparently no pages are available (just like with the bootmem
-+	 *  allocator), and need to be freed themselves via mem_init(),
-+	 *  which is called by start_kernel() later on in the process
-+	 */
-+}
-diff --git a/arch/hexagon/mm/vm_fault.c b/arch/hexagon/mm/vm_fault.c
+diff --git a/arch/hexagon/kernel/vmlinux.lds.S b/arch/hexagon/kernel/vmlinux.lds.S
 new file mode 100644
-index 0000000..c10b76f
+index 0000000..362742f
 --- /dev/null
-+++ b/arch/hexagon/mm/vm_fault.c
-@@ -0,0 +1,187 @@
++++ b/arch/hexagon/kernel/vmlinux.lds.S
+@@ -0,0 +1,93 @@
 +/*
-+ * Memory fault handling for Hexagon
++ * Linker script for Hexagon kernel
 + *
-+ * Copyright (c) 2010-2011 Code Aurora Forum. All rights reserved.
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -489,173 +489,102 @@ index 0000000..c10b76f
 + * 02110-1301, USA.
 + */
 +
-+/*
-+ * Page fault handling for the Hexagon Virtual Machine.
-+ * Can also be called by a native port emulating the HVM
-+ * execptions.
-+ */
++#define LOAD_OFFSET PAGE_OFFSET
 +
-+#include <asm/pgtable.h>
-+#include <asm/traps.h>
-+#include <asm/uaccess.h>
-+#include <linux/mm.h>
-+#include <linux/signal.h>
-+#include <linux/module.h>
-+#include <linux/hardirq.h>
++#include <asm-generic/vmlinux.lds.h>
++#include <asm/asm-offsets.h>	/*  Most of the kernel defines are here  */
++#include <asm/mem-layout.h>	/*  except for page_offset  */
++#include <asm/cache.h>		/*  and now we're pulling cache line size  */
++OUTPUT_ARCH(hexagon)
++ENTRY(stext)
++
++jiffies = jiffies_64;
 +
 +/*
-+ * Decode of hardware exception sends us to one of several
-+ * entry points.  At each, we generate canonical arguments
-+ * for handling by the abstract memory management code.
-+ */
-+#define FLT_IFETCH     -1
-+#define FLT_LOAD        0
-+#define FLT_STORE       1
++See asm-generic/vmlinux.lds.h for expansion of some of these macros.
++See asm-generic/sections.h for seemingly required labels.
++*/
++
++#define PAGE_SIZE _PAGE_SIZE
++
++/*  This LOAD_OFFSET is temporary for debugging on the simulator; it may change
++    for hypervisor pseudo-physical memory.  */
 +
 +
-+/*
-+ * Canonical page fault handler
-+ */
-+void do_page_fault(unsigned long address, long cause, struct pt_regs *regs)
++SECTIONS
 +{
-+	struct vm_area_struct *vma;
-+	struct mm_struct *mm = current->mm;
-+	siginfo_t info;
-+	int si_code = SEGV_MAPERR;
-+	int fault;
-+	const struct exception_table_entry *fixup;
++	. = PAGE_OFFSET + LOAD_ADDRESS;
 +
-+	/*
-+	 * If we're in an interrupt or have no user context,
-+	 * then must not take the fault.
-+	 */
-+	if (unlikely(in_interrupt() || !mm))
-+		goto no_context;
++	__init_begin = .;
++	HEAD_TEXT_SECTION
++	INIT_TEXT_SECTION(PAGE_SIZE)
++	PERCPU_SECTION(L1_CACHE_BYTES)
++	__init_end = .;
 +
-+	local_irq_enable();
++        . = ALIGN(_PAGE_SIZE);
++	_stext = .;
++	.text : AT(ADDR(.text) - LOAD_OFFSET) {
++		_text = .;
++		TEXT_TEXT
++		SCHED_TEXT
++		LOCK_TEXT
++		KPROBES_TEXT
++		*(.fixup)
++	}
++	_etext = .;
 +
-+	down_read(&mm->mmap_sem);
-+	vma = find_vma(mm, address);
-+	if (!vma)
-+		goto bad_area;
++	INIT_DATA_SECTION(PAGE_SIZE)
 +
-+	if (vma->vm_start <= address)
-+		goto good_area;
++	_sdata = .;
++		RW_DATA_SECTION(32,PAGE_SIZE,PAGE_SIZE)
++		RO_DATA_SECTION(PAGE_SIZE)
++	_edata = .;
 +
-+	if (!(vma->vm_flags & VM_GROWSDOWN))
-+		goto bad_area;
++	EXCEPTION_TABLE(16)
++	NOTES
 +
-+	if (expand_stack(vma, address))
-+		goto bad_area;
++	BSS_SECTION(_PAGE_SIZE, _PAGE_SIZE, _PAGE_SIZE)
 +
-+good_area:
-+	/* Address space is OK.  Now check access rights. */
-+	si_code = SEGV_ACCERR;
++	_end = .;
 +
-+	switch (cause) {
-+	case FLT_IFETCH:
-+		if (!(vma->vm_flags & VM_EXEC))
-+			goto bad_area;
-+		break;
-+	case FLT_LOAD:
-+		if (!(vma->vm_flags & VM_READ))
-+			goto bad_area;
-+		break;
-+	case FLT_STORE:
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+		break;
++	/DISCARD/ : {
++		EXIT_TEXT
++		EXIT_DATA
++		EXIT_CALL
 +	}
 +
-+	fault = handle_mm_fault(mm, vma, address, (cause > 0));
++	STABS_DEBUG
++	DWARF_DEBUG
 +
-+	/* The most common case -- we are done. */
-+	if (likely(!(fault & VM_FAULT_ERROR))) {
-+		if (fault & VM_FAULT_MAJOR)
-+			current->maj_flt++;
-+		else
-+			current->min_flt++;
-+
-+		up_read(&mm->mmap_sem);
-+		return;
-+	}
-+
-+	up_read(&mm->mmap_sem);
-+
-+	/* Handle copyin/out exception cases */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	if (fault & VM_FAULT_OOM) {
-+		pagefault_out_of_memory();
-+		return;
-+	}
-+
-+	/* User-mode address is in the memory map, but we are
-+	 * unable to fix up the page fault.
-+	 */
-+	if (fault & VM_FAULT_SIGBUS) {
-+		info.si_signo = SIGBUS;
-+		info.si_code = BUS_ADRERR;
-+	}
-+	/* Address is not in the memory map */
-+	else {
-+		info.si_signo = SIGSEGV;
-+		info.si_code = SEGV_ACCERR;
-+	}
-+	info.si_errno = 0;
-+	info.si_addr = (void __user *)address;
-+	force_sig_info(info.si_code, &info, current);
-+	return;
-+
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+	if (user_mode(regs)) {
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		info.si_code = si_code;
-+		info.si_addr = (void *)address;
-+		force_sig_info(SIGSEGV, &info, current);
-+		return;
-+	}
-+	/* Kernel-mode fault falls through */
-+
-+no_context:
-+	fixup = search_exception_tables(pt_elr(regs));
-+	if (fixup) {
-+		pt_set_elr(regs, fixup->fixup);
-+		return;
-+	}
-+
-+	/* Things are looking very, very bad now */
-+	bust_spinlocks(1);
-+	printk(KERN_EMERG "Unable to handle kernel paging request at "
-+		"virtual address 0x%08lx, regs %p\n", address, regs);
-+	die("Bad Kernel VA", regs, SIGKILL);
 +}
 +
 +
-+void read_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
 +
-+	do_page_fault(badvadr, FLT_LOAD, regs);
-+}
 +
-+void write_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
 +
-+	do_page_fault(badvadr, FLT_STORE, regs);
-+}
+diff --git a/arch/hexagon/lib/Makefile b/arch/hexagon/lib/Makefile
+new file mode 100644
+index 0000000..874655e
+--- /dev/null
++++ b/arch/hexagon/lib/Makefile
+@@ -0,0 +1,4 @@
++#
++# Makefile for hexagon-specific library files.
++#
++obj-y = checksum.o io.o memcpy.o memset.o
+diff --git a/arch/hexagon/mm/Makefile b/arch/hexagon/mm/Makefile
+new file mode 100644
+index 0000000..018be76
+--- /dev/null
++++ b/arch/hexagon/mm/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for Hexagon memory management subsystem
++#
 +
-+void execute_protection_fault(struct pt_regs *regs)
-+{
-+	unsigned long badvadr = pt_badva(regs);
++obj-y := init.o pgalloc.o ioremap.o uaccess.o vm_fault.o cache.o
++obj-y += copy_to_user.o copy_from_user.o strnlen_user.o vm_tlb.o
 +
-+	do_page_fault(badvadr, FLT_IFETCH, regs);
-+}
 -- 
 1.7.1
 
