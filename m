@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab1JaG21 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 02:28:27 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:46760 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750894Ab1JaG20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 02:28:26 -0400
-Message-ID: <4EAE3FF7.9000302@st.com>
-Date: Mon, 31 Oct 2011 11:58:07 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1754025Ab1JaGn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 02:43:29 -0400
+Received: from ozlabs.org ([203.10.76.45]:36167 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751072Ab1JaGnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 02:43:25 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: David Decotigny <david.decotigny@google.com>, linux-kernel@vger.kernel.org
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Michal Schmidt <mschmidt@redhat.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: Re: [PATCH v1 3/3] param: allow to selectively enable /sys/module/MOD/paramaters nodes
+In-Reply-To: <d1eab40bc9015e24c2c455cf3142f7966daa827a.1319679966.git.david.decotigny@google.com>
+References: <cover.1319679966.git.david.decotigny@google.com> <d1eab40bc9015e24c2c455cf3142f7966daa827a.1319679966.git.david.decotigny@google.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 31 Oct 2011 12:12:23 +1030
+Message-ID: <87vcr6os1r.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <greg@kroah.com>
-Subject: Re: [PATCH] pcie-gadget-spear: Add "platform:" prefix for platform
- modalias
-References: <1320027628.2690.1.camel@phoenix>
-In-Reply-To: <1320027628.2690.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 7:50 AM, Axel Lin wrote:
-> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
-> with "platform:"), the platform modalias is prefixed with "platform:".
->
-> Signed-off-by: Axel Lin<axel.lin@gmail.com>
-> ---
->   drivers/misc/spear13xx_pcie_gadget.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/misc/spear13xx_pcie_gadget.c b/drivers/misc/spear13xx_pcie_gadget.c
-> index cfbddbe..43d073b 100644
-> --- a/drivers/misc/spear13xx_pcie_gadget.c
-> +++ b/drivers/misc/spear13xx_pcie_gadget.c
-> @@ -903,6 +903,6 @@ static void __exit spear_pcie_gadget_exit(void)
->   }
->   module_exit(spear_pcie_gadget_exit);
->
-> -MODULE_ALIAS("pcie-gadget-spear");
-> +MODULE_ALIAS("platform:pcie-gadget-spear");
->   MODULE_AUTHOR("Pratyush Anand");
->   MODULE_LICENSE("GPL");
+Hi David,
 
-Acked-by: Pratyush Anand<pratyush.anand@st.com>
+        I'm having real trouble parsing your descriptions.  I found it
+easier to read the patches, and that'd not good.
+
+On Wed, 26 Oct 2011 19:22:27 -0700, David Decotigny <david.decotigny@google.com> wrote:
+> This change defines CONFIG_SYSFS_MODULE_PARAM to prevent kernel module
+> parameters from being exposed to user. When unset, /sys/module/MOD is
+> populated as usual, except for the "parameters" sub-directory, which
+> is not created anymore.
+
+That's backwards.  CONFIG_SYSFS_MODULE_PARAM *enables*
+/sys/module/<modname>/parameters, this implies it disables it.  Sure, it
+allows it to be disabled without disabling all of CONFIG_SYSFS.
+
+> Context: by default, when the module_param() attribute perm == 0, the
+> module attribute is not exposed to user in
+> /sys/module/*/parameters. Many module implementations use this
+> strategy, presumably to spare some memory.
+
+No, they use it because that was the default when I transferred them all
+from the older module parameter system.  It was the safe choice.
+
+> However, it can be
+> interesting to retrieve how kernel modules are configured at run-time
+> (debug, audit, etc.): it would be nice to see more modules have perm
+> != 0 in order to expose their configuration pararemers to
+> user.
+
+But this patch doesn't address any of that.
+
+> Unfortunately, this doesn't play well with memory-constrained
+> systems that need sysfs but don't need this level of
+> introspection. This change allows to support both use cases.
+
+Do you have any statistics to support your assertion that this has any
+significant effect on memory usage?
+
+Your patches seem fine, but your descriptions are not straightforward!
+
+Thanks,
+Rusty.
