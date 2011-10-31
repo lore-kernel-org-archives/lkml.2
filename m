@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1JaNHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 09:07:04 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:34097 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab1JaNHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 09:07:01 -0400
-Message-ID: <1320066197.2266.11.camel@js-netbook>
-Subject: Re: [MIPS]clocks_calc_mult_shift() may gen a too big mult value
-From: John Stultz <johnstul@us.ibm.com>
-To: Chen Jie <chenj@lemote.com>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, linux-mips@linux-mips.org,
-        LKML <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        yanhua <yanh@lemote.com>,
-        =?UTF-8?Q?=E9=A1=B9=E5=AE=87?= <xiangy@lemote.com>,
-        zhangfx <zhangfx@lemote.com>,
-        =?UTF-8?Q?=E5=AD=99=E6=B5=B7=E5=8B=87?= <sunhy@lemote.com>
-Date: Mon, 31 Oct 2011 09:03:17 -0400
-In-Reply-To: <CAGXxSxUHGN99hXK8K5k9ayVfMenAWAbWVpqkotix_JyUbPCU+w@mail.gmail.com>
-References: <CAGXxSxXmgzxN361Cko1fY_+oWwfgjXLhS61gtvqB8YYXHXZVyw@mail.gmail.com>
-	 <CAM2zO=CodQLE05ZNOOba3jv_qJ5XuZj3yrnS0aHCOj+cp_24Xw@mail.gmail.com>
-	 <CAGXxSxUHGN99hXK8K5k9ayVfMenAWAbWVpqkotix_JyUbPCU+w@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
+	id S1754819Ab1JaNUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 09:20:09 -0400
+Received: from lo.gmane.org ([80.91.229.12]:44864 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754728Ab1JaNUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 09:20:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Tobias Heinlein <theinlein@vandium.net>
+Subject: Re: Xen dom0 linux kernel 3.1 boot failure =?utf-8?b?cHR3cl9lbXVsYXRlOg==?= could not =?utf-8?b?Z2V0X3BhZ2VfZnJvbV9sMWU=?=
+Date: Mon, 31 Oct 2011 13:17:09 +0000 (UTC)
+Message-ID: <loom.20111031T140651-901@post.gmane.org>
+References: <05c3da5dc6158197e28d62e853ac2f04@tjhsst.edu>
 Mime-Version: 1.0
-x-cbid: 11103113-1780-0000-0000-00000095EDE7
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 93.197.247.181 (Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20100101 Firefox/7.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 18:48 +0800, Chen Jie wrote:
-> Hi,
-> 
-> 2011/10/31 Yong Zhang <yong.zhang0@gmail.com>:
-> > On Mon, Oct 31, 2011 at 5:00 PM, Chen Jie <chenj@lemote.com> wrote:
-> >> Hi all,
-> >>
-> >> On MIPS, with maxsec=4, clocks_calc_mult_shift() may generate a very
-> >> big mult, which may easily cause timekeeper.mult overflow within
-> >> timekeeping jobs.
-> >
-> > Hmmm, why not use clocksource_register_hz()/clocksource_register_khz()
-> > instead? it's more convenient.
-> 
-> Thanks for the suggestion. And sorry for I didn't notice the upstream
-> code has already hooked to clocksource_register_hz() in csrc-r4k.c
-> (We're using r4000 clock source)
-> 
-> I'm afraid this still doesn't fix my case. Through
-> clocksource_register_hz()->__clocksource_register_scale()->__clocksource_updatefreq_scale,
-> I got a calculated maxsec = (0xffffffff - (0xffffffff>>5))/250000500 =
-> 16        # assume mips_hpt_frequency=250000500
-> 
-> With this maxsec, I got a mult of 0xffffde72, still too big.
+Hi,
 
-Hrmm. Yong Zang is right to suggest clocksource_register_hz(), as the
-intention of that code is to try to avoid these sorts of issues.
+2013pfoley <2013pfoley <at> tjhsst.edu> writes:
+> [..]
+>
+>  [    0.000000] last_pfn = 0x63b5ef max_arch_pfn = 0x400000000
+>  [    0.000000] last_pfn = 0xdf62d max_arch_pfn = 0x400000000
+>  [    0.000000] found SMP MP-table at [ffff8800000f4f80] f4f80
+>  (XEN) mm.c:945:d0 Error getting mfn 100 (pfn 5555555555555555) from L1 
+>  entry 8000000000100461 for l1e_owner=0, pg_owner=0
+>  (XEN) mm.c:5046:d0 ptwr_emulate: could not get_page_from_l1e()
+>  [    0.000000] BUG: unable to handle kernel NULL pointer dereference at 
+>           (null)
+>  [    0.000000] IP: [<ffffffff81008a5a>] xen_set_pte+0x3a/0x1f0
+>  [    0.000000] PGD 0
+>  [    0.000000] Oops: 0003 [#1] SMP
+>  [    0.000000] CPU 0
+>  [    0.000000] Modules linked in:
+>  [    0.000000]
+>  [    0.000000] Pid: 0, comm: swapper Not tainted 3.1.0 #4 HP ProLiant 
+>  DL380 G6
 
-What is the corresponding shift value you're getting for the value
-above?
+I get the exact same error here. Reading from your output, it seems we have the
+same hardware; I have this problem on a HP ProLiant DL380 G6, too. 
 
-Could you annotate clocks_calc_mult_shift() a little bit to see where
-things might be going wrong?
+After a wild hint from a guy on ##xen to play around with the BIOS settings, I
+was able to narrow down the problem to a setting called "MPS Table Mode". It is
+set to "Full Table APIC" by default (with which the crash occurs), but when it's
+set to "Disabled" Xen boots the kernel just fine.
 
-thanks
--john
+FWIW, the help text of the setting is: "Multi Processor Specification (MPS)
+Table / APIC Setting is used for interrupt routing. Certain unsupported
+operating systems may require setting the MPS Table Mode to APIC Disabled."
+
+(BTW, the kernel itself boots fine without Xen. So I'm not sure if this belongs
+to the LKML at all.)
+
+
+
 
