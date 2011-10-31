@@ -1,79 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933808Ab1JaVpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 17:45:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34398 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753166Ab1JaVpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 17:45:31 -0400
-Message-ID: <1320097524.4399.8.camel@Joe-Laptop>
-Subject: [PATCH] 3c505: Fix compile breakage
-From: Joe Perches <joe@perches.com>
-To: Boaz Harrosh <bharrosh@panasas.com>, Jason Baron <jbaron@redhat.com>
-Cc: Philip Blundell <philb@gnu.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 31 Oct 2011 23:45:24 +0200
-In-Reply-To: <4EAF0F34.4070702@panasas.com>
-References: <4EAF0F34.4070702@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S934014Ab1JaVpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 17:45:54 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:52417 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933391Ab1JaVpx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 17:45:53 -0400
+MIME-Version: 1.0
+Message-ID: <88a768ce-833d-4344-80a9-d357410ea9cf@default>
+Date: Mon, 31 Oct 2011 14:45:25 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default
+ 20111031183423.GG3466@redhat.com>
+In-Reply-To: <20111031183423.GG3466@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4EAF16FD.00A4,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The joys of preprocessor games with c90 named initializers.
+> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> 
+> On Fri, Oct 28, 2011 at 10:07:12AM -0700, Dan Magenheimer wrote:
+> > First, there are several companies and several unaffiliated kernel
+> > developers contributing here, building on top of frontswap.  I happen
+> > to be spearheading it, and my company is backing me up.  (It
+> > might be more appropriate to note that much of the resistance comes
+> > from people of your company... but please let's keep our open-source
+> > developer hats on and have a technical discussion rather than one
+> > which pleases our respective corporate overlords.)
+> 
+> Fair enough to want an independent review but I'd be interesting to
+> also know how many of the several companies and unaffiliated kernel
+> developers are contributing to it that aren't using tmem with Xen.
 
-commit 07613b0b5ef8
-("dynamic_debug: consolidate repetitive struct _ddebug descriptor definitions")
-uses a ".filename" named initializer.
+Well just to summarize the non-Oracle-non-tmem supportive responses so far
+to this frontswap thread:
 
-When filename is also a #define this fails to compile.
+Nitin Gupta, for zcache
+Brian King (IBM), for Linux on Power
+Sasha Levin and Neo Jia, affiliation unspecified, working on tmem for KVM
+Ed Tomlinson, affiliation unspecified, end-user of zcache
 
-Remove #define filename from 3c505.c
+This doesn't count those that replied offlist to Linus to support the
+merging of cleancache earlier this year, and doesn't count the fair
+number of people who have offlist asked me about zcache or if KVM
+supports tmem or when RAMster will be ready.  I suppose I could
+do a better job advertising others' interest...
 
-Signed-off-by: Joe Perches <joe@perches.com>
+> Note, Hugh is working for another company... and they're using cgroups
+> not KVM nor Xen, so I suggests he'd be a fair reviewer from a non-virt
+> standpoint, if he hopefully has the time to weight in.
 
----
+I spent an hour with Hugh at Google this summer, and he (like you)
+expressed some dislike of the ABI/API and the hooks but he has since
+told both me and Andrew he doesn't have time to pursue this.
 
-On Mon, 2011-10-31 at 14:12 -0700, Boaz Harrosh wrote:
-> Doing an "make ARCH=i386 allmodconfig" on  linus/master  [f362f98] gives me the below
-> compilation breakage.
-> (Fedora_15_amd64 machine)
-> It's probably old news but I thought I'll report it as part of my obligation
-> as a Kernel monkey
+Others in Google have shown vague interest in tmem for cgroups but
+I've been too busy myself to even think about that.
 
-Thanks Boaz.
+> However keep in mind if we'd see something that can allow KVM to run
+> even faster, we'd be quite silly in not taking advantage of it too, to
+> beat our own SPECvirt record. The whole design idea of KVM (unlike
+> Xen) is to reuse the kernel improvements as much as possible so when
+> the guest runs faster the hypervisor also runs faster with the exact
+> same code. Problem a vmexit doing a bounce buffer every 4k doesn't mix
+> well into SPECvirt in my view and that probably is what has kept us
+> from making any attempt to use tmem API anywhere.
 
-Good monkey, <gives peanut>
+If SPECvirt does any swapping that actually goes to disk (doubtful?),
+frontswap will help.
 
- drivers/net/ethernet/i825xx/3c505.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+Personally, I think SPECvirt was hand-designed by VMware to favor
+their platform, but they were chagrined to find that you and KVM
+cleverly re-implemented transparent content-based page sharing
+which was the feature for which they were designing SPECvirt.
+IOW, SPECvirt is benchmarketing not benchmarking... but I know
+that's important too. :-)
 
-diff --git a/drivers/net/ethernet/i825xx/3c505.c b/drivers/net/ethernet/i825xx/3c505.c
-index 40e1a17..ba82a26 100644
---- a/drivers/net/ethernet/i825xx/3c505.c
-+++ b/drivers/net/ethernet/i825xx/3c505.c
-@@ -126,15 +126,13 @@
-  *
-  *********************************************************/
- 
--#define filename __FILE__
--
- #define timeout_msg "*** timeout at %s:%s (line %d) ***\n"
- #define TIMEOUT_MSG(lineno) \
--	pr_notice(timeout_msg, filename, __func__, (lineno))
-+	pr_notice(timeout_msg, __FILE__, __func__, (lineno))
- 
- #define invalid_pcb_msg "*** invalid pcb length %d at %s:%s (line %d) ***\n"
- #define INVALID_PCB_MSG(len) \
--	pr_notice(invalid_pcb_msg, (len), filename, __func__, __LINE__)
-+	pr_notice(invalid_pcb_msg, (len), __FILE__, __func__, __LINE__)
- 
- #define search_msg "%s: Looking for 3c505 adapter at address %#x..."
- 
+Sorry for the topic drift...
 
-
+Thanks,
+Dan
