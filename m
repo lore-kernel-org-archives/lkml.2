@@ -1,32 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab1JaQpG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 12:45:06 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65410 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932268Ab1JaQpD (ORCPT
+	id S932827Ab1JaREh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:04:37 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:20054 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932637Ab1JaREg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 12:45:03 -0400
+	Mon, 31 Oct 2011 13:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=eB4OooZznmnxL+BXrrPll46F708cq0ZWYZT61t54t/V0mDaK+tcwco1sNmpPbzb3w
+	CoQUiWZKaNxJCGHuRiyAw==
 MIME-Version: 1.0
-In-Reply-To: <F9300DCD-387B-481A-85B2-5ED30204CADC@tuxera.com>
-References: <F9300DCD-387B-481A-85B2-5ED30204CADC@tuxera.com>
-Date: Mon, 31 Oct 2011 17:45:01 +0100
-Message-ID: <CAO+b5-q0Mbfeb-57UsGYzjz0S=Z_Lra7o=HbpFxz83jHrvcnJA@mail.gmail.com>
-Subject: Re: Deadlock due to device removal - race condition in scsi/block layer?
-From: Bart Van Assche <bart.vanassche@gmail.com>
-To: Anton Altaparmakov <anton@tuxera.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20111018144747.17121.82799.stgit@bhelgaas.mtv.corp.google.com>
+References: <20111018144747.17121.82799.stgit@bhelgaas.mtv.corp.google.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 31 Oct 2011 11:04:11 -0600
+Message-ID: <CAErSpo40=2Gp-8OyOZ6BBCWEdFkgr7OJ8DxE7YfYjSpNoDj0iA@mail.gmail.com>
+Subject: Re: [PATCH] x86: mpparse: fix mp_bus_not_pci handling
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Jonathan Nieder <jrnieder@gmail.com>,
+        Alexey Starikovskiy <astarikovskiy@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/11, Anton Altaparmakov <anton@tuxera.com> wrote:
-> We have seen a deadlock when doing "unplug whilst writing" testing.
+On Tue, Oct 18, 2011 at 8:47 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
+> Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
+> except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
+> not the only non-PCI bus, so it's better to always set mp_bus_not_pci
+> and clear it only for PCI.
+>
+> The workaround was to boot with "noapic".  Dan verified that with this
+> patch, his system boots without "noapic".
+>
+> Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
+> Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
+> Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
+> Cc: stable@kernel.org # 2.6.26+
+> Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  arch/x86/kernel/mpparse.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
+> index 9103b89..0741b062 100644
+> --- a/arch/x86/kernel/mpparse.c
+> +++ b/arch/x86/kernel/mpparse.c
+> @@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
+>        }
+>  #endif
+>
+> +       set_bit(m->busid, mp_bus_not_pci);
+>        if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
+> -               set_bit(m->busid, mp_bus_not_pci);
+>  #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
+>                mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
+>  #endif
 
-Does this patch help: http://marc.info/?l=linux-scsi&m=131680195721932 ?
-
-Bart.
+Ping?
