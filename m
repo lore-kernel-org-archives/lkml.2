@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934747Ab1JaWwJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 18:52:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40810 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934711Ab1JaWwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 18:52:07 -0400
-Message-ID: <4EAF2688.9000508@zytor.com>
-Date: Mon, 31 Oct 2011 15:51:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S934755Ab1JaWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:52:29 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44848 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934709Ab1JaWw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 18:52:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=J2h0TP+EoD0dLmeBowITTX3xAQPqux8VUKPSqFHZeW17D5qcII4dMm2yj8pPwa/6M
+	6WfuXt899KQ0UGnMzr6QQ==
+Date: Mon, 31 Oct 2011 15:52:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Arun Sharma <asharma@fb.com>
+Subject: Re: [RFC/PATCH 4/7] x86, mm: Wrap ZONE_DMA32 with
+ CONFIG_ZONE_DMA32
+In-Reply-To: <1319811801-1725-4-git-send-email-penberg@kernel.org>
+Message-ID: <alpine.DEB.2.00.1110311551290.22237@chino.kir.corp.google.com>
+References: <1319811801-1725-1-git-send-email-penberg@kernel.org> <1319811801-1725-4-git-send-email-penberg@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Junio C Hamano <gitster@pobox.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com> <4EAF1F40.3030907@zytor.com> <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com> <4EAF2245.90308@zytor.com> <7vzkggok6u.fsf@alter.siamese.dyndns.org> <20111031224905.GQ16825@thunk.org>
-In-Reply-To: <20111031224905.GQ16825@thunk.org>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 03:49 PM, Ted Ts'o wrote:
-> On Mon, Oct 31, 2011 at 03:44:25PM -0700, Junio C Hamano wrote:
->> So nobody is worried about this (quoting from my earlier message)?
->>
->>    On the other hand, the consumers of "Linus kernel" may want to say that
->>    they trust your tree and your tags because they can verify them with your
->>    GPG signature, but also they can independently verify the lieutenants'
->>    trees you pulled from are genuine.
->>
->> A signed emphemeral tag is usable as means to verify authenticity in a
->> hop-by-hop fashion, but that does not leave a permanent trail that can be
->> used for auditing.
+On Fri, 28 Oct 2011, Pekka Enberg wrote:
+
+> In preparation for unifying 32-bit and 64-bit zone_sizes_init() make sure
+> ZONE_DMA32 is wrapped in CONFIG_ZONE_DMA32.
 > 
-> Oh, there are definitely people who worry about this.  They tend to be
-> security poeple, though, so the goal is how do we leave the permanent
-> trail in a way that doesn't generate too much noise or otherwise makes
-> life difficult for developers who don't care.
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+Adding Arun Sharma to the cc, he was interested in disabling 
+CONFIG_ZONE_DMA32 and I believe carries this patch internally (as we do).
+
+> ---
+>  arch/x86/mm/init_64.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-
-Could we introduce a tag namespace that doesn't show up in gitweb by
-default, and perhaps doesn't resolve in abbreviated form?
-
-This is basically what Linus suggested, as far as I understand:
-something like refs/pulls/hpa/tip-123-456 which is otherwise a normal
-tag object?
-
-	-hpa
-
-
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 3ddda59..a9214e6 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -620,7 +620,9 @@ static void __init zone_sizes_init(void)
+>  #ifdef CONFIG_ZONE_DMA
+>  	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
+>  #endif
+> +#ifdef CONFIG_ZONE_DMA32
+>  	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
+> +#endif
+>  	max_zone_pfns[ZONE_NORMAL] = max_pfn;
+>  
+>  	free_area_init_nodes(max_zone_pfns);
