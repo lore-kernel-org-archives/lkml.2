@@ -1,114 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934014Ab1JaVpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 17:45:54 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:52417 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933391Ab1JaVpx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 17:45:53 -0400
+	id S934049Ab1JaVqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 17:46:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39869 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932356Ab1JaVqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 17:46:44 -0400
+Message-ID: <4EAF1731.2070908@zytor.com>
+Date: Mon, 31 Oct 2011 14:46:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Message-ID: <88a768ce-833d-4344-80a9-d357410ea9cf@default>
-Date: Mon, 31 Oct 2011 14:45:25 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Hugh Dickins <hughd@google.com>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
- <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com20111028163053.GC1319@redhat.com>
- <b86860d2-3aac-4edd-b460-bd95cb1103e6@default
- 20111031183423.GG3466@redhat.com>
-In-Reply-To: <20111031183423.GG3466@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4EAF16FD.00A4,ss=1,re=0.000,fgs=0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+In-Reply-To: <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
-> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+On 10/30/2011 10:12 AM, Linus Torvalds wrote:
 > 
-> On Fri, Oct 28, 2011 at 10:07:12AM -0700, Dan Magenheimer wrote:
-> > First, there are several companies and several unaffiliated kernel
-> > developers contributing here, building on top of frontswap.  I happen
-> > to be spearheading it, and my company is backing me up.  (It
-> > might be more appropriate to note that much of the resistance comes
-> > from people of your company... but please let's keep our open-source
-> > developer hats on and have a technical discussion rather than one
-> > which pleases our respective corporate overlords.)
+> Actually, I have been running "gpg --verify" on the email that use the
+> standard PGP encapsulation (ie the kind that Jeff used, that has
+> "-----BEGIN PGP SIGNED MESSAGE-----" in it.
 > 
-> Fair enough to want an independent review but I'd be interesting to
-> also know how many of the several companies and unaffiliated kernel
-> developers are contributing to it that aren't using tmem with Xen.
+> It's the rfc3516-type email (aka protocol="application/pgp-encrypted")
+> type that I can't even verify, because that's not something that gpg
+> knows inherently how to check: you have to decode the message the
+> right way and know what the rules are, and I have no intention of
+> trying to figure it out. I have yet to find any usable tool that is
+> able to check it, and I'm certainly not going to waste time trying to
+> parse the rfc and write my own.
+> 
 
-Well just to summarize the non-Oracle-non-tmem supportive responses so far
-to this frontswap thread:
+What client are you using (or are you using the gmail web interface?)
 
-Nitin Gupta, for zcache
-Brian King (IBM), for Linux on Power
-Sasha Levin and Neo Jia, affiliation unspecified, working on tmem for KVM
-Ed Tomlinson, affiliation unspecified, end-user of zcache
+	-hpa
 
-This doesn't count those that replied offlist to Linus to support the
-merging of cleancache earlier this year, and doesn't count the fair
-number of people who have offlist asked me about zcache or if KVM
-supports tmem or when RAMster will be ready.  I suppose I could
-do a better job advertising others' interest...
-
-> Note, Hugh is working for another company... and they're using cgroups
-> not KVM nor Xen, so I suggests he'd be a fair reviewer from a non-virt
-> standpoint, if he hopefully has the time to weight in.
-
-I spent an hour with Hugh at Google this summer, and he (like you)
-expressed some dislike of the ABI/API and the hooks but he has since
-told both me and Andrew he doesn't have time to pursue this.
-
-Others in Google have shown vague interest in tmem for cgroups but
-I've been too busy myself to even think about that.
-
-> However keep in mind if we'd see something that can allow KVM to run
-> even faster, we'd be quite silly in not taking advantage of it too, to
-> beat our own SPECvirt record. The whole design idea of KVM (unlike
-> Xen) is to reuse the kernel improvements as much as possible so when
-> the guest runs faster the hypervisor also runs faster with the exact
-> same code. Problem a vmexit doing a bounce buffer every 4k doesn't mix
-> well into SPECvirt in my view and that probably is what has kept us
-> from making any attempt to use tmem API anywhere.
-
-If SPECvirt does any swapping that actually goes to disk (doubtful?),
-frontswap will help.
-
-Personally, I think SPECvirt was hand-designed by VMware to favor
-their platform, but they were chagrined to find that you and KVM
-cleverly re-implemented transparent content-based page sharing
-which was the feature for which they were designing SPECvirt.
-IOW, SPECvirt is benchmarketing not benchmarking... but I know
-that's important too. :-)
-
-Sorry for the topic drift...
-
-Thanks,
-Dan
