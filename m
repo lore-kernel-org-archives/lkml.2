@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab1JaXST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 19:18:19 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:47807 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932477Ab1JaXSS (ORCPT
+	id S1752156Ab1JaXTj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 19:19:39 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:36731 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab1JaXTi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 19:18:18 -0400
-X-Greylist: delayed 945 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 19:18:18 EDT
-Message-ID: <4EAF28B6.6080802@fb.com>
-Date: Mon, 31 Oct 2011 16:01:10 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Pekka Enberg <penberg@kernel.org>, <x86@kernel.org>,
-        <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [RFC/PATCH 4/7] x86, mm: Wrap ZONE_DMA32 with CONFIG_ZONE_DMA32
-References: <1319811801-1725-1-git-send-email-penberg@kernel.org> <1319811801-1725-4-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1110311551290.22237@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1110311551290.22237@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
- definitions=2011-10-31_05:2011-10-31,2011-10-31,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+	Mon, 31 Oct 2011 19:19:38 -0400
+Date: Tue, 1 Nov 2011 10:19:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-next@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: git tree URL for IEEE 1394 (FireWire) kernel subsystem
+Message-Id: <20111101101930.e12ca55cc07324b42cf01564@canb.auug.org.au>
+In-Reply-To: <20111031185701.5c8771c6@stein>
+References: <20110917194757.2f561324@stein>
+	<20110918215144.f33db78e54224626c6ee408e@canb.auug.org.au>
+	<20111031185701.5c8771c6@stein>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/11 3:52 PM, David Rientjes wrote:
-> On Fri, 28 Oct 2011, Pekka Enberg wrote:
->
->> In preparation for unifying 32-bit and 64-bit zone_sizes_init() make sure
->> ZONE_DMA32 is wrapped in CONFIG_ZONE_DMA32.
->>
->> Cc: Tejun Heo<tj@kernel.org>
->> Cc: Yinghai Lu<yinghai@kernel.org>
->> Cc: H. Peter Anvin<hpa@linux.intel.com>
->> Cc: David Rientjes<rientjes@google.com>
->> Signed-off-by: Pekka Enberg<penberg@kernel.org>
->
-> Acked-by: David Rientjes<rientjes@google.com>
->
-> Adding Arun Sharma to the cc, he was interested in disabling
-> CONFIG_ZONE_DMA32 and I believe carries this patch internally (as we do).
->
+--Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes we do.
+Hi Stefan,
 
-Acked-by: Arun Sharma <asharma@fb.com>
+On Mon, 31 Oct 2011 18:57:01 +0100 Stefan Richter <stefanr@s5r6.in-berlin.d=
+e> wrote:
+>
+> please switch the ieee1394/for-next URL once more, now to
+>=20
+>     git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git =
+for-next
+>=20
+> which is meant to be permanent.  (-2.6 suffix of the former name
+> dropped).  Current content is identical with my pull request to
+> Linus today.
 
+I have switched to that from today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOry0CAAoJEECxmPOUX5FEO7MP/jIbya2nARtVTHyPjLUhtK2Q
+s7JdXFBSQjlFCkWCvOZP31d2mPvu29MGJ30OWow3tfQlvXwuwV2MFEsBBTTGCwy/
+3Gm2T7V2wCXeWnIQDa7aQ1PL7NE0OqXtESccM1dVLN/Gu2P3K+8hNaNcQQo+Z+WN
+ELQ5DrF/zkFW6PKtwh8fwqRHJlKhoXKUUq6+zT8zCU8REw4mLrAriW6hRdVPKOfM
+QKDz9C5T+TJoPt1XMoZXI7JyID2epNHSftGMJ0JtGc3XFBsg8eUFYmS6b4cu5FkK
+chEdeO1bo1WBSGVC5O5DpK1GMbN/B3M6tQkbvWV/7RCfkjrnaIdt0Yo0TAwiLTL4
+iH+6l+VjYKmCN0TUa1cxCfN2PXI8Zp04p2lVGpgkwU7ZYNHHp437bEtljuKr2Pm0
+EyzFgDEh0ghHAhu81WW2LOLWkXofl6WE+yHtdYm9r7976jTtkRWq2D2SlZUViImL
+YUDN7iRFLio8Iu2qTcAwDq4WSUSWZsyed0DGbB7Nq9NAKf+uRfKsjJGeGqqo5wui
+rgkSnHfskfHrS4b8zikIkiyeIJADPNm8MjVoOX6C/8a+qsp7dSXHS8rZBJOqO61e
+5gzCOd7qC8KedMvlS2b3fVQxw8oekOD3xGz9M/VQtqEtEoQAdTYGtofVMTzE1GwP
+62hLeHNkwisivPjOk9Nf
+=Ce/R
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_10_19_30_+1100_7j/Z+E7UHECF9shS--
