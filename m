@@ -1,124 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab1JaEfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 00:35:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52859 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab1JaEfa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 00:35:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319676161.22361.148.camel@sli10-conroe>
-References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
-	<CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
-	<CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
-	<1319676161.22361.148.camel@sli10-conroe>
-Date: Mon, 31 Oct 2011 10:05:29 +0530
-Message-ID: <CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
-Subject: Re: Multi-partition block layer behaviour
-From: Tiju Jacob <jacobtiju@gmail.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752041Ab1JaEnh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 00:43:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49660 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751259Ab1JaEnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 00:43:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="69475832"
+Subject: [GIT PULL] slave-dmaengine updates
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus <torvalds@linux-foundation.org>
+Cc: Dan <dan.j.williams@intel.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Oct 2011 10:10:17 +0530
+Message-ID: <1320036017.32205.11.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 6:12 AM, Shaohua Li <shaohua.li@intel.com> wrote:
-> On Wed, 2011-10-26 at 18:10 +0800, Tiju Jacob wrote:
->> >> 1. When an I/O request is made to the filesystem, process 'A' acquires
->> >> a mutex FS lock and a mutex block driver lock.
->> >>
->> >> 2. Process 'B' tries to acquire the mutex FS lock, which is not
->> >> available. Hence, it goes to sleep. Due to the new plugging mechanism,
->> >> before going to sleep, shcedule() is invoked which disables preemption
->> >> and the context becomes atomic. In schedule(), the newly added
->> >> blk_flush_plug_list() is invoked which unplugs the block driver.
->> >>
->> >> 3) During unplug operation the block driver tries to acquire the mutex
->> >> lock which fails, because the lock was held by process 'A'. Previous
->> >> invocation of scheudle() in step 2 has already made the context as
->> >> atomic, hence the error "Schedule while atomic" occured.
->> > if blk_flush_plug_list() is called in schedule(), it will use
->> > blk_run_queue_async
->> > to unplug the queue. This runs in a workqueue. So how could this happen?
->> >
->>
->> The call stack goes as follows:
->>
->> From schedule() it calls blk_schedule_flush_plug()  and
->> blk_flush_plug_list() gets invoked.
->>
->> In blk_flush_plug_list() queue_unplugged() does not get invoked. Hence
->>  blk_run_queue_async is not called.
->> Instead __elv_add_request() is invoked with ELEVATOR_INSERT_SORT_MERGE
->> flag and the flag gets reassigned to ELEVATOR_INSERT_BACK.
->>
->> In ELEVATOR_INSERT_BACK, __blk_run_queue() gets invoked and calls request_fn().
+Hi Linus,
 
-> This doesn't make sense. why the flag is changed from
-> ELEVATOR_INSERT_SORT_MERGE to ELEVATOR_INSERT_BACK?
+Here is the slave-dmaengine updates which include consolidation of
+samsung dma drivers from arm drivers to use dmaengine, enhancements and
+fixes to amba-pl08x driver along with other usual fixes.
 
-In  __elv_add_request() "where" gets reassigned as follows:
+Since I have not been able to get my key signed with enough people yet,
+so not sending this with key. Hopefully next time it would be a signed
+message which you can verify. Also my tree is on infradead servers (same
+one you pulled last time), let me know if you are okay with this server
+or i should consider moving it.
 
-	} else if (!(rq->cmd_flags & REQ_ELVPRIV) &&
-		    (where == ELEVATOR_INSERT_SORT ||
-		     where == ELEVATOR_INSERT_SORT_MERGE))
-		where = ELEVATOR_INSERT_BACK;
+Thanks
+~Vinod
 
->	
-> can you post a full log? or did your driver have something special?
+The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
+  Linus Torvalds (1):
+        Linux 3.1-rc4
 
-Our driver doesn't have anything special. Our FTL driver works fine
-with linux kernels 2.6.38 and prior 2.6 kernels. This error occurs
-from 2.6.39 onwards.
-However, here's the log.
+are available in the git repository at:
 
-.....
-.....
-BUG: scheduling while atomic: fsstress.fork_n/498/0x00000002
-Modules linked in: fs_fat(P) fs_glue(P) ftl_driver(P) fsr(P)
-[<c0042e30>] (unwind_backtrace+0x0/0xec) from [<c031e234>] (schedule+0x54/0x3ec)
-[<c031e234>] (schedule+0x54/0x3ec) from [<c031f884>]
-(__mutex_lock_slowpath+0x174/0x294)
-[<c031f884>] (__mutex_lock_slowpath+0x174/0x294) from [<c031f9b0>]
-(mutex_lock+0xc/0x20)
-[<c031f9b0>] (mutex_lock+0xc/0x20) from [<bf062b50>]
-(ftl_request+0x264/0x3c0 [ftl_driver])
-[<bf062b50>] (ftl_request+0x264/0x3c0 [ftl_driver]) from [<c01c1d6c>]
-(__blk_run_queue+0x1c/0x24)
-[<c01c1d6c>] (__blk_run_queue+0x1c/0x24) from [<c01c11a8>]
-(__elv_add_request+0x1ec/0x248)
-[<c01c11a8>] (__elv_add_request+0x1ec/0x248) from [<c01c3bbc>]
-(blk_flush_plug_list+0x1b4/0x204)
-[<c01c3bbc>] (blk_flush_plug_list+0x1b4/0x204) from [<c031e3a0>]
-(schedule+0x1c0/0x3ec)
-[<c031e3a0>] (schedule+0x1c0/0x3ec) from [<c016acb8>]
-(start_this_handle+0x318/0x50c)
-[<c016acb8>] (start_this_handle+0x318/0x50c) from [<c016b0ac>]
-(jbd2__journal_start+0xa8/0xd8)
-[<c016b0ac>] (jbd2__journal_start+0xa8/0xd8) from [<c0148114>]
-(ext4_journal_start_sb+0x110/0x128)
-[<c0148114>] (ext4_journal_start_sb+0x110/0x128) from [<c013bb54>]
-(_ext4_get_block+0x74/0x138)
-[<c013bb54>] (_ext4_get_block+0x74/0x138) from [<c00f2d5c>]
-(__blockdev_direct_IO+0x594/0xc1c)
-[<c00f2d5c>] (__blockdev_direct_IO+0x594/0xc1c) from [<c013e208>]
-(ext4_direct_IO+0x120/0x214)
-[<c013e208>] (ext4_direct_IO+0x120/0x214) from [<c0097d48>]
-(generic_file_direct_write+0x120/0x208)
-[<c0097d48>] (generic_file_direct_write+0x120/0x208) from [<c00981f0>]
-(__generic_file_aio_write+0x3c0/0x4f4)
-[<c00981f0>] (__generic_file_aio_write+0x3c0/0x4f4) from [<c0098390>]
-(generic_file_aio_write+0x6c/0xdc)
-[<c0098390>] (generic_file_aio_write+0x6c/0xdc) from [<c0135d58>]
-(ext4_file_write+0x268/0x2dc)
-[<c0135d58>] (ext4_file_write+0x268/0x2dc) from [<c00c3ec0>]
-(do_sync_write+0x9c/0xe8)
-[<c00c3ec0>] (do_sync_write+0x9c/0xe8) from [<c00c4704>] (vfs_write+0xb0/0x13c)
-[<c00c4704>] (vfs_write+0xb0/0x13c) from [<c00c4c98>] (sys_write+0x3c/0x68)
-[<c00c4c98>] (sys_write+0x3c/0x68) from [<c003d4a0>] (ret_fast_syscall+0x0/0x30)
-.....
-.....
-.....
+  git://git.infradead.org/users/vkoul/slave-dma.git next
+
+Axel Lin (1):
+      dmaengine i.MX DMA/SDMA: add missing include of linux/module.h
+
+Barry Song (1):
+      dmaengine: delete redundant chan_id and chancnt initialization in dma drivers
+
+Boojin Kim (16):
+      DMA: PL330: Add support runtime PM for PL330 DMAC
+      DMA: PL330: Update PL330 DMA API driver
+      DMA: PL330: Support DMA_SLAVE_CONFIG command
+      DMA: PL330: Remove the start operation for handling DMA_TERMINATE_ALL command
+      DMA: PL330: Add DMA_CYCLIC capability
+      ARM: SAMSUNG: Update to use PL330-DMA driver
+      ARM: SAMSUNG: Add common DMA operations
+      ARM: EXYNOS4: Use generic DMA PL330 driver
+      ARM: S5PV210: Use generic DMA PL330 driver
+      ARM: S5PC100: Use generic DMA PL330 driver
+      ARM: S5P64X0: Use generic DMA PL330 driver
+      ARM: SAMSUNG: Remove S3C-PL330-DMA driver
+      spi/s3c64xx: Add support DMA engine API
+      spi/s3c64xx: Merge dma control code
+      ASoC: Samsung: Update DMA interface
+      ARM: SAMSUNG: Remove Samsung specific enum type for dma direction
+
+Dan Carpenter (1):
+      dma/timberdale: free_irq() on an error path
+
+Guennadi Liakhovetski (4):
+      dmatest: make dmatest threads freezable
+      serial: sh-sci: don't filter on DMA device, use only channel ID
+      dmaengine: shdma: protect against the IRQ handler
+      dma: shdma: transfer based runtime PM
+
+Lothar WaÃŸmann (1):
+      mxs-dma: enable CLKGATE before accessing registers
+
+Mika Westerberg (1):
+      dmaengine/ep93xx_dma: add module.h include
+
+Nicolas Ferre (4):
+      dmaengine: at_hdmac: replace spin_lock* with irqsave variants
+      dmaengine: at_hdmac: improve power management routines
+      dmaengine: at_hdmac: add wrappers for testing channel state
+      dmaengine: at_hdmac: fix way to specify cyclic capability
+
+Per Forlin (4):
+      dmaengine/ste_dma40: add missing kernel doc for pending_queue
+      dmaengine/ste_dma40: remove duplicate call to d40_pool_lli_free().
+      dmaengine/ste_dma40: fix Oops due to double free of client descriptor
+      dmaengine/ste_dma40: fix memory leak due to prepared descriptors
+
+Russell King - ARM Linux (1):
+      dmaengine: amba-pl08x: make filter check that the channel is owned by pl08x
+
+Sascha Hauer (3):
+      dmaengine i.MX SDMA: lock channel 0
+      dmaengine i.MX SDMA: set firmware scripts addresses to negative value initially
+      dmaengine i.MX SDMA: use request_firmware_nowait
+
+Tomoya MORINAGA (2):
+      pch_dma: Fix suspend issue
+      pch_dma: Reduce wasting memory
+
+Vinod Koul (5):
+      dmaengine: add helper function for slave_single
+      dmaengine: remove struct scatterlist for header
+      Merge branch 'next' into v3.1-rc4
+      Merge branch 'samsung_dma' into next
+      dmaengine: mid_dma: mask_peripheral_interrupt only when dmac is idle
+
+Viresh Kumar (21):
+      dmaengine/dmatest: Terminate transfers on all channels in case of error or exit
+      ARM: asm/pl080.h: Protect against multiple inclusion of header file
+      dmaengine/amba-pl08x: Resolve formatting issues
+      dmaengine/amba-pl08x: Rearrange inclusion of header files in ascending order
+      dmaengine/amba-pl08x: pass (*ptr) to sizeof() instead of (struct xyz)
+      dmaengine/amba-pl08x: Complete doc comment for struct pl08x_txd
+      dmaengine/amba-pl08x: Remove redundant comment and rewrite original
+      dmaengine/amba-pl08x: Changing few prints to dev_dbg from dev_info
+      dmaengine/amba-pl08x: support runtime PM
+      dmaengine/amba-pl08x: Simplify pl08x_ensure_on()
+      dmaengine/amba-pl08x: No need to check "ch->signal < 0"
+      dmaengine/amba-pl08x: Schedule tasklet in case of error interrupt
+      dmaengine/amba-pl08x: Get rid of pl08x_pre_boundary()
+      dmaengine/amba-pl08x: max_bytes_per_lli is TRANSFER_SIZE * src_width (not MIN(width))
+      dmaengine/amba-pl08x: Add prep_single_byte_llis() routine
+      dmaengine/amba-pl08x: Align lli_len to max(src.width, dst.width)
+      dmaengine/amba-pl08x: Choose peripheral bus as master bus
+      dmaengine/amba-pl08x: Pass flow controller information with slave channel data
+      dmaengine/amba-pl08x: Call pl08x_free_txd() instead of calling kfree() directly
+      dmaengine/amba-pl08x: Add support for sg len greater than one for slave transfers
+      dmaengine/amba-pl08x: Check txd->llis_va before freeing dma_pool
+
+ arch/arm/include/asm/hardware/pl080.h              |    4 +
+ arch/arm/mach-exynos4/Kconfig                      |    2 +-
+ arch/arm/mach-exynos4/clock.c                      |   11 +-
+ arch/arm/mach-exynos4/dma.c                        |  299 +++--
+ arch/arm/mach-exynos4/include/mach/dma.h           |    4 +-
+ arch/arm/mach-s3c2410/include/mach/dma.h           |   20 +-
+ arch/arm/mach-s3c2412/dma.c                        |    4 +-
+ arch/arm/mach-s3c64xx/dma.c                        |   10 +-
+ arch/arm/mach-s3c64xx/include/mach/dma.h           |    8 +-
+ arch/arm/mach-s5p64x0/Kconfig                      |    4 +-
+ arch/arm/mach-s5p64x0/clock-s5p6440.c              |    9 +-
+ arch/arm/mach-s5p64x0/clock-s5p6450.c              |    9 +-
+ arch/arm/mach-s5p64x0/dma.c                        |  273 +++--
+ arch/arm/mach-s5p64x0/include/mach/dma.h           |    4 +-
+ arch/arm/mach-s5pc100/Kconfig                      |    2 +-
+ arch/arm/mach-s5pc100/clock.c                      |   11 +-
+ arch/arm/mach-s5pc100/dma.c                        |  323 ++++--
+ arch/arm/mach-s5pc100/include/mach/dma.h           |    4 +-
+ arch/arm/mach-s5pv210/Kconfig                      |    2 +-
+ arch/arm/mach-s5pv210/clock.c                      |   10 +-
+ arch/arm/mach-s5pv210/dma.c                        |  316 ++++--
+ arch/arm/mach-s5pv210/include/mach/dma.h           |    4 +-
+ arch/arm/plat-s3c24xx/dma.c                        |   10 +-
+ arch/arm/plat-samsung/Kconfig                      |    9 +-
+ arch/arm/plat-samsung/Makefile                     |    4 +-
+ arch/arm/plat-samsung/dma-ops.c                    |  131 ++
+ arch/arm/plat-samsung/include/plat/dma-ops.h       |   63 +
+ .../include/plat/{s3c-dma-pl330.h => dma-pl330.h}  |   24 +-
+ arch/arm/plat-samsung/include/plat/dma-s3c24xx.h   |    2 +-
+ arch/arm/plat-samsung/include/plat/dma.h           |   10 +-
+ .../plat-samsung/include/plat/s3c-pl330-pdata.h    |   32 -
+ arch/arm/plat-samsung/s3c-dma-ops.c                |  130 ++
+ arch/arm/plat-samsung/s3c-pl330.c                  | 1244
+--------------------
+ drivers/dma/Kconfig                                |    3 +-
+ drivers/dma/amba-pl08x.c                           |  640 +++++-----
+ drivers/dma/at_hdmac.c                             |  164 ++-
+ drivers/dma/at_hdmac_regs.h                        |   24 +
+ drivers/dma/dmatest.c                              |   23 +-
+ drivers/dma/dw_dmac.c                              |    5 +-
+ drivers/dma/ep93xx_dma.c                           |    1 +
+ drivers/dma/imx-dma.c                              |    1 +
+ drivers/dma/imx-sdma.c                             |   48 +-
+ drivers/dma/intel_mid_dma.c                        |    9 +-
+ drivers/dma/mpc512x_dma.c                          |    1 -
+ drivers/dma/mxs-dma.c                              |   45 +-
+ drivers/dma/pch_dma.c                              |    7 +-
+ drivers/dma/pl330.c                                |  231 ++++-
+ drivers/dma/shdma.c                                |  129 ++-
+ drivers/dma/shdma.h                                |    7 +
+ drivers/dma/ste_dma40.c                            |   42 +-
+ drivers/dma/timb_dma.c                             |    5 +-
+ drivers/mmc/host/s3cmci.c                          |    6 +-
+ drivers/spi/spi-s3c64xx.c                          |  175 ++--
+ drivers/tty/serial/sh-sci.c                        |   25 +-
+ include/linux/amba/pl08x.h                         |   30 +-
+ include/linux/amba/pl330.h                         |    6 +-
+ include/linux/dmaengine.h                          |   13 +-
+ include/linux/serial_sci.h                         |    2 -
+ sound/soc/samsung/ac97.c                           |   10 +-
+ sound/soc/samsung/dma.c                            |  146 +--
+ sound/soc/samsung/dma.h                            |    4 +-
+ 61 files changed, 2331 insertions(+), 2463 deletions(-)
+ create mode 100644 arch/arm/plat-samsung/dma-ops.c
+ create mode 100644 arch/arm/plat-samsung/include/plat/dma-ops.h
+ rename arch/arm/plat-samsung/include/plat/{s3c-dma-pl330.h =>
+dma-pl330.h} (84%)
+ delete mode 100644 arch/arm/plat-samsung/include/plat/s3c-pl330-pdata.h
+ create mode 100644 arch/arm/plat-samsung/s3c-dma-ops.c
+ delete mode 100644 arch/arm/plat-samsung/s3c-pl330.c
+
+
+-- 
+~Vinod
+
+
