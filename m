@@ -1,60 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab1JaUsd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 16:48:33 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:26106 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab1JaUsc (ORCPT
+	id S1753511Ab1JaUvh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 16:51:37 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33152 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919Ab1JaUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 16:48:32 -0400
-Subject: Re: [PATCH] bonding:update speed/duplex for NETDEV_CHANGE
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: Weiping Pan <wpan@redhat.com>, <netdev@vger.kernel.org>,
-        <andy@greyhouse.net>, <linux-kernel@vger.kernel.org>
-In-Reply-To: <14973.1320093129@death>
-References: <4EAE0D9A.9060408@gmail.com>
-	 <e00468a2cbb8a25d7a89028e876769449454309f.1320070684.git.wpan@redhat.com>
-	 <1320084906.2735.9.camel@bwh-desktop>  <14973.1320093129@death>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Mon, 31 Oct 2011 20:48:28 +0000
-Message-ID: <1320094108.2735.15.camel@bwh-desktop>
+	Mon, 31 Oct 2011 16:51:35 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v5] CPU hotplug,
+ Freezer: Fix race between CPU hotplug and freezer
+To: rjw@sisk.pl
+Cc: a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, pavel@ucw.cz,
+        len.brown@intel.com, mingo@elte.hu, akpm@linux-foundation.org,
+        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
+        linux-pm@vger.kernel.org, rusty@rustcorp.com.au,
+        vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
+        linux-kernel@vger.kernel.org, tj@kernel.org
+Date: Tue, 01 Nov 2011 02:21:27 +0530
+Message-ID: <20111031205125.26694.5730.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18482.005
-X-TM-AS-Result: No--15.032300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 31 Oct 2011 20:48:32.0207 (UTC) FILETIME=[7386A5F0:01CC980E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 13:32 -0700, Jay Vosburgh wrote:
-[...]
-> 	This particular case arises only during enslavement.  The call
-> to bond_update_speed_duplex call has failed, but the device is marked by
-> bonding to be up.  Bonding complains that the device isn't down, but it
-> cannot get speed and duplex, and therefore is assuming them to be
-> 100/Full.
-> 
-> 	The catch is that this happens only for the ARP monitor, because
-> it initially presumes a slave to be up regardless of actual carrier
-> state (for historical reasons related to very old 10 or 10/100 drivers,
-> prior to the introduction of netif_carrier_*).
+The CPU hotplug notifications sent out by the _cpu_up() and _cpu_down()
+functions depend on the value of the 'tasks_frozen' argument passed to them
+(which indicates whether tasks have been frozen or not).
+(Examples for such CPU hotplug notifications: CPU_ONLINE, CPU_ONLINE_FROZEN,
+CPU_DEAD, CPU_DEAD_FROZEN).
 
-Right, I gathered that.  Is there any reason to use the ARP monitor when
-all slaves support link state notification?  Maybe the bonding
-documentation should recommend miimon in section 7, not just in section
-2.
+Thus, it is essential that while the callbacks for those notifications are
+running, the state of the system with respect to the tasks being frozen or
+not remains unchanged, *throughout that duration*. Hence there is a need for
+synchronizing the CPU hotplug code with the freezer subsystem.
 
-Ben.
+Since the freezer is involved only in the Suspend/Hibernate call paths, this
+patch hooks the CPU hotplug code to the suspend/hibernate notifiers
+PM_[SUSPEND|HIBERNATE]_PREPARE and PM_POST_[SUSPEND|HIBERNATE] to prevent
+the race between CPU hotplug and freezer, thus ensuring that CPU hotplug
+notifications will always be run with the state of the system really being
+what the notifications indicate, _throughout_ their execution time.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+v5: * Removed the new freezer notifiers since freezer is used only in suspend
+      and hibernate call paths. Used the suspend/hibernate notifier events
+      to synchronize CPU hotplug and freezer.
+
+v4: * Retained the value 0 for the 'tasks_frozen' argument, while calling
+      _cpu_up() and _cpu_down().
+      Removed the unnecessary PM_POST_FREEZE and PM_THAW_PREPARE notifications.
+
+v3: * Added synchronization between CPU hotplug and the freezer subsystem
+      without introducing any new locks in the CPU hotplug call path.
+
+v2: * Removed the atomic_t declaration of tasks_frozen flag and the
+      atomic_[set|read] functions since they were unnecessary.
+    * Updated the changelog to give an example scenario where things could go
+      wrong due to the bug in the CPU hotplug call path.
+
+References:
+v1 -> http://thread.gmane.org/gmane.linux.kernel/1198312/
+v2 -> http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087
+v3 -> http://thread.gmane.org/gmane.linux.documentation/3472
+v4 -> http://thread.gmane.org/gmane.linux.documentation/3485
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
+
+ kernel/cpu.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 74 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 12b7458..aa39dd7 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -15,6 +15,7 @@
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
++#include <linux/suspend.h>
+ 
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -476,6 +477,79 @@ static int alloc_frozen_cpus(void)
+ 	return 0;
+ }
+ core_initcall(alloc_frozen_cpus);
++
++/*
++ * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
++ * hotplug when tasks are about to be frozen. Also, don't allow the freezer
++ * to continue until any currently running CPU hotplug operation gets
++ * completed.
++ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
++ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
++ * CPU hotplug path and released only after it is complete. Thus, we
++ * (and hence the freezer) will block here until any currently running CPU
++ * hotplug operation gets completed.
++ */
++void cpu_hotplug_disable_before_freeze(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
++
++
++/*
++ * When tasks have been thawed, re-enable regular CPU hotplug (which had been
++ * disabled while beginning to freeze tasks).
++ */
++void cpu_hotplug_enable_after_thaw(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
++/*
++ * When callbacks for CPU hotplug notifications are being executed, we must
++ * ensure that the state of the system with respect to the tasks being frozen
++ * or not, as reported by the notification, remains unchanged *throughout the
++ * duration* of the execution of the callbacks.
++ * Hence we need to prevent the freezer from racing with regular CPU hotplug.
++ *
++ * This synchronization is implemented by mutually excluding regular CPU
++ * hotplug and Suspend/Hibernate call paths by hooking onto the Suspend/
++ * Hibernate notifications.
++ */
++static int
++cpu_hotplug_pm_callback(struct notifier_block *nb,
++			unsigned long action, void *ptr)
++{
++	switch (action) {
++
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		cpu_hotplug_disable_before_freeze();
++		break;
++
++	case PM_POST_SUSPEND:
++	case PM_POST_HIBERNATION:
++		cpu_hotplug_enable_after_thaw();
++		break;
++
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++
++int cpu_hotplug_pm_sync_init(void)
++{
++	pm_notifier(cpu_hotplug_pm_callback, 0);
++	return 0;
++}
++core_initcall(cpu_hotplug_pm_sync_init);
++
+ #endif /* CONFIG_PM_SLEEP_SMP */
+ 
+ /**
 
