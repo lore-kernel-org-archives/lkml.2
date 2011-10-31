@@ -1,38 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab1JaAXE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 20:23:04 -0400
-Received: from zimbra.iperclub.it ([194.183.15.201]:59394 "EHLO
-	zimbra.iperclub.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1JaAXD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 20:23:03 -0400
-X-Greylist: delayed 664 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Oct 2011 20:23:03 EDT
-Date: Mon, 31 Oct 2011 01:11:31 +0100 (CET)
-From: "Mr.Wang Shu" <demo@iperclub.it>
-Reply-To: "Mr.Wang Shu" <673081wh@w.cn>
-Subject: Business Proposal
-Message-ID: <1270540f-beaa-4f44-8cbc-0e654cc22bad@zimbra>
-Content-Type: text/plain; charset=utf-8
+	id S1753449Ab1JaBCl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 21:02:41 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7805 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753348Ab1JaBCk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 21:02:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,428,1315206000"; 
+   d="scan'208";a="84184163"
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111028095040.GA31281@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
+	 <20111027233407.GC29407@barrios-laptop.redhat.com>
+	 <1319778715.22361.155.camel@sli10-conroe>
+	 <20111028073026.GB6268@barrios-laptop.redhat.com>
+	 <1319790356.22361.165.camel@sli10-conroe>
+	 <20111028095040.GA31281@barrios-laptop.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Oct 2011 09:10:49 +0800
+Message-ID: <1320023449.22361.166.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [41.220.69.15]
-X-Mailer: Zimbra 7.1.2_GA_3268 (zclient/7.1.2_GA_3268)
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2011-10-28 at 17:50 +0800, Minchan Kim wrote:
+> On Fri, Oct 28, 2011 at 04:25:56PM +0800, Shaohua Li wrote:
+> > On Fri, 2011-10-28 at 15:30 +0800, Minchan Kim wrote:
+> > > On Fri, Oct 28, 2011 at 01:11:55PM +0800, Shaohua Li wrote:
+> > > > On Fri, 2011-10-28 at 07:34 +0800, Minchan Kim wrote:
+> > > > > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> > > > > > With current logic, if page reclaim finds a huge page, it will just reclaim
+> > > > > > the head page and leave tail pages reclaimed later. Let's take an example,
+> > > > > > lru list has page A and B, page A is huge page:
+> > > > > > 1. page A is isolated
+> > > > > > 2. page B is isolated
+> > > > > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> > > > > > page A+1, page A+2, ... are added to lru list.
+> > > > > > 4. shrink_page_list() adds page B to swap page cache.
+> > > > > > 5. page A and B is written out and reclaimed.
+> > > > > > 6. page A+1, A+2 ... is isolated and reclaimed later.
+> > > > > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> > > > > 
+> > > > > I don't see your code yet but have a question.
+> > > > > You mitigate this problem by 4/5 which could add subpages into lru tail
+> > > > > so subpages would reclaim next interation of reclaim.
+> > > > > 
+> > > > > What do we need 5/5?
+> > > > > Do I miss something?
+> > > > Both patches are required. without this patch, current page reclaim will
+> > > > only reclaim the first page of a huge page, because the hugepage isn't
+> > > > split yet. The hugepage is split when the first page is being written to
+> > > > swap, which is too later and page reclaim might already isolated a lot
+> > > > of pages.
+> > > 
+> > > When split happens, subpages would be located in tail of LRU by your 4/5.
+> > > (Assume tail of LRU is old age).
+> > yes, but a lot of other pages already isolated. we will reclaim those
+> > pages first. for example, reclaim huge page A, B. current reclaim order
+> > is A, B, A+1, ... B+1, because we will isolated A and B first, all tail
+> > pages are not isolated yet. While with my patch, the order is A, A
+> > +1, ... B, B+1,.... with my patch, we can avoid unnecessary page split
+> > or page isolation. This is exactly why my patch reduces the thp_split
+> > count.
+> 
+> It's possbile but I doubt how it is effective becuase add_to_swap has a unlikely as follows
+> 
+> 	if (unlikely(PageTransHuge(page)))
+> 
+> I don't mean unlikely assumption is absolutely right.
+> But at least, you have to convince us of it's wrong.
+> Personally, I don't want to add more logic and handling THP pages
+> different with normal page unless it's real concern.
+if you actually use THP, you will find it's a problem. The data I posted
+already clearly showed it.
 
-
-This is Mr. Wang Shu from Hong Kong. I am sending you this message concerning a Business Proposal of $6,500,000.00
-and I want you to partner with me in this project. This business will benefit you a lot. Please contact me back with the below 
-address for details:
-
-Email: 673081wh@w.cn
-
-I await your prompt response. 
-
-Thanks.
-
-Mr. Wang Shu
