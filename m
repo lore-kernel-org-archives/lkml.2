@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934530Ab1JaPqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:46:11 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:35446 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933392Ab1JaPqJ (ORCPT
+	id S934535Ab1JaPsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:48:24 -0400
+Received: from usmamail.tilera.com ([206.83.70.75]:6806 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933500Ab1JaPsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:46:09 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: chris.mason@oracle.com
-Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
-Subject: [PATCH] btrfs: add block plug for .writepages
-Date: Tue,  1 Nov 2011 00:45:07 +0900
-Message-Id: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Mon, 31 Oct 2011 11:48:23 -0400
+Message-ID: <4EAEC345.90704@tilera.com>
+Date: Mon, 31 Oct 2011 11:48:21 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Jonas Bonn <jonas@southpole.se>
+CC: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH RFC 8/8] tile: implement syscall restart generically
+References: <cover.1319364492.git.jonas@southpole.se> <e790f266cc75b291d44726cf6bf8641d1bf7af5d.1319364492.git.jonas@southpole.se>
+In-Reply-To: <e790f266cc75b291d44726cf6bf8641d1bf7af5d.1319364492.git.jonas@southpole.se>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add block plug for btrfs .writepages. Block plug is helpful to reduce block lock contention.
+On 10/23/2011 6:20 AM, Jonas Bonn wrote:
+> Manipulating task state to effect re-execution of an interrupted syscall
+> used to be purely architecture specific code.  However, as most arch's
+> were essentially just making minor adjustments to almost identical logic,
+> this code could be moved to a common implementation.
+>
+> The generic variant introduces the function handle_syscall_restart() to be
+> called after get_signal_to_deliver().  The architecture specific register
+> manipulations required to effect the actual restart are now implemented
+> in the generic syscall interface found in asm/syscall.h
+>
+> This patch transitions this architecture's signal handling code over to
+> using the generic syscall restart code by:
+>
+> i)  Implementing the register manipulations in asm/syscall.h
+> ii) Replacing the restart logic with a call to handle_syscall_restart
+>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
 
-Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
----
- fs/btrfs/extent_io.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+I like the idea, though the patch isn't quite right:
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index d418164..8f2d6bd 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2388,6 +2388,7 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
- 	pgoff_t end;		/* Inclusive */
- 	int scanned = 0;
- 	int tag;
-+	struct blk_plug plug;
- 
- 	pagevec_init(&pvec, 0);
- 	if (wbc->range_cyclic) {
-@@ -2405,6 +2406,8 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
- retry:
- 	if (wbc->sync_mode == WB_SYNC_ALL)
- 		tag_pages_for_writeback(mapping, index, end);
-+
-+	blk_start_plug(&plug);
- 	while (!done && !nr_to_write_done && (index <= end) &&
- 	       (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
- 			min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1))) {
-@@ -2468,6 +2471,7 @@ retry:
- 		pagevec_release(&pvec);
- 		cond_resched();
- 	}
-+	blk_finish_plug(&plug);
- 	if (!scanned && !done) {
- 		/*
- 		 * We hit the last page and there is more work to be done: wrap
+- You need to move the definition of INT_SWINT_1_SIGRETURN from
+<asm/sigframe.h> to <asm/syscall.h>.  You then have to add #includes of
+<asm/syscall.h> to signal.c and stack.c in arch/tile/kernel.  (And probably
+use syscall_clear() in signal.c.)
+
+- In syscall_do_restartblock() you need to use regs->regs[], not regs->gprs[].
+
 -- 
-1.7.4.4
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
