@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934381Ab1JaLXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 07:23:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35149 "EHLO mx2.suse.de"
+	id S934373Ab1JaLX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 07:23:57 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47426 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932704Ab1JaLXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 07:23:45 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: kernel panic
-Date: Mon, 31 Oct 2011 13:24:04 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc5-5.99.12.5343e5f-desktop; KDE/4.4.4; x86_64; ; )
-Cc: nick bray <nick.bray1@ntlworld.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, lenb@kernel.org,
-        Zhao Yakui <yakui.zhao@intel.com>, Zhang Rui <rui.zhang@intel.com>
-References: <4EA549C3.4080206@ntlworld.com> <CAErSpo4_epbHEAH3Ah=07NZFjqQedUcMXh+cxTSJ4Mp9KhvfPw@mail.gmail.com> <201110280413.51751.trenn@suse.de>
-In-Reply-To: <201110280413.51751.trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932704Ab1JaLXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 07:23:55 -0400
+Subject: Re: powerpc 476, Little-endian, pte fault
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Santosh Kumar <santoshkumar.a@gmail.com>, linuxppc-dev@ozlabs.org,
+        Ian Munsie <ianmunsi@au1.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20440.1320054588@neuling.org>
+References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
+	 <12144.1320040276@neuling.org>
+	 <CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
+	 <20440.1320054588@neuling.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Oct 2011 12:23:34 +0100
+Message-ID: <1320060214.30202.34.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110311324.05185.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 October 2011 04:13:50 Thomas Renninger wrote:
-...
-> Ah, maybe an older acpidump got used and the _CST method of the
-> object is in a not exported, dynamically loaded SSDT.
-> This is very likely.
+On Mon, 2011-10-31 at 20:49 +1100, Michael Neuling wrote:
+> > I have built a cross compiler for ppc440 in little endian mode and
+> > using it to build the kernel.
+> > 
+> > Yes i am running Linux in Little-Endian. This is the first user space
+> > process. I wrote the below program and running it as init from
+> > /sbin/init. I have also set the permissions with chmod +s.
+> > 
+> > main()
+> > {
+> > 
+> > while(1){
+> > printf("hello world");
+> > sleep(1);
+> >  }
+> > }
 > 
-> Please use a very recent acpidump:
-> Hm, Len's ftp directory on kernel.org where latest acpidump was
-> located is gone?
-I've put a (hopefully) recent acpidump source here:
-ftp.suse.com/pub/people/trenn/acpidump
-Should get available in an hour or so.
+> Does libc even support little endian on PPC?
 
-I expect you see:
-"Dynamic OEM Table Load"
-message(s) in dmesg and the SSDT which includes the ACPI parts which are
-causing this is loaded at runtime. Older acpidump versions were not able
-to extract these, the one I put on my ftp account should be able to.
+Ian did a port a while back for uClibc, is that at least partially based
+on it ?
 
-Can you run it and put the output somewhere (related Ubuntu bug?) and
-provide a pointer to it, please.
-Hm, you could create a bug here:
-http://acpica.org/bugzilla
-It looks like ACPI code in the _CST function is triggering an ACPICA
-interpreter memory bug when it tries to evaluate the func (guessing...).
+> > I have attached the patch.
+> 
+> This is a pretty huge patch:
+> 
+>  115 files changed, 44479 insertions(+), 7398 deletions(-)
+> 
+> It seems to include a new platform as well as a bunch of unrelated junk.
+>
+> I suggest you need to break this down into something more digestible.
+> Like remove all the junk in the patch.  Then add the support for the new
+> platform (invader? platform).  Then start looking at little endian.
+> Unless you do this, it's unlikely anyone here is going to be able to
+> help.
+>
+> When you get to the little endian work, you might want to take a look at
+> this patch series from Ian Munsie:
+> 
+> http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-October/086165.html
 
-    Thomas
+Right, the new patch should be if possible based on Ian's series or at
+least a cleaned / rebased variant of it. Then split in bits so we can
+review it properly.
+
+Cheers,
+Ben.
+
+> Mikey
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
+
