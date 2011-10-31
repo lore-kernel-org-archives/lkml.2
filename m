@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1JaVTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 17:19:04 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34288 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab1JaVTC (ORCPT
+	id S1755340Ab1JaVVW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 17:21:22 -0400
+Received: from ishtar.tlinx.org ([173.164.175.65]:54695 "EHLO
+	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225Ab1JaVVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 17:19:02 -0400
-Date: Mon, 31 Oct 2011 17:18:51 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Scott James Remnant <scott@netsplit.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH] coredump: wait on the core pattern umh at least once
-Message-ID: <20111031211851.GA5437@neilslaptop.think-freely.org>
-References: <1319832688-30336-1-git-send-email-scott@netsplit.com>
- <20111029141323.GA7036@redhat.com>
- <CA+bD78hSSDkOBsNTy=VjnzjYSMMtw_B6Gu2hX39G7zp2smGUVg@mail.gmail.com>
+	Mon, 31 Oct 2011 17:21:21 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 17:21:21 EDT
+Message-ID: <4EAF1021.2090004@tlinx.org>
+Date: Mon, 31 Oct 2011 14:16:17 -0700
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+bD78hSSDkOBsNTy=VjnzjYSMMtw_B6Gu2hX39G7zp2smGUVg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.6 (--)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: ACPI ERROR SMBus or IPMI write requires Buff of len 66, found 32...???? linux-3.0.0
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 11:01:44AM -0700, Scott James Remnant wrote:
-> On Sat, Oct 29, 2011 at 7:13 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> 
-> > On 10/28, Scott James Remnant wrote:
-> > >
-> > > If a thread crashes as a result of a signal on the thread group leader
-> > > that signal can still be pending,
-> >
-> > No. do_coredump() clears TIF_SIGPENDING.
-> >
-> I'm definitely seeing cases where SIGTERM sent to the process group
-> that chrome is in results in one of chrome's thread's crashing (not
-> your concern, obviously), but at the point it enters this function
-> TIF_SIGPENDING is definitely set and the signal is SIGTERM.
-> 
-> The SIGTERM is in the shared pending set.
-> 
-> > I already tried to explain why this signal_pending() was added, but
-> > apparently I was not clear. I'll try again in the previous thread.
-> >
-> Could you add me to the Cc: of that thread?
-> 
-> Scott
-> 
-FWIW, this is the (huge) thread, and specific post that originated the change
-we're looking at:
-https://lkml.org/lkml/2009/7/2/98
-Neil
+
+
+Was looking through boot log messages, and this one seemed 'new'...
+
+is this saying that the device requires 66, but the driver allocated 32 
+bytes?
+
+Or the opposite: i.e. driver requires 66 (according to some new 
+standard**) but the
+device from 2009, has the 2009 standard of 32?
+
+Just a WAG, but 20110413 looks like a date, that is certainly newer than 
+the system, though
+it has had firmware upgrades (though none in the past 6 months or so...)...
+
+Seems like a weird thing to be changed across drivers while not 
+providing for some backward
+compat, but that's purely based on a notion that there's a driver/hw 
+version mismatch now
+when before, there were no such error messages (maybe the error message 
+is new, and it's
+always been broken? ;-) )...
+
+as subj says linux-3.0.0, stock vanilla + the latest IMQ networkfilter 
+patch.
+X64
+
+[   13.722612] ACPI Error: SMBus or IPMI write requires Buffer of length 
+66, found length 32 (20110413/exfield-285)
+[   13.733078] ACPI Error: Method parse/execution failed 
+[\_SB_.PMI0._GHL] (Node ffff880616962b18), AE_AML_BUFFER_LIMIT 
+(20110413/psparse-536)
+[   13.746189] ACPI Error: Method parse/execution failed 
+[\_SB_.PMI0._PMC] (Node ffff880616962a78), AE_AML_BUFFER_LIMIT
+[   13.755322] dca service started, version 1.12.1[   13.761822]  
+(20110413/psparse-536)
+[   13.765509] ACPI Exception: AE_AML_BUFFER_LIMIT, Evaluating _PMC 
+(20110413/power_meter-773)
+
+Did something that would cause this?  I haven't determined what the 
+impact of the above
+problem is -- it might be some status progs no longer work OR maybe 
+never worked, and now
+may have a clue... ?   Any insights?
+
+
 
