@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1JaTuz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 15:50:55 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:45349 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab1JaTuy (ORCPT
+	id S1755218Ab1JaTzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 15:55:53 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62017 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab1JaTzw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 15:50:54 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] fat: Spelling s/obsolate/obsolete/g
-Date: Mon, 31 Oct 2011 20:50:45 +0100
-Message-Id: <1320090645-17095-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 31 Oct 2011 15:55:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <201110132145.42270.rjw@sisk.pl>
+References: <201110132145.42270.rjw@sisk.pl>
+Date: Tue, 1 Nov 2011 03:55:50 +0800
+Message-ID: <CACVXFVO_qNoy=AMs4RQOPsNq5dnTsc-=-f70Njf9Hv8eRkx=+Q@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of
+ suspend/hibernate interfaces
+From: Ming Lei <tom.leiming@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        mark gross <markgross@thegnar.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>, NeilBrown <neilb@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- fs/fat/inode.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+Hi,
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 1726d73..66cec01 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -898,7 +898,7 @@ enum {
- 	Opt_charset, Opt_shortname_lower, Opt_shortname_win95,
- 	Opt_shortname_winnt, Opt_shortname_mixed, Opt_utf8_no, Opt_utf8_yes,
- 	Opt_uni_xl_no, Opt_uni_xl_yes, Opt_nonumtail_no, Opt_nonumtail_yes,
--	Opt_obsolate, Opt_flush, Opt_tz_utc, Opt_rodir, Opt_err_cont,
-+	Opt_obsolete, Opt_flush, Opt_tz_utc, Opt_rodir, Opt_err_cont,
- 	Opt_err_panic, Opt_err_ro, Opt_discard, Opt_err,
- };
- 
-@@ -928,17 +928,17 @@ static const match_table_t fat_tokens = {
- 	{Opt_err_panic, "errors=panic"},
- 	{Opt_err_ro, "errors=remount-ro"},
- 	{Opt_discard, "discard"},
--	{Opt_obsolate, "conv=binary"},
--	{Opt_obsolate, "conv=text"},
--	{Opt_obsolate, "conv=auto"},
--	{Opt_obsolate, "conv=b"},
--	{Opt_obsolate, "conv=t"},
--	{Opt_obsolate, "conv=a"},
--	{Opt_obsolate, "fat=%u"},
--	{Opt_obsolate, "blocksize=%u"},
--	{Opt_obsolate, "cvf_format=%20s"},
--	{Opt_obsolate, "cvf_options=%100s"},
--	{Opt_obsolate, "posix"},
-+	{Opt_obsolete, "conv=binary"},
-+	{Opt_obsolete, "conv=text"},
-+	{Opt_obsolete, "conv=auto"},
-+	{Opt_obsolete, "conv=b"},
-+	{Opt_obsolete, "conv=t"},
-+	{Opt_obsolete, "conv=a"},
-+	{Opt_obsolete, "fat=%u"},
-+	{Opt_obsolete, "blocksize=%u"},
-+	{Opt_obsolete, "cvf_format=%20s"},
-+	{Opt_obsolete, "cvf_options=%100s"},
-+	{Opt_obsolete, "posix"},
- 	{Opt_err, NULL},
- };
- static const match_table_t msdos_tokens = {
-@@ -1170,7 +1170,7 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
- 			break;
- 
- 		/* obsolete mount options */
--		case Opt_obsolate:
-+		case Opt_obsolete:
- 			fat_msg(sb, KERN_INFO, "\"%s\" option is obsolete, "
- 			       "not supported now", p);
- 			break;
+On Fri, Oct 14, 2011 at 3:45 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+
+> Second, to address the backup problem, we need to allow user space
+> processes other than the suspend/hibernate process itself to prevent the
+> system from being put into sleep states.  A mechanism for that is introduced
+> by the second patch in the form of the /dev/sleepctl special device working
+> kind of like user space wakelocks on Android (although in a simplified
+> fashion).
+
+I also have another similar example: write(fd, buffer, 100*4096).
+
+Suppose only 80*4096 are copied into pages of the file, then someone
+run ' echo mem > /sys/power/state ' to trigger system sleep, so only
+partial writing is completed before system sleep and data inconsistence
+may be caused for the file on filesystem.
+
+But I am not sure if it is possible to happen in reality.
+
+thank,
 -- 
-1.7.0.4
-
+Ming Lei
