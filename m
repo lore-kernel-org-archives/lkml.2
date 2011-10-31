@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab1KAARW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:17:22 -0400
+	id S933638Ab1KAARd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:17:33 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:35201 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab1KAART (ORCPT
+	with ESMTP id S1755671Ab1KAARb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:17:19 -0400
-Message-Id: <093448$3uejqv@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599647"
+	Mon, 31 Oct 2011 20:17:31 -0400
+Message-Id: <093448$3uejrj@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599667"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:27:03 -0500
-Subject: [PATCH v5 02/36] Hexagon: Core arch-specific header files
+Date: Mon, 31 Oct 2011 18:38:04 -0500
+Subject: [PATCH v5 09/36] Hexagon: Add checksum functions
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,38 +21,20 @@ Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Signed-off-by: Linas Vepstas <linas@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/byteorder.h  |   28 ++++
- arch/hexagon/include/asm/elf.h        |  229 +++++++++++++++++++++++++++++++++
- arch/hexagon/include/asm/fpu.h        |    4 +
- arch/hexagon/include/asm/futex.h      |  137 ++++++++++++++++++++
- arch/hexagon/include/asm/linkage.h    |   25 ++++
- arch/hexagon/include/asm/module.h     |   26 ++++
- arch/hexagon/include/asm/param.h      |   26 ++++
- arch/hexagon/include/asm/perf_event.h |   24 ++++
- arch/hexagon/include/asm/string.h     |   32 +++++
- arch/hexagon/include/asm/suspend.h    |   27 ++++
- arch/hexagon/include/asm/swab.h       |   24 ++++
- arch/hexagon/include/asm/timex.h      |   37 ++++++
- 12 files changed, 619 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/byteorder.h
- create mode 100644 arch/hexagon/include/asm/elf.h
- create mode 100644 arch/hexagon/include/asm/fpu.h
- create mode 100644 arch/hexagon/include/asm/futex.h
- create mode 100644 arch/hexagon/include/asm/linkage.h
- create mode 100644 arch/hexagon/include/asm/module.h
- create mode 100644 arch/hexagon/include/asm/param.h
- create mode 100644 arch/hexagon/include/asm/perf_event.h
- create mode 100644 arch/hexagon/include/asm/string.h
- create mode 100644 arch/hexagon/include/asm/suspend.h
- create mode 100644 arch/hexagon/include/asm/swab.h
- create mode 100644 arch/hexagon/include/asm/timex.h
+ arch/hexagon/include/asm/checksum.h   |   50 ++++++++
+ arch/hexagon/include/asm/intrinsics.h |   26 ++++
+ arch/hexagon/lib/checksum.c           |  203 +++++++++++++++++++++++++++++++++
+ 3 files changed, 279 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/checksum.h
+ create mode 100644 arch/hexagon/include/asm/intrinsics.h
+ create mode 100644 arch/hexagon/lib/checksum.c
 
-diff --git a/arch/hexagon/include/asm/byteorder.h b/arch/hexagon/include/asm/byteorder.h
+diff --git a/arch/hexagon/include/asm/checksum.h b/arch/hexagon/include/asm/checksum.h
 new file mode 100644
-index 0000000..0e19b9f
+index 0000000..3ce4ecd
 --- /dev/null
-+++ b/arch/hexagon/include/asm/byteorder.h
-@@ -0,0 +1,28 @@
++++ b/arch/hexagon/include/asm/checksum.h
+@@ -0,0 +1,50 @@
 +/*
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -71,24 +53,78 @@ index 0000000..0e19b9f
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_BYTEORDER_H
-+#define _ASM_BYTEORDER_H
++#ifndef _ASM_CHECKSUM_H
++#define _ASM_CHECKSUM_H
 +
-+#if defined(__GNUC__) && !defined(__STRICT_ANSI__) || defined(__KERNEL__)
-+#  define __BYTEORDER_HAS_U64__
-+#endif
++#define do_csum	do_csum
++unsigned int do_csum(const void *voidptr, int len);
 +
-+#include <linux/byteorder/little_endian.h>
-+
-+#endif /* _ASM_BYTEORDER_H */
-diff --git a/arch/hexagon/include/asm/elf.h b/arch/hexagon/include/asm/elf.h
-new file mode 100644
-index 0000000..37976a0
---- /dev/null
-+++ b/arch/hexagon/include/asm/elf.h
-@@ -0,0 +1,229 @@
 +/*
-+ * ELF definitions for the Hexagon architecture
++ * the same as csum_partial, but copies from src while it
++ * checksums
++ *
++ * here even more important to align src and dst on a 32-bit (or even
++ * better 64-bit) boundary
++ */
++#define csum_partial_copy_nocheck csum_partial_copy_nocheck
++__wsum csum_partial_copy_nocheck(const void *src, void *dst,
++					int len, __wsum sum);
++
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented
++ */
++#define csum_tcpudp_nofold csum_tcpudp_nofold
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
++
++#define csum_tcpudp_magic csum_tcpudp_magic
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++	unsigned short len, unsigned short proto, __wsum sum);
++
++#include <asm-generic/checksum.h>
++
++#endif
+diff --git a/arch/hexagon/include/asm/intrinsics.h b/arch/hexagon/include/asm/intrinsics.h
+new file mode 100644
+index 0000000..1c02186
+--- /dev/null
++++ b/arch/hexagon/include/asm/intrinsics.h
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++
++#ifndef _ASM_HEXAGON_INTRINSICS_H
++#define _ASM_HEXAGON_INTRINSICS_H
++
++#define HEXAGON_P_vrmpyhacc_PP	__builtin_HEXAGON_M2_vrmac_s0
++#define HEXAGON_P_vrmpyh_PP	__builtin_HEXAGON_M2_vrmpy_s0
++#define HEXAGON_R_cl0_R		__builtin_HEXAGON_S2_cl0
++
++#endif
+diff --git a/arch/hexagon/lib/checksum.c b/arch/hexagon/lib/checksum.c
+new file mode 100644
+index 0000000..9300552
+--- /dev/null
++++ b/arch/hexagon/lib/checksum.c
+@@ -0,0 +1,203 @@
++/*
++ * Checksum functions for Hexagon
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
 + *
@@ -107,637 +143,189 @@ index 0000000..37976a0
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_ELF_H
-+#define __ASM_ELF_H
-+
-+#include <asm/ptrace.h>
-+#include <asm/user.h>
-+
-+/*
-+ * This should really be in linux/elf-em.h.
-+ */
-+#define EM_HEXAGON	164   /* QUALCOMM Hexagon */
-+
-+struct elf32_hdr;
-+
-+/*
-+ * ELF header e_flags defines.
-+ */
-+
-+/*  should have stuff like "CPU type" and maybe "ABI version", etc  */
-+
-+/* Hexagon relocations */
-+  /* V2 */
-+#define R_HEXAGON_NONE           0
-+#define R_HEXAGON_B22_PCREL      1
-+#define R_HEXAGON_B15_PCREL      2
-+#define R_HEXAGON_B7_PCREL       3
-+#define R_HEXAGON_LO16           4
-+#define R_HEXAGON_HI16           5
-+#define R_HEXAGON_32             6
-+#define R_HEXAGON_16             7
-+#define R_HEXAGON_8              8
-+#define R_HEXAGON_GPREL16_0      9
-+#define R_HEXAGON_GPREL16_1     10
-+#define R_HEXAGON_GPREL16_2     11
-+#define R_HEXAGON_GPREL16_3     12
-+#define R_HEXAGON_HL16          13
-+  /* V3 */
-+#define R_HEXAGON_B13_PCREL     14
-+  /* V4 */
-+#define R_HEXAGON_B9_PCREL      15
-+  /* V4 (extenders) */
-+#define R_HEXAGON_B32_PCREL_X   16
-+#define R_HEXAGON_32_6_X        17
-+  /* V4 (extended) */
-+#define R_HEXAGON_B22_PCREL_X   18
-+#define R_HEXAGON_B15_PCREL_X   19
-+#define R_HEXAGON_B13_PCREL_X   20
-+#define R_HEXAGON_B9_PCREL_X    21
-+#define R_HEXAGON_B7_PCREL_X    22
-+#define R_HEXAGON_16_X          23
-+#define R_HEXAGON_12_X          24
-+#define R_HEXAGON_11_X          25
-+#define R_HEXAGON_10_X          26
-+#define R_HEXAGON_9_X           27
-+#define R_HEXAGON_8_X           28
-+#define R_HEXAGON_7_X           29
-+#define R_HEXAGON_6_X           30
-+  /* V2 PIC */
-+#define R_HEXAGON_32_PCREL      31
-+#define R_HEXAGON_COPY          32
-+#define R_HEXAGON_GLOB_DAT      33
-+#define R_HEXAGON_JMP_SLOT      34
-+#define R_HEXAGON_RELATIVE      35
-+#define R_HEXAGON_PLT_B22_PCREL 36
-+#define R_HEXAGON_GOTOFF_LO16   37
-+#define R_HEXAGON_GOTOFF_HI16   38
-+#define R_HEXAGON_GOTOFF_32     39
-+#define R_HEXAGON_GOT_LO16      40
-+#define R_HEXAGON_GOT_HI16      41
-+#define R_HEXAGON_GOT_32        42
-+#define R_HEXAGON_GOT_16        43
-+
-+/*
-+ * ELF register definitions..
-+ */
-+typedef unsigned long elf_greg_t;
-+
-+typedef struct user_regs_struct elf_gregset_t;
-+#define ELF_NGREG (sizeof(elf_gregset_t)/sizeof(unsigned long))
-+
-+/*  Placeholder  */
-+typedef unsigned long elf_fpregset_t;
-+
-+/*
-+ * Bypass the whole "regsets" thing for now and use the define.
-+ */
-+
-+#define ELF_CORE_COPY_REGS(DEST, REGS)	\
-+do {					\
-+	DEST.r0 = REGS->r00;		\
-+	DEST.r1 = REGS->r01;		\
-+	DEST.r2 = REGS->r02;		\
-+	DEST.r3 = REGS->r03;		\
-+	DEST.r4 = REGS->r04;		\
-+	DEST.r5 = REGS->r05;		\
-+	DEST.r6 = REGS->r06;		\
-+	DEST.r7 = REGS->r07;		\
-+	DEST.r8 = REGS->r08;		\
-+	DEST.r9 = REGS->r09;		\
-+	DEST.r10 = REGS->r10;		\
-+	DEST.r11 = REGS->r11;		\
-+	DEST.r12 = REGS->r12;		\
-+	DEST.r13 = REGS->r13;		\
-+	DEST.r14 = REGS->r14;		\
-+	DEST.r15 = REGS->r15;		\
-+	DEST.r16 = REGS->r16;		\
-+	DEST.r17 = REGS->r17;		\
-+	DEST.r18 = REGS->r18;		\
-+	DEST.r19 = REGS->r19;		\
-+	DEST.r20 = REGS->r20;		\
-+	DEST.r21 = REGS->r21;		\
-+	DEST.r22 = REGS->r22;		\
-+	DEST.r23 = REGS->r23;		\
-+	DEST.r24 = REGS->r24;		\
-+	DEST.r25 = REGS->r25;		\
-+	DEST.r26 = REGS->r26;		\
-+	DEST.r27 = REGS->r27;		\
-+	DEST.r28 = REGS->r28;		\
-+	DEST.r29 = pt_psp(REGS);	\
-+	DEST.r30 = REGS->r30;		\
-+	DEST.r31 = REGS->r31;		\
-+	DEST.sa0 = REGS->sa0;		\
-+	DEST.lc0 = REGS->lc0;		\
-+	DEST.sa1 = REGS->sa1;		\
-+	DEST.lc1 = REGS->lc1;		\
-+	DEST.m0 = REGS->m0;		\
-+	DEST.m1 = REGS->m1;		\
-+	DEST.usr = REGS->usr;		\
-+	DEST.p3_0 = REGS->preds;	\
-+	DEST.gp = REGS->gp;		\
-+	DEST.ugp = REGS->ugp;		\
-+	DEST.pc = pt_elr(REGS);	\
-+	DEST.cause = pt_cause(REGS);	\
-+	DEST.badva = pt_badva(REGS);	\
-+} while (0);
++/*  This was derived from arch/alpha/lib/checksum.c  */
 +
 +
++#include <linux/module.h>
++#include <linux/string.h>
 +
-+/*
-+ * This is used to ensure we don't load something for the wrong architecture.
-+ * Checks the machine and ABI type.
-+ */
-+#define elf_check_arch(hdr)	((hdr)->e_machine == EM_HEXAGON)
-+
-+/*
-+ * These are used to set parameters in the core dumps.
-+ */
-+#define ELF_CLASS	ELFCLASS32
-+#define ELF_DATA	ELFDATA2LSB
-+#define ELF_ARCH	EM_HEXAGON
-+
-+#ifdef CONFIG_HEXAGON_ARCH_V2
-+#define ELF_CORE_EFLAGS 0x1
-+#endif
-+
-+#ifdef CONFIG_HEXAGON_ARCH_V3
-+#define ELF_CORE_EFLAGS 0x2
-+#endif
-+
-+#ifdef CONFIG_HEXAGON_ARCH_V4
-+#define ELF_CORE_EFLAGS 0x3
-+#endif
-+
-+/*
-+ * Some architectures have ld.so set up a pointer to a function
-+ * to be registered using atexit, to facilitate cleanup.  So that
-+ * static executables will be well-behaved, we would null the register
-+ * in question here, in the pt_regs structure passed.  For now,
-+ * leave it a null macro.
-+ */
-+#define ELF_PLAT_INIT(regs, load_addr) do { } while (0)
-+
-+#define USE_ELF_CORE_DUMP
-+#define CORE_DUMP_USE_REGSET
-+
-+/* Hrm is this going to cause problems for changing PAGE_SIZE?  */
-+#define ELF_EXEC_PAGESIZE	4096
-+
-+/*
-+ * This is the location that an ET_DYN program is loaded if exec'ed.  Typical
-+ * use of this is to invoke "./ld.so someprog" to test out a new version of
-+ * the loader.  We need to make sure that it is out of the way of the program
-+ * that it will "exec", and that there is sufficient room for the brk.
-+ */
-+#define ELF_ET_DYN_BASE         0x08000000UL
-+
-+/*
-+ * This yields a mask that user programs can use to figure out what
-+ * instruction set this cpu supports.
-+ */
-+#define ELF_HWCAP	(0)
-+
-+/*
-+ * This yields a string that ld.so will use to load implementation
-+ * specific libraries for optimization.  This is more specific in
-+ * intent than poking at uname or /proc/cpuinfo.
-+ */
-+#define ELF_PLATFORM  (NULL)
-+
-+#ifdef __KERNEL__
-+#define SET_PERSONALITY(ex) set_personality(PER_LINUX)
-+#endif
-+
-+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
-+struct linux_binprm;
-+extern int arch_setup_additional_pages(struct linux_binprm *bprm,
-+				       int uses_interp);
-+
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/fpu.h b/arch/hexagon/include/asm/fpu.h
-new file mode 100644
-index 0000000..0e135ea
---- /dev/null
-+++ b/arch/hexagon/include/asm/fpu.h
-@@ -0,0 +1,4 @@
-+/*
-+ * If the FPU is used inside the kernel,
-+ * kernel_fpu_end() will be defined here.
-+ */
-diff --git a/arch/hexagon/include/asm/futex.h b/arch/hexagon/include/asm/futex.h
-new file mode 100644
-index 0000000..7e597f8
---- /dev/null
-+++ b/arch/hexagon/include/asm/futex.h
-@@ -0,0 +1,137 @@
-+#ifndef _ASM_HEXAGON_FUTEX_H
-+#define _ASM_HEXAGON_FUTEX_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/futex.h>
++#include <asm/byteorder.h>
++#include <net/checksum.h>
 +#include <linux/uaccess.h>
-+#include <asm/errno.h>
-+
-+/* XXX TODO-- need to add sync barriers! */
-+
-+#define __futex_atomic_op(insn, ret, oldval, uaddr, oparg) \
-+	__asm__ __volatile( \
-+	"1: %0 = memw_locked(%3);\n" \
-+	    /* For example: %1 = %4 */ \
-+	    insn \
-+	"2: memw_locked(%3,p2) = %1;\n" \
-+	"   if !p2 jump 1b;\n" \
-+	"   %1 = #0;\n" \
-+	"3:\n" \
-+	".section .fixup,\"ax\"\n" \
-+	"4: %1 = #%5;\n" \
-+	"   jump 3b\n" \
-+	".previous\n" \
-+	".section __ex_table,\"a\"\n" \
-+	".long 1b,4b,2b,4b\n" \
-+	".previous\n" \
-+	: "=&r" (oldval), "=&r" (ret), "+m" (*uaddr) \
-+	: "r" (uaddr), "r" (oparg), "i" (-EFAULT) \
-+	: "p2", "memory")
++#include <asm/intrinsics.h>
 +
 +
-+static inline int
-+futex_atomic_op_inuser(int encoded_op, int __user *uaddr)
++/*  Vector value operations  */
++#define SIGN(x, y)	((0x8000ULL*x)<<y)
++#define CARRY(x, y)	((0x0002ULL*x)<<y)
++#define SELECT(x, y)	((0x0001ULL*x)<<y)
++
++#define VR_NEGATE(a, b, c, d)	(SIGN(a, 48) + SIGN(b, 32) + SIGN(c, 16) \
++	+ SIGN(d, 0))
++#define VR_CARRY(a, b, c, d)	(CARRY(a, 48) + CARRY(b, 32) + CARRY(c, 16) \
++	+ CARRY(d, 0))
++#define VR_SELECT(a, b, c, d)	(SELECT(a, 48) + SELECT(b, 32) + SELECT(c, 16) \
++	+ SELECT(d, 0))
++
++
++/* optimized HEXAGON V3 intrinsic version */
++static inline unsigned short from64to16(u64 x)
 +{
-+	int op = (encoded_op >> 28) & 7;
-+	int cmp = (encoded_op >> 24) & 15;
-+	int oparg = (encoded_op << 8) >> 20;
-+	int cmparg = (encoded_op << 20) >> 20;
-+	int oldval = 0, ret;
-+	if (encoded_op & (FUTEX_OP_OPARG_SHIFT << 28))
-+		oparg = 1 << oparg;
++	u64 sum;
 +
-+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
-+		return -EFAULT;
++	sum = HEXAGON_P_vrmpyh_PP(x^VR_NEGATE(1, 1, 1, 1),
++			     VR_SELECT(1, 1, 1, 1));
++	sum += VR_CARRY(0, 0, 1, 0);
++	sum = HEXAGON_P_vrmpyh_PP(sum, VR_SELECT(0, 0, 1, 1));
 +
-+	pagefault_disable();
++	return 0xFFFF & sum;
++}
 +
-+	switch (op) {
-+	case FUTEX_OP_SET:
-+		__futex_atomic_op("%1 = %4\n", ret, oldval, uaddr, oparg);
-+		break;
-+	case FUTEX_OP_ADD:
-+		__futex_atomic_op("%1 = add(%0,%4)\n", ret, oldval, uaddr,
-+				  oparg);
-+		break;
-+	case FUTEX_OP_OR:
-+		__futex_atomic_op("%1 = or(%0,%4)\n", ret, oldval, uaddr,
-+				  oparg);
-+		break;
-+	case FUTEX_OP_ANDN:
-+		__futex_atomic_op("%1 = not(%4); %1 = and(%0,%1)\n", ret,
-+				  oldval, uaddr, oparg);
-+		break;
-+	case FUTEX_OP_XOR:
-+		__futex_atomic_op("%1 = xor(%0,%4)\n", ret, oldval, uaddr,
-+				  oparg);
-+		break;
-+	default:
-+		ret = -ENOSYS;
++/*
++ * computes the checksum of the TCP/UDP pseudo-header
++ * returns a 16-bit checksum, already complemented.
++ */
++__sum16 csum_tcpudp_magic(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
++{
++	return (__force __sum16)~from64to16(
++		(__force u64)saddr + (__force u64)daddr +
++		(__force u64)sum + ((len + proto) << 8));
++}
++
++__wsum csum_tcpudp_nofold(unsigned long saddr, unsigned long daddr,
++			  unsigned short len, unsigned short proto,
++			  __wsum sum)
++{
++	u64 result;
++
++	result = (__force u64)saddr + (__force u64)daddr +
++		 (__force u64)sum + ((len + proto) << 8);
++
++	/* Fold down to 32-bits so we don't lose in the typedef-less
++	   network stack.  */
++	/* 64 to 33 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	/* 33 to 32 */
++	result = (result & 0xffffffffUL) + (result >> 32);
++	return (__force __wsum)result;
++}
++EXPORT_SYMBOL(csum_tcpudp_nofold);
++
++/*
++ * Do a 64-bit checksum on an arbitrary memory area..
++ *
++ * This isn't a great routine, but it's not _horrible_ either. The
++ * inner loop could be unrolled a bit further, and there are better
++ * ways to do the carry, but this is reasonable.
++ */
++
++/* optimized HEXAGON intrinsic version, with over read fixed */
++unsigned int do_csum(const void *voidptr, int len)
++{
++	u64 sum0, sum1, x0, x1, *ptr8_o, *ptr8_e, *ptr8;
++	int i, start, mid, end, mask;
++	const char *ptr = voidptr;
++	unsigned short *ptr2;
++	unsigned int *ptr4;
++
++	if (len <= 0)
++		return 0;
++
++	start = 0xF & (16-(((int) ptr) & 0xF)) ;
++	mask  = 0x7fffffffUL >> HEXAGON_R_cl0_R(len);
++	start = start & mask ;
++
++	mid = len - start;
++	end = mid & 0xF;
++	mid = mid>>4;
++	sum0 = mid << 18;
++	sum1 = 0;
++
++	if (start & 1)
++		sum0 += (u64) (ptr[0] << 8);
++	ptr2 = (unsigned short *) &ptr[start & 1];
++	if (start & 2)
++		sum1 += (u64) ptr2[0];
++	ptr4 = (unsigned int *) &ptr[start & 3];
++	if (start & 4) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum0 += VR_SELECT(0, 0, 1, 0);
++	}
++	ptr8 = (u64 *) &ptr[start & 7];
++	if (start & 8) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 += VR_CARRY(0, 0, 1, 0);
++	}
++	ptr8_o = (u64 *) (ptr + start);
++	ptr8_e = (u64 *) (ptr + start + 8);
++
++	if (mid) {
++		x0 = *ptr8_e; ptr8_e += 2;
++		x1 = *ptr8_o; ptr8_o += 2;
++		if (mid > 1)
++			for (i = 0; i < mid-1; i++) {
++				sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++					x0^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++					x1^VR_NEGATE(1, 1, 1, 1),
++					VR_SELECT(1, 1, 1, 1));
++				x0 = *ptr8_e; ptr8_e += 2;
++				x1 = *ptr8_o; ptr8_o += 2;
++			}
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0, x0^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1, x1^VR_NEGATE(1, 1, 1, 1),
++			VR_SELECT(1, 1, 1, 1));
 +	}
 +
-+	pagefault_enable();
-+
-+	if (!ret) {
-+		switch (cmp) {
-+		case FUTEX_OP_CMP_EQ:
-+			ret = (oldval == cmparg);
-+			break;
-+		case FUTEX_OP_CMP_NE:
-+			ret = (oldval != cmparg);
-+			break;
-+		case FUTEX_OP_CMP_LT:
-+			ret = (oldval < cmparg);
-+			break;
-+		case FUTEX_OP_CMP_GE:
-+			ret = (oldval >= cmparg);
-+			break;
-+		case FUTEX_OP_CMP_LE:
-+			ret = (oldval <= cmparg);
-+			break;
-+		case FUTEX_OP_CMP_GT:
-+			ret = (oldval > cmparg);
-+			break;
-+		default:
-+			ret = -ENOSYS;
-+		}
++	ptr4 = (unsigned int *) &ptr[start + (mid * 16) + (end & 8)];
++	if (end & 4) {
++		sum1 = HEXAGON_P_vrmpyhacc_PP(sum1,
++			VR_NEGATE(0, 0, 1, 1)^((u64)ptr4[0]),
++			VR_SELECT(0, 0, 1, 1));
++		sum1 += VR_SELECT(0, 0, 1, 0);
 +	}
-+	return ret;
++	ptr2 = (unsigned short *) &ptr[start + (mid * 16) + (end & 12)];
++	if (end & 2)
++		sum0 += (u64) ptr2[0];
++
++	if (end & 1)
++		sum1 += (u64) ptr[start + (mid * 16) + (end & 14)];
++
++	ptr8 = (u64 *) &ptr[start + (mid * 16)];
++	if (end & 8) {
++		sum0 = HEXAGON_P_vrmpyhacc_PP(sum0,
++			VR_NEGATE(1, 1, 1, 1)^(ptr8[0]),
++			VR_SELECT(1, 1, 1, 1));
++		sum0 += VR_CARRY(0, 0, 1, 0);
++	}
++	sum0 = HEXAGON_P_vrmpyh_PP((sum0+sum1)^VR_NEGATE(0, 0, 0, 1),
++		VR_SELECT(0, 0, 1, 1));
++	sum0 += VR_NEGATE(0, 0, 0, 1);
++	sum0 = HEXAGON_P_vrmpyh_PP(sum0, VR_SELECT(0, 0, 1, 1));
++
++	if (start & 1)
++		sum0 = (sum0 << 8) | (0xFF & (sum0 >> 8));
++
++	return 0xFFFF & sum0;
 +}
 +
-+static inline int
-+futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr, u32 oldval,
-+			      u32 newval)
++/*
++ * copy from ds while checksumming, otherwise like csum_partial
++ */
++__wsum
++csum_partial_copy_nocheck(const void *src, void *dst, int len, __wsum sum)
 +{
-+	int prev;
-+	int ret;
-+
-+	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
-+		return -EFAULT;
-+
-+	__asm__ __volatile__ (
-+	"1: %1 = memw_locked(%3)\n"
-+	"   {\n"
-+	"      p2 = cmp.eq(%1,%4)\n"
-+	"      if !p2.new jump:NT 3f\n"
-+	"   }\n"
-+	"2: memw_locked(%3,p2) = %5\n"
-+	"   if !p2 jump 1b\n"
-+	"3:\n"
-+	".section .fixup,\"ax\"\n"
-+	"4: %0 = #%6\n"
-+	"   jump 3b\n"
-+	".previous\n"
-+	".section __ex_table,\"a\"\n"
-+	".long 1b,4b,2b,4b\n"
-+	".previous\n"
-+	: "+r" (ret), "=&r" (prev), "+m" (*uaddr)
-+	: "r" (uaddr), "r" (oldval), "r" (newval), "i"(-EFAULT)
-+	: "p2", "memory");
-+
-+	*uval = prev;
-+	return ret;
++	memcpy(dst, src, len);
++	return csum_partial(dst, len, sum);
 +}
-+
-+#endif /* __KERNEL__ */
-+#endif /* _ASM_HEXAGON_FUTEX_H */
-diff --git a/arch/hexagon/include/asm/linkage.h b/arch/hexagon/include/asm/linkage.h
-new file mode 100644
-index 0000000..a00b85f
---- /dev/null
-+++ b/arch/hexagon/include/asm/linkage.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef __ASM_LINKAGE_H
-+#define __ASM_LINKAGE_H
-+
-+#define __ALIGN		.align 4
-+#define __ALIGN_STR	".align 4"
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/module.h b/arch/hexagon/include/asm/module.h
-new file mode 100644
-index 0000000..72ba494
---- /dev/null
-+++ b/arch/hexagon/include/asm/module.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_MODULE_H
-+#define _ASM_MODULE_H
-+
-+#include <asm-generic/module.h>
-+
-+#define MODULE_ARCH_VERMAGIC __stringify(PROCESSOR_MODEL_NAME) " "
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/param.h b/arch/hexagon/include/asm/param.h
-new file mode 100644
-index 0000000..285344b
---- /dev/null
-+++ b/arch/hexagon/include/asm/param.h
-@@ -0,0 +1,26 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_PARAM_H
-+#define _ASM_PARAM_H
-+
-+#define EXEC_PAGESIZE	16384
-+
-+#include <asm-generic/param.h>
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/perf_event.h b/arch/hexagon/include/asm/perf_event.h
-new file mode 100644
-index 0000000..6c2910f
---- /dev/null
-+++ b/arch/hexagon/include/asm/perf_event.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_PERF_EVENT_H
-+#define _ASM_PERF_EVENT_H
-+
-+#define PERF_EVENT_INDEX_OFFSET	0
-+
-+#endif /* _ASM_PERF_EVENT_H */
-diff --git a/arch/hexagon/include/asm/string.h b/arch/hexagon/include/asm/string.h
-new file mode 100644
-index 0000000..f4489c1
---- /dev/null
-+++ b/arch/hexagon/include/asm/string.h
-@@ -0,0 +1,32 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_STRING_H_
-+#define _ASM_STRING_H_
-+
-+#ifdef __KERNEL__
-+#define __HAVE_ARCH_MEMCPY
-+extern void *memcpy(void *__to, __const__ void *__from, size_t __n);
-+
-+/*  ToDo:  use dczeroa, accelerate the compiler-constant zero case  */
-+#define __HAVE_ARCH_MEMSET
-+extern void *memset(void *__to, int c, size_t __n);
-+#endif
-+
-+
-+#endif /* _ASM_STRING_H_ */
-diff --git a/arch/hexagon/include/asm/suspend.h b/arch/hexagon/include/asm/suspend.h
-new file mode 100644
-index 0000000..089dd82
---- /dev/null
-+++ b/arch/hexagon/include/asm/suspend.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_SUSPEND_H
-+#define _ASM_SUSPEND_H
-+
-+static inline int arch_prepare_suspend(void)
-+{
-+	return 0;
-+}
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/swab.h b/arch/hexagon/include/asm/swab.h
-new file mode 100644
-index 0000000..99cf0be
---- /dev/null
-+++ b/arch/hexagon/include/asm/swab.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_SWAB_H
-+#define _ASM_SWAB_H
-+
-+#define __SWAB_64_THRU_32__
-+
-+#endif
-diff --git a/arch/hexagon/include/asm/timex.h b/arch/hexagon/include/asm/timex.h
-new file mode 100644
-index 0000000..09cd843
---- /dev/null
-+++ b/arch/hexagon/include/asm/timex.h
-@@ -0,0 +1,37 @@
-+/*
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_TIMEX_H
-+#define _ASM_TIMEX_H
-+
-+#include <asm-generic/timex.h>
-+#include <asm/timer-regs.h>
-+
-+/* Using TCX0 as our clock.  CLOCK_TICK_RATE scheduled to be removed. */
-+#define CLOCK_TICK_RATE              TCX0_CLK_RATE
-+
-+#define ARCH_HAS_READ_CURRENT_TIMER
-+
-+static inline int read_current_timer(unsigned long *timer_val)
-+{
-+	*timer_val = (unsigned long) __vmgettime();
-+	return 0;
-+}
-+
-+#endif
-+
 -- 
 1.7.1
 
