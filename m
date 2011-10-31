@@ -1,43 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933932Ab1JaSai (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 14:30:38 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56461 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933659Ab1JaSah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 14:30:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1319811801-1725-1-git-send-email-penberg@kernel.org>
-References: <1319811801-1725-1-git-send-email-penberg@kernel.org>
-Date: Mon, 31 Oct 2011 11:30:37 -0700
-X-Google-Sender-Auth: FQLxcJFh3JYs5SHmBBln03Mh6Hk
-Message-ID: <CAE9FiQXB6T870YnRBeQ1-8H6XxRteLpEuaSDWO1KVZuLRk0B0A@mail.gmail.com>
-Subject: Re: [RFC/PATCH 1/7] x86, mm: Use MAX_DMA_PFN for ZONE_DMA on 32-bit
-From: Yinghai Lu <yinghai@kernel.org>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        David Rientjes <rientjes@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933906Ab1JaSeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 14:34:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:54577 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932711Ab1JaSeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 14:34:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="69708458"
+From: <tony.luck@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Arjan van de Ven" <arjan@linux.intel.com>
+Subject: [PATCH] Stop mce-inject writing to mce_chrdev_ops
+Date: Mon, 31 Oct 2011 11:34:21 -0700
+Message-Id: <4eaeea2d17118d40b4@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 7:23 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> Use MAX_DMA_PFN which represents the 16 MB ISA DMA limit on 32-bit x86 just
-> like we do on 64-bit.
->
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Arjan would like to make struct file_operations const, but mce-inject
+directly writes to the mce_chrdev_ops to install its write handler.
+In an ideal world mce-inject would have its own character device, but
+we have a sizable legacy of test scripts that hardwire "/dev/mcelog",
+so it would be painful to switch to a separate device now. Instead,
+this patch switches to a stub function in the mce code, with a
+registration helper that mce-inject can call when it is loaded.
 
-for this patch set:
+Note that this would also allow for a sane process to allow mce-inject
+to be unloaded again (with an unregister function, and appropriate
+module_{get,put}() calls), but that is left for potential future patches.
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 
-Thanks
+---
 
-Yinghai
+diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
+index c9321f3..22cc0eb 100644
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -201,7 +201,10 @@ int mce_notify_irq(void);
+ void mce_notify_process(void);
+ 
+ DECLARE_PER_CPU(struct mce, injectm);
+-extern struct file_operations mce_chrdev_ops;
++
++extern void register_mce_write_hook(ssize_t (*)(struct file *filp,
++				    const char __user *ubuf,
++				    size_t usize, loff_t *off));
+ 
+ /*
+  * Exception handler
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+index 0ed633c..a18c2c8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
+@@ -215,7 +215,7 @@ static int inject_init(void)
+ 	if (!alloc_cpumask_var(&mce_inject_cpumask, GFP_KERNEL))
+ 		return -ENOMEM;
+ 	printk(KERN_INFO "Machine check injector initialized\n");
+-	mce_chrdev_ops.write = mce_write;
++	register_mce_write_hook(mce_write);
+ 	register_die_notifier(&mce_raise_nb);
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 08363b0..e24468d 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -1628,16 +1628,35 @@ static long mce_chrdev_ioctl(struct file *f, unsigned int cmd,
+ 	}
+ }
+ 
++static ssize_t (*mce_write)(struct file *filp, const char __user *ubuf,
++                         size_t usize, loff_t *off);
++
++void register_mce_write_hook(ssize_t (*fn)(struct file *filp, const char __user *ubuf,
++                         size_t usize, loff_t *off))
++{
++	mce_write = fn;
++}
++EXPORT_SYMBOL_GPL(register_mce_write_hook);
++
++ssize_t mce_chrdev_write(struct file *filp, const char __user *ubuf,
++                         size_t usize, loff_t *off)
++{
++	if (mce_write)
++		return mce_write(filp, ubuf, usize, off);
++	else
++		return -ENODEV;
++}
++
+ /* Modified in mce-inject.c, so not static or const */
+ struct file_operations mce_chrdev_ops = {
+ 	.open			= mce_chrdev_open,
+ 	.release		= mce_chrdev_release,
+ 	.read			= mce_chrdev_read,
++	.write			= mce_chrdev_write,
+ 	.poll			= mce_chrdev_poll,
+ 	.unlocked_ioctl		= mce_chrdev_ioctl,
+ 	.llseek			= no_llseek,
+ };
+-EXPORT_SYMBOL_GPL(mce_chrdev_ops);
+ 
+ static struct miscdevice mce_chrdev_device = {
+ 	MISC_MCELOG_MINOR,
