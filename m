@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933328Ab1JaROv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 13:14:51 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:51998 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932854Ab1JaROu (ORCPT
+	id S933340Ab1JaRRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:17:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56688 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab1JaRRR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 13:14:50 -0400
-Subject: [RFC PATCH v3 10/10] fadump: Introduce config option for firmware
-	assisted dump feature
-To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: Haren Myneni <hbabu@us.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Amerigo Wang <amwang@redhat.com>, Milton Miller <miltonm@bga.com>,
-        Anton Blanchard <anton@samba.org>
-Date: Mon, 31 Oct 2011 22:43:54 +0530
-Message-ID: <20111031171354.12259.92108.stgit@mars.in.ibm.com>
-In-Reply-To: <20111031170200.12259.27663.stgit@mars.in.ibm.com>
-References: <20111031170200.12259.27663.stgit@mars.in.ibm.com>
-User-Agent: StGit/0.15-1-ged5e-dirty
+	Mon, 31 Oct 2011 13:17:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11103107-1396-0000-0000-0000001DCB19
+In-Reply-To: <4EAED00C.3010908@xenotime.net>
+References: <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au>
+ <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au>
+ <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au>
+ <20110106000157.GA16089@gondor.apana.org.au> <20110315145940.GA15373@gondor.apana.org.au>
+ <20110520235409.GA1722@gondor.apana.org.au> <20110724011752.GA14373@gondor.apana.org.au>
+ <20111031040952.GA19659@gondor.apana.org.au> <4EAED00C.3010908@xenotime.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 31 Oct 2011 10:16:55 -0700
+X-Google-Sender-Auth: 7R0oUYUhmVbyH2fD7oY5ClphLMA
+Message-ID: <CA+55aFw=quU1bVR_AZ0OBW4DkPWMfxvWu7smx9VcDe81vaGu9Q@mail.gmail.com>
+Subject: Re: Crypto Update for 3.2
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+On Mon, Oct 31, 2011 at 9:42 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>
+> Actually adds "select NET", a reverse dependency.  :(
+>
+> Linus was quite vocal about not allowing MD to select BLOCK.
+> See https://lkml.org/lkml/2011/8/10/527
+> and https://lkml.org/lkml/2011/8/10/533
+>
+> To me this is very similar.
 
-This patch introduces a new config option CONFIG_FA_DUMP for firmware
-assisted dump feature on Powerpc (ppc64) architecture.
+I do agree.
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
----
- arch/powerpc/Kconfig |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+"select" makes sense when it's a way for a user to not have to care
+about some small helper thing that is really not obvious for a casual
+user.
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 6926b61..7ce773c 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -379,6 +379,19 @@ config PHYP_DUMP
- 
- 	  If unsure, say "N"
- 
-+config FA_DUMP
-+	bool "Firmware-assisted dump"
-+	depends on PPC64 && PPC_RTAS && CRASH_DUMP
-+	help
-+	  A robust mechanism to get reliable kernel crash dump with
-+	  assistance from firmware. This approach does not use kexec,
-+	  instead firmware assists in booting the kdump kernel
-+	  while preserving memory contents. Firmware-assisted dump
-+	  is meant to be a kdump replacement offering robustness and
-+	  speed not possible without system firmware assistance.
-+
-+	  If unsure, say "N"
-+
- config PPCBUG_NVRAM
- 	bool "Enable reading PPCBUG NVRAM during boot" if PPLUS || LOPEC
- 	default y if PPC_PREP
+But darn it, if somebody has said "no networking", then some random
+small feature shouldn't suddenly select it.
 
+IOW, it's about "relative importance". We should use "select" when
+some feature that should be user-visible selects some details. And we
+should use "depends on" when there's a major subsystem that some small
+detail depends on.
+
+So classic and obvious uses where "select" is appropriate is when a
+driver needs some helper library to work (eg "select FW_LOADER" or
+"select CRC32").
+
+And a classic and obvious case where "depends on" is the appropriate
+choice is when it depends on a major subsystem ("depends on PCI" or
+"depends on USB" or "depends on X86").
+
+And I think "NET" definitely falls into that second category - exactly
+the same way "BLOCK" fell into it. You don't "select" major subsystems
+- if somebody turned off the subsystem, we turn off the stuff that
+depends on it.
+
+(Of course, in reality, pretty much nobody turns off NET, I suspect.
+But if some embedded place really doesn't want it, then damn it, we
+shouldn't ask about the odd crypto user interfaces, because they
+really aren't major enough, and the embedded platform is clearly
+trying very hard to run small).
+
+                        Linus
