@@ -1,314 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab1JaBNU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 21:13:20 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2505 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab1JaBNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 21:13:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,428,1315206000"; 
-   d="scan'208";a="79502251"
-Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
-From: Shaohua Li <shaohua.li@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "aarcange@redhat.com" <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        mel <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111029000624.GA1261@barrios-laptop.redhat.com>
-References: <1319511580.22361.141.camel@sli10-conroe>
-	 <20111029000624.GA1261@barrios-laptop.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Oct 2011 09:21:28 +0800
-Message-ID: <1320024088.22361.176.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753494Ab1JaB34 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 21:29:56 -0400
+Received: from dalsmrelay2.nai.com ([205.227.136.216]:37315 "EHLO
+	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab1JaB3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 21:29:54 -0400
+Message-ID: <4EADF9F2.7040001@snapgear.com>
+Date: Mon, 31 Oct 2011 11:29:22 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: Re: [PATCH 00/27 v7] m68k: Convert to genirq
+References: <1319978915-10933-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1319978915-10933-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-29 at 08:06 +0800, Minchan Kim wrote:
-> On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
-> > With current logic, if page reclaim finds a huge page, it will just reclaim
-> > the head page and leave tail pages reclaimed later. Let's take an example,
-> > lru list has page A and B, page A is huge page:
-> > 1. page A is isolated
-> > 2. page B is isolated
-> > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
-> > page A+1, page A+2, ... are added to lru list.
-> > 4. shrink_page_list() adds page B to swap page cache.
-> > 5. page A and B is written out and reclaimed.
-> > 6. page A+1, A+2 ... is isolated and reclaimed later.
-> > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
-> >
-> > We expected the whole huge page A is reclaimed in the meantime, so
-> > the order is A, A+1, ... A+HPAGE_PMD_NR-1, B, ....
-> >
-> > With this patch, we do huge page split just after the head page is isolated
-> > for inactive lru list, so the tail pages will be reclaimed immediately.
-> >
-> > In a test, a range of anonymous memory is written and will trigger swap.
-> > Without the patch:
-> > #cat /proc/vmstat|grep thp
-> > thp_fault_alloc 451
-> > thp_fault_fallback 0
-> > thp_collapse_alloc 0
-> > thp_collapse_alloc_failed 0
-> > thp_split 238
-> >
-> > With the patch:
-> > #cat /proc/vmstat|grep thp
-> > thp_fault_alloc 450
-> > thp_fault_fallback 1
-> > thp_collapse_alloc 0
-> > thp_collapse_alloc_failed 0
-> > thp_split 103
-> >
-> > So the thp_split number is reduced a lot, though there is one extra
-> > thp_fault_fallback.
-> >
-> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > ---
-> >  include/linux/memcontrol.h |    3 +-
-> >  mm/memcontrol.c            |   12 +++++++++--
-> >  mm/vmscan.c                |   49 ++++++++++++++++++++++++++++++++++-----------
-> >  3 files changed, 50 insertions(+), 14 deletions(-)
-> >
-> > Index: linux/mm/vmscan.c
-> > ===================================================================
-> > --- linux.orig/mm/vmscan.c    2011-10-25 08:36:08.000000000 +0800
-> > +++ linux/mm/vmscan.c 2011-10-25 09:51:44.000000000 +0800
-> > @@ -1076,7 +1076,8 @@ int __isolate_lru_page(struct page *page
-> >   */
-> >  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
-> >               struct list_head *src, struct list_head *dst,
-> > -             unsigned long *scanned, int order, int mode, int file)
-> > +             unsigned long *scanned, int order, int mode, int file,
-> > +             struct page **split_page)
-> >  {
-> >       unsigned long nr_taken = 0;
-> >       unsigned long nr_lumpy_taken = 0;
-> > @@ -1100,7 +1101,12 @@ static unsigned long isolate_lru_pages(u
-> >               case 0:
-> >                       list_move(&page->lru, dst);
-> >                       mem_cgroup_del_lru(page);
-> > -                     nr_taken += hpage_nr_pages(page);
-> > +                     if (PageTransHuge(page) && split_page) {
-> > +                             nr_taken++;
-> > +                             *split_page = page;
-> > +                             goto out;
-> > +                     } else
-> > +                             nr_taken += hpage_nr_pages(page);
-> >                       break;
-> >
-> >               case -EBUSY:
-> > @@ -1158,11 +1164,16 @@ static unsigned long isolate_lru_pages(u
-> >                       if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-> >                               list_move(&cursor_page->lru, dst);
-> >                               mem_cgroup_del_lru(cursor_page);
-> > -                             nr_taken += hpage_nr_pages(page);
-> >                               nr_lumpy_taken++;
-> >                               if (PageDirty(cursor_page))
-> >                                       nr_lumpy_dirty++;
-> >                               scan++;
-> > +                             if (PageTransHuge(page) && split_page) {
-> > +                                     nr_taken++;
-> > +                                     *split_page = page;
-> > +                                     goto out;
-> > +                             } else
-> > +                                     nr_taken += hpage_nr_pages(page);
-> >                       } else {
-> >                               /*
-> >                                * Check if the page is freed already.
-> > @@ -1188,6 +1199,7 @@ static unsigned long isolate_lru_pages(u
-> >                       nr_lumpy_failed++;
-> >       }
-> >
-> > +out:
-> >       *scanned = scan;
-> >
-> >       trace_mm_vmscan_lru_isolate(order,
-> > @@ -1202,7 +1214,8 @@ static unsigned long isolate_pages_globa
-> >                                       struct list_head *dst,
-> >                                       unsigned long *scanned, int order,
-> >                                       int mode, struct zone *z,
-> > -                                     int active, int file)
-> > +                                     int active, int file,
-> > +                                     struct page **split_page)
-> >  {
-> >       int lru = LRU_BASE;
-> >       if (active)
-> > @@ -1210,7 +1223,7 @@ static unsigned long isolate_pages_globa
-> >       if (file)
-> >               lru += LRU_FILE;
-> >       return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
-> > -                                                             mode, file);
-> > +                                                     mode, file, split_page);
-> >  }
-> >
-> >  /*
-> > @@ -1444,10 +1457,12 @@ shrink_inactive_list(unsigned long nr_to
-> >  {
-> >       LIST_HEAD(page_list);
-> >       unsigned long nr_scanned;
-> > +     unsigned long total_scanned = 0;
-> >       unsigned long nr_reclaimed = 0;
-> >       unsigned long nr_taken;
-> >       unsigned long nr_anon;
-> >       unsigned long nr_file;
-> > +     struct page *split_page;
-> >
-> >       while (unlikely(too_many_isolated(zone, file, sc))) {
-> >               congestion_wait(BLK_RW_ASYNC, HZ/10);
-> > @@ -1458,16 +1473,19 @@ shrink_inactive_list(unsigned long nr_to
-> >       }
-> >
-> >       set_reclaim_mode(priority, sc, false);
-> > +again:
-> >       lru_add_drain();
-> > +     split_page = NULL;
-> >       spin_lock_irq(&zone->lru_lock);
-> >
-> >       if (scanning_global_lru(sc)) {
-> > -             nr_taken = isolate_pages_global(nr_to_scan,
-> > +             nr_taken = isolate_pages_global(nr_to_scan - total_scanned,
-> >                       &page_list, &nr_scanned, sc->order,
-> >                       sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
-> >                                       ISOLATE_BOTH : ISOLATE_INACTIVE,
-> > -                     zone, 0, file);
-> > +                     zone, 0, file, &split_page);
-> >               zone->pages_scanned += nr_scanned;
-> > +             total_scanned += nr_scanned;
-> >               if (current_is_kswapd())
-> >                       __count_zone_vm_events(PGSCAN_KSWAPD, zone,
-> >                                              nr_scanned);
-> > @@ -1475,12 +1493,13 @@ shrink_inactive_list(unsigned long nr_to
-> >                       __count_zone_vm_events(PGSCAN_DIRECT, zone,
-> >                                              nr_scanned);
-> >       } else {
-> > -             nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
-> > +             nr_taken = mem_cgroup_isolate_pages(nr_to_scan - total_scanned,
-> >                       &page_list, &nr_scanned, sc->order,
-> >                       sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
-> >                                       ISOLATE_BOTH : ISOLATE_INACTIVE,
-> >                       zone, sc->mem_cgroup,
-> > -                     0, file);
-> > +                     0, file, &split_page);
-> > +             total_scanned += nr_scanned;
-> >               /*
-> >                * mem_cgroup_isolate_pages() keeps track of
-> >                * scanned pages on its own.
-> > @@ -1491,11 +1510,19 @@ shrink_inactive_list(unsigned long nr_to
-> >               spin_unlock_irq(&zone->lru_lock);
-> >               return 0;
-> >       }
-> > +     if (split_page && total_scanned < nr_to_scan) {
-> > +             spin_unlock_irq(&zone->lru_lock);
-> > +             split_huge_page(split_page);
-> > +             goto again;
-> > +     }
-> >
-> >       update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
-> >
-> >       spin_unlock_irq(&zone->lru_lock);
-> >
-> > +     if (split_page)
-> > +             split_huge_page(split_page);
-> > +
-> >       nr_reclaimed = shrink_page_list(&page_list, zone, sc);
-> >
-> >       /* Check if we should syncronously wait for writeback */
-> > @@ -1589,13 +1616,13 @@ static void shrink_active_list(unsigned
-> >               nr_taken = isolate_pages_global(nr_pages, &l_hold,
-> >                                               &pgscanned, sc->order,
-> >                                               ISOLATE_ACTIVE, zone,
-> > -                                             1, file);
-> > +                                             1, file, NULL);
-> >               zone->pages_scanned += pgscanned;
-> >       } else {
-> >               nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
-> >                                               &pgscanned, sc->order,
-> >                                               ISOLATE_ACTIVE, zone,
-> > -                                             sc->mem_cgroup, 1, file);
-> > +                                             sc->mem_cgroup, 1, file, NULL);
-> >               /*
-> >                * mem_cgroup_isolate_pages() keeps track of
-> >                * scanned pages on its own.
-> > Index: linux/mm/memcontrol.c
-> > ===================================================================
-> > --- linux.orig/mm/memcontrol.c        2011-10-25 08:36:08.000000000 +0800
-> > +++ linux/mm/memcontrol.c     2011-10-25 09:33:51.000000000 +0800
-> > @@ -1187,7 +1187,8 @@ unsigned long mem_cgroup_isolate_pages(u
-> >                                       unsigned long *scanned, int order,
-> >                                       int mode, struct zone *z,
-> >                                       struct mem_cgroup *mem_cont,
-> > -                                     int active, int file)
-> > +                                     int active, int file,
-> > +                                     struct page **split_page)
-> >  {
-> >       unsigned long nr_taken = 0;
-> >       struct page *page;
-> > @@ -1224,7 +1225,13 @@ unsigned long mem_cgroup_isolate_pages(u
-> >               case 0:
-> >                       list_move(&page->lru, dst);
-> >                       mem_cgroup_del_lru(page);
-> > -                     nr_taken += hpage_nr_pages(page);
-> > +                     if (PageTransHuge(page) && split_page) {
-> > +                             nr_taken++;
-> > +                             *split_page = page;
-> > +                             goto out;
-> > +                     } else
-> > +                             nr_taken += hpage_nr_pages(page);
-> > +
-> >                       break;
-> >               case -EBUSY:
-> >                       /* we don't affect global LRU but rotate in our LRU */
-> > @@ -1235,6 +1242,7 @@ unsigned long mem_cgroup_isolate_pages(u
-> >               }
-> >       }
-> >
-> > +out:
-> >       *scanned = scan;
-> >
-> >       trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
-> > Index: linux/include/linux/memcontrol.h
-> > ===================================================================
-> > --- linux.orig/include/linux/memcontrol.h     2011-10-25 08:36:08.000000000 +0800
-> > +++ linux/include/linux/memcontrol.h  2011-10-25 09:33:51.000000000 +0800
-> > @@ -37,7 +37,8 @@ extern unsigned long mem_cgroup_isolate_
-> >                                       unsigned long *scanned, int order,
-> >                                       int mode, struct zone *z,
-> >                                       struct mem_cgroup *mem_cont,
-> > -                                     int active, int file);
-> > +                                     int active, int file,
-> > +                                     struct page **split_page);
-> >
-> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
-> >  /*
-> >
-> >
-> 
-> I saw the code. my concern is your patch could make unnecessary split of THP.
-> 
-> When we isolates page, we can't know whether it's working set or not.
-> So split should happen after we judge it's working set page.
-yes, but since memory is big currently, it's unlikely the isolated page
-get accessed in the window. And I only did the split in
-shrink_inactive_list, not in active list.
-And THP has mechanism to collapse small pages to huge page later.
+Hi Geert,
 
-> If you really want to merge this patch, I suggest that
-> we can handle it in shrink_page_list step, not isolation step.
-> 
-> My totally untested code which is just to show the concept is as follows,
-I did consider this option before. It has its problem too. The isolation
-can isolate several huge page one time. And then later shrink_page_list
-can swap several huge page one time, which is unfortunate. I'm pretty
-sure this method can't reduce the thp_split count in my test. It could
-be helpful when pages are heavily rotated, but this means page reclaim
-is already broken, which is rare case.
+On 30/10/11 22:48, Geert Uytterhoeven wrote:
+> This patch series converts the m68k/mmu (nommu was converted before)
+> architecture to the generic hardirq framework.
+>
+>    - [01/27] ide-{cd,floppy,tape}: Do not include<linux/irq.h>
+>    - [02/27] m68k/irq: Rename irq_controller to irq_chip
+>    - [03/27] m68k/irq: Kill irq_node_t typedef, always use struct irq_node
+>    - [04/27] m68k/irq: Rename irq_node to irq_data
+>    - [05/27] m68k/irq: Switch irq_chip methods to "struct irq_data *data"
+>    - [06/27] m68k/irq: Rename setup_irq() to m68k_setup_irq() and make it static
+>    - [07/27] m68k/irq: Extract irq_set_chip()
+>    - [08/27] m68k/irq: Add m68k_setup_irq_controller()
+>    - [09/27] m68k/irq: Rename {,__}m68k_handle_int()
+>    - [10/27] m68k/irq: Remove obsolete IRQ_FLG_* users
+>    - [11/27] m68k/irq: Add genirq support
+>    - [12/27] m68k/atari: Convert Atari to genirq
+>    - [13/27] m68k/atari: Remove code and comments about different irq types
+>    - [14/27] m68k/amiga: Refactor amiints.c
+>    - [15/27] m68k/amiga: Convert Amiga to genirq
+>    - [16/27] m68k/amiga: Optimize interrupts using chain handlers
+>    - [17/27] m68k/mac: Convert Mac to genirq
+>    - [18/27] m68k/mac: Optimize interrupts using chain handlers
+>    - [19/27] m68k/hp300: Convert HP9000/300 and HP9000/400 to genirq
+>    - [20/27] m68k/vme: Convert VME to genirq
+>    - [21/27] m68k/apollo: Convert Apollo to genirq
+>    - [22/27] m68k/sun3: Use the kstat_irqs_cpu() wrapper
+>    - [23/27] m68k/sun3: Convert Sun3/3x to genirq
+>    - [24/27] m68k/q40: Convert Q40/Q60 to genirq
+>    - [25/27] m68k/irq: Remove obsolete m68k irq framework
+>    - [26/27] m68k/irq: Remove obsolete support for user vector interrupt fixups
+>    - [27/27] m68k/mac: Remove mac_irq_{en,dis}able() wrappers
+>
+> Changes in v7:
+>    - Rebased after arch/m68k/Kconfig restructuring:
+>        - The temporary USE_GENERIC_HARDIRQS is now in arch/m68k/Kconfig,
+>          depending on MMU,
+>    - Rebased after arch/m68k/kernel/Makefile merge,
+>    - Split off IRQ_FLG_* removal in separate commits:
+>        - Postpone removals in drivers that should go through the respective
+>          driver trees (net/scsi/staging/serial),
+>        - Postpone final removal to v3.3,
+>    - Dropped (went in via another tree):
+>        - genirq: Add missing "else" in irq_shutdown(),
+>        - keyboard: Do not include<linux/irq.>,
+>    - Added Patch 27 ("m68k/mac: Remove mac_irq_{en,dis}able() wrappers")
+>
+> I added this to the m68k for-next and for-3.2 branches.
+>
+> I'll rebase it once more on top of v3.2-rc1 once that comes out (currently
+> it's based on a random base point).
 
+This all looks really good.
+
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+
+Regards
+Greg
+
+
+
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
