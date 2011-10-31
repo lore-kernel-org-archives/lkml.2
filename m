@@ -1,218 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab1JaEnh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 00:43:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49660 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751259Ab1JaEnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 00:43:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="69475832"
-Subject: [GIT PULL] slave-dmaengine updates
-From: Vinod Koul <vinod.koul@intel.com>
-To: Linus <torvalds@linux-foundation.org>
-Cc: Dan <dan.j.williams@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Oct 2011 10:10:17 +0530
-Message-ID: <1320036017.32205.11.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1752210Ab1JaEzM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 00:55:12 -0400
+Received: from adsl-99-136-217-124.dsl.sfldmi.sbcglobal.net ([99.136.217.124]:54243
+	"EHLO hytron.hytron.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab1JaEzK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 00:55:10 -0400
+Date: Mon, 31 Oct 2011 00:51:46 -0400 (EDT)
+From: Darko <darko@hytron.net>
+To: Yongqiang Yang <xiaoqiangnk@gmail.com>
+cc: NeilBrown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk failure
+In-Reply-To: <CAGBYx2b62skKsU8c2A8GepVQxj+7_NJSFTDFwJ+9cU8jstU_6A@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1110310045120.1603@hytron.hytron.net>
+References: <Pine.LNX.4.64.1110300257510.32513@hytron.hytron.net>
+ <20111030190548.2febafc0@notabene.brown> <Pine.LNX.4.64.1110301833180.1168@hytron.hytron.net>
+ <CAGBYx2b62skKsU8c2A8GepVQxj+7_NJSFTDFwJ+9cU8jstU_6A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-2006745895-513396609-1320036706=:1603"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Here is the slave-dmaengine updates which include consolidation of
-samsung dma drivers from arm drivers to use dmaengine, enhancements and
-fixes to amba-pl08x driver along with other usual fixes.
+---2006745895-513396609-1320036706=:1603
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Since I have not been able to get my key signed with enough people yet,
-so not sending this with key. Hopefully next time it would be a signed
-message which you can verify. Also my tree is on infradead servers (same
-one you pulled last time), let me know if you are okay with this server
-or i should consider moving it.
+Hi Yongqiang,
 
-Thanks
-~Vinod
+I am using kernel version 3.0.8. Looking through the file super.c, the=20
+file already has the code mentioned on the web. I also noticed the date of=
+=20
+the post (http://lists.openwall.net/linux-ext4/2011/03/29/5) is back from=
+=20
+March of 2011. I think the bug I reported here was not fixed by that patch=
+=20
+since the kernel version I am using is much newer than March 2011.
 
-The following changes since commit c6a389f123b9f68d605bb7e0f9b32ec1e3e14132:
-  Linus Torvalds (1):
-        Linux 3.1-rc4
+I am not sure if I understand what you mean by "commit 0449641130 ext4"?
 
-are available in the git repository at:
+Thanks,
 
-  git://git.infradead.org/users/vkoul/slave-dma.git next
-
-Axel Lin (1):
-      dmaengine i.MX DMA/SDMA: add missing include of linux/module.h
-
-Barry Song (1):
-      dmaengine: delete redundant chan_id and chancnt initialization in dma drivers
-
-Boojin Kim (16):
-      DMA: PL330: Add support runtime PM for PL330 DMAC
-      DMA: PL330: Update PL330 DMA API driver
-      DMA: PL330: Support DMA_SLAVE_CONFIG command
-      DMA: PL330: Remove the start operation for handling DMA_TERMINATE_ALL command
-      DMA: PL330: Add DMA_CYCLIC capability
-      ARM: SAMSUNG: Update to use PL330-DMA driver
-      ARM: SAMSUNG: Add common DMA operations
-      ARM: EXYNOS4: Use generic DMA PL330 driver
-      ARM: S5PV210: Use generic DMA PL330 driver
-      ARM: S5PC100: Use generic DMA PL330 driver
-      ARM: S5P64X0: Use generic DMA PL330 driver
-      ARM: SAMSUNG: Remove S3C-PL330-DMA driver
-      spi/s3c64xx: Add support DMA engine API
-      spi/s3c64xx: Merge dma control code
-      ASoC: Samsung: Update DMA interface
-      ARM: SAMSUNG: Remove Samsung specific enum type for dma direction
-
-Dan Carpenter (1):
-      dma/timberdale: free_irq() on an error path
-
-Guennadi Liakhovetski (4):
-      dmatest: make dmatest threads freezable
-      serial: sh-sci: don't filter on DMA device, use only channel ID
-      dmaengine: shdma: protect against the IRQ handler
-      dma: shdma: transfer based runtime PM
-
-Lothar Waßmann (1):
-      mxs-dma: enable CLKGATE before accessing registers
-
-Mika Westerberg (1):
-      dmaengine/ep93xx_dma: add module.h include
-
-Nicolas Ferre (4):
-      dmaengine: at_hdmac: replace spin_lock* with irqsave variants
-      dmaengine: at_hdmac: improve power management routines
-      dmaengine: at_hdmac: add wrappers for testing channel state
-      dmaengine: at_hdmac: fix way to specify cyclic capability
-
-Per Forlin (4):
-      dmaengine/ste_dma40: add missing kernel doc for pending_queue
-      dmaengine/ste_dma40: remove duplicate call to d40_pool_lli_free().
-      dmaengine/ste_dma40: fix Oops due to double free of client descriptor
-      dmaengine/ste_dma40: fix memory leak due to prepared descriptors
-
-Russell King - ARM Linux (1):
-      dmaengine: amba-pl08x: make filter check that the channel is owned by pl08x
-
-Sascha Hauer (3):
-      dmaengine i.MX SDMA: lock channel 0
-      dmaengine i.MX SDMA: set firmware scripts addresses to negative value initially
-      dmaengine i.MX SDMA: use request_firmware_nowait
-
-Tomoya MORINAGA (2):
-      pch_dma: Fix suspend issue
-      pch_dma: Reduce wasting memory
-
-Vinod Koul (5):
-      dmaengine: add helper function for slave_single
-      dmaengine: remove struct scatterlist for header
-      Merge branch 'next' into v3.1-rc4
-      Merge branch 'samsung_dma' into next
-      dmaengine: mid_dma: mask_peripheral_interrupt only when dmac is idle
-
-Viresh Kumar (21):
-      dmaengine/dmatest: Terminate transfers on all channels in case of error or exit
-      ARM: asm/pl080.h: Protect against multiple inclusion of header file
-      dmaengine/amba-pl08x: Resolve formatting issues
-      dmaengine/amba-pl08x: Rearrange inclusion of header files in ascending order
-      dmaengine/amba-pl08x: pass (*ptr) to sizeof() instead of (struct xyz)
-      dmaengine/amba-pl08x: Complete doc comment for struct pl08x_txd
-      dmaengine/amba-pl08x: Remove redundant comment and rewrite original
-      dmaengine/amba-pl08x: Changing few prints to dev_dbg from dev_info
-      dmaengine/amba-pl08x: support runtime PM
-      dmaengine/amba-pl08x: Simplify pl08x_ensure_on()
-      dmaengine/amba-pl08x: No need to check "ch->signal < 0"
-      dmaengine/amba-pl08x: Schedule tasklet in case of error interrupt
-      dmaengine/amba-pl08x: Get rid of pl08x_pre_boundary()
-      dmaengine/amba-pl08x: max_bytes_per_lli is TRANSFER_SIZE * src_width (not MIN(width))
-      dmaengine/amba-pl08x: Add prep_single_byte_llis() routine
-      dmaengine/amba-pl08x: Align lli_len to max(src.width, dst.width)
-      dmaengine/amba-pl08x: Choose peripheral bus as master bus
-      dmaengine/amba-pl08x: Pass flow controller information with slave channel data
-      dmaengine/amba-pl08x: Call pl08x_free_txd() instead of calling kfree() directly
-      dmaengine/amba-pl08x: Add support for sg len greater than one for slave transfers
-      dmaengine/amba-pl08x: Check txd->llis_va before freeing dma_pool
-
- arch/arm/include/asm/hardware/pl080.h              |    4 +
- arch/arm/mach-exynos4/Kconfig                      |    2 +-
- arch/arm/mach-exynos4/clock.c                      |   11 +-
- arch/arm/mach-exynos4/dma.c                        |  299 +++--
- arch/arm/mach-exynos4/include/mach/dma.h           |    4 +-
- arch/arm/mach-s3c2410/include/mach/dma.h           |   20 +-
- arch/arm/mach-s3c2412/dma.c                        |    4 +-
- arch/arm/mach-s3c64xx/dma.c                        |   10 +-
- arch/arm/mach-s3c64xx/include/mach/dma.h           |    8 +-
- arch/arm/mach-s5p64x0/Kconfig                      |    4 +-
- arch/arm/mach-s5p64x0/clock-s5p6440.c              |    9 +-
- arch/arm/mach-s5p64x0/clock-s5p6450.c              |    9 +-
- arch/arm/mach-s5p64x0/dma.c                        |  273 +++--
- arch/arm/mach-s5p64x0/include/mach/dma.h           |    4 +-
- arch/arm/mach-s5pc100/Kconfig                      |    2 +-
- arch/arm/mach-s5pc100/clock.c                      |   11 +-
- arch/arm/mach-s5pc100/dma.c                        |  323 ++++--
- arch/arm/mach-s5pc100/include/mach/dma.h           |    4 +-
- arch/arm/mach-s5pv210/Kconfig                      |    2 +-
- arch/arm/mach-s5pv210/clock.c                      |   10 +-
- arch/arm/mach-s5pv210/dma.c                        |  316 ++++--
- arch/arm/mach-s5pv210/include/mach/dma.h           |    4 +-
- arch/arm/plat-s3c24xx/dma.c                        |   10 +-
- arch/arm/plat-samsung/Kconfig                      |    9 +-
- arch/arm/plat-samsung/Makefile                     |    4 +-
- arch/arm/plat-samsung/dma-ops.c                    |  131 ++
- arch/arm/plat-samsung/include/plat/dma-ops.h       |   63 +
- .../include/plat/{s3c-dma-pl330.h => dma-pl330.h}  |   24 +-
- arch/arm/plat-samsung/include/plat/dma-s3c24xx.h   |    2 +-
- arch/arm/plat-samsung/include/plat/dma.h           |   10 +-
- .../plat-samsung/include/plat/s3c-pl330-pdata.h    |   32 -
- arch/arm/plat-samsung/s3c-dma-ops.c                |  130 ++
- arch/arm/plat-samsung/s3c-pl330.c                  | 1244
---------------------
- drivers/dma/Kconfig                                |    3 +-
- drivers/dma/amba-pl08x.c                           |  640 +++++-----
- drivers/dma/at_hdmac.c                             |  164 ++-
- drivers/dma/at_hdmac_regs.h                        |   24 +
- drivers/dma/dmatest.c                              |   23 +-
- drivers/dma/dw_dmac.c                              |    5 +-
- drivers/dma/ep93xx_dma.c                           |    1 +
- drivers/dma/imx-dma.c                              |    1 +
- drivers/dma/imx-sdma.c                             |   48 +-
- drivers/dma/intel_mid_dma.c                        |    9 +-
- drivers/dma/mpc512x_dma.c                          |    1 -
- drivers/dma/mxs-dma.c                              |   45 +-
- drivers/dma/pch_dma.c                              |    7 +-
- drivers/dma/pl330.c                                |  231 ++++-
- drivers/dma/shdma.c                                |  129 ++-
- drivers/dma/shdma.h                                |    7 +
- drivers/dma/ste_dma40.c                            |   42 +-
- drivers/dma/timb_dma.c                             |    5 +-
- drivers/mmc/host/s3cmci.c                          |    6 +-
- drivers/spi/spi-s3c64xx.c                          |  175 ++--
- drivers/tty/serial/sh-sci.c                        |   25 +-
- include/linux/amba/pl08x.h                         |   30 +-
- include/linux/amba/pl330.h                         |    6 +-
- include/linux/dmaengine.h                          |   13 +-
- include/linux/serial_sci.h                         |    2 -
- sound/soc/samsung/ac97.c                           |   10 +-
- sound/soc/samsung/dma.c                            |  146 +--
- sound/soc/samsung/dma.h                            |    4 +-
- 61 files changed, 2331 insertions(+), 2463 deletions(-)
- create mode 100644 arch/arm/plat-samsung/dma-ops.c
- create mode 100644 arch/arm/plat-samsung/include/plat/dma-ops.h
- rename arch/arm/plat-samsung/include/plat/{s3c-dma-pl330.h =>
-dma-pl330.h} (84%)
- delete mode 100644 arch/arm/plat-samsung/include/plat/s3c-pl330-pdata.h
- create mode 100644 arch/arm/plat-samsung/s3c-dma-ops.c
- delete mode 100644 arch/arm/plat-samsung/s3c-pl330.c
+Darko
 
 
--- 
-~Vinod
+On Mon, 31 Oct 2011, Yongqiang Yang wrote:
+
+> Date: Mon, 31 Oct 2011 12:25:18 +0800
+> From: Yongqiang Yang <xiaoqiangnk@gmail.com>
+> To: Darko <darko@hytron.net>
+> Cc: NeilBrown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+>     linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+> Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk fail=
+ure
+>=20
+> Hi Darko,
+>
+> The bug has been fixed by commit 0449641130 ext4: Init timer earlier
+> to avoid a kernel panic in __save_error_info.
+> http://lists.openwall.net/linux-ext4/2011/03/29/5
+>
+>
+> I suspect you mounted ext2/3 partition using ext4 module.
+>
+>
+> Yongqiang.
+>
+> On Mon, Oct 31, 2011 at 11:13 AM, Darko <darko@hytron.net> wrote:
+>> Thank you for your reply!
+>>
+>> I wanted to add to this that I was able to replicate the problem with ex=
+t3
+>> and ext2 file systems as well. They both hard lock the system, and the o=
+nly
+>> way to recovery is to push the reset button. I can see the trace error o=
+n
+>> the screen, but I am unable to do anything with it, since it goes by so =
+fast
+>> that the portion which says "kernel BUG" is invisible. I assume they bot=
+h
+>> have similar issues with the code in kernel/timer.c
+>>
+>> On the other hand, I tried using raiserfs 3.5 tonight, and I got
+>> input/output error as expected. The system did not crash. Just another p=
+roof
+>> that a bug is laying somewhere in the ext2/3/4 file system.
+>>
+>> When someone comes up with a patch, I am willing to try it out and feed =
+you
+>> back with the report.
+>>
+>> Hope this helps.
+>>
+>> Thank You,
+>>
+>> Darko Kraus
+>>
+>>
+>> On Sun, 30 Oct 2011, NeilBrown wrote:
+>>
+>>> Date: Sun, 30 Oct 2011 19:05:48 +1100
+>>> From: NeilBrown <neilb@suse.de>
+>>> To: Darko <darko@hytron.net>
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+>>> =A0 =A0linux-ext4@vger.kernel.org
+>>> Subject: Re: PROBLEM: Kernel panic and system crash during RAID disk
+>>> failure
+>>>
+>>> On Sun, 30 Oct 2011 03:27:28 -0400 (EDT) Darko <darko@hytron.net> wrote=
+:
+>>>
+>>>> Hello,
+>>>>
+>>>> I have been doing some testing with the md RAID driver and I think I
+>>>> discovered a problem with it.
+>>>> Everything was performed on a system with a single hard drive using lo=
+op
+>>>> devices as virtual raid devices.
+>>>> So here is the setup:
+>>>> /dev/sdc is my main drive that hold entire Linux OS and has one
+>>>> partition.
+>>>> in the /tmp I created 7 files, 100MB each and associated them with loo=
+p
+>>>> devices:
+>>>>
+>>>> losetup -a
+>>>> /dev/loop0: [0821]:294820 (/var/tmp/raid-0)
+>>>> /dev/loop1: [0821]:294857 (/var/tmp/raid-1)
+>>>> /dev/loop2: [0821]:300120 (/var/tmp/raid-2)
+>>>> /dev/loop3: [0821]:301073 (/var/tmp/raid-3)
+>>>> /dev/loop4: [0821]:301074 (/var/tmp/raid-4)
+>>>> /dev/loop5: [0821]:301075 (/var/tmp/raid-5)
+>>>> /dev/loop6: [0821]:301076 (/var/tmp/raid-6)
+>>>>
+>>>> The next step was, created an RAID6 array:
+>>>> mdadm --create /dev/md10 --level=3D6 -raid-deviced=3D7 /dev/loop[0-6]
+>>>>
+>>>> Here is how it looks so far:
+>>>>
+>>>> cat /proc/mdstat
+>>>> Personalities : [raid0] [raid1] [raid10] [raid6] [raid5] [raid4]
+>>>> md10 : active raid6 loop6[6] loop5[5] loop4[4] loop3[3] loop2[2] loop1=
+[1]
+>>>> loop0[0]
+>>>> =A0 =A0 =A0 499200 blocks super 1.2 level 6, 512k chunk, algorithm 2 [=
+7/7]
+>>>> [UUUUUUU]
+>>>>
+>>>>
+>>>> Then the filesystem...
+>>>> mkfs.ext4 -b 4096 -i 4096 -m 0 /dev/md10
+>>>>
+>>>> Mounting the file system to a folder called 'A' right in the root of m=
+y
+>>>> system:
+>>>>
+>>>> mount /dev/md10 /A
+>>>>
+>>>> Then I copied a few files on that file system. So far everything is go=
+od.
+>>>>
+>>>> Then I purposly failed 2 drives:
+>>>> mdadm --manage /dev/md10 --fail /dev/loop0
+>>>> mdadm --manage /dev/md10 --fail /dev/loop1
+>>>>
+>>>> The array continues to run fine in degraded mode. I was wondering what
+>>>> would happen if another drive fails. So while I was doing a write
+>>>> operating right in that filesystem (/dev/md10) using:
+>>>> dd if=3D/dev/zero of=3Dtestfile bs=3D1k count=3D360000 =A0...
+>>>>
+>>>> ...quickly switched to a different console and entered the command:
+>>>> mdadm --manage /dev/md10 --fail /dev/loop2
+>>>>
+>>>> ...which made 3 failed drives and the array can no longer work...
+>>>>
+>>>> Well I would be happy to see just the array not working, but kernel pa=
+nic
+>>>> in both versions 2.6.37.4 and 3.0.8 made me worry that it is serious b=
+ug
+>>>> and appears to be in older and newer kernels as well.
+>>>> I repeated this several times, and mostly the machine gets locked up w=
+ith
+>>>> kernel panic. But once I was able to get it not to lock up all the way=
+,
+>>>> and that is how I have dmesg output.
+>>>>
+>>>> The attached files include dmesg from the system startup until the bug
+>>>> trace, and some additional information regarding my system that might =
+be
+>>>> helpful.
+>>>>
+>>>> For any additional question, please feel free to contact me!
+>>>>
+>>>> I hope this info helps someone find and resolve the problem in the cod=
+e.
+>>>>
+>>>
+>>> The important part of your kernel log message is:
+>>>
+>>>
+>>> [ 1227.766202] ------------[ cut here ]------------
+>>> [ 1227.766259] kernel BUG at kernel/timer.c:681!
+>>> [ 1227.766311] invalid opcode: 0000 [#1] SMP
+>>> [ 1227.766365] last sysfs file: /sys/devices/virtual/block/md10/dev
+>>> [ 1227.766419] Modules linked in:
+>>> [ 1227.766471]
+>>> [ 1227.766520] Pid: 1507, comm: mount Not tainted 2.6.37.6-v5.0 #7
+>>> MICRO-STAR INTERNATIONAL CO., LTD MS-7142/MS-7142
+>>> [ 1227.766633] EIP: 0060:[<c104f960>] EFLAGS: 00010246 CPU: 0
+>>> [ 1227.766690] EIP is at mod_timer+0x210/0x250
+>>> [ 1227.766742] EAX: 00000000 EBX: f5494e1c ECX: 00000000 EDX: 00000000
+>>> [ 1227.766796] ESI: 00000000 EDI: 05348416 EBP: f54a3c90 ESP: f54a3c74
+>>> [ 1227.766851] =A0DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+>>> [ 1227.766904] Process mount (pid: 1507, ti=3Df54a2000 task=3Df2068880
+>>> task.ti=3Df54a2000)
+>>> [ 1227.767002] Stack:
+>>> [ 1227.767003] =A0f2068880 f54b159c 00000010 00000000 f1f8e400 f4efc57c
+>>> 0000128d f54a3ca8
+>>> [ 1227.767003] =A0c11cb7ba c17d4e52 f4efc400 00000124 00000000 f54a3cb4
+>>> c11ce4e6 ecee6318
+>>> [ 1227.767003] =A0f54a3cdc c11cf7cc ecec7578 00000124 00000000 f4efc400
+>>> f54a3cd4 00000124
+>>> [ 1227.767003] Call Trace:
+>>> [ 1227.767003] =A0[<c11cb7ba>] ? __save_error_info.clone.61+0x7a/0xf0
+>>> [ 1227.767003] =A0[<c11ce4e6>] ? save_error_info+0x16/0x30
+>>> [ 1227.767003] =A0[<c11cf7cc>] ? ext4_error_inode+0x4c/0xf0
+>>> [ 1227.767003] =A0[<c11b57e1>] ? __ext4_get_inode_loc+0x201/0x410
+>>> [ 1227.767003] =A0[<c110b62a>] ? inode_init_always+0x1aa/0x1c0
+>>> [ 1227.767003] =A0[<c11b72f9>] ? ext4_iget+0x59/0x6f0
+>>> [ 1227.767003] =A0[<c11d2716>] ? ext4_fill_super+0x1ab6/0x2c70
+>>> [ 1227.767003] =A0[<c114896f>] ? disk_name+0xbf/0xd0
+>>> [ 1227.767003] =A0[<c10fa119>] ? mount_bdev+0x179/0x1c0
+>>> [ 1227.767003] =A0[<c11d0c60>] ? ext4_fill_super+0x0/0x2c70
+>>> [ 1227.767003] =A0[<c11ca17f>] ? ext4_mount+0x1f/0x30
+>>> [ 1227.767003] =A0[<c11d0c60>] ? ext4_fill_super+0x0/0x2c70
+>>> [ 1227.767003] =A0[<c10f9835>] ? vfs_kern_mount+0x75/0x250
+>>> [ 1227.767003] =A0[<c110df03>] ? get_fs_type+0x33/0xb0
+>>> [ 1227.767003] =A0[<c11ca160>] ? ext4_mount+0x0/0x30
+>>> [ 1227.767003] =A0[<c10f9a6e>] ? do_kern_mount+0x3e/0xe0
+>>> [ 1227.767003] =A0[<c111080f>] ? do_mount+0x35f/0x6b0
+>>> [ 1227.767003] =A0[<c10d47c9>] ? strndup_user+0x49/0x70
+>>> [ 1227.767003] =A0[<c1110e0b>] ? sys_mount+0x6b/0xa0
+>>> [ 1227.767003] =A0[<c17b550c>] ? syscall_call+0x7/0xb
+>>> [ 1227.767003] Code: fe ff ff 8b 0e 89 4d e4 8b 46 04 83 c6 08 89 f9 89=
+ da
+>>> ff 55 e4 8b 06 85 c0 89 45 e4 75 ea e9 aa fe ff ff 8b 75 ec e9 ee fe ff=
+ ff
+>>> <0f> 0b 8b 55 04 89 d8 e8 34 f9 ff ff e9 2a fe ff ff 8b 35 30 b8
+>>> [ 1227.767003] EIP: [<c104f960>] mod_timer+0x210/0x250 SS:ESP
+>>> 0068:f54a3c74
+>>> [ 1227.770073] ---[ end trace d7b3d7a67954d202 ]---
+>>>
+>>>
+>>> which happens after:
+>>>
+>>> [ 1137.167043] Aborting journal on device md10-8.
+>>> [ 1137.167058] Buffer I/O error on device md10, logical block 139265
+>>> [ 1137.167060] lost page write due to I/O error on md10
+>>> [ 1137.167065] JBD2: I/O error detected when updating journal superbloc=
+k
+>>> for md10-8.
+>>> [ 1137.660922] Buffer I/O error on device md10, logical block 1
+>>> [ 1137.660926] lost page write due to I/O error on md10
+>>> [ 1137.660932] EXT4-fs error (device md10): ext4_journal_start_sb:260:
+>>> Detected aborted journal
+>>> [ 1137.661046] EXT4-fs (md10): Remounting filesystem read-only
+>>> [ 1137.661103] EXT4-fs (md10): previous I/O error to superblock detecte=
+d
+>>> [ 1137.661313] Buffer I/O error on device md10, logical block 1
+>>> [ 1137.661315] lost page write due to I/O error on md10
+>>> [ 1219.891363] EXT4-fs (md10): previous I/O error to superblock detecte=
+d
+>>> [ 1220.050654] Buffer I/O error on device md10, logical block 1
+>>> [ 1220.050657] lost page write due to I/O error on md10
+>>> [ 1220.050663] EXT4-fs error (device md10): ext4_put_super:728: Couldn'=
+t
+>>> clean up the journal
+>>>
+>>> and some more "Buffer I/O error"s.
+>>>
+>>> So it looks like an ext4 issue.
+>>>
+>>> I have Cc:ed the appropriate list.
+>>>
+>>> Thanks for the report.
+>>>
+>>> NeilBrown
+>>>
+>>>
+>>
+>>
+>> --
+>> Darko Kraus
+>> Enterprise Network Administrator
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" =
+in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at =A0http://www.tux.org/lkml/
+>>
+>
+>
+>
+> --=20
+> Best Wishes
+> Yongqiang Yang
+>
 
 
+--
+Darko Kraus
+Enterprise Network Administrator
+---2006745895-513396609-1320036706=:1603--
