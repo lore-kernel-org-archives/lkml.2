@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934655Ab1JaTIh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 15:08:37 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:53941 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934039Ab1JaTFy (ORCPT
+	id S934643Ab1JaTI6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 15:08:58 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49433 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934033Ab1JaTFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 15:05:54 -0400
+	Mon, 31 Oct 2011 15:05:47 -0400
 From: Tejun Heo <tj@kernel.org>
 To: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org
 Cc: arnd@arndb.de, oleg@redhat.com, matthltc@us.ibm.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 08/17] freezer: use dedicated lock instead of task_lock() + memory barrier
-Date: Mon, 31 Oct 2011 12:05:19 -0700
-Message-Id: <1320087928-32307-9-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>, Paul Menage <menage@google.com>
+Subject: [PATCH 05/17] freezer: rename thaw_process() to __thaw_task() and simplify the implementation
+Date: Mon, 31 Oct 2011 12:05:16 -0700
+Message-Id: <1320087928-32307-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1320087928-32307-1-git-send-email-tj@kernel.org>
 References: <1320087928-32307-1-git-send-email-tj@kernel.org>
@@ -22,182 +22,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Freezer synchronization is needlessly complicated - it's by no means a
-hot path and the priority is staying unintrusive and safe.  This patch
-makes it simply use a dedicated lock instead of piggy-backing on
-task_lock() and playing with memory barriers.
+thaw_process() now has only internal users - system and cgroup
+freezers.  Remove the unnecessary return value, rename, unexport and
+collapse __thaw_process() into it.  This will help further updates to
+the freezer code.
 
-On the failure path of try_to_freeze_tasks(), locking is moved from it
-to cancel_freezing().  This makes the frozen() test racy but the race
-here is a non-issue as the warning is printed for tasks which failed
-to enter frozen for 20 seconds and race on PF_FROZEN at the last
-moment doesn't change anything.
-
-This simplifies freezer implementation and eases further changes
-including some race fixes.
+-v2: minor style update as suggested by Matt.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Paul Menage <menage@google.com>
+Cc: Matt Helsley <matthltc@us.ibm.com>
 ---
- kernel/freezer.c       |   84 +++++++++++++++++++++---------------------------
- kernel/power/process.c |    2 -
- 2 files changed, 37 insertions(+), 49 deletions(-)
+ include/linux/freezer.h |    3 +--
+ kernel/cgroup_freezer.c |    7 +++----
+ kernel/freezer.c        |   31 ++++++++++++-------------------
+ kernel/power/process.c  |    2 +-
+ 4 files changed, 17 insertions(+), 26 deletions(-)
 
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 4a73dd2..253bcfe 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -45,7 +45,7 @@ static inline bool should_send_signal(struct task_struct *p)
+ }
+ 
+ /* Takes and releases task alloc lock using task_lock() */
+-extern int thaw_process(struct task_struct *p);
++extern void __thaw_task(struct task_struct *t);
+ 
+ extern bool __refrigerator(bool check_kthr_stop);
+ extern int freeze_processes(void);
+@@ -183,7 +183,6 @@ static inline int frozen(struct task_struct *p) { return 0; }
+ static inline int freezing(struct task_struct *p) { return 0; }
+ static inline void set_freeze_flag(struct task_struct *p) {}
+ static inline void clear_freeze_flag(struct task_struct *p) {}
+-static inline int thaw_process(struct task_struct *p) { return 1; }
+ 
+ static inline bool __refrigerator(bool check_kthr_stop) { return false; }
+ static inline int freeze_processes(void) { return -ENOSYS; }
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index e691818..e7fa0ec 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -130,7 +130,7 @@ struct cgroup_subsys freezer_subsys;
+  *   write_lock css_set_lock (cgroup iterator start)
+  *    task->alloc_lock
+  *   read_lock css_set_lock (cgroup iterator start)
+- *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
++ *    task->alloc_lock (inside __thaw_task(), prevents race with refrigerator())
+  *     sighand->siglock
+  */
+ static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
+@@ -300,9 +300,8 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+ 	struct task_struct *task;
+ 
+ 	cgroup_iter_start(cgroup, &it);
+-	while ((task = cgroup_iter_next(cgroup, &it))) {
+-		thaw_process(task);
+-	}
++	while ((task = cgroup_iter_next(cgroup, &it)))
++		__thaw_task(task);
+ 	cgroup_iter_end(cgroup, &it);
+ 
+ 	freezer->state = CGROUP_THAWED;
 diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 8faa0e0..10dd2e0 100644
+index 57ba75f..8faa0e0 100644
 --- a/kernel/freezer.c
 +++ b/kernel/freezer.c
-@@ -11,17 +11,8 @@
- #include <linux/freezer.h>
- #include <linux/kthread.h>
+@@ -145,18 +145,8 @@ void cancel_freezing(struct task_struct *p)
+ 	}
+ }
  
--/*
-- * freezing is complete, mark current process as frozen
-- */
--static inline void frozen_process(void)
+-static int __thaw_process(struct task_struct *p)
 -{
--	if (!unlikely(current->flags & PF_NOFREEZE)) {
--		current->flags |= PF_FROZEN;
--		smp_wmb();
+-	if (frozen(p)) {
+-		p->flags &= ~PF_FROZEN;
+-		return 1;
 -	}
--	clear_freeze_flag(current);
+-	clear_freeze_flag(p);
+-	return 0;
 -}
-+/* protects freezing and frozen transitions */
-+static DEFINE_SPINLOCK(freezer_lock);
- 
- /* Refrigerator is place where frozen processes are stored :-). */
- bool __refrigerator(bool check_kthr_stop)
-@@ -31,14 +22,16 @@ bool __refrigerator(bool check_kthr_stop)
- 	bool was_frozen = false;
- 	long save;
- 
--	task_lock(current);
--	if (freezing(current)) {
--		frozen_process();
--		task_unlock(current);
--	} else {
--		task_unlock(current);
-+	spin_lock_irq(&freezer_lock);
-+	if (!freezing(current)) {
-+		spin_unlock_irq(&freezer_lock);
- 		return was_frozen;
- 	}
-+	if (!(current->flags & PF_NOFREEZE))
-+		current->flags |= PF_FROZEN;
-+	clear_freeze_flag(current);
-+	spin_unlock_irq(&freezer_lock);
-+
- 	save = current->state;
- 	pr_debug("%s entered refrigerator\n", current->comm);
- 
-@@ -99,21 +92,18 @@ static void fake_signal_wake_up(struct task_struct *p)
-  */
- bool freeze_task(struct task_struct *p, bool sig_only)
- {
--	/*
--	 * We first check if the task is freezing and next if it has already
--	 * been frozen to avoid the race with frozen_process() which first marks
--	 * the task as frozen and next clears its TIF_FREEZE.
--	 */
--	if (!freezing(p)) {
--		smp_rmb();
--		if (frozen(p))
--			return false;
 -
--		if (!sig_only || should_send_signal(p))
--			set_freeze_flag(p);
--		else
--			return false;
--	}
-+	unsigned long flags;
-+	bool ret = false;
-+
-+	spin_lock_irqsave(&freezer_lock, flags);
-+
-+	if (sig_only && !should_send_signal(p))
-+		goto out_unlock;
-+
-+	if (frozen(p))
-+		goto out_unlock;
-+
-+	set_freeze_flag(p);
- 
- 	if (should_send_signal(p)) {
- 		fake_signal_wake_up(p);
-@@ -123,26 +113,28 @@ bool freeze_task(struct task_struct *p, bool sig_only)
- 		 * TASK_RUNNING transition can't race with task state
- 		 * testing in try_to_freeze_tasks().
- 		 */
--	} else if (sig_only) {
--		return false;
- 	} else {
- 		wake_up_state(p, TASK_INTERRUPTIBLE);
- 	}
--
--	return true;
-+	ret = true;
-+out_unlock:
-+	spin_unlock_irqrestore(&freezer_lock, flags);
-+	return ret;
- }
- 
- void cancel_freezing(struct task_struct *p)
- {
- 	unsigned long flags;
- 
-+	spin_lock_irqsave(&freezer_lock, flags);
- 	if (freezing(p)) {
- 		pr_debug("  clean up: %s\n", p->comm);
- 		clear_freeze_flag(p);
--		spin_lock_irqsave(&p->sighand->siglock, flags);
-+		spin_lock(&p->sighand->siglock);
- 		recalc_sigpending_and_wake(p);
--		spin_unlock_irqrestore(&p->sighand->siglock, flags);
-+		spin_unlock(&p->sighand->siglock);
- 	}
-+	spin_unlock_irqrestore(&freezer_lock, flags);
- }
- 
  /*
-@@ -156,16 +148,14 @@ void cancel_freezing(struct task_struct *p)
+- * Wake up a frozen process
++ * Wake up a frozen task
+  *
+  * task_lock() is needed to prevent the race with refrigerator() which may
+  * occur if the freezing of tasks fails.  Namely, without the lock, if the
+@@ -164,15 +154,18 @@ static int __thaw_process(struct task_struct *p)
+  * refrigerator() could call frozen_process(), in which case the task would be
+  * frozen and no one would thaw it.
   */
- void __thaw_task(struct task_struct *p)
+-int thaw_process(struct task_struct *p)
++void __thaw_task(struct task_struct *p)
  {
--	bool was_frozen;
-+	unsigned long flags;
- 
--	task_lock(p);
--	was_frozen = frozen(p);
--	if (was_frozen)
-+	spin_lock_irqsave(&freezer_lock, flags);
-+	if (frozen(p)) {
- 		p->flags &= ~PF_FROZEN;
--	else
--		clear_freeze_flag(p);
--	task_unlock(p);
--
--	if (was_frozen)
- 		wake_up_process(p);
-+	} else {
++	bool was_frozen;
++
+ 	task_lock(p);
+-	if (__thaw_process(p) == 1) {
+-		task_unlock(p);
+-		wake_up_process(p);
+-		return 1;
+-	}
++	was_frozen = frozen(p);
++	if (was_frozen)
++		p->flags &= ~PF_FROZEN;
++	else
 +		clear_freeze_flag(p);
-+	}
-+	spin_unlock_irqrestore(&freezer_lock, flags);
+ 	task_unlock(p);
+-	return 0;
++
++	if (was_frozen)
++		wake_up_process(p);
  }
+-EXPORT_SYMBOL(thaw_process);
 diff --git a/kernel/power/process.c b/kernel/power/process.c
-index 9db048f..bd420ca 100644
+index addbbe5..fe27872 100644
 --- a/kernel/power/process.c
 +++ b/kernel/power/process.c
-@@ -118,11 +118,9 @@ static int try_to_freeze_tasks(bool sig_only)
+@@ -186,7 +186,7 @@ static void thaw_tasks(bool nosig_only)
+ 		if (cgroup_freezing_or_frozen(p))
+ 			continue;
  
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, p) {
--			task_lock(p);
- 			if (!wakeup && freezing(p) && !freezer_should_skip(p))
- 				sched_show_task(p);
- 			cancel_freezing(p);
--			task_unlock(p);
- 		} while_each_thread(g, p);
- 		read_unlock(&tasklist_lock);
- 	} else {
+-		thaw_process(p);
++		__thaw_task(p);
+ 	} while_each_thread(g, p);
+ 	read_unlock(&tasklist_lock);
+ }
 -- 
 1.7.3.1
 
