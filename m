@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952Ab1KAAYu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:24:50 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35201 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932118Ab1KAAR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932187Ab1KAAR1 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 31 Oct 2011 20:17:27 -0400
-Message-Id: <093448$3uejre@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599662"
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:58529 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab1KAARW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 20:17:22 -0400
+Message-Id: <e97c6e$3uaavo@wolverine02.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132459512"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:36:46 -0500
-Subject: [PATCH v5 07/36] Hexagon: Add threadinfo
+Date: Mon, 31 Oct 2011 18:28:13 -0500
+Subject: [PATCH v5 04/36] Hexagon: Add atomic ops support
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -20,20 +20,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/hexagon/include/asm/thread_info.h |  154 ++++++++++++++++++++++++++++++++
- 1 files changed, 154 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/thread_info.h
+ arch/hexagon/include/asm/atomic.h |  164 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 164 insertions(+), 0 deletions(-)
+ create mode 100644 arch/hexagon/include/asm/atomic.h
 
-diff --git a/arch/hexagon/include/asm/thread_info.h b/arch/hexagon/include/asm/thread_info.h
+diff --git a/arch/hexagon/include/asm/atomic.h b/arch/hexagon/include/asm/atomic.h
 new file mode 100644
-index 0000000..9c2934f
+index 0000000..e220f90
 --- /dev/null
-+++ b/arch/hexagon/include/asm/thread_info.h
-@@ -0,0 +1,154 @@
++++ b/arch/hexagon/include/asm/atomic.h
+@@ -0,0 +1,164 @@
 +/*
-+ * Thread support for the Hexagon architecture
++ * Atomic operations for the Hexagon architecture
 + *
 + * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
++ *
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -50,138 +51,147 @@ index 0000000..9c2934f
 + * 02110-1301, USA.
 + */
 +
-+#ifndef _ASM_THREAD_INFO_H
-+#define _ASM_THREAD_INFO_H
++#ifndef _ASM_ATOMIC_H
++#define _ASM_ATOMIC_H
 +
-+#ifdef __KERNEL__
++#include <linux/types.h>
 +
-+#ifndef __ASSEMBLY__
-+#include <asm/processor.h>
-+#include <asm/registers.h>
-+#include <asm/page.h>
-+#endif
++#define ATOMIC_INIT(i)		{ (i) }
++#define atomic_set(v, i)	((v)->counter = (i))
 +
-+#define THREAD_SHIFT		12
-+#define THREAD_SIZE		(1<<THREAD_SHIFT)
-+
-+#if THREAD_SHIFT >= PAGE_SHIFT
-+#define THREAD_SIZE_ORDER	(THREAD_SHIFT - PAGE_SHIFT)
-+#else  /*  don't use standard allocator  */
-+#define __HAVE_ARCH_THREAD_INFO_ALLOCATOR
-+extern struct thread_info *alloc_thread_info_node(struct task_struct *tsk, int node);
-+extern void free_thread_info(struct thread_info *ti);
-+#endif
-+
-+
-+#ifndef __ASSEMBLY__
-+
-+typedef struct {
-+	unsigned long seg;
-+} mm_segment_t;
-+
-+/*
-+ * This is union'd with the "bottom" of the kernel stack.
-+ * It keeps track of thread info which is handy for routines
-+ * to access quickly.
++/**
++ * atomic_read - reads a word, atomically
++ * @v: pointer to atomic value
++ *
++ * Assumes all word reads on our architecture are atomic.
 + */
++#define atomic_read(v)		((v)->counter)
 +
-+struct thread_info {
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain      *exec_domain;   /* execution domain */
-+	unsigned long		flags;          /* low level flags */
-+	__u32                   cpu;            /* current cpu */
-+	int                     preempt_count;  /* 0=>preemptible,<0=>BUG */
-+	mm_segment_t            addr_limit;     /* segmentation sux */
-+	/*
-+	 * used for syscalls somehow;
-+	 * seems to have a function pointer and four arguments
-+	 */
-+	struct restart_block    restart_block;
-+	/* Points to the current pt_regs frame  */
-+	struct pt_regs		*regs;
-+	/*
-+	 * saved kernel sp at switch_to time;
-+	 * not sure if this is used (it's not in the VM model it seems;
-+	 * see thread_struct)
-+	 */
-+	unsigned long		sp;
-+};
++/**
++ * atomic_xchg - atomic
++ * @v: pointer to memory to change
++ * @new: new value (technically passed in a register -- see xchg)
++ */
++#define atomic_xchg(v, new)	(xchg(&((v)->counter), (new)))
 +
-+#else /* !__ASSEMBLY__ */
 +
-+#include <asm/asm-offsets.h>
++/**
++ * atomic_cmpxchg - atomic compare-and-exchange values
++ * @v: pointer to value to change
++ * @old:  desired old value to match
++ * @new:  new value to put in
++ *
++ * Parameters are then pointer, value-in-register, value-in-register,
++ * and the output is the old value.
++ *
++ * Apparently this is complicated for archs that don't support
++ * the memw_locked like we do (or it's broken or whatever).
++ *
++ * Kind of the lynchpin of the rest of the generically defined routines.
++ * Remember V2 had that bug with dotnew predicate set by memw_locked.
++ *
++ * "old" is "expected" old val, __oldval is actual old value
++ */
++static inline int atomic_cmpxchg(atomic_t *v, int old, int new)
++{
++	int __oldval;
 +
-+#endif  /* __ASSEMBLY__  */
++	asm volatile(
++		"1:	%0 = memw_locked(%1);\n"
++		"	{ P0 = cmp.eq(%0,%2);\n"
++		"	  if (!P0.new) jump:nt 2f; }\n"
++		"	memw_locked(%1,P0) = %3;\n"
++		"	if (!P0) jump 1b;\n"
++		"2:\n"
++		: "=&r" (__oldval)
++		: "r" (&v->counter), "r" (old), "r" (new)
++		: "memory", "p0"
++	);
 +
-+/*  looks like "linux/hardirq.h" uses this.  */
-+
-+#define PREEMPT_ACTIVE		0x10000000
-+
-+#ifndef __ASSEMBLY__
-+
-+#define INIT_THREAD_INFO(tsk)                   \
-+{                                               \
-+	.task           = &tsk,                 \
-+	.exec_domain    = &default_exec_domain, \
-+	.flags          = 0,                    \
-+	.cpu            = 0,                    \
-+	.preempt_count  = 1,                    \
-+	.addr_limit     = KERNEL_DS,            \
-+	.restart_block = {                      \
-+		.fn = do_no_restart_syscall,    \
-+	},                                      \
-+	.sp = 0,				\
-+	.regs = NULL,			\
++	return __oldval;
 +}
 +
-+#define init_thread_info        (init_thread_union.thread_info)
-+#define init_stack              (init_thread_union.stack)
++static inline int atomic_add_return(int i, atomic_t *v)
++{
++	int output;
 +
-+/* Tacky preprocessor trickery */
-+#define	qqstr(s) qstr(s)
-+#define qstr(s) #s
-+#define QUOTED_THREADINFO_REG qqstr(THREADINFO_REG)
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = add(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0;\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
 +
-+register struct thread_info *__current_thread_info asm(QUOTED_THREADINFO_REG);
-+#define current_thread_info()  __current_thread_info
++}
 +
-+#endif /* __ASSEMBLY__ */
++#define atomic_add(i, v) atomic_add_return(i, (v))
 +
-+/*
-+ * thread information flags
-+ * - these are process state flags that various assembly files
-+ *   may need to access
-+ * - pending work-to-be-done flags are in LSW
-+ * - other flags in MSW
++static inline int atomic_sub_return(int i, atomic_t *v)
++{
++	int output;
++	__asm__ __volatile__ (
++		"1:	%0 = memw_locked(%1);\n"
++		"	%0 = sub(%0,%2);\n"
++		"	memw_locked(%1,P3)=%0\n"
++		"	if !P3 jump 1b;\n"
++		: "=&r" (output)
++		: "r" (&v->counter), "r" (i)
++		: "memory", "p3"
++	);
++	return output;
++}
++
++#define atomic_sub(i, v) atomic_sub_return(i, (v))
++
++/**
++ * atomic_add_unless - add unless the number is a given value
++ * @v: pointer to value
++ * @a: amount to add
++ * @u: unless value is equal to u
++ *
++ * Returns 1 if the add happened, 0 if it didn't.
 + */
++static inline int __atomic_add_unless(atomic_t *v, int a, int u)
++{
++	int output, __oldval;
++	asm volatile(
++		"1:	%0 = memw_locked(%2);"
++		"	{"
++		"		p3 = cmp.eq(%0, %4);"
++		"		if (p3.new) jump:nt 2f;"
++		"		%0 = add(%0, %3);"
++		"		%1 = #0;"
++		"	}"
++		"	memw_locked(%2, p3) = %0;"
++		"	{"
++		"		if !p3 jump 1b;"
++		"		%1 = #1;"
++		"	}"
++		"2:"
++		: "=&r" (__oldval), "=&r" (output)
++		: "r" (v), "r" (a), "r" (u)
++		: "memory", "p3"
++	);
++	return output;
++}
 +
-+#define TIF_SYSCALL_TRACE       0       /* syscall trace active */
-+#define TIF_NOTIFY_RESUME       1       /* resumption notification requested */
-+#define TIF_SIGPENDING          2       /* signal pending */
-+#define TIF_NEED_RESCHED        3       /* rescheduling necessary */
-+#define TIF_SINGLESTEP          4       /* restore ss @ return to usr mode */
-+#define TIF_IRET                5       /* return with iret */
-+#define TIF_RESTORE_SIGMASK     6       /* restore sig mask in do_signal() */
-+/* true if poll_idle() is polling TIF_NEED_RESCHED */
-+#define TIF_POLLING_NRFLAG      16
-+#define TIF_MEMDIE              17      /* OOM killer killed process */
++#define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
 +
-+#define _TIF_SYSCALL_TRACE      (1 << TIF_SYSCALL_TRACE)
-+#define _TIF_NOTIFY_RESUME      (1 << TIF_NOTIFY_RESUME)
-+#define _TIF_SIGPENDING         (1 << TIF_SIGPENDING)
-+#define _TIF_NEED_RESCHED       (1 << TIF_NEED_RESCHED)
-+#define _TIF_SINGLESTEP         (1 << TIF_SINGLESTEP)
-+#define _TIF_IRET               (1 << TIF_IRET)
-+#define _TIF_RESTORE_SIGMASK    (1 << TIF_RESTORE_SIGMASK)
-+#define _TIF_POLLING_NRFLAG     (1 << TIF_POLLING_NRFLAG)
++#define atomic_inc(v) atomic_add(1, (v))
++#define atomic_dec(v) atomic_sub(1, (v))
 +
-+/* work to do on interrupt/exception return - All but TIF_SYSCALL_TRACE */
-+#define _TIF_WORK_MASK          (0x0000FFFF & ~_TIF_SYSCALL_TRACE)
++#define atomic_inc_and_test(v) (atomic_add_return(1, (v)) == 0)
++#define atomic_dec_and_test(v) (atomic_sub_return(1, (v)) == 0)
++#define atomic_sub_and_test(i, v) (atomic_sub_return(i, (v)) == 0)
++#define atomic_add_negative(i, v) (atomic_add_return(i, (v)) < 0)
 +
-+/* work to do on any return to u-space */
-+#define _TIF_ALLWORK_MASK       0x0000FFFF
 +
-+#endif /* __KERNEL__ */
++#define atomic_inc_return(v) (atomic_add_return(1, v))
++#define atomic_dec_return(v) (atomic_sub_return(1, v))
 +
 +#endif
 -- 
