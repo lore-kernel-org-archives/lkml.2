@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934355Ab1JaK47 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 06:56:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45560 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933761Ab1JaK46 (ORCPT
+	id S934336Ab1JaLAE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 07:00:04 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:52824 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933520Ab1JaLAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 06:56:58 -0400
+	Mon, 31 Oct 2011 07:00:03 -0400
+Date: Mon, 31 Oct 2011 11:59:59 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 21/21] cris: drop unused Kconfig symbols
+Message-ID: <20111031105959.GA26898@axis.com>
+References: <1318595467.6132.80.camel@x61.thuisdomein> <20111014133354.GE9412@axis.com> <14215.1318619461@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Date: Mon, 31 Oct 2011 18:56:57 +0800
-Message-ID: <CAGW+__+9jOaSdmqGcdCTi+EnRyyNcZ3hFqdqpf3Nxjqb8ZQPbw@mail.gmail.com>
-Subject: [PATCH][mm/memory.c]: transparent hugepage check condition missed
-From: GuanJun He <heguanbo@gmail.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14215.1318619461@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the transparent hugepage module still does not support
-tmpfs and cache,the check condition should always be checked
-to make sure that it only affect the anonymous maps, the
-original check condition missed this, this patch is to fix this.
-Otherwise,the hugepage may affect the file-backed maps,
-then the cache for the small-size pages will be unuseful,
-and till now there is still no implementation for hugepage's cache.
+Sorry for the late answer, I've been in-flight my self.
 
-Signed-off-by: Guanjun He <gjhe@suse.com>
----
- mm/memory.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+On Fri, Oct 14, 2011 at 09:11:01PM +0200, Valdis.Kletnieks@vt.edu wrote:
+> Shouldn't the patches that upstream those drivers be the ones to add the
+> Kconfig glue?  Or is this a case of "in-flight driver" where the submission is
+> literally in the middle of getting merged so some parts have landed and some
+> haven't yet, and all will be good in the next merge cycle?
 
-diff --git a/mm/memory.c b/mm/memory.c
-index a56e3ba..79b85fe 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3475,7 +3475,8 @@ int handle_mm_fault(struct mm_struct *mm, struct
-vm_area_struct *vma,
- 		if (pmd_trans_huge(orig_pmd)) {
- 			if (flags & FAULT_FLAG_WRITE &&
- 			    !pmd_write(orig_pmd) &&
--			    !pmd_trans_splitting(orig_pmd))
-+			    !pmd_trans_splitting(orig_pmd) &&
-+			    !vma->vm_ops)
- 				return do_huge_pmd_wp_page(mm, vma, address,
- 							   pmd, orig_pmd);
- 			return 0;
---
+You are of course correct that the driver patches should be
+ones that add the Kconfigs.
+
+The drivers have been in-flight for quite a while, but without any
+push from us, I'll try to give it some love, and at least get it into
+a separate tree.
+
+> (Personally, I'm tending towards unless it's going to be in linux-next within
+> the next month or so, pull the Kconfig variables out and the driver can re-add
+> them when it actually lands)
+
+Ok, let's do it the right way and remove them now, and I can re-add
+them in the same tree.
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
