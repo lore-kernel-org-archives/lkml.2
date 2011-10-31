@@ -1,168 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab1JaUvh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 16:51:37 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:33152 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab1JaUvf (ORCPT
+	id S1752642Ab1JaU7I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 16:59:08 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:30511 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1JaU7G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 16:51:35 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v5] CPU hotplug,
- Freezer: Fix race between CPU hotplug and freezer
-To: rjw@sisk.pl
-Cc: a.p.zijlstra@chello.nl, stern@rowland.harvard.edu, pavel@ucw.cz,
-        len.brown@intel.com, mingo@elte.hu, akpm@linux-foundation.org,
-        suresh.b.siddha@intel.com, lucas.demarchi@profusion.mobi,
-        linux-pm@vger.kernel.org, rusty@rustcorp.com.au,
-        vatsa@linux.vnet.ibm.com, ashok.raj@intel.com,
-        linux-kernel@vger.kernel.org, tj@kernel.org
-Date: Tue, 01 Nov 2011 02:21:27 +0530
-Message-ID: <20111031205125.26694.5730.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Mon, 31 Oct 2011 16:59:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Message-ID: <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default>
+Date: Mon, 31 Oct 2011 13:58:39 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default
+ 20111031181651.GF3466@redhat.com>
+In-Reply-To: <20111031181651.GF3466@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4EAF0C08.0090,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU hotplug notifications sent out by the _cpu_up() and _cpu_down()
-functions depend on the value of the 'tasks_frozen' argument passed to them
-(which indicates whether tasks have been frozen or not).
-(Examples for such CPU hotplug notifications: CPU_ONLINE, CPU_ONLINE_FROZEN,
-CPU_DEAD, CPU_DEAD_FROZEN).
+> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
 
-Thus, it is essential that while the callbacks for those notifications are
-running, the state of the system with respect to the tasks being frozen or
-not remains unchanged, *throughout that duration*. Hence there is a need for
-synchronizing the CPU hotplug code with the freezer subsystem.
+Hi Andrea --
 
-Since the freezer is involved only in the Suspend/Hibernate call paths, this
-patch hooks the CPU hotplug code to the suspend/hibernate notifiers
-PM_[SUSPEND|HIBERNATE]_PREPARE and PM_POST_[SUSPEND|HIBERNATE] to prevent
-the race between CPU hotplug and freezer, thus ensuring that CPU hotplug
-notifications will always be run with the state of the system really being
-what the notifications indicate, _throughout_ their execution time.
+Thanks for your input. It's good to have some real technical
+discussion about the core of tmem.  I hope you will
+take the time to read and consider my reply,
+and comment on any disagreements.
 
-v5: * Removed the new freezer notifiers since freezer is used only in suspend
-      and hibernate call paths. Used the suspend/hibernate notifier events
-      to synchronize CPU hotplug and freezer.
+OK, let's go over your concerns about the "flawed API."
 
-v4: * Retained the value 0 for the 'tasks_frozen' argument, while calling
-      _cpu_up() and _cpu_down().
-      Removed the unnecessary PM_POST_FREEZE and PM_THAW_PREPARE notifications.
+> 1) 4k page limit (no way to handle hugepages)
 
-v3: * Added synchronization between CPU hotplug and the freezer subsystem
-      without introducing any new locks in the CPU hotplug call path.
+FALSE.  The API/ABI was designed from the beginning to handle
+different pagesizes.  It can even dynamically handle more than
+one page size, though a different "pool" must be created on
+the kernel side for each different pagesize.  (At the risk
+of derision, remember I used to code for IA64 so I am
+very familiar with different pagesizes.)
 
-v2: * Removed the atomic_t declaration of tasks_frozen flag and the
-      atomic_[set|read] functions since they were unnecessary.
-    * Updated the changelog to give an example scenario where things could go
-      wrong due to the bug in the CPU hotplug call path.
+It is true that the current tmem _backends_ (Xen and
+zcache) reject pagesizes other than 4K, but if there are
+"frontends" that have a different pagesize, the API/ABI
+supports it.
 
-References:
-v1 -> http://thread.gmane.org/gmane.linux.kernel/1198312/
-v2 -> http://thread.gmane.org/gmane.linux.kernel/1198312/focus=1199087
-v3 -> http://thread.gmane.org/gmane.linux.documentation/3472
-v4 -> http://thread.gmane.org/gmane.linux.documentation/3485
+For hugepages, I agree copying 2M seems odd.  But talking
+about hugepages in the swap subsystem, I think we are
+talking about a very remote future.  (Remember cleancache
+is _already_ merged so I'm limiting this to swap.)  Perhaps
+in that far future, Intel will have an optimized "copy2M"
+instruction that can circumvent cache pollution?
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+> 2) synchronous
 
- kernel/cpu.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 74 insertions(+), 0 deletions(-)
+TRUE.  (Well, mostly.... RAMster is exploiting some asynchrony
+but that's all still experimental.)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 12b7458..aa39dd7 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -15,6 +15,7 @@
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
- #include <linux/gfp.h>
-+#include <linux/suspend.h>
- 
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -476,6 +477,79 @@ static int alloc_frozen_cpus(void)
- 	return 0;
- }
- core_initcall(alloc_frozen_cpus);
-+
-+/*
-+ * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
-+ * hotplug when tasks are about to be frozen. Also, don't allow the freezer
-+ * to continue until any currently running CPU hotplug operation gets
-+ * completed.
-+ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-+ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-+ * CPU hotplug path and released only after it is complete. Thus, we
-+ * (and hence the freezer) will block here until any currently running CPU
-+ * hotplug operation gets completed.
-+ */
-+void cpu_hotplug_disable_before_freeze(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 1;
-+	cpu_maps_update_done();
-+}
-+
-+
-+/*
-+ * When tasks have been thawed, re-enable regular CPU hotplug (which had been
-+ * disabled while beginning to freeze tasks).
-+ */
-+void cpu_hotplug_enable_after_thaw(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 0;
-+	cpu_maps_update_done();
-+}
-+
-+/*
-+ * When callbacks for CPU hotplug notifications are being executed, we must
-+ * ensure that the state of the system with respect to the tasks being frozen
-+ * or not, as reported by the notification, remains unchanged *throughout the
-+ * duration* of the execution of the callbacks.
-+ * Hence we need to prevent the freezer from racing with regular CPU hotplug.
-+ *
-+ * This synchronization is implemented by mutually excluding regular CPU
-+ * hotplug and Suspend/Hibernate call paths by hooking onto the Suspend/
-+ * Hibernate notifications.
-+ */
-+static int
-+cpu_hotplug_pm_callback(struct notifier_block *nb,
-+			unsigned long action, void *ptr)
-+{
-+	switch (action) {
-+
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		cpu_hotplug_disable_before_freeze();
-+		break;
-+
-+	case PM_POST_SUSPEND:
-+	case PM_POST_HIBERNATION:
-+		cpu_hotplug_enable_after_thaw();
-+		break;
-+
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+
-+int cpu_hotplug_pm_sync_init(void)
-+{
-+	pm_notifier(cpu_hotplug_pm_callback, 0);
-+	return 0;
-+}
-+core_initcall(cpu_hotplug_pm_sync_init);
-+
- #endif /* CONFIG_PM_SLEEP_SMP */
- 
- /**
+Remember the whole point of tmem/cleancache/frontswap is in
+environments where memory is scarce and CPU is plentiful,
+which is increasingly common (especially in virtualization).
+We all cut our teeth on kernel work in an environment where
+saving every CPU cycle was important, but in these new
+memory-constrained many-core environments, the majority of
+CPU cycles are idle.  So does it really matter if the CPU is
+idle because it is waiting on the disk vs being used for
+synchronous copying/compression/dedup?  See the published
+Xen benchmarks:  CPU utilization goes up, but throughput
+goes up too.  Why?  Because physical memory is being used
+more efficiently.
 
+Also IMHO the reason the frontswap hooks and the cleancache
+hooks can be so simple and elegant and can support many
+different users is because the API/ABI is synchronous.
+If you change that, I think you will introduce all sorts
+of special cases and races and bugs on both sides of the
+ABI/API.  And (IMHO) the end result is that most CPUs
+are still mostly sitting idle waiting for work to do.
+
+> 3) not zerocopy, requires one bounce buffer for every get and one
+>    bounce buffer again for every put (like highmem I/O with 32bit pci)
+
+Hmmm... not sure I understand this one.  It IS copy-based
+so is not zerocopy; the page of data is actually moving out
+of memory controlled/directly-addressable by the kernel into
+memory that is not controlled/directly-addressable by the kernel.
+But neither the Xen implementation nor the zcache implementation
+uses any bounce buffers, even when compressing or dedup'ing.
+
+So unless I misunderstand, this one is FALSE.
+
+> 4) can't handle batched requests
+
+TRUE.  Tell me again why a vmexit/vmenter per 4K page is
+"impossible"?  Again you are assuming (1) the CPU had some
+real work to do instead and (2) that vmexit/vmenter is horribly
+slow.  Even if vmexit/vmenter is thousands of cycles, it is still
+orders of magnitude faster than a disk access.  And vmexit/vmenter
+is about the same order of magnitude as page copy, and much
+faster than compression/decompression, both of which still
+result in a nice win.
+
+You are also assuming that frontswap puts/gets are highly
+frequent.  By definition they are not, because they are
+replacing single-page disk reads/writes due to swapping.
+
+That said, the API/ABI is very extensible, so if it were
+proven that batching was sufficiently valuable, it could
+be added later... but I don't see it as a showstopper.
+Really do you?
+
+> worse than HIGHMEM 32bit... Obviously you must be mlocking all Oracle
+> db memory so you won't hit that bounce buffering ever with
+> Oracle. Also note, historically there's nobody that hated bounce
+> buffers more than Oracle (at least I remember the highmem issues with
+> pci32 cards :). Also Oracle was the biggest user of hugetlbfs.
+
+I already noted that there's no bounce buffers, but Oracle is
+not pursuing this because of the Oracle _database_ (though
+it does work on single node databases).  While "Oracle" is
+often used to equate to its eponymous database, tmem works
+on lots of workloads and Oracle (even pre-Sun-merger) sells
+tons of non-DB software.  In fact I personally take some heat
+for putting more emphasis on getting tmem into Linux than in
+using it to proprietarily improve other Oracle products.
+
+> If I'm wrong please correct me, I hadn't lots of time to check
+> code. But we already raised these points before without much answer.
+
+OK, so you're wrong on two of the points and I've corrected
+you.  On two of the points, synchrony and non-batchability,
+you make claims that (1) these are bad and (2) that there
+is a better way to achieve the same results with asynchrony
+and batchability.
+
+I do agree you've raised the points before, but I am pretty
+sure I've always given the same answers, so you shouldn't
+say that you haven't gotten "much answer" but that you disagree
+with the answer you got.
+
+I've got working code, it's going in real distros and products and
+has growing usage by (non-Oracle) kernel developers as well as
+real users clamoring for it or already using it.  You claim
+that by making it asynchronous it would be better, while I claim
+that it would make it impossibly complicated.  (We'd essentially
+be rewriting, or creating a parallel, blkio subsystem.)  You claim
+that a batch interface is necessary, while I claim that if it is
+proven that it is needed, it could be added later.
+
+We've been talking about this since July 2009, right?
+If you can do it better, where's your code?  I have the
+highest degree of respect for your abilities and I have no
+doubt that you could do something similar for KVM over a
+long weekend... but can you also make it work for Xen, for
+in-kernel compression, and for cross-kernel clustering
+(not to mention for other "users" in my queue)?  The foundation
+tmem code in the core kernel (frontswap and cleancache)
+is elegant in its simplicity and _it works_.
+
+REALLY no disrespect intended and I'm sorry if I am flaming,
+so let me calm down by quoting Linus from the LWN KS2011
+article:
+
+  "[Linus] stated that, simply, code that actually is used is
+   code that is actually worth something... code aimed at
+   solving the same problem is just a vague idea that is
+   worthless by comparison...  Even if it truly is crap,
+   we've had crap in the kernel before.  The code does not
+   get better out of tree."
+
+So, please, all the other parts necessary for tmem are
+already in-tree, why all the resistance about frontswap?
+
+Thanks,
+Dan
