@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497Ab1JaTJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 15:09:41 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44909 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933742Ab1JaTFk (ORCPT
+	id S934116Ab1JaTO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 15:14:27 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:49946 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933236Ab1JaTO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 15:05:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, matthltc@us.ibm.com,
-        Tejun Heo <tj@kernel.org>, Marcel Holtmann <marcel@holtmann.org>,
-        wwang <wei_wang@realsil.com.cn>
-Subject: [PATCH 02/17] freezer: don't unnecessarily set PF_NOFREEZE explicitly
-Date: Mon, 31 Oct 2011 12:05:13 -0700
-Message-Id: <1320087928-32307-3-git-send-email-tj@kernel.org>
+	Mon, 31 Oct 2011 15:14:26 -0400
+From: Thieu Le <thieule@chromium.org>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thieu Le <thieule@chromium.org>
+Subject: [PATCH] vfs: Export fallocate facility to kernel modules
+Date: Mon, 31 Oct 2011 12:14:05 -0700
+Message-Id: <1320088445-12373-1-git-send-email-thieule@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1320087928-32307-1-git-send-email-tj@kernel.org>
-References: <1320087928-32307-1-git-send-email-tj@kernel.org>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some drivers set PF_NOFREEZE in their kthread functions which is
-completely unnecessary and racy - some part of freezer code doesn't
-consider cases where PF_NOFREEZE is set asynchronous to freezer
-operations.
+Export fallocate facility so layered file systems such as ecryptfs can
+take advantage of this feature.  One example of the need for fallocate
+is by ecryptfs.  ecryptfs has recently switched to a writeback cache
+model so its dirty pages are not written to the lower file system
+immediately.  In order to ensure that space is available when the page
+is later written, ecryptfs can efficiently preallocate that space using
+vfs_fallocate().
 
-In general, there's no reason to allow setting PF_NOFREEZE explicitly.
-Remove them and change the documentation to note that setting
-PF_NOFREEZE directly isn't allowed.
+vfs_fallocate() does not perform all of the checkings of do_fallocate()
+because those checks are done higher in the stack.  Checking of offset and
+len are done by rw_verify_area() and generic_write_checks().  These
+functions are called by VFS before ecryptfs invokes vfs_fallocate() in its
+ecryptfs_write_end() function.  And since ecryptfs directly opens the lower
+file, it ensures that the file is opened with the proper flags and mode.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>
-Cc: wwang <wei_wang@realsil.com.cn>
+Signed-off-by: Thieu Le <thieule@chromium.org>
 ---
- Documentation/power/freezing-of-tasks.txt |    2 +-
- drivers/bluetooth/btmrvl_main.c           |    2 --
- drivers/mfd/twl4030-irq.c                 |    3 ---
- drivers/mfd/twl6030-irq.c                 |    2 --
- drivers/staging/rts_pstor/rtsx.c          |    2 --
- 5 files changed, 1 insertions(+), 10 deletions(-)
+ fs/open.c          |   14 ++++++++++----
+ include/linux/fs.h |    2 ++
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/power/freezing-of-tasks.txt b/Documentation/power/freezing-of-tasks.txt
-index 38b5724..710c965 100644
---- a/Documentation/power/freezing-of-tasks.txt
-+++ b/Documentation/power/freezing-of-tasks.txt
-@@ -67,7 +67,7 @@ III. Which kernel threads are freezable?
+diff --git a/fs/open.c b/fs/open.c
+index f711921..8a4ba20 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -214,6 +214,15 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
+ #endif /* BITS_PER_LONG == 32 */
  
- Kernel threads are not freezable by default.  However, a kernel thread may clear
- PF_NOFREEZE for itself by calling set_freezable() (the resetting of PF_NOFREEZE
--directly is strongly discouraged).  From this point it is regarded as freezable
-+directly is not allowed).  From this point it is regarded as freezable
- and must call try_to_freeze() in a suitable place.
  
- IV. Why do we do that?
-diff --git a/drivers/bluetooth/btmrvl_main.c b/drivers/bluetooth/btmrvl_main.c
-index 548d1d9..57312d4 100644
---- a/drivers/bluetooth/btmrvl_main.c
-+++ b/drivers/bluetooth/btmrvl_main.c
-@@ -473,8 +473,6 @@ static int btmrvl_service_main_thread(void *data)
++int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
++{
++	if (!file->f_op->fallocate)
++		return -EOPNOTSUPP;
++
++	return file->f_op->fallocate(file, mode, offset, len);
++}
++EXPORT_SYMBOL(vfs_fallocate);
++
+ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ {
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+@@ -263,10 +272,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+ 	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0))
+ 		return -EFBIG;
  
- 	init_waitqueue_entry(&wait, current);
- 
--	current->flags |= PF_NOFREEZE;
+-	if (!file->f_op->fallocate)
+-		return -EOPNOTSUPP;
 -
- 	for (;;) {
- 		add_wait_queue(&thread->wait_q, &wait);
+-	return file->f_op->fallocate(file, mode, offset, len);
++	return vfs_fallocate(file, mode, offset, len);
+ }
  
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 8a7ee31..6aae831 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -289,9 +289,6 @@ static int twl4030_irq_thread(void *data)
- 	static unsigned i2c_errors;
- 	static const unsigned max_i2c_errors = 100;
+ SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 277f497..c0e1225 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1504,6 +1504,8 @@ extern int vfs_link(struct dentry *, struct inode *, struct dentry *);
+ extern int vfs_rmdir(struct inode *, struct dentry *);
+ extern int vfs_unlink(struct inode *, struct dentry *);
+ extern int vfs_rename(struct inode *, struct dentry *, struct inode *, struct dentry *);
++extern int vfs_fallocate(struct file *file, int mode, loff_t offset,
++			 loff_t len);
  
--
--	current->flags |= PF_NOFREEZE;
--
- 	while (!kthread_should_stop()) {
- 		int ret;
- 		int module_irq;
-diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-index eb3b5f8..6fd7795 100644
---- a/drivers/mfd/twl6030-irq.c
-+++ b/drivers/mfd/twl6030-irq.c
-@@ -96,8 +96,6 @@ static int twl6030_irq_thread(void *data)
- 	static const unsigned max_i2c_errors = 100;
- 	int ret;
- 
--	current->flags |= PF_NOFREEZE;
--
- 	while (!kthread_should_stop()) {
- 		int i;
- 		union {
-diff --git a/drivers/staging/rts_pstor/rtsx.c b/drivers/staging/rts_pstor/rtsx.c
-index 480b0ed..8a7803c 100644
---- a/drivers/staging/rts_pstor/rtsx.c
-+++ b/drivers/staging/rts_pstor/rtsx.c
-@@ -466,8 +466,6 @@ static int rtsx_control_thread(void *__dev)
- 	struct rtsx_chip *chip = dev->chip;
- 	struct Scsi_Host *host = rtsx_to_host(dev);
- 
--	current->flags |= PF_NOFREEZE;
--
- 	for (;;) {
- 		if (wait_for_completion_interruptible(&dev->cmnd_ready))
- 			break;
+ /*
+  * VFS dentry helper functions.
 -- 
 1.7.3.1
 
