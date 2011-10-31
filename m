@@ -1,300 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934874Ab1KAASd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:18:33 -0400
+	id S934864Ab1KAASV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:18:21 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:60416 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934855Ab1KAASU (ORCPT
+	with ESMTP id S934110Ab1KAASS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:20 -0400
-Message-Id: <093448$3uek00@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599808"
+	Mon, 31 Oct 2011 20:18:18 -0400
+Message-Id: <093448$3uejvv@wolverine01.qualcomm.com>
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599807"
 From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:58:01 -0500
-Subject: [PATCH v5 00/36] Hexagon: Add support for Qualcomm Hexagon architecture
+Date: Mon, 31 Oct 2011 18:56:59 -0500
+Subject: [PATCH v5 36/36] Add extra arch overrides to asm-generic/checksum.h
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are plausible reasons for architectures to provide their own
+versions of csum_partial_copy_nocheck and csum_tcpudp_magic.
+By protecting these, the architecture can still re-use the
+asm-generic checksum.h, instead of copying it.
 
-Linus,
+Signed-off-by: Linas Vepstas <linas@codeaurora.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/checksum.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-This is the fifth version of the patchset (with one tiny whitespace fix) to
-the Linux kernel to support the Qualcomm Hexagon architecture.  I believe it
-has all the acks necessary and is ready for inclusion in your tree.
-
-Please let me know if there's anything else you require of these patches.
-
-
-Thanks,
-Richard Kuo
-
-
-Richard Kuo (36):
-  Hexagon: Add generic headers
-  Hexagon: Core arch-specific header files
-  Hexagon: Add bitops support
-  Hexagon: Add atomic ops support
-  Hexagon: Add syscalls
-  Hexagon: Add processor and system headers
-  Hexagon: Add threadinfo
-  Hexagon: Add delay functions
-  Hexagon: Add checksum functions
-  Hexagon: Add memcpy and memset accelerated functions
-  Hexagon: Add hypervisor interface
-  Hexagon: Export ksyms defined in assembly files.
-  Hexagon: Support dynamic module loading.
-  Hexagon: Add signal functions
-  Hexagon: Add init_task and process functions
-  Hexagon: Add startup code
-  Hexagon: Add interrupts
-  Hexagon: Add time and timer functions
-  Hexagon: Add ptrace support
-  Hexagon: Provide basic debugging and system trap support.
-  Hexagon: Add SMP support
-  Hexagon: Add locking types and functions
-  Hexagon: Add user access functions
-  Hexagon: Provide basic implementation and/or stubs for I/O routines.
-  Hexagon: Implement basic cache-flush support
-  Hexagon: Implement basic TLB management routines for Hexagon.
-  Hexagon: Provide DMA implementation
-  Hexagon: Add ioremap support
-  Hexagon: Add page table header files & etc.
-  Hexagon: Add page-fault support.
-  Hexagon: kgdb support files
-  Hexagon: Comet platform support
-  Hexagon: Add configuration and makefiles for the Hexagon
-    architecture.
-  Hexagon: Add basic stacktrace functionality for Hexagon architecture.
-  Hexagon: Add self to MAINTAINERS
-  Add extra arch overrides to asm-generic/checksum.h
-
- MAINTAINERS                               |    6 +
- arch/hexagon/Kconfig                      |  220 ++++++++++++
- arch/hexagon/Makefile                     |   59 +++
- arch/hexagon/configs/comet_defconfig      |   85 +++++
- arch/hexagon/include/asm/Kbuild           |   59 +++
- arch/hexagon/include/asm/asm-offsets.h    |    1 +
- arch/hexagon/include/asm/atomic.h         |  164 +++++++++
- arch/hexagon/include/asm/bitops.h         |  301 ++++++++++++++++
- arch/hexagon/include/asm/bitsperlong.h    |   26 ++
- arch/hexagon/include/asm/byteorder.h      |   28 ++
- arch/hexagon/include/asm/cache.h          |   34 ++
- arch/hexagon/include/asm/cacheflush.h     |   99 ++++++
- arch/hexagon/include/asm/checksum.h       |   50 +++
- arch/hexagon/include/asm/delay.h          |   28 ++
- arch/hexagon/include/asm/dma-mapping.h    |  101 ++++++
- arch/hexagon/include/asm/dma.h            |   29 ++
- arch/hexagon/include/asm/elf.h            |  229 ++++++++++++
- arch/hexagon/include/asm/fixmap.h         |   73 ++++
- arch/hexagon/include/asm/fpu.h            |    4 +
- arch/hexagon/include/asm/futex.h          |  137 ++++++++
- arch/hexagon/include/asm/hexagon_vm.h     |  281 +++++++++++++++
- arch/hexagon/include/asm/intrinsics.h     |   26 ++
- arch/hexagon/include/asm/io.h             |  326 +++++++++++++++++
- arch/hexagon/include/asm/irq.h            |   36 ++
- arch/hexagon/include/asm/irqflags.h       |   62 ++++
- arch/hexagon/include/asm/kgdb.h           |   43 +++
- arch/hexagon/include/asm/linkage.h        |   25 ++
- arch/hexagon/include/asm/mem-layout.h     |  112 ++++++
- arch/hexagon/include/asm/mmu.h            |   37 ++
- arch/hexagon/include/asm/mmu_context.h    |  100 ++++++
- arch/hexagon/include/asm/module.h         |   26 ++
- arch/hexagon/include/asm/mutex.h          |    8 +
- arch/hexagon/include/asm/page.h           |  157 +++++++++
- arch/hexagon/include/asm/param.h          |   26 ++
- arch/hexagon/include/asm/perf_event.h     |   24 ++
- arch/hexagon/include/asm/pgalloc.h        |  146 ++++++++
- arch/hexagon/include/asm/pgtable.h        |  518 +++++++++++++++++++++++++++
- arch/hexagon/include/asm/processor.h      |  123 +++++++
- arch/hexagon/include/asm/ptrace.h         |   35 ++
- arch/hexagon/include/asm/registers.h      |  236 +++++++++++++
- arch/hexagon/include/asm/setup.h          |   29 ++
- arch/hexagon/include/asm/sigcontext.h     |   33 ++
- arch/hexagon/include/asm/signal.h         |   26 ++
- arch/hexagon/include/asm/smp.h            |   44 +++
- arch/hexagon/include/asm/spinlock.h       |  186 ++++++++++
- arch/hexagon/include/asm/spinlock_types.h |   42 +++
- arch/hexagon/include/asm/string.h         |   32 ++
- arch/hexagon/include/asm/suspend.h        |   27 ++
- arch/hexagon/include/asm/swab.h           |   24 ++
- arch/hexagon/include/asm/syscall.h        |   54 +++
- arch/hexagon/include/asm/system.h         |  126 +++++++
- arch/hexagon/include/asm/thread_info.h    |  154 ++++++++
- arch/hexagon/include/asm/time.h           |   29 ++
- arch/hexagon/include/asm/timer-regs.h     |   39 ++
- arch/hexagon/include/asm/timex.h          |   37 ++
- arch/hexagon/include/asm/tlb.h            |   39 ++
- arch/hexagon/include/asm/tlbflush.h       |   58 +++
- arch/hexagon/include/asm/traps.h          |   29 ++
- arch/hexagon/include/asm/uaccess.h        |  116 ++++++
- arch/hexagon/include/asm/unistd.h         |   36 ++
- arch/hexagon/include/asm/user.h           |   81 +++++
- arch/hexagon/include/asm/vdso.h           |   31 ++
- arch/hexagon/include/asm/vm_fault.h       |   26 ++
- arch/hexagon/include/asm/vm_mmu.h         |  111 ++++++
- arch/hexagon/kernel/Makefile              |   19 +
- arch/hexagon/kernel/asm-offsets.c         |  104 ++++++
- arch/hexagon/kernel/dma.c                 |  220 ++++++++++++
- arch/hexagon/kernel/head.S                |  162 +++++++++
- arch/hexagon/kernel/hexagon_ksyms.c       |   42 +++
- arch/hexagon/kernel/init_task.c           |   54 +++
- arch/hexagon/kernel/irq_cpu.c             |   90 +++++
- arch/hexagon/kernel/kgdb.c                |  255 ++++++++++++++
- arch/hexagon/kernel/module.c              |  162 +++++++++
- arch/hexagon/kernel/process.c             |  279 +++++++++++++++
- arch/hexagon/kernel/ptrace.c              |  180 ++++++++++
- arch/hexagon/kernel/reset.c               |   38 ++
- arch/hexagon/kernel/setup.c               |  145 ++++++++
- arch/hexagon/kernel/signal.c              |  345 ++++++++++++++++++
- arch/hexagon/kernel/smp.c                 |  276 +++++++++++++++
- arch/hexagon/kernel/stacktrace.c          |   66 ++++
- arch/hexagon/kernel/syscall.c             |   90 +++++
- arch/hexagon/kernel/syscalltab.c          |   32 ++
- arch/hexagon/kernel/time.c                |  250 +++++++++++++
- arch/hexagon/kernel/topology.c            |   52 +++
- arch/hexagon/kernel/trampoline.S          |   35 ++
- arch/hexagon/kernel/traps.c               |  454 ++++++++++++++++++++++++
- arch/hexagon/kernel/vdso.c                |  101 ++++++
- arch/hexagon/kernel/vm_entry.S            |  269 ++++++++++++++
- arch/hexagon/kernel/vm_events.c           |  101 ++++++
- arch/hexagon/kernel/vm_init_segtable.S    |  442 +++++++++++++++++++++++
- arch/hexagon/kernel/vm_ops.S              |  102 ++++++
- arch/hexagon/kernel/vm_switch.S           |   95 +++++
- arch/hexagon/kernel/vm_vectors.S          |   50 +++
- arch/hexagon/kernel/vmlinux.lds.S         |   93 +++++
- arch/hexagon/lib/Makefile                 |    4 +
- arch/hexagon/lib/checksum.c               |  203 +++++++++++
- arch/hexagon/lib/io.c                     |   91 +++++
- arch/hexagon/lib/memcpy.S                 |  543 +++++++++++++++++++++++++++++
- arch/hexagon/lib/memset.S                 |  316 +++++++++++++++++
- arch/hexagon/mm/Makefile                  |    7 +
- arch/hexagon/mm/cache.c                   |  128 +++++++
- arch/hexagon/mm/copy_from_user.S          |  114 ++++++
- arch/hexagon/mm/copy_to_user.S            |   92 +++++
- arch/hexagon/mm/copy_user_template.S      |  185 ++++++++++
- arch/hexagon/mm/init.c                    |  276 +++++++++++++++
- arch/hexagon/mm/ioremap.c                 |   56 +++
- arch/hexagon/mm/pgalloc.c                 |   25 ++
- arch/hexagon/mm/strnlen_user.S            |  140 ++++++++
- arch/hexagon/mm/uaccess.c                 |   59 +++
- arch/hexagon/mm/vm_fault.c                |  187 ++++++++++
- arch/hexagon/mm/vm_tlb.c                  |   93 +++++
- include/asm-generic/checksum.h            |    4 +
- include/asm-generic/rwsem.h               |  132 +++++++
- 113 files changed, 12747 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/Kconfig
- create mode 100644 arch/hexagon/Makefile
- create mode 100644 arch/hexagon/configs/comet_defconfig
- create mode 100644 arch/hexagon/include/asm/Kbuild
- create mode 100644 arch/hexagon/include/asm/asm-offsets.h
- create mode 100644 arch/hexagon/include/asm/atomic.h
- create mode 100644 arch/hexagon/include/asm/bitops.h
- create mode 100644 arch/hexagon/include/asm/bitsperlong.h
- create mode 100644 arch/hexagon/include/asm/byteorder.h
- create mode 100644 arch/hexagon/include/asm/cache.h
- create mode 100644 arch/hexagon/include/asm/cacheflush.h
- create mode 100644 arch/hexagon/include/asm/checksum.h
- create mode 100644 arch/hexagon/include/asm/delay.h
- create mode 100644 arch/hexagon/include/asm/dma-mapping.h
- create mode 100644 arch/hexagon/include/asm/dma.h
- create mode 100644 arch/hexagon/include/asm/elf.h
- create mode 100644 arch/hexagon/include/asm/fixmap.h
- create mode 100644 arch/hexagon/include/asm/fpu.h
- create mode 100644 arch/hexagon/include/asm/futex.h
- create mode 100644 arch/hexagon/include/asm/hexagon_vm.h
- create mode 100644 arch/hexagon/include/asm/intrinsics.h
- create mode 100644 arch/hexagon/include/asm/io.h
- create mode 100644 arch/hexagon/include/asm/irq.h
- create mode 100644 arch/hexagon/include/asm/irqflags.h
- create mode 100644 arch/hexagon/include/asm/kgdb.h
- create mode 100644 arch/hexagon/include/asm/linkage.h
- create mode 100644 arch/hexagon/include/asm/mem-layout.h
- create mode 100644 arch/hexagon/include/asm/mmu.h
- create mode 100644 arch/hexagon/include/asm/mmu_context.h
- create mode 100644 arch/hexagon/include/asm/module.h
- create mode 100644 arch/hexagon/include/asm/mutex.h
- create mode 100644 arch/hexagon/include/asm/page.h
- create mode 100644 arch/hexagon/include/asm/param.h
- create mode 100644 arch/hexagon/include/asm/perf_event.h
- create mode 100644 arch/hexagon/include/asm/pgalloc.h
- create mode 100644 arch/hexagon/include/asm/pgtable.h
- create mode 100644 arch/hexagon/include/asm/processor.h
- create mode 100644 arch/hexagon/include/asm/ptrace.h
- create mode 100644 arch/hexagon/include/asm/registers.h
- create mode 100644 arch/hexagon/include/asm/setup.h
- create mode 100644 arch/hexagon/include/asm/sigcontext.h
- create mode 100644 arch/hexagon/include/asm/signal.h
- create mode 100644 arch/hexagon/include/asm/smp.h
- create mode 100644 arch/hexagon/include/asm/spinlock.h
- create mode 100644 arch/hexagon/include/asm/spinlock_types.h
- create mode 100644 arch/hexagon/include/asm/string.h
- create mode 100644 arch/hexagon/include/asm/suspend.h
- create mode 100644 arch/hexagon/include/asm/swab.h
- create mode 100644 arch/hexagon/include/asm/syscall.h
- create mode 100644 arch/hexagon/include/asm/system.h
- create mode 100644 arch/hexagon/include/asm/thread_info.h
- create mode 100644 arch/hexagon/include/asm/time.h
- create mode 100644 arch/hexagon/include/asm/timer-regs.h
- create mode 100644 arch/hexagon/include/asm/timex.h
- create mode 100644 arch/hexagon/include/asm/tlb.h
- create mode 100644 arch/hexagon/include/asm/tlbflush.h
- create mode 100644 arch/hexagon/include/asm/traps.h
- create mode 100644 arch/hexagon/include/asm/uaccess.h
- create mode 100644 arch/hexagon/include/asm/unistd.h
- create mode 100644 arch/hexagon/include/asm/user.h
- create mode 100644 arch/hexagon/include/asm/vdso.h
- create mode 100644 arch/hexagon/include/asm/vm_fault.h
- create mode 100644 arch/hexagon/include/asm/vm_mmu.h
- create mode 100644 arch/hexagon/kernel/Makefile
- create mode 100644 arch/hexagon/kernel/asm-offsets.c
- create mode 100644 arch/hexagon/kernel/dma.c
- create mode 100644 arch/hexagon/kernel/head.S
- create mode 100644 arch/hexagon/kernel/hexagon_ksyms.c
- create mode 100644 arch/hexagon/kernel/init_task.c
- create mode 100644 arch/hexagon/kernel/irq_cpu.c
- create mode 100644 arch/hexagon/kernel/kgdb.c
- create mode 100644 arch/hexagon/kernel/module.c
- create mode 100644 arch/hexagon/kernel/process.c
- create mode 100644 arch/hexagon/kernel/ptrace.c
- create mode 100644 arch/hexagon/kernel/reset.c
- create mode 100644 arch/hexagon/kernel/setup.c
- create mode 100644 arch/hexagon/kernel/signal.c
- create mode 100644 arch/hexagon/kernel/smp.c
- create mode 100644 arch/hexagon/kernel/stacktrace.c
- create mode 100644 arch/hexagon/kernel/syscall.c
- create mode 100644 arch/hexagon/kernel/syscalltab.c
- create mode 100644 arch/hexagon/kernel/time.c
- create mode 100644 arch/hexagon/kernel/topology.c
- create mode 100644 arch/hexagon/kernel/trampoline.S
- create mode 100644 arch/hexagon/kernel/traps.c
- create mode 100644 arch/hexagon/kernel/vdso.c
- create mode 100644 arch/hexagon/kernel/vm_entry.S
- create mode 100644 arch/hexagon/kernel/vm_events.c
- create mode 100644 arch/hexagon/kernel/vm_init_segtable.S
- create mode 100644 arch/hexagon/kernel/vm_ops.S
- create mode 100644 arch/hexagon/kernel/vm_switch.S
- create mode 100644 arch/hexagon/kernel/vm_vectors.S
- create mode 100644 arch/hexagon/kernel/vmlinux.lds.S
- create mode 100644 arch/hexagon/lib/Makefile
- create mode 100644 arch/hexagon/lib/checksum.c
- create mode 100644 arch/hexagon/lib/io.c
- create mode 100644 arch/hexagon/lib/memcpy.S
- create mode 100644 arch/hexagon/lib/memset.S
- create mode 100644 arch/hexagon/mm/Makefile
- create mode 100644 arch/hexagon/mm/cache.c
- create mode 100644 arch/hexagon/mm/copy_from_user.S
- create mode 100644 arch/hexagon/mm/copy_to_user.S
- create mode 100644 arch/hexagon/mm/copy_user_template.S
- create mode 100644 arch/hexagon/mm/init.c
- create mode 100644 arch/hexagon/mm/ioremap.c
- create mode 100644 arch/hexagon/mm/pgalloc.c
- create mode 100644 arch/hexagon/mm/strnlen_user.S
- create mode 100644 arch/hexagon/mm/uaccess.c
- create mode 100644 arch/hexagon/mm/vm_fault.c
- create mode 100644 arch/hexagon/mm/vm_tlb.c
- create mode 100644 include/asm-generic/rwsem.h
+diff --git a/include/asm-generic/checksum.h b/include/asm-generic/checksum.h
+index 4647c76..c084767 100644
+--- a/include/asm-generic/checksum.h
++++ b/include/asm-generic/checksum.h
+@@ -33,8 +33,10 @@ extern __wsum csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
+ extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
+ 					int len, __wsum sum, int *csum_err);
+ 
++#ifndef csum_partial_copy_nocheck
+ #define csum_partial_copy_nocheck(src, dst, len, sum)	\
+ 	csum_partial_copy((src), (dst), (len), (sum))
++#endif
+ 
+ /*
+  * This is a version of ip_compute_csum() optimized for IP headers,
+@@ -63,12 +65,14 @@ csum_tcpudp_nofold(__be32 saddr, __be32 daddr, unsigned short len,
+ 		unsigned short proto, __wsum sum);
+ #endif
+ 
++#ifndef csum_tcpudp_magic
+ static inline __sum16
+ csum_tcpudp_magic(__be32 saddr, __be32 daddr, unsigned short len,
+ 		  unsigned short proto, __wsum sum)
+ {
+ 	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
+ }
++#endif
+ 
+ /*
+  * this routine is used for miscellaneous IP-like checksums, mainly
+-- 
+1.7.1
 
 
 --
