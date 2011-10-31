@@ -1,83 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934373Ab1JaLX5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 07:23:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47426 "EHLO gate.crashing.org"
+	id S934397Ab1JaLda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 07:33:30 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39226 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932704Ab1JaLXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 07:23:55 -0400
-Subject: Re: powerpc 476, Little-endian, pte fault
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Santosh Kumar <santoshkumar.a@gmail.com>, linuxppc-dev@ozlabs.org,
-        Ian Munsie <ianmunsi@au1.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20440.1320054588@neuling.org>
-References: <CAJw04pD24W_nGSLheWunCa_o7QqBmRf_TSAD44EkzazigRe_nQ@mail.gmail.com>
-	 <12144.1320040276@neuling.org>
-	 <CAJw04pAh5QDQMkUHbj9=rRPiUCZejimHiydCJFMAoZeSd_ydhA@mail.gmail.com>
-	 <20440.1320054588@neuling.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 Oct 2011 12:23:34 +0100
-Message-ID: <1320060214.30202.34.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S932718Ab1JaLd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 07:33:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,431,1315206000"; 
+   d="scan'208";a="68778810"
+Date: Mon, 31 Oct 2011 19:33:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "xfs@oss.sgi.com" <xfs@oss.sgi.com>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 3/5] mm: try to distribute dirty pages fairly across
+ zones
+Message-ID: <20111031113321.GA30890@localhost>
+References: <1317367044-475-1-git-send-email-jweiner@redhat.com>
+ <1317367044-475-4-git-send-email-jweiner@redhat.com>
+ <20110930142805.GC869@tiehlicka.suse.cz>
+ <20111028201829.GA20607@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111028201829.GA20607@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 20:49 +1100, Michael Neuling wrote:
-> > I have built a cross compiler for ppc440 in little endian mode and
-> > using it to build the kernel.
-> > 
-> > Yes i am running Linux in Little-Endian. This is the first user space
-> > process. I wrote the below program and running it as init from
-> > /sbin/init. I have also set the permissions with chmod +s.
-> > 
-> > main()
-> > {
-> > 
-> > while(1){
-> > printf("hello world");
-> > sleep(1);
-> >  }
-> > }
-> 
-> Does libc even support little endian on PPC?
+> //regression
+> 3) much increased cpu %user and %system for btrfs
 
-Ian did a port a while back for uClibc, is that at least partially based
-on it ?
+Sorry I find out that the CPU time regressions for btrfs are caused by
+some additional trace events enabled on btrfs (for debugging an
+unrelated btrfs hang bug) which results in 7 times more trace event
+lines:
 
-> > I have attached the patch.
-> 
-> This is a pretty huge patch:
-> 
->  115 files changed, 44479 insertions(+), 7398 deletions(-)
-> 
-> It seems to include a new platform as well as a bunch of unrelated junk.
->
-> I suggest you need to break this down into something more digestible.
-> Like remove all the junk in the patch.  Then add the support for the new
-> platform (invader? platform).  Then start looking at little endian.
-> Unless you do this, it's unlikely anyone here is going to be able to
-> help.
->
-> When you get to the little endian work, you might want to take a look at
-> this patch series from Ian Munsie:
-> 
-> http://lists.ozlabs.org/pipermail/linuxppc-dev/2010-October/086165.html
+ 2701238 /export/writeback/thresh=1000M/btrfs-1dd-4k-8p-2941M-1000M:10-3.1.0-rc9-ioless-full-nfs-wq5-next-20111014+
+19054054 /export/writeback/thresh=1000M/btrfs-1dd-4k-8p-2941M-1000M:10-3.1.0-rc9-ioless-full-per-zone-dirty-next-20111014+
 
-Right, the new patch should be if possible based on Ian's series or at
-least a cleaned / rebased variant of it. Then split in bits so we can
-review it properly.
+So no real regressions.
 
-Cheers,
-Ben.
+Besides, the patchset also performs good on random writes:
 
-> Mikey
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+3.1.0-rc9-ioless-full-nfs-wq5-next-20111014+  3.1.0-rc9-ioless-full-per-zone-dirty-next-20111014+  
+------------------------  ------------------------  
+                    1.65        -5.1%         1.57  MMAP-RANDWRITE-4K/btrfs-fio_fat_mmap_randwrite_4k-4k-8p-4096M-20:10-X
+                   18.65        -6.4%        17.46  MMAP-RANDWRITE-4K/ext3-fio_fat_mmap_randwrite_4k-4k-8p-4096M-20:10-X
+                    2.09        +1.2%         2.12  MMAP-RANDWRITE-4K/ext4-fio_fat_mmap_randwrite_4k-4k-8p-4096M-20:10-X
+                    2.49        -0.3%         2.48  MMAP-RANDWRITE-4K/xfs-fio_fat_mmap_randwrite_4k-4k-8p-4096M-20:10-X
+                   51.35        +0.0%        51.36  MMAP-RANDWRITE-64K/btrfs-fio_fat_mmap_randwrite_64k-64k-8p-4096M-20:10-X
+                   45.20        +0.5%        45.43  MMAP-RANDWRITE-64K/ext3-fio_fat_mmap_randwrite_64k-64k-8p-4096M-20:10-X
+                   44.77        +0.7%        45.10  MMAP-RANDWRITE-64K/ext4-fio_fat_mmap_randwrite_64k-64k-8p-4096M-20:10-X
+                   45.11        +2.5%        46.23  MMAP-RANDWRITE-64K/xfs-fio_fat_mmap_randwrite_64k-64k-8p-4096M-20:10-X
+                  211.31        +0.2%       211.74  TOTAL write_bw
 
+And writes to USB key:
 
+3.1.0-rc9-ioless-full-nfs-wq5-next-20111014+  3.1.0-rc9-ioless-full-per-zone-dirty-next-20111014+  
+------------------------  ------------------------  
+                    5.94        +0.8%         5.99  UKEY-thresh=1G/btrfs-1dd-4k-8p-4096M-1024M:10-X
+                    2.64        -0.8%         2.62  UKEY-thresh=1G/ext3-10dd-4k-8p-4096M-1024M:10-X
+                    5.10        +0.3%         5.12  UKEY-thresh=1G/ext3-1dd-4k-8p-4096M-1024M:10-X
+                    3.26        -0.8%         3.24  UKEY-thresh=1G/ext3-2dd-4k-8p-4096M-1024M:10-X
+                    5.63        -0.5%         5.60  UKEY-thresh=1G/ext4-10dd-4k-8p-4096M-1024M:10-X
+                    6.04        -0.1%         6.04  UKEY-thresh=1G/ext4-1dd-4k-8p-4096M-1024M:10-X
+                    5.90        -0.2%         5.88  UKEY-thresh=1G/ext4-2dd-4k-8p-4096M-1024M:10-X
+                    2.45       +22.6%         3.00  UKEY-thresh=1G/xfs-10dd-4k-8p-4096M-1024M:10-X
+                    6.18        -0.4%         6.16  UKEY-thresh=1G/xfs-1dd-4k-8p-4096M-1024M:10-X
+                    4.81        +0.0%         4.81  UKEY-thresh=1G/xfs-2dd-4k-8p-4096M-1024M:10-X
+                   47.94        +1.1%        48.45  TOTAL write_bw
+
+In summary, I see no problem at all in these trivial writeback tests.
+
+Tested-by: Wu Fengguang <fengguang.wu@intel.com>
+
+Thanks,
+Fengguang
