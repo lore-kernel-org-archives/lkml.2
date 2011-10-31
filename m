@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933427Ab1JaRTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 13:19:00 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35522 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab1JaRS7 (ORCPT
+	id S933491Ab1JaRTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:19:18 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:64612 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932861Ab1JaRTP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 13:18:59 -0400
-Message-ID: <4EAEAE3D.8070102@jp.fujitsu.com>
-Date: Mon, 31 Oct 2011 10:18:37 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Mon, 31 Oct 2011 13:19:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=vjItZZ
+	95zb8d5U6zVUYjAbGaFigJw2+KAFfN09fqP0GztUwMv2Ep2UzeEPlBzUpgnvpMir
+	i1IaGtYd/3LRJmSHltgmdSbi+EGCPq2uffDF1dOm9pN67VpfxGniuc9Lfobpgzgw
+	d0tc80zT2CP+lKjDC4cnrZS7Bk3TfCV4DHyX0=
+From: Junio C Hamano <junio@pobox.com>
+To: Stefan =?utf-8?Q?N=C3=A4we?= <stefan.naewe@atlas-elektronik.com>
+Cc: "git\@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.8.rc0
+References: <7vfwi9rc0g.fsf@alter.siamese.dyndns.org>
+ <4EAEAE13.50101@atlas-elektronik.com>
+Date: Mon, 31 Oct 2011 10:19:12 -0700
+In-Reply-To: <4EAEAE13.50101@atlas-elektronik.com> ("Stefan =?utf-8?Q?N?=
+ =?utf-8?Q?=C3=A4we=22's?= message of "Mon, 31 Oct 2011 15:17:55 +0100")
+Message-ID: <7v8vo1qdtb.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: fhrbata@redhat.com
-CC: rientjes@google.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, oleg@redhat.com, minchan.kim@gmail.com,
-        stable@kernel.org, eteo@redhat.com, pmatouse@redhat.com
-Subject: Re: [PATCH v2] oom: fix integer overflow of points in oom_badness
-References: <1320048865-13175-1-git-send-email-fhrbata@redhat.com> <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
-In-Reply-To: <1320076569-23872-1-git-send-email-fhrbata@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 74A5FAC0-03E4-11E1-9430-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(10/31/2011 11:56 AM), Frantisek Hrbata wrote:
-> An integer overflow will happen on 64bit archs if task's sum of rss, swapents
-> and nr_ptes exceeds (2^31)/1000 value. This was introduced by commit
-> 
-> f755a04 oom: use pte pages in OOM score
-> 
-> where the oom score computation was divided into several steps and it's no
-> longer computed as one expression in unsigned long(rss, swapents, nr_pte are
-> unsigned long), where the result value assigned to points(int) is in
-> range(1..1000). So there could be an int overflow while computing
-> 
-> 176          points *= 1000;
-> 
-> and points may have negative value. Meaning the oom score for a mem hog task
-> will be one.
-> 
-> 196          if (points <= 0)
-> 197                  return 1;
-> 
-> For example:
-> [ 3366]     0  3366 35390480 24303939   5       0             0 oom01
-> Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
-> 
-> Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
-> memory, but it's oom score is one.
-> 
-> In this situation the mem hog task is skipped and oom killer kills another and
-> most probably innocent task with oom score greater than one.
-> 
-> The points variable should be of type long instead of int to prevent the int
-> overflow.
-> 
-> Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-> ---
->  mm/oom_kill.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 626303b..e9a1785 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -162,7 +162,7 @@ static bool oom_unkillable_task(struct task_struct *p,
->  unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
->  		      const nodemask_t *nodemask, unsigned long totalpages)
->  {
-> -	int points;
-> +	long points;
->  
->  	if (oom_unkillable_task(p, mem, nodemask))
->  		return 0;
+Stefan Näwe <stefan.naewe@atlas-elektronik.com> writes:
 
-Good catch.
+>>  * HTTP transport did not use pushurl correctly, and also did not tell
+>>    what host it is trying to authenticate with when asking for
+>>    credentials.
+>>    (merge deba493 jk/http-auth later to maint).
+>
+> This seems to break pushing with https for me.
+> It never uses values from my '~/.netrc'.
+> I'll come up with a detailed scenario later.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Thanks.
 
-
+I have been pushing my updates out to code.google.com via authentication
+token stored in ~/.netrc over https, so it would be nice to see what
+breaks for you that works for me. There probably is something subtly
+different.
