@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934524Ab1JaPoq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:44:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50761 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933392Ab1JaPop (ORCPT
+	id S934530Ab1JaPqL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:46:11 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35446 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933392Ab1JaPqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:44:45 -0400
-X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=nDqYd8iKHsYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=D19gQVrFAAAA:8 a=8lJELL_dshy6mX-vN1EA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1320075882.4793.4.camel@gandalf.stny.rr.com>
-Subject: Re: linux-next 20111025: warnings in
- rcu_idle_exit_common()/rcu_idle_enter_common()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
-Date: Mon, 31 Oct 2011 11:44:42 -0400
-In-Reply-To: <20111031121951.GM6160@linux.vnet.ibm.com>
-References: <20111031082634.GA10348@localhost>
-	 <20111031095152.GL6160@linux.vnet.ibm.com>
-	 <20111031104325.GA25808@localhost> <20111031114142.GA32555@localhost>
-	 <20111031121951.GM6160@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 31 Oct 2011 11:46:09 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: chris.mason@oracle.com
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH] btrfs: add block plug for .writepages
+Date: Tue,  1 Nov 2011 00:45:07 +0900
+Message-Id: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 05:19 -0700, Paul E. McKenney wrote:
-> On Mon, Oct 31, 2011 at 07:41:42PM +0800, Wu Fengguang wrote:
-> > On Mon, Oct 31, 2011 at 06:43:25PM +0800, Wu Fengguang wrote:
-> > > On Mon, Oct 31, 2011 at 05:51:52PM +0800, Paul E. McKenney wrote:
-> > > > On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
-> > > > > Hi Paul,
-> > > > >
-> > > > > I got two warnings in rcutree.c. The last working kernels are
-> > > > > linux-next 20111014 and linux v3.1.
-> > > > 
-> > > > Interesting.  Could you please enable RCU event tracing at boot?
-> > > 
-> > > Sorry I cannot...possibly due to another ftrace bug.
-> > > 
-> > > > The RCU event tracing is at tracing/events/rcu/enable relative to
-> > > > the debugfs mount point at runtime, if that helps.
-> > > 
-> > > It's exactly that linux next 20111025 (comparing to 20111014) no
-> > > longer produces all the trace events that made me looking into the
-> > > dmesg and find the warning from RCU (rather than the expected warning
-> > > from ftrace).
-> > > 
-> > > The trace output is now:
-> > > 
-> > >         # tracer: nop
-> > >         #
-> > >         # WARNING: FUNCTION TRACING IS CORRUPTED
-> > >         #          MAY BE MISSING FUNCTION EVENTS
-> > >         #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
-> > >         #              | |       |          |         |
-> > > (nothing more)
-> > 
-> > I checked the other test box and got the same warnings. Below is the
-> > full dmesg.
-> > 
-> > No single trace output again..
-> 
-> Hmmm...  I wonder if it is too early during boot for tracing to work
-> correctly.
-> 
-> Gah!  I have rcu/next set ahead to commits that are not supposed to go
-> upstream yet.  I reset it back to match the stuff that is targeted for
-> the current merge window.  Still need to find the bug, of course.
-> 
-> Anyone have any idea why the kworker thread might be trying to enter
-> the idle loop?  The idle_cpu(smp_processor_id()) call believes that
-> this is not the idle task.  Or does x86 allow non-idle tasks to enter
-> the idle loop?  Or to be migrated off-CPU?
+Add block plug for btrfs .writepages. Block plug is helpful to reduce block lock contention.
 
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ fs/btrfs/extent_io.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-It's not. Carsten Emde noticed what looked like a bug in ftrace last
-week at LinuxCon, and looking deeper at it, I found that the swapper
-task for all but CPU0 is named kworker.  That's because kworker creates
-the idle task for all other CPUs besides CPU 0 and the idle task takes
-on kworker name.
-
-Carsten posted a patch last week too:
-
-https://lkml.org/lkml/2011/10/26/313
-
-I'm glad that this bug shows up outside of just ftrace :)
-
--- Steve
-
-
+diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+index d418164..8f2d6bd 100644
+--- a/fs/btrfs/extent_io.c
++++ b/fs/btrfs/extent_io.c
+@@ -2388,6 +2388,7 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+ 	pgoff_t end;		/* Inclusive */
+ 	int scanned = 0;
+ 	int tag;
++	struct blk_plug plug;
+ 
+ 	pagevec_init(&pvec, 0);
+ 	if (wbc->range_cyclic) {
+@@ -2405,6 +2406,8 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+ retry:
+ 	if (wbc->sync_mode == WB_SYNC_ALL)
+ 		tag_pages_for_writeback(mapping, index, end);
++
++	blk_start_plug(&plug);
+ 	while (!done && !nr_to_write_done && (index <= end) &&
+ 	       (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
+ 			min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1))) {
+@@ -2468,6 +2471,7 @@ retry:
+ 		pagevec_release(&pvec);
+ 		cond_resched();
+ 	}
++	blk_finish_plug(&plug);
+ 	if (!scanned && !done) {
+ 		/*
+ 		 * We hit the last page and there is more work to be done: wrap
+-- 
+1.7.4.4
 
