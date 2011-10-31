@@ -1,162 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab1JaIwQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 04:52:16 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:49094 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119Ab1JaIwP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 04:52:15 -0400
-Date: Mon, 31 Oct 2011 04:40:25 -0400 (EDT)
-Message-Id: <20111031.044025.134410682817900998.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	id S932233Ab1JaIzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 04:55:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:51159 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754599Ab1JaIzi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 04:55:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,429,1315206000"; 
+   d="scan'208";a="68735646"
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111031082317.GA21440@barrios-laptop.redhat.com>
+References: <1319511580.22361.141.camel@sli10-conroe>
+	 <20111029000624.GA1261@barrios-laptop.redhat.com>
+	 <1320024088.22361.176.camel@sli10-conroe>
+	 <20111031082317.GA21440@barrios-laptop.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Oct 2011 17:03:33 +0800
+Message-ID: <1320051813.22361.182.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 31 Oct 2011 01:52:14 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-10-31 at 16:23 +0800, Minchan Kim wrote:
+> On Mon, Oct 31, 2011 at 09:21:28AM +0800, Shaohua Li wrote:
+> > On Sat, 2011-10-29 at 08:06 +0800, Minchan Kim wrote:
+> > > On Tue, Oct 25, 2011 at 10:59:40AM +0800, Shaohua Li wrote:
+> > > > With current logic, if page reclaim finds a huge page, it will just reclaim
+> > > > the head page and leave tail pages reclaimed later. Let's take an example,
+> > > > lru list has page A and B, page A is huge page:
+> > > > 1. page A is isolated
+> > > > 2. page B is isolated
+> > > > 3. shrink_page_list() adds page A to swap page cache. so page A is split.
+> > > > page A+1, page A+2, ... are added to lru list.
+> > > > 4. shrink_page_list() adds page B to swap page cache.
+> > > > 5. page A and B is written out and reclaimed.
+> > > > 6. page A+1, A+2 ... is isolated and reclaimed later.
+> > > > So the reclaim order is A, B, ...(maybe other pages), A+1, A+2 ...
+> > > >
+> > > > We expected the whole huge page A is reclaimed in the meantime, so
+> > > > the order is A, A+1, ... A+HPAGE_PMD_NR-1, B, ....
+> > > >
+> > > > With this patch, we do huge page split just after the head page is isolated
+> > > > for inactive lru list, so the tail pages will be reclaimed immediately.
+> > > >
+> > > > In a test, a range of anonymous memory is written and will trigger swap.
+> > > > Without the patch:
+> > > > #cat /proc/vmstat|grep thp
+> > > > thp_fault_alloc 451
+> > > > thp_fault_fallback 0
+> > > > thp_collapse_alloc 0
+> > > > thp_collapse_alloc_failed 0
+> > > > thp_split 238
+> > > >
+> > > > With the patch:
+> > > > #cat /proc/vmstat|grep thp
+> > > > thp_fault_alloc 450
+> > > > thp_fault_fallback 1
+> > > > thp_collapse_alloc 0
+> > > > thp_collapse_alloc_failed 0
+> > > > thp_split 103
+> > > >
+> > > > So the thp_split number is reduced a lot, though there is one extra
+> > > > thp_fault_fallback.
+> > > >
+> > > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > > > ---
+> > > >  include/linux/memcontrol.h |    3 +-
+> > > >  mm/memcontrol.c            |   12 +++++++++--
+> > > >  mm/vmscan.c                |   49 ++++++++++++++++++++++++++++++++++-----------
+> > > >  3 files changed, 50 insertions(+), 14 deletions(-)
+> > > >
+> > > > Index: linux/mm/vmscan.c
+> > > > ===================================================================
+> > > > --- linux.orig/mm/vmscan.c    2011-10-25 08:36:08.000000000 +0800
+> > > > +++ linux/mm/vmscan.c 2011-10-25 09:51:44.000000000 +0800
+> > > > @@ -1076,7 +1076,8 @@ int __isolate_lru_page(struct page *page
+> > > >   */
+> > > >  static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+> > > >               struct list_head *src, struct list_head *dst,
+> > > > -             unsigned long *scanned, int order, int mode, int file)
+> > > > +             unsigned long *scanned, int order, int mode, int file,
+> > > > +             struct page **split_page)
+> > > >  {
+> > > >       unsigned long nr_taken = 0;
+> > > >       unsigned long nr_lumpy_taken = 0;
+> > > > @@ -1100,7 +1101,12 @@ static unsigned long isolate_lru_pages(u
+> > > >               case 0:
+> > > >                       list_move(&page->lru, dst);
+> > > >                       mem_cgroup_del_lru(page);
+> > > > -                     nr_taken += hpage_nr_pages(page);
+> > > > +                     if (PageTransHuge(page) && split_page) {
+> > > > +                             nr_taken++;
+> > > > +                             *split_page = page;
+> > > > +                             goto out;
+> > > > +                     } else
+> > > > +                             nr_taken += hpage_nr_pages(page);
+> > > >                       break;
+> > > >
+> > > >               case -EBUSY:
+> > > > @@ -1158,11 +1164,16 @@ static unsigned long isolate_lru_pages(u
+> > > >                       if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> > > >                               list_move(&cursor_page->lru, dst);
+> > > >                               mem_cgroup_del_lru(cursor_page);
+> > > > -                             nr_taken += hpage_nr_pages(page);
+> > > >                               nr_lumpy_taken++;
+> > > >                               if (PageDirty(cursor_page))
+> > > >                                       nr_lumpy_dirty++;
+> > > >                               scan++;
+> > > > +                             if (PageTransHuge(page) && split_page) {
+> > > > +                                     nr_taken++;
+> > > > +                                     *split_page = page;
+> > > > +                                     goto out;
+> > > > +                             } else
+> > > > +                                     nr_taken += hpage_nr_pages(page);
+> > > >                       } else {
+> > > >                               /*
+> > > >                                * Check if the page is freed already.
+> > > > @@ -1188,6 +1199,7 @@ static unsigned long isolate_lru_pages(u
+> > > >                       nr_lumpy_failed++;
+> > > >       }
+> > > >
+> > > > +out:
+> > > >       *scanned = scan;
+> > > >
+> > > >       trace_mm_vmscan_lru_isolate(order,
+> > > > @@ -1202,7 +1214,8 @@ static unsigned long isolate_pages_globa
+> > > >                                       struct list_head *dst,
+> > > >                                       unsigned long *scanned, int order,
+> > > >                                       int mode, struct zone *z,
+> > > > -                                     int active, int file)
+> > > > +                                     int active, int file,
+> > > > +                                     struct page **split_page)
+> > > >  {
+> > > >       int lru = LRU_BASE;
+> > > >       if (active)
+> > > > @@ -1210,7 +1223,7 @@ static unsigned long isolate_pages_globa
+> > > >       if (file)
+> > > >               lru += LRU_FILE;
+> > > >       return isolate_lru_pages(nr, &z->lru[lru].list, dst, scanned, order,
+> > > > -                                                             mode, file);
+> > > > +                                                     mode, file, split_page);
+> > > >  }
+> > > >
+> > > >  /*
+> > > > @@ -1444,10 +1457,12 @@ shrink_inactive_list(unsigned long nr_to
+> > > >  {
+> > > >       LIST_HEAD(page_list);
+> > > >       unsigned long nr_scanned;
+> > > > +     unsigned long total_scanned = 0;
+> > > >       unsigned long nr_reclaimed = 0;
+> > > >       unsigned long nr_taken;
+> > > >       unsigned long nr_anon;
+> > > >       unsigned long nr_file;
+> > > > +     struct page *split_page;
+> > > >
+> > > >       while (unlikely(too_many_isolated(zone, file, sc))) {
+> > > >               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > > > @@ -1458,16 +1473,19 @@ shrink_inactive_list(unsigned long nr_to
+> > > >       }
+> > > >
+> > > >       set_reclaim_mode(priority, sc, false);
+> > > > +again:
+> > > >       lru_add_drain();
+> > > > +     split_page = NULL;
+> > > >       spin_lock_irq(&zone->lru_lock);
+> > > >
+> > > >       if (scanning_global_lru(sc)) {
+> > > > -             nr_taken = isolate_pages_global(nr_to_scan,
+> > > > +             nr_taken = isolate_pages_global(nr_to_scan - total_scanned,
+> > > >                       &page_list, &nr_scanned, sc->order,
+> > > >                       sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> > > >                                       ISOLATE_BOTH : ISOLATE_INACTIVE,
+> > > > -                     zone, 0, file);
+> > > > +                     zone, 0, file, &split_page);
+> > > >               zone->pages_scanned += nr_scanned;
+> > > > +             total_scanned += nr_scanned;
+> > > >               if (current_is_kswapd())
+> > > >                       __count_zone_vm_events(PGSCAN_KSWAPD, zone,
+> > > >                                              nr_scanned);
+> > > > @@ -1475,12 +1493,13 @@ shrink_inactive_list(unsigned long nr_to
+> > > >                       __count_zone_vm_events(PGSCAN_DIRECT, zone,
+> > > >                                              nr_scanned);
+> > > >       } else {
+> > > > -             nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+> > > > +             nr_taken = mem_cgroup_isolate_pages(nr_to_scan - total_scanned,
+> > > >                       &page_list, &nr_scanned, sc->order,
+> > > >                       sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+> > > >                                       ISOLATE_BOTH : ISOLATE_INACTIVE,
+> > > >                       zone, sc->mem_cgroup,
+> > > > -                     0, file);
+> > > > +                     0, file, &split_page);
+> > > > +             total_scanned += nr_scanned;
+> > > >               /*
+> > > >                * mem_cgroup_isolate_pages() keeps track of
+> > > >                * scanned pages on its own.
+> > > > @@ -1491,11 +1510,19 @@ shrink_inactive_list(unsigned long nr_to
+> > > >               spin_unlock_irq(&zone->lru_lock);
+> > > >               return 0;
+> > > >       }
+> > > > +     if (split_page && total_scanned < nr_to_scan) {
+> > > > +             spin_unlock_irq(&zone->lru_lock);
+> > > > +             split_huge_page(split_page);
+> > > > +             goto again;
+> > > > +     }
+> > > >
+> > > >       update_isolated_counts(zone, sc, &nr_anon, &nr_file, &page_list);
+> > > >
+> > > >       spin_unlock_irq(&zone->lru_lock);
+> > > >
+> > > > +     if (split_page)
+> > > > +             split_huge_page(split_page);
+> > > > +
+> > > >       nr_reclaimed = shrink_page_list(&page_list, zone, sc);
+> > > >
+> > > >       /* Check if we should syncronously wait for writeback */
+> > > > @@ -1589,13 +1616,13 @@ static void shrink_active_list(unsigned
+> > > >               nr_taken = isolate_pages_global(nr_pages, &l_hold,
+> > > >                                               &pgscanned, sc->order,
+> > > >                                               ISOLATE_ACTIVE, zone,
+> > > > -                                             1, file);
+> > > > +                                             1, file, NULL);
+> > > >               zone->pages_scanned += pgscanned;
+> > > >       } else {
+> > > >               nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
+> > > >                                               &pgscanned, sc->order,
+> > > >                                               ISOLATE_ACTIVE, zone,
+> > > > -                                             sc->mem_cgroup, 1, file);
+> > > > +                                             sc->mem_cgroup, 1, file, NULL);
+> > > >               /*
+> > > >                * mem_cgroup_isolate_pages() keeps track of
+> > > >                * scanned pages on its own.
+> > > > Index: linux/mm/memcontrol.c
+> > > > ===================================================================
+> > > > --- linux.orig/mm/memcontrol.c        2011-10-25 08:36:08.000000000 +0800
+> > > > +++ linux/mm/memcontrol.c     2011-10-25 09:33:51.000000000 +0800
+> > > > @@ -1187,7 +1187,8 @@ unsigned long mem_cgroup_isolate_pages(u
+> > > >                                       unsigned long *scanned, int order,
+> > > >                                       int mode, struct zone *z,
+> > > >                                       struct mem_cgroup *mem_cont,
+> > > > -                                     int active, int file)
+> > > > +                                     int active, int file,
+> > > > +                                     struct page **split_page)
+> > > >  {
+> > > >       unsigned long nr_taken = 0;
+> > > >       struct page *page;
+> > > > @@ -1224,7 +1225,13 @@ unsigned long mem_cgroup_isolate_pages(u
+> > > >               case 0:
+> > > >                       list_move(&page->lru, dst);
+> > > >                       mem_cgroup_del_lru(page);
+> > > > -                     nr_taken += hpage_nr_pages(page);
+> > > > +                     if (PageTransHuge(page) && split_page) {
+> > > > +                             nr_taken++;
+> > > > +                             *split_page = page;
+> > > > +                             goto out;
+> > > > +                     } else
+> > > > +                             nr_taken += hpage_nr_pages(page);
+> > > > +
+> > > >                       break;
+> > > >               case -EBUSY:
+> > > >                       /* we don't affect global LRU but rotate in our LRU */
+> > > > @@ -1235,6 +1242,7 @@ unsigned long mem_cgroup_isolate_pages(u
+> > > >               }
+> > > >       }
+> > > >
+> > > > +out:
+> > > >       *scanned = scan;
+> > > >
+> > > >       trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
+> > > > Index: linux/include/linux/memcontrol.h
+> > > > ===================================================================
+> > > > --- linux.orig/include/linux/memcontrol.h     2011-10-25 08:36:08.000000000 +0800
+> > > > +++ linux/include/linux/memcontrol.h  2011-10-25 09:33:51.000000000 +0800
+> > > > @@ -37,7 +37,8 @@ extern unsigned long mem_cgroup_isolate_
+> > > >                                       unsigned long *scanned, int order,
+> > > >                                       int mode, struct zone *z,
+> > > >                                       struct mem_cgroup *mem_cont,
+> > > > -                                     int active, int file);
+> > > > +                                     int active, int file,
+> > > > +                                     struct page **split_page);
+> > > >
+> > > >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+> > > >  /*
+> > > >
+> > > >
+> > >
+> > > I saw the code. my concern is your patch could make unnecessary split of THP.
+> > >
+> > > When we isolates page, we can't know whether it's working set or not.
+> > > So split should happen after we judge it's working set page.
+> > yes, but since memory is big currently, it's unlikely the isolated page
+> > get accessed in the window. And I only did the split in
+> 
+> We don't check page_reference when isolate happens.
+> Window which between isolation time and reclaim?
+> No. Window is from inactive's head to tail and it's the basic concept of
+> our LRU.
+> 
+> > shrink_inactive_list, not in active list.
+> 
+> But inactive list's size could be still big and
+> page reference heuristic is very important for reclaim algorithm.
+I mean pages aren't referenced. but ok, I can't take such assumption.
 
-The majority of the bits here are driver bug fixes, but more notably:
+> > And THP has mechanism to collapse small pages to huge page later.
+> 
+> You mean "merge" instead of "collapse"?
+> 
+> >
+> > > If you really want to merge this patch, I suggest that
+> > > we can handle it in shrink_page_list step, not isolation step.
+> > >
+> > > My totally untested code which is just to show the concept is as follows,
+> > I did consider this option before. It has its problem too. The isolation
+> > can isolate several huge page one time. And then later shrink_page_list
+> > can swap several huge page one time, which is unfortunate. I'm pretty
+> > sure this method can't reduce the thp_split count in my test. It could
+> 
+> I understand your point but approach isn't good to me.
+> Maybe we can check whether we are going on or not before other THP page split happens
+> in shrink_page_list. If we split THP page successfully, maybe we can skip another THP split.
+> Another idea is we can avoid split of THP unless high order reclaim happens or low order
+> high priority pressure happens.
+I agreed the split better be done at shrink_page_list, but we must avoid
+isolate too many pages. I'll check if I can have a better solution for
+next post.
 
-1) icmp6_dst_alloc needs to set the destination address in the route
-   before trying to binding the route to an inetpeer entry, since the
-   inetpeer is found by destination.  Fix from Gao Feng.
+Thanks,
+Shaohua
 
-2) Traffic class not set properly for TIME_WAIT sockets, from Eric
-   Dumazet.
-
-3) Fix vlan over bonding ARP regression, also from Eric Dumazet.
-
-4) ip6_ufo_append_data() does not propagate errors properly, resulting
-   in signal interrupts and hangups looking like memory allocation
-   errors.  Fix from Zheng Yan.
-
-5) Refcounting and hash lookup fixes in batman-adv from Simon Wunderlich.
-
-7) Fix races in bond_close() and workqueue deadlocks.  From Jay
-   Vosburgh.
-
-8) IPV6 addrconf prefix handling needs to explicitly lookup routes
-   in the RT6_TABLE_PREFIX routing table, otherwise it might find
-   unrelated routes.  Fix from Andreas Hofmeister.
-
-Please pull, thanks a lot!
-
-The following changes since commit 839d8810747bbf39e0a5a7f223b67bffa7945f8d:
-
-  Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging (2011-10-30 15:54:59 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Andreas Hofmeister (1):
-      ipv6: fix route lookup in addrconf_prefix_rcv()
-
-Angus Clark (1):
-      stmmac: fix NULL pointer dereference in capabilities fixup (v2)
-
-Antonio Quartulli (1):
-      batman-adv: unify hash_entry field position in tt_local/global_entry
-
-David S. Miller (1):
-      Merge branch 'batman-adv/maint' of git://git.open-mesh.org/linux-merge
-
-Dmitry Kravkov (2):
-      bnx2x: use FW 7.0.29.0
-      bnx2x: update driver version to 1.70.30-0
-
-Eric Dumazet (2):
-      ipv6: tcp: fix TCLASS value in ACK messages sent from TIME_WAIT
-      vlan: allow nested vlan_do_receive()
-
-Gao feng (1):
-      ipv6: fix route error binding peer in func icmp6_dst_alloc
-
-Geert Uytterhoeven (1):
-      i825xx: Fix incorrect dependency for BVME6000_NET
-
-Giuseppe CAVALLARO (2):
-      stmmac: fix a bug while checking the HW cap reg (v2)
-      stmmac: update normal descriptor structure (v2)
-
-Jay Vosburgh (1):
-      bonding: eliminate bond_close race conditions
-
-Simon Wunderlich (2):
-      batman-adv: remove references for global tt entries
-      batman-adv: add sanity check when removing global tts
-
-Somnath Kotur (2):
-      be2net: Refactored be_cmds.c file.
-      be2net: Changing MAC Address of a VF was broken.
-
-Sony Chacko (1):
-      qlcnic: updated reset sequence
-
-Sritej Velaga (2):
-      qlcnic: skip IDC ack check in fw reset path.
-      qlcnic: Updated License file
-
-Sucheta Chakraborty (2):
-      qlcnic: reset loopback mode if promiscous mode setting fails.
-      qlcnic: fix beacon and LED test.
-
-Yaniv Rosner (5):
-      bnx2x: Fix LED blink rate for 578xx
-      bnx2x: Add link retry to 578xx-KR
-      bnx2x: Fix RX/TX problem caused by the MAC layer
-      bnx2x: Fix 54618se LED behavior
-      bnx2x: Enable changing speed when port type is PORT_DA
-
-Zheng Yan (1):
-      ipv6: fix error propagation in ip6_ufo_append_data()
-
- Documentation/networking/LICENSE.qlcnic            |   51 +---
- drivers/net/bonding/bond_3ad.c                     |    8 +-
- drivers/net/bonding/bond_alb.c                     |   16 +-
- drivers/net/bonding/bond_main.c                    |   96 +++---
- drivers/net/bonding/bonding.h                      |    1 -
- drivers/net/ethernet/broadcom/bnx2x/bnx2x.h        |    4 +-
- .../net/ethernet/broadcom/bnx2x/bnx2x_ethtool.c    |    1 +
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_hsi.h    |    2 +-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c   |  217 ++++++++---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.h   |    3 +
- drivers/net/ethernet/emulex/benet/be_cmds.c        |  400 ++++++--------------
- drivers/net/ethernet/emulex/benet/be_main.c        |   28 +-
- drivers/net/ethernet/i825xx/Kconfig                |    2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic.h        |    4 +-
- .../net/ethernet/qlogic/qlcnic/qlcnic_ethtool.c    |   45 ++-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hdr.h    |    2 +
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c     |    2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_init.c   |   50 +++-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |   48 ++-
- drivers/net/ethernet/stmicro/stmmac/common.h       |    8 +-
- drivers/net/ethernet/stmicro/stmmac/descs.h        |   31 +-
- drivers/net/ethernet/stmicro/stmmac/norm_desc.c    |   38 +-
- .../net/ethernet/stmicro/stmmac/stmmac_ethtool.c   |    8 +-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c  |   13 +-
- include/linux/if_vlan.h                            |    6 +-
- include/net/inet_timewait_sock.h                   |    1 +
- include/net/ipv6.h                                 |    3 +-
- net/8021q/vlan_core.c                              |    7 +-
- net/batman-adv/translation-table.c                 |   17 +-
- net/batman-adv/types.h                             |    4 +-
- net/core/dev.c                                     |    4 +-
- net/dccp/ipv6.c                                    |    4 +-
- net/ipv4/tcp_minisocks.c                           |    1 +
- net/ipv6/addrconf.c                                |   43 ++-
- net/ipv6/inet6_connection_sock.c                   |    2 +-
- net/ipv6/ip6_output.c                              |    9 +-
- net/ipv6/route.c                                   |    3 +-
- net/ipv6/tcp_ipv6.c                                |   17 +-
- net/sctp/ipv6.c                                    |    2 +-
- 39 files changed, 634 insertions(+), 567 deletions(-)
