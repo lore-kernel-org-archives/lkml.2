@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934488Ab1JaPTA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:19:00 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:62826 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933175Ab1JaPS7 convert rfc822-to-8bit (ORCPT
+	id S934476Ab1JaPVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:21:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:64021 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933027Ab1JaPVd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:18:59 -0400
-X-IronPort-AV: E=Sophos;i="4.69,432,1315206000"; 
-   d="scan'208";a="593870315"
-Subject: Re: [PATCH] nfs: Fix unused variable warning.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        akpm@linux-foundation.org
-Date: Mon, 31 Oct 2011 11:18:43 -0400
-In-Reply-To: <1319798192.26450.1.camel@localhost.localdomain>
-References: <1319798192.26450.1.camel@localhost.localdomain>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 31 Oct 2011 11:21:33 -0400
+MIME-Version: 1.0
+Date: Mon, 31 Oct 2011 16:21:32 +0100
+Message-ID: <CAHzZGExE0yVou+zUivL8DMRNY5w=HO7jVNmFdspN2gNgmRBtPA@mail.gmail.com>
+Subject: Virutal tty device settings problem.
+From: "dpc@ucore.info" <dpc@ucore.info>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1320074323.4714.2.camel@lade.trondhjem.org>
-Mime-Version: 1.0
-X-OriginalArrivalTime: 31 Oct 2011 15:18:43.0782 (UTC) FILETIME=[60B49E60:01CC97E0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-10-28 at 16:36 +0600, Rakib Mullick wrote: 
-> When CONFIG_NFS=y, but CONFIG_NFS_V3_{,V4}=n we get the following warning:
-> 
-> 	fs/nfs/write.c: In function ‘nfs_writeback_done’:
-> 	fs/nfs/write.c:1246:21: warning: unused variable ‘server’
-> 
->  This patch fixes it.
-> 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
-> 
-> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-> index 2219c88..e528e5c 100644
-> --- a/fs/nfs/write.c
-> +++ b/fs/nfs/write.c
-> @@ -1243,7 +1243,6 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
->  {
->  	struct nfs_writeargs	*argp = &data->args;
->  	struct nfs_writeres	*resp = &data->res;
-> -	struct nfs_server	*server = NFS_SERVER(data->inode);
->  	int status;
->  
->  	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
-> @@ -1272,6 +1271,8 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
->  		 *	 as a dprintk() in order to avoid filling syslog.
->  		 */
->  		static unsigned long    complain;
-> +		struct nfs_server	*server;
-> +		server = NFS_SERVER(data->inode);
->  
->  		/* Note this will print the MDS for a DS write */
->  		if (time_before(complain, jiffies)) {
+Hi,
 
-This will still cause a warning if you compile without RPC_DEBUG (e.g.
-if CONFIG_SYSCTL isn't defined).
+I'm writing a virtual console driver for paravirtualized setup.
 
-Since there is only one user, it seems better to just open-code the
-NFS_SERVER(data->inode) in the dprintk()...
+Use case: being able to access paravirtualized guest consoles from "domain 0".
 
+It's similar to HVCS, as I've been analyzing how it works.
+
+
+Basically in my driver there's a frontend and backend. Backend is used
+by domain 0 exposing tty devices: each for every other guest. One can
+attach cu/minicom to such device and access guest console.
+
+The frontend is working on the other guest side and communicate via
+shared memory/virtual IRQs with backend. It exposes on tty device for
+system console / getty.
+
+
+Little illustration:
+
+|               GUEST 0               |                  |
+ GUEST 1                 |
+tty device <--> kernel backend driver <--> magic here <--> kernel
+frontend driver <--> tty device
+(minicom/cu)
+                  (getty)
+
+
+I have the communication working and my driver transmits bytes between
+domain 0 and other systems. So the "magic here" can be considered a
+bytestream. But I'm lost with all the modes, cr/nl etc. conversions.
+
+I don't understand which part of the kernel is responsible for NL / CR
+conversions, what modes should I use on each side of the driver and
+stuff like this. At the moment, from what I understand it seems that
+some of termios flags are handled above tty driver layer, and other
+should be handled inside/below it. Can anyone point me to documents
+explaining this things or explain how should I handle this so that the
+scenario from the illustration is working seamlessly?
+
+Any help will be much appreciated.
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Dawid Ciężarkiewicz
