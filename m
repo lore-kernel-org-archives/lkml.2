@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933610Ab1JaRyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 13:54:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56582 "EHLO mx1.redhat.com"
+	id S933614Ab1JaR4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 13:56:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55853 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755025Ab1JaRyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 13:54:32 -0400
-Date: Mon, 31 Oct 2011 17:34:22 +0100
+	id S1755036Ab1JaR4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 13:56:40 -0400
+Date: Mon, 31 Oct 2011 18:14:41 +0100
 From: Andrea Arcangeli <aarcange@redhat.com>
 To: Nai Xia <nai.xia@gmail.com>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -15,30 +15,49 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         jpiszcz@lucidpixels.com, arekm@pld-linux.org,
         linux-kernel@vger.kernel.org
 Subject: Re: kernel 3.0: BUG: soft lockup: find_get_pages+0x51/0x110
-Message-ID: <20111031163422.GC3466@redhat.com>
+Message-ID: <20111031171441.GD3466@redhat.com>
 References: <201110122012.33767.pluto@agmk.net>
- <20111021155632.GD4082@suse.de>
  <20111021174120.GJ608@redhat.com>
- <201110221307.11615.nai.xia@gmail.com>
+ <20111021225008.GK608@redhat.com>
+ <201110221352.22741.nai.xia@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201110221307.11615.nai.xia@gmail.com>
+In-Reply-To: <201110221352.22741.nai.xia@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nai,
+On Sat, Oct 22, 2011 at 01:52:22PM +0800, Nai Xia wrote:
+> BTW, I am curious about what benchmark did you run and " x10 boost"
+> meaning compared to Hugh's anon_vma_locking fix?
 
-On Sat, Oct 22, 2011 at 01:07:11PM +0800, Nai Xia wrote:
-> Yeah, anon_vma root lock is a big lock. And JFYI, actually I am doing 
-> some very nasty hacking on anon_vma and one of the side effects is 
-> breaking the root lock into pieces. But this area is pretty 
-> convolved by many racing conditions. I hope some day I will finally make
-> my patch work and have your precious review of it. :-)
+I was referring to the mremap optimizations I pushed in -mm.
 
-:) It's going to be not trivial, initially it was not a shared lock
-but it wasn't safe that way (especially with migrate required a
-reliable rmap_walk) and using a shared lock across all
-same_anon_vma/same_vma lists was the only way to be safe and solve the
-races.
+> This patch and together with the reasoning looks good to me. 
+> But I wondering this patch can make the anon_vma chain ordering game more 
+> complex and harder to play in the future.
+
+Well we don't know yet what future will bring... at least this adds
+some documentation on the fact the order matters for
+fork/mremap/migrate/split_huge_page. As far as I can tell they're the
+4 pieces of the VM where the rmap_walk order matters. And
+split_huge_page and migrate are the only two where if the rmap_walk
+fails we can't safely continue and have to BUG_ON.
+
+> However, if it does bring much perfomance benefit, I vote for this patch 
+> because it balances all three requirements here: bug free, performance &
+> no two VMAs stay not merged for no good reason.
+
+I suppose it should bring an SMP performance benefit as the critical
+section is reduced but we'll have to do some more list_del/add_tail
+than if we take the global lock...
+
+> Our situation again makes me have the strong feeling that we are really
+> in bad need of a computer aided way to travel all possible state space.
+> There are some guys around me who do automatic software testing research.
+> But I am afraid our problem is too much "real world" for them... sigh...  
+
+Also the code changes too fast for that...
+
+I'll send the patch again with signoff.
