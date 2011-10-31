@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab1JaQkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 12:40:10 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:31799 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab1JaQkI convert rfc822-to-8bit (ORCPT
+	id S932678Ab1JaQnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 12:43:21 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:57322 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932144Ab1JaQnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 12:40:08 -0400
+	Mon, 31 Oct 2011 12:43:20 -0400
+Message-ID: <4EAED00C.3010908@xenotime.net>
+Date: Mon, 31 Oct 2011 09:42:52 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Message-ID: <ef778e79-72d0-4c58-99e8-3b36d85fa30d@default>
-Date: Mon, 31 Oct 2011 09:38:12 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default
- 20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4EAECEFD.00F5,ss=1,re=0.000,fgs=0
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Update for 3.2
+References: <20091204135530.GA29371@gondor.apana.org.au> <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <20110315145940.GA15373@gondor.apana.org.au> <20110520235409.GA1722@gondor.apana.org.au> <20110724011752.GA14373@gondor.apana.org.au> <20111031040952.GA19659@gondor.apana.org.au>
+In-Reply-To: <20111031040952.GA19659@gondor.apana.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com]
-> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-
-Hi Kame --
-
-Thanks for your reply and for your earlier reviews of frontswap,
-and my apologies that I accidentally left you off of the Cc list \
-for the basenote of this git-pull request.
-
-> I don't have heavy concerns to the codes itself but this process as bypassing -mm
-> or linux-next seems ugly.
-
-First, frontswap IS in linux-next and it has been since June 3
-and v11 has been in linux-next since September 23.  This
-is stated in the base git-pull request.
- 
-> Why bypass -mm tree ?
+On 10/30/2011 09:09 PM, Herbert Xu wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
 > 
-> I think you planned to merge this via -mm tree and, then, posted patches
-> to linux-mm with CC -mm guys.
+> Hi Linus:
+> 
+> Here is the crypto update for 3.2:
+> 
+> * User-space interface for algorithm selection/configuration
+> * SSSE3 implementation of SHA1.
+> * X86-64 assembly implementation of blowfish.
+> * X86-64 assembly implementation of twofish.
+> * Misc fixes.
+> 
+> 
+> Please pull from
+> 
+> git://github.com/herbertx/crypto.git
+> 
+> 
+> The top commit object is
+> 
+> 	commit ea8bdfcff17599e5d80f93e2ae194fbbab7f8d5e
+> 	Author: Herbert Xu <herbert@gondor.apana.org.au>
+> 	Date:   Wed Oct 26 17:15:10 2011 +0200
+> 
+> 	    crypto: user - Add dependency on NET
 
-Hmmm... the mm process is not clear or well-documented.
-I am a relative newbie here.  Linus has repeatedly spoken
-of ensuring that code is in linux-next, and there is no
-(last I checked) current -mm git tree.  I was aware that
-the mm tree still existed, but thought it was for shaking
-out major features, not for adding a handful of hooks.
-I was aware that akpm's blessing was highly desirable,
-but his (offlist) reply was essentially "I'm not interested,
-I don't have time to deal with this, and I don't think anyone
-will use it."  I explained about all the users (many of whom
-have replied to this thread to support frontswap), but got
-no further reply.  I was advised by several people that, in
-the case of disagreement, Linus will decide, so I pushed
-forward.  This is the same as the process I used for
-cleancache, which Linus merged.
 
-I have been instructed offlist and onlist that this was a big
-mistake, that it appears that I am subverting the process,
-and that I am probably insulting akpm.  If so, I am
-truly sorry and would be happy to take instruction
-on how to proceed correctly.  However, in turn, I hope
-that those driving the process aren't blocking useful
-code simply due to lack of time.
+> Herbert Xu (4):
+>       crypto: sha - Fix build error due to crypto_sha1_update
+>       crypto: cryptd - Use subsys_initcall to prevent races with aesni
+>       crypto: user - Initialise match in crypto_alg_match
+>       crypto: user - Add dependency on NET
 
-> I think you posted 2011/09/16 at the last time, v10. But no further submission
-> to gather acks/reviews from Mel, Johannes, Andrew, Hugh etc.. and no inclusion
-> request to -mm or -next. _AND_, IIUC, at v10, the number of posted pathces was 6.
-> Why now 8 ? Just because it's simple changes ?
+Actually adds "select NET", a reverse dependency.  :(
 
-See https://lkml.org/lkml/2011/9/21/373.  Konrad Wilk
-helped me to reorganize the patches (closer to what you
-suggested I think), but there were no code changes between
-v10 and v11, just dividing up the patches differently
-as Konrad thought there should be more smaller commits.
-So no code change between v10 and v11 but the number of
-patches went from 6 to 8.
+Linus was quite vocal about not allowing MD to select BLOCK.
+See https://lkml.org/lkml/2011/8/10/527
+and https://lkml.org/lkml/2011/8/10/533
 
-My last line in that post should also make it clear that
-I thought I was done and ready for the 3.2 window, so there
-was no evil intent on my part to subvert a process.
-It would have been nice if someone had told me there
-were uncompleted steps in the -mm process or, even better,
-pointed me to a (non-existent?) document where I could see
-for myself if I was missing steps!
+To me this is very similar.
 
-So... now what?
-
-Thanks,
-Dan
-
-P.S. It appears that this excerpt from the LWN KS2011 report
-might be related to the problem?
-
-  "Andrew complained about the acceptance of entirely new
-   features into the kernel. Those features often land on
-   his doorstep without much justification, forcing him to
-   ask the developers to explain their motivations. The kernel
-   community, he complained, is not supporting him well. Who
-   can tell him if a given patch makes sense? Mistakes have
-   been made in the past; bad features have been merged and
-   good stuff has been lost. How, he asked, can he find
-   people who know better about the desirability of
-   specific patches?"
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
