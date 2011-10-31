@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933198Ab1JaPJT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 11:09:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49966 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932449Ab1JaPJR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 11:09:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <4EAE5DE3.2020205@t-online.de>
-References: <4EAE5DE3.2020205@t-online.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 31 Oct 2011 08:08:55 -0700
-X-Google-Sender-Auth: yjvE_5J67IiF2XEruUl3tlyatdc
-Message-ID: <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
-Subject: Re: [BUG] kernel 3.1.0 possible circular locking dependency detected
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933228Ab1JaPPK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 11:15:10 -0400
+Received: from lo.gmane.org ([80.91.229.12]:37857 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932908Ab1JaPPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 11:15:09 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Richard Hughes <hughsient@gmail.com>
+Subject: Re: [RFC][PATCH 0/2] PM / Sleep: Extended control of suspend/hibernate interfaces
+Date: Mon, 31 Oct 2011 15:11:16 +0000 (UTC)
+Message-ID: <loom.20111031T155558-924@post.gmane.org>
+References: <Pine.LNX.4.44L0.1110152224461.19724-100000@netrider.rowland.org> <Pine.LNX.4.44L0.1110161018580.28864-100000@netrider.rowland.org> <20111017093401.21cd4461@notabene.brown>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 78.86.55.77 (Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20100101 Firefox/7.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added a few more people to the cc ]
+NeilBrown <neilb <at> suse.de> writes:
+> gnome-power-manager talks to upowerd over dbus to ask for a suspend.
 
-On Mon, Oct 31, 2011 at 1:35 AM, Knut Petersen
-<Knut_Petersen@t-online.de> wrote:
-> After a " rm -r /verybigdir" (about 12G on a 25G reiserfs 3.6partition)
-> I found the following report about a circular locking dependency in
-> kernel 3.1.0
+Quite a few other desktops talk to upower, including XFCE, KDE and LXDE.
+It's basically the only way on a modern desktop a user can put the
+machine to sleep without becoming root.
 
-Heh. There is even a comment about the ordering violation:
+> upowerd then runs /usr/sbin/pm-suspend.
+> pm-suspend then runs all the script in /usr/lib/pm-utils/sleep.d/
+> and the calls "do_suspend" which is defined in
+> /usr/lib/pm-utils/pm-functions
+> 
+> Ugghh.. That is a very deep stack that is doing things the "wrong"
+> way.
+> i.e. it is structured about request to suspend rather than requests to
+> stay awake.
 
-/* We use I_MUTEX_CHILD here to silence lockdep. It's safe because xattr
- * mutation ops aren't called during rename or splace, which are the
- * only other users of I_MUTEX_CHILD. It violates the ordering, but that's
- * better than allocating another subclass just for this code. */
+Erm, that's what it was designed to do. UPower has never had any feature
+requests to manage "stay-awake" functionality as upower is pretty much a
+mechanism daemon, rather than a policy daemon. Certainly just writing to
+/sys if /usr/lib/pm-utils/pm-functions isn't installed would be a very
+sane patch to suggest, given that pm-suspend in Fedora 16 basically
+doesn't do anything anymore.
 
-and apparently the comment is wrong: we *do* end up looking up xattrs
-during splice, due to the security_inode_need_killpriv() thing.
+UPower does have signals that tell userspace when a suspend is about to
+happen, and when the computer has been resumed, and this is done using
+DBus.
 
-So I think this needs a suid (or sgid) file that has xattrs and is removed.
+I think it would be a shame to have Yet Another Daemon and Yet Another
+Protocol just for managing this stuff, when upower already has DBus and
+tons of client support. I think adding a tiny DBus interface on upower
+to manage the stay-awake functionality would make things much less
+complicated and give us a common desktop / embedded story.
 
-That said, I suspect this is a false positive, because the actual
-unlink can never happen while somebody is splicing to/from the same
-file at the same time (because then the iput wouldn't be the last one
-for the inode, and the file removal would be delayed until the file
-has been closed for the last time).
+Richard.
 
-But the hacky use of "I_MUTEX_CHILD" is basically not the proper way
-to silence the lockdep splat.
+(please cc me in any replies, not subscribed)
 
-Anybody?
 
-                  Linus
