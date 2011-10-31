@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934782Ab1JaWyk (ORCPT <rfc822;w@1wt.eu>);
+	id S934794Ab1JaWyo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 18:54:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45248 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934773Ab1JaWyk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Oct 2011 18:54:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40827 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934723Ab1JaWyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 18:54:39 -0400
-Message-ID: <4EAF2724.8040001@zytor.com>
-Date: Mon, 31 Oct 2011 15:54:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:date:from:x-x-sender:to:cc:subject:
+	in-reply-to:message-id:references:user-agent:mime-version:content-type:x-system-of-record;
+	b=wEqQ5oq+WwsECgjI/O5eATTzv/LnDExN5vkaWMEII1tEw9ukEZ9IKrBw9dCtYMJz1
+	tT59Y+g2wG55+Sl7y+BxQ==
+Date: Mon, 31 Oct 2011 15:54:34 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [RFC/PATCH 5/7] x86, mm: Use max_low_pfn for ZONE_NORMAL on
+ 64-bit
+In-Reply-To: <1319811801-1725-5-git-send-email-penberg@kernel.org>
+Message-ID: <alpine.DEB.2.00.1110311554230.22237@chino.kir.corp.google.com>
+References: <1319811801-1725-1-git-send-email-penberg@kernel.org> <1319811801-1725-5-git-send-email-penberg@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com> <4EAF1F40.3030907@zytor.com> <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com> <4EAF2245.90308@zytor.com> <7vzkggok6u.fsf@alter.siamese.dyndns.org> <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
-In-Reply-To: <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 03:52 PM, Linus Torvalds wrote:
+On Fri, 28 Oct 2011, Pekka Enberg wrote:
+
+> 64-bit has no highmem so max_low_pfn is always the same as 'max_pfn'.
 > 
-> Save it in the commit we generate. BAM! Useful, readable, permanent,
-> and independently verifiable.
-> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: H. Peter Anvin <hpa@linux.intel.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-Note: this means creating a commit even for a fast-forward merge.  Not
-that there is any technical problem with that, of course.
-
-	-hpa
-
+Acked-by: David Rientjes <rientjes@google.com>
