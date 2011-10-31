@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab1JaJBg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:01:36 -0400
-Received: from mail.lemote.com ([222.92.8.141]:42330 "EHLO lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932119Ab1JaJBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:01:35 -0400
+	id S932326Ab1JaJDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:03:11 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9092 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab1JaJDK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 05:03:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 31 Oct 2011 02:02:52 -0700
+Date: Mon, 31 Oct 2011 11:02:49 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 2/6] arm/tegra: prepare pinmux code for multiple tegra
+ variants
+Message-ID: <20111031090249.GL1001@tbergstrom-lnx.Nvidia.com>
+References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
+ <1319561644-6160-3-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
+ <20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173EDAB4A4@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-From: Chen Jie <chenj@lemote.com>
-Date: Mon, 31 Oct 2011 17:00:58 +0800
-Message-ID: <CAGXxSxXmgzxN361Cko1fY_+oWwfgjXLhS61gtvqB8YYXHXZVyw@mail.gmail.com>
-Subject: [MIPS]clocks_calc_mult_shift() may gen a too big mult value
-To: linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>
-Cc: johnstul@us.ibm.com, tglx@linutronix.de, yanhua <yanh@lemote.com>,
-        =?UTF-8?B?6aG55a6H?= <xiangy@lemote.com>, zhangfx <zhangfx@lemote.com>,
-        =?UTF-8?B?5a2Z5rW35YuH?= <sunhy@lemote.com>
-Content-Type: multipart/mixed; boundary=0015174482148802f204b0947b28
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173EDAB4A4@HQMAIL01.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015174482148802f204b0947b28
-Content-Type: text/plain; charset=ISO-8859-1
+On Fri, Oct 28, 2011 at 06:18:27PM +0200, Stephen Warren wrote:
+> Peter De Schrijver wrote at Friday, October 28, 2011 2:18 AM:
+> > On Thu, Oct 27, 2011 at 09:59:49PM +0200, Stephen Warren wrote:
+> > > Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
+> > > > This patch modifies the pinmux code to be useable for multiple tegra variants.
+> > > > Some tegra20 specific constants will be replaced by variables which will be
+> > > > initialized to the appropriate value at runtime.
+> ...
+> > > > @@ -668,11 +668,24 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+> > > >  	}
+> > > >  }
+> > > >
+> > > > +static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
+> > > > +	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
+> > > > +	{ },
+> > > > +};
+> > > > +
+> > > >  static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
+> > > >  {
+> > > >  	struct resource *res;
+> > > >  	int i;
+> > > >  	int config_bad = 0;
+> > > > +	const struct of_device_id *match;
+> > > > +
+> > > > +#ifdef CONFIG_OF
+> > > > +	match = of_match_device(tegra_pinmux_of_match, &pdev->dev);
+> > >
+> > > What if match==NULL? I suppose that "can't" happen with DT, since the
+> > > device wouldn't have been probed unless there was a matching entry...
+> > 
+> > Exactly. That was my reasoning as well. We can't get here unless there is a
+> > match.
+> > 
+> > > Does this work when booting without DT; IIRC the internal patches I saw
+> > > fell back to hard-coding a call to tegra20_pinmux_init() when booting
+> > > a static board file (i.e. not booting device-tree)? Perhaps that's in a
+> > 
 
-Hi all,
+Indeed. Something went wrong here.
 
-On MIPS, with maxsec=4, clocks_calc_mult_shift() may generate a very
-big mult, which may easily cause timekeeper.mult overflow within
-timekeeping jobs.
+> > Unfortunately I don't have a tegra20 board which is supported without
+> > devicetree.
+> 
+> Oh, that's quite unfortunate. Still, you need to write the code so it's
+> expected to work for the non-DT case. Once you've fixed this, if you
+> push a complete branch somewhere, I can boot-test it on a few non-DT
+> boards. Hopefully I can test on Cardhu too.
 
-e.g. when clock freq was 250000500(i.e. mips_hpt_frequency=250000500,
-and the CPU Freq will be 250000500*2=500001000), mult will be
-0xffffde72
+I know. But alas I have to base myself on assumptions, which is suboptimal of
+course. I will see if I can find a tegra20 board which doesn't require
+devicetree here in finland or push a complete branch somewhere.
 
-Attachment is a script that calculates mult values for CPU Freq
-between 400050000 and 500050000, with 1KHz step. It outputs mult
-values greater than 0xf0000000:
-CPU Freq:500001000, mult:0xffffde72, shift:30
-CPU Freq:500002000, mult:0xffffbce4, shift:30
-CPU Freq:500003000, mult:0xffff9b56, shift:30
-CPU Freq:500004000, mult:0xffff79c9, shift:30
-...
+Cheers,
 
-The peak value appears around CPU_freq=500001000.
+Peter.
 
-To avoid this, it may need:
-1. Supply a bigger maxsec value?
-2. In clocks_calc_mult_shift(), pick next mult/shift pair if mult is
-too big? Then maxsec will not be strictly obeyed.
-3. Change timekeeper.mult to u64?
-4. ...
-
-Any idea?
-
-
-
---
-Regards,
-- Chen Jie
-
---0015174482148802f204b0947b28
-Content-Type: text/x-python; charset=US-ASCII; name="mult-test.py"
-Content-Disposition: attachment; filename="mult-test.py"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_guf66e8v0
-
-IyEvYmluL2VudiBweXRob24KCmRlZiBjbG9ja3NfY2FsY19tdWx0X3NoaWZ0KGZyb21fLCB0b18s
-IG1heHNlYyk6CglzZnRhY2MgPSAzMjsKCgl0bXAgPSBtYXhzZWMgKiBmcm9tXyA+PiAzMjsKCXdo
-aWxlIHRtcDoKCQl0bXAgPj49IDEKCQlzZnRhY2MgLT0gMQoKCWZvciBzZnQgaW4geHJhbmdlKDMy
-LCAwLCAtMSk6CgkJdG1wID0gdG9fIDw8IHNmdDsKCQl0bXAgKz0gKGZyb21fIC8gMikKCQl0bXAg
-Lz0gZnJvbV8KCQlpZiAoKHRtcCA+PiBzZnRhY2MpID09IDApOgoJCQlicmVhawoKCW11bHQgPSB0
-bXAKCXNoaWZ0ID0gc2Z0CglyZXR1cm4gbXVsdCwgc2hpZnQgCgpmb3IgaSBpbiB4cmFuZ2UoNDAw
-MDUwMDAwLCA1MDAwNTAwMDAsIDEwMDApOgoJbXVsdCwgc2hpZnQgPSBjbG9ja3NfY2FsY19tdWx0
-X3NoaWZ0KGkvMiwgMTAwMDAwMDAwMCwgNCkKCWlmIG11bHQgPiAweGYwMDAwMDAwOgoJCXByaW50
-ICJDUFUgRnJlcTolZCwgbXVsdDoweCV4LCBzaGlmdDolZCIgJSAoaSwgbXVsdCwgc2hpZnQpCg==
---0015174482148802f204b0947b28--
