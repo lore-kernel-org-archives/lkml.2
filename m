@@ -1,63 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934660Ab1JaTHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 15:07:48 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56966 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934573Ab1JaTHq convert rfc822-to-8bit (ORCPT
+	id S934633Ab1JaTIR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 15:08:17 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44251 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934504Ab1JaTF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 15:07:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111027084310.2b7da753@pyx>
-References: <1319602564-19162-1-git-send-email-paul.s.schilling@gmail.com>
-	<20111027084310.2b7da753@pyx>
-Date: Mon, 31 Oct 2011 14:07:45 -0500
-Message-ID: <CAC=G6sz=PkDoODYh4beT_eRhkm+ZhUxtLnrBXPPuFJW3n+6Vcg@mail.gmail.com>
-Subject: Re: [PATCH 02/15] ATA : vortex86 : fix vortex86dx/sx hardware CRC bug.
-From: Paul Schilling <paul.s.schilling@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jeff Garzik <jgarzik@pobox.com>, "David S. Miller" <davem@davemloft.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 31 Oct 2011 15:05:59 -0400
+From: Tejun Heo <tj@kernel.org>
+To: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: arnd@arndb.de, oleg@redhat.com, matthltc@us.ibm.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 10/17] freezer: test freezable conditions while holding freezer_lock
+Date: Mon, 31 Oct 2011 12:05:21 -0700
+Message-Id: <1320087928-32307-11-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1320087928-32307-1-git-send-email-tj@kernel.org>
+References: <1320087928-32307-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+try_to_freeze_tasks() and thaw_processes() use freezable() and
+frozen() as preliminary tests before initiating operations on a task.
+These are done without any synchronization and hinder with
+synchronization cleanup without any real performance benefits.
 
-When I developed this patch for the Vortex86dx.  I recall trying many
-combinations of udma and mwdma.  At the time I developed it, I came
-to the conclusion that both udma and mwdma both failed with CRC
-errors being reported.  I am not readily set-up to redo the testing to
-see if mwdma is indeed also affected by the errata.  It will be a couple
-of weeks before I can re-test this patch on the hardware with mwdma
-turned on.
+In try_to_freeze_tasks(), open code self test and move PF_NOFREEZE and
+frozen() tests inside freezer_lock in freeze_task().
 
-Thanks,
-Paul
+thaw_processes() can simply drop freezable() test as frozen() test in
+__thaw_task() is enough.
 
-On Thu, Oct 27, 2011 at 2:43 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 25 Oct 2011 23:16:04 -0500
-> Paul Schilling <paul.s.schilling@gmail.com> wrote:
->
->> This fixes a DMA issue related to a CRC bug on
->> the RDC pata peripherial found on the vortex86sx and vortex86dx.
->
-> What is the RDC erratum reference for this ? Also it seems to make no
-> sense
->
->
->>       static const struct ata_port_info info_rdc_11 = {
->>               .flags = ATA_FLAG_SLAVE_POSS,
->>               .pio_mask = ATA_PIO4,
->> -             .mwdma_mask = ATA_MWDMA2,
->> +             .mwdma_mask = 0,
->> +             .udma_mask = 0,
->
-> MWDMA is not part of the CRC hardware anyway
->
-> Are you sure these newer variants are simply not using a different set of
-> timing parameters thus showing bugs on your system ?
->
+Note: This used to be a part of larger patch to fix set_freezable()
+      race.  Separated out to satisfy ordering among dependent fixes.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/freezer.c       |    3 ++-
+ kernel/power/process.c |   16 +---------------
+ 2 files changed, 3 insertions(+), 16 deletions(-)
+
+diff --git a/kernel/freezer.c b/kernel/freezer.c
+index 05afd68..5c911c0 100644
+--- a/kernel/freezer.c
++++ b/kernel/freezer.c
+@@ -109,7 +109,8 @@ bool freeze_task(struct task_struct *p, bool sig_only)
+ 
+ 	spin_lock_irqsave(&freezer_lock, flags);
+ 
+-	if (sig_only && !should_send_signal(p))
++	if ((p->flags & PF_NOFREEZE) ||
++	    (sig_only && !should_send_signal(p)))
+ 		goto out_unlock;
+ 
+ 	if (frozen(p))
+diff --git a/kernel/power/process.c b/kernel/power/process.c
+index e6e2739..e59676f 100644
+--- a/kernel/power/process.c
++++ b/kernel/power/process.c
+@@ -22,14 +22,6 @@
+  */
+ #define TIMEOUT	(20 * HZ)
+ 
+-static inline int freezable(struct task_struct * p)
+-{
+-	if ((p == current) ||
+-	    (p->flags & PF_NOFREEZE))
+-		return 0;
+-	return 1;
+-}
+-
+ static int try_to_freeze_tasks(bool sig_only)
+ {
+ 	struct task_struct *g, *p;
+@@ -52,10 +44,7 @@ static int try_to_freeze_tasks(bool sig_only)
+ 		todo = 0;
+ 		read_lock(&tasklist_lock);
+ 		do_each_thread(g, p) {
+-			if (frozen(p) || !freezable(p))
+-				continue;
+-
+-			if (!freeze_task(p, sig_only))
++			if (p == current || !freeze_task(p, sig_only))
+ 				continue;
+ 
+ 			/*
+@@ -181,9 +170,6 @@ void thaw_processes(void)
+ 
+ 	read_lock(&tasklist_lock);
+ 	do_each_thread(g, p) {
+-		if (!freezable(p))
+-			continue;
+-
+ 		if (cgroup_freezing_or_frozen(p))
+ 			continue;
+ 
+-- 
+1.7.3.1
+
