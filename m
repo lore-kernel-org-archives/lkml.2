@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093Ab1JaDTV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Oct 2011 23:19:21 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60975 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab1JaDTU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Oct 2011 23:19:20 -0400
-Date: Mon, 31 Oct 2011 11:19:07 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: arjan@infradead.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
- as it should
-Message-ID: <20111031031907.GB18057@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111030151256.27b2b20e@infradead.org>
- <1179048211.51348.1320013764432.JavaMail.mail@webmail17>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1179048211.51348.1320013764432.JavaMail.mail@webmail17>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753174Ab1JaDZT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Oct 2011 23:25:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:9525 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918Ab1JaDZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Oct 2011 23:25:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="69184397"
+Subject: Re: [PATCH v5] dmaengine: add CSR SiRFprimaII DMAC driver
+From: Vinod Koul <vinod.koul@intel.com>
+To: Barry Song <Barry.Song@csr.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Jassi Brar <jaswinder.singh@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        workgroup.linux@csr.com, Rongjun Ying <rongjun.ying@csr.com>,
+        Barry Song <Baohua.Song@csr.com>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1319768559-24200-1-git-send-email-Barry.Song@csr.com>
+References: <1319768559-24200-1-git-send-email-Barry.Song@csr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 Oct 2011 08:51:58 +0530
+Message-ID: <1320031318.20054.234.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 30, 2011 at 10:29:23PM +0000, Artem S. Tashkinov wrote:
-> > On Oct 31, 2011, Arjan van de Ven wrote:
-> >
-> > On Sun, 30 Oct 2011 19:57:12 +0000 (GMT)
-> > "Artem S. Tashkinov" wrote:
-> >
-> > > Hello,
-> > >
-> > > It's known that if you want to reach maximum performance on HT
-> > > enabled Intel CPUs you should distribute the load evenly between
-> > > physical cores, and when you have loaded all of them you should then
-> > > load the remaining virtual cores.
-> >
-> > this is a bold statement, and patently false if you have to threads of
-> > one process that heavily share data between eachother...
-> > (but true for more independent workloads)
+On Thu, 2011-10-27 at 19:22 -0700, Barry Song wrote:
+> From: Rongjun Ying <Rongjun.Ying@csr.com>
 > 
-> In my initial message I was talking about completely unrelated tasks/
-> processes which share no data/instructions/whatever else. You don't
-> need to trust my test case as you can carry out this test on your own.
+> Cc: Jassi Brar <jaswinder.singh@linaro.org>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Rongjun Ying <rongjun.ying@csr.com>
+> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> ---
+>  -v5:
+>  fix checkpatch issues;
+>  fix compile warinings;
+>  Note: This tree
+>  git://gitorious.org/sirfprima2-kernel/sirfprima2-kernel.git prima2-dma-for-Vinod
+>  merge both slave_dma interleaved branch and prima2 defconfig.
+Applied thanks.
+I will merge these after merging direction fixes.
 
-(Cc'ing more people)
+-- 
+~Vinod
 
-Maybe you can also show your test case here?
-
-Thanks,
-Yong
