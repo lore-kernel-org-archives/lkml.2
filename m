@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932326Ab1JaJDL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 05:03:11 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9092 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab1JaJDK (ORCPT
+	id S932378Ab1JaJDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 05:03:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54107 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab1JaJDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 05:03:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 31 Oct 2011 02:02:52 -0700
-Date: Mon, 31 Oct 2011 11:02:49 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 2/6] arm/tegra: prepare pinmux code for multiple tegra
- variants
-Message-ID: <20111031090249.GL1001@tbergstrom-lnx.Nvidia.com>
-References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
- <1319561644-6160-3-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173E1B49AA@HQMAIL01.nvidia.com>
- <20111028081738.GA12383@tbergstrom-lnx.Nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173EDAB4A4@HQMAIL01.nvidia.com>
+	Mon, 31 Oct 2011 05:03:49 -0400
+Message-ID: <4EAE630A.6040309@gmail.com>
+Date: Mon, 31 Oct 2011 09:57:46 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173EDAB4A4@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, msb@chromium.org,
+        seiji.aguchi@hds.com
+Subject: Re: [PATCH] ramoops appears geared to not support ARM
+References: <1319844110-23062-1-git-send-email-bfreed@chromium.org>	<4EAC0C18.5090602@gmail.com>	<CAEYUcX1PUgniJLqYXKM5pf_9T06OPFg4q0ZUCFc8Deu1J_R9-A@mail.gmail.com>	<4EAD360D.6010004@gmail.com> <CAEYUcX2yF1hw=D8XHMGE7p4Tty+G-vmVudNsFHXUOSTGGKoq=w@mail.gmail.com>
+In-Reply-To: <CAEYUcX2yF1hw=D8XHMGE7p4Tty+G-vmVudNsFHXUOSTGGKoq=w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 28, 2011 at 06:18:27PM +0200, Stephen Warren wrote:
-> Peter De Schrijver wrote at Friday, October 28, 2011 2:18 AM:
-> > On Thu, Oct 27, 2011 at 09:59:49PM +0200, Stephen Warren wrote:
-> > > Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
-> > > > This patch modifies the pinmux code to be useable for multiple tegra variants.
-> > > > Some tegra20 specific constants will be replaced by variables which will be
-> > > > initialized to the appropriate value at runtime.
-> ...
-> > > > @@ -668,11 +668,24 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
-> > > >  	}
-> > > >  }
-> > > >
-> > > > +static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
-> > > > +	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
-> > > > +	{ },
-> > > > +};
-> > > > +
-> > > >  static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
-> > > >  {
-> > > >  	struct resource *res;
-> > > >  	int i;
-> > > >  	int config_bad = 0;
-> > > > +	const struct of_device_id *match;
-> > > > +
-> > > > +#ifdef CONFIG_OF
-> > > > +	match = of_match_device(tegra_pinmux_of_match, &pdev->dev);
-> > >
-> > > What if match==NULL? I suppose that "can't" happen with DT, since the
-> > > device wouldn't have been probed unless there was a matching entry...
-> > 
-> > Exactly. That was my reasoning as well. We can't get here unless there is a
-> > match.
-> > 
-> > > Does this work when booting without DT; IIRC the internal patches I saw
-> > > fell back to hard-coding a call to tegra20_pinmux_init() when booting
-> > > a static board file (i.e. not booting device-tree)? Perhaps that's in a
-> > 
+Il 31/10/2011 07:03, Bryan Freed ha scritto:
+> On Sun, Oct 30, 2011 at 4:33 AM, Marco Stornelli
+> <marco.stornelli@gmail.com>  wrote:
+>>
+>> Il 30/10/2011 03:07, Bryan Freed ha scritto:
+>>>
+>>> Right, and that is what I do to get ARM working.  The reserve() function
+>>> calls memblock_reserve() to reserve the memory for RAMOOPS.  Keeping it
+>>> part of main memory (by not using memblock_remove()) gets the memory
+>>> properly mapped.
+>>>
+>>
+>> According to Russell, it needs to use memblock_remove to exclude that piece of memory.
+>>
+>>> The problem I think we need to resolve is that this makes the ramoops
+>>> driver messy.
+>>
+>> I agree. Indeed I think we don't need to do anything in the driver. The problem is only how to exclude a piece of memory from kernel main memory view. For x86 it's trivial, for ARM it doesn't, but it's still possible.
+>>
+>> Marco
+>
+> I will give that (using mem_remove()) a shot tomorrow.
+> My recollection on using it in last week's investigation showed the
+> ramoops driver ioremap() giving a mapping that did not correspond with
+> what the /dev/mem expected to see.  I vaguely recall /dev/mem was
+> effectively calling __va(0x02000000) which added a base address of
+> 0xc0000000 giving 0xc2000000 as the resulting virtual address.  The
+> ramoops ioremap(), however, gave some arbitrary virtual address for
+> this memory.
+> The result was that using /dev/mem to read 0x02000000 caused a panic.
 
-Indeed. Something went wrong here.
+I don't understand this point. We have different virtual addresses and 
+then? The linear transformation with a fixed offset is the normal way 
+for the kernel to have a virtual address from a physical one when you 
+are using a memory address directly mapped. The virtual address returned 
+by ioremap it can be an address not directly mapped, I mean it isn't a 
+simple linear transformation of the physical address used in input.
+It isn't normal to have a kernel panic, even if there is something 
+wrong, you should receive EINVAL or something similar.
 
-> > Unfortunately I don't have a tegra20 board which is supported without
-> > devicetree.
-> 
-> Oh, that's quite unfortunate. Still, you need to write the code so it's
-> expected to work for the non-DT case. Once you've fixed this, if you
-> push a complete branch somewhere, I can boot-test it on a few non-DT
-> boards. Hopefully I can test on Cardhu too.
+>
+> Another problem was that removing just 512KiB of memory for ramoops
+> screwed up the system memory initialization.  It appeared to me that
+> the ARM memory code expected sections to be 1MiB aligned.  I could
+> memblock_reserve anything, but I could only memblock_remove on a 1MiB
+> boundary.
+>
 
-I know. But alas I have to base myself on assumptions, which is suboptimal of
-course. I will see if I can find a tegra20 board which doesn't require
-devicetree here in finland or push a complete branch somewhere.
+It's an arch problem not related to the driver.
 
-Cheers,
+> And I cannot shake the feeling that we have a fairly simple disconnect
+> here.  Ramoops expects to use _device_ memory because it uses
+> ioremap().  But the buffer itself is accessed through /dev/mem which
+> (as we use it with no mmap() calls) expects to give access to _system_
 
-Peter.
+no mmap calls?! I don't understand how you are using /dev/mem.
 
+Marco
