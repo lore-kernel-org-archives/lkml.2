@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898Ab1JaKLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 06:11:52 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54610 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432Ab1JaKLv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 06:11:51 -0400
-Date: Mon, 31 Oct 2011 10:11:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] s3c2410: remove __ioaddrc()
-Message-ID: <20111031101126.GE19187@n2100.arm.linux.org.uk>
-References: <1319916749-14899-1-git-send-email-cesarb@cesarb.net>
+	id S933090Ab1JaKMe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 06:12:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58796 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932508Ab1JaKMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 06:12:33 -0400
+Date: Mon, 31 Oct 2011 11:12:30 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH] [TRIVIAL] ARM: imx: Fix typo
+ 'MACH_MX31_3DS_MXC_NAND_USE_BBT'
+In-Reply-To: <1318421062.2336.4.camel@x61.thuisdomein>
+Message-ID: <alpine.LNX.2.00.1110311110370.3541@pobox.suse.cz>
+References: <1318421062.2336.4.camel@x61.thuisdomein>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319916749-14899-1-git-send-email-cesarb@cesarb.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 05:32:29PM -0200, Cesar Eduardo Barros wrote:
-> While looking at s3c2410's mach/io.h, I noticed the #define for
-> __ioaddr() looked wrong. While the #defines above it called the "c"
-> suffixed variant when __builtin_constant_p() was true, the one for
-> __ioaddr() called the "c" suffixed variant (__ioaddrc()) when
-> __builtin_constant_p() was *false*.
-> 
-> Looking further, I noticed that __ioaddr() and __ioaddrc() were
-> identical, the only difference being that __ioaddr() is an inline
-> function and __ioaddrc() is a macro.
-> 
-> __ioaddrc() is not used anywhere else. There were similar constructs,
-> also reversed from what I'd expect, in both mach-clps7500 (removed from
-> the kernel in 2.6.29) and mach-rpc. The copy in mach-rpc was removed in
-> commit 6de2c31d3dad7384b3efa03674bd6ed479d58cb2 (rpc: remove obsolete IO
-> accessors).
-> 
-> Since __ioaddrc() is both redundant and useless, has no other uses, and
-> has already been removed in mach-rpc, remove it also in mach-s3c2410.
+On Wed, 12 Oct 2011, Paul Bolle wrote:
 
-Good.  Now, what about that horrible fudge in the inb/outb etc accessors.
-Can that be killed off as well?
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> This is trivial because this is what apparently was intended. On the
+> other hand this should open code paths that were hidden until now. So
+> perhaps this needs the maintainer's approval. (I cannot meaningfully
+> test this.)
+
+I'd like to have this tested by some relevant people before taking it 
+myself (added some CCs).
+
+> 
+>  arch/arm/mach-imx/mach-mx31_3ds.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/mach-mx31_3ds.c b/arch/arm/mach-imx/mach-mx31_3ds.c
+> index c20be75..5750ca5 100644
+> --- a/arch/arm/mach-imx/mach-mx31_3ds.c
+> +++ b/arch/arm/mach-imx/mach-mx31_3ds.c
+> @@ -542,7 +542,7 @@ static const struct mxc_nand_platform_data
+>  mx31_3ds_nand_board_info __initconst = {
+>  	.width		= 1,
+>  	.hw_ecc		= 1,
+> -#ifdef MACH_MX31_3DS_MXC_NAND_USE_BBT
+> +#ifdef CONFIG_MACH_MX31_3DS_MXC_NAND_USE_BBT
+>  	.flash_bbt	= 1,
+>  #endif
+>  };
+> -- 
+> 1.7.4.4
+> 
+> 
+> 
+
+-- 
+Jiri Kosina
+SUSE Labs
