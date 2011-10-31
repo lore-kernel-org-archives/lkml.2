@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab1JaXJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 19:09:14 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:49785 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab1JaXJM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 19:09:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=YgiZ5fLA6syMEPs7aV4YU7y/pBMYjmQy
-	8qKgaNhI7av0C6/11wFSVXjF7S+QOX178MStl/TPmSMvuybLGeDHOj8tKrTAnNJf
-	iPP+y5GQ7pUECHOBueJoW9htT8Tik04W0It9S1muvjUc/JwXzu9LiXpK5kFcELzS
-	IuZLqUhfBe8=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <20111026202235.GA20928@havoc.gtf.org>
- <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike>
- <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
- <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <4EAF1F40.3030907@zytor.com>
- <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
- <4EAF2245.90308@zytor.com>
- <CA+55aFzedaAzzWfzhqVf8y8ZW0jeb56hZwdV3UodSp8Q_Qhc2A@mail.gmail.com>
- <7vvcr4ojvp.fsf@alter.siamese.dyndns.org>
-Date: Mon, 31 Oct 2011 16:09:09 -0700
-In-Reply-To: <7vvcr4ojvp.fsf@alter.siamese.dyndns.org> (Junio C. Hamano's
- message of "Mon, 31 Oct 2011 15:51:06 -0700")
-Message-ID: <7vlis0oj1m.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1755745Ab1JaXKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 19:10:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44552 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753360Ab1JaXKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 19:10:36 -0400
+Date: Tue, 1 Nov 2011 00:10:31 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jan Kara <jack@suse.cz>, Andreas Dilger <adilger@dilger.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
+Subject: Re: Latency writing to an mlocked ext4 mapping
+Message-ID: <20111031231031.GD10107@quack.suse.cz>
+References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
+ <ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca>
+ <CALCETrU23vyCXPG6mJU9qaPeAGOWDQtur5C+LRT154V5FM=Ajg@mail.gmail.com>
+ <CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
+ <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
+ <20111025122618.GA8072@quack.suse.cz>
+ <CALCETrWoZeFpznU5Nv=+PvL9QRkTnS4atiGXx0jqZP_E3TJPqw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 57B975AA-0415-11E1-8ED5-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALCETrWoZeFpznU5Nv=+PvL9QRkTnS4atiGXx0jqZP_E3TJPqw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano <gitster@pobox.com> writes:
-
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
-> ...
-> As I already said, I do not think notes is a good match as a tool to do
-> this.
->
->> matters is that "git push" and "git pull" would JustWork(tm), and
->> check the signature if one exists, without having to cut-and-paste
->> data that simply shouldn't be visible to the user.
->>
->> I abhor the interface Ingo suggested, for example....
->
-> Some cut-and-paste (or piping the e-mail to a command) would be necessary
-> evil, though, as you would have GPG keys from more than one trusted person
-> in your keyring, and when you are responding to a pull-request from person
-> A, finding a valid commit signed by person B should not be a success, but
-> at least should raise a warning.
-
-So here is a quick hack that does not involve cut-and-paste (it depends on
-the signed-commit topic in 'next').
-
- $ git pull --require-signature
-
-would trigger signature verification and stops you after fetching but
-before merging.
-
- git-pull.sh |   25 ++++++++++++++++++++++++-
- 1 files changed, 24 insertions(+), 1 deletions(-)
-
-diff --git a/git-pull.sh b/git-pull.sh
-index 9868a0b..f3b4c93 100755
---- a/git-pull.sh
-+++ b/git-pull.sh
-@@ -39,7 +39,7 @@ test -z "$(git ls-files -u)" || die_conflict
- test -f "$GIT_DIR/MERGE_HEAD" && die_merge
+On Fri 28-10-11 16:37:03, Andy Lutomirski wrote:
+> On Tue, Oct 25, 2011 at 5:26 AM, Jan Kara <jack@suse.cz> wrote:
+> >>  - Why are we calling file_update_time at all?  Presumably we also
+> >> update the time when the page is written back (if not, that sounds
+> >> like a bug, since the contents may be changed after something saw the
+> >> mtime update), and, if so, why bother updating it on the first write?
+> >> Anything that relies on this behavior is, I think, unreliable, because
+> >> the page could be made writable arbitrarily early by another program
+> >> that changes nothing.
+> >  We don't update timestamp when the page is written back. I believe this
+> > is mostly because we don't know whether the data has been changed by a
+> > write syscall, which already updated the timestamp, or by mmap. That is
+> > also the reason why we update the timestamp at page fault time.
+> >
+> >  The reason why file_update_time() blocks for you is probably that it
+> > needs to get access to buffer where inode is stored on disk and because a
+> > transaction including this buffer is committing at the moment, your thread
+> > has to wait until the transaction commit finishes. This is mostly a problem
+> > specific to how ext4 works so e.g. xfs shouldn't have it.
+> >
+> >  Generally I believe the attempts to achieve any RT-like latencies when
+> > writing to a filesystem are rather hopeless. How much hopeless depends on
+> > the load of the filesystem (e.g., in your case of mostly idle filesystem I
+> > can imagine some tweaks could reduce your latencies to an acceptable level
+> > but once the disk gets loaded you'll be screwed). So I'd suggest that
+> > having RT thread just store log in memory (or write to a pipe) and have
+> > another non-RT thread write the data to disk would be a much more robust
+> > design.
+> 
+> Windows seems to do pretty well at this, and I think it should be fixable on
+> Linux too.  "All" that needs to be done is to remove the pte_wrprotect from
+> page_mkclean_one.  The fallout from that might be unpleasant, though, but
+> it would probably speed up a number of workloads.
+  Well, but Linux's mm pretty much depends the pte_wrprotect() so that's
+unlikely to go away in a forseeable future. The reason is that we need to
+reliably account the number of dirty pages so that we can throttle
+processes that dirty too much of memory and also protect agaist system
+going into out-of-memory problems when too many pages would be dirty (and
+thus hard to reclaim). Thus we create clean pages as write-protected, when
+they are first written to, we account them as dirtied and unprotect them.
+When pages are cleaned by writeback, we decrement number of dirty pages
+accordingly and write-protect them again. 
  
- strategy_args= diffstat= no_commit= squash= no_ff= ff_only=
--log_arg= verbosity= progress= recurse_submodules=
-+log_arg= verbosity= progress= recurse_submodules= must_be_signed=
- merge_args=
- curr_branch=$(git symbolic-ref -q HEAD)
- curr_branch_short="${curr_branch#refs/heads/}"
-@@ -60,6 +60,8 @@ do
- 		diffstat=--no-stat ;;
- 	--stat|--summary)
- 		diffstat=--stat ;;
-+	--require-signature)
-+		must_be_signed=yes ;;
- 	--log|--no-log)
- 		log_arg=$1 ;;
- 	--no-c|--no-co|--no-com|--no-comm|--no-commi|--no-commit)
-@@ -208,6 +210,27 @@ orig_head=$(git rev-parse -q --verify HEAD)
- git fetch $verbosity $progress $dry_run $recurse_submodules --update-head-ok "$@" || exit 1
- test -z "$dry_run" || exit 0
- 
-+if test -n "$must_be_signed"
-+then
-+	signature=$(git show -s --format='%G?' FETCH_HEAD)
-+	case "$signature" in
-+	G)
-+		case "$verbosity" in
-+		*' '-v*)
-+			git show -s --show-signature FETCH_HEAD ;;
-+		esac
-+		;;
-+	B)
-+		echo >&2 "Bad signature on the tip commit"
-+		exit 1
-+		;;
-+	*)
-+		echo >&2 "Tip commit must be signed"
-+		exit 1
-+		;;
-+	fi
-+fi
-+
- curr_head=$(git rev-parse -q --verify HEAD)
- if test -n "$orig_head" && test "$curr_head" != "$orig_head"
- then
+> Adding a whole separate process just to copy data from memory to disk sounds
+> a bit like a hack -- that's what mmap + mlock would do if it worked better.
+  Well, always only guarantees you cannot hit major fault when accessing
+the page. And we keep that promise - we only hit a minor fault. But I agree
+that for your usecase this is impractical.
+
+I can see as theoretically feasible for writeback to skip mlocked pages
+which would help your case. But practically, I do not see how to implement
+that efficiently (just skipping a dirty page when we find it's mlocked
+seems like a way to waste CPU needlessly).
+
+> Incidentally, pipes are no good.  I haven't root-caused it yet, but both
+> reading to and writing from pipes, even if O_NONBLOCK, can block.  I
+> haven't root-caused it yet.
+  Interesting. I imagine they could block on memory allocation but I guess
+you don't put that much pressure on your system. So it might be interesting
+to know where else they block...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
