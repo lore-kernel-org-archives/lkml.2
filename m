@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab1KARFg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:05:36 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4156 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755787Ab1KARFe convert rfc822-to-8bit (ORCPT
+	id S1755872Ab1KARGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:06:13 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53255 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab1KARGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:05:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 01 Nov 2011 10:05:17 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Taylor Hutt <thutt@chromium.org>
-CC: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 1 Nov 2011 10:05:15 -0700
-Subject: RE: [PATCH] asoc: tegra: wm8903: Simplify pin disconnect
-Thread-Topic: [PATCH] asoc: tegra: wm8903: Simplify pin disconnect
-Thread-Index: AcyYswuOyWxErSmhTmaayyLpIZEQawABGtqg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173EDABA68@HQMAIL01.nvidia.com>
-References: <1320164771-457-1-git-send-email-thutt@chromium.org>
-In-Reply-To: <1320164771-457-1-git-send-email-thutt@chromium.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Nov 2011 13:06:10 -0400
 MIME-Version: 1.0
+In-Reply-To: <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+References: <20111026202235.GA20928@havoc.gtf.org>
+	<1319969101.5215.20.camel@dabdike>
+	<CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+	<4EAF1731.2070908@zytor.com>
+	<CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com>
+	<4EAF1FF6.3000500@zytor.com>
+	<CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com>
+	<alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm>
+	<4EAF66C7.6080909@zytor.com>
+	<CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+Date: Tue, 1 Nov 2011 10:06:09 -0700
+Message-ID: <CA+8MBbLQm3OP5t8diSznURHtiRprqJEz1WerhddnUhqExLj_5w@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, david@lang.hm,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Taylor Hutt wrote at Tuesday, November 01, 2011 10:26 AM:
-> (Note that this patch fails the kernel patch checker because
->  the 'M' macro produces an error that it's value should be enclosed
->  in parenthesis; this is not actually possible for this use & expansion.)
-> 
-> Detail
-> 
->   This change is a simplification, both in implementation and for
->   reasoning about whcih pins are connected and disconnected.
-> 
->   The impetus for the change was the addition of new boards, and the
->   difficulty in reasoning about the previous code to disconnect pins.
-> 
->   Now, unless a connection is specified for the current board, the pin
->   will be disconnected.
-> 
->   A follow-on change will add the 'asymptote' board.
-> 
-> Testing
-> 
->   Visual inspection from original code.
->   Built kernel.
+On Mon, Oct 31, 2011 at 8:42 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Maybe it's because I'm used to having all my mail locally, but
+> searching all my emails is one of my most common operations. The gmail
+> web interface does that fine.
 
-As I mentioned in the ChromeOS review, I don't like this approach.
+I've had my gmail account subscribed to LKML since the dawn of gmail.
 
-The main issue is that all the connectivity information is already present
-in the ${machine}_audio_maps[] arrays, and this change duplicates it all
-in the data-structures inside tegra_wm8903_disconnect_pins().
+It used to be snappy for searches - but it got slower as my mailbox
+filled (a few months ago I had to throw out the oldest couple of years of
+LKML because I was getting close to the gmail limit - I'm back up to
+86% again now, so getting close to another purge).
 
-Instead, I believe a function should be added to the ASoC core that reads
-the machine's dapm routes, and does the same thing based on that. Mark
-Brown pointed out that this should be an optional utility function that
-machine drivers should call, since applying it automatically might cause
-issues for some other machines.
+So - don't get too used to speed in gmail.
 
-The second issue here is that the new code calls machine_is_ventana()
-and the equivalent for other machines, and some of those functions will go
-away next time Russell updates mach-types and removes entries for boards
-that aren't supported with an explicit board file.
-
--- 
-nvpublic
-
+-Tony
