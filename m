@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1KAJup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 05:50:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21884 "EHLO mx1.redhat.com"
+	id S1753248Ab1KAJxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 05:53:05 -0400
+Received: from mail96.atlas.de ([194.156.172.86]:29993 "EHLO mail96.atlas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069Ab1KAJuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 05:50:44 -0400
-Message-ID: <4EAFC15C.7010601@redhat.com>
-Date: Tue, 01 Nov 2011 17:52:28 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1752861Ab1KAJxE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 05:53:04 -0400
+Message-ID: <4EAFC18A.1070502@atlas-elektronik.com>
+Date: Tue, 01 Nov 2011 10:53:14 +0100
+From: =?UTF-8?B?U3RlZmFuIE7DpHdl?= <stefan.naewe@atlas-elektronik.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: kexec@lists.infradead.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, vgoyal@redhat.com, horms@verge.net.au,
-        luyu@redhat.com
-Subject: Re: [PATCH retry] intel-iommu:make identity_map default for crash
- dump
-References: <20111101091939.GA8985@darkstar.nay.redhat.com> <1320140052.2089.5.camel@shinybook.infradead.org>
-In-Reply-To: <1320140052.2089.5.camel@shinybook.infradead.org>
+To: Junio C Hamano <gitster@pobox.com>
+Cc: "git@vger.kernel.org" <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git 1.7.8.rc0
+References: <7vfwi9rc0g.fsf@alter.siamese.dyndns.org> <4EAEAE13.50101@atlas-elektronik.com>
+In-Reply-To: <4EAEAE13.50101@atlas-elektronik.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 05:34 PM, David Woodhouse wrote:
-
-> On Tue, 2011-11-01 at 17:19 +0800, Dave Young wrote:
->> kdump kernel sometimes will get DMAR faults which
->> is caused by random in-flight dma from 1st kernel
+Am 31.10.2011 15:17, schrieb Stefan Näwe:
+> Am 31.10.2011 06:00, schrieb Junio C Hamano:
+>> A release candidate Git 1.7.8.rc0 is available for testing.
 >>
->> Here make the identity_mapping as default for this case
+>> [...]
+>>
+>>
+>> Git v1.7.8 Release Notes (draft)
+>> ================================
+>>
+>> Updates since v1.7.7
+>> --------------------
+>>
+>> [...]
+>>
+>>  * HTTP transport did not use pushurl correctly, and also did not tell
+>>    what host it is trying to authenticate with when asking for
+>>    credentials.
+>>    (merge deba493 jk/http-auth later to maint).
 > 
-> So you want to *allow* the random in-flight DMA? And with an identity
-> mapping it's really going to random addresses, since it'll be
-> untranslated and won't even go to the physical addresses which it was
-> originally intended for?
-> 
-> This seems entirely broken to me.
-> 
-> If there is "random in-flight dma" from the first kernel, the correct
-> thing to do is *block* it. Which is what we do.
-> 
+> This seems to break pushing with https for me.
+> It never uses values from my '~/.netrc'.
+> I'll come up with a detailed scenario later.
+
+Update:
+
+git push prompts for the password but just pressing return succeeds.
+
+Weird...
 
 
-This patch works for me for several cases. For kdump It can be seen a
-workaround. But yes blocking the 1st kernel dma is ideal.
-
-Glad to hear that you are working on this.
-
+Stefan
 -- 
-Thanks
-Dave
+----------------------------------------------------------------
+/dev/random says: Budget: A method for going broke methodically.
+python -c "print '73746566616e2e6e616577654061746c61732d656c656b74726f6e696b2e636f6d'.decode('hex')"
