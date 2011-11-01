@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab1KAQkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 12:40:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56073 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab1KAQkQ (ORCPT
+	id S1755349Ab1KAQml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 12:42:41 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35198 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753200Ab1KAQmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 12:40:16 -0400
-Date: Tue, 1 Nov 2011 12:40:10 -0400
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH pm 1/2] usb_storage: don't use set_freezable_with_signal()
-Message-ID: <20111101164010.GA19686@thinkpad-t410>
-Mail-Followup-To: Tejun Heo <tj@kernel.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-	Oleg Nesterov <oleg@redhat.com>,
-	Alan Stern <stern@rowland.harvard.edu>,
-	Greg Kroah-Hartman <gregkh@suse.de>
-References: <20111101003726.GM18855@google.com>
+	Tue, 1 Nov 2011 12:42:40 -0400
+Date: Tue, 1 Nov 2011 09:42:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        dmitry.torokhov@gmail.com
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111101164235.GS18855@google.com>
+References: <20111101124759.GA1326@zeus>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111101003726.GM18855@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111101124759.GA1326@zeus>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 05:37:26PM -0700, Tejun Heo wrote:
-> The current implementation of set_freezable_with_signal() is buggy and
-> tricky to get right.  usb-storage is the only user and its use can be
-> avoided trivially.
+On Tue, Nov 01, 2011 at 07:48:19AM -0500, Andrew Watts wrote:
+> Hi.
 > 
-> All usb-storage wants is to be able to sleep with timeout and get
-> woken up if freezing() becomes true.  This can be trivially
-> implemented by doing interruptible wait w/ freezing() included in the
-> wait condition.  There's no reason to use set_freezable_with_signal().
+> Hibernate/sleep (echo disk/mem > /sys/power/state) has presented problems
+> for me starting with 2.6.39. Kernel 2.6.37.6 was the last completely bug-free
+> version I used (I skipped the 2.6.38 branch entirely).
 > 
-> Perform interruptible wait on freezing() instead of using
-> set_freezable_with_signal(), which is scheduled for removal.
+> The symptoms are that upon resume (from sleep/hibernate) there is no video
+> nor any keyboard input with the exception of sysrq.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Seth Forshee <seth.forshee@canonical.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
+> It has been a frustrating bug to hunt down because it is not easily
+> reproduced; sometimes the bug doesn't pop up until after a long sequence of
+> hibernate/sleep cycles.
 > 
-> These two patches are on top of "freezer: fix various bugs and
-> simplify implementation, take#2" patchset[1] and are also available in
-> the following git branch.
+> I successfully bisected the problem to: 8ee294cd9def000.
 > 
->  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-kill-freezable_with_signal
+> =======
+> Commit: 8ee294cd9def0004887da7f44b80563493b0a097
+> Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Date:   Mon Nov 15 01:39:57 2010 -0800
+> Input: serio - convert to common workqueue instead of a thread
+> =======
 > 
-> If usb-storage ppl are okay with it, I think routing this through pm
-> would be the easiest.  Oh, and this definitely is for the next merge
-> window.
+> Backing out 8ee294cd9def000 (which requires reversing part of
+> 1d64b655dc083df also) fixes this particular problem on 2.6.39.4,
+> 3.0.8, and 3.1.
 > 
-> Thank you.
-> 
-> [1] http://thread.gmane.org/gmane.linux.kernel/1209247
-> 
->  drivers/usb/storage/usb.c |   13 +++++++------
->  1 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-> index c325e69..aa84b3d 100644
-> --- a/drivers/usb/storage/usb.c
-> +++ b/drivers/usb/storage/usb.c
-> @@ -831,7 +831,8 @@ static int usb_stor_scan_thread(void * __us)
->  
->  	dev_dbg(dev, "device found\n");
->  
-> -	set_freezable_with_signal();
-> +	set_freezable();
-> +
->  	/*
->  	 * Wait for the timeout to expire or for a disconnect
->  	 *
-> @@ -839,16 +840,16 @@ static int usb_stor_scan_thread(void * __us)
->  	 * fail to freeze, but we can't be non-freezable either. Nor can
->  	 * khubd freeze while waiting for scanning to complete as it may
->  	 * hold the device lock, causing a hang when suspending devices.
-> -	 * So we request a fake signal when freezing and use
-> -	 * interruptible sleep to kick us out of our wait early when
-> -	 * freezing happens.
-> +	 * So instead of using wait_event_freezable(), explicitly test
-> +	 * for (DONT_SCAN || freezing) in interruptible wait and proceed
-> +	 * if any of DONT_SCAN, freezing or timeout has happened.
->  	 */
->  	if (delay_use > 0) {
->  		dev_dbg(dev, "waiting for device to settle "
->  				"before scanning\n");
->  		wait_event_interruptible_timeout(us->delay_wait,
-> -				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
-> -				delay_use * HZ);
-> +				test_bit(US_FLIDX_DONT_SCAN, &us->dflags) ||
-> +				freezing(current), delay_use * HZ);
->  	}
->  
->  	/* If the device is still connected, perform the scanning */
+> Unfortunately, in 3.0.8 and 3.1 I have other suspend/hibernate problems
+> that I will investigate next and detail in a different regression report.
 
-That looks like it ought to work, and it's definitely less convoluted
-than what's there now.  I'd be happy to test it next week when I'm back
-home and have access to the machine that prompted the original change.
+Does the following patch fix the problem?
 
-Seth
+Thanks.
+
+diff --git a/drivers/input/serio/serio.c b/drivers/input/serio/serio.c
+index ba70058..95aeebd 100644
+--- a/drivers/input/serio/serio.c
++++ b/drivers/input/serio/serio.c
+@@ -949,6 +949,7 @@ static int serio_resume(struct device *dev)
+ 	 * deal with it.
+ 	 */
+ 	serio_queue_event(serio, NULL, SERIO_RECONNECT_PORT);
++	queue_work(system_long_wq, &serio_event_work);
+ 
+ 	return 0;
+ }
