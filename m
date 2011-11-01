@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab1KAM0J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:26:09 -0400
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:38913 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab1KAM0I (ORCPT
+	id S1754484Ab1KAM0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:26:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57699 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212Ab1KAM0l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:26:08 -0400
-Subject: Re: [PATCH][mm:] adjust the logic of checking THP
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Guanjun He <heguanbo@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1320147705-15117-1-git-send-email-heguanbo@gmail.com>
-References: <shaohua.li@intel.com;linux-mm@kvack.org;linux-kernel@vger.kernel.org>
-	 <1320147705-15117-1-git-send-email-heguanbo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 13:26:05 +0100
-Message-ID: <1320150365.14409.160.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Nov 2011 08:26:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANejiEVg18ZFZWzFRK6Lm2H_65ovW=N6Fe0q02y1LcDQnKsi2Q@mail.gmail.com>
+References: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
+	<20111031160145.GD4468@shiny>
+	<CAKYAXd88-QomPkrrDY0TzuJodW6XwecMSKufBqFaE2W16ntX2Q@mail.gmail.com>
+	<CANejiEVg18ZFZWzFRK6Lm2H_65ovW=N6Fe0q02y1LcDQnKsi2Q@mail.gmail.com>
+Date: Tue, 1 Nov 2011 21:26:40 +0900
+Message-ID: <CAKYAXd9AFPGy0TCcw7zrksD4wqoLRQkEr9YZ571eyZsNTnJ=tw@mail.gmail.com>
+Subject: Re: [PATCH] btrfs: add block plug for .writepages
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perhaps a summary would help the people actually knowledgeable about mm
-understand why this adjustment is needed.
-
-I'll just mention a few obvious things.
-
-On Tue, 2011-11-01 at 19:41 +0800, Guanjun He wrote:
-> Signed-off-by: Guanjun He <heguanbo@gmail.com>
-> ---
->  mm/memory.c |   32 ++++++++++++++++++--------------
->  1 files changed, 18 insertions(+), 14 deletions(-)
-> 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index a56e3ba..d6dd6b3 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3465,20 +3465,24 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	pmd = pmd_alloc(mm, pud, address);
->  	if (!pmd)
->  		return VM_FAULT_OOM;
-> -	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
-> -		if (!vma->vm_ops)
-> -			return do_huge_pmd_anonymous_page(mm, vma, address,
-> -							  pmd, flags);
-> -	} else {
-> -		pmd_t orig_pmd = *pmd;
-> -		barrier();
-> -		if (pmd_trans_huge(orig_pmd)) {
-> -			if (flags & FAULT_FLAG_WRITE &&
-> -			    !pmd_write(orig_pmd) &&
-> -			    !pmd_trans_splitting(orig_pmd))
-> -				return do_huge_pmd_wp_page(mm, vma, address,
-> -							   pmd, orig_pmd);
-> -			return 0;
-> +	if (transparent_hugepage_enabled(vma)) {
-> +		if(pmd_none(*pmd)){
-
-codingstyle (scripts/checkpatch.pl would have caught that one).
-
-> +			if (!vma->vm_ops)
-> +				return do_huge_pmd_anonymous_page(mm, vma, address,
-> +						pmd, flags);
-> +		}
-> +		else
-> +		{
-
-codingstyle (ditto). There's probably more.
-
-> +			pmd_t orig_pmd = *pmd;
-> +			barrier();
-> +			if (pmd_trans_huge(orig_pmd)) {
-> +				if (flags & FAULT_FLAG_WRITE &&
-> +						!pmd_write(orig_pmd) &&
-> +						!pmd_trans_splitting(orig_pmd))
-> +					return do_huge_pmd_wp_page(mm, vma, address,
-> +							pmd, orig_pmd);
-> +				return 0;
-> +			}
->  		}
->  	}
->  
-
-
-Paul Bolle
-
+2011/11/1 Shaohua Li <shaohua.li@intel.com>:
+> 2011/11/1 NamJae Jeon <linkinjeon@gmail.com>:
+>> 2011/11/1 Chris Mason <chris.mason@oracle.com>:
+>>> On Tue, Nov 01, 2011 at 12:45:07AM +0900, Namjae Jeon wrote:
+>>>> Add block plug for btrfs .writepages. Block plug is helpful to reduce block lock contention.
+>>>>
+>>>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>>>> ---
+>>>>  fs/btrfs/extent_io.c |    4 ++++
+>>>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
+>>>> index d418164..8f2d6bd 100644
+>>>> --- a/fs/btrfs/extent_io.c
+>>>> +++ b/fs/btrfs/extent_io.c
+>>>> @@ -2388,6 +2388,7 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+>>>>       pgoff_t end;            /* Inclusive */
+>>>>       int scanned = 0;
+>>>>       int tag;
+>>>> +     struct blk_plug plug;
+>>>>
+>>>>       pagevec_init(&pvec, 0);
+>>>>       if (wbc->range_cyclic) {
+>>>> @@ -2405,6 +2406,8 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
+>>>>  retry:
+>>>>       if (wbc->sync_mode == WB_SYNC_ALL)
+>>>>               tag_pages_for_writeback(mapping, index, end);
+>>>> +
+>>>> +     blk_start_plug(&plug);
+>>>>       while (!done && !nr_to_write_done && (index <= end) &&
+>>>>              (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
+>>>>                       min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1))) {
+>>>> @@ -2468,6 +2471,7 @@ retry:
+>>>>               pagevec_release(&pvec);
+>>>>               cond_resched();
+>>>>       }
+>>>> +     blk_finish_plug(&plug);
+>>>>       if (!scanned && !done) {
+>>>>               /*
+>>>>                * We hit the last page and there is more work to be done: wrap
+>>>
+>>> Thanks for the patch, but we actually do this at a lower level in btrfs.
+>>> The actual IO can be done to multiple block devices, so we try to plug
+>>> for each device individually.
+>>>
+>>> -chris
+>>>
+>>>
+>> Hi. Chris.
+>>
+>> I got your point. pending bio is operated by worker_loop thread.
+>> But Is block plug needed in extent_readpages ?
+> .readpages are called in readahead, where we already have block
+> plug.
+Thanks for your reply. I checked it.
+block plug in mpage_readpages is not needed also.
+>
