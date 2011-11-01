@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab1KARP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:15:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49050 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773Ab1KARP5 (ORCPT
+	id S1755613Ab1KARTZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:19:25 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:56945 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753922Ab1KARTY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:15:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+8MBbLQm3OP5t8diSznURHtiRprqJEz1WerhddnUhqExLj_5w@mail.gmail.com>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com>
- <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com>
- <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm> <4EAF66C7.6080909@zytor.com>
- <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com> <CA+8MBbLQm3OP5t8diSznURHtiRprqJEz1WerhddnUhqExLj_5w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 1 Nov 2011 10:15:34 -0700
-X-Google-Sender-Auth: Ov60OaDJ2Y33KTEWLAlljLmjOkk
-Message-ID: <CA+55aFz4xcD-+9pTyXgPwoCGEffL1ydcdxdTCEB8hRKzZfqVwA@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, david@lang.hm,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Nov 2011 13:19:24 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 1 Nov 2011 18:19:20 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Lars =?UTF-8?B?Tm9vZMOpbg==?= <lars.nooden@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: where to report bugs while bugzilla.kernel.org is down?
+Message-ID: <20111101181920.2c6655dd@stein>
+In-Reply-To: <4EB0205E.4050602@gmail.com>
+References: <4EB0205E.4050602@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 10:06 AM, Tony Luck <tony.luck@gmail.com> wrote:
->
-> I've had my gmail account subscribed to LKML since the dawn of gmail.
->
-> It used to be snappy for searches - but it got slower as my mailbox
-> filled (a few months ago I had to throw out the oldest couple of years of
-> LKML because I was getting close to the gmail limit - I'm back up to
-> 86% again now, so getting close to another purge).
->
-> So - don't get too used to speed in gmail.
+On Nov 01 Lars Noodén wrote:
+> bugzilla.kernel.org has been down for a while and it may be a while
+> before it is up again.  In the mean time how should bugs be reported?
+> 
+> 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
 
-The LKML thing is why I really love how gmail works. LKML just goes
-into the black hole that is the gmail thing, and I never see it. But
-then, when I get cc'd about something in the middle of a thread when a
-question comes up - I just magically see the whole thread without
-having to look around in other folders or anything like that.
+Bugs should be reported on LKML and/or if applicable on a respective
+subsystem mailinglist.  (See MAINTAINERS file of the kernel source.)
 
-I'm sure 'notmuch' etc does that too, but pine sure never did. If I
-made my filters automatically move lkml posts to my lkml folder, by
-the time I got cc'd, I had to go back to that folder to see the
-history of the thread.
+Even when bugzilla.kernel.org comes back, report bugs preferably to
+mailinglists.  Bugzilla is a bug tracker, not so much a reporting tool.
+Some maintainers and the good people who track kernel regressions make use
+of bugzilla.kernel.org to keep record of bugs.  Furthermore, it can of
+course be used by reporters too especially if they need to upload
+screenshots of a kernel panic or large log files etc..
 
-But yeah, I only have about two years of LKML. I'll happily throw out
-old lkml email when it gets to be painfully slow to search, though. I
-used to have to do lkml folder cleanups every few months even when I
-had my email *locally* because it just got too painful with big
-folders, so the gmail approach already not only works much better, but
-if I have to clean things up every few years, that's much less than I
-used to have to do anyway.
-
-                          Linus
+(That said, bug reports which are entered into bugzilla instead of posted
+to a mailinglist are usually forwarded to people or mailinglists who might
+be able to handle them.)
+-- 
+Stefan Richter
+-=====-==-== =-== ----=
+http://arcgraph.de/sr/
