@@ -1,174 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754144Ab1KAMHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:07:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39167 "EHLO mx2.suse.de"
+	id S1754207Ab1KAMIM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:08:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:8020 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753942Ab1KAMHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:07:36 -0400
-Date: Tue, 1 Nov 2011 12:07:26 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Nai Xia <nai.xia@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-Message-ID: <20111101120726.GA25123@suse.de>
-References: <20111031171441.GD3466@redhat.com>
- <1320082040-1190-1-git-send-email-aarcange@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1320082040-1190-1-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753942Ab1KAMIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:08:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,437,1315206000"; 
+   d="scan'208";a="80033506"
+Date: Tue, 1 Nov 2011 12:18:51 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Paul Schilling <paul.s.schilling@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 02/14] ARM : SAMSUNG : Add RS485 support.
+Message-ID: <20111101121851.7d393277@bob.linux.org.uk>
+In-Reply-To: <1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
+References: <samsung_rs485>
+	<1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 06:27:20PM +0100, Andrea Arcangeli wrote:
-> migrate was doing a rmap_walk with speculative lock-less access on
-> pagetables. That could lead it to not serialize properly against
-> mremap PT locks. But a second problem remains in the order of vmas in
-> the same_anon_vma list used by the rmap_walk.
-> 
-> If vma_merge would succeed in copy_vma, the src vma could be placed
-> after the dst vma in the same_anon_vma list. That could still lead
-> migrate to miss some pte.
-> 
+> +config SAMSUNG_HAS_RS485
+> +	bool "Enable RS485 support for Samsung"
+> +	depends on SERIAL_SAMSUNG && (MACH_CONDOR2440 ||
+> MACH_CONDOR2416 || MACH_MINI2440)
+> +	default y if (MACH_CONDOR2440 || MACH_CONDOR2416)
+> +	default n if (MACH_MINI2440)
 
-For future reference, why? How about this as an explanation?
+There really needs to be more ARM thinking about doing this sort of
+stuff at runtime. If you can detect the board type at runtime then you
+need to be moving towards kicking board specifics out of the depends,
+and treating it as an "include support for this, if the board has it"
+so you can move towards less build time only configuration.
 
-If vma_merge would succeed in copy_vma, the src vma could be placed
-after the dst vma in the same_anon_vma list. That leads to a race
-between migration and mremap whereby a migration PTE is left behind.
-
-mremap				migration
-create dst VMA
-				rmap_walk
-				finds dst, no ptes, release PTL
-move_ptes
-copies src PTEs to dst
-				finds src, ptes empty, releases PTL
-
-The migration PTE is now left behind because the order of VMAs matter.
-
-> This patch adds a anon_vma_order_tail() function to force the dst vma
-> at the end of the list before mremap starts to solve the problem.
-> 
-
-Document the alternative just in case?
-
-"One fix would be to have mremap take the anon_vma lock which would
-serialise migration and mremap but this would hurt scalability. Instead,
-this patch adds....."
-
-I would also prefer something like anon_vma_moveto_tail() but maybe
-it's just me that sees "order" and thinks "high-order allocation".
-
-> If the mremap is very large and there are a lots of parents or childs
-> sharing the anon_vma root lock, this should still scale better than
-> taking the anon_vma root lock around every pte copy practically for
-> the whole duration of mremap.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  include/linux/rmap.h |    1 +
->  mm/mmap.c            |    8 ++++++++
->  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 53 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index 2148b12..45eb098 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -120,6 +120,7 @@ void anon_vma_init(void);	/* create anon_vma_cachep */
->  int  anon_vma_prepare(struct vm_area_struct *);
->  void unlink_anon_vmas(struct vm_area_struct *);
->  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
-> +void anon_vma_order_tail(struct vm_area_struct *);
->  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
->  void __anon_vma_link(struct vm_area_struct *);
->  
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index a65efd4..a5858dc 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
->  		 */
->  		if (vma_start >= new_vma->vm_start &&
->  		    vma_start < new_vma->vm_end)
-> +			/*
-> +			 * No need to call anon_vma_order_tail() in
-> +			 * this case because the same PT lock will
-> +			 * serialize the rmap_walk against both src
-> +			 * and dst vmas.
-> +			 */
->  			*vmap = new_vma;
-> +		else
-> +			anon_vma_order_tail(new_vma);
->  	} else {
->  		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
->  		if (new_vma) {
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 8005080..6dbc165 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
->  }
->  
->  /*
-> + * Some rmap walk that needs to find all ptes/hugepmds without false
-> + * negatives (like migrate and split_huge_page) running concurrent
-> + * with operations that copy or move pagetables (like mremap() and
-> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
-> + * in a certain order: the dst_vma must be placed after the src_vma in
-> + * the list. This is always guaranteed by fork() but mremap() needs to
-> + * call this function to enforce it in case the dst_vma isn't newly
-> + * allocated and chained with the anon_vma_clone() function but just
-> + * an extension of a pre-existing vma through vma_merge.
-> + *
-> + * NOTE: the same_anon_vma list can still be changed by other
-> + * processes while mremap runs because mremap doesn't hold the
-> + * anon_vma mutex to prevent modifications to the list while it
-> + * runs. All we need to enforce is that the relative order of this
-> + * process vmas isn't changing (we don't care about other vmas
-> + * order). Each vma corresponds to an anon_vma_chain structure so
-> + * there's no risk that other processes calling anon_vma_order_tail()
-> + * and changing the same_anon_vma list under mremap() will screw with
-> + * the relative order of this process vmas in the list, because we
-> + * won't alter the order of any vma that isn't belonging to this
-> + * process. And there can't be another anon_vma_order_tail running
-> + * concurrently with mremap() coming from this process because we hold
-> + * the mmap_sem for the whole mremap(). fork() ordering dependency
-> + * also shouldn't be affected because we only care that the parent
-> + * vmas are placed in the list before the child vmas and
-> + * anon_vma_order_tail won't reorder vmas from either the fork parent
-> + * or child.
-> + */
-> +void anon_vma_order_tail(struct vm_area_struct *dst)
-> +{
-> +	struct anon_vma_chain *pavc;
-> +	struct anon_vma *root = NULL;
-> +
-> +	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
-> +		struct anon_vma *anon_vma = pavc->anon_vma;
-> +		VM_BUG_ON(pavc->vma != dst);
-> +		root = lock_anon_vma_root(root, anon_vma);
-> +		list_del(&pavc->same_anon_vma);
-> +		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
-> +	}
-> +	unlock_anon_vma_root(root);
-> +}
+> +/* FIXME */
+> +	#if 0
+> +	if (last_state != en) {
 > +
 
-This is following the same rules as anon_vma_clone() and I didn't see a
-flaw in your explanation as to why it's safe.
+So this doesn't look ready to submit either...
 
-Acked-by: Mel Gorman <mgorman@suse.de>
 
--- 
-Mel Gorman
-SUSE Labs
+> +		if ((utrstat & S3C2410_UTRSTAT_TXE) ? 1 : 0) {
+> +			if (cfg->gpio_transmit_en > -1) {
+> +
+> gpio_set_value(cfg->gpio_transmit_en, 0);
+> +			}
+
+Lots of excess brackets (see CodingStyle) - removing a few of the
+excess ones would make it easier to read later.
+
+The later bits become a real mess of ifdefs - much not your fault, the
+combination of your ifdefs and existing lack of design push it beyond
+ugly and really want addressing.
+
