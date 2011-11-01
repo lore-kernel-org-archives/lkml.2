@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1KADbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 23:31:45 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:33006 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754022Ab1KADbm (ORCPT
+	id S1754095Ab1KADnM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 23:43:12 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:45887 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830Ab1KADnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 23:31:42 -0400
-Message-ID: <4EAF6802.2060005@tao.ma>
-Date: Tue, 01 Nov 2011 11:31:14 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH for 3.2] fs/direct-io.c: Calculate fs_count correctly
- in get_more_blocks.
-References: <20111029105856.GA6479@infradead.org>	<1320045873-3956-1-git-send-email-tm@tao.ma> <x49wrblav46.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49wrblav46.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Mon, 31 Oct 2011 23:43:10 -0400
+Date: Tue, 1 Nov 2011 14:43:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Bolle <pebolle@tiscali.nl>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: linux-next: manual merge of the kbuild tree with the  tree
+Message-Id: <20111101144300.4d9ea5834a874944bd87e823@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 02:12 AM, Jeff Moyer wrote:
-> Tao Ma <tm@tao.ma> writes:
-> 
->> From: Tao Ma <boyu.mt@taobao.com>
->>
->> In get_more_blocks, we use dio_count to calculate fs_count and do some
->> tricky things to increase fs_count if dio_count isn't aligned. But
->> actually it still has some cornor case that can't be coverd. See the
->> following example:
->> ./dio_write foo -s 1024 -w 4096(direct write 4096 bytes at offset 1024).
->> The same goes if the offset isn't aligned to fs_blocksize.
->>
->> In this case, the old calculation counts fs_count to be 1, but actually
->> we will write into 2 different blocks(if fs_blocksize=4096). The old code
->> just works, since it will call get_block twice(and may have to allocate
->> and create extent twice for file systems like ext4). So we'd better call
->> get_block just once with the proper fs_count.
-> 
-> This description was *really* hard for me to understand.  It seems to me
-> that right now there's an inefficiency in the code.  It's not clear
-> whether you're claiming that it was introduced recently, though.  Was
-> it, or has this problem been around for a while?
-Actually it is there a long time ago. And the good thing is that it
-isn't a bug, only some performance overhead.
-> 
-> How did you notice this?  Was there any evidence of a problem, such as
-> performance overhead or less than ideal file layout?
-I found it when I dig into some ext4 issues. The ext4 can't create the
-whole 8K(in the above case) and ext4 has to create the blocks 2 times
-for just one direct i/o write. In some of our test, it costs.
+--Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Anyway, I agree that the code does not correctly calculate the number of
-> file system blocks in a request.  I also agree that your patch fixes
-> that issue.
-> 
-> Please ammend the description and then you can add my:
-So how about the following commit log(please feel free to modify it if I
-still don't describe it correctly).
+Hi Michal,
 
-In get_more_blocks, we use dio_count to calculate fs_count to let the
-file system map(maybe also create) blocks. And some tricky things are
-done to increase fs_count if dio_count isn't aligned.
+Today's linux-next merge of the kbuild tree got a conflict in
+drivers/net/ethernet/stmicro/stmmac/Kconfig (drivers/net/stmmac/Kconfig
+in the kbuild tree) between commit 7ac6653a085b ("stmmac: Move the
+STMicroelectronics driver") from the  tree and commit 2d3def0b73e3
+("stmmac: drop unused Kconfig symbol") from the kbuild tree.
 
-But actually it still has some cornor case that can't be coverd. See the
-following example:
-./dio_write foo -s 1024 -w 4096(direct write 4096 bytes at offset 1024).
+I just used the latter version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-In this case, the old calculation counts fs_count to be 1, but actually
-we will write into 2 different blocks(if fs_blocksize=4096). So the
-underlying file system is called twice and leads to some performance
-overhead. So fix it by calculating fs_count correctly and let the file
-system knows what we really want to write.
+--Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+
+Content-Type: application/pgp-signature
 
-Thanks
-Tao
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> Acked-by: Jeff Moyer <jmoyer@redhat.com>
-> 
-> Cheers,
-> Jeff
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+iQIcBAEBCAAGBQJOr2rEAAoJEECxmPOUX5FEGV8P/2NqifpYSrCuIFJ2WCC6fnXk
+BbEHaGoVU6csLh6BEuYySawdmSEWaqD83CY0nSwYM1icDxFlZnzln5Lmb02TKBlx
++9+mAQ30Da7Q+/xVJcKoHncNMUntwcjUQGJ6CnQVnIsEwRWVTCGEEBuP/xAvI3a2
+gG6V/+fzDxPaEBkU4QJpK6ZQpWNQfoXrFnyXO1TQSfX4eV1MUD6BujUjC1OsGxQp
+JIrI3AFaRlHdsncQ37R77vpMeb3HY0L3FCQxe6qN4z72clmoOeZmOuSuwPHTp/9K
+okXuXBnIz7V2SbfXSzKnnOQugEBPRNJBxQoC32wGtlhLGkh7KI/7xwMIUcwnz9gG
+r2RFSXNDR5z6nEV/USJv/TtsFYehKa88zB1stqLU7PdGL4H52W6nqzaHaHWU2yTm
+cPIz9b72pLCFVwLBWhIoeoQGdr8YqR8wVuRKmqZOUF3SwflLwp8rU5S9tAltZaqf
+p2cZCVBrlBaxDy0AfoQdlO9lpKNVbeOmYBhqKl+7qmLPz24/j4Pbm2wH6qYMEpXA
+YZLfA4AlGXVAmP/iqXFf5Rh1IZr6Z9fjOFzD6lg9hqzGxr+JM/e85iesfFQlKWMe
+xDCYg2eixoGe4mixUsHuKlIiyXObBdlH1kWNvZofCWZR1eNYm4jYoq5OJNgvBIHT
+mhyl1nHD7xggbtmyQaQ3
+=zJn+
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+--
