@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304Ab1KAFbk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 01:31:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54949 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab1KAFbj convert rfc822-to-8bit (ORCPT
+	id S1751241Ab1KAFjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 01:39:09 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36477 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750742Ab1KAFjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 01:31:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111031160145.GD4468@shiny>
-References: <1320075907-4079-1-git-send-email-linkinjeon@gmail.com>
-	<20111031160145.GD4468@shiny>
-Date: Tue, 1 Nov 2011 14:31:38 +0900
-Message-ID: <CAKYAXd88-QomPkrrDY0TzuJodW6XwecMSKufBqFaE2W16ntX2Q@mail.gmail.com>
-Subject: Re: [PATCH] btrfs: add block plug for .writepages
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>, Namjae Jeon <linkinjeon@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Nov 2011 01:39:07 -0400
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Junio C Hamano <gitster@pobox.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        git@vger.kernel.org, Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
+References: <20111026202235.GA20928@havoc.gtf.org>
+	 <1319969101.5215.20.camel@dabdike>
+	 <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+	 <1320049150.8283.19.camel@dabdike>
+	 <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+	 <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+	 <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+	 <4EAF1F40.3030907@zytor.com>
+	 <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
+	 <4EAF2245.90308@zytor.com> <7vzkggok6u.fsf@alter.siamese.dyndns.org>
+	 <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Nov 2011 09:39:01 +0400
+Message-ID: <1320125941.7701.14.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/1 Chris Mason <chris.mason@oracle.com>:
-> On Tue, Nov 01, 2011 at 12:45:07AM +0900, Namjae Jeon wrote:
->> Add block plug for btrfs .writepages. Block plug is helpful to reduce block lock contention.
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> ---
->>  fs/btrfs/extent_io.c |    4 ++++
->>  1 files changed, 4 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
->> index d418164..8f2d6bd 100644
->> --- a/fs/btrfs/extent_io.c
->> +++ b/fs/btrfs/extent_io.c
->> @@ -2388,6 +2388,7 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
->>       pgoff_t end;            /* Inclusive */
->>       int scanned = 0;
->>       int tag;
->> +     struct blk_plug plug;
->>
->>       pagevec_init(&pvec, 0);
->>       if (wbc->range_cyclic) {
->> @@ -2405,6 +2406,8 @@ static int extent_write_cache_pages(struct extent_io_tree *tree,
->>  retry:
->>       if (wbc->sync_mode == WB_SYNC_ALL)
->>               tag_pages_for_writeback(mapping, index, end);
->> +
->> +     blk_start_plug(&plug);
->>       while (!done && !nr_to_write_done && (index <= end) &&
->>              (nr_pages = pagevec_lookup_tag(&pvec, mapping, &index, tag,
->>                       min(end - index, (pgoff_t)PAGEVEC_SIZE-1) + 1))) {
->> @@ -2468,6 +2471,7 @@ retry:
->>               pagevec_release(&pvec);
->>               cond_resched();
->>       }
->> +     blk_finish_plug(&plug);
->>       if (!scanned && !done) {
->>               /*
->>                * We hit the last page and there is more work to be done: wrap
->
-> Thanks for the patch, but we actually do this at a lower level in btrfs.
-> The actual IO can be done to multiple block devices, so we try to plug
-> for each device individually.
->
-> -chris
->
->
-Hi. Chris.
+On Mon, 2011-10-31 at 15:52 -0700, Linus Torvalds wrote:
+> On Mon, Oct 31, 2011 at 3:44 PM, Junio C Hamano <gitster@pobox.com> wrote:
+> >
+> > So nobody is worried about this (quoting from my earlier message)?
+> 
+> No, because you haven't been reading what we write.
+> 
+> The tag is useless.
 
-I got your point. pending bio is operated by worker_loop thread.
-But Is block plug needed in extent_readpages ?
+It's not useless to people who want to verify the tree after it's been
+released by you (say for forensics or something).  As Peter said, we can
+put it in a normally invisible namespace, but having a flag to make it
+visible allows tools like git describe --contains to tell me which
+signed tag was used to send a particular commit.
 
-Thanks.
+> The information *in* the tag is not. But it shouldn't be saved in the
+> tag (or note, or whatever). Because that's just an annoying place for
+> it to be, with no upside.
+> 
+> Save it in the commit we generate. BAM! Useful, readable, permanent,
+> and independently verifiable.
+> 
+> And the advantage is that we can make that same mechanism add
+> "maintainer notes" to the merge message too. Right now some
+> maintainers write good notes about what the merge will bring in, but
+> they are basically lost, because git is so good at merging and doesn't
+> even stop to ask people to edit the merge message.
+
+A signed empty commit containing the merge message as a comment also
+looks fine to me.  We'd need extra tooling to say which signed merge
+corresponds to this patch, but I'd say its workable.  The only slightly
+counter intuitive thing is that for a non-trivial merge, my signed merge
+description will have to be the next commit below rather than in the
+actual merge you do (because we can't alter a cryptographically signed
+commit).
+
+James
+
+
