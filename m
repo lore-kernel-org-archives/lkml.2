@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932636Ab1KAXsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:48:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38653 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab1KAXq4 (ORCPT
+	id S932656Ab1KAXsS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:48:18 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55815 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab1KAXqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:46:56 -0400
+	Tue, 1 Nov 2011 19:46:50 -0400
 From: Tejun Heo <tj@kernel.org>
 To: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com
 Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org, fweisbec@gmail.com,
         matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
         kamezawa.hiroyu@Jp.fujitsu.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 06/10] cgroup: improve old cgroup handling in cgroup_attach_proc()
-Date: Tue,  1 Nov 2011 16:46:29 -0700
-Message-Id: <1320191193-8110-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/10] cgroup: always lock threadgroup during migration
+Date: Tue,  1 Nov 2011 16:46:27 -0700
+Message-Id: <1320191193-8110-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1320191193-8110-1-git-send-email-tj@kernel.org>
 References: <1320191193-8110-1-git-send-email-tj@kernel.org>
@@ -23,202 +23,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_attach_proc() behaves differently from cgroup_attach_task() in
-the following aspects.
+Update cgroup to take advantage of the fack that threadgroup_lock()
+guarantees stable threadgroup.
 
-* All hooks are invoked even if no task is actually being moved.
+* Lock threadgroup even if the target is a single task.  This
+  guarantees that when the target tasks stay stable during migration
+  regardless of the target type.
 
-* ->can_attach_task() is called for all tasks in the group whether the
-  new cgrp is different from the current cgrp or not; however,
-  ->attach_task() is skipped if new equals new.  This makes the calls
-  asymmetric.
+* Remove PF_EXITING early exit optimization from attach_task_by_pid()
+  and check it in cgroup_task_migrate() instead.  The optimization was
+  for rather cold path to begin with and PF_EXITING state can be
+  trusted throughout migration by checking it after locking
+  threadgroup.
 
-This patch improves old cgroup handling in cgroup_attach_proc() by
-looking up the current cgroup at the head, recording it in the flex
-array along with the task itself, and using it to remove the above two
-differences.  This will also ease further changes.
+* Don't add PF_EXITING tasks to target task array in
+  cgroup_attach_proc().  This ensures that task migration is performed
+  only for live tasks.
 
--v2: nr_todo renamed to nr_migrating_tasks as per Paul Menage's
-     suggestion.
+* Remove -ESRCH failure path from cgroup_task_migrate().  With the
+  above changes, it's guaranteed to be called only for live tasks.
+
+After the changes, only live tasks are migrated and they're guaranteed
+to stay alive until migration is complete.  This removes problems
+caused by exec and exit racing against cgroup migration including
+symmetry among cgroup attach methods and different cgroup methods
+racing each other.
+
+v2: Oleg pointed out that one more PF_EXITING check can be removed
+    from cgroup_attach_proc().  Removed.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Paul Menage <paul@paulmenage.org>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
 ---
- kernel/cgroup.c |   66 +++++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 42 insertions(+), 24 deletions(-)
+ kernel/cgroup.c |   51 +++++++++++++++++++++++----------------------------
+ 1 files changed, 23 insertions(+), 28 deletions(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3679fb6..19396d6 100644
+index f0e099f..83e10f9 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1757,6 +1757,11 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
- }
- EXPORT_SYMBOL_GPL(cgroup_path);
- 
-+struct task_and_cgroup {
-+	struct task_struct	*task;
-+	struct cgroup		*cgrp;
-+};
-+
- /*
-  * cgroup_task_migrate - move a task from one cgroup to another.
+@@ -1762,7 +1762,7 @@ EXPORT_SYMBOL_GPL(cgroup_path);
   *
-@@ -2008,15 +2013,15 @@ static int css_set_prefetch(struct cgroup *cgrp, struct css_set *cg,
+  * 'guarantee' is set if the caller promises that a new css_set for the task
+  * will already exist. If not set, this function might sleep, and can fail with
+- * -ENOMEM. Otherwise, it can only fail with -ESRCH.
++ * -ENOMEM. Must be called with cgroup_mutex and threadgroup locked.
   */
- int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- {
--	int retval, i, group_size;
-+	int retval, i, group_size, nr_migrating_tasks;
- 	struct cgroup_subsys *ss, *failed_ss = NULL;
- 	bool cancel_failed_ss = false;
- 	/* guaranteed to be initialized later, but the compiler needs this */
--	struct cgroup *oldcgrp = NULL;
- 	struct css_set *oldcg;
- 	struct cgroupfs_root *root = cgrp->root;
- 	/* threadgroup list cursor and array */
- 	struct task_struct *tsk;
-+	struct task_and_cgroup *tc;
- 	struct flex_array *group;
- 	/*
- 	 * we need to make sure we have css_sets for all the tasks we're
-@@ -2035,8 +2040,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	group_size = get_nr_threads(leader);
- 	/* flex_array supports very large thread-groups better than kmalloc. */
--	group = flex_array_alloc(sizeof(struct task_struct *), group_size,
--				 GFP_KERNEL);
-+	group = flex_array_alloc(sizeof(*tc), group_size, GFP_KERNEL);
- 	if (!group)
- 		return -ENOMEM;
- 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
-@@ -2060,8 +2064,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+ 			       struct task_struct *tsk, bool guarantee)
+@@ -1800,13 +1800,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
  	}
- 	/* take a reference on each task in the group to go in the array. */
- 	tsk = leader;
--	i = 0;
-+	i = nr_migrating_tasks = 0;
- 	do {
-+		struct task_and_cgroup ent;
-+
- 		/* @tsk either already exited or can't exit until the end */
- 		if (tsk->flags & PF_EXITING)
- 			continue;
-@@ -2073,14 +2079,23 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		 * saying GFP_ATOMIC has no effect here because we did prealloc
- 		 * earlier, but it's good form to communicate our expectations.
- 		 */
--		retval = flex_array_put_ptr(group, i, tsk, GFP_ATOMIC);
-+		ent.task = tsk;
-+		ent.cgrp = task_cgroup_from_root(tsk, root);
-+		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
- 		BUG_ON(retval != 0);
- 		i++;
-+		if (ent.cgrp != cgrp)
-+			nr_migrating_tasks++;
- 	} while_each_thread(leader, tsk);
- 	/* remember the number of threads in the array for later. */
- 	group_size = i;
- 	rcu_read_unlock();
+ 	put_css_set(oldcg);
  
-+	/* methods shouldn't be called if no task is actually migrating */
-+	retval = 0;
-+	if (!nr_migrating_tasks)
-+		goto out_put_tasks;
+-	/* if PF_EXITING is set, the tsk->cgroups pointer is no longer safe. */
++	/* @tsk can't exit as its threadgroup is locked */
+ 	task_lock(tsk);
+-	if (tsk->flags & PF_EXITING) {
+-		task_unlock(tsk);
+-		put_css_set(newcg);
+-		return -ESRCH;
+-	}
++	WARN_ON_ONCE(tsk->flags & PF_EXITING);
+ 	rcu_assign_pointer(tsk->cgroups, newcg);
+ 	task_unlock(tsk);
+ 
+@@ -1832,8 +1828,8 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
+  * @cgrp: the cgroup the task is attaching to
+  * @tsk: the task to be attached
+  *
+- * Call holding cgroup_mutex. May take task_lock of
+- * the task 'tsk' during call.
++ * Call with cgroup_mutex and threadgroup locked. May take task_lock of
++ * @tsk during call.
+  */
+ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ {
+@@ -1842,6 +1838,10 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 	struct cgroup *oldcgrp;
+ 	struct cgroupfs_root *root = cgrp->root;
+ 
++	/* @tsk either already exited or can't exit until the end */
++	if (tsk->flags & PF_EXITING)
++		return -ESRCH;
 +
- 	/*
- 	 * step 1: check that we can legitimately attach to the cgroup.
- 	 */
-@@ -2096,8 +2111,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 		if (ss->can_attach_task) {
- 			/* run on each task in the threadgroup. */
- 			for (i = 0; i < group_size; i++) {
--				tsk = flex_array_get_ptr(group, i);
--				retval = ss->can_attach_task(cgrp, tsk);
-+				tc = flex_array_get(group, i);
-+				if (tc->cgrp == cgrp)
-+					continue;
-+				retval = ss->can_attach_task(cgrp, tc->task);
- 				if (retval) {
- 					failed_ss = ss;
- 					cancel_failed_ss = true;
-@@ -2113,18 +2130,17 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 */
- 	INIT_LIST_HEAD(&newcg_list);
- 	for (i = 0; i < group_size; i++) {
--		tsk = flex_array_get_ptr(group, i);
-+		tc = flex_array_get(group, i);
- 		/* nothing to do if this task is already in the cgroup */
--		oldcgrp = task_cgroup_from_root(tsk, root);
--		if (cgrp == oldcgrp)
-+		if (tc->cgrp == cgrp)
+ 	/* Nothing to do if the task is already in that cgroup */
+ 	oldcgrp = task_cgroup_from_root(tsk, root);
+ 	if (cgrp == oldcgrp)
+@@ -2062,6 +2062,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	tsk = leader;
+ 	i = 0;
+ 	do {
++		/* @tsk either already exited or can't exit until the end */
++		if (tsk->flags & PF_EXITING)
++			continue;
++
+ 		/* as per above, nr_threads may decrease, but not increase. */
+ 		BUG_ON(i >= group_size);
+ 		get_task_struct(tsk);
+@@ -2116,11 +2120,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
  			continue;
  		/* get old css_set pointer */
--		task_lock(tsk);
--		oldcg = tsk->cgroups;
-+		task_lock(tc->task);
-+		oldcg = tc->task->cgroups;
+ 		task_lock(tsk);
+-		if (tsk->flags & PF_EXITING) {
+-			/* ignore this task if it's going away */
+-			task_unlock(tsk);
+-			continue;
+-		}
+ 		oldcg = tsk->cgroups;
  		get_css_set(oldcg);
--		task_unlock(tsk);
-+		task_unlock(tc->task);
- 		/* see if the new one for us is already in the list? */
--		if (css_set_check_fetched(cgrp, tsk, oldcg, &newcg_list)) {
-+		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
- 			/* was already there, nothing to do. */
- 			put_css_set(oldcg);
- 		} else {
-@@ -2147,19 +2163,18 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 			ss->pre_attach(cgrp);
- 	}
- 	for (i = 0; i < group_size; i++) {
--		tsk = flex_array_get_ptr(group, i);
-+		tc = flex_array_get(group, i);
- 		/* leave current thread as it is if it's already there */
--		oldcgrp = task_cgroup_from_root(tsk, root);
--		if (cgrp == oldcgrp)
-+		if (tc->cgrp == cgrp)
- 			continue;
- 
--		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
-+		retval = cgroup_task_migrate(cgrp, tc->cgrp, tc->task, true);
- 		BUG_ON(retval != 0);
- 
- 		/* attach each task to each subsystem */
- 		for_each_subsys(root, ss) {
+ 		task_unlock(tsk);
+@@ -2158,9 +2157,8 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
  			if (ss->attach_task)
--				ss->attach_task(cgrp, tsk);
-+				ss->attach_task(cgrp, tc->task);
+ 				ss->attach_task(cgrp, tsk);
  		}
+-		/* if the thread is PF_EXITING, it can just get skipped. */
+ 		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+-		BUG_ON(retval != 0 && retval != -ESRCH);
++		BUG_ON(retval != 0);
  	}
  	/* nothing is sensitive to fork() after this point. */
-@@ -2170,8 +2185,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
- 	 * being moved, this call will need to be reworked to communicate that.
- 	 */
- 	for_each_subsys(root, ss) {
--		if (ss->attach)
--			ss->attach(ss, cgrp, oldcgrp, leader);
-+		if (ss->attach) {
-+			tc = flex_array_get(group, 0);
-+			ss->attach(ss, cgrp, tc->cgrp, tc->task);
-+		}
+ 
+@@ -2212,8 +2210,8 @@ out_free_group_list:
+ 
+ /*
+  * Find the task_struct of the task to attach by vpid and pass it along to the
+- * function to attach either it or all tasks in its threadgroup. Will take
+- * cgroup_mutex; may take task_lock of task.
++ * function to attach either it or all tasks in its threadgroup. Will lock
++ * cgroup_mutex and threadgroup; may take task_lock of task.
+  */
+ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ {
+@@ -2240,11 +2238,6 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ 			 * detect it later.
+ 			 */
+ 			tsk = tsk->group_leader;
+-		} else if (tsk->flags & PF_EXITING) {
+-			/* optimization for the single-task-only case */
+-			rcu_read_unlock();
+-			cgroup_unlock();
+-			return -ESRCH;
+ 		}
+ 		/*
+ 		 * even if we're attaching all tasks in the thread group, we
+@@ -2268,13 +2261,15 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
+ 		get_task_struct(tsk);
  	}
  
- 	/*
-@@ -2200,10 +2217,11 @@ out_cancel_attach:
- 				ss->cancel_attach(ss, cgrp, leader);
- 		}
- 	}
-+out_put_tasks:
- 	/* clean up the array of referenced threads in the group. */
- 	for (i = 0; i < group_size; i++) {
--		tsk = flex_array_get_ptr(group, i);
--		put_task_struct(tsk);
-+		tc = flex_array_get(group, i);
-+		put_task_struct(tc->task);
- 	}
- out_free_group_list:
- 	flex_array_free(group);
+-	if (threadgroup) {
+-		threadgroup_lock(tsk);
++	threadgroup_lock(tsk);
++
++	if (threadgroup)
+ 		ret = cgroup_attach_proc(cgrp, tsk);
+-		threadgroup_unlock(tsk);
+-	} else {
++	else
+ 		ret = cgroup_attach_task(cgrp, tsk);
+-	}
++
++	threadgroup_unlock(tsk);
++
+ 	put_task_struct(tsk);
+ 	cgroup_unlock();
+ 	return ret;
 -- 
 1.7.3.1
 
