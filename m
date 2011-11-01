@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1KANcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 09:32:18 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:49785 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752180Ab1KANcQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 09:32:16 -0400
-X-AuditID: 1209190d-b7f726d0000008d1-b4-4eaff4dfe4b4
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=windows-1252
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <alpine.DEB.2.02.1110312158420.31794@asgard.lang.hm>
-Date: Tue, 1 Nov 2011 09:32:12 -0400
-Cc: Theodore Tso <tytso@MIT.EDU>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2947D9A5-4083-4B76-936A-DAA9508FE422@mit.edu>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com> <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com> <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm> <4EAF66C7.6080909@zytor.com> <alpine.DEB.2.02.1110312158420.31794@asgard.lang.hm>
-To: david@lang.hm
-X-Mailer: Apple Mail (2.1251.1)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsUixG6nrnv/y3o/g1k7dSzmrF/DZtHWd4vV
-	YtpGcYuN/RwWr/saWS2O7XjEZHF51xw2i0d9b9kdODzezLrI5jFt0ik2jx/PTrB7nJjxm8Xj
-	8yY5jxMtX1gD2KK4bFJSczLLUov07RK4Mq7eZy9oZ6t4ePQ8cwPjHZYuRk4OCQETiZc71rJC
-	2GISF+6tZ+ti5OIQEtjHKNE9ZSszhLOeUWLVvcVMEM4KJolnE2YxgbQIC3hLTPp1kw3E5hUw
-	llhz6x3YWGYBPYkd13+BjWUTUJK482k/WJxTwFFi7/z/YL0sAioSB2f8ZYeof8QkcfyzBISt
-	LbFs4WtmiJlWEleW3gWrERJ4yizxabcUiC0iICjx4fIGRoiz5SVavt5hm8AoOAvJGbOQnDEL
-	ydgFjMyrGGVTcqt0cxMzc4pTk3WLkxPz8lKLdI30cjNL9FJTSjcxguKDU5J3B+O7g0qHGAU4
-	GJV4eAMPrvMTYk0sK67MPcQoycGkJMr74vN6PyG+pPyUyozE4oz4otKc1OJDjBIczEoivP7L
-	gMp5UxIrq1KL8mFS0hwsSuK8hTsc/IQE0hNLUrNTUwtSi2CyMhwcShK82sA0ICRYlJqeWpGW
-	mVOCkGbi4AQZzgM0/DnIYt7igsTc4sx0iPwpRl2Ou42LTzEKseTl56VKifP+BCkSACnKKM2D
-	mwNLa68YxYHeEubVBFnHA0yJcJNeAS1hAloy8xLYkpJEhJRUA6O4qrHirMmBdhsncUVO3xSX
-	k75i9eEZlhv+cf6/yHNaJ3ivwccM68/XW/r2vb31J2ZKCZ+9m4OAaEaPdShPQOeaH/tjXi3x
-	sTbO+Ppkn08ZR2oLb5/2naW5opsDZn1U8eBZNZOxzPzL492x296cnvkkwM6iraxnsW7lyh6t
-	n7djfnXPtZV7ukqJpTgj0VCLuag4EQBSf4h1RgMAAA==
+	id S1754638Ab1KANeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 09:34:09 -0400
+Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:39375 "EHLO
+	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752939Ab1KANeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 09:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=earthlink.net;
+  b=Pcj+rHm/AZglf+YpL2bndG8eI0QbbQ1qA9ZvHMYJK2neUh228WYBP+OqIgdZ8bZ0;
+  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <4EAFF54C.7010406@earthlink.net>
+Date: Tue, 01 Nov 2011 09:34:04 -0400
+From: Stephen Clark <sclark46@earthlink.net>
+Reply-To: sclark46@earthlink.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, Vincent Pelletier <plr.vincent@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: =?windows-1252?Q?Re=3A_ext4_bug_=3F_=22Intel_320_SSD?=
+ =?windows-1252?Q?_write_performance_=96_contd=2E=22?=
+References: <CAF78GY1_HwP2QZsMLqHeJechjps44Jq2o1VDSFC0TriXB1riPQ@mail.gmail.com> <20111031210951.GK16825@thunk.org>
+In-Reply-To: <20111031210951.GK16825@thunk.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec799fad7e513f2ea1aec1e3a463c8c6d297350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/31/2011 05:09 PM, Ted Ts'o wrote:
+> On Mon, Oct 31, 2011 at 09:38:37PM +0100, Vincent Pelletier wrote:
+>    
+>> Reading this blog post[1], I thought the "2nd iteration" results could be
+>> considered a bug in mkfs.ext4 (and possibly any mkfs implementation):
+>> shouldn't mkfs run [FI]TRIM on its target before creating filesystem
+>> structure ?
+>>      
+> It's not enabled by default, because there are crappy SSD's out there
+> where use of the TRIM command will turn them into bricks.  (No, it's
+> not the Intel X-25 drives that I'm worried about.)
+>
+> So I (and the distributions) don't want to make it the default, since
+> if you buy crap drives and then mke2fs turns them into bricks, who are
+> you likely to blame?  The crap SSD manufacturer?  Yourself for trying
+> to buy SSD's on the cheap?  Or the program that issued the TRIM
+> command?
+>
+> You can enable the trim behaviour by default by adding to your
+> /etc/mke2fs.conf file:
+>
+> [defaults]
+> 	discard = true
+>
+> But then it's on your head if anything bad happens.  :-/
+>
+>          	      	      	      - Ted
+>
+>    
+<snip>
 
-On Nov 1, 2011, at 1:03 AM, david@lang.hm wrote:
-> 
-> my biggest gripe with most IMAP clients is that they try so hard to cache everything locally that you may as well just copy the mail locally to begin with…
+What about using discard in fstab like:
+LABEL=/ /                      ext4    
+defaults,discard,noatime,nodiratime        1 1
 
-I use a combination of mutt and mbsync (isync is the source forge project name), precisely because I want everything locally, so I can read/delete/reply to e-mail while I am off-line, but then be able to get back onto the network and sync everything back to the IMAP server.   I also like this better than copying the mail locally because if my laptop explodes or is stolen in Belgium, I still have a backup on the IMAP server.
+Thanks,
+Steve
 
-One nice thing about mutt by the way is that it has very nice PGP/GPG integration…
+-- 
 
--- Ted
+"They that give up essential liberty to obtain temporary safety,
+deserve neither liberty nor safety."  (Ben Franklin)
+
+"The course of history shows that as a government grows, liberty
+decreases."  (Thomas Jefferson)
+
+
 
