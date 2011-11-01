@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab1KAG6a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:58:30 -0400
-Received: from home.keithp.com ([63.227.221.253]:40736 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab1KAG63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:58:29 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org
-Cc: Eric Anholt <eric@anholt.net>, stable@kernel.org
-Subject: Re: [PATCH] drm/i915: Fix object refcount leak on mmappable size limit error path.
-In-Reply-To: <1320128181-3161-1-git-send-email-eric@anholt.net>
-References: <1320128181-3161-1-git-send-email-eric@anholt.net>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 31 Oct 2011 23:58:25 -0700
-Message-ID: <yunsjm8pbvy.fsf@aiko.keithp.com>
+	id S1752010Ab1KAHDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 03:03:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37331 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1KAHDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 03:03:07 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
+References: <EF2E73589CA71846A15D0B2CDF79505D087B34BE51@wm021.weinmann.com>
+	<CAF8ieYXPMgUzekth7PGxC3AgYNKac-HQ21D3vvB5J3SLOatmfQ@mail.gmail.com>
+	<EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
+Date: Tue, 1 Nov 2011 00:03:05 -0700
+Message-ID: <CAF8ieYWY2RwkgPERgagvw2bby8Y+UFgrYr3zPOb27e=bfOH-vg@mail.gmail.com>
+Subject: Re: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
+From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 31, 2011 at 10:59 PM, Voss, Nikolaus <N.Voss@weinmann.de> wrote:
+> Hi Havard,
+>
+>> {sda,scl}_is_open_drain indicates that the GPIO hardware is set up to
+>> do open drain so the software doesn't have to, i.e.
+>> gpio_set_value(pin, 1) will turn off the output driver rather than
+>> drive the pin high, so the _val functions will do the right thing.
+>
+> gpio_set_value(pin, 1) drives the output high same as
+> gpio_direction_output(pin, 1) does (documented in Documentation/gpio.txt),
+> so the gpio will be changed from open-drain to push-pull.
 
-On Mon, 31 Oct 2011 23:16:21 -0700, Eric Anholt <eric@anholt.net> wrote:
+Normally, yes. But if the pin is configured as open-drain (which is
+not covered by the GPIO API because it's highly platform-specific),
+gpio_set_value(pin, 1) will turn off the output driver.
 
-> I've been seeing memory leaks on my system in the form of large
-> (300-400MB) GEM objects created by now-dead processes laying around
-> clogging up memory.  I usually notice when it gets to about 1.2GB of
-> them.  Hopefully this clears up the issue, but I just found this bug
-> by inspection.
->=20
-> Signed-off-by: Eric Anholt <eric@anholt.net>
-> Cc: stable@kernel.org
+> In contrast, gpio_direction_input(pin) will turn off the output driver.
 
-Reviewed-by: Keith Packard <keithp@keithp.com
+Yes, but it's (usually) much more expensive.
 
-I wouldn't mind having someone audit the driver for more places where
-drm_gem_object_lookup might not be paired with drm_gem_object_unreference...
+> Open-drain io is bound to "!is_open_drain" and push-pull io is bound to
+> "is_open_drain", so I still think this should be the other way round.
 
-=2D-=20
-keith.packard@intel.com
+It is never correct to use push-pull I/O for i2c, so the flag does not
+specify the desired behavior of the driver, it specifies what the
+hardware has been configured to do so that the driver can choose the
+cheapest way to do open-drain I/O.
 
---=-=-=
-Content-Type: application/pgp-signature
+And even if you could argue that the flag should be inverted, it has
+had the same meaning since the driver was introduced several years
+ago, so changing it now will break every single platform which
+currently uses i2c-gpio.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTq+YkTYtFsjWk68qAQgyZRAA2frTtZcXkooIgaLiao5OjG42flmu1l9Q
-vyBu4fPkFT2Kxl5KOegZfVneU2cusYIRnXJidAKzBWuTtrBTBWoje/L92/1kFXZ5
-L4TnZwR1SgrOJxO057zuWYwLFSQHgTCu+QXdfNgGGxg4T2fHk+Am0Gm7XZptOlE+
-LvSximS6VLlr4fQjq8RXWRfbMQeu7m86x8/5VPBuFTRr8jrjqmuAMkEZTf70GsxR
-xJmYXRaGNbv4D7WKQE8Ww2VbwN8vz3Jiww+av1zVqEcJ0jgbB1w3cqEAYoAO+FtG
-Ukxo3tKqCqe0IsPw1nNRnpMpptk2vYFZZyUczjwJCe8GVneD39t1FQgYiPtQ5Acy
-CzSoiQqTkfIdihMCsyuVTdt+SI/YTPsTbQ9jqPVKyfB4ii6gibif9/yF2dGwFuZM
-VHcKhGahJTlWg7Hi9OtE4XaSqqHdb977LLT6bYR7DGfZLdoLAb8vIQDreoBji7Z9
-ONEYzDTYKvpFPV/bqZHWWnD8KCwRcoBg4FbEgdEf16c2ZmLiYFXWCyzA+5E6Pw2L
-uaHM36JQwRdHffE1uZI3sTR4wCWen5/dQXQRf6JetxRUmvYbkvWocZgG2lJW0oD7
-TDImozBp6ID/Ugu8K7Wuc45pfGYfsSuepJu/u4DZndTcJDdxaHPo1+huZ4sLkmsP
-tGS214MFQ8k=
-=h79L
------END PGP SIGNATURE-----
---=-=-=--
+Havard
