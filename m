@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934225Ab1KABFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 21:05:48 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:56753 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab1KABFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 21:05:47 -0400
-X-Greylist: delayed 440 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 Oct 2011 21:05:47 EDT
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Con Kolivas <con@kolivas.org>
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as it should
-Date: Mon, 31 Oct 2011 20:58:24 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos2.pae.bfs; KDE/4.6.5; i686; ; )
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17> <1320061348.6389.18.camel@marge.simson.net> <2516934.OmMpfqGngS@quad>
-In-Reply-To: <2516934.OmMpfqGngS@quad>
-Cc: linux-kernel@vger.kernel.org
+	id S934319Ab1KABH4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 21:07:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49994 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755797Ab1KABHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 21:07:55 -0400
+Message-ID: <4EAF46CF.8040408@cn.fujitsu.com>
+Date: Tue, 01 Nov 2011 09:09:35 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1256"
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tracing: Restore system filter behavior
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-01 09:07:59,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-01 09:08:01,
+	Serialize complete at 2011-11-01 09:08:01
 Content-Transfer-Encoding: 7bit
-Message-Id: <201110312058.24617.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 31, 2011, Con Kolivas wrote:
+Though not all events have field 'prev_pid', it was allowed to do this:
 
->Fortunately BFS is about optimising user visible service latency for
->normal users running normal applications on normal desktops under normal
->workloads, and not about tbench throughput.
->
->Regards,
->Con
+  # echo 'prev_pid == 100' > events/sched/filter
 
-And for that it is doing a very good job for me, thanks Con.
+but commit 75b8e98263fdb0bfbdeba60d4db463259f1fe8a2 (tracing/filter: Swap
+entire filter of events) broke it without any reason.
 
-Cheers, Gene
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ include/linux/ftrace_event.h       |    2 ++
+ kernel/trace/trace_events_filter.c |    7 ++++++-
+ 2 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 96efa67..c3da42d 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -172,6 +172,7 @@ enum {
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+ 	TRACE_EVENT_FL_RECORDED_CMD_BIT,
+ 	TRACE_EVENT_FL_CAP_ANY_BIT,
++	TRACE_EVENT_FL_NO_SET_FILTER_BIT,
+ };
+ 
+ enum {
+@@ -179,6 +180,7 @@ enum {
+ 	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+ 	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
+ 	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
++	TRACE_EVENT_FL_NO_SET_FILTER	= (1 << TRACE_EVENT_FL_NO_SET_FILTER_BIT),
+ };
+ 
+ struct ftrace_event_call {
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 816d3d0..86040d9 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -1649,7 +1649,9 @@ static int replace_system_preds(struct event_subsystem *system,
+ 		 */
+ 		err = replace_preds(call, NULL, ps, filter_string, true);
+ 		if (err)
+-			goto fail;
++			call->flags |= TRACE_EVENT_FL_NO_SET_FILTER;
++		else
++			call->flags &= ~TRACE_EVENT_FL_NO_SET_FILTER;
+ 	}
+ 
+ 	list_for_each_entry(call, &ftrace_events, list) {
+@@ -1658,6 +1660,9 @@ static int replace_system_preds(struct event_subsystem *system,
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
+ 
++		if (call->flags & TRACE_EVENT_FL_NO_SET_FILTER)
++			continue;
++
+ 		filter_item = kzalloc(sizeof(*filter_item), GFP_KERNEL);
+ 		if (!filter_item)
+ 			goto fail_mem;
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-My web page: <http://coyoteden.dyndns-free.com:85/gene>
-Enzymes are things invented by biologists that explain things which
-otherwise require harder thinking.
-		-- Jerome Lettvin
+1.7.3.1
