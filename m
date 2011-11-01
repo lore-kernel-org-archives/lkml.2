@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab1KABJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 21:09:53 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46282 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab1KABJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 21:09:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,435,1315206000"; 
-   d="scan'208";a="31980912"
-Subject: Re: [PATCH][mm/memory.c]: transparent hugepage check condition
- missed
-From: Shaohua Li <shaohua.li@intel.com>
-To: Guanjun He <gjhe@suse.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1320049412-12642-1-git-send-email-gjhe@suse.com>
-References: <transparent-hugepage-check-condition-miss>
-	 <1320049412-12642-1-git-send-email-gjhe@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 09:18:08 +0800
-Message-ID: <1320110288.22361.190.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751549Ab1KABKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 21:10:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63745 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750798Ab1KABKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 21:10:33 -0400
+Message-ID: <4EAF476C.2060900@cn.fujitsu.com>
+Date: Tue, 01 Nov 2011 09:12:12 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ilya Dryomov <idryomov@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tracing: fix event_subsystem ref counting
+References: <1320052062-7846-1-git-send-email-idryomov@gmail.com> <1320077699.4793.5.camel@gandalf.stny.rr.com>
+In-Reply-To: <1320077699.4793.5.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-01 09:10:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-01 09:10:38,
+	Serialize complete at 2011-11-01 09:10:38
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 16:23 +0800, Guanjun He wrote:
-> For the transparent hugepage module still does not support
-> tmpfs and cache,the check condition should always be checked 
-> to make sure that it only affect the anonymous maps, the 
-> original check condition missed this, this patch is to fix this.
-> Otherwise,the hugepage may affect the file-backed maps,
-> then the cache for the small-size pages will be unuseful,
-> and till now there is still no implementation for hugepage's cache.
+Steven Rostedt wrote:
+> On Mon, 2011-10-31 at 11:07 +0200, Ilya Dryomov wrote:
+>> Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
+>> ever being released.
+>>
+>> Ref_count was added to keep track of subsystem users, not for counting
+>> events.  Subsystem is created with ref_count = 1, so there is no need to
+>> increment it for every event, we have nr_events for that.  Fix this by
+>> touching ref_count only when we actually have a new user -
+>> subsystem_open().
 > 
-> Signed-off-by: Guanjun He <gjhe@suse.com>
-> ---
->  mm/memory.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+> Good catch, I'll pull this in.
 > 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index a56e3ba..79b85fe 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -3475,7 +3475,8 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  		if (pmd_trans_huge(orig_pmd)) {
->  			if (flags & FAULT_FLAG_WRITE &&
->  			    !pmd_write(orig_pmd) &&
-> -			    !pmd_trans_splitting(orig_pmd))
-> +			    !pmd_trans_splitting(orig_pmd) &&
-> +			    !vma->vm_ops)
->  				return do_huge_pmd_wp_page(mm, vma, address,
->  							   pmd, orig_pmd);
->  			return 0;
-so if vma->vm_ops != NULL, how could the pmd_trans_huge(orig_pmd) be
-true? We never enable THP if vma->vm_ops != NULL.
 
+I made a different fix last week:
+
+http://marc.info/?l=linux-kernel&m=131978486911595&w=2
+
+but I guess Ilya's version is a bit better.
