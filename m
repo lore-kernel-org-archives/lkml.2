@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab1KBAcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 20:32:33 -0400
-Received: from claw.goop.org ([74.207.240.146]:40967 "EHLO claw.goop.org"
+	id S932569Ab1KBAca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 20:32:30 -0400
+Received: from claw.goop.org ([74.207.240.146]:40963 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751889Ab1KBAc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751391Ab1KBAc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Nov 2011 20:32:28 -0400
-Message-ID: <4EB0748E.1070601@goop.org>
-Date: Tue, 01 Nov 2011 15:37:02 -0700
+Message-ID: <4EB05E82.4010303@goop.org>
+Date: Tue, 01 Nov 2011 14:02:58 -0700
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] make Jump Labels work early
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Xen time-setting
+References: <4EA70B22.2020508@goop.org>
+In-Reply-To: <4EA70B22.2020508@goop.org>
 X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
@@ -24,387 +25,466 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 10/25/2011 12:16 PM, Jeremy Fitzhardinge wrote:
+> Hi Linus,
+>
+> This just wires up "set system time" through to Xen so it can set the
+> actual RTC hardware.  The bulk of the patch is a new header to define
+> the Xen platform interface ABI, which will also get used by other
+> patches in this merge window (I hope).
 
-This is the series which makes jump labels work early.  Does someone want to pick this up, or
-should I just send it to Linus directly?
+Ping?
 
-[ I see Linus has already picked up the stop-machine patch from -mm. ]
 
-Thanks,
-	J
-
-The following changes since commit a102a9ece5489e1718cd7543aa079082450ac3a2:
-
-  Linux 3.1-rc8 (2011-09-27 15:48:34 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/jump-label-noearly
-
-Jeremy Fitzhardinge (9):
-      jump_label: use proper atomic_t initializer
-      stop_machine: make stop_machine safe and efficient to call early
-      jump_label: if a key has already been initialized, don't nop it out
-      x86/jump_label: drop arch_jump_label_text_poke_early()
-      sparc/jump_label: drop arch_jump_label_text_poke_early()
-      jump_label: add arch_jump_label_transform_static() to optimise non-live code updates
-      s390/jump-label: add arch_jump_label_transform_static()
-      x86/jump_label: add arch_jump_label_transform_static()
-      jump-label: initialize jump-label subsystem much earlier
-
- arch/s390/kernel/jump_label.c  |   51 ++++++++++++++++++++++++---------------
- arch/sparc/kernel/jump_label.c |    8 ------
- arch/x86/kernel/jump_label.c   |   20 +++++++++++----
- include/linux/jump_label.h     |   23 +++++++++++-------
- init/main.c                    |    3 ++
- kernel/jump_label.c            |   37 ++++++++++++++++------------
- kernel/stop_machine.c          |   22 +++++++++++++++++
- 7 files changed, 105 insertions(+), 59 deletions(-)
-
-diff --git a/arch/s390/kernel/jump_label.c b/arch/s390/kernel/jump_label.c
-index 44cc06b..b987ab2 100644
---- a/arch/s390/kernel/jump_label.c
-+++ b/arch/s390/kernel/jump_label.c
-@@ -18,26 +18,15 @@ struct insn {
- } __packed;
- 
- struct insn_args {
--	unsigned long *target;
--	struct insn *insn;
--	ssize_t size;
-+	struct jump_entry *entry;
-+	enum jump_label_type type;
- };
- 
--static int __arch_jump_label_transform(void *data)
-+static void __jump_label_transform(struct jump_entry *entry,
-+				   enum jump_label_type type)
- {
--	struct insn_args *args = data;
--	int rc;
--
--	rc = probe_kernel_write(args->target, args->insn, args->size);
--	WARN_ON_ONCE(rc < 0);
--	return 0;
--}
--
--void arch_jump_label_transform(struct jump_entry *entry,
--			       enum jump_label_type type)
--{
--	struct insn_args args;
- 	struct insn insn;
-+	int rc;
- 
- 	if (type == JUMP_LABEL_ENABLE) {
- 		/* brcl 15,offset */
-@@ -49,11 +38,33 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 		insn.offset = 0;
- 	}
- 
--	args.target = (void *) entry->code;
--	args.insn = &insn;
--	args.size = JUMP_LABEL_NOP_SIZE;
-+	rc = probe_kernel_write((void *)entry->code, &insn, JUMP_LABEL_NOP_SIZE);
-+	WARN_ON_ONCE(rc < 0);
-+}
- 
--	stop_machine(__arch_jump_label_transform, &args, NULL);
-+static int __sm_arch_jump_label_transform(void *data)
-+{
-+	struct insn_args *args = data;
-+
-+	__jump_label_transform(args->entry, args->type);
-+	return 0;
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
-+	struct insn_args args;
-+
-+	args.entry = entry;
-+	args.type = type;
-+
-+	stop_machine(__sm_arch_jump_label_transform, &args, NULL);
-+}
-+
-+void arch_jump_label_transform_static(struct jump_entry *entry,
-+				      enum jump_label_type type)
-+{
-+	__jump_label_transform(entry, type);
- }
- 
- #endif
-diff --git a/arch/sparc/kernel/jump_label.c b/arch/sparc/kernel/jump_label.c
-index ea2dafc..971fd43 100644
---- a/arch/sparc/kernel/jump_label.c
-+++ b/arch/sparc/kernel/jump_label.c
-@@ -36,12 +36,4 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 	put_online_cpus();
- }
- 
--void arch_jump_label_text_poke_early(jump_label_t addr)
--{
--	u32 *insn_p = (u32 *) (unsigned long) addr;
--
--	*insn_p = 0x01000000;
--	flushi(insn_p);
--}
--
- #endif
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-index 3fee346..ea9d5f2f 100644
---- a/arch/x86/kernel/jump_label.c
-+++ b/arch/x86/kernel/jump_label.c
-@@ -24,8 +24,9 @@ union jump_code_union {
- 	} __attribute__((packed));
- };
- 
--void arch_jump_label_transform(struct jump_entry *entry,
--			       enum jump_label_type type)
-+static void __jump_label_transform(struct jump_entry *entry,
-+				   enum jump_label_type type,
-+				   void *(*poker)(void *, const void *, size_t))
- {
- 	union jump_code_union code;
- 
-@@ -35,17 +36,24 @@ void arch_jump_label_transform(struct jump_entry *entry,
- 				(entry->code + JUMP_LABEL_NOP_SIZE);
- 	} else
- 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
-+
-+	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+}
-+
-+void arch_jump_label_transform(struct jump_entry *entry,
-+			       enum jump_label_type type)
-+{
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	__jump_label_transform(entry, type, text_poke_smp);
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
- }
- 
--void arch_jump_label_text_poke_early(jump_label_t addr)
-+void arch_jump_label_transform_static(struct jump_entry *entry,
-+				      enum jump_label_type type)
- {
--	text_poke_early((void *)addr, ideal_nops[NOP_ATOMIC5],
--			JUMP_LABEL_NOP_SIZE);
-+	__jump_label_transform(entry, type, text_poke_early);
- }
- 
- #endif
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 66f23dc..388b0d4 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -16,7 +16,7 @@ struct jump_label_key {
- 
- # include <asm/jump_label.h>
- # define HAVE_JUMP_LABEL
--#endif
-+#endif	/* CC_HAVE_ASM_GOTO && CONFIG_JUMP_LABEL */
- 
- enum jump_label_type {
- 	JUMP_LABEL_DISABLE = 0,
-@@ -28,9 +28,9 @@ struct module;
- #ifdef HAVE_JUMP_LABEL
- 
- #ifdef CONFIG_MODULES
--#define JUMP_LABEL_INIT {{ 0 }, NULL, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL, NULL}
- #else
--#define JUMP_LABEL_INIT {{ 0 }, NULL}
-+#define JUMP_LABEL_INIT {ATOMIC_INIT(0), NULL}
- #endif
- 
- static __always_inline bool static_branch(struct jump_label_key *key)
-@@ -41,18 +41,20 @@ static __always_inline bool static_branch(struct jump_label_key *key)
- extern struct jump_entry __start___jump_table[];
- extern struct jump_entry __stop___jump_table[];
- 
-+extern void jump_label_init(void);
- extern void jump_label_lock(void);
- extern void jump_label_unlock(void);
- extern void arch_jump_label_transform(struct jump_entry *entry,
--				 enum jump_label_type type);
--extern void arch_jump_label_text_poke_early(jump_label_t addr);
-+				      enum jump_label_type type);
-+extern void arch_jump_label_transform_static(struct jump_entry *entry,
-+					     enum jump_label_type type);
- extern int jump_label_text_reserved(void *start, void *end);
- extern void jump_label_inc(struct jump_label_key *key);
- extern void jump_label_dec(struct jump_label_key *key);
- extern bool jump_label_enabled(struct jump_label_key *key);
- extern void jump_label_apply_nops(struct module *mod);
- 
--#else
-+#else  /* !HAVE_JUMP_LABEL */
- 
- #include <linux/atomic.h>
- 
-@@ -62,6 +64,10 @@ struct jump_label_key {
- 	atomic_t enabled;
- };
- 
-+static __always_inline void jump_label_init(void)
-+{
-+}
-+
- static __always_inline bool static_branch(struct jump_label_key *key)
- {
- 	if (unlikely(atomic_read(&key->enabled)))
-@@ -96,7 +102,6 @@ static inline int jump_label_apply_nops(struct module *mod)
- {
- 	return 0;
- }
-+#endif	/* HAVE_JUMP_LABEL */
- 
--#endif
--
--#endif
-+#endif	/* _LINUX_JUMP_LABEL_H */
-diff --git a/init/main.c b/init/main.c
-index 2a9b88a..29d8d84 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -515,6 +515,9 @@ asmlinkage void __init start_kernel(void)
- 	parse_args("Booting kernel", static_command_line, __start___param,
- 		   __stop___param - __start___param,
- 		   &unknown_bootoption);
-+
-+	jump_label_init();
-+
- 	/*
- 	 * These use large bootmem allocations and must precede
- 	 * kmem_cache_init()
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index a8ce450..bbdfe2a 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -104,6 +104,18 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
- 	return 0;
- }
- 
-+/* 
-+ * Update code which is definitely not currently executing.
-+ * Architectures which need heavyweight synchronization to modify
-+ * running code can override this to make the non-live update case
-+ * cheaper.
-+ */
-+void __weak arch_jump_label_transform_static(struct jump_entry *entry,
-+					    enum jump_label_type type)
-+{
-+	arch_jump_label_transform(entry, type);	
-+}
-+
- static void __jump_label_update(struct jump_label_key *key,
- 				struct jump_entry *entry,
- 				struct jump_entry *stop, int enable)
-@@ -121,14 +133,7 @@ static void __jump_label_update(struct jump_label_key *key,
- 	}
- }
- 
--/*
-- * Not all archs need this.
-- */
--void __weak arch_jump_label_text_poke_early(jump_label_t addr)
--{
--}
--
--static __init int jump_label_init(void)
-+void __init jump_label_init(void)
- {
- 	struct jump_entry *iter_start = __start___jump_table;
- 	struct jump_entry *iter_stop = __stop___jump_table;
-@@ -139,22 +144,22 @@ static __init int jump_label_init(void)
- 	jump_label_sort_entries(iter_start, iter_stop);
- 
- 	for (iter = iter_start; iter < iter_stop; iter++) {
--		arch_jump_label_text_poke_early(iter->code);
--		if (iter->key == (jump_label_t)(unsigned long)key)
-+		struct jump_label_key *iterk;
-+
-+		iterk = (struct jump_label_key *)(unsigned long)iter->key;
-+		arch_jump_label_transform_static(iter, jump_label_enabled(iterk) ?
-+						 JUMP_LABEL_ENABLE : JUMP_LABEL_DISABLE);
-+		if (iterk == key)
- 			continue;
- 
--		key = (struct jump_label_key *)(unsigned long)iter->key;
--		atomic_set(&key->enabled, 0);
-+		key = iterk;
- 		key->entries = iter;
- #ifdef CONFIG_MODULES
- 		key->next = NULL;
- #endif
- 	}
- 	jump_label_unlock();
--
--	return 0;
- }
--early_initcall(jump_label_init);
- 
- #ifdef CONFIG_MODULES
- 
-@@ -212,7 +217,7 @@ void jump_label_apply_nops(struct module *mod)
- 		return;
- 
- 	for (iter = iter_start; iter < iter_stop; iter++)
--		arch_jump_label_text_poke_early(iter->code);
-+		arch_jump_label_transform_static(iter, JUMP_LABEL_DISABLE);
- }
- 
- static int jump_label_add_module(struct module *mod)
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index ba5070c..d3f960a 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -41,6 +41,7 @@ struct cpu_stopper {
- };
- 
- static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
-+static bool stop_machine_initialized = false;
- 
- static void cpu_stop_init_done(struct cpu_stop_done *done, unsigned int nr_todo)
- {
-@@ -386,6 +387,8 @@ static int __init cpu_stop_init(void)
- 	cpu_stop_cpu_callback(&cpu_stop_cpu_notifier, CPU_ONLINE, bcpu);
- 	register_cpu_notifier(&cpu_stop_cpu_notifier);
- 
-+	stop_machine_initialized = true;
-+
- 	return 0;
- }
- early_initcall(cpu_stop_init);
-@@ -485,6 +488,25 @@ int __stop_machine(int (*fn)(void *), void *data, const struct cpumask *cpus)
- 					    .num_threads = num_online_cpus(),
- 					    .active_cpus = cpus };
- 
-+	if (!stop_machine_initialized) {
-+		/*
-+		 * Handle the case where stop_machine() is called
-+		 * early in boot before stop_machine() has been
-+		 * initialized.
-+		 */
-+ 		unsigned long flags;
-+		int ret;
-+
-+		WARN_ON_ONCE(smdata.num_threads != 1);
-+
-+		local_irq_save(flags);
-+		hard_irq_disable();
-+		ret = (*fn)(data);
-+		local_irq_restore(flags);
-+
-+		return ret;
-+	}
-+
- 	/* Set the initial state and stop all online cpus. */
- 	set_state(&smdata, STOPMACHINE_PREPARE);
- 	return stop_cpus(cpu_online_mask, stop_machine_cpu_stop, &smdata);
-
+>
+> Thanks,
+>     J
+>
+> The following changes since commit 02f8c6aee8df3cdc935e9bdd4f2d020306035dbe:
+>
+>   Linux 3.0 (2011-07-21 19:17:23 -0700)
+>
+> are available in the git repository at:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xen-settime
+>
+> Jeremy Fitzhardinge (2):
+>       xen: add dom0_op hypercall
+>       xen/dom0: set wallclock time in Xen
+>
+> Yu Ke (1):
+>       xen/acpi: Domain0 acpi parser related platform hypercall
+>
+>  arch/ia64/include/asm/xen/interface.h |    1 +
+>  arch/x86/include/asm/xen/hypercall.h  |    8 +
+>  arch/x86/include/asm/xen/interface.h  |    1 +
+>  arch/x86/xen/time.c                   |   16 ++-
+>  include/xen/interface/platform.h      |  320 +++++++++++++++++++++++++++++++++
+>  include/xen/interface/xen.h           |    1 +
+>  6 files changed, 346 insertions(+), 1 deletions(-)
+>  create mode 100644 include/xen/interface/platform.h
+>
+> diff --git a/arch/ia64/include/asm/xen/interface.h b/arch/ia64/include/asm/xen/interface.h
+> index e951e74..1d2427d 100644
+> --- a/arch/ia64/include/asm/xen/interface.h
+> +++ b/arch/ia64/include/asm/xen/interface.h
+> @@ -76,6 +76,7 @@ DEFINE_GUEST_HANDLE(char);
+>  DEFINE_GUEST_HANDLE(int);
+>  DEFINE_GUEST_HANDLE(long);
+>  DEFINE_GUEST_HANDLE(void);
+> +DEFINE_GUEST_HANDLE(uint64_t);
+>  
+>  typedef unsigned long xen_pfn_t;
+>  DEFINE_GUEST_HANDLE(xen_pfn_t);
+> diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+> index d240ea9..0c9894e 100644
+> --- a/arch/x86/include/asm/xen/hypercall.h
+> +++ b/arch/x86/include/asm/xen/hypercall.h
+> @@ -45,6 +45,7 @@
+>  #include <xen/interface/xen.h>
+>  #include <xen/interface/sched.h>
+>  #include <xen/interface/physdev.h>
+> +#include <xen/interface/platform.h>
+>  
+>  /*
+>   * The hypercall asms have to meet several constraints:
+> @@ -299,6 +300,13 @@ HYPERVISOR_set_timer_op(u64 timeout)
+>  }
+>  
+>  static inline int
+> +HYPERVISOR_dom0_op(struct xen_platform_op *platform_op)
+> +{
+> +	platform_op->interface_version = XENPF_INTERFACE_VERSION;
+> +	return _hypercall1(int, dom0_op, platform_op);
+> +}
+> +
+> +static inline int
+>  HYPERVISOR_set_debugreg(int reg, unsigned long value)
+>  {
+>  	return _hypercall2(int, set_debugreg, reg, value);
+> diff --git a/arch/x86/include/asm/xen/interface.h b/arch/x86/include/asm/xen/interface.h
+> index 5d4922a..a1f2db5 100644
+> --- a/arch/x86/include/asm/xen/interface.h
+> +++ b/arch/x86/include/asm/xen/interface.h
+> @@ -55,6 +55,7 @@ DEFINE_GUEST_HANDLE(char);
+>  DEFINE_GUEST_HANDLE(int);
+>  DEFINE_GUEST_HANDLE(long);
+>  DEFINE_GUEST_HANDLE(void);
+> +DEFINE_GUEST_HANDLE(uint64_t);
+>  #endif
+>  
+>  #ifndef HYPERVISOR_VIRT_START
+> diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+> index 5158c50..8c9cdfa 100644
+> --- a/arch/x86/xen/time.c
+> +++ b/arch/x86/xen/time.c
+> @@ -200,8 +200,22 @@ static unsigned long xen_get_wallclock(void)
+>  
+>  static int xen_set_wallclock(unsigned long now)
+>  {
+> +	struct xen_platform_op op;
+> +	int rc;
+> +
+>  	/* do nothing for domU */
+> -	return -1;
+> +	if (!xen_initial_domain())
+> +		return -1;
+> +
+> +	op.cmd = XENPF_settime;
+> +	op.u.settime.secs = now;
+> +	op.u.settime.nsecs = 0;
+> +	op.u.settime.system_time = xen_clocksource_read();
+> +
+> +	rc = HYPERVISOR_dom0_op(&op);
+> +	WARN(rc != 0, "XENPF_settime failed: now=%ld\n", now);
+> +
+> +	return rc;
+>  }
+>  
+>  static struct clocksource xen_clocksource __read_mostly = {
+> diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+> new file mode 100644
+> index 0000000..c168468
+> --- /dev/null
+> +++ b/include/xen/interface/platform.h
+> @@ -0,0 +1,320 @@
+> +/******************************************************************************
+> + * platform.h
+> + *
+> + * Hardware platform operations. Intended for use by domain-0 kernel.
+> + *
+> + * Permission is hereby granted, free of charge, to any person obtaining a copy
+> + * of this software and associated documentation files (the "Software"), to
+> + * deal in the Software without restriction, including without limitation the
+> + * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+> + * sell copies of the Software, and to permit persons to whom the Software is
+> + * furnished to do so, subject to the following conditions:
+> + *
+> + * The above copyright notice and this permission notice shall be included in
+> + * all copies or substantial portions of the Software.
+> + *
+> + * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> + * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> + * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> + * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> + * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> + * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+> + * DEALINGS IN THE SOFTWARE.
+> + *
+> + * Copyright (c) 2002-2006, K Fraser
+> + */
+> +
+> +#ifndef __XEN_PUBLIC_PLATFORM_H__
+> +#define __XEN_PUBLIC_PLATFORM_H__
+> +
+> +#include "xen.h"
+> +
+> +#define XENPF_INTERFACE_VERSION 0x03000001
+> +
+> +/*
+> + * Set clock such that it would read <secs,nsecs> after 00:00:00 UTC,
+> + * 1 January, 1970 if the current system time was <system_time>.
+> + */
+> +#define XENPF_settime             17
+> +struct xenpf_settime {
+> +	/* IN variables. */
+> +	uint32_t secs;
+> +	uint32_t nsecs;
+> +	uint64_t system_time;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_settime_t);
+> +
+> +/*
+> + * Request memory range (@mfn, @mfn+@nr_mfns-1) to have type @type.
+> + * On x86, @type is an architecture-defined MTRR memory type.
+> + * On success, returns the MTRR that was used (@reg) and a handle that can
+> + * be passed to XENPF_DEL_MEMTYPE to accurately tear down the new setting.
+> + * (x86-specific).
+> + */
+> +#define XENPF_add_memtype         31
+> +struct xenpf_add_memtype {
+> +	/* IN variables. */
+> +	unsigned long mfn;
+> +	uint64_t nr_mfns;
+> +	uint32_t type;
+> +	/* OUT variables. */
+> +	uint32_t handle;
+> +	uint32_t reg;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_add_memtype_t);
+> +
+> +/*
+> + * Tear down an existing memory-range type. If @handle is remembered then it
+> + * should be passed in to accurately tear down the correct setting (in case
+> + * of overlapping memory regions with differing types). If it is not known
+> + * then @handle should be set to zero. In all cases @reg must be set.
+> + * (x86-specific).
+> + */
+> +#define XENPF_del_memtype         32
+> +struct xenpf_del_memtype {
+> +	/* IN variables. */
+> +	uint32_t handle;
+> +	uint32_t reg;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_del_memtype_t);
+> +
+> +/* Read current type of an MTRR (x86-specific). */
+> +#define XENPF_read_memtype        33
+> +struct xenpf_read_memtype {
+> +	/* IN variables. */
+> +	uint32_t reg;
+> +	/* OUT variables. */
+> +	unsigned long mfn;
+> +	uint64_t nr_mfns;
+> +	uint32_t type;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_read_memtype_t);
+> +
+> +#define XENPF_microcode_update    35
+> +struct xenpf_microcode_update {
+> +	/* IN variables. */
+> +	GUEST_HANDLE(void) data;          /* Pointer to microcode data */
+> +	uint32_t length;                  /* Length of microcode data. */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_microcode_update_t);
+> +
+> +#define XENPF_platform_quirk      39
+> +#define QUIRK_NOIRQBALANCING      1 /* Do not restrict IO-APIC RTE targets */
+> +#define QUIRK_IOAPIC_BAD_REGSEL   2 /* IO-APIC REGSEL forgets its value    */
+> +#define QUIRK_IOAPIC_GOOD_REGSEL  3 /* IO-APIC REGSEL behaves properly     */
+> +struct xenpf_platform_quirk {
+> +	/* IN variables. */
+> +	uint32_t quirk_id;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_platform_quirk_t);
+> +
+> +#define XENPF_firmware_info       50
+> +#define XEN_FW_DISK_INFO          1 /* from int 13 AH=08/41/48 */
+> +#define XEN_FW_DISK_MBR_SIGNATURE 2 /* from MBR offset 0x1b8 */
+> +#define XEN_FW_VBEDDC_INFO        3 /* from int 10 AX=4f15 */
+> +struct xenpf_firmware_info {
+> +	/* IN variables. */
+> +	uint32_t type;
+> +	uint32_t index;
+> +	/* OUT variables. */
+> +	union {
+> +		struct {
+> +			/* Int13, Fn48: Check Extensions Present. */
+> +			uint8_t device;                   /* %dl: bios device number */
+> +			uint8_t version;                  /* %ah: major version      */
+> +			uint16_t interface_support;       /* %cx: support bitmap     */
+> +			/* Int13, Fn08: Legacy Get Device Parameters. */
+> +			uint16_t legacy_max_cylinder;     /* %cl[7:6]:%ch: max cyl # */
+> +			uint8_t legacy_max_head;          /* %dh: max head #         */
+> +			uint8_t legacy_sectors_per_track; /* %cl[5:0]: max sector #  */
+> +			/* Int13, Fn41: Get Device Parameters (as filled into %ds:%esi). */
+> +			/* NB. First uint16_t of buffer must be set to buffer size.      */
+> +			GUEST_HANDLE(void) edd_params;
+> +		} disk_info; /* XEN_FW_DISK_INFO */
+> +		struct {
+> +			uint8_t device;                   /* bios device number  */
+> +			uint32_t mbr_signature;           /* offset 0x1b8 in mbr */
+> +		} disk_mbr_signature; /* XEN_FW_DISK_MBR_SIGNATURE */
+> +		struct {
+> +			/* Int10, AX=4F15: Get EDID info. */
+> +			uint8_t capabilities;
+> +			uint8_t edid_transfer_time;
+> +			/* must refer to 128-byte buffer */
+> +			GUEST_HANDLE(uchar) edid;
+> +		} vbeddc_info; /* XEN_FW_VBEDDC_INFO */
+> +	} u;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_firmware_info_t);
+> +
+> +#define XENPF_enter_acpi_sleep    51
+> +struct xenpf_enter_acpi_sleep {
+> +	/* IN variables */
+> +	uint16_t pm1a_cnt_val;      /* PM1a control value. */
+> +	uint16_t pm1b_cnt_val;      /* PM1b control value. */
+> +	uint32_t sleep_state;       /* Which state to enter (Sn). */
+> +	uint32_t flags;             /* Must be zero. */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_enter_acpi_sleep_t);
+> +
+> +#define XENPF_change_freq         52
+> +struct xenpf_change_freq {
+> +	/* IN variables */
+> +	uint32_t flags; /* Must be zero. */
+> +	uint32_t cpu;   /* Physical cpu. */
+> +	uint64_t freq;  /* New frequency (Hz). */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_change_freq_t);
+> +
+> +/*
+> + * Get idle times (nanoseconds since boot) for physical CPUs specified in the
+> + * @cpumap_bitmap with range [0..@cpumap_nr_cpus-1]. The @idletime array is
+> + * indexed by CPU number; only entries with the corresponding @cpumap_bitmap
+> + * bit set are written to. On return, @cpumap_bitmap is modified so that any
+> + * non-existent CPUs are cleared. Such CPUs have their @idletime array entry
+> + * cleared.
+> + */
+> +#define XENPF_getidletime         53
+> +struct xenpf_getidletime {
+> +	/* IN/OUT variables */
+> +	/* IN: CPUs to interrogate; OUT: subset of IN which are present */
+> +	GUEST_HANDLE(uchar) cpumap_bitmap;
+> +	/* IN variables */
+> +	/* Size of cpumap bitmap. */
+> +	uint32_t cpumap_nr_cpus;
+> +	/* Must be indexable for every cpu in cpumap_bitmap. */
+> +	GUEST_HANDLE(uint64_t) idletime;
+> +	/* OUT variables */
+> +	/* System time when the idletime snapshots were taken. */
+> +	uint64_t now;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_getidletime_t);
+> +
+> +#define XENPF_set_processor_pminfo      54
+> +
+> +/* ability bits */
+> +#define XEN_PROCESSOR_PM_CX	1
+> +#define XEN_PROCESSOR_PM_PX	2
+> +#define XEN_PROCESSOR_PM_TX	4
+> +
+> +/* cmd type */
+> +#define XEN_PM_CX   0
+> +#define XEN_PM_PX   1
+> +#define XEN_PM_TX   2
+> +
+> +/* Px sub info type */
+> +#define XEN_PX_PCT   1
+> +#define XEN_PX_PSS   2
+> +#define XEN_PX_PPC   4
+> +#define XEN_PX_PSD   8
+> +
+> +struct xen_power_register {
+> +	uint32_t     space_id;
+> +	uint32_t     bit_width;
+> +	uint32_t     bit_offset;
+> +	uint32_t     access_size;
+> +	uint64_t     address;
+> +};
+> +
+> +struct xen_processor_csd {
+> +	uint32_t    domain;      /* domain number of one dependent group */
+> +	uint32_t    coord_type;  /* coordination type */
+> +	uint32_t    num;         /* number of processors in same domain */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_processor_csd);
+> +
+> +struct xen_processor_cx {
+> +	struct xen_power_register  reg; /* GAS for Cx trigger register */
+> +	uint8_t     type;     /* cstate value, c0: 0, c1: 1, ... */
+> +	uint32_t    latency;  /* worst latency (ms) to enter/exit this cstate */
+> +	uint32_t    power;    /* average power consumption(mW) */
+> +	uint32_t    dpcnt;    /* number of dependency entries */
+> +	GUEST_HANDLE(xen_processor_csd) dp; /* NULL if no dependency */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_processor_cx);
+> +
+> +struct xen_processor_flags {
+> +	uint32_t bm_control:1;
+> +	uint32_t bm_check:1;
+> +	uint32_t has_cst:1;
+> +	uint32_t power_setup_done:1;
+> +	uint32_t bm_rld_set:1;
+> +};
+> +
+> +struct xen_processor_power {
+> +	uint32_t count;  /* number of C state entries in array below */
+> +	struct xen_processor_flags flags;  /* global flags of this processor */
+> +	GUEST_HANDLE(xen_processor_cx) states; /* supported c states */
+> +};
+> +
+> +struct xen_pct_register {
+> +	uint8_t  descriptor;
+> +	uint16_t length;
+> +	uint8_t  space_id;
+> +	uint8_t  bit_width;
+> +	uint8_t  bit_offset;
+> +	uint8_t  reserved;
+> +	uint64_t address;
+> +};
+> +
+> +struct xen_processor_px {
+> +	uint64_t core_frequency; /* megahertz */
+> +	uint64_t power;      /* milliWatts */
+> +	uint64_t transition_latency; /* microseconds */
+> +	uint64_t bus_master_latency; /* microseconds */
+> +	uint64_t control;        /* control value */
+> +	uint64_t status;     /* success indicator */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_processor_px);
+> +
+> +struct xen_psd_package {
+> +	uint64_t num_entries;
+> +	uint64_t revision;
+> +	uint64_t domain;
+> +	uint64_t coord_type;
+> +	uint64_t num_processors;
+> +};
+> +
+> +struct xen_processor_performance {
+> +	uint32_t flags;     /* flag for Px sub info type */
+> +	uint32_t platform_limit;  /* Platform limitation on freq usage */
+> +	struct xen_pct_register control_register;
+> +	struct xen_pct_register status_register;
+> +	uint32_t state_count;     /* total available performance states */
+> +	GUEST_HANDLE(xen_processor_px) states;
+> +	struct xen_psd_package domain_info;
+> +	uint32_t shared_type;     /* coordination type of this processor */
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_processor_performance);
+> +
+> +struct xenpf_set_processor_pminfo {
+> +	/* IN variables */
+> +	uint32_t id;    /* ACPI CPU ID */
+> +	uint32_t type;  /* {XEN_PM_CX, XEN_PM_PX} */
+> +	union {
+> +		struct xen_processor_power          power;/* Cx: _CST/_CSD */
+> +		struct xen_processor_performance    perf; /* Px: _PPC/_PCT/_PSS/_PSD */
+> +	};
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_set_processor_pminfo);
+> +
+> +struct xen_platform_op {
+> +	uint32_t cmd;
+> +	uint32_t interface_version; /* XENPF_INTERFACE_VERSION */
+> +	union {
+> +		struct xenpf_settime           settime;
+> +		struct xenpf_add_memtype       add_memtype;
+> +		struct xenpf_del_memtype       del_memtype;
+> +		struct xenpf_read_memtype      read_memtype;
+> +		struct xenpf_microcode_update  microcode;
+> +		struct xenpf_platform_quirk    platform_quirk;
+> +		struct xenpf_firmware_info     firmware_info;
+> +		struct xenpf_enter_acpi_sleep  enter_acpi_sleep;
+> +		struct xenpf_change_freq       change_freq;
+> +		struct xenpf_getidletime       getidletime;
+> +		struct xenpf_set_processor_pminfo set_pminfo;
+> +		uint8_t                        pad[128];
+> +	} u;
+> +};
+> +DEFINE_GUEST_HANDLE_STRUCT(xen_platform_op_t);
+> +
+> +#endif /* __XEN_PUBLIC_PLATFORM_H__ */
+> diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+> index 70213b4..d83cc08 100644
+> --- a/include/xen/interface/xen.h
+> +++ b/include/xen/interface/xen.h
+> @@ -453,6 +453,7 @@ struct start_info {
+>  /* These flags are passed in the 'flags' field of start_info_t. */
+>  #define SIF_PRIVILEGED    (1<<0)  /* Is the domain privileged? */
+>  #define SIF_INITDOMAIN    (1<<1)  /* Is this the initial control domain? */
+> +#define SIF_PM_MASK       (0xFF<<8) /* reserve 1 byte for xen-pm options */
+>  
+>  typedef uint64_t cpumap_t;
+>  
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
