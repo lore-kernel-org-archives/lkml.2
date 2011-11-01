@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab1KAAzM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:55:12 -0400
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:41803 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753541Ab1KAAzK (ORCPT
+	id S934061Ab1KAA7F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:59:05 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:33388 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692Ab1KAA7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:55:10 -0400
-Date: Mon, 31 Oct 2011 17:55:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111101005505.GO18855@google.com>
-References: <20111031221743.GA18855@google.com>
- <201111010024.16659.rjw@sisk.pl>
- <20111031233059.GI18855@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031233059.GI18855@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 31 Oct 2011 20:59:03 -0400
+Date: Tue, 1 Nov 2011 11:58:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the crypto-current tree
+Message-Id: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_11_58_51_+1100_R__G+wW+4zIqxa7J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, again.
+--Signature=_Tue__1_Nov_2011_11_58_51_+1100_R__G+wW+4zIqxa7J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 31, 2011 at 04:30:59PM -0700, Tejun Heo wrote:
-> I can't remember one off the top of my head but I'm pretty sure there
-> at least are few which expect tight inter-locking between sleeps and
-> wakeups.  I'll look for examples and post reply.  ISTR them being
-> kernel threads so this might not apply directly but it's still a
-> dangerous game to play.
+Hi Herbert,
 
-Hmm... I couldn't find KILLABLE used like that but here are two
-UNINTERRUPTIBLE sleep examples.
+After merging the crypto-current tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-* kthread_start() depends on the fact that a kthread won't be woken up
-  from UNINTERRUPTIBLE sleep spuriously.
+  GEN     /scratch/sfr/x86_64_allmodconfig/Makefile
+scripts/kconfig/conf --allmodconfig Kconfig
+net/Kconfig:5:error: recursive dependency detected!
+net/Kconfig:5:	symbol NET is selected by CRYPTO_USER
+crypto/Kconfig:103:	symbol CRYPTO_USER depends on CRYPTO
+crypto/Kconfig:15:	symbol CRYPTO is selected by BT
+net/bluetooth/Kconfig:5:	symbol BT depends on NET
+warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2X_FCOE) selects =
+NETDEVICES which has unmet direct dependencies (NET)
+warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2_ISCSI && SCSI_B=
+NX2X_FCOE) selects ETHERNET which has unmet direct dependencies (NETDEVICES=
+ && NET)
+#
+# configuration written to .config
+#
+WITHOUT_DISTCC:=20
+ARCH=3Dx86_64
+CCVER=3D4.6
+net/Kconfig:5:error: recursive dependency detected!
+net/Kconfig:5:	symbol NET is selected by CRYPTO_USER
+crypto/Kconfig:103:	symbol CRYPTO_USER depends on CRYPTO
+crypto/Kconfig:15:	symbol CRYPTO is selected by BT
+net/bluetooth/Kconfig:5:	symbol BT depends on NET
+warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2X_FCOE) selects =
+NETDEVICES which has unmet direct dependencies (NET)
+warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2_ISCSI && SCSI_B=
+NX2X_FCOE) selects ETHERNET which has unmet direct dependencies (NETDEVICES=
+ && NET)
+*
+* Restart config...
+*
+*
+* Security options
+*
+Enable access key retention support (KEYS) [Y/n/?] y
+  TRUSTED KEYS (TRUSTED_KEYS) [M/n/?] m
+  ENCRYPTED KEYS (ENCRYPTED_KEYS) [M/n/y/?] m
+  Enable the /proc/keys file by which keys may be viewed (KEYS_DEBUG_PROC_K=
+EYS) [Y/n/?] y
+Restrict unprivileged access to the kernel syslog (SECURITY_DMESG_RESTRICT)=
+ [Y/n/?] y
+Enable different security models (SECURITY) [N/y/?] (NEW) aborted!
 
-* jfs_flush_journal() doesn't check whether the wakeup was spurious
-  after waiting if !tblkGC_COMMITTED.
+Console input/output is redirected. Run 'make oldconfig' to update configur=
+ation.
 
-Maybe we can re-define KILLABLE as killable && freezable but IMHO that
-requires pretty strong rationales.  If at all possible, let's not
-diddle with that if it can be worked around some other way.
+Presumbly caused by commit ea8bdfcff175 ("crypto: user - Add dependency
+on NET").
 
-Thank you.
+I have used the crypto-current tree from next-20111025 for today (i.e. that
+commit has not been added to linux-next today).
 
--- 
-tejun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__1_Nov_2011_11_58_51_+1100_R__G+wW+4zIqxa7J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr0RMAAoJEECxmPOUX5FEjgUP/RdMcNJnhvFDI0qWPpYJ2ScK
+6cvv524q/+EjRtVdH1X/CsU8ExdykGiSpaE8Wnrpot5s96d1kAQlGS+gMxVbaSC4
+SvIm6KsqhOpLSFbpaUyf3VJZt9HOhNOiMeWfh2+5KfOaYJlIFW6IJS2GvkQBx+3p
+t0gRvaGaa+IG3a/stIavyLnhpejthBY5E1Fbdn/LOfM0XSvStlgAJOl5/uRVBWz8
+UX72JsXNIewULi5qNYI8reeFQhCBnrqhHk76ykQ9OZYrZtTbYW8VeiD6ku/SSE4X
++2jNUdHVS5t4E6acLWCSMr9eJe5/ogS6Ac1Lf5ZUmzW+yBs3PDiIgFpep2XFtjtq
+OQCZC3YhdjALkcuH7buVPoTM32w6PRvx7UCMAWncxzt0Jbnko7qhJRPc1zmC8rDE
+ieX383myMPIb/Gt4blIFyWj445S+WEQB+HRiPThvr1kdil3ogDkhW3gy1ePAdo4e
+q6S8etEuf8pNiWuaErvcWuRpPvDs4ENRyjDjn4lw5XSZXW/aPB08au719hESh1Cy
+SpQ6qR9anMbdha4BARW6dRuL4HHYf320EA1fcfBzZ+/cjomDX6+8Aun3ZNP3XMWr
+i1tZNUR9O5BxPfWXS66x+l/3+mEun7Ojl/9ygcdiZfMNwzrZjEtMhHoom5mcQFb2
+vnIUbZKQx2c+Knc2enSP
+=V0R5
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_11_58_51_+1100_R__G+wW+4zIqxa7J--
