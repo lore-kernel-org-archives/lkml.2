@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab1KAXv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:51:27 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52221 "EHLO
+	id S932715Ab1KAXwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:52:00 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52315 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab1KAXv0 (ORCPT
+	with ESMTP id S932264Ab1KAXv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:51:26 -0400
+	Tue, 1 Nov 2011 19:51:59 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:organization:x-system-of-record;
-	b=ZkMiPWhJy57c2QIMQPtwjP9GUSwHOsE8S6TMVVsyZzB7zvSiNk/1eJ67zR1KdDTNW
-	YZtT3u87ktQxwHY+BBTrw==
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
+	references:in-reply-to:references:organization;
+	b=X3eXgfq9juHNW6CU41FwLs43Z2KUO+ryt24fqYaHTos0jShl5g2VDR92qFmcKxRfc
+	nHJmtGpdvph2DDz6Q7rXg==
 From: David Decotigny <david.decotigny@google.com>
 To: Randy Dunlap <rdunlap@xenotime.net>,
         Jason Wessel <jason.wessel@windriver.com>,
@@ -22,54 +23,163 @@ Cc: Greg Kroah-Hartman <gregkh@suse.de>, Michal Schmidt <mschmidt@redhat.com>,
         Dmitry Torokhov <dtor@vmware.com>, Kay Sievers <kay.sievers@vrfy.org>,
         Lucas De Marchi <lucas.demarchi@profusion.mobi>,
         Satoru Moriya <satoru.moriya@hds.com>,
+        David Decotigny <decot@google.com>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH v2 0/3] param: optional /sys/module/*/parameters
-Date: Tue,  1 Nov 2011 16:50:32 -0700
-Message-Id: <cover.1320191327.git.david.decotigny@google.com>
+Subject: [PATCH v2 2/3] param: simple refactoring
+Date: Tue,  1 Nov 2011 16:50:34 -0700
+Message-Id: <6e4eb7cacd383e2d2a030e7bd323edcc0dec8fef.1320191327.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1320191327.git.david.decotigny@google.com>
+References: <cover.1320191327.git.david.decotigny@google.com>
+In-Reply-To: <cover.1320191327.git.david.decotigny@google.com>
+References: <cover.1320191327.git.david.decotigny@google.com>
 Organization: Google, Inc.
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: David Decotigny <decot@google.com>
 
-Thank you Rusty for your review.
+Moved locate_module_kobject() to limit the number of #ifdef/#endif
+blocks. Also moved __modinit macro definition at the top.
 
-Here is the v2. I hope it is easier to understand. It also adds
-doc for the new Kconfig knob.
-
-Description:
-
-  These patches turn /sys/module/*/parameters into an optional feature
-  that can be enabled/disabled at compilation time. The goal is to
-  encourage module developers to expose more of their parameters with
-  fewer hesitations (eg. memory concerns, etc.), as the burden on
-  small systems can now be avoided by disabling
-  /sys/module/*/paramaters/ altogether at compile-time. On larger
-  systems, having more module parameters exposed would help
-  debugging/auditing of live systems.
-
-Regards,
+Tested:
+  make defconfig all
+  + make all with # CONFIG_SYSFS is not set
 
 
-############################################
-# Patch Set Summary:
 
-David Decotigny (3):
-  param: make destroy_params() private
-  param: simple refactoring
-  param: make /sys/module/*/paramaters optional
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ kernel/params.c |   93 ++++++++++++++++++++++++++----------------------------
+ 1 files changed, 45 insertions(+), 48 deletions(-)
 
- Documentation/ABI/stable/sysfs-module |    3 +
- Documentation/DocBook/kgdb.tmpl       |    3 +-
- fs/sysfs/Kconfig                      |   15 ++++-
- include/linux/moduleparam.h           |   14 +----
- kernel/module.c                       |    9 +++
- kernel/params.c                       |  108 ++++++++++++++++-----------------
- 6 files changed, 82 insertions(+), 70 deletions(-)
-
+diff --git a/kernel/params.c b/kernel/params.c
+index 75fd7bf..b0e1668 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -31,6 +31,12 @@
+ #define DEBUGP(fmt, a...)
+ #endif
+ 
++#ifdef CONFIG_MODULES
++#define __modinit
++#else
++#define __modinit __init
++#endif
++
+ /* Protects all parameters, and incidentally kmalloced_param list. */
+ static DEFINE_MUTEX(param_lock);
+ 
+@@ -515,6 +521,44 @@ struct module_param_attrs
+ };
+ 
+ #ifdef CONFIG_SYSFS
++static struct module_kobject * __init locate_module_kobject(const char *name)
++{
++	struct module_kobject *mk;
++	struct kobject *kobj;
++	int err;
++
++	kobj = kset_find_obj(module_kset, name);
++	if (kobj) {
++		mk = to_module_kobject(kobj);
++	} else {
++		mk = kzalloc(sizeof(struct module_kobject), GFP_KERNEL);
++		BUG_ON(!mk);
++
++		mk->mod = THIS_MODULE;
++		mk->kobj.kset = module_kset;
++		err = kobject_init_and_add(&mk->kobj, &module_ktype, NULL,
++					   "%s", name);
++#ifdef CONFIG_MODULES
++		if (!err)
++			err = sysfs_create_file(&mk->kobj, &module_uevent.attr);
++#endif
++		if (err) {
++			kobject_put(&mk->kobj);
++			printk(KERN_ERR
++				"Module '%s' failed add to sysfs, error number %d\n",
++				name, err);
++			printk(KERN_ERR
++				"The system will be unstable now.\n");
++			return NULL;
++		}
++
++		/* So that we hold reference in both cases. */
++		kobject_get(&mk->kobj);
++	}
++
++	return mk;
++}
++
+ #define to_param_attr(n) container_of(n, struct param_attribute, mattr)
+ 
+ static ssize_t param_attr_show(struct module_attribute *mattr,
+@@ -554,15 +598,7 @@ static ssize_t param_attr_store(struct module_attribute *mattr,
+ 		return len;
+ 	return err;
+ }
+-#endif
+-
+-#ifdef CONFIG_MODULES
+-#define __modinit
+-#else
+-#define __modinit __init
+-#endif
+ 
+-#ifdef CONFIG_SYSFS
+ void __kernel_param_lock(void)
+ {
+ 	mutex_lock(&param_lock);
+@@ -709,46 +745,7 @@ void module_param_sysfs_remove(struct module *mod)
+ 		free_module_param_attrs(&mod->mkobj);
+ 	}
+ }
+-#endif
+-
+-
+-static struct module_kobject * __init locate_module_kobject(const char *name)
+-{
+-	struct module_kobject *mk;
+-	struct kobject *kobj;
+-	int err;
+-
+-	kobj = kset_find_obj(module_kset, name);
+-	if (kobj) {
+-		mk = to_module_kobject(kobj);
+-	} else {
+-		mk = kzalloc(sizeof(struct module_kobject), GFP_KERNEL);
+-		BUG_ON(!mk);
+-
+-		mk->mod = THIS_MODULE;
+-		mk->kobj.kset = module_kset;
+-		err = kobject_init_and_add(&mk->kobj, &module_ktype, NULL,
+-					   "%s", name);
+-#ifdef CONFIG_MODULES
+-		if (!err)
+-			err = sysfs_create_file(&mk->kobj, &module_uevent.attr);
+-#endif
+-		if (err) {
+-			kobject_put(&mk->kobj);
+-			printk(KERN_ERR
+-				"Module '%s' failed add to sysfs, error number %d\n",
+-				name, err);
+-			printk(KERN_ERR
+-				"The system will be unstable now.\n");
+-			return NULL;
+-		}
+-
+-		/* So that we hold reference in both cases. */
+-		kobject_get(&mk->kobj);
+-	}
+-
+-	return mk;
+-}
++#endif /* CONFIG_MODULES */
+ 
+ static void __init kernel_add_sysfs_param(const char *name,
+ 					  struct kernel_param *kparam,
 -- 
 1.7.3.1
 
