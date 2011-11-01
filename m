@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab1KACSH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 22:18:07 -0400
-Received: from mail.lang.hm ([64.81.33.126]:57481 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab1KACSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 22:18:06 -0400
-Date: Mon, 31 Oct 2011 19:17:41 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-In-Reply-To: <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com>
- <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753442Ab1KACaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 22:30:10 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16978 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462Ab1KACaI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 22:30:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132633270"
+Message-ID: <a0e26bc1328fbfe00f01b8e225f2cf1a.squirrel@www.codeaurora.org>
+In-Reply-To: <CA+55aFw2T0_mD1rM+dTz28fZPtSVhVDTWCYxXDvohwCwNk+b2g@mail.gmail.com>
+References: <093448$3uek00@wolverine01.qualcomm.com>
+    <CA+55aFw2T0_mD1rM+dTz28fZPtSVhVDTWCYxXDvohwCwNk+b2g@mail.gmail.com>
+Date: Mon, 31 Oct 2011 19:30:08 -0700 (PDT)
+Subject: Re: [PATCH v5 00/36] Hexagon: Add support for Qualcomm Hexagon 
+     architecture
+From: rkuo@codeaurora.org
+To: "Linus Torvalds" <torvalds@linux-foundation.org>
+Cc: "Richard Kuo" <rkuo@codeaurora.org>, linux-kernel@vger.kernel.org,
+        "Linas Vepstas" <linas@codeaurora.org>
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="680960-1478385170-1320113862=:31794"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---680960-1478385170-1320113862=:31794
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 31 Oct 2011, Linus Torvalds wrote:
-
-> On Mon, Oct 31, 2011 at 3:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On Mon, Oct 31, 2011 at 4:58 PM, Richard Kuo <rkuo@codeaurora.org> wrote:
 >>
->> I use enigmail which is a Thunderbird plugin; it works quite well, but,
->> well, it requires Thunderbird.  I think many GUI MUAs have similar
->> plugins, but text MTAs might be worse, I don't know.
+>> Please let me know if there's anything else you require of these
+>> patches.
 >
-> I have never met a GUI MUA I like before google webmail. And the
-> advantage of google webmail isn't so much the GUI MUA, as the fact
-> that it doesn't suck like IMAP, and does the automatic folders and
-> good handling of archives right.
+> So there's something odd going on with the Sign-off's, which makes me
+> unhappy. It also makes me wonder if the authorship is properly
+> attributed.
 >
-> The reason I switched away from pine was that pine is fine (apart from
-> the archival thing) if you have all your mail local. But "local mail"
-> is painful when traveling, or when trying to interact with mail using
-> a mobile phone etc.
+> Some of these things are signed off by Linas Vepstas. In fact, some of
+> them are *only* signed off on by him, not by you. Which is definitely
+> wrong. But it makes me wonder if the authorship is buggered up, and
+> those patches maybe should have a "From: Linas Vepstas
+> <linas@codeaurora.org>" on them too.
 >
-> And IMAP mail in turn is totally useless both when traveling *and*
-> when at home.
+> Example of this: "[PATCH v5 12/36] Hexagon: Export ksyms defined in
+> assembly files." (but 13/36, 31/36 and 36/36 were that way too).
+>
+> Others are signed off by both Linas Vepstas and you, but in an odd
+> order. Since you're sending them to me, I'd expect your sign-off to be
+> last, but it isn't. So the sign-off sequence makes it look like they
+> were sent by Linas, even though I got them from you.
+>
+> So I'd like some clarification on this, and I do need *your* sign-off
+> on them all since you're sending them to me.
+>
+> You don't have to re-send, but you do have to explain whether perhaps
+> Linas should be author (and why the odd order of sign-offs) and
+> basically do a "yeah, I sign off on those patches" with a full listing
+> of the patches in question so that I have it for the record.
+>
+>                        Linus
+>
 
-what IMAP servers have you used? I find that with a good IMAP server I can 
-get away with _very_ little processing power in the client and get good 
-performance (I still am using pine, but with a cyrus IMAP server)
+OK, my mistake on these.  Linas did author those patches, but clearly
+I'm in their path.  So, I sign off on:
 
-there are a bunch of IMAP servers out there that are horrible (and even 
-more IMAP clients that are really doing POP and storing everything 
-locally, just using the IMAP protocol)
+[PATCH v5 12/36] Hexagon: Export ksyms defined in assembly files.
+[PATCH v5 13/36] Hexagon: Support dynamic module loading.
+[PATCH v5 31/36] Hexagon: kgdb support files
+[PATCH v5 36/36] Add extra arch overrides to asm-generic/checksum.h
 
-David Lang
---680960-1478385170-1320113862=:31794--
+Many other times, I was the author, and Linas also had contributions to
+the files as well, but again, if they're coming through me, my signed-off
+should be last.  The From: is me because I imported all the files into git
+from what we were doing previously.  The rest of the patches from now on
+should have proper authorship.
+
+
+Thanks,
+Richard Kuo
+
+
+
