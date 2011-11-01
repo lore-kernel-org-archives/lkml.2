@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab1KAS1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:27:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57923 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755880Ab1KAS1Y (ORCPT
+	id S1755926Ab1KAS2B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:28:01 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:45588 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754864Ab1KAS17 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:27:24 -0400
-Date: Tue, 1 Nov 2011 18:27:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>, Tony Lindgren <tony@atomide.com>,
-        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] regulator: Provide dummy supply support
-Message-ID: <20111101182720.GH10029@opensource.wolfsonmicro.com>
-References: <1319833618-25190-1-git-send-email-s.hauer@pengutronix.de>
- <20111028215931.GA30366@opensource.wolfsonmicro.com>
- <20111028224757.GG23421@pengutronix.de>
- <201111011350.17425.vapier@gentoo.org>
+	Tue, 1 Nov 2011 14:27:59 -0400
+Date: Tue, 1 Nov 2011 11:27:53 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Jeff Layton <jlayton@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
+ fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Message-ID: <20111101182753.GW18855@google.com>
+References: <20111031221743.GA18855@google.com>
+ <201111010024.16659.rjw@sisk.pl>
+ <20111031233059.GI18855@google.com>
+ <20111101005505.GO18855@google.com>
+ <20111101041337.39077229@tlielax.poochiereds.net>
+ <20111101065958.50addab5@tlielax.poochiereds.net>
+ <20111101163059.GR18855@google.com>
+ <20111101175953.GB5358@redhat.com>
+ <20111101180601.GV18855@google.com>
+ <20111101181329.GA6739@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201111011350.17425.vapier@gentoo.org>
-X-Cookie: Avoid reality at all costs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111101181329.GA6739@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 01:50:14PM -0400, Mike Frysinger wrote:
-> On Friday 28 October 2011 18:47:57 Sascha Hauer wrote:
+Hello,
 
-> > > We already have a dummy regulator driver and a fixed voltage regulator
-> > > driver, we shouldn't be adding a third implementation of the same thing.
-> > > Just use the fixed voltage regulator for this.
+On Tue, Nov 01, 2011 at 07:13:29PM +0100, Oleg Nesterov wrote:
+> On 11/01, Tejun Heo wrote:
+> >
+> > Yeah yeah, Trond already pointed it out.  I forgot about the
+> > sigpending special case in schedule(), which I think is rather odd,
+> 
+> I disagree with "rather odd" ;)
+> 
+> We have a lot of examples of
+> 
+> 	current->state = TASK_INTERRUPTIBLE;
+> 	...
+> 	if (signal_pending())
+> 		break;
+> 	schedule();
+> 
+> Without that special case in schedule() the code above becomes racy.
+> Just consider __wait_event_interruptible().
 
-> > I explained in my mail why I think that the current implementation of
-> > the dummy regulator is not suitable for things apart from debugging.
+But __wait_event_interruptible() does proper set-TASK_*, check
+sigpending and schedule() sequence.  As long as the waker performs
+seg-sigpending, wakeup sequence in the correct order, nothing is
+broken (as w/ any other wakeup conditions).  The special case deals
+with callers which don't check sigpending between set-TASK_* and
+schedule() and that's the part I think is a bit odd.  Whether I feel
+odd or not is irrelevant tho - it's already there.
 
-> your complaints seem to be specific to how the dummy regulator gets hooked in 
-> and not in the specific regulator implementation.  so it seems like the right 
-> thing would be to split the kconfig knobs:
+> > Any better ideas?
+> 
+> Well. As a simple (probably temporary) fix, I'd suggest
+> 
+> 	#define wait_event_freezekillable(wq, condition)
+> 	{
+> 		freezer_do_not_count();
+> 		__retval = wait_event_killable(condition);
+> 		freezer_count();
+> 		__retval;
+> 	}
+> 
+> Do you think it can work?
 
-Quite.  Sascha, your mail doesn't refer to the implementation of the
-regulator itself at all.  Nothing in your changelog even mentions that
-you're introducing a new regulator driver.
+Yeah, probably.  I was hoping to remove count/do_not_count tho.
+Hmmm... maybe we can just flip PF_NOFREEZE instead with a bit of
+modification, I think.
 
-I think there's a big abstraction understanding failure here, reading
-your changelog I'm not sure you understand the existing mechainsms that
-are in place.  You say:
+Thanks.
 
-| This patch allows a board to register dummy supplies for devices
-| which need a regulator but which is not software controllable
-| on this board.
-
-but this is exactly the use case the fixed voltage regulator is there
-for.
-
->  config REGULATOR_DUMMY
-> -	bool "Provide a dummy regulator if regulator lookups fail"
-> +	bool "Provide a dummy regulator"
-> +config REGULATOR_DUMMY_FALLBACK
-> +	bool "Fallback to dummy regulator if lookup fails"
-> +	depends on REGULATOR_DUMMY
-
-As I think I said earlier I'd use the fixed regulator for this, all
-Sascha's actually doing here is adding a wrapper to simplify
-registration of that.
+-- 
+tejun
