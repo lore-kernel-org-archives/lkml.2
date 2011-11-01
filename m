@@ -1,63 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756176Ab1KAXhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:37:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44756 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755986Ab1KAXhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:37:12 -0400
-Date: Wed, 2 Nov 2011 00:37:08 +0100
-From: Jan Kara <jack@suse.cz>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] fs: fix dentry leak in simple_fill_super()
-Message-ID: <20111101233708.GK18701@quack.suse.cz>
-References: <20111101121233.15505.87415.stgit@zurg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101121233.15505.87415.stgit@zurg>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756148Ab1KAXqm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:46:42 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55815 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab1KAXql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 19:46:41 -0400
+From: Tejun Heo <tj@kernel.org>
+To: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, fweisbec@gmail.com,
+        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
+        kamezawa.hiroyu@Jp.fujitsu.com
+Subject: [PATCHSET] cgroup: stable threadgroup during attach & subsys methods consolidation
+Date: Tue,  1 Nov 2011 16:46:23 -0700
+Message-Id: <1320191193-8110-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 01-11-11 16:12:33, Konstantin Khlebnikov wrote:
-> put dentry if inode allocation failed, d_genocide() cannot release it
-  Al is currently ill and Christoph Hellwig is taking care of fixes for
-now. Added him to CC...
+Hello,
 
-								Honza
+NOT FOR THIS MERGE WINDOW.
 
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  fs/libfs.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/libfs.c b/fs/libfs.c
-> index c18e9a1..a2c0029 100644
-> --- a/fs/libfs.c
-> +++ b/fs/libfs.c
-> @@ -510,8 +510,10 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
->  		if (!dentry)
->  			goto out;
->  		inode = new_inode(s);
-> -		if (!inode)
-> +		if (!inode) {
-> +			dput(dentry);
->  			goto out;
-> +		}
->  		inode->i_mode = S_IFREG | files->mode;
->  		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
->  		inode->i_fop = files->ops;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+This patchset is combination of the following two patchsets.
+
+ [1] cgroup: extend threadgroup locking
+ [2] cgroup: introduce cgroup_taskset and consolidate subsys methods, take#2
+
+Changes from the last postings are
+
+* 0001-cgroup-add-cgroup_root_mutex.patch replaces mutex ordering
+  reversal patch, which Oleg found out to be broken.  Instead, a new
+  sub-mutex cgroup_root_mutex is introduced to break circular
+  dependency.
+
+* Rebased on top of the current linus/master.
+
+* Other minor changes to reflect comments from reviews.
+
+* Reviewed/Acked-by's added.
+
+This patchset addresses the following two issues.
+
+1. cgroup currently only blocks new threads from joining the target
+   threadgroup during migration, and on-going migration could race
+   against exec and exit leading to interesting problems - the
+   symmetry between various attach methods, task exiting during method
+   execution, ->exit() racing against attach methods, migrating task
+   switching basic properties during exec and so on.
+
+   This is resolved by extending threadgroup locking such that it
+   covers all operations which can alter the threadgroup - fork, exit
+   and exec, and update cgroup to take advantage of it.  rwsem read
+   ops are added to exit path but exec is excluded by grabbing the
+   existing cred_guard_mutex from threadgroup locking helper.
+
+   This makes threadgroup locking complete and resolves cgroup issues
+   stemming from the target taskset being unstable.
+
+2. cgroup has grown quite some number of subsys methods.  Some of them
+   are overlapping, inconsistent with each other and called under
+   different conditions depending on whether they're called for a
+   single task or whole process.  Unfortunately, these callbacks are
+   complicated and incomplete at the same time.
+
+   * ->attach_task() is called after migration for task attach but
+     before for process.
+
+   * Ditto for ->pre_attach().
+
+   * ->can_attach_task() is called for every task in the thread group
+     ->but attach_task() skips the ones which don't actually change
+     ->cgroups.
+
+   * Task attach becomes noop if the task isn't actually moving.
+     Process attach is always performed.
+
+   * ->attach_task() doesn't (or at least aren't supposed to) have
+     access to the old cgroup.
+
+   * During cancel, there's no way to access the affected tasks.
+
+   This patchset introduces cgroup_taskset along with some accessors
+   and iterator, updates methods to use it, consolidates usages and
+   drops superflous methods.
+
+ 0001-cgroup-add-cgroup_root_mutex.patch
+ 0002-threadgroup-rename-signal-threadgroup_fork_lock-to-g.patch
+ 0003-threadgroup-extend-threadgroup_lock-to-cover-exit-an.patch
+ 0004-cgroup-always-lock-threadgroup-during-migration.patch
+ 0005-cgroup-subsys-attach_task-should-be-called-after-mig.patch
+ 0006-cgroup-improve-old-cgroup-handling-in-cgroup_attach_.patch
+ 0007-cgroup-introduce-cgroup_taskset-and-use-it-in-subsys.patch
+ 0008-cgroup-don-t-use-subsys-can_attach_task-or-attach_ta.patch
+ 0009-cgroup-cpuset-don-t-use-ss-pre_attach.patch
+ 0010-cgroup-kill-subsys-can_attach_task-pre_attach-and-at.patch
+
+0001-0004 implement stable thread group.
+
+0005-0010 introduce taskset and consolidate subsys callbacks.
+
+This patchset is on top of the current linus/master 839d881074 "Merge
+branch 'i2c-for-linus' of ..." and also available in the following git
+branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cgroup-cleanup
+
+If this looks okay, I think it would be best to route this through pm
+tree as there are and will be intersecting changes (mostly around
+cgroup_freezer).
+
+diffstat follows.
+
+ Documentation/cgroups/cgroups.txt |   51 ++----
+ block/blk-cgroup.c                |   45 +++--
+ include/linux/cgroup.h            |   31 ++-
+ include/linux/init_task.h         |    9 -
+ include/linux/sched.h             |   62 +++++--
+ kernel/cgroup.c                   |  320 +++++++++++++++++++++++---------------
+ kernel/cgroup_freezer.c           |   27 +--
+ kernel/cpuset.c                   |  105 +++++-------
+ kernel/events/core.c              |   13 -
+ kernel/exit.c                     |   17 +-
+ kernel/fork.c                     |    8 
+ kernel/sched.c                    |   31 ++-
+ mm/memcontrol.c                   |   16 -
+ security/device_cgroup.c          |    7 
+ 14 files changed, 430 insertions(+), 312 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1187853
+[2] http://thread.gmane.org/gmane.linux.kernel/1184375
