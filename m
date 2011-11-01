@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab1KAIMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 04:12:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16196 "EHLO mga09.intel.com"
+	id S1752264Ab1KAIOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 04:14:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39409 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752120Ab1KAIM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 04:12:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="69905984"
-Subject: Re: [RFC] ata port runtime pm
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jeff Garzik <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Priyanka Gupta <ankaguptaca@gmail.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-In-Reply-To: <Pine.LNX.4.44L0.1110281444170.2175-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1110281444170.2175-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 16:12:25 +0800
-Message-ID: <1320135145.3489.19.camel@minggr>
+	id S1752247Ab1KAIOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 04:14:06 -0400
+Date: Tue, 1 Nov 2011 04:13:37 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Steve French <sfrench@samba.org>,
+        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
+ fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Message-ID: <20111101041337.39077229@tlielax.poochiereds.net>
+In-Reply-To: <20111101005505.GO18855@google.com>
+References: <20111031221743.GA18855@google.com>
+	<201111010024.16659.rjw@sisk.pl>
+	<20111031233059.GI18855@google.com>
+	<20111101005505.GO18855@google.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-10-29 at 02:51 +0800, Alan Stern wrote:
-> On Fri, 28 Oct 2011, Rafael J. Wysocki wrote:
+On Mon, 31 Oct 2011 17:55:05 -0700
+Tejun Heo <tj@kernel.org> wrote:
+
+> Hey, again.
 > 
-> > On Friday, October 28, 2011, Lin Ming wrote:
-> > > On Fri, 2011-10-28 at 11:37 +0800, Jeff Garzik wrote:
-> > > > On 10/27/2011 11:21 PM, Lin Ming wrote:
-> > > > > @@ -3208,6 +3209,11 @@ int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
-> > > > >
-> > > > >   	ap = ata_shost_to_port(shost);
-> > > > >
-> > > > > +	if (pm_runtime_suspended(&ap->tdev))
-> > > > > +		pm_runtime_resume(&ap->tdev);
-> > > > > +	pm_runtime_mark_last_busy(&ap->tdev);
-> > > > > +	pm_request_autosuspend(&ap->tdev);
-> > > > > +
-> > > > >   	spin_lock_irqsave(ap->lock, irq_flags);
-> > > > >
-> > > > 
-> > > > 
-> > > > Putting this into the core command dispatch fast-path is rather 
-> > > > disappointing.  That's at least one additional lock, plus some atomic 
-> > > > instructions and tests.
+> On Mon, Oct 31, 2011 at 04:30:59PM -0700, Tejun Heo wrote:
+> > I can't remember one off the top of my head but I'm pretty sure there
+> > at least are few which expect tight inter-locking between sleeps and
+> > wakeups.  I'll look for examples and post reply.  ISTR them being
+> > kernel threads so this might not apply directly but it's still a
+> > dangerous game to play.
 > 
-> And it calls pm_runtime_resume(), which requires process context, from 
-> within a SCSI queuecmd routine, which runs in interrupt context.
+> Hmm... I couldn't find KILLABLE used like that but here are two
+> UNINTERRUPTIBLE sleep examples.
+> 
+> * kthread_start() depends on the fact that a kthread won't be woken up
+>   from UNINTERRUPTIBLE sleep spuriously.
+> 
+> * jfs_flush_journal() doesn't check whether the wakeup was spurious
+>   after waiting if !tblkGC_COMMITTED.
+> 
+> Maybe we can re-define KILLABLE as killable && freezable but IMHO that
+> requires pretty strong rationales.  If at all possible, let's not
+> diddle with that if it can be worked around some other way.
+> 
+> Thank you.
+> 
 
-Hi, 
+(cc'ing Trond and the linux-nfs mailing list -- fwiw, he maintains the
+NFS client code -- Bruce is the NFS server maintainer and probably has
+little interest in this thread).
 
-Thanks to point this out. I change the code to do ata port runtime
-suspend/resume through scsi layer.
+The main reason for this change is primarily that we have people with
+laptops and nfs and cifs mounts that sometimes fail to suspend.
 
-scsi host runtime suspend/resume framework is already there(scsi_pm.c).
-So I only need to insert hooks for ata port in
-scsi_runtime_suspend/resume(...).
+IIUC, the TASK_KILLABLE was mostly added to ensure that file-store
+writes would be uninterruptible, but still allow those tasks to be
+killed if the process is going down anyway.
 
-But I found a live lock when testing my patch.
+The intr/nointr mount options in NFS have been deprecated since
+TASK_KILLABLE was added. The scheme now is basically that those sleeps
+ignore any signals except for fatal ones. So, that knob is meaningless
+and has been for a long time now.
 
-<scsi host runtime suspend>
-  scsi_autopm_put_host
-    pm_runtime_put_sync
-      <scsi_host runtime pm status updated to RPM_SUSPENDING>
-      ......
-        <call libata hook to do suspend>
-          <wake up scsi EH to handle suspend>
-          <wait for scsi EH ...>
+cifs never had a working intr/nointr knob, but signal handling while
+waiting for replies was always a difficult thing to handle correctly. I
+don't think the right answer is to go back to using such a knob in cifs
+or nfs.
 
-<scsi EH wake up>
-  scsi_error_handler
-    <resume scsi host>
-    scsi_autopm_get_host
-      pm_runtime_get_sync
-      .....
-        <sleep to wait for the ongoing scsi host suspend> 
+I suppose we could look at going back to the world of complicated
+signal handling and TASK_INTERRUPTIBLE, but that's not a trivial change
+either. The TASK_WAKE_FREEZABLE flag you mention might make more sense
+than doing that.
 
-libata schedules scsi EH to handle suspend, then dead lock happens
-because scsi EH in turn waits for the ongoing suspend.
-
-Any idea how to resolve this dead lock?
-
-Thanks,
-Lin Ming
-
+-- 
+Jeff Layton <jlayton@redhat.com>
