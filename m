@@ -1,62 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1KARFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:05:23 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:57957 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab1KARFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:05:22 -0400
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 13:05:22 EDT
-From: Eric Anholt <eric@anholt.net>
-To: Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org
-Cc: stable@kernel.org
-Subject: Re: [PATCH] drm/i915: Fix object refcount leak on mmappable size limit error path.
-In-Reply-To: <yunsjm8pbvy.fsf@aiko.keithp.com>
-References: <1320128181-3161-1-git-send-email-eric@anholt.net> <yunsjm8pbvy.fsf@aiko.keithp.com>
-User-Agent: Notmuch/0.5-277-ge59eaa5 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 01 Nov 2011 09:57:27 -0700
-Message-ID: <87pqhb232g.fsf@eliezer.anholt.net>
+	id S1755771Ab1KARF2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:05:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55969 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755721Ab1KARF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 13:05:27 -0400
+Date: Tue, 1 Nov 2011 10:05:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] kobject module-ref race-condition or unsafe
+ module_put(THIS_MODULE)
+Message-ID: <20111101170516.GB8925@suse.de>
+References: <CANq1E4SovxjRsuDN3PMqCnjBMMQeHWnvbwreXJWcDj7D7wUxWw@mail.gmail.com>
+ <20111029223935.GB3952@suse.de>
+ <CANq1E4QwjDOb0x_HcarwY4cM=P5NXoL6351=ivy-NLP9ZnVoJA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CANq1E4QwjDOb0x_HcarwY4cM=P5NXoL6351=ivy-NLP9ZnVoJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Sun, Oct 30, 2011 at 01:36:08AM +0200, David Herrmann wrote:
+> On Sun, Oct 30, 2011 at 12:39 AM, Greg KH <gregkh@suse.de> wrote:
+> > On Sat, Oct 29, 2011 at 07:52:47PM +0200, David Herrmann wrote:
+> >> Hi
+> >>
+> >> I currently do not understand how kobjects keep a reference to the
+> >> owning module. Lets assume I provide a "release" method via a
+> >> kobj_type for my kobject. I want to go sure my module is still alive
+> >> when this method is called. Otherwise, this "release" method would be
+> >> no longer available and we would jump into invalid memory. Therefore,
+> >> I need to take a reference to my own module. This seems trivial.
+> >> However, how do I release this reference again?
+> >> The most simple solution might be calling module_put(THIS_MODULE) in
+> >> my "release" method. However, if this call drops the module-refcount
+> >> to 0 and immediately removes the module, the module_put() returns to
+> >> my "release" function which now is no longer available.
+> >>
+> >> It seems quite unlikely that the cleanup of a module is faster than
+> >> two function-returns, however, theoretically there is a race
+> >> condition.
+> >>
+> >> The following example is based on fs/char_dev.c. Lets assume my module
+> >> provides a  kobject structure. On init I take a ref to myself with
+> >> try_module_get(THIS_MODULE).
+> >
+> > No, never do that, why would you?
+> >
+> >> I add my own kobj_type with the following release function:
+> >>
+> >> static void mydev_put(struct mydev *p)
+> >> {
+> >>       if (p) {
+> >>               kobject_put(&p->kobj);
+> >>               module_put(THIS_MODULE);
+> >>       }
+> >> }
+> >
+> > Ick, don't do that.
+> >
+> >> How can we go sure that module_put() doesn't free my own module before
+> >> it returns? Isn't a call to module_put(THIS_MODULE) always unsafe
+> >> (unless I own at least two references)?
+> >
+> > Yes, that's why you shouldn't be doing this :)
+> >
+> >> Maybe I have missed some important fact here, but this seems quite
+> >> unsafe to me. Adding a "owner" field to a kobj_type would fix that
+> >> issue for kobjects/devices.
+> >
+> > No, let's determine exactly what you are trying to do first, and why in
+> > the world you are dealing with "raw" kobjects.  You should almost never
+> > never never do that.
+> >
+> > What driver are you writing?  Have a pointer to the code somewhere?
+> 
+> Initially, I was looking at hci_dev at net/bluetooth/hci_core.c and
+> hci_sysfs.c. It registers a "struct device" with a device_type
+> structure and a static release function. I was wondering how I can be
+> sure that the "release" function is still available when it is called.
 
-On Mon, 31 Oct 2011 23:58:25 -0700, Keith Packard <keithp@keithp.com> wrote:
-Non-text part: multipart/signed
-> On Mon, 31 Oct 2011 23:16:21 -0700, Eric Anholt <eric@anholt.net> wrote:
->=20
-> > I've been seeing memory leaks on my system in the form of large
-> > (300-400MB) GEM objects created by now-dead processes laying around
-> > clogging up memory.  I usually notice when it gets to about 1.2GB of
-> > them.  Hopefully this clears up the issue, but I just found this bug
-> > by inspection.
-> >=20
-> > Signed-off-by: Eric Anholt <eric@anholt.net>
-> > Cc: stable@kernel.org
->=20
-> Reviewed-by: Keith Packard <keithp@keithp.com
->=20
-> I wouldn't mind having someone audit the driver for more places where
-> drm_gem_object_lookup might not be paired with drm_gem_object_unreference=
-...
+Ah, so you are a bus, that's good, that is the only thing that should be
+caring about this.
 
-I went ahead and finished the read-through, and everything else looks
-good.
+> I couldn't find any module reference in "struct device" nor can I be
+> sure that the module is still loaded when the device is freed.
 
---=-=-=
-Content-Type: application/pgp-signature
+That's because a struct device doesn't care about a module, it's the
+larger structure that wraps it that should, if it really needs to.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Look at how USB and PCI handle this, that's the way to properly do this
+if you really feel you need to do so.
 
-iEYEARECAAYFAk6wJPcACgkQHUdvYGzw6vdtcACglXUFBx6P+8pBBB8YtqLNbo+F
-Ea4AoIHaH1vkQrkfUf/cnd1cGxlHQM6z
-=vs+r
------END PGP SIGNATURE-----
---=-=-=--
+> There are several bugfixes in padovan's tree and pending on the ML so
+> I can't point you to the source. Reading net/bluetooth/hci* really
+> doesn't help here. However, what should I do in the following case:
+> 
+> I provide hci_alloc_dev() which creates a hci_dev with an embedded
+> "struct device" and hci_dev_get/put which map to get/put_device(). The
+> device is registered with a "device_type" including a "release"
+> callback which simply calls kfree() on the hci_dev.
+
+Good.
+
+> Now how can I be sure the "release" callback pointing to my function
+> is still available when a device is freed? When unloading the
+> bluetooth module I cannot wait for all hci_dev structures to be
+> freed().
+
+Why not?  That sounds like the correct thing to do, right?  It's what
+the network stack does.
+
+> This would make ref-counts useless. What is the recommended
+> way to do that?
+
+No, please don't confuse module counts with reference counts of devices,
+they are two totally different things.
+
+Device reference counts count the users of the memory for the device.
+
+Module reference counts count the users of the memory for the code for
+the module.
+
+Usually the two are never linked, as they are different.
+
+hope this helps,
+
+greg k-h
