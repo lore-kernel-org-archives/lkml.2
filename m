@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab1KAMVB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:21:01 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50354 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123Ab1KAMVA (ORCPT
+	id S1754327Ab1KAMYZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:24:25 -0400
+Received: from mail-dy0-f46.google.com ([209.85.220.46]:60570 "EHLO
+	mail-dy0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154Ab1KAMYX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:21:00 -0400
+	Tue, 1 Nov 2011 08:24:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <20111101131849.668e0115@xenia.leun.net>
-References: <20111101111420.1667f3aa@xenia.leun.net>
-	<CAFLxGvxeofy58Zuo9rGuXsiQMitJp890T0vwkDzoLHQ3im63ZA@mail.gmail.com>
-	<20111101131849.668e0115@xenia.leun.net>
-Date: Tue, 1 Nov 2011 13:20:59 +0100
-Message-ID: <CAFLxGvybSStaRaS1ig9=h++LHx7EXzo4_48V4oix9mdPvRHFaw@mail.gmail.com>
-Subject: Re: What about bugzilla.kernel.org / Bug 37142 / Tuxonice developer
- going to quit development
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Michael Leun <ml@newton.leun.net>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        nigel@tuxonice.net
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4EAFE184.5010409@metafoo.de>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+ <1320108191-6647-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-8-git-send-email-pali.rohar@gmail.com>
+ <4EAFE184.5010409@metafoo.de>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Tue, 1 Nov 2011 13:23:40 +0100
+Message-ID: <CAHYPw2EPdmmbk+DM1SgFKa8LGAKQEp7ppX+0Zjpkdx7hOcwzJA@mail.gmail.com>
+Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with ioctl
+ for reading registers
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 1:18 PM, Michael Leun <ml@newton.leun.net> wrote:
->
-> On Tue, 1 Nov 2011 13:01:58 +0100
-> richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
->
->> On Tue, Nov 1, 2011 at 11:14 AM, Michael Leun <ml@newton.leun.net>
->> wrote:
->> > Rafael, Richard: What do you think is the current state of this bug?
->> > Was it ever fixed for you?
+2011/11/1 Lars-Peter Clausen <lars@metafoo.de>:
+> On 11/01/2011 01:43 AM, Pali Rohár wrote:
+>> * When bq27x00_battery module is loaded it take control of bq27200 i2c battery chip and then it is not possible to use i2cget program from user space (returns -EBUSY)
+>> * This patch adds new miscdevice for each battery which has ioctl BQ27X00_READ_REG for reading battery registers from user space
 >>
->> No.
+>> * ioctl cmd:
+>>   #define BQ27X00_READ_REG _IO(MISC_MAJOR, 0)
 >>
->> But I'm quite sure that my netbook is causing the issue.
->> Now I can reproduce the error after 1-2 s2disk runs.
->> A few months ago 10-20 runs were needed.
->> My netbook seesm to die. :-(
+>> * ioctl arg:
+>>   struct bq27x00_reg_parms {
+>>     int reg; /* battery register (in) */
+>>     int single; /* 1 - 8bit register, 0 - 16bit register (in) */
+>>     int ret; /* register status, negative indicate error (out) */
+>>   };
 >>
->> But I'll retest the issue with kernel 2.6.37.4. Currently I'm using
->> 3.1.
+>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
 >
-> I doubt that is related to HW, because I can reproduce on at least two,
-> if not 3 different machines and on the two where it matters to me using
-> tuxonice fixed it.
+> I'm not sure if this is such a good idea. Why do you need to read the registers
+> from userspace? Shouldn't all relevant information be available in a
+> standardized format through the power_supply userspace API? If you want to use
+> it for debugging it might be a better idea to provide a debugfs file.
+>
+> - Lars
+>
 
-Okay. I'll retest!
+bq27200 chip has a lot of registers (for diagnostic) which is usefull
+on Nokia N900. power_supply interface is not very abstract to handle
+all of them. Also on Nokia N900 is needed proprietary pogram BME for
+battery charging which need to access to bq27200 registers. A simple
+LD_PRELOAD library which wrap i2c-dev access to this device provided
+by this patch is here:
+https://code.launchpad.net/~pali/+junk/maemo_libbqioctl
 
-> So, you might want to try if you can cure your dying HW with some
-> tuxonice ;-)
-
-I've never used tuxonice. What makes it so special?
+Other shell script which show all info from bq register is here:
+http://enivax.net/jk/n900/bq.tar
 
 -- 
-Thanks,
-//richard
+Pali Rohár
+pali.rohar@gmail.com
