@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab1KAHDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 03:03:31 -0400
-Received: from mailout06.t-online.de ([194.25.134.19]:39252 "EHLO
-	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab1KAHDa (ORCPT
+	id S1752100Ab1KAHFX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 03:05:23 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:43766 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1KAHFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 03:03:30 -0400
-Message-ID: <4EAF99BD.1010203@t-online.de>
-Date: Tue, 01 Nov 2011 08:03:25 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: shemminger@linux-foundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: sky2: hung mac
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ID: X7B5ysZBZhLjBjq4ch4q4L7bms1uGeIu59M2kE143ulCvSPUgoAKuR15GrztElRQj0
-X-TOI-MSGID: 4ed487f3-298f-4986-9572-71d85a6aaa44
+	Tue, 1 Nov 2011 03:05:22 -0400
+Date: Tue, 1 Nov 2011 18:05:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: linux-next: manual merge of the moduleh tree with the mfd tree
+Message-Id: <20111101180517.8a53c259b54ee6df641bb4f4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_18_05_17_+1100_xa4rUCsbv7cDjO+9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got a sky2 "hung mac" message.
+--Signature=_Tue__1_Nov_2011_18_05_17_+1100_xa4rUCsbv7cDjO+9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-grep-ing the logs I realized that this already happened
-  two times, but that was about 8 months ago.
+Hi Paul,
 
-system hw: AOpen i915GMm-hfs, Pentium M Dothan 2GB,
-                     2 Yukon-2 EC chips, revision 1.
-system sw: oct: kernel 3.1.0, running since oct 24.
-system sw: oct: latest stable kernel at that time
-system is always on.
+Today's linux-next merge of the moduleh tree got a conflict in
+drivers/mfd/ab3550-core.c between commit 6508204630f4 ("mfd: Delete
+ab3550 driver") from the mfd tree and commit 4e36dd331423 ("mfd: Add
+module.h to the implicit drivers/mfd users") from the moduleh tree.
 
-Feb  3 12:04:24 golem kernel: [21332.000035] sky2 0000:02:00.0: eth0: hung mac 124:123 fifo 195 (165:160)
-Feb  3 12:04:24 golem kernel: [21332.000047] sky2 0000:02:00.0: eth0: receiver hang detected
-Feb  3 12:04:27 golem kernel: [21334.950762] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
+The latter deleted the file, so I did that.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Feb  7 20:08:33 golem kernel: [10925.000036] sky2 0000:02:00.0: eth0: hung mac 0:33 fifo 5 (145:155)
-Feb  7 20:08:33 golem kernel: [10925.000048] sky2 0000:02:00.0: eth0: receiver hang detected
-Feb  7 20:08:36 golem kernel: [10928.060855] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
+--Signature=_Tue__1_Nov_2011_18_05_17_+1100_xa4rUCsbv7cDjO+9
+Content-Type: application/pgp-signature
 
-Oct 31 17:55:55 golem kernel: [29826.000040] sky2 0000:02:00.0: eth0: hung mac 8:28 fifo 0 (173:173)
-Oct 31 17:55:55 golem kernel: [29826.000083] sky2 0000:02:00.0: eth0: receiver hang detected
-Oct 31 17:55:58 golem kernel: [29829.006516] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Is it a sign of a bug or should it simply be ignored?
+iQIcBAEBCAAGBQJOr5otAAoJEECxmPOUX5FEFnEP/0sdLACkFwFZpG89tvTGhTzz
+SeydRx9ZG72krwGn07KoM8tkjbgzwt2Osa8i+chbKhNiJfea+13AH1s4/Mleu89g
+VvB+fm66n6+4dUpCqeVBm+x5h4Jh1Kkl6tk26es0oFrVvzQJEtMmNaci4ORCItDb
+l04abgbP9DT73Deb21SSe2XACsRb0Xw0/Udgr8XQ353Q+P1At2IVaEAtd42Z7+2A
+1uhDJvTrtBUFxApjM2t7sbHVpbH9Eq0xCbF+w+MzX7ADzP4RC/vpcVNmbAcZbYWj
+0jyWo4xhwzQHIcMtCJTzjfYrrA2AhluTck7GdX0P63A15cpCbieMNQZcvWUTdoSp
+/vEpFJo1o1etnKt314sM9dXx2zO+YqqI01CPrVkLN7h1w9bko93Pn0GxylHDzx1V
+iJ1cpBvUyonDNN6loIR90U0JfsNvveQbeDze/Oz3bxKaoux2swMmcvMVmKG/ZR9c
+DrOCJRgnF8R9UQtYaK3ZX/cBp/iKxAGtCZzFoPB7yIU7+hyYY/9kXbQp0DdvaUmK
+wsXigJG9fM30fS8e7xAbgfnaVuz6bi8CrOwAPlOum2I6r4vV3mhy2k+8FgVqNB+C
+B7Jlx/eCw9BXe2mm35HXNlsZ0XBBcFlcNIAcLQc6qmlNp3J9D8U1gKhZOAbKohph
+9mh2Qj2dHzEfUr947kdY
+=XFMb
+-----END PGP SIGNATURE-----
 
-cu,
-  Knut
+--Signature=_Tue__1_Nov_2011_18_05_17_+1100_xa4rUCsbv7cDjO+9--
