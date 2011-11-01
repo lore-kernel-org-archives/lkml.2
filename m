@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab1KAJS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 05:18:26 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:42510 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752100Ab1KAJSZ convert rfc822-to-8bit
-	(ORCPT <rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Tue, 1 Nov 2011 05:18:25 -0400
-Message-Id: <4EB029DB0200001600008FC0@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 Beta 
-Date: Tue, 01 Nov 2011 03:18:19 -0600
-From: "Guan Jun He" <gjhe@suse.com>
-To: "Shaohua Li" <shaohua.li@intel.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][mm/memory.c]: transparent hugepage check condition
- missed
-References: <1320049412-12642-1-git-send-email-gjhe@suse.com>
- <1320110288.22361.190.camel@sli10-conroe>
- <4EB01C8F0200001600008FAE@novprvlin0050.provo.novell.com>
- <CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>
-In-Reply-To: <CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>
+	id S1752890Ab1KAJZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 05:25:06 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:46185 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab1KAJZF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 05:25:05 -0400
+Date: Tue, 1 Nov 2011 20:24:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konstantin Ozerkov <kozerkov@parallels.com>,
+        "Denis V. Lunev" <den@openvz.org>
+Subject: linux-next: build failure after merge of the final tree (sound tree
+ related)
+Message-Id: <20111101202452.76723ee949d47fb37a6207dd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_20_24_52_+1100_xD5IS=Gud5yHaOFk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__1_Nov_2011_20_24_52_+1100_xD5IS=Gud5yHaOFk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
->>> On 11/1/2011 at 04:42 PM, in message
-<CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>, Shaohua
-Li <shaohua.li@intel.com> wrote: 
-> 2011/11/1 Guan Jun He <gjhe@suse.com>:
->>
->>
->>>>> On 11/1/2011 at 09:18 AM, in message <1320110288.22361.190.camel@sli10-conroe>,
->> Shaohua Li <shaohua.li@intel.com> wrote:
->>> On Mon, 2011-10-31 at 16:23 +0800, Guanjun He wrote:
->>>> For the transparent hugepage module still does not support
->>>> tmpfs and cache,the check condition should always be checked
->>>> to make sure that it only affect the anonymous maps, the
->>>> original check condition missed this, this patch is to fix this.
->>>> Otherwise,the hugepage may affect the file-backed maps,
->>>> then the cache for the small-size pages will be unuseful,
->>>> and till now there is still no implementation for hugepage's cache.
->>>>
->>>> Signed-off-by: Guanjun He <gjhe@suse.com>
->>>> ---
->>>>  mm/memory.c |    3 ++-
->>>>  1 files changed, 2 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/mm/memory.c b/mm/memory.c
->>>> index a56e3ba..79b85fe 100644
->>>> --- a/mm/memory.c
->>>> +++ b/mm/memory.c
->>>> @@ -3475,7 +3475,8 @@ int handle_mm_fault(struct mm_struct *mm, struct
->>> vm_area_struct *vma,
->>>>              if (pmd_trans_huge(orig_pmd)) {
->>>>                      if (flags & FAULT_FLAG_WRITE &&
->>>>                          !pmd_write(orig_pmd) &&
->>>> -                        !pmd_trans_splitting(orig_pmd))
->>>> +                        !pmd_trans_splitting(orig_pmd) &&
->>>> +                        !vma->vm_ops)
->>>>                              return do_huge_pmd_wp_page(mm, vma, address,
->>>>                                                         pmd, orig_pmd);
->>>>                      return 0;
->>> so if vma->vm_ops != NULL, how could the pmd_trans_huge(orig_pmd) be
->>> true? We never enable THP if vma->vm_ops != NULL.
->> acturally, pmd_trans_huge(orig_pmd) only checks the _PAGE_PSE bits,
->> it's only a pagesize, not a flag to identity a hugepage.
->> If I change my default pagesize to PAGE_PSE,
-> Not sure what pagesize means here, assume pmd entry bits.
-yes, it's  pmd entry bits.
-> how could you make the default 'pagesize' to PAGE_PSE?
-That requires some work and not so easy and need hardware support... So, recently it won't come.
-But one can easily create the same pmd entry bits for some special use;
-as comment above, it's a pmd entry bits, only mark a size, not a flag;
-and adjust the logic to use the flag can perfect avoid this potential issuse,
-and basically no impact to the current code.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
+In file included from sound/pci/intel8x0.c:46:0:
+arch/powerpc/include/asm/kvm_para.h: In function 'kvm_arch_para_features':
+arch/powerpc/include/asm/kvm_para.h:166:22: error: 'KVM_HC_FEATURES' undecl=
+ared (first use in this function)
 
+Caused by commit 228cf79376f1 ("ALSA: intel8x0: Improve performance in
+virtual environment").  It should probably be including linux/kvm_para.h
+instead of asm/kvm_para.h.
 
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__1_Nov_2011_20_24_52_+1100_xD5IS=Gud5yHaOFk
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr7rkAAoJEECxmPOUX5FEgaAQAINnkg1gySuuuR0rqydZSWYZ
+N0ktK2AAkrFv2EtLMPRoWxFGLp0Y0wz2rASJWj7Jf/L27kmhE3RY/VikwVVFIeLI
+GyZ3yEZ8ryQK4VnKNbRvRnC93IMvPNUxenRvC++ARkpRNaHqDdL7NQGpehHbP11p
+tCAlYY3FkSbUZq17r+ToAnvgu6CSME+sRRE3rJ2YLWymy5RXQI9CAMMKhtNp3LTH
+RzRQK2kW0UFtSvjB0jcX/ttVPs0w5pHeI9XHAHwzMb3ATbgG+T2HcLOfNyLi54jj
+M5a8qBIBNlblj5E1AJEEPlxy7FStGQmqJ+4k/TNuKTIXB74Bpuzq/IcgOF8dXZyJ
+TFGyYHq8FqlZWjIgnqSDwmzSPvGRrIKZsRx0Qp3Sqh7AHesJ+h/dN1fpS6yctzBn
+FdIQ8fqs3YxKPm+h75SnnXfquVyxu+xvir3glZ3XsFVkaoryO0ydvKi2BxRHXovn
+EC4uLrhNe+jnfa4mGoQ1ifEHDk87d9fRQXv57BHscimwiOyinAYBrq7WCTPk6q/e
+/UopnoHdqD/ScYq7XU2GN3c6oeD0b+FoaIglydiRXkIxv8g10+S6V69eHq9PNy7R
++mcdLehuqVACVauvn4p0AUr4Yoz2jcufXKlfzlPfV4Q/Sspt78j2HXKYksl/8Qbu
+FUb80NTuPMJisaDyMFE5
+=dlfx
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_20_24_52_+1100_xD5IS=Gud5yHaOFk--
