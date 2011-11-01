@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab1KAQzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 12:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42917 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792Ab1KAQzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 12:55:36 -0400
-Date: Tue, 1 Nov 2011 12:48:51 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: ACPI / PM: Add Sony VPCEB17FX to nonvs blacklist
-Message-ID: <20111101164851.GA9444@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S1755647Ab1KAQzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 12:55:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:51068 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755609Ab1KAQzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 12:55:41 -0400
+Date: Tue, 1 Nov 2011 09:55:35 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Jeff Layton <jlayton@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, linux-pm@vger.kernel.org,
+        linux-cifs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>, linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
+ fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Message-ID: <20111101165535.GU18855@google.com>
+References: <20111031221743.GA18855@google.com>
+ <201111010024.16659.rjw@sisk.pl>
+ <20111031233059.GI18855@google.com>
+ <20111101005505.GO18855@google.com>
+ <20111101041337.39077229@tlielax.poochiereds.net>
+ <20111101065958.50addab5@tlielax.poochiereds.net>
+ <20111101163059.GR18855@google.com>
+ <1320166171.5019.1.camel@lade.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320166171.5019.1.camel@lade.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another entry for the nonvs blacklist, as noted by a user in
-https://bugzilla.redhat.com/show_bug.cgi?id=641789#c12
+Hello,
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+On Tue, Nov 01, 2011 at 12:49:31PM -0400, Trond Myklebust wrote:
+> > #define wait_event_freezekillable(wq, condition)			\
+> > do {									\
+> > 	DEFINE_WAIT(__wait);						\
+> > 	for (;;) {							\
+> > 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+> > 		if (condition || fatal_signal_pending(current))		\
+> > 			break;						\
+> > 		schedule();						\
+> > 		try_to_freeze();					\
+> > 	}								\
+> > 	finish_wait(&wq, &__wait);					\
+> > } while (0)
+> 
+> Err... Won't this end up busy-waiting if a non-fatal signal is received?
 
-diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-index 0e46fae..6d9a3ab 100644
---- a/drivers/acpi/sleep.c
-+++ b/drivers/acpi/sleep.c
-@@ -398,6 +398,14 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
- 	},
- 	{
- 	.callback = init_nvs_nosave,
-+	.ident = "Sony Vaio VPCEB17FX",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB17FX"),
-+		},
-+	},
-+	{
-+	.callback = init_nvs_nosave,
- 	.ident = "Sony Vaio VGN-SR11M",
- 	.matches = {
- 		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+Ah... right, forgot about signal_pending_state() special case in
+schedule().  Any better ideas, anyone?
+
+-- 
+tejun
