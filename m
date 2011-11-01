@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1KAKfD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 06:35:03 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:48135 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753057Ab1KAKfB (ORCPT
+	id S1753425Ab1KAKom (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 06:44:42 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:35328 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752862Ab1KAKol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 06:35:01 -0400
-Subject: Re: [PATCH 00/17] drop unused Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-In-Reply-To: <20111101101226.GI26898@axis.com>
-References: <1319456255.2409.30.camel@x61.thuisdomein>
-	 <20111031224248.GB25411@sepie.suse.cz>
-	 <1320101716.14409.97.camel@x61.thuisdomein>
-	 <20111101085930.GF26898@axis.com>
-	 <1320140764.14409.135.camel@x61.thuisdomein>
-	 <20111101101226.GI26898@axis.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 11:35:00 +0100
-Message-ID: <1320143700.14409.139.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Nov 2011 06:44:41 -0400
+From: Ciaran McCormick <ciaranmccormick@gmail.com>
+To: gregkh@suse.de, shemminger@vyatta.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ciaran McCormick <ciaranmccormick@gmail.com>
+Subject: [PATCH] Stageing: bcm: fixed spacing coding style in led_control.c
+Date: Tue,  1 Nov 2011 10:44:19 +0000
+Message-Id: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+Signed-off-by: Ciaran McCormick <ciaranmccormick@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-01 at 11:12 +0100, Jesper Nilsson wrote:
-> So, just to be clear on what I intend to do (now that I know what you meant):
-> 
-> - Pick up the removal patch to the CRIS-tree.
-> - Create a new tree/branch with the missing drivers and the Kconfigs readded.
-> 
-> Does this seem allright for you?
+---
+ drivers/staging/bcm/led_control.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-I can't really complain if you decide to carry a patch I submitted, can
-I? So, yes, this is OK with me.
-
-Thanks for clearing this up.
-
-
-Paul Bolle
+diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/led_control.c
+index 16e939f..28c3382 100644
+--- a/drivers/staging/bcm/led_control.c
++++ b/drivers/staging/bcm/led_control.c
+@@ -5,8 +5,8 @@
+ 
+ static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
+ {
+-	B_UINT16 	u16CheckSum=0;
+-	while(u32Size--) {
++	B_UINT16	u16CheckSum = 0;
++	while (u32Size--) {
+ 		u16CheckSum += (B_UINT8)~(*pu8Buffer);
+ 	    pu8Buffer++;
+ 	}
+@@ -16,7 +16,7 @@ BOOLEAN IsReqGpioIsLedInNVM(PMINI_ADAPTER Adapter, UINT gpios)
+ {
+ 	INT Status ;
+ 	Status = (Adapter->gpioBitMap & gpios) ^ gpios ;
+-	if(Status)
++	if (Status)
+ 		return FALSE;
+ 	else
+ 		return TRUE;
+-- 
+1.7.5.4
 
