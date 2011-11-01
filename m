@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380Ab1KAGAM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:00:12 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:39459 "EHLO
+	id S1751522Ab1KAGA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:00:28 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:55193 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab1KAGAL (ORCPT
+	with ESMTP id S1751145Ab1KAGAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:00:11 -0400
-Date: Tue, 1 Nov 2011 17:00:00 +1100
+	Tue, 1 Nov 2011 02:00:23 -0400
+Date: Tue, 1 Nov 2011 16:37:48 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Wim Van Sebroeck <wim@iguana.be>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: linux-next: build failure after merge of the edac tree
-Message-Id: <20111101170000.6e7301a30bc21e917631eb88@canb.auug.org.au>
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: linux-next: build failure after merge of the watchdog tree
+Message-Id: <20111101163748.26d5f1264b56961e36ff0ced@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw"
+ boundary="Signature=_Tue__1_Nov_2011_16_37_48_+1100_QyHcbMa1e1qTCjx8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw
+--Signature=_Tue__1_Nov_2011_16_37_48_+1100_QyHcbMa1e1qTCjx8
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Mauro,
+Hi Wim,
 
-After merging the edac tree, today's linux-next build (x86_64
+After merging the watchdog tree, today's linux-next build (x86_64
 allmodconfig) failed like this:
 
-arch/x86/kernel/cpu/mcheck/mce.c:39:28: fatal error: linux/edac_mce.h: No s=
-uch file or directory
+drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_start':
+drivers/watchdog/wm831x_wdt.c:56:40: error: 'struct watchdog_device' has no=
+ member named 'priv'
+drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_stop':
+drivers/watchdog/wm831x_wdt.c:79:40: error: 'struct watchdog_device' has no=
+ member named 'priv'
+drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_ping':
+drivers/watchdog/wm831x_wdt.c:102:40: error: 'struct watchdog_device' has n=
+o member named 'priv'
+drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_set_timeout':
+drivers/watchdog/wm831x_wdt.c:144:40: error: 'struct watchdog_device' has n=
+o member named 'priv'
+drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_probe':
+drivers/watchdog/wm831x_wdt.c:215:12: error: 'struct watchdog_device' has n=
+o member named 'parent'
+drivers/watchdog/wm831x_wdt.c:216:12: error: 'struct watchdog_device' has n=
+o member named 'priv'
 
-Caused by commit cdaf4f4e563c ("i7core_edac: Drop the edac_mce
-facility").  This commit removed the file include/linux/edac_mce.h which
-is still metioned by the above file (and MAINTAINERS).  Grep is your
-friend.
+Caused by commit 5b04099edc42 ("watchdog: Convert wm831x driver to
+watchdog core").
 
-I have used the version of the edac tree from next-20111025 for today.
+I have used the version of the watchdog tree from next-20111025 for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw
+--Signature=_Tue__1_Nov_2011_16_37_48_+1100_QyHcbMa1e1qTCjx8
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOr4rgAAoJEECxmPOUX5FEcuQP/00Hb+k2GilzGPMNaG7evd2E
-AXxBrdbgjo9F4yPSQEdXOicGLEi4wP1G9VKfd+8tuAqmlhJnNlQN7nyBOTI4CN5b
-Yho7w4RbbSZ/ONAFFiaby7MLy4lo1AcB8kTRZ3E+uB4NJZY53f3AIQlmEsCP+Wne
-WfibnqddB/UiZd/M+H9v6JXUvY7AcMFKqx5+wauoOpH5L6ots6TphtJJJ68RhgVz
-lviSthRWLQ6+Kccx1bagIb3klaYjrhxFaM1mXLbsXjJSCOwcRZvLOJUuYUsTACni
-V6cZXeFcUBhPLAvQbD1GewsyfTY+WlOr5toy9yu2isShbfYV0ipnyQFe8jvs8omf
-uZ+IwibYoQ0yGJuiN1P4orKgQFpiwW+ss5CACTyQzmTZHIeicWhbhirGP/ZDv0ly
-Du4o0pANe7qcD+xyFXQ8J9cEKTufB0wKzb6C7SscKim7Dc0/zX0T9jsFtqh0+jQp
-Gacl1SNXrLdyO9bU0rfYjACEixXY58OJ0+u/Se+HwziTHwwrMoK1/hKxWmWqV/w8
-+RZKHc3e3YLHGBlZFGjZ28PztIeOi6Uyq5/PJZGqvhzz4DbLunxvhzRSU1OsE6rJ
-O6NOs4vj/Cchv2XIv3oe5LTLw5JP5cRVT17OX0xjiqVtys+5qhzOj7m6iUOyeJSA
-SHpmmV1H8Rh/d45Y8AWM
-=3XpC
+iQIcBAEBCAAGBQJOr4WsAAoJEECxmPOUX5FE45kP/ji2AdhaiQ7D7xMl6PmxOEP6
+oU+56F17RV75+z7pl8B6FzowZSG4x7mcwgtlRAEgeKXKWjwMxxK0vDoQgu9Xd6Q0
+pdYU0guGJg6vsF4riHtT9kvznQEbueyeRkeSAwskH2dckw/sVjYFZs6D+vuv9SJt
+nbhuoD9iOxLfRfIAooOMFLBE6k3rhNTK5yDMJuAJvmWr/YAkqDq1lKOvqCx5YFCm
+uo7385bCX8GNsO94l8h2gt+2qdRRaYcG8VKqWpPJXosPRaXVm88JYgWtLb6NkhUi
+znsgWxqe0bwKM+CcMnWEnWnpDRCl77MtTNH2p1iGC19jxODsTQdTOfAjWpaH8rLW
+h1l1JbsFaxEFju6V3vRTuo4xfy8eobHNMO3mgMviA1mY3VYJcQRCUqRmC7d3QmCP
+0JkijkfdVbYvAgUWuZxgzJzcbip1xCOxJJXrl2ei6VQTVcGEn5E8ZsIy9+qvFoA1
+2d5AiMLK/xwHaj6vdgnt7LMgP7NSSJ/th96PV0ueArJWVS37axDIY76uN/jnVjv/
+xNkiRVGZEPRcENuXfHtsYwh+393kgKmyHkrW6swwgm2kJ5OPWdjESJ/E8b+gvExJ
+epxK5j//tXGD3D5tizY1OBNxECd+HgpZhdpORl9UpKnxt7LCJordLqsh8vL/qdW6
+SyI2iuA4VhSIKPwof6Ab
+=k834
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw--
+--Signature=_Tue__1_Nov_2011_16_37_48_+1100_QyHcbMa1e1qTCjx8--
