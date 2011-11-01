@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab1KAS3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:29:51 -0400
-Received: from home.keithp.com ([63.227.221.253]:59540 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab1KAS3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:29:50 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org
-Cc: stable@kernel.org
-Subject: Re: [PATCH] drm/i915: Fix object refcount leak on mmappable size limit error path.
-In-Reply-To: <87pqhb232g.fsf@eliezer.anholt.net>
-References: <1320128181-3161-1-git-send-email-eric@anholt.net> <yunsjm8pbvy.fsf@aiko.keithp.com> <87pqhb232g.fsf@eliezer.anholt.net>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Tue, 01 Nov 2011 11:29:47 -0700
-Message-ID: <yunk47j1ysk.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1755934Ab1KASaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:30:19 -0400
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:38997
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754102Ab1KASaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:30:18 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -1
+From: Ben Widawsky <ben@bwidawsk.net>
+To: Dave Airlie <airlied@redhat.com>
+Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Ben Widawsky <ben@bwidawsk.net>
+Subject: [PATCH] drm/i915: iommu workaround related cleanups
+Date: Tue,  1 Nov 2011 11:29:49 -0700
+Message-Id: <1320172189-3478-1-git-send-email-ben@bwidawsk.net>
+X-Mailer: git-send-email 1.7.7.1
+In-Reply-To: <CAPM=9txN-YspvSERzUDjkwdciB-TwOvgHEXiAnG53PKA1PGfgQ@mail.gmail.com>
+References: <CAPM=9txN-YspvSERzUDjkwdciB-TwOvgHEXiAnG53PKA1PGfgQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Cleanups recommended by Dave Airlie.
 
-On Tue, 01 Nov 2011 09:57:27 -0700, Eric Anholt <eric@anholt.net> wrote:
+Cc: Keith Packard <keithp@keithp.com>
+Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+---
+ drivers/char/agp/intel-agp.h |    6 ++++++
+ drivers/char/agp/intel-gtt.c |    7 ++++---
+ 2 files changed, 10 insertions(+), 3 deletions(-)
 
-> I went ahead and finished the read-through, and everything else looks
-> good.
+diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
+index 5da67f1..d8fa7d6 100644
+--- a/drivers/char/agp/intel-agp.h
++++ b/drivers/char/agp/intel-agp.h
+@@ -238,4 +238,10 @@
+ int intel_gmch_probe(struct pci_dev *pdev,
+ 			       struct agp_bridge_data *bridge);
+ void intel_gmch_remove(struct pci_dev *pdev);
++
++#ifdef CONFIG_INTEL_IOMMU
++/* This is a special note from the iommu driver that we are mapped through it */
++extern int intel_iommu_gfx_mapped;
++#endif
++
+ #endif
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index c92424c..11985fb 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -1183,14 +1183,13 @@ static void gen6_cleanup(void)
+ {
+ }
+ 
++#ifdef CONFIG_INTEL_IOMMU
+ /* Certain Gen5 chipsets require require idling the GPU before
+  * unmapping anything from the GTT when VT-d is enabled.
+  */
+ static inline int needs_idle_maps(void)
+ {
+-#ifdef CONFIG_INTEL_IOMMU
+ 	const unsigned short gpu_devid = intel_private.pcidev->device;
+-	extern int intel_iommu_gfx_mapped;
+ 
+ 	/* Query intel_iommu to see if we need the workaround. Presumably that
+ 	 * was loaded first.
+@@ -1199,9 +1198,11 @@ static inline int needs_idle_maps(void)
+ 	     gpu_devid == PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG) &&
+ 	     intel_iommu_gfx_mapped)
+ 		return 1;
+-#endif
+ 	return 0;
+ }
++#else
++static inline bool needs_idle_maps(void) { return false; }
++#endif
+ 
+ static int i9xx_setup(void)
+ {
+-- 
+1.7.7.1
 
-Thanks. I've merged your patch locally; it's on top of a couple of
-patches that need some work, so I'll reorder stuff and push this out today.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrA6mzYtFsjWk68qAQhygQ//S9WCYXniscjxN5ehVc9tf6g83fLYZhIx
-lwPWJO4FLukeYLi2/o+J/gFHlw95ilpNlmGHZ60VBIOhfYIOw25Qd3hzTKuTVOPk
-KoDmUTv+sk/3Q6Apf49dmQTBFBYBUtzeRWxArzEFmeP9FdREATYY1nzOv0a2RY2i
-3dwgHkLWwZ3q3FA8tvI+zjYYUO20+oLV5zoV1r/04nLoKFaMh6MCtU8wNnuhAMxM
-EtPlf8g+GBWSFEAh2TrCoxDgNvhAbQ6aA/tYPwSqYcGl7MctfyuJAjMFDuaF5ewx
-+B+XiigtUZOokygx1lIvTSi76hT3xAXISf3ZNkBLkGnlCMh0FEEAq82Yk/wtwFZl
-HV6y/UqZGZZrJ/Cu6VoEfohz3U0hURcxFti34MpOSrbhmpWNS4swVdx6IU0qBRTx
-8hOUcgMohpNe6xoJwm8OFqUBcnxIbQXtreCTPOkfIfGG10pI7q+AtmalaUIeED8S
-VhQ4Oq6lwBE4qNMa7U+KNWujzbSyMmCVMN5lZPh0BbpGafrlotmSEqIMzphlrYJX
-/zuNRf80aBTCohGFNaPZ/r/9iZSo+fB/74BiVwbvknhSTkgVJcU//c4r0hTVbks3
-AKkd9dXj00a8WfaHdq1R7xvo6mvY1hci1GutlD/blkZ3Nwj0+3GNsgYpKn5zPULy
-HIgvVf2AeCg=
-=bZ3e
------END PGP SIGNATURE-----
---=-=-=--
