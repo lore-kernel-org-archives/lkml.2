@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab1KAUp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 16:45:56 -0400
-Received: from tundra.namei.org ([65.99.196.166]:36893 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab1KAUpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 16:45:54 -0400
-Date: Wed, 2 Nov 2011 07:45:53 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <keescook@chromium.org>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v6 0/3] security: Yama LSM
-In-Reply-To: <1319672956-17114-1-git-send-email-keescook@chromium.org>
-Message-ID: <alpine.LRH.2.00.1111020735080.11087@tundra.namei.org>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753630Ab1KAUtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 16:49:24 -0400
+Received: from ims-m11.mx.aol.com ([64.12.207.144]:24184 "EHLO
+	ims-m11.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1KAUtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 16:49:22 -0400
+Message-Id: <201111012048.pA1Km3Gq022026@ims-m11.mx.aol.com>
+Reply-To: <mrsanusilamido2@skymail.mn>
+From: "Mr. Lamido Sanusi Aminu" <ws250465@aol.com>
+Subject: CBN WIRE TRANSFER RELEASE UPDATE ========PLEASE CALL ME
+Date: Tue, 1 Nov 2011 20:46:11 -0000
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00F1_01C2A9A6.2E67FA26"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/75756
+X-AOL-VSS-CODE: scan_error
+X-AOL-SCOLL-SCORE: 0:2:106151280:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-VSS-INFO: 5400.1158/75756
+X-AOL-VSS-CODE: scan_error
+X-AOL-SCOLL-SCORE: 0:2:252646176:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d33824eb05b0475ff
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Oct 2011, Kees Cook wrote:
+This is a multi-part message in MIME format.
 
-> As discussed at the Linux Security Summit, I'm resubmitting this
-> code. As an LSM, it has coherent policy around expanding specific DAC
-> behaviors. There is no need for it to be a full-blown MAC, since it is
-> not intended to be one, but rather to be a simplified expansion to DAC,
-> with system-wide knobs. See the specific patches for details...
-
-Yes, there was a strong consensus (unanimous I believe) at the security 
-summit on incorporating the Yama LSM as a container for generally useful 
-miscellaneous security hardening features that don't belong elsewhere.
-
-This means that LSM is no longer 'officially' only for access control 
-mechanisms.
-
-We probably need to flesh out criteria for inclusion in Yama and document 
-it.
+------=_NextPart_000_00F1_01C2A9A6.2E67FA26
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
 
+------=_NextPart_000_00F1_01C2A9A6.2E67FA26
+Content-Type: application/octet-stream;
+	name="CBN WIRE TRANSFER RELEASE UPDATE ===========PLEASE CALL ME.txt"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="CBN WIRE TRANSFER RELEASE UPDATE ===========PLEASE CALL ME.txt"
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
+Q0VOVFJBTCBCQU5LIE9GIE5JR0VSSUENClRJTlVCVSBTUVVBUkUsVklDVE9S
+SUEgSVNMQU5ELCBMQUdPUyAtIE5JR0VSSUEuDQpNUi4gU0FOVVNJIExBTUlE
+TyBBTUlOVSxFWEVDVVRJVkUgR09WRVJOT1IsDQpDRU5UUkFMIEJBTksgT0Yg
+TklHRVJJQQ0KDQogDQpDQk4gV0lSRSBUUkFOU0ZFUiBSRUxFQVNFIFVQREFU
+RQ0KIA0KIA0KQXR0ZW50aW9uOg0KIA0KSSBhbSBNci4gTGFtaWRvIHNhbnVz
+aSBnb3Zlcm5vciAoQ2JuKSwgdGhlIG5ldyAgYXBwb2ludGVkIGJhbmsgZ292
+ZXJub3Igb2YgY2VudHJhbCBiYW5rIG9mIE5pZ2VyaWEoY2JuKS4NCiANCkZv
+bGxvd2luZyB0aGUgY29uZmlybWF0aW9uIG9mIHlvdXIgcGVyc29uYWwgZGV0
+YWlscywgYW5kIGFtb3VudCB2YWx1ZWQgJDguNU0gKGVpZ2h0IG1pbGxpb24g
+Zml2ZSBodW5kcmVkIHRob3VzYW5kIHVuaXRlZCBzdGF0ZSBkb2xsYXJzIG9u
+bHkpIGFzIHBhcnQgcGF5bWVudCBvZiAkMTAuNW0gdXNkIGFwcHJvdmVkIHdp
+dGggb3VyIGJhbmsgd2UgaGF2ZSBjb21wbGllZCB3aXRoIHRoZSBmb3JlaWdu
+IHRyYW5zZmVyIHBvbGljeSwgdW5kZXIgTmlnZXJpYW4gbGF3LiBZb3VyIG9u
+bGluZSBhY2NvdW50IHdoaWNoIGhhcyBiZWVuIHByb2Nlc3NlZCBhbmQgY29u
+ZmlybWVkLCB5b3VyICBvdXRzdGFuZGluZyBwYXltZW50IGhhcyBiZWVuIGlu
+cHV0IGZvciBvbmxpbmUgdHJhbnNmZXIgdG8geW91ciBiYW5rIGFjY291bnQg
+aW4geW91ciBjb3VudHJ5LiBUbyB0aGlzIGVmZmVjdC4NCg0KTm90ZSwgZnJv
+bSB0aGUgcmVjb3JkIHNvIGZhciB3ZSB1bmRlcnN0YW5kIHRoYXQgeW91IGhh
+dmUgc3BlbnQgYSBsb3Qgb2YgbW9uZXkgc2VuZGluZyB0byBNci4gUm9iZXJ0
+IEVib25nIHdoaWNoIHlvdSBoYXZlIGJlZW4gY2hhcmdlZCB3aXRoIGZlZXMg
+dGhhdCB3ZXJlIG5vdCBzdXBwb3NlZCB0byBwYXkuDQogDQpIb3dldmVyLCB3
+ZSBoYXZlIHRyYWNlIHRoZSBsb3AgaG9sZXMgYW5kIFByb2YuQ2hhcmxlcyBT
+b2x1ZG8gaGFzIGJlZW4gZmlyZWQgZm9yIHRoZXNlIGlsbGVnYWwgYWN0IGFu
+ZCBmcmF1ZCBhY3Rpdml0aWVzLg0KIA0KV2UgYXJlIHZlcnkgc29ycnkgZm9y
+IGFsbCB0aGlzIG11c3QgaGF2ZSBjYXVzZWQgeW91IGluIHRoZSBwYXN0IGFu
+ZCB0aGUgaG9ub3JhYmxlIG1lbWJlcnMgb2YgY2VudHJhbCBiYW5rIG9mIE5p
+Z2VyaWEgd2FudCB0byB1c2UgdGhpcyBvcHBvcnR1bml0eSB0byBwbGVhZCBm
+b3IgYWxsIHRoZXNlIHN0cmVzcy4NCiANCkJlIGluZm9ybSB0aGF0IGFsbCB0
+aGUgY2hhcmdlcyB0aGF0IG5lZWQgdG8gYmUgcGFpZCBieSB5b3UgaGF2ZSBi
+ZWVuIHdhdmVkIGFuZCB3ZSBhcmUgdmVyeSBtdWNoIHNldCB0byB0cmFuc2Zl
+ciBhbmQgcmVsZWFzZSB5b3VyIGZ1bmQgdG8geW91IGFjY29yZGluZ2x5IHdp
+dGhvdXQgYW55IGRlbGF5IG9mIGFueSBraW5kLg0KIA0KVGhlIG9ubHkgZmVl
+cyB0aGF0IGlzIGV4cGVjdGVkIG9mIHlvdSB0byBwYXkgaXMgJDY1LjAwIGZv
+ciB5b3VyIGZpbmFsIGNsZWFyYW5jZSBwZXJtaXQgb3JkZXIgY2VydGlmaWNh
+dGUgb2YgdHJhbnNmZXIgKEZDUE9DKSB3aGljaCBpcyB0aGUgb25seSBwYXlt
+ZW50IHlvdSB3aWxsIG1hZGUgZm9yIHRoZSBmaW5hbCByZWxlYXNlIG9mIHlv
+dXIgZnVuZCBhbmQgd2UgYWR2aWNlIHRoYXQgeW91IGRvIG5vdCBzZW5kIGFu
+eSBmZWVzIHRvIGFueSBib2R5IHVubGVzcyB3ZSBjbGVhciBhbmQgYWR2aWNl
+Lg0KIA0KWW91IGFyZSBleHBlY3RlZCB0byBzZW5kIHRoZSBmZWVzIHZpYSB3
+ZXN0ZXJuIHVuaW9uIHdpdGggdGhlIGRldGFpbHMgYmVsb3cgdGhlIHBlcnNv
+biBpbiBjaGFyZ2Ugb2Ygc3VjaCBwYXltZW50Og0KIA0KTkFNRTogQ0hJIEpB
+Q09CDQpBRERSRVNTOiBMQUdPUy1OSUdFUklBDQpURVhUIFFVRVNUSU9OOiBU
+SEFOS1MNCkFOU1dFUjogIEdPRA0KQU1PVU5UOiAkNjUuMDANCg0KMS4gTVRD
+TiAoVGVuIERpZ2l0IE1vbmV5IFRyYW5zZmVyIENvbnRyb2wgTnVtYmVyKToN
+CjIuIFNlbmRlcnMgTmFtZToNCjMuIFNlbmRlcnMgQWRkcmVzczoNCjQuIEF0
+dGFjaGVkIFNjYW5uZWQgQ29weSBvZiB0aGUgV2VzdGVybiBVbmlvbiBQYXlt
+ZW50IFJlY2VpcHQNCg0KV2Ugc2hhbGwgc3RhbmQgdG8gb3VyIHdvcmQgYW5k
+IHlvdXIgcGF5bWVudCBtdXN0IGJlIHJlbGVhc2UgdG8geW91IGluIG9ud2Fy
+ZCByZWNlaXB0IG9mIHRoZSBmZWVzIGZvciB0aGUgaXNzdWUgb2YgdGhlIGxh
+c3QgY2xlYXJhbmNlIChGQ1BPQykgYXMgdGhlIG9ubHkgZmFjdG9yIGhvbGRp
+bmcgeW91ciB0cmFuc2Zlci4gDQogDQpZb3VycyBmYWl0aGZ1bGx5LA0KIA0K
+TXIuIExhbWlkbyBTYW51c2kgQW1pbnUNClRoZSBFeGVjdXRpdmUgR292ZXJu
+b3INCkNlbnRyYWwgQmFuayBvZiBOaWdlcmlhLg0KUGxlYXNlIGNhbGwgbWUg
+KzIzNC04MDgtMTA2LTU2MzU=
+
+------=_NextPart_000_00F1_01C2A9A6.2E67FA26--
