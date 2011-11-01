@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab1KAMtF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:49:05 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:50468 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754495Ab1KAMtE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:49:04 -0400
-Date: Tue, 1 Nov 2011 08:48:59 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ben Hutchings <ben@decadent.org.uk>, Jason Baron <jbaron@redhat.com>,
-        Nick Bowler <nbowler@elliptictech.com>, Greg KH <greg@kroah.com>,
-        Dave Jones <davej@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Debian kernel maintainers <debian-kernel@lists.debian.org>
-Subject: Re: [PATCH] module: Enable dynamic debugging regardless of taint
-Message-ID: <20111101124859.GA1698@Krystal>
-References: <1319773094.6759.32.camel@deadeye> <87obwxq5tz.fsf@rustcorp.com.au> <1320068657.6759.107.camel@deadeye> <87r51svbit.fsf@rustcorp.com.au> <1320119973.30281.7.camel@deadeye> <87lis0v4ih.fsf@rustcorp.com.au>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754592Ab1KAMx1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:53:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753947Ab1KAMx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:53:26 -0400
+Message-ID: <4EAFEBBE.3070604@redhat.com>
+Date: Tue, 01 Nov 2011 10:53:18 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: wharms@bfs.de
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        "Mark A. Grondona" <mgrondona@llnl.gov>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] edac: sb_edac: add sanity check to silence static checker
+References: <20111101062852.GA19020@elgon.mountain> <4EAFE6DF.8030403@bfs.de>
+In-Reply-To: <4EAFE6DF.8030403@bfs.de>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <87lis0v4ih.fsf@rustcorp.com.au>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 08:45:16 up 572 days, 22:34,  3 users,  load average: 0.24, 0.19,
-	0.12
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rusty Russell (rusty@rustcorp.com.au) wrote:
-> On Tue, 01 Nov 2011 03:59:33 +0000, Ben Hutchings <ben@decadent.org.uk> wrote:
-> > Dynamic debugging is currently disabled for tainted modules, except
-> > for TAINT_CRAP.  This prevents use of dynamic debugging for
-> > out-of-tree modules now that they are also tainted.
-> > 
-> > This condition was apparently intended to avoid a crash if a force-
-> > loaded module has an incompatible definition of dynamic debug
-> > structures.  However, a administrator that forces us to load a module
-> > is claiming that it *is* compatible even though it fails our version
-> > checks.  If they are mistaken, there are any number of ways the module
-> > could crash the system.
-> > 
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Em 01-11-2011 10:32, walter harms escreveu:
 > 
-> Thanks, applied, unless Mathieu objects...
-
-I'm OK with that. We should probably note in the changelog the
-side-effect of now supporting dynamic debugging of proprietary drivers.
-If we start doing this for dynamic debugging, I'd be tempted to do it
-for tracepoints and static jump labels too, since at least tracepoints
-would not be the only "offender" (from an end-user point of view)
-causing crashes on incompatible module load.
-
-Thanks!
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
 > 
-> Cheers,
-> Rusty.
+> Am 01.11.2011 07:28, schrieb Dan Carpenter:
+>> I assume the the check on if (limit <= prv) prevents n_tads from
+>> actually reaching MAX_TAD.  The problem with that is that it relies
+>> on the hardware returning the right value and Smatch complains that
+>> if it doesn't we could have a buffer overflow.
+>>
+>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> ---
+>> Feel free to ignore this patch if you want.  I don't have very stong
+>> feelings about this either way.
+>>
+>> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+>> index 7a402bf..ebf386c 100644
+>> --- a/drivers/edac/sb_edac.c
+>> +++ b/drivers/edac/sb_edac.c
+>> @@ -970,6 +970,12 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>>  			break;
+>>  		prv = limit;
+>>  	}
+>> +	if (n_tads == MAX_TAD) {
+>> +		sprintf(msg, "Could not discover the memory channel");
+> 
+> why the sprintf() ? can you not simply:
+> 	edac_mc_handle_ce_no_info(mci,"Could not discover the memory channel");
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Yes, please us the edac-specific call. I'm working on some patches that will
+provide an additional functionality to those edac report calls. So, using
+sprintf() won't do the right thing after applying those patches (likely for
+Kernel v3.3).
+
+> 		
+> 	re,
+>  	 wh
+>> +		edac_mc_handle_ce_no_info(mci, msg);
+>> +		return -EINVAL;
+>> +	}
+>> +
+>>  	ch_way = TAD_CH(reg) + 1;
+>>  	sck_way = TAD_SOCK(reg) + 1;
+>>  	/*
+
