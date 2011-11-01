@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755076Ab1KATCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 15:02:17 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:31640 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1KATCP (ORCPT
+	id S1755569Ab1KATMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 15:12:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56095 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773Ab1KATMq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 15:02:15 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, thellstrom@vmware.com, thomas@shipmail.org,
-        airlied@redhat.com, jglisse@redhat.com, bskeggs@redhat.com
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 01/11] swiotlb: Expose swiotlb_nr_tlb function to modules
-Date: Tue,  1 Nov 2011 14:47:22 -0400
-Message-Id: <1320173252-2812-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1320173252-2812-1-git-send-email-konrad.wilk@oracle.com>
-References: <1320173252-2812-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4EB04231.022E,ss=1,re=0.000,fgs=0
+	Tue, 1 Nov 2011 15:12:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAC=G6swE7WCqTFkJkOm_GXpVncjXrc+-jvaKHiwc9KTb6Re8hQ@mail.gmail.com>
+References: <1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
+	<20111101121851.7d393277@bob.linux.org.uk>
+	<CAC=G6swE7WCqTFkJkOm_GXpVncjXrc+-jvaKHiwc9KTb6Re8hQ@mail.gmail.com>
+Date: Tue, 1 Nov 2011 14:12:45 -0500
+Message-ID: <CAC=G6szKRbyJXTXOCyDaF3rEfaiVCktTU6y0Fwohh6qf2VD-_A@mail.gmail.com>
+Subject: Re: [PATCH 02/14] ARM : SAMSUNG : Add RS485 support.
+From: Paul Schilling <paul.s.schilling@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a mechanism to detect whether SWIOTLB is enabled or not.
-We also fix the spelling - it was swioltb instead of
-swiotlb.
+I need an opinion on two issues before I resubmit the Samsung RS-485 driver.
 
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-[v1: Ripped out swiotlb_enabled]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/swiotlb-xen.c |    2 +-
- include/linux/swiotlb.h   |    2 +-
- lib/swiotlb.c             |    5 +++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+First of all the driver works.  I have tested it on a logic analyser
+and I found that it
+switches from transmit to receive in token mode exactly after 1 bit of
+idle time as long
+as interrupts are kept enabled and nothing tries to wait or sleep
+inside of an interrupt.
+I found 2 maybe 3 places where this occurs up to 22 milliseconds.
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 6e8c15a..cbcd8cc 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -149,7 +149,7 @@ void __init xen_swiotlb_init(int verbose)
- 	int rc;
- 	unsigned long nr_tbl;
- 
--	nr_tbl = swioltb_nr_tbl();
-+	nr_tbl = swiotlb_nr_tbl();
- 	if (nr_tbl)
- 		xen_io_tlb_nslabs = nr_tbl;
- 	else {
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 445702c..e872526 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -24,7 +24,7 @@ extern int swiotlb_force;
- 
- extern void swiotlb_init(int verbose);
- extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
--extern unsigned long swioltb_nr_tbl(void);
-+extern unsigned long swiotlb_nr_tbl(void);
- 
- /*
-  * Enumeration for sync targets
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 99093b3..058935e 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -110,11 +110,11 @@ setup_io_tlb_npages(char *str)
- __setup("swiotlb=", setup_io_tlb_npages);
- /* make io_tlb_overflow tunable too? */
- 
--unsigned long swioltb_nr_tbl(void)
-+unsigned long swiotlb_nr_tbl(void)
- {
- 	return io_tlb_nslabs;
- }
--
-+EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
- /* Note that this doesn't work with highmem page */
- static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 				      volatile void *address)
-@@ -321,6 +321,7 @@ void __init swiotlb_free(void)
- 		free_bootmem_late(__pa(io_tlb_start),
- 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
-+	io_tlb_nslabs = 0;
- }
- 
- static int is_swiotlb_buffer(phys_addr_t paddr)
--- 
-1.7.6.4
+The opinion part...  I needed a timer to switch from transmit to
+receive after the FIFO
+was empty.  I started by using the low resolution timer using jiffies
+first.  I found that
+wasn't high enough resolution, so I switched to the Linux HRT.
+Currently I have both
+versions that can be selected by conditional compile.  Should I just
+remove the low
+resolution timer completely or leave it in.
 
+Second, I have a chunk of code that if it could be made to work could
+off load the
+receiving to DMA up to the last couple of bytes then switch back to
+interrupts for
+the token byte.  Should I leave that code in a #if 0 statement or
+should I just delete
+it.
+
+Thanks,
+Paul Schilling
+
+On Tue, Nov 1, 2011 at 9:57 AM, Paul Schilling
+<paul.s.schilling@gmail.com> wrote:
+> I am working on resubmitting this stuff right now.  I have 14 patches
+> that should be
+> broken into more like 20 patches.  Most of them are ARM S3C and
+> specifically S3C2416 patches.
+> I am working on a patch right now to fix a Atomic wait in the DMA
+> code.  That causes
+> 20 milliseconds of no interrupts whenever a sound is played on the samsung S3C
+> platform.
+>
+> The code below wasn't supposed to go out and I have patch that removes
+> that chunk
+> of code almost ready that just needs testing before I send it.
+>
+> On Tue, Nov 1, 2011 at 7:18 AM, Alan Cox <alan@linux.intel.com> wrote:
+>>> +config SAMSUNG_HAS_RS485
+>>> +     bool "Enable RS485 support for Samsung"
+>>> +     depends on SERIAL_SAMSUNG && (MACH_CONDOR2440 ||
+>>> MACH_CONDOR2416 || MACH_MINI2440)
+>>> +     default y if (MACH_CONDOR2440 || MACH_CONDOR2416)
+>>> +     default n if (MACH_MINI2440)
+>>
+>> There really needs to be more ARM thinking about doing this sort of
+>> stuff at runtime. If you can detect the board type at runtime then you
+>> need to be moving towards kicking board specifics out of the depends,
+>> and treating it as an "include support for this, if the board has it"
+>> so you can move towards less build time only configuration.
+>>
+>
+> The chunk of code that says FIXME is an optimization that could be
+> implemented to
+> decrease interrupts by using DMA until the last byte is ready to be
+> sent.  I have a new
+> patch that explains in a comment what the code is for.
+>
+>>> +/* FIXME */
+>>> +     #if 0
+>>> +     if (last_state != en) {
+>>> +
+>>
+>> So this doesn't look ready to submit either...
+>>
+>
+> I have a patch that I haven't sent yet that fixes the code formating
+> issues.  I need to compile and test it before I send it out.
+>
+>>
+>>> +             if ((utrstat & S3C2410_UTRSTAT_TXE) ? 1 : 0) {
+>>> +                     if (cfg->gpio_transmit_en > -1) {
+>>> +
+>>> gpio_set_value(cfg->gpio_transmit_en, 0);
+>>> +                     }
+>>
+>> Lots of excess brackets (see CodingStyle) - removing a few of the
+>> excess ones would make it easier to read later.
+>>
+>> The later bits become a real mess of ifdefs - much not your fault, the
+>> combination of your ifdefs and existing lack of design push it beyond
+>> ugly and really want addressing.
+>>
+>>
+>
