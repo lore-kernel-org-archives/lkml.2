@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab1KARF1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:05:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55968 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab1KARFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:05:24 -0400
-Date: Tue, 1 Nov 2011 10:01:56 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: Remove unsafe device module references
-Message-ID: <20111101170156.GA8925@suse.de>
-References: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
+	id S1755836Ab1KARFg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:05:36 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:4156 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755787Ab1KARFe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 13:05:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 01 Nov 2011 10:05:17 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Taylor Hutt <thutt@chromium.org>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Tue, 1 Nov 2011 10:05:15 -0700
+Subject: RE: [PATCH] asoc: tegra: wm8903: Simplify pin disconnect
+Thread-Topic: [PATCH] asoc: tegra: wm8903: Simplify pin disconnect
+Thread-Index: AcyYswuOyWxErSmhTmaayyLpIZEQawABGtqg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173EDABA68@HQMAIL01.nvidia.com>
+References: <1320164771-457-1-git-send-email-thutt@chromium.org>
+In-Reply-To: <1320164771-457-1-git-send-email-thutt@chromium.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:41:40PM +0100, David Herrmann wrote:
-> Hi Dmitry and Greg
+Taylor Hutt wrote at Tuesday, November 01, 2011 10:26 AM:
+> (Note that this patch fails the kernel patch checker because
+>  the 'M' macro produces an error that it's value should be enclosed
+>  in parenthesis; this is not actually possible for this use & expansion.)
 > 
-> It doesn't make sense to take a reference to our own module. When we call
-> module_put(THIS_MODULE) we cannot make sure that our module is still alive when
-> this function returns. Therefore, module_put() will return to invalid memory and
-> our input_dev_release() function is no longer available.
+> Detail
 > 
-> It would be interesting if Greg could elaborate what else we could do to replace
-> this module-refcount as it is definitely needed here. However, "struct device"
-> doesn't provide an owner field so there is no way for us to let the device core
-> keep a reference to our module.
+>   This change is a simplification, both in implementation and for
+>   reasoning about whcih pins are connected and disconnected.
+> 
+>   The impetus for the change was the addition of new boards, and the
+>   difficulty in reasoning about the previous code to disconnect pins.
+> 
+>   Now, unless a connection is specified for the current board, the pin
+>   will be disconnected.
+> 
+>   A follow-on change will add the 'asymptote' board.
+> 
+> Testing
+> 
+>   Visual inspection from original code.
+>   Built kernel.
 
-For a bus module, yes, this is needed, so don't remove these calls, it's
-wrong to do so.
+As I mentioned in the ChromeOS review, I don't like this approach.
 
-> I have no clue what to do here but the current implementation is definitely
-> unsafe so this is marked as RFC. Currently, the device_attributes probably
-> already keep a reference to our module so applying this patch would probably not
-> break anything, however, this does not look like something we can trust on.
+The main issue is that all the connectivity information is already present
+in the ${machine}_audio_maps[] arrays, and this change duplicates it all
+in the data-structures inside tegra_wm8903_disconnect_pins().
 
-Yes it is, why do you think it isn't?
+Instead, I believe a function should be added to the ASoC core that reads
+the machine's dapm routes, and does the same thing based on that. Mark
+Brown pointed out that this should be an optional utility function that
+machine drivers should call, since applying it automatically might cause
+issues for some other machines.
 
-> My bug-thread kind of died (https://lkml.org/lkml/2011/10/29/75) so I now try to
-> show this with an example here.
+The second issue here is that the new code calls machine_is_ventana()
+and the equivalent for other machines, and some of those functions will go
+away next time Russell updates mach-types and removes entries for boards
+that aren't supported with an explicit board file.
 
-It died due to me traveling, sorry, I'll respond to them now.
+-- 
+nvpublic
 
-I fail to see what the real problem you are trying to solve here is.  Is
-there something with the way the kernel works today that you are having
-problems with?  What is driving this?
-
-
-greg k-h
