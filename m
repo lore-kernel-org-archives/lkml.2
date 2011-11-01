@@ -1,216 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab1KAUWj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 16:22:39 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:29070 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab1KAUWi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 16:22:38 -0400
-Date: Tue, 1 Nov 2011 23:22:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Ciaran McCormick <ciaranmccormick@gmail.com>, devel@driverdev.osuosl.org,
-        shemminger@vyatta.com, gregkh@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Stageing: bcm: fixed spacing coding style in
- led_control.c
-Message-ID: <20111101202259.GC4682@mwanda>
-References: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
- <1320145665.14409.149.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
-Content-Disposition: inline
-In-Reply-To: <1320145665.14409.149.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4EB05505.0124,ss=1,re=0.000,fgs=0
+	id S1753242Ab1KAU1u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 16:27:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752553Ab1KAU1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 16:27:49 -0400
+Subject: [PULL] Add support for Texas Instruments C6X architecture
+From: Mark Salter <msalter@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 01 Nov 2011 16:27:46 -0400
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1320179267.14825.107.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---mvpLiMfbWzRoNl4x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull this port of Linux to the Texas Instruments C6X architecture.
+The patches have all been acked and available for some time in linux-net.
 
-On Tue, Nov 01, 2011 at 12:07:45PM +0100, Paul Bolle wrote:
-> Stageing? And you might as well drop the filename from the summary. By
-> the way, are the other files (if any) of this driver any better (I
-> haven't checked)?
->=20
+The top commit has a signed tag: for-linus-3.2-merge-window
 
-This needs a Signed-off-by line as well.
+The following changes since commit 3ee72ca99288f1de95ec9c570e43f531c8799f06:
 
-I'd say keep the filename.  Otherwise you get a string of cleanup
-patches that all have the same name and that's annoying.
+  Merge git://github.com/davem330/net (2011-10-06 16:15:10 -0700)
 
-> On Tue, 2011-11-01 at 10:44 +0000, Ciaran McCormick wrote:
-> > ---
-> >  drivers/staging/bcm/led_control.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> >=20
-> > diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/le=
-d_control.c
-> > index 16e939f..28c3382 100644
-> > --- a/drivers/staging/bcm/led_control.c
-> > +++ b/drivers/staging/bcm/led_control.c
-> > @@ -5,8 +5,8 @@
-> > =20
-> >  static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32=
-Size)
-> >  {
-> > -	B_UINT16 	u16CheckSum=3D0;
-> > -	while(u32Size--) {
-> > +	B_UINT16	u16CheckSum =3D 0;
+are available in the git repository at:
 
-Put a blank line between declarations and code.  Probably you could
-make the tab a space as well.
+  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git for-linux-next
 
-> > +	while (u32Size--) {
-> >  		u16CheckSum +=3D (B_UINT8)~(*pu8Buffer);
->=20
-> I'd say this line might need a space after the cast.
+Aurelien Jacquiot (14):
+      C6X: build infrastructure
+      C6X: early boot code
+      C6X: memory management and DMA support
+      C6X: process management
+      C6X: signal management
+      C6X: time management
+      C6X: interrupt handling
+      C6X: syscalls
+      C6X: build infrastructure
+      C6X: cache control
+      C6X: loadable module support
+      C6X: ptrace support
+      C6X: headers
+      C6X: library code
 
-That's not in CodingStyle so it's up to the maintainer to decide, I
-guess.  I think we normally wouldn't put a space there.
+Mark Salter (10):
+      fix default __strnlen_user macro
+      fixed generic page.h for non-zero PAGE_OFFSET
+      add ELF machine define for TI C6X DSPs
+      add missing __iomem to generic iounmap declaration
+      C6X: devicetree support
+      C6X: clocks
+      C6X: general SoC support
+      C6X: EMIF - External Memory Interface
+      C6X: DSCR - Device State Configuration Registers
+      C6X: MAINTAINERS
 
->=20
-> >  	    pu8Buffer++;
+ Documentation/devicetree/bindings/c6x/clocks.txt   |   40 +
+ Documentation/devicetree/bindings/c6x/dscr.txt     |  127 +++
+ Documentation/devicetree/bindings/c6x/emifa.txt    |   62 ++
+ .../devicetree/bindings/c6x/interrupt.txt          |  104 +++
+ Documentation/devicetree/bindings/c6x/soc.txt      |   28 +
+ Documentation/devicetree/bindings/c6x/timer64.txt  |   26 +
+ MAINTAINERS                                        |    8 +
+ arch/c6x/Kconfig                                   |  174 +++++
+ arch/c6x/Makefile                                  |   60 ++
+ arch/c6x/boot/Makefile                             |   30 +
+ arch/c6x/boot/dts/dsk6455.dts                      |   62 ++
+ arch/c6x/boot/dts/evmc6457.dts                     |   48 ++
+ arch/c6x/boot/dts/evmc6472.dts                     |   73 ++
+ arch/c6x/boot/dts/evmc6474.dts                     |   58 ++
+ arch/c6x/boot/dts/tms320c6455.dtsi                 |   96 +++
+ arch/c6x/boot/dts/tms320c6457.dtsi                 |   68 ++
+ arch/c6x/boot/dts/tms320c6472.dtsi                 |  134 ++++
+ arch/c6x/boot/dts/tms320c6474.dtsi                 |   89 +++
+ arch/c6x/boot/linked_dtb.S                         |    2 +
+ arch/c6x/configs/dsk6455_defconfig                 |   44 ++
+ arch/c6x/configs/evmc6457_defconfig                |   41 +
+ arch/c6x/configs/evmc6472_defconfig                |   42 +
+ arch/c6x/configs/evmc6474_defconfig                |   42 +
+ arch/c6x/include/asm/Kbuild                        |   54 ++
+ arch/c6x/include/asm/asm-offsets.h                 |    1 +
+ arch/c6x/include/asm/bitops.h                      |  105 +++
+ arch/c6x/include/asm/byteorder.h                   |   12 +
+ arch/c6x/include/asm/cache.h                       |   90 +++
+ arch/c6x/include/asm/cacheflush.h                  |   65 ++
+ arch/c6x/include/asm/checksum.h                    |   34 +
+ arch/c6x/include/asm/clkdev.h                      |   22 +
+ arch/c6x/include/asm/clock.h                       |  148 ++++
+ arch/c6x/include/asm/delay.h                       |   67 ++
+ arch/c6x/include/asm/dma-mapping.h                 |   91 +++
+ arch/c6x/include/asm/dscr.h                        |   34 +
+ arch/c6x/include/asm/elf.h                         |  113 +++
+ arch/c6x/include/asm/ftrace.h                      |    6 +
+ arch/c6x/include/asm/hardirq.h                     |   20 +
+ arch/c6x/include/asm/irq.h                         |  302 ++++++++
+ arch/c6x/include/asm/irqflags.h                    |   72 ++
+ arch/c6x/include/asm/linkage.h                     |   30 +
+ arch/c6x/include/asm/megamod-pic.h                 |    9 +
+ arch/c6x/include/asm/memblock.h                    |    4 +
+ arch/c6x/include/asm/mmu.h                         |   18 +
+ arch/c6x/include/asm/module.h                      |   33 +
+ arch/c6x/include/asm/mutex.h                       |    6 +
+ arch/c6x/include/asm/page.h                        |   11 +
+ arch/c6x/include/asm/pgtable.h                     |   81 ++
+ arch/c6x/include/asm/processor.h                   |  132 ++++
+ arch/c6x/include/asm/procinfo.h                    |   28 +
+ arch/c6x/include/asm/prom.h                        |    1 +
+ arch/c6x/include/asm/ptrace.h                      |  174 +++++
+ arch/c6x/include/asm/sections.h                    |   12 +
+ arch/c6x/include/asm/setup.h                       |   32 +
+ arch/c6x/include/asm/sigcontext.h                  |   80 ++
+ arch/c6x/include/asm/signal.h                      |   17 +
+ arch/c6x/include/asm/soc.h                         |   35 +
+ arch/c6x/include/asm/string.h                      |   21 +
+ arch/c6x/include/asm/swab.h                        |   54 ++
+ arch/c6x/include/asm/syscall.h                     |  123 +++
+ arch/c6x/include/asm/syscalls.h                    |   55 ++
+ arch/c6x/include/asm/system.h                      |  168 ++++
+ arch/c6x/include/asm/thread_info.h                 |  121 +++
+ arch/c6x/include/asm/timer64.h                     |    6 +
+ arch/c6x/include/asm/timex.h                       |   33 +
+ arch/c6x/include/asm/tlb.h                         |    8 +
+ arch/c6x/include/asm/traps.h                       |   36 +
+ arch/c6x/include/asm/uaccess.h                     |  107 +++
+ arch/c6x/include/asm/unaligned.h                   |  170 +++++
+ arch/c6x/include/asm/unistd.h                      |   26 +
+ arch/c6x/kernel/Makefile                           |   12 +
+ arch/c6x/kernel/asm-offsets.c                      |  123 +++
+ arch/c6x/kernel/c6x_ksyms.c                        |   66 ++
+ arch/c6x/kernel/devicetree.c                       |   53 ++
+ arch/c6x/kernel/dma.c                              |  153 ++++
+ arch/c6x/kernel/entry.S                            |  803 ++++++++++++++++++++
+ arch/c6x/kernel/head.S                             |   84 ++
+ arch/c6x/kernel/irq.c                              |  728 ++++++++++++++++++
+ arch/c6x/kernel/module.c                           |  123 +++
+ arch/c6x/kernel/process.c                          |  263 +++++++
+ arch/c6x/kernel/ptrace.c                           |  187 +++++
+ arch/c6x/kernel/setup.c                            |  498 ++++++++++++
+ arch/c6x/kernel/signal.c                           |  377 +++++++++
+ arch/c6x/kernel/soc.c                              |   91 +++
+ arch/c6x/kernel/switch_to.S                        |   74 ++
+ arch/c6x/kernel/sys_c6x.c                          |   74 ++
+ arch/c6x/kernel/time.c                             |   65 ++
+ arch/c6x/kernel/traps.c                            |  423 ++++++++++
+ arch/c6x/kernel/vectors.S                          |   81 ++
+ arch/c6x/kernel/vmlinux.lds.S                      |  162 ++++
+ arch/c6x/lib/Makefile                              |    7 +
+ arch/c6x/lib/checksum.c                            |   36 +
+ arch/c6x/lib/csum_64plus.S                         |  419 ++++++++++
+ arch/c6x/lib/divi.S                                |   53 ++
+ arch/c6x/lib/divremi.S                             |   46 ++
+ arch/c6x/lib/divremu.S                             |   87 +++
+ arch/c6x/lib/divu.S                                |   98 +++
+ arch/c6x/lib/llshl.S                               |   37 +
+ arch/c6x/lib/llshr.S                               |   38 +
+ arch/c6x/lib/llshru.S                              |   38 +
+ arch/c6x/lib/memcpy_64plus.S                       |   46 ++
+ arch/c6x/lib/mpyll.S                               |   49 ++
+ arch/c6x/lib/negll.S                               |   31 +
+ arch/c6x/lib/pop_rts.S                             |   32 +
+ arch/c6x/lib/push_rts.S                            |   31 +
+ arch/c6x/lib/remi.S                                |   64 ++
+ arch/c6x/lib/remu.S                                |   82 ++
+ arch/c6x/lib/strasgi.S                             |   89 +++
+ arch/c6x/lib/strasgi_64plus.S                      |   39 +
+ arch/c6x/mm/Makefile                               |    5 +
+ arch/c6x/mm/dma-coherent.c                         |  143 ++++
+ arch/c6x/mm/init.c                                 |  113 +++
+ arch/c6x/platforms/Kconfig                         |   16 +
+ arch/c6x/platforms/Makefile                        |   12 +
+ arch/c6x/platforms/cache.c                         |  445 +++++++++++
+ arch/c6x/platforms/dscr.c                          |  598 +++++++++++++++
+ arch/c6x/platforms/emif.c                          |   88 +++
+ arch/c6x/platforms/megamod-pic.c                   |  349 +++++++++
+ arch/c6x/platforms/platform.c                      |   17 +
+ arch/c6x/platforms/pll.c                           |  444 +++++++++++
+ arch/c6x/platforms/plldata.c                       |  404 ++++++++++
+ arch/c6x/platforms/timer64.c                       |  236 ++++++
+ include/asm-generic/io.h                           |    2 +-
+ include/asm-generic/page.h                         |   10 +-
+ include/asm-generic/uaccess.h                      |    7 +-
+ include/linux/elf-em.h                             |    1 +
+ 126 files changed, 12972 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/c6x/clocks.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/dscr.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/emifa.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/interrupt.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/soc.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/timer64.txt
+ create mode 100644 arch/c6x/Kconfig
+ create mode 100644 arch/c6x/Makefile
+ create mode 100644 arch/c6x/boot/Makefile
+ create mode 100644 arch/c6x/boot/dts/dsk6455.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6457.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6472.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6474.dts
+ create mode 100644 arch/c6x/boot/dts/tms320c6455.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6457.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6472.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6474.dtsi
+ create mode 100644 arch/c6x/boot/linked_dtb.S
+ create mode 100644 arch/c6x/configs/dsk6455_defconfig
+ create mode 100644 arch/c6x/configs/evmc6457_defconfig
+ create mode 100644 arch/c6x/configs/evmc6472_defconfig
+ create mode 100644 arch/c6x/configs/evmc6474_defconfig
+ create mode 100644 arch/c6x/include/asm/Kbuild
+ create mode 100644 arch/c6x/include/asm/asm-offsets.h
+ create mode 100644 arch/c6x/include/asm/bitops.h
+ create mode 100644 arch/c6x/include/asm/byteorder.h
+ create mode 100644 arch/c6x/include/asm/cache.h
+ create mode 100644 arch/c6x/include/asm/cacheflush.h
+ create mode 100644 arch/c6x/include/asm/checksum.h
+ create mode 100644 arch/c6x/include/asm/clkdev.h
+ create mode 100644 arch/c6x/include/asm/clock.h
+ create mode 100644 arch/c6x/include/asm/delay.h
+ create mode 100644 arch/c6x/include/asm/dma-mapping.h
+ create mode 100644 arch/c6x/include/asm/dscr.h
+ create mode 100644 arch/c6x/include/asm/elf.h
+ create mode 100644 arch/c6x/include/asm/ftrace.h
+ create mode 100644 arch/c6x/include/asm/hardirq.h
+ create mode 100644 arch/c6x/include/asm/irq.h
+ create mode 100644 arch/c6x/include/asm/irqflags.h
+ create mode 100644 arch/c6x/include/asm/linkage.h
+ create mode 100644 arch/c6x/include/asm/megamod-pic.h
+ create mode 100644 arch/c6x/include/asm/memblock.h
+ create mode 100644 arch/c6x/include/asm/mmu.h
+ create mode 100644 arch/c6x/include/asm/module.h
+ create mode 100644 arch/c6x/include/asm/mutex.h
+ create mode 100644 arch/c6x/include/asm/page.h
+ create mode 100644 arch/c6x/include/asm/pgtable.h
+ create mode 100644 arch/c6x/include/asm/processor.h
+ create mode 100644 arch/c6x/include/asm/procinfo.h
+ create mode 100644 arch/c6x/include/asm/prom.h
+ create mode 100644 arch/c6x/include/asm/ptrace.h
+ create mode 100644 arch/c6x/include/asm/sections.h
+ create mode 100644 arch/c6x/include/asm/setup.h
+ create mode 100644 arch/c6x/include/asm/sigcontext.h
+ create mode 100644 arch/c6x/include/asm/signal.h
+ create mode 100644 arch/c6x/include/asm/soc.h
+ create mode 100644 arch/c6x/include/asm/string.h
+ create mode 100644 arch/c6x/include/asm/swab.h
+ create mode 100644 arch/c6x/include/asm/syscall.h
+ create mode 100644 arch/c6x/include/asm/syscalls.h
+ create mode 100644 arch/c6x/include/asm/system.h
+ create mode 100644 arch/c6x/include/asm/thread_info.h
+ create mode 100644 arch/c6x/include/asm/timer64.h
+ create mode 100644 arch/c6x/include/asm/timex.h
+ create mode 100644 arch/c6x/include/asm/tlb.h
+ create mode 100644 arch/c6x/include/asm/traps.h
+ create mode 100644 arch/c6x/include/asm/uaccess.h
+ create mode 100644 arch/c6x/include/asm/unaligned.h
+ create mode 100644 arch/c6x/include/asm/unistd.h
+ create mode 100644 arch/c6x/kernel/Makefile
+ create mode 100644 arch/c6x/kernel/asm-offsets.c
+ create mode 100644 arch/c6x/kernel/c6x_ksyms.c
+ create mode 100644 arch/c6x/kernel/devicetree.c
+ create mode 100644 arch/c6x/kernel/dma.c
+ create mode 100644 arch/c6x/kernel/entry.S
+ create mode 100644 arch/c6x/kernel/head.S
+ create mode 100644 arch/c6x/kernel/irq.c
+ create mode 100644 arch/c6x/kernel/module.c
+ create mode 100644 arch/c6x/kernel/process.c
+ create mode 100644 arch/c6x/kernel/ptrace.c
+ create mode 100644 arch/c6x/kernel/setup.c
+ create mode 100644 arch/c6x/kernel/signal.c
+ create mode 100644 arch/c6x/kernel/soc.c
+ create mode 100644 arch/c6x/kernel/switch_to.S
+ create mode 100644 arch/c6x/kernel/sys_c6x.c
+ create mode 100644 arch/c6x/kernel/time.c
+ create mode 100644 arch/c6x/kernel/traps.c
+ create mode 100644 arch/c6x/kernel/vectors.S
+ create mode 100644 arch/c6x/kernel/vmlinux.lds.S
+ create mode 100644 arch/c6x/lib/Makefile
+ create mode 100644 arch/c6x/lib/checksum.c
+ create mode 100644 arch/c6x/lib/csum_64plus.S
+ create mode 100644 arch/c6x/lib/divi.S
+ create mode 100644 arch/c6x/lib/divremi.S
+ create mode 100644 arch/c6x/lib/divremu.S
+ create mode 100644 arch/c6x/lib/divu.S
+ create mode 100644 arch/c6x/lib/llshl.S
+ create mode 100644 arch/c6x/lib/llshr.S
+ create mode 100644 arch/c6x/lib/llshru.S
+ create mode 100644 arch/c6x/lib/memcpy_64plus.S
+ create mode 100644 arch/c6x/lib/mpyll.S
+ create mode 100644 arch/c6x/lib/negll.S
+ create mode 100644 arch/c6x/lib/pop_rts.S
+ create mode 100644 arch/c6x/lib/push_rts.S
+ create mode 100644 arch/c6x/lib/remi.S
+ create mode 100644 arch/c6x/lib/remu.S
+ create mode 100644 arch/c6x/lib/strasgi.S
+ create mode 100644 arch/c6x/lib/strasgi_64plus.S
+ create mode 100644 arch/c6x/mm/Makefile
+ create mode 100644 arch/c6x/mm/dma-coherent.c
+ create mode 100644 arch/c6x/mm/init.c
+ create mode 100644 arch/c6x/platforms/Kconfig
+ create mode 100644 arch/c6x/platforms/Makefile
+ create mode 100644 arch/c6x/platforms/cache.c
+ create mode 100644 arch/c6x/platforms/dscr.c
+ create mode 100644 arch/c6x/platforms/emif.c
+ create mode 100644 arch/c6x/platforms/megamod-pic.c
+ create mode 100644 arch/c6x/platforms/platform.c
+ create mode 100644 arch/c6x/platforms/pll.c
+ create mode 100644 arch/c6x/platforms/plldata.c
+ create mode 100644 arch/c6x/platforms/timer64.c
 
-This line should be indented the same as the previous line.
 
-> >  	}
-> > @@ -16,7 +16,7 @@ BOOLEAN IsReqGpioIsLedInNVM(PMINI_ADAPTER Adapter, UI=
-NT gpios)
-> >  {
-> >  	INT Status ;
-> >  	Status =3D (Adapter->gpioBitMap & gpios) ^ gpios ;
->=20
-> You missed the space before the semicolons here.
->=20
-> > -	if(Status)
-> > +	if (Status)
-> >  		return FALSE;
-> >  	else
-> >  		return TRUE;
->=20
-> But, more importantly, why only do whitespace related stuff? Almost
-> every second word apparently needs to be restyled here. Is doing just
-> whitespace related stuff worthwhile? (This is not a rhetorical question.
-> I'm actually wondering what Greg prefers).
-
-You're right that this driver needs a lot of work.  Actually this
-patch only touches on a tiny bit of the white space changes that are
-needed in the file.  Here are the checkpatch complaints:
-
-dcarpenter@elgon:~/progs/kernel/devel$ ./scripts/checkpatch.pl -f drivers/s=
-taging/bcm/led_control.c | egrep "^(WARN|ERROR):" | sort | uniq -c
-     21 ERROR: code indent should use tabs where possible
-     74 ERROR: do not use C99 // comments
-      9 ERROR: else should follow close brace '}'
-      2 ERROR: space prohibited after that open parenthesis '('
-      3 ERROR: space prohibited before that close parenthesis ')'
-      2 ERROR: space prohibited before that ':' (ctx:WxE)
-      2 ERROR: space required after that ',' (ctx:VxO)
-     81 ERROR: space required after that ',' (ctx:VxV)
-      1 ERROR: space required after that ',' (ctx:WxV)
-      2 ERROR: space required before that '&' (ctx:OxV)
-      1 ERROR: space required before the open brace '{'
-     88 ERROR: space required before the open parenthesis '('
-      2 ERROR: spaces required around that '||' (ctx:VxE)
-      1 ERROR: spaces required around that ':' (ctx:VxE)
-      1 ERROR: spaces required around that '<' (ctx:VxV)
-      1 ERROR: spaces required around that '=3D=3D' (ctx:VxV)
-      5 ERROR: spaces required around that '=3D' (ctx:VxV)
-      8 ERROR: spaces required around that '=3D' (ctx:VxW)
-      2 ERROR: spaces required around that '!=3D' (ctx:VxW)
-      1 ERROR: spaces required around that '<' (ctx:WxV)
-      2 ERROR: spaces required around that '=3D' (ctx:WxV)
-      1 ERROR: spaces required around that '||' (ctx:WxV)
-     70 ERROR: that open brace { should be on the previous line
-dcarpenter@elgon:~/progs/kernel/devel$=20
-
-I'd prefer a series of patches:
-
-[patch 1/3] Staging: bcm: fix whitespace in led_control.c
-This would address tabs vs spaces, extra prohibited spaces, and
-spaces required around certain chars.  Also it would add blank lines
-between functions and between declarations and code.
-
-[patch 2/3] Staging: bcm: fix C99 comments in led_control.c
-This would fix the 74 ERROR: do not use C99 // comments
-
-[patch 3/3] Staging: bcm: fix braces style in led_control.c
-This would fix the 70 ERROR: that open brace { should be on the
-previous line.
-
-Then another series would go through every file in the driver and
-change the types to standard kernel types.
-
-[patch 1/x] Staging: bcm: Change B_UINT16 to u16
-[patch 2/x] Staging: bcm: Change B_UINT32 to u32
-
-Then go through each file and rename the local variables to kernel
-style variables.
-
-[patch 1/y] Staging: bcm: Rename "Status" to "ret" in led_control.c
-[patch 2/y] Staging: bcm: Rename CamelCase variables in led_control.c
-
-Then go through the whole driver and make as many functions as
-possible static.  Sparse can help with this.
-
-[patch 1/z] Staging: bcm: mark functions as static
-[patch 2/z] Staging: bcm: fix function names in led_control.c
-
-Then go through the entire driver and rename all the non-static
-functions.  This would be done one function per patch.  Btw the
-coccinelle is could at this.  So much of this stuff could be scripted.
-
-Then get rid of all the typedefs.
-
-Then rename all the struct members.
-
-Delete all the dead code.
-
-Change all the custom printk() macros to normal kernel format.
-
-All this stuff is fairly mechanical and do-able.
-
-Then is when you start to hit the interesting bits.  The driver is at
-the hello world stage.  It can connect to the internet but it crashes
-soon after that.  I think you need a forked version of WPA supplicant
-in userspace to make this work.  I tried a while back and didn't find
-the userspace code and now I don't have the hardware.
-
-So there is a long way to go... But anyway, every small step in the
-right direction helps.  I think we tend to merge patches even if they
-are small like this one.
-
-regards,
-dan carpenter
-
---mvpLiMfbWzRoNl4x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsFUiAAoJEOnZkXI/YHqR/S4P/1ge3Aqic21D2eC10Sqn4h0Q
-aNj5M/hjpCtjhn6jeZ5NTm/zxhSDd/qJ3BfRDipVQ2sr4vcPJqtONJkL8drvJJ8U
-l4ATsJ1VHn6irQa8SRgEZ5ylxLMQzomjwuOs6+xcSgd9R3LJjk8adBfk+XVXMzP6
-OvTz/1oNAbemWZVFbqvQu+LtUH/Dt+ySry/4xlHWuI0nHNNtwH6ffEYyfjGv89le
-O4tPw9kdchfUQDOPzQUHAaagL0JteTxsxw4yVHExUrinIfooQcjGhW2Q30YTvEnJ
-rl5J0bKzr9PbVTRs3vYPk/YGZux3hZhXhbdAvftz0LbgJnQyMoVAbJRTuD2lUQbV
-9yHzTH8PJARqTCcbQgEH2e8vCJ4xUz7632L5KRKfyl5ubkfhAGdwPSNZHwcyVNTL
-CXFXPcMtI4uW8vCm71ihDoKer77G3Nic9Ve5qK4MuMX3n50Nynnn54MqmiequvcW
-G1bjU5D6iWVB44TvIlQ1iIg4T/ywOAlFHkJXVnzFKvGLUK5UiEw1QSfKuBvg6bJO
-vBmURi24FhLTXjclM6STvnar/tIrBc1cefkw0LztPe5SP88R0o121bJ4j4LzzUbs
-d38wQt7cwtIfsrVIFz8KHQu6xxjtyzFJTdIhStxXRQVun2AwkGO28U09V5RyWv2D
-H1FFzcdc2WxAr6EfzEKG
-=3neB
------END PGP SIGNATURE-----
-
---mvpLiMfbWzRoNl4x--
