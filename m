@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659Ab1KAGQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:16:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60199 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab1KAGQ0 (ORCPT
+	id S1751622Ab1KAGXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:23:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33095 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab1KAGXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:16:26 -0400
-Subject: [PATCH] nfs: Fix unused variable warning from file.c
+	Tue, 1 Nov 2011 02:23:48 -0400
+Subject: [PATCH] nfs: Remove unused variable from write.c
 From: Rakib Mullick <rakib.mullick@gmail.com>
 To: Trond Myklebust <Trond.Myklebust@netapp.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 12:16:15 +0600
-Message-ID: <1320128175.3340.3.camel@localhost.localdomain>
+Date: Tue, 01 Nov 2011 12:23:42 +0600
+Message-ID: <1320128622.3340.6.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
 Content-Transfer-Encoding: 8bit
@@ -22,50 +22,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following unused variable warning.
+When CONFIG_NFS=y and CONFIG_NFS_V3_{,V4}=n we get the following warning.
+	
+	fs/nfs/write.c: In function ‘nfs_writeback_done’:
+	fs/nfs/write.c:1246:21: warning: unused variable ‘server’
 
-fs/nfs/file.c: In function ‘nfs_file_release’:
-fs/nfs/file.c:140:17: warning: unused variable ‘dentry’
-fs/nfs/file.c: In function ‘nfs_file_read’:
-fs/nfs/file.c:237:9: warning: unused variable ‘count’
- 
+ Remove the variable 'server' to fix the above warning.
+
 
 Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
 ---
 
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 28b8c3f..bd7dff0 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -137,11 +137,9 @@ nfs_file_open(struct inode *inode, struct file *filp)
- static int
- nfs_file_release(struct inode *inode, struct file *filp)
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 2219c88..77a8c32 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1243,7 +1243,6 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
  {
--	struct dentry *dentry = filp->f_path.dentry;
--
- 	dprintk("NFS: release(%s/%s)\n",
--			dentry->d_parent->d_name.name,
--			dentry->d_name.name);
-+			filp->f_path.dentry->d_parent->d_name.name,
-+			filp->f_path.dentry->d_name.name);
+ 	struct nfs_writeargs	*argp = &data->args;
+ 	struct nfs_writeres	*resp = &data->res;
+-	struct nfs_server	*server = NFS_SERVER(data->inode);
+ 	int status;
  
- 	nfs_inc_stats(inode, NFSIOS_VFSRELEASE);
- 	return nfs_release(inode, filp);
-@@ -234,14 +232,13 @@ nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
- 	struct dentry * dentry = iocb->ki_filp->f_path.dentry;
- 	struct inode * inode = dentry->d_inode;
- 	ssize_t result;
--	size_t count = iov_length(iov, nr_segs);
- 
- 	if (iocb->ki_filp->f_flags & O_DIRECT)
- 		return nfs_file_direct_read(iocb, iov, nr_segs, pos);
- 
- 	dprintk("NFS: read(%s/%s, %lu@%lu)\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name,
--		(unsigned long) count, (unsigned long) pos);
-+		(unsigned long) iov_length(iov, nr_segs), (unsigned long) pos);
- 
- 	result = nfs_revalidate_mapping(inode, iocb->ki_filp->f_mapping);
- 	if (!result) {
+ 	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
+@@ -1277,7 +1276,7 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
+ 		if (time_before(complain, jiffies)) {
+ 			dprintk("NFS:       faulty NFS server %s:"
+ 				" (committed = %d) != (stable = %d)\n",
+-				server->nfs_client->cl_hostname,
++			NFS_SERVER(data->inode)->nfs_client->cl_hostname,
+ 				resp->verf->committed, argp->stable);
+ 			complain = jiffies + 300 * HZ;
+ 		}
 
 
