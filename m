@@ -1,103 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1KANw2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 09:52:28 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:43959 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab1KANw1 (ORCPT
+	id S1754825Ab1KAN6l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 09:58:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44940 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753582Ab1KAN6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 09:52:27 -0400
-Date: Tue, 1 Nov 2011 09:51:39 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        thellstrom@vmware.com, thomas@shipmail.org, airlied@redhat.com,
-        xen-devel@lists.xensource.com, j.glisse@redhat.com, bskeggs@redhat.com
-Subject: Re: [PATCH 08/11] ttm: Provide DMA aware TTM page pool code.
-Message-ID: <20111101135139.GC22652@phenom.dumpdata.com>
-References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
- <1319062772-2793-9-git-send-email-konrad.wilk@oracle.com>
- <20111031193722.GB3036@homer.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031193722.GB3036@homer.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4EAFF976.0064,ss=1,re=0.000,fgs=0
+	Tue, 1 Nov 2011 09:58:40 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        Arun Sharma <asharma@fb.com>, Pekka Enberg <penberg@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v2 1/7] x86, mm: Use MAX_DMA_PFN for ZONE_DMA on 32-bit
+Date: Tue,  1 Nov 2011 15:58:16 +0200
+Message-Id: <1320155902-10424-1-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static struct dma_page *__ttm_dma_alloc_page(struct dma_pool *pool)
-> > +{
-> > +	struct dma_page *d_page;
-> > +
-> > +	d_page = kmalloc(sizeof(struct dma_page), GFP_KERNEL);
-> > +	if (!d_page)
-> > +		return NULL;
-> > +
-> > +	d_page->vaddr = dma_alloc_coherent(pool->dev, pool->size,
-> > +					   &d_page->dma,
-> > +					   pool->gfp_flags);
-> > +	d_page->p = virt_to_page(d_page->vaddr);
-> > +	if (!d_page->vaddr) {
-> > +		kfree(d_page);
-> > +		d_page = NULL;
-> > +	}
-> 
-> Move d_page->p = virt_to_page(d_page->vaddr); after if (!d_page->vaddr)
-> block.
+Use MAX_DMA_PFN which represents the 16 MB ISA DMA limit on 32-bit x86 just
+like we do on 64-bit.
 
-Duh! Yes.
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ arch/x86/mm/init_32.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-.. snip..
-> > +#if 0
-> > +	if (nr_free > 1) {
-> > +		pr_debug("%s: (%s:%d) Attempting to free %d (%d) pages\n",
-> > +			pool->dev_name, pool->name, current->pid,
-> > +			npages_to_free, nr_free);
-> > +	}
-> > +#endif
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 29f7c6d..434c97d 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -679,8 +679,7 @@ static void __init zone_sizes_init(void)
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+ #ifdef CONFIG_ZONE_DMA
+-	max_zone_pfns[ZONE_DMA] =
+-		virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
++	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
+ #endif
+ 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+ #ifdef CONFIG_HIGHMEM
+-- 
+1.7.6.4
 
-What is your feeling on those #if 0? I was not sure to keep them - they are useful
-when debugging, but not so much during run-time? Rip them out and I can just
-keep them in my 'debug' patch queue in case things go wrong?
-
-Or perhas do it (rip 'em out) in 3 months time-frame?
-
-.. snip..
-> > +static struct dma_pool *ttm_dma_find_pool(struct device *dev,
-> > +					  enum pool_type type)
-> > +{
-> > +	struct dma_pool *pool, *tmp, *found = NULL;
-> > +
-> > +	if (type == IS_UNDEFINED)
-> > +		return found;
-> > +	/* NB: We iterate on the 'struct dev' which has no spinlock, but
-> > +	 * it does have a kref which we have taken. */
-> 
-> I fail to see where we kref dev.
-
-Ah, I should document that more extensivly. That is done way way
-earlier. As in in the path of the initialization of the driver:
-
-drm_pci_init
-  for non-KMS calls pci_dev_get()
-
-  for KMS calls pci_register_driver..
-      which calls 'driver_register' which called 'device_register'
-
-And then during teardown (so unbind on sysfs), it ends up calling the devres
-deconstructors which cleans up the 'struct device' dev_res, - in our case
-ttm_dma_pool_release. However the nice thing is at that point of time all of
-the calls to the TTM have quiseced so nobody is calling ttm for this device
-anymore.
-
-Let me stick this in the comment section.
-
-> See comment above, otherwise:
-> Reviewed-by: Jerome Glisse <jglisse@redhat.com>
-
-Great! Thank you! 
