@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab1KAJRs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 05:17:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab1KAJRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 05:17:47 -0400
-Date: Tue, 1 Nov 2011 17:19:39 +0800
-From: Dave Young <dyoung@redhat.com>
-To: kexec@lists.infradead.org, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Cc: vgoyal@redhat.com, horms@verge.net.au, luyu@redhat.com,
-        dwmw2@infradead.org
-Subject: [PATCH retry] intel-iommu:make identity_map default for crash dump
-Message-ID: <20111101091939.GA8985@darkstar.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752847Ab1KAJS0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 05:18:26 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:42510 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752100Ab1KAJSZ convert rfc822-to-8bit
+	(ORCPT <rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
+	Tue, 1 Nov 2011 05:18:25 -0400
+Message-Id: <4EB029DB0200001600008FC0@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 Beta 
+Date: Tue, 01 Nov 2011 03:18:19 -0600
+From: "Guan Jun He" <gjhe@suse.com>
+To: "Shaohua Li" <shaohua.li@intel.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][mm/memory.c]: transparent hugepage check condition
+ missed
+References: <1320049412-12642-1-git-send-email-gjhe@suse.com>
+ <1320110288.22361.190.camel@sli10-conroe>
+ <4EB01C8F0200001600008FAE@novprvlin0050.provo.novell.com>
+ <CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>
+In-Reply-To: <CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kdump kernel sometimes will get DMAR faults which
-is caused by random in-flight dma from 1st kernel
 
-Here make the identity_mapping as default for this case
 
-Signed-off-by: Dave Young <dyoung@redhat.com>
----
- drivers/iommu/intel-iommu.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+>>> On 11/1/2011 at 04:42 PM, in message
+<CANejiEVk41X-P+UyMf96jmPrJJ5-_vbubYtnQgaWXY2FLb41iw@mail.gmail.com>, Shaohua
+Li <shaohua.li@intel.com> wrote: 
+> 2011/11/1 Guan Jun He <gjhe@suse.com>:
+>>
+>>
+>>>>> On 11/1/2011 at 09:18 AM, in message <1320110288.22361.190.camel@sli10-conroe>,
+>> Shaohua Li <shaohua.li@intel.com> wrote:
+>>> On Mon, 2011-10-31 at 16:23 +0800, Guanjun He wrote:
+>>>> For the transparent hugepage module still does not support
+>>>> tmpfs and cache,the check condition should always be checked
+>>>> to make sure that it only affect the anonymous maps, the
+>>>> original check condition missed this, this patch is to fix this.
+>>>> Otherwise,the hugepage may affect the file-backed maps,
+>>>> then the cache for the small-size pages will be unuseful,
+>>>> and till now there is still no implementation for hugepage's cache.
+>>>>
+>>>> Signed-off-by: Guanjun He <gjhe@suse.com>
+>>>> ---
+>>>>  mm/memory.c |    3 ++-
+>>>>  1 files changed, 2 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/mm/memory.c b/mm/memory.c
+>>>> index a56e3ba..79b85fe 100644
+>>>> --- a/mm/memory.c
+>>>> +++ b/mm/memory.c
+>>>> @@ -3475,7 +3475,8 @@ int handle_mm_fault(struct mm_struct *mm, struct
+>>> vm_area_struct *vma,
+>>>>              if (pmd_trans_huge(orig_pmd)) {
+>>>>                      if (flags & FAULT_FLAG_WRITE &&
+>>>>                          !pmd_write(orig_pmd) &&
+>>>> -                        !pmd_trans_splitting(orig_pmd))
+>>>> +                        !pmd_trans_splitting(orig_pmd) &&
+>>>> +                        !vma->vm_ops)
+>>>>                              return do_huge_pmd_wp_page(mm, vma, address,
+>>>>                                                         pmd, orig_pmd);
+>>>>                      return 0;
+>>> so if vma->vm_ops != NULL, how could the pmd_trans_huge(orig_pmd) be
+>>> true? We never enable THP if vma->vm_ops != NULL.
+>> acturally, pmd_trans_huge(orig_pmd) only checks the _PAGE_PSE bits,
+>> it's only a pagesize, not a flag to identity a hugepage.
+>> If I change my default pagesize to PAGE_PSE,
+> Not sure what pagesize means here, assume pmd entry bits.
+yes, it's  pmd entry bits.
+> how could you make the default 'pagesize' to PAGE_PSE?
+That requires some work and not so easy and need hardware support... So, recently it won't come.
+But one can easily create the same pmd entry bits for some special use;
+as comment above, it's a pmd entry bits, only mark a size, not a flag;
+and adjust the logic to use the flag can perfect avoid this potential issuse,
+and basically no impact to the current code.
 
---- linux-2.6.orig/drivers/iommu/intel-iommu.c	2011-11-01 13:06:18.667505962 +0800
-+++ linux-2.6/drivers/iommu/intel-iommu.c	2011-11-01 17:07:50.789137864 +0800
-@@ -40,6 +40,7 @@
- #include <linux/tboot.h>
- #include <linux/dmi.h>
- #include <linux/pci-ats.h>
-+#include <linux/crash_dump.h>
- #include <asm/cacheflush.h>
- #include <asm/iommu.h>
- 
-@@ -2488,7 +2489,7 @@ static int __init init_dmars(void)
- 		}
- 	}
- 
--	if (iommu_pass_through)
-+	if (iommu_pass_through || is_kdump_kernel())
- 		iommu_identity_mapping |= IDENTMAP_ALL;
- 
- #ifdef CONFIG_INTEL_IOMMU_BROKEN_GFX_WA
+
+
+
