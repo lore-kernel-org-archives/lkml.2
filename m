@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab1KAPmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 11:42:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54432 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab1KAPmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 11:42:17 -0400
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: linux-input@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@googlemail.com>
-Subject: [RFC] Input: Remove unsafe device module references
-Date: Tue,  1 Nov 2011 16:41:40 +0100
-Message-Id: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
-X-Mailer: git-send-email 1.7.7.1
+	id S1755223Ab1KAPxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 11:53:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24799 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752683Ab1KAPxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 11:53:08 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20111023083636.GA14048@suse.de>
+References: <20111023083636.GA14048@suse.de> <20111023062833.GA8126@kroah.com> <20111023062540.684446582@pistachio.kroah.org> <CA+55aFxkHr75LZU0udv=A+Bg52fMMOEfp47TTxHGbgf51UouRg@mail.gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, stable-review@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Chuck Ebbert <cebbert@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [22/27] VFS: Fix automount for negative autofs dentries
+Date: Tue, 01 Nov 2011 15:51:21 +0000
+Message-ID: <19544.1320162681@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry and Greg
+Greg KH <gregkh@suse.de> wrote:
 
-It doesn't make sense to take a reference to our own module. When we call
-module_put(THIS_MODULE) we cannot make sure that our module is still alive when
-this function returns. Therefore, module_put() will return to invalid memory and
-our input_dev_release() function is no longer available.
+> Ok, that makes a bit more sense, I'll add these if David and Miklos
+> agree that they are ok to add here.  David and Miklos?
 
-It would be interesting if Greg could elaborate what else we could do to replace
-this module-refcount as it is definitely needed here. However, "struct device"
-doesn't provide an owner field so there is no way for us to let the device core
-keep a reference to our module.
+Sure.
 
-I have no clue what to do here but the current implementation is definitely
-unsafe so this is marked as RFC. Currently, the device_attributes probably
-already keep a reference to our module so applying this patch would probably not
-break anything, however, this does not look like something we can trust on.
-
-My bug-thread kind of died (https://lkml.org/lkml/2011/10/29/75) so I now try to
-show this with an example here.
-
-Regards
 David
-
-Signed-off-by: David Herrmann <dh.herrmann@googlemail.com>
----
- drivers/input/input.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index da38d97..f691502 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -1417,8 +1417,6 @@ static void input_dev_release(struct device *device)
- 	input_mt_destroy_slots(dev);
- 	kfree(dev->absinfo);
- 	kfree(dev);
--
--	module_put(THIS_MODULE);
- }
- 
- /*
-@@ -1657,8 +1655,6 @@ struct input_dev *input_allocate_device(void)
- 		spin_lock_init(&dev->event_lock);
- 		INIT_LIST_HEAD(&dev->h_list);
- 		INIT_LIST_HEAD(&dev->node);
--
--		__module_get(THIS_MODULE);
- 	}
- 
- 	return dev;
--- 
-1.7.7.1
-
