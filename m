@@ -1,107 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab1KAWYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 18:24:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42713 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab1KAWYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 18:24:32 -0400
-Date: Tue, 1 Nov 2011 23:24:30 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] ext2, ext3, UDF fixes for 3.2-rc1
-Message-ID: <20111101222430.GD18701@quack.suse.cz>
+	id S1756134Ab1KAWZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 18:25:32 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37843 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab1KAWZa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 18:25:30 -0400
 MIME-Version: 1.0
+Message-ID: <82d2f082-6ab1-479e-bbf9-f04992804420@default>
+Date: Tue, 1 Nov 2011 15:25:14 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
+ <ef778e79-72d0-4c58-99e8-3b36d85fa30d@default>
+ <20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com>
+ <f62e02cd-fa41-44e8-8090-efe2ef052f64@default
+ 20111101144309.a51c99b5.akpm@linux-foundation.org>
+In-Reply-To: <20111101144309.a51c99b5.akpm@linux-foundation.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EB071CF.0055,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+> From: Andrew Morton [mailto:akpm@linux-foundation.org]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> 
+> On Tue, 1 Nov 2011 08:25:38 -0700 (PDT)
+> Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> 
+> At kernel summit there was discussion and overall agreement that we've
+> been paying insufficient attention to the big-picture "should we
+> include this feature at all" issues.  We resolved to look more
+> intensely and critically at new features with a view to deciding
+> whether their usefulness justified their maintenance burden.  It seems
+> that you're our crash-test dummy ;) (Now I'm wondering how to get
+> "cgroups: add a task counter subsystem" put through the same wringer).
+> 
+> I will confess to and apologise for dropping the ball on cleancache and
+> frontswap.  I was never really able to convince myself that it met the
+> (very vague) cost/benefit test, but nor was I able to present
+> convincing arguments that it failed that test.  So I very badly went
+> into hiding, to wait and see what happened.  What we needed all those
+> months ago was to have the discussion we're having now.
+> 
+> This is a difficult discussion and a difficult decision.  But it is
+> important that we get it right.  Thanks for you patience.
 
-  could you please pull from
+Thanks very much for your very kind response.  Let me know if
+I can do anything else to help the process other than continuing
+the discussion of course.  I'll be happy to help as soon as
+I return from the crash-test-dummy hospital ;-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
-
-The repository contains various minor ext2, ext3, and UDF cleanups and fixes.
-
-Top of the tree is ed47a7d which I've also signed as tag jack_linux-fs-v3.2-rc1
-(anyone has a suggestion for sane naming?). The full shortlog is:
-
-Dmitry Monakhov (1):
-      ext3: Allow quota file use root reservation
-
-H Hartley Sweeten (1):
-      ext3/balloc.c: local functions should be static
-
-Jan Kara (4):
-      ext3: Remove i_mutex from ext3_sync_file()
-      quota: Drop path reference on error exit from quotactl
-      udf: Remove web reference from UDF MAINTAINERS entry
-      udf: Cleanup metadata flags handling
-
-Joe Perches (6):
-      udf: Promote some debugging messages to udf_error
-      udf: Rename udf_error to udf_err
-      udf: Rename udf_warning to udf_warn
-      udf: Convert printks to pr_<level>
-      udf: Neaten logging output, use vsprintf extension %pV
-      udf: Neaten udf_debug uses
-
-Julia Lawall (2):
-      fs/ext2/balloc.c: delete useless initialization
-      fs/ext3/balloc.c: delete useless initialization
-
-Li Haifeng (1):
-      ext2: fix the outdated comment in ext2_nfs_get_inode()
-
-Lukas Czerner (1):
-      ext3: remove deprecated oldalloc
-
-Namjae Jeon (2):
-      udf: Add readpages support for udf.
-      udf: Skip mirror metadata FE loading when metadata FE is ok
-
-Tao Ma (1):
-      ext3: Remove the obsolete broken EXT3_IOC32_WAIT_FOR_READONLY.
-
-Toshiyuki Okajima (1):
-      ext3: fix message in ext3_remount for rw-remount case
-
-The diffstat is
-
- Documentation/filesystems/ext3.txt |    8 -
- MAINTAINERS                        |    1 -
- fs/ext2/balloc.c                   |    2 +-
- fs/ext2/super.c                    |    8 +-
- fs/ext3/balloc.c                   |   17 ++-
- fs/ext3/fsync.c                    |   10 --
- fs/ext3/ialloc.c                   |   45 +------
- fs/ext3/ioctl.c                    |   24 ---
- fs/ext3/super.c                    |   12 +-
- fs/quota/quota.c                   |    7 +-
- fs/udf/balloc.c                    |   14 +-
- fs/udf/directory.c                 |    8 +-
- fs/udf/inode.c                     |   48 ++++---
- fs/udf/lowlevel.c                  |    2 +-
- fs/udf/misc.c                      |   19 ++-
- fs/udf/namei.c                     |    5 +-
- fs/udf/partition.c                 |   19 ++-
- fs/udf/super.c                     |  280 ++++++++++++++++--------------------
- fs/udf/truncate.c                  |   22 ++--
- fs/udf/udf_sb.h                    |    5 +-
- fs/udf/udfdecl.h                   |   37 +++--
- fs/udf/udftime.c                   |    3 +-
- fs/udf/unicode.c                   |    6 +-
- include/linux/ext3_fs.h            |    2 +-
- include/linux/ext3_fs_sb.h         |    4 -
- 25 files changed, 261 insertions(+), 347 deletions(-)
-
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Dan
