@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab1KBCXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 22:23:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64523 "EHLO
+	id S1754100Ab1KBCXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 22:23:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55650 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932715Ab1KBCXO (ORCPT
+	with ESMTP id S1754329Ab1KBCXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 22:23:14 -0400
+	Tue, 1 Nov 2011 22:23:12 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL 7/13] arm-soc board dsupport
-Date: Tue, 1 Nov 2011 04:45:53 +0100
+Subject: [GIT PULL 8/13] arm-soc general updates
+Date: Tue, 1 Nov 2011 04:51:13 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 References: <201111010348.13214.arnd@arndb.de>
@@ -18,183 +18,250 @@ In-Reply-To: <201111010348.13214.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111010445.54154.arnd@arndb.de>
-X-Provags-ID: V02:K0:yaVksRGls97XiPFtdC0hFoQB1Qpku6ZC39YsyMLQnz8
- FmyzibWu0u0sysjeRelERZ9cDpO9UDhFLVYR0FDD4Cv8enPANt
- L3XXEWedERqkxSszUoQUjgt/x5wlUF9rLfizCYtSDS0KmNoMjc
- zWWXfxYSSiz3HjuDND2ph1aXVLMqmWm3po29DICvZRN2IZS0ze
- ChVm7EbR22CDMA83gWyAton293ALwpLc9JIsiZbj2UjcU20Pkk
- YvgtuEInxx+C/a9HmR0KQ+m3nKwJ6YNhpJnHCI9Ac30Prxa4cG
- Bsk7RgYrcopiybo+VMBhC79R/uQciOc6Yk9YzwYiEYPK5mVTkh
- 0DbfKWnJfvCdXXj8tX1k=
+Content-Transfer-Encoding: 8bit
+Message-Id: <201111010451.13903.arnd@arndb.de>
+X-Provags-ID: V02:K0:3S+L5IwOmNbNrkAUI0B6bB4y4+pJkIT9yVKk8Lo9NVk
+ Snt+KOlyPquuNii5S+NdprPWT3QXBV+xXoT6TSaYqn3jLU0Nsn
+ jSevzUaVgutkgAbBMavnJOXE11bpGQ9SJEFQO9lcP47TgCRXU0
+ xmplTSrYsfTRg1zAWfbtY7jmU1D4MuZiBKlHbl4w2qefnoLB8b
+ hK4vuddTi3VOaFNm8HNkfihuOmI98sVuiIB9KZYGwRLNRp5dtJ
+ aLMEB5tEAxpYQq+w1NBXTxG3cNBe83MnSJiUHTpYd29iZ5LkLD
+ yGDr0xQslWy+cq7h469gkXLElsLISiRhTI7suLqco4pnDovTPw
+ dS6y1Dzr0e5c+NIwpTUA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for new boards in the arm platform. While I really wish we
-could already do without this and only add device tree source files, I'm
-making two exceptions that have been agreed on during the ARM subarch
-maintainer summit:
-
-1. Legacy platforms that see almost no active development can add /occasional/
-board files. They will never be converted to device tree based probing, and there
-is no reason to destabilize the platform or hold up support for machines that
-have clean support out of tree. In this series, those are mxs, ixp4xx and ep93xx.
-
-2. Any platform that sees active development towards becoming fully discoverable
-using the device tree can still add board files as a transitionary step. These
-files will get removed again once the platform is fully converted.
-
-The tegra and samsung platforms also contain a few updates that make support in
-the existing board files more complete. These fall under category 2.
+These are updates to platforms all over the place that did not really fit anywhere else-
+The most significant change in here is allowing various kinds of freescale i.mx
+machines to be supported using a single kernel instead of one kernel per soc type.
 
 	Arnd
 
-The following changes since commit 543e61c98dbf862182ee6d6f0b8bd79386e02a7d:
+The following changes since commit 611e518c9ad54adcf9bf704fbbc668af3a2f8e07:
 
-  Merge branch 'next/deletion' into for-next (2011-11-01 00:38:14 +0100)
+  Merge branch 'next/board' into HEAD (2011-11-01 04:34:20 +0100)
 
 are available in the git repository at:
 
-  git://git.linaro.org/people/arnd/arm-soc.git next/board
+  git://git.linaro.org/people/arnd/arm-soc.git next/devel
 
-Ajay Kumar (1):
-      ARM: SAMSUNG: Fix mask value for S5P64X0 CPU IDs
+Arnaud Patard (2):
+      efika: Configure esdhc cd/wp on efika mx/sb
+      ARM: mx5: fix clock usage for suspend
 
-Arnd Bergmann (8):
-      Merge branches 'tegra/board' and 'at91/board' into next/board
-      Merge branch 'samsung/board' into next/board
-      Merge branch 'ixp/board' into next/board
-      Merge branch 'samsung/board' into next/board
-      Merge branch 'ep93xx/board' into next/board
-      Merge branch 'imx/board' into next/board
-      Merge branch 'depends/rmk/gpio' into next/board
-      Merge branch 'depends/rmk/devel-stable' into next/board
+Arnd Bergmann (6):
+      Merge branch 'imx/cleanup' into imx/devel
+      Merge branches 'sirf/devel', 'at91/devel', 'imx/devel' and 'davinci/devel' into next/devel
+      Merge branch 'imx-features-for-arnd' of git://git.pengutronix.de/git/imx/linux-2.6 into imx/devel
+      Merge branch 'imx/devel' into next/devel
+      Merge branch 'tegra/devel' into next/devel
+      Merge branch 'depends/rmk/gpio' into next/devel
 
-Changhwan Youn (7):
-      ARM: EXYNOS4: Add support PPI in external GIC
-      ARM: EXYNOS4: Add support MCT PPI for EXYNOS4212
-      ARM: EXYNOS4: Add support new EXYNOS4412 SoC
-      ARM: EXYNOS4: Add support clock for EXYNOS4412
-      ARM: EXYNOS4: Add functions for gic interrupt handling
-      ARM: EXYNOS4: Add MCT support for EXYNOS4412
-      ARM: EXYNOS4: Add support SMDK4412 Board
+Dong Aisheng (5):
+      ARM: mxs: add saif clock
+      ARM: mxs: add saif device
+      ARM: mxs: add sgtl5000 i2c device
+      ARM: mxs: add mxs-sgtl5000 device
+      ARM: mxs: correct the using of frac div for saif
 
-Hartley Sweeten (1):
-      ep93xx: add support Vision EP9307 SoM
+Fabio Estevam (5):
+      ARM: imx: pwm: Add support for MX53
+      ARM: mx53_loco: Add support for the accelerometer
+      ARM: imx: Introduce generic function for displaying silicon revision
+      ARM: mach-imx/mx25_3ds: Add FlexCAN support
+      ARM: mach-qong: Add watchdog support
+
+Hui Wang (1):
+      ARM i.MX avic: convert to use generic irq chip
+
+Ido Yariv (4):
+      ARM: davinci: DA850: Add MMC/SD1 pinmux configuration
+      ARM: davinci: DA850: Add GPIO pinmux configuration for wl1271
+      mmc: davinci: Add support for set_power callback
+      ARM: davinci: AM18x: Add wl1271/wlan support
+
+Jason Liu (7):
+      ARM: mx25: Print silicon revision on boot
+      ARM: mx27: Print silicon revision on boot
+      ARM: mx31: use generic function for displaying silicon revision
+      ARM: mx35: use generic function for displaying silicon revision
+      ARM: mx5: use generic function for displaying silicon revision
+      ARM: i.MX: initialize l2x0 at early_init time
+      ARM: mx25: Add the missing IIM base definition
 
 Jean-Christophe PLAGNIOL-VILLARD (1):
-      at91: USB-A9G20 C01 & C11 board support
+      at91: ohci-at91: always provide all the clocks
 
-JeongHyeon Kim (1):
-      ARM: EXYNOS4: Add support for ORIGEN board
+Olof Johansson (1):
+      ARM: tegra: update defconfig
 
-Jonghwan Choi (1):
-      ARM: EXYNOS4: Add support PM for EXYNOS4212
+Peter De Schrijver (3):
+      arm/tegra: prepare Seaboard pinmux code for derived boards
+      arm/tegra: add support for ventana pinmuxing
+      arm/tegra: device tree support for ventana board
 
-Josef Holzmayr (1):
-      at91: add support for RSIs EWS board
+Philippe Rétornaz (1):
+      mx31moboard: Add poweroff support
 
-Kukjin Kim (10):
-      ARM: SAMSUNG: Add support for detecting CPU at runtime
-      ARM: S5P64X0: Use soc_is_s5p64x0() to distinguish cpu at runtime
-      ARM: SAMSUNG: Add support for handling of cpu revision
-      ARM: EXYNOS4: Use samsung_rev() to distinguish silicon revision
-      Merge branch 'next/topic-cpuid-rev' into next/topic-add-exynos4212
-      Merge branch 'next/topic-cleanup-smdkv310' into next/topic-add-exynos4212
-      ARM: EXYNOS4: Add support new EXYNOS4212 SoC
-      ARM: EXYNOS4: Add support clock for EXYNOS4212
-      ARM: EXYNOS4: Add support SMDK4212 Board
-      Merge branch 'next-samsung-board-v3.1' into next-samsung-board
+Sascha Hauer (12):
+      ARM i.MX: allow to compile together ARMv4 and ARMv5 based SoCs
+      ARM i.MX: allow to compile together all i.MX5 based SoCs
+      ARM i.MX5: update defconfig
+      ARM i.MX defconfigs: use one defconfig for all ARMv4/v5 SoCs
+      Merge branches 'features/assorted', 'features/imx-cpurev', 'features/imx-pata', 'features/multisoc' and 'features/mxs' into imx-features-for-arnd
+      ARM i.MX avic: add handle_irq function
+      ARM i.MX tzic: add handle_irq function
+      ARM i.MX boards: use CONFIG_MULTI_IRQ_HANDLER
+      ARM i.MX entry-macro.S: remove now unused code
+      Merge branches 'features/assorted', 'features/imx-pata' and 'features/imx-multi-irq-v2' into imx-features
+      Merge branch 'features/ahci' into for-arnd-features
+      Merge branch 'features/denx-mx28' into for-arnd-features
 
-Marc Dietrich (5):
-      ARM: tegra: paz00: add support serial port on JP1
-      ARM: tegra: paz00: enable rfkill for internal wifi card
-      ARM: tegra: paz00: enable wifi led
-      ARM: tegra: paz00: reorder the SDHCI channel init
-      ARM: tegra: paz00: add clocks required for usb operation
+Stephen Warren (6):
+      arm/tegra: Prep boards for gpio/pinmux conversion to pdevs
+      arm/dt: Tegra: Add pinmux node to tegra20.dtsi
+      arm/tegra: Convert pinmux driver to a platform device
+      gpio/tegra: Convert to a platform device
+      arm/tegra: pinmux: ioremap registers
+      arm/tegra: Harmony: Configure PMC for low-level interrupts
 
-Mark Brown (1):
-      ARM: SAMSUNG: Fix mask for S3C64xx CPU IDs
+Thomas Petazzoni (3):
+      at91: ohci-at91: add vbus_pin_inverted platform attribute
+      at91: at91-ohci: support overcurrent notification
+      at91: at91-ohci: configure overcurrent pins as input GPIOs
 
-Nico Erfurth (1):
-      at91: merge board USB-A9260 and USB-A9263 together
+Wolfram Sang (3):
+      arm: mxs: mx28evk: add fixed regulators for audio
+      arm: mach-mxs: add device for rtc
+      arm: mach-mxs: add rtc to all boards
 
-Richard Cochran (1):
-      ixp4xx: support omicron ixp425 based boards
-
-Stefano Babic (1):
-      ARM: mxs: Add initial support for DENX MX28
-
-Stephen Warren (4):
-      ARM: Tegra: Harmony: Add USB device
-      ARM: Tegra: Seaboard board updates for audio
-      ARM: Tegra: Seaboard: Add USB devices
-      ARM: Tegra: Force PORT_TEGRA as the UART type
-
-Tushar Behera (1):
-      ARM: EXYNOS4: convert boot_params to atag_offset
-
- arch/arm/configs/exynos4_defconfig                 |    1 +
- arch/arm/configs/mxs_defconfig                     |    1 +
- arch/arm/mach-at91/Kconfig                         |   13 +
- arch/arm/mach-at91/Makefile                        |    6 +-
- arch/arm/mach-at91/board-rsi-ews.c                 |  233 ++++++++++++
- arch/arm/mach-at91/board-usb-a9260.c               |  230 ------------
- arch/arm/mach-at91/board-usb-a9263.c               |  246 -------------
- arch/arm/mach-at91/board-usb-a926x.c               |  383 ++++++++++++++++++++
- arch/arm/mach-at91/include/mach/timex.h            |    5 +
- arch/arm/mach-ep93xx/Kconfig                       |    7 +
- arch/arm/mach-ep93xx/Makefile                      |    1 +
- arch/arm/mach-ep93xx/vision_ep9307.c               |  364 +++++++++++++++++++
- arch/arm/mach-exynos4/Kconfig                      |   54 +++
- arch/arm/mach-exynos4/Makefile                     |   10 +-
- arch/arm/mach-exynos4/clock-exynos4210.c           |  139 +++++++
- arch/arm/mach-exynos4/clock-exynos4212.c           |  118 ++++++
- arch/arm/mach-exynos4/clock.c                      |  218 ++++++++----
- arch/arm/mach-exynos4/cpu.c                        |   57 +++-
- arch/arm/mach-exynos4/include/mach/entry-macro.S   |   23 +-
- arch/arm/mach-exynos4/include/mach/exynos4-clock.h |   43 +++
- arch/arm/mach-exynos4/include/mach/irqs.h          |    2 +
- arch/arm/mach-exynos4/include/mach/map.h           |    4 +-
- arch/arm/mach-exynos4/include/mach/regs-clock.h    |   54 ++-
- arch/arm/mach-exynos4/include/mach/regs-mct.h      |    5 +-
- arch/arm/mach-exynos4/mach-origen.c                |  108 ++++++
- arch/arm/mach-exynos4/mach-smdk4x12.c              |  302 +++++++++++++++
- arch/arm/mach-exynos4/mct.c                        |  165 +++++----
- arch/arm/mach-exynos4/platsmp.c                    |   13 +-
- arch/arm/mach-exynos4/pm.c                         |   79 +----
- arch/arm/mach-ixp4xx/Kconfig                       |   19 +
- arch/arm/mach-ixp4xx/Makefile                      |    4 +
- arch/arm/mach-ixp4xx/include/mach/uncompress.h     |    3 +-
- arch/arm/mach-ixp4xx/miccpt-pci.c                  |   78 ++++
- arch/arm/mach-ixp4xx/omixp-setup.c                 |  273 ++++++++++++++
- arch/arm/mach-mxs/Kconfig                          |   17 +
- arch/arm/mach-mxs/Makefile                         |    1 +
- arch/arm/mach-mxs/clock-mx28.c                     |   16 +-
- arch/arm/mach-mxs/include/mach/mxs.h               |    1 +
- arch/arm/mach-mxs/include/mach/uncompress.h        |    1 +
- arch/arm/mach-mxs/mach-m28evk.c                    |  366 +++++++++++++++++++
- arch/arm/mach-s3c64xx/cpu.c                        |   22 +-
- arch/arm/mach-s5p64x0/dev-spi.c                    |    8 +-
- arch/arm/mach-s5p64x0/dma.c                        |    7 +-
- arch/arm/mach-s5p64x0/gpiolib.c                    |    7 +-
- arch/arm/mach-s5p64x0/irq-eint.c                   |    3 +-
- arch/arm/mach-tegra/board-harmony.c                |    5 +-
- arch/arm/mach-tegra/board-paz00-pinmux.c           |    3 +
- arch/arm/mach-tegra/board-paz00.c                  |   64 +++-
- arch/arm/mach-tegra/board-paz00.h                  |    8 +
- arch/arm/mach-tegra/board-seaboard-pinmux.c        |    6 +-
- arch/arm/mach-tegra/board-seaboard.c               |   81 ++++-
- arch/arm/mach-tegra/board-seaboard.h               |   12 +-
- arch/arm/mach-tegra/board-trimslice.c              |    4 +-
- arch/arm/plat-s3c24xx/cpu.c                        |    9 +-
- arch/arm/plat-s5p/cpu.c                            |   46 ++-
- arch/arm/plat-s5p/include/plat/exynos4.h           |    5 +-
- arch/arm/plat-s5p/include/plat/pll.h               |   55 +++-
- arch/arm/plat-samsung/Makefile                     |    2 +-
- arch/arm/plat-samsung/cpu.c                        |   58 +++
- arch/arm/plat-samsung/include/plat/cpu.h           |  113 ++++++-
- 60 files changed, 3371 insertions(+), 810 deletions(-)
+ .../devicetree/bindings/pinmux/pinmux_nvidia.txt   |    5 +
+ arch/arm/Kconfig                                   |    1 +
+ arch/arm/Makefile                                  |    4 +-
+ arch/arm/boot/dts/tegra-ventana.dts                |   32 +++
+ arch/arm/boot/dts/tegra20.dtsi                     |    8 +
+ arch/arm/configs/imx_v4_v5_defconfig               |  170 ++++++++++++++
+ arch/arm/configs/mx1_defconfig                     |   91 --------
+ arch/arm/configs/mx21_defconfig                    |   97 --------
+ arch/arm/configs/mx27_defconfig                    |  130 -----------
+ arch/arm/configs/mx51_defconfig                    |  170 --------------
+ arch/arm/configs/mx5_defconfig                     |  184 +++++++++++++++
+ arch/arm/configs/tegra_defconfig                   |   39 +++-
+ arch/arm/mach-at91/at91cap9.c                      |    2 +
+ arch/arm/mach-at91/at91cap9_devices.c              |    6 +
+ arch/arm/mach-at91/at91rm9200.c                    |    2 +
+ arch/arm/mach-at91/at91rm9200_devices.c            |    8 +
+ arch/arm/mach-at91/at91sam9260.c                   |    2 +
+ arch/arm/mach-at91/at91sam9260_devices.c           |    8 +
+ arch/arm/mach-at91/at91sam9261.c                   |   29 ++--
+ arch/arm/mach-at91/at91sam9261_devices.c           |    8 +
+ arch/arm/mach-at91/at91sam9263.c                   |    2 +
+ arch/arm/mach-at91/at91sam9263_devices.c           |    6 +
+ arch/arm/mach-at91/at91sam9g45.c                   |    2 +
+ arch/arm/mach-at91/at91sam9g45_devices.c           |    6 +
+ arch/arm/mach-at91/include/mach/board.h            |    5 +
+ arch/arm/mach-davinci/Kconfig                      |   10 +
+ arch/arm/mach-davinci/board-da850-evm.c            |  114 ++++++++++
+ arch/arm/mach-davinci/da850.c                      |    9 +
+ arch/arm/mach-davinci/include/mach/mmc.h           |    3 +
+ arch/arm/mach-davinci/include/mach/mux.h           |   10 +
+ arch/arm/mach-imx/Kconfig                          |   52 ++---
+ arch/arm/mach-imx/Makefile                         |    2 +-
+ arch/arm/mach-imx/clock-imx25.c                    |    6 +
+ arch/arm/mach-imx/clock-imx27.c                    |    2 +
+ arch/arm/mach-imx/clock-imx31.c                    |    4 +-
+ arch/arm/mach-imx/clock-imx35.c                    |    3 +-
+ arch/arm/mach-imx/cpu-imx25.c                      |   41 ++++
+ arch/arm/mach-imx/cpu-imx27.c                      |   28 +--
+ arch/arm/mach-imx/cpu-imx31.c                      |   49 +++--
+ arch/arm/mach-imx/cpu-imx35.c                      |   30 ++--
+ arch/arm/mach-imx/mach-apf9328.c                   |    1 +
+ arch/arm/mach-imx/mach-armadillo5x0.c              |    1 +
+ arch/arm/mach-imx/mach-bug.c                       |    1 +
+ arch/arm/mach-imx/mach-cpuimx27.c                  |    1 +
+ arch/arm/mach-imx/mach-cpuimx35.c                  |    1 +
+ arch/arm/mach-imx/mach-eukrea_cpuimx25.c           |    1 +
+ arch/arm/mach-imx/mach-imx27_visstrim_m10.c        |    1 +
+ arch/arm/mach-imx/mach-imx27ipcam.c                |    1 +
+ arch/arm/mach-imx/mach-imx27lite.c                 |    1 +
+ arch/arm/mach-imx/mach-kzm_arm11_01.c              |    1 +
+ arch/arm/mach-imx/mach-mx1ads.c                    |    2 +
+ arch/arm/mach-imx/mach-mx21ads.c                   |    1 +
+ arch/arm/mach-imx/mach-mx25_3ds.c                  |   11 +
+ arch/arm/mach-imx/mach-mx27_3ds.c                  |    1 +
+ arch/arm/mach-imx/mach-mx27ads.c                   |    1 +
+ arch/arm/mach-imx/mach-mx31_3ds.c                  |    1 +
+ arch/arm/mach-imx/mach-mx31ads.c                   |    1 +
+ arch/arm/mach-imx/mach-mx31lilly.c                 |    1 +
+ arch/arm/mach-imx/mach-mx31lite.c                  |    1 +
+ arch/arm/mach-imx/mach-mx31moboard.c               |   18 ++
+ arch/arm/mach-imx/mach-mx35_3ds.c                  |    1 +
+ arch/arm/mach-imx/mach-mxt_td60.c                  |    1 +
+ arch/arm/mach-imx/mach-pca100.c                    |    1 +
+ arch/arm/mach-imx/mach-pcm037.c                    |    1 +
+ arch/arm/mach-imx/mach-pcm038.c                    |    1 +
+ arch/arm/mach-imx/mach-pcm043.c                    |    1 +
+ arch/arm/mach-imx/mach-qong.c                      |    2 +
+ arch/arm/mach-imx/mach-scb9328.c                   |    1 +
+ arch/arm/mach-imx/mach-vpr200.c                    |    1 +
+ arch/arm/mach-mx5/Kconfig                          |   18 +--
+ arch/arm/mach-mx5/board-cpuimx51.c                 |    1 +
+ arch/arm/mach-mx5/board-cpuimx51sd.c               |    1 +
+ arch/arm/mach-mx5/board-mx50_rdp.c                 |    1 +
+ arch/arm/mach-mx5/board-mx51_3ds.c                 |    1 +
+ arch/arm/mach-mx5/board-mx51_babbage.c             |    1 +
+ arch/arm/mach-mx5/board-mx51_efikamx.c             |   12 +-
+ arch/arm/mach-mx5/board-mx51_efikasb.c             |   19 ++-
+ arch/arm/mach-mx5/board-mx53_ard.c                 |    1 +
+ arch/arm/mach-mx5/board-mx53_evk.c                 |    1 +
+ arch/arm/mach-mx5/board-mx53_loco.c                |   21 ++
+ arch/arm/mach-mx5/board-mx53_smd.c                 |    1 +
+ arch/arm/mach-mx5/clock-mx51-mx53.c                |    6 +-
+ arch/arm/mach-mx5/cpu.c                            |   74 ++-----
+ arch/arm/mach-mx5/devices-imx53.h                  |    1 +
+ arch/arm/mach-mx5/mx51_efika.c                     |    1 -
+ arch/arm/mach-mxs/Kconfig                          |    6 +
+ arch/arm/mach-mxs/clock-mx28.c                     |    8 +-
+ arch/arm/mach-mxs/devices-mx23.h                   |    2 +
+ arch/arm/mach-mxs/devices-mx28.h                   |    5 +
+ arch/arm/mach-mxs/devices/Kconfig                  |    6 +
+ arch/arm/mach-mxs/devices/Makefile                 |    2 +
+ arch/arm/mach-mxs/devices/platform-mxs-saif.c      |   60 +++++
+ arch/arm/mach-mxs/devices/platform-rtc-stmp3xxx.c  |   51 ++++
+ arch/arm/mach-mxs/include/mach/devices-common.h    |   12 +
+ arch/arm/mach-mxs/mach-mx23evk.c                   |    1 +
+ arch/arm/mach-mxs/mach-mx28evk.c                   |   80 +++++++
+ arch/arm/mach-mxs/mach-stmp378x_devb.c             |    1 +
+ arch/arm/mach-mxs/mach-tx28.c                      |    1 +
+ arch/arm/mach-tegra/Kconfig                        |    6 +
+ arch/arm/mach-tegra/Makefile                       |    1 +
+ arch/arm/mach-tegra/Makefile.boot                  |    1 +
+ arch/arm/mach-tegra/board-dt.c                     |   26 ++-
+ arch/arm/mach-tegra/board-harmony-pinmux.c         |    8 +
+ arch/arm/mach-tegra/board-harmony-power.c          |   13 +-
+ arch/arm/mach-tegra/board-paz00-pinmux.c           |    8 +
+ arch/arm/mach-tegra/board-seaboard-pinmux.c        |   69 ++++++-
+ arch/arm/mach-tegra/board-trimslice-pinmux.c       |    7 +
+ arch/arm/mach-tegra/devices.c                      |   84 +++++++
+ arch/arm/mach-tegra/devices.h                      |    2 +
+ arch/arm/mach-tegra/include/mach/pinmux.h          |    4 +
+ arch/arm/mach-tegra/pinmux-t2-tables.c             |   76 +-----
+ arch/arm/mach-tegra/pinmux.c                       |  163 +++++++++++---
+ arch/arm/plat-mxc/Kconfig                          |   39 +---
+ arch/arm/plat-mxc/avic.c                           |   91 ++++++--
+ arch/arm/plat-mxc/cpu.c                            |    9 +
+ arch/arm/plat-mxc/include/mach/common.h            |   15 ++
+ arch/arm/plat-mxc/include/mach/entry-macro.S       |   58 +-----
+ arch/arm/plat-mxc/include/mach/iomux-mx3.h         |    1 +
+ arch/arm/plat-mxc/include/mach/mx25.h              |    5 +
+ arch/arm/plat-mxc/include/mach/mx3x.h              |   18 +--
+ arch/arm/plat-mxc/irq-common.c                     |   21 +-
+ arch/arm/plat-mxc/irq-common.h                     |    3 +-
+ arch/arm/plat-mxc/pwm.c                            |    2 +-
+ arch/arm/plat-mxc/tzic.c                           |   32 +++-
+ drivers/gpio/gpio-tegra.c                          |  143 ++++++++----
+ drivers/mmc/host/davinci_mmc.c                     |   13 +
+ drivers/usb/host/ohci-at91.c                       |  239 ++++++++++++++++++--
+ 127 files changed, 1995 insertions(+), 995 deletions(-)
 
