@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1KAVSH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 17:18:07 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:31688 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab1KAVSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 17:18:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6517"; a="133171679"
-Date: Tue, 1 Nov 2011 16:17:59 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [PATCH v5 33/36] Hexagon: Add configuration and makefiles for
- the Hexagon architecture.
-Message-ID: <20111101211759.GB3035@codeaurora.org>
-References: <093448$3uejv7@wolverine01.qualcomm.com>
- <1320139846.14409.129.camel@x61.thuisdomein>
- <20111101172709.GA3035@codeaurora.org>
- <1320173992.14409.193.camel@x61.thuisdomein>
+	id S1754688Ab1KAVTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 17:19:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39225 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751699Ab1KAVTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 17:19:42 -0400
+Date: Tue, 1 Nov 2011 14:19:15 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jirislaby@gmail.com>, David Miller <davem@davemloft.net>,
+        Mikulas Patocka <mpatocka@redhat.com>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] sysfs: Make sysfs_rename safe with sysfs_dirents in
+ rbtrees.
+Message-ID: <20111101211915.GA20290@suse.de>
+References: <20111025.063206.2273357152859701628.davem@davemloft.net>
+ <CA+55aFw1GVvszqoC_f0RAvG5t1xj0CSYLhLU=y0gQ+_54Gsomw@mail.gmail.com>
+ <20111025131315.GA1899@suse.de>
+ <4EAC8642.3050309@suse.cz>
+ <m11utvytg4.fsf@fess.ebiederm.org>
+ <4EADB864.3060702@suse.cz>
+ <m1mxcgrl7q.fsf_-_@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320173992.14409.193.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1mxcgrl7q.fsf_-_@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 07:59:52PM +0100, Paul Bolle wrote:
-> So, you'll move it up a line?
->  
-> > > > +#config ZONE_DMA
-> > > > +#	bool
-> > > > +#	default y
-> > > 
-> > > Why is this added commented out?
-> > 
-> > We were using it before, but not anymore.
+On Tue, Nov 01, 2011 at 07:06:17AM -0700, Eric W. Biederman wrote:
 > 
-> So, please drop it.
-
-Yes to both of these.
-
-> But "config TRACING" (in kernel/trace/Kconfig) also selects it if
-> STACKTRACE_SUPPORT is set. It seems GENERIC_TRACER is the hidden magic
-> here. GENERIC_TRACER is selected by the various tracer options - see
-> kernel/trace/Kconfig again, I'm unfamiliar with this stuff - and will
-> itself select TRACING. So if an arch has STACKTRACE_SUPPORT set it
-> doesn't have to select STACKTRACE itself. (Note that - except for tile -
-> no other arch selects STACKTRACE.) 
+> In sysfs_rename remove the optimization of not calling sysfs_unlink_sibling
+> and sysfs_link_sibling if the renamed parent directory is not changing.
+> This optimization is no longer valid now that sysfs dirents are stored in an
+> rbtree sorted by name.
 > 
-> But hopefully someone who doesn't have to grep the Kconfig files to
-> understand this, can tell us for sure.
+> Move the assignment of s_ns before the call of sysfs_link_sibling.  With no
+> sysfs_dirent fields changing after the call of sysfs_link_sibling this allows
+> sysfs_link_sibling to take any of the directory entries into account when
+> it builds the rbtrees, and s_ns looks like a prime canidate to be used
+> in the rbtree in the future.
+> 
+> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 
-Ah...  Well, if nothing else, I'll just try not setting it and see if it
-works as it seems to be intended.
- 
-> If you really feel you need to add it, but commented out, perhaps a
-> comment can be added to keep people like me from submitting patches to
-> remove it.
+Looks good, Linus, thanks for taking this in your tree already.
 
-Sounds reasonable.  I'll either add a comment or just remove it
-altogether (which is the long term goal).
-
-Not that I mind getting patches, of course.
-
-I'll have all these fixed in my tree and push them out when I can.
-
-
-Thanks,
-Richard Kuo
-
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+greg k-h
