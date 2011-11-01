@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab1KAHyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 03:54:36 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:60263 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1KAHye (ORCPT
+	id S1752573Ab1KAICX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 04:02:23 -0400
+Received: from exprod5og113.obsmtp.com ([64.18.0.26]:40440 "EHLO
+	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab1KAICT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 03:54:34 -0400
-Date: Tue, 1 Nov 2011 18:54:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: linux-next: manual merge of the akpm with the scsi tree
-Message-Id: <20111101185413.694c111f8b8bf015326fbc83@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn"
+	Tue, 1 Nov 2011 04:02:19 -0400
+MIME-Version: 1.0
+Date: Tue, 1 Nov 2011 16:02:15 +0800
+Message-ID: <CAFf0ej7_cZEs29yYQSMP1dtk5Urs_OyfrWeeO7UOhgsYYJXLdg@mail.gmail.com>
+Subject: question about kernel panic related to sched_rt.c
+From: MING ZHOU <a17711@motorola.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi  all,
 
-Hi Andrew,
+ May I ask a question about scheduler (sched_rt.c)? I want to make
+sure a patch related  in kernel-linux mailing list is valid or not.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/scsi/sd.c between commit 21208ae5a21f ("[SCSI] sd: remove
-arbitrary SD_MAX_DISKS namespace limit") from the scsi tree and
-"drivers/scsi/sd.c: use ida_simple_get() and ida_simple_remove() in place
-of boilerplate code" from the akpm.
+ https://lkml.org/lkml/2011/8/14/71
 
-I think that the latter supercedes that former, so I used it.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ I encountered a kernel panic recently which caused by BUG_ON in
+pick_next_pushable_task ( my kernel version is 2.6.35, on arm-omap
+platform).
 
---Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn
-Content-Type: application/pgp-signature
+static struct task_struct *pick_next_pushable_task(struct rq *rq)
+{
+  ...
+    BUG_ON(task_current(rq, p));  <------------ panic here!!!
+  ...
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+<4>[17583.180664] [<c00a3888>] (pick_next_pushable_task+0x4c/0xa4)
+from [<c00ae21c>] (push_rt_task+0x20/0x264)
+<4>[17583.180725] [<c00ae21c>] (push_rt_task+0x20/0x264) from
+[<c00ae554>] (post_schedule_rt+0x14/0x20)
+<4>[17583.180816] [<c00ae554>] (post_schedule_rt+0x14/0x20) from
+[<c069352c>] (schedule+0x738/0x7c8)
 
-iQIcBAEBCAAGBQJOr6WlAAoJEECxmPOUX5FEj7UQAIflCKAYH09ZpPY2IfB23amD
-7nYHEcp45lVoRYZw8XNNvRCNgUfieTLKAfe2BbbgmD39ZHwDFixQkc0ZALd//yfT
-X0w/6fA4t/LLwBmaYNFGZxTho1uYeJHJ4T5/m3uov3zUVyVVZ4hDc6JZqBBrf82+
-Hf9q6c5iQ/OODCmM2/xLirEf+DqaZelMxQgmsTwUS/1LhNo3Ts0K90XmaHjSm7qq
-n0/mgd0RpbC+DgtpqOcQBrH1a4U20+ioGYQ4xJGphZSxn/thYJ2isE8m0fws//4V
-wOw2VSJVVknXydzVeqroDT/+R6Lk+ALiuDELG/N8eTmdyAz3mSQLz6t7MlFt2oxJ
-mhmRo/XChEVWyji7nYSyzd5nqCJQKu2B6WSdUL0sUnnGqihOgpJZTcWsLZew4+lL
-v1BBkRyVFTQ8vKJuKPseBvTYDBUGc+YG7vBh+WTQGZV+Jcwm3Bei4Au4pVSRFbOO
-cWWgyKNmFKfSA0x2LX+EuOvY3zzr3WHoY33d4KFO0fCZGQ4FiueiwCk1S5SPHC42
-OHil5brS4MVgRoZRtaf88EChTyJEe9yD8hvKHabGNyYlinbsmRuSYERWpYYPQSz9
-uhdclNxIb2vf7ayWvw1KFRVgWVGiog+StxC9LSVEuIFsz9wivK+MUH6WPjZDEaOc
-nhDNXrx0QykD/5fzn+Wp
-=ws2k
------END PGP SIGNATURE-----
 
---Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn--
+ I checked patch history related to push_rt_task, and I think the
+following patch may be the reason, since if dequeue task improperly,
+it may ruin task pointer by mistake.
+
+ https://lkml.org/lkml/2011/8/14/71
+
+Commit-ID:  311e800e16f63d909136a64ed17ca353a160be59
+Author:     Hillf Danton <dhillf@gmail.com>
+
+sched, rt: Fix rq->rt.pushable_tasks bug in push_rt_task()
+
+Do not call dequeue_pushable_task() when failing to push an eligible
+task, as it remains pushable, merely not at this particular moment.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Mike Galbraith <mgalbraith@gmx.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+
+And I also noticed in commit history of sched_rt.c, I found the
+similar patch is submitted before at 2008.
+However, it was not picked up in latest kernel code.  So, I am
+wondering whether this patch is valid?
+
+commit 1563513d34ed4b12ef32bc2adde4a53ce05701a1
+Author: Gregory Haskins <ghaskins@novell.com>
+Date:   Mon Dec 29 09:39:53 2008 -0500
+
+RT: fix push_rt_task() to handle dequeue_pushable properly
+
+ A panic was discovered by Chirag Jog where a BUG_ON sanity check
+ in the new "pushable_task" logic would trigger a panic under
+ certain circumstances:
+
+ http://lkml.org/lkml/2008/9/25/189
+
+ Gilles Carry discovered that the root cause was attributed to the
+ pushable_tasks list getting corrupted in the push_rt_task logic.
+ This was the result of a dropped rq lock in double_lock_balance
+ allowing a task in the process of being pushed to potentially migrate
+ away, and thus corrupt the pushable_tasks() list.
+
+ I traced back the problem as introduced by the pushable_tasks patch
+ that went in recently.   There is a "retry" path in push_rt_task()
+ that actually had a compound conditional to decide whether to
+ retry or exit.  I missed the meaning behind the rationale for the
+ virtual "if(!task) goto out;" portion of the compound statement and
+ thus did not handle it properly.  The new pushable_tasks logic
+ actually creates three distinct conditions:
+
+ 1) an untouched and unpushable task should be dequeued
+ 2) a migrated task where more pushable tasks remain should be retried
+ 3) a migrated task where no more pushable tasks exist should exit
+
+ The original logic mushed (1) and (3) together, resulting in the
+ system dequeuing a migrated task (against an unlocked foreign run-queue
+ nonetheless).
+
+ To fix this, we get rid of the notion of "paranoid" and we support the
+ three unique conditions properly.  The paranoid feature is no longer
+ relevant with the new pushable logic (since pushable naturally limits
+ the loop) anyway, so lets just remove it.
+
+ Reported-By: Chirag Jog <chirag@linux.vnet.ibm.com>
+ Found-by: Gilles Carry <gilles.carry@bull.net>
+ Signed-off-by: Gregory Haskins <ghaskins@novell.com>
+
+
+Best Regards,
+Jane Zhou
