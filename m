@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab1KAOGM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:06:12 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47315 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab1KAOGL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:06:11 -0400
+	id S1754746Ab1KAOOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:14:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46665 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753391Ab1KAOOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 10:14:18 -0400
+Date: Tue, 1 Nov 2011 15:14:16 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Julia Lawall <julia@diku.dk>
+Cc: David Herrmann <dh.herrmann@googlemail.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5 v3] drivers/hid/hid-roccat.c: eliminate a null pointer
+ dereference
+In-Reply-To: <Pine.LNX.4.64.1110292045180.10808@ask.diku.dk>
+Message-ID: <alpine.LNX.2.00.1111011513510.348@pobox.suse.cz>
+References: <1319846297-2985-3-git-send-email-julia@diku.dk> <20111029062412.GG14881@longonot.mountain> <4EABC937.60600@broadcom.com> <CANq1E4QJoM+NYub9hfs3KnL1w212FK0MHo8ez2p1nyGmNVb-=A@mail.gmail.com> <Pine.LNX.4.64.1110291411150.17700@ask.diku.dk>
+ <alpine.LNX.2.00.1110291857310.3541@pobox.suse.cz> <Pine.LNX.4.64.1110292045180.10808@ask.diku.dk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4EAF1021.2090004@tlinx.org>
-References: <4EAF1021.2090004@tlinx.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 1 Nov 2011 08:05:49 -0600
-Message-ID: <CAErSpo4GaQfoBWs2iPk1ppx69Ccnz3dZvt31vSp8R7zka8a6=g@mail.gmail.com>
-Subject: Re: ACPI ERROR SMBus or IPMI write requires Buff of len 66, found
- 32...???? linux-3.0.0
-To: Linda Walsh <lkml@tlinx.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc linux-acpi]
+On Sat, 29 Oct 2011, Julia Lawall wrote:
 
-On Mon, Oct 31, 2011 at 3:16 PM, Linda Walsh <lkml@tlinx.org> wrote:
->
->
-> Was looking through boot log messages, and this one seemed 'new'...
+> It is not possible to take the lock in device if device is NULL.
+> The mutex_lock is thus moved after the NULL test.  New error handling
+> labels are added at the end to differentiate between the cases where
+> different sets of locks should be unlocks, and between whether or not
+> reader should be freed (only on error).
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> expression E, E1;
+> identifier f;
+> statement S1,S2,S3;
+> @@
+> 
+> if (E == NULL)
+> {
+>   ... when != if (E == NULL || ...) S1 else S2
+>       when != E = E1
+> *E->f
+>   ... when any
+>   return ...;
+> }
+> else S3
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Can you confirm that this error did not occur on a previous version?
-What is the most recent version where it did not occur?
+Applied, thank you.
 
-> is this saying that the device requires 66, but the driver allocated 32
-> bytes?
->
-> Or the opposite: i.e. driver requires 66 (according to some new standard**)
-> but the
-> device from 2009, has the 2009 standard of 32?
->
-> Just a WAG, but 20110413 looks like a date, that is certainly newer than the
-> system, though
-> it has had firmware upgrades (though none in the past 6 months or so...)...
-
-20110413 is basically the version number of the ACPI CA in Linux.
-Generally, we don't remove support for old things, so if it worked in
-the past, it should still work with newer versions.
-
-> Seems like a weird thing to be changed across drivers while not providing
-> for some backward
-> compat, but that's purely based on a notion that there's a driver/hw version
-> mismatch now
-> when before, there were no such error messages (maybe the error message is
-> new, and it's
-> always been broken? ;-) )...
->
-> as subj says linux-3.0.0, stock vanilla + the latest IMQ networkfilter
-> patch.
-> X64
->
-> [   13.722612] ACPI Error: SMBus or IPMI write requires Buffer of length 66,
-> found length 32 (20110413/exfield-285)
-> [   13.733078] ACPI Error: Method parse/execution failed [\_SB_.PMI0._GHL]
-> (Node ffff880616962b18), AE_AML_BUFFER_LIMIT (20110413/psparse-536)
-> [   13.746189] ACPI Error: Method parse/execution failed [\_SB_.PMI0._PMC]
-> (Node ffff880616962a78), AE_AML_BUFFER_LIMIT
-> [   13.755322] dca service started, version 1.12.1[   13.761822]
->  (20110413/psparse-536)
-> [   13.765509] ACPI Exception: AE_AML_BUFFER_LIMIT, Evaluating _PMC
-> (20110413/power_meter-773)
-
-For completeness, it'd be nice to see the complete dmesg log.  In this
-case, it looks AML-related, so an acpidump would also be useful.
-
-Bjorn
+-- 
+Jiri Kosina
+SUSE Labs
