@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab1KANeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 09:34:09 -0400
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:39375 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752939Ab1KANeH (ORCPT
+	id S1754345Ab1KANhf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 09:37:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18472 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab1KANhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 09:34:07 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=Pcj+rHm/AZglf+YpL2bndG8eI0QbbQ1qA9ZvHMYJK2neUh228WYBP+OqIgdZ8bZ0;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4EAFF54C.7010406@earthlink.net>
-Date: Tue, 01 Nov 2011 09:34:04 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 1 Nov 2011 09:37:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 01 Nov 2011 06:37:17 -0700
+Date: Tue, 1 Nov 2011 15:37:15 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 3/6] arm/tegra: prepare early init for multiple tegra
+ variants
+Message-ID: <20111101133715.GE13358@tbergstrom-lnx.Nvidia.com>
+References: <1319561644-6160-1-git-send-email-pdeschrijver@nvidia.com>
+ <1319561644-6160-4-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173E1B49B2@HQMAIL01.nvidia.com>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Vincent Pelletier <plr.vincent@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: =?windows-1252?Q?Re=3A_ext4_bug_=3F_=22Intel_320_SSD?=
- =?windows-1252?Q?_write_performance_=96_contd=2E=22?=
-References: <CAF78GY1_HwP2QZsMLqHeJechjps44Jq2o1VDSFC0TriXB1riPQ@mail.gmail.com> <20111031210951.GK16825@thunk.org>
-In-Reply-To: <20111031210951.GK16825@thunk.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec799fad7e513f2ea1aec1e3a463c8c6d297350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173E1B49B2@HQMAIL01.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 05:09 PM, Ted Ts'o wrote:
-> On Mon, Oct 31, 2011 at 09:38:37PM +0100, Vincent Pelletier wrote:
->    
->> Reading this blog post[1], I thought the "2nd iteration" results could be
->> considered a bug in mkfs.ext4 (and possibly any mkfs implementation):
->> shouldn't mkfs run [FI]TRIM on its target before creating filesystem
->> structure ?
->>      
-> It's not enabled by default, because there are crappy SSD's out there
-> where use of the TRIM command will turn them into bricks.  (No, it's
-> not the Intel X-25 drives that I'm worried about.)
->
-> So I (and the distributions) don't want to make it the default, since
-> if you buy crap drives and then mke2fs turns them into bricks, who are
-> you likely to blame?  The crap SSD manufacturer?  Yourself for trying
-> to buy SSD's on the cheap?  Or the program that issued the TRIM
-> command?
->
-> You can enable the trim behaviour by default by adding to your
-> /etc/mke2fs.conf file:
->
-> [defaults]
-> 	discard = true
->
-> But then it's on your head if anything bad happens.  :-/
->
->          	      	      	      - Ted
->
->    
-<snip>
+On Thu, Oct 27, 2011 at 10:06:13PM +0200, Stephen Warren wrote:
+> Peter De Schrijver wrote at Tuesday, October 25, 2011 10:54 AM:
+> > This patch splits the early init code in a common and a tegra20 specific part.
+> 
+> > diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+> 
+> > +static void __init tegra_init_early(void)
+> > +{
+> > +
+> > +	int i;
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(early_init); i++)
+> > +		if (of_machine_is_compatible(early_init[i].machine))
+> > +			return early_init[i].init();
+> > +
+> > +	printk(KERN_WARNING "Unknown platform detected\n");
+> 
+> pr_warn/WARN/WARN_ON?
+> 
+> > diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+> 
+> > @@ -31,8 +31,6 @@
+> >  #include "clock.h"
+> >  #include "fuse.h"
+> > 
+> > -void (*arch_reset)(char mode, const char *cmd) = tegra_assert_system_reset;
+> > -
+> >  void tegra_assert_system_reset(char mode, const char *cmd)
+> >  {
+> >  	void __iomem *reset = IO_ADDRESS(TEGRA_CLK_RESET_BASE + 0x04);
+> > @@ -44,7 +42,9 @@ void tegra_assert_system_reset(char mode, const char *cmd)
+> >  	writel_relaxed(reg, reset);
+> >  }
+> > 
+> > -static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
+> > +void (*arch_reset)(char mode, const char *cmd) = tegra_assert_system_reset;
+> 
+> I'm not sure why you moved that, but I suppose it's fine.
+> 
+> > +
+> > +static __initdata struct tegra_clk_init_table tegra20_clk_init_table[] = {
+> >  	/* name		parent		rate		enabled */
+> >  	{ "clk_m",	NULL,		0,		true },
+> >  	{ "pll_p",	"clk_m",	216000000,	true },
+> > @@ -65,19 +65,25 @@ static void __init tegra_init_cache(void)
+> >  {
+> >  #ifdef CONFIG_CACHE_L2X0
+> >  	void __iomem *p = IO_ADDRESS(TEGRA_ARM_PERIF_BASE) + 0x3000;
+> > +	u32 aux_ctrl;
+> > 
+> >  	writel_relaxed(0x331, p + L2X0_TAG_LATENCY_CTRL);
+> >  	writel_relaxed(0x441, p + L2X0_DATA_LATENCY_CTRL);
+> > +	writel(2, p + L2X0_PREFETCH_CTRL);
 
-What about using discard in fstab like:
-LABEL=/ /                      ext4    
-defaults,discard,noatime,nodiratime        1 1
+This is actually wrong :)
 
-Thanks,
-Steve
+> > +
+> > +	aux_ctrl = readl(p + L2X0_CACHE_TYPE);
+> > +	aux_ctrl = (aux_ctrl & 0x700) << (17-8);
+> > +	aux_ctrl |= 0x6C000001;
+> 
+> This is an unrelated change?
+> 
 
--- 
+This is needed to deal with potential differences in L2 associativity between
+SoCs.
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
+Cheers,
 
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+Peter.
