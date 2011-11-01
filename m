@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab1KAO57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:57:59 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57446 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab1KAO55 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:57:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111101121851.7d393277@bob.linux.org.uk>
-References: <1319255194-4799-1-git-send-email-paul.s.schilling@gmail.com>
-	<20111101121851.7d393277@bob.linux.org.uk>
-Date: Tue, 1 Nov 2011 09:57:56 -0500
-Message-ID: <CAC=G6swE7WCqTFkJkOm_GXpVncjXrc+-jvaKHiwc9KTb6Re8hQ@mail.gmail.com>
-Subject: Re: [PATCH 02/14] ARM : SAMSUNG : Add RS485 support.
-From: Paul Schilling <paul.s.schilling@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+	id S1755197Ab1KAPEx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 11:04:53 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:60833 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754853Ab1KAPEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 11:04:52 -0400
+Date: Tue, 1 Nov 2011 15:04:48 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Boojin Kim <boojin.kim@samsung.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/9] mm: alloc_contig_freed_pages() added
+Message-ID: <20111101150448.GD14998@csn.ul.ie>
+References: <20111018122109.GB6660@csn.ul.ie>
+ <809d0a2afe624c06505e0df51e7657f66aaf9007.1319428526.git.mina86@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <809d0a2afe624c06505e0df51e7657f66aaf9007.1319428526.git.mina86@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am working on resubmitting this stuff right now.  I have 14 patches
-that should be
-broken into more like 20 patches.  Most of them are ARM S3C and
-specifically S3C2416 patches.
-I am working on a patch right now to fix a Atomic wait in the DMA
-code.  That causes
-20 milliseconds of no interrupts whenever a sound is played on the samsung S3C
-platform.
+On Sun, Oct 23, 2011 at 09:05:05PM -0700, Michal Nazarewicz wrote:
+> > On Thu, Oct 06, 2011 at 03:54:42PM +0200, Marek Szyprowski wrote:
+> >> This commit introduces alloc_contig_freed_pages() function
+> >> which allocates (ie. removes from buddy system) free pages
+> >> in range. Caller has to guarantee that all pages in range
+> >> are in buddy system.
+> 
+> On Tue, 18 Oct 2011 05:21:09 -0700, Mel Gorman <mel@csn.ul.ie> wrote:
+> > Straight away, I'm wondering why you didn't use
+> > mm/compaction.c#isolate_freepages()
+> 
+> Does the below look like a step in the right direction?
+> 
+> It basically moves isolate_freepages_block() to page_alloc.c (changing
 
-The code below wasn't supposed to go out and I have patch that removes
-that chunk
-of code almost ready that just needs testing before I send it.
+For the purposes of review, have a separate patch for moving
+isolate_freepages_block to another file that does not alter the
+function in any way. When the function is updated in a follow-on patch,
+it'll be far easier to see what has changed.
 
-On Tue, Nov 1, 2011 at 7:18 AM, Alan Cox <alan@linux.intel.com> wrote:
->> +config SAMSUNG_HAS_RS485
->> +     bool "Enable RS485 support for Samsung"
->> +     depends on SERIAL_SAMSUNG && (MACH_CONDOR2440 ||
->> MACH_CONDOR2416 || MACH_MINI2440)
->> +     default y if (MACH_CONDOR2440 || MACH_CONDOR2416)
->> +     default n if (MACH_MINI2440)
->
-> There really needs to be more ARM thinking about doing this sort of
-> stuff at runtime. If you can detect the board type at runtime then you
-> need to be moving towards kicking board specifics out of the depends,
-> and treating it as an "include support for this, if the board has it"
-> so you can move towards less build time only configuration.
->
+page_isolation.c may also be a better fit than page_alloc.c
 
-The chunk of code that says FIXME is an optimization that could be
-implemented to
-decrease interrupts by using DMA until the last byte is ready to be
-sent.  I have a new
-patch that explains in a comment what the code is for.
+As it is, the patch for isolate_freepages_block is almost impossible
+to read because it's getting munged with existing code that is already
+in page_alloc.c . About all I caught from it is that scannedp does
+not have a type. It defaults to unsigned int but it's unnecessarily
+obscure.
 
->> +/* FIXME */
->> +     #if 0
->> +     if (last_state != en) {
->> +
->
-> So this doesn't look ready to submit either...
->
+> it name to isolate_freepages_range()) and changes it so that depending
+> on arguments it treats holes (either invalid PFN or non-free page) as
+> errors so that CMA can use it.
+> 
 
-I have a patch that I haven't sent yet that fixes the code formating
-issues.  I need to compile and test it before I send it out.
+I haven't actually read the function because it's too badly mixed with
+page_alloc.c code but this description fits what I'm looking for.
 
->
->> +             if ((utrstat & S3C2410_UTRSTAT_TXE) ? 1 : 0) {
->> +                     if (cfg->gpio_transmit_en > -1) {
->> +
->> gpio_set_value(cfg->gpio_transmit_en, 0);
->> +                     }
->
-> Lots of excess brackets (see CodingStyle) - removing a few of the
-> excess ones would make it easier to read later.
->
-> The later bits become a real mess of ifdefs - much not your fault, the
-> combination of your ifdefs and existing lack of design push it beyond
-> ugly and really want addressing.
->
->
+> It also accepts a range rather then just assuming a single pageblock
+> thus the change moves range calculation in compaction.c from
+> isolate_freepages_block() up to isolate_freepages().
+> 
+> The change also modifies spilt_free_page() so that it does not try to
+> change pageblock's migrate type if current migrate type is ISOLATE or
+> CMA.
+> 
+
+This is fine. Later, the flags that determine what happens to pageblocks
+may be placed in compact_control.
+
+> ---
+>  include/linux/mm.h             |    1 -
+>  include/linux/page-isolation.h |    4 +-
+>  mm/compaction.c                |   73 +++--------------------
+>  mm/internal.h                  |    5 ++
+>  mm/page_alloc.c                |  128 +++++++++++++++++++++++++---------------
+>  5 files changed, 95 insertions(+), 116 deletions(-)
+> 
+
+I confess I didn't read closely because of the mess in page_alloc.c but
+the intent seems fine. Hopefully there will be a new version of CMA
+posted that will be easier to review.
+
+Thanks
+
+-- 
+Mel Gorman
+SUSE Labs
