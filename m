@@ -1,466 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934879Ab1KAAVH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:21:07 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:60395 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934814Ab1KAASL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:18:11 -0400
-Message-Id: <093448$3uejst@wolverine01.qualcomm.com>
-X-IronPort-AV: E=McAfee;i="5400,1158,6516"; a="132599709"
-From: Richard Kuo <rkuo@codeaurora.org>
-Date: Mon, 31 Oct 2011 18:48:50 -0500
-Subject: [PATCH v5 24/36] Hexagon: Provide basic implementation and/or stubs for I/O routines.
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+	id S934888Ab1KAAVY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:21:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:38815 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934140Ab1KAAVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 20:21:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="69805691"
+Subject: Re: Multi-partition block layer behaviour
+From: Shaohua Li <shaohua.li@intel.com>
+To: Tiju Jacob <jacobtiju@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CADAg6uwi8bgo3gQuWPeTHeD44biRR4=0E0BjvZradQMtfMCigA@mail.gmail.com>
+References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
+	 <CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
+	 <CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
+	 <1319676161.22361.148.camel@sli10-conroe>
+	 <CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
+	 <1320039564.22361.178.camel@sli10-conroe>
+	 <CANejiEVxdX7KC6MFqBZ2azPtETmwJXML6v1L5-kq+UrRTmf+Tg@mail.gmail.com>
+	 <CADAg6uwi8bgo3gQuWPeTHeD44biRR4=0E0BjvZradQMtfMCigA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Nov 2011 08:29:22 +0800
+Message-ID: <1320107362.22361.185.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Kuo <rkuo@codeaurora.org>
-Signed-off-by: Linas Vepstas <linas@codeaurora.org>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
----
- arch/hexagon/include/asm/io.h |  326 +++++++++++++++++++++++++++++++++++++++++
- arch/hexagon/lib/io.c         |   91 ++++++++++++
- 2 files changed, 417 insertions(+), 0 deletions(-)
- create mode 100644 arch/hexagon/include/asm/io.h
- create mode 100644 arch/hexagon/lib/io.c
+On Mon, 2011-10-31 at 18:21 +0800, Tiju Jacob wrote:
+> >> ok, thanks. So this means the elevator is switching in the test. How
+> >> about below patch:
+> >>
+> >> diff --git a/block/elevator.c b/block/elevator.c
+> >> index a3b64bc..e14824a 100644
+> >> --- a/block/elevator.c
+> >> +++ b/block/elevator.c
+> >> @@ -683,8 +683,13 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+> >>                 * - Usually, back inserted requests won't be merged
+> >>                 *   with anything.  There's no point in delaying queue
+> >>                 *   processing.
+> >> +                * If elevator is switching, doesn't need run the queue.
+> >> +                * elevator switching will run it anyway. And this could
+> >> +                * cause warning since the code might run in atomic
+> >> +                * environment(blk_flush_plug_list() callbed in schedule())
+> >>                 */
+> >> -               __blk_run_queue(q);
+> >> +               if (!test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags))
+> >> +                       __blk_run_queue(q);
+> >>                break;
+> >>
+> >>        case ELEVATOR_INSERT_SORT_MERGE:
+> >>
+> >>
+> > oh, wait. We should have no this issue with latest kernel, because
+> > blk_schedule_flush_plug is moved out of schedule atomic environment. please
+> > try a latest kernel, for example, 3.1.
+> >
+> 
+> Even after applying the above patch, I am getting the same error. We
+> have to use the linux 3.0.* kernel series. So is there a fix for the
+> 3.0 series?
+> We'll defenetly check with the 3.1 kernel and let know.
+please ignore the patch. There is a fix in upstream:
+9c40cef2b799f9b5e7fa5de4
+and it's marked -stable, so it will go to 3.0 stable.
+if 3.1 kernel doesn't work, please report back with a log.
 
-diff --git a/arch/hexagon/include/asm/io.h b/arch/hexagon/include/asm/io.h
-new file mode 100644
-index 0000000..b3acc2c
---- /dev/null
-+++ b/arch/hexagon/include/asm/io.h
-@@ -0,0 +1,326 @@
-+/*
-+ * IO definitions for the Hexagon architecture
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#ifndef _ASM_IO_H
-+#define _ASM_IO_H
-+
-+#ifdef __KERNEL__
-+
-+#include <linux/types.h>
-+#include <linux/delay.h>
-+#include <linux/vmalloc.h>
-+#include <asm/string.h>
-+#include <asm/mem-layout.h>
-+#include <asm/iomap.h>
-+#include <asm/page.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+
-+/*
-+ * We don't have PCI yet.
-+ * _IO_BASE is pointing at what should be unused virtual space.
-+ */
-+#define IO_SPACE_LIMIT 0xffff
-+#define _IO_BASE ((void __iomem *)0xfe000000)
-+
-+extern int remap_area_pages(unsigned long start, unsigned long phys_addr,
-+				unsigned long end, unsigned long flags);
-+
-+extern void __iounmap(const volatile void __iomem *addr);
-+
-+/* Defined in lib/io.c, needed for smc91x driver. */
-+extern void __raw_readsw(const void __iomem *addr, void *data, int wordlen);
-+extern void __raw_writesw(void __iomem *addr, const void *data, int wordlen);
-+
-+extern void __raw_readsl(const void __iomem *addr, void *data, int wordlen);
-+extern void __raw_writesl(void __iomem *addr, const void *data, int wordlen);
-+
-+#define readsw(p, d, l)	__raw_readsw(p, d, l)
-+#define writesw(p, d, l) __raw_writesw(p, d, l)
-+
-+#define readsl(p, d, l)   __raw_readsl(p, d, l)
-+#define writesl(p, d, l)  __raw_writesl(p, d, l)
-+
-+/*
-+ * virt_to_phys - map virtual address to physical
-+ * @address:  address to map
-+ */
-+static inline unsigned long virt_to_phys(volatile void *address)
-+{
-+	return __pa(address);
-+}
-+
-+/*
-+ * phys_to_virt - map physical address to virtual
-+ * @address: address to map
-+ */
-+static inline void *phys_to_virt(unsigned long address)
-+{
-+	return __va(address);
-+}
-+
-+/*
-+ * convert a physical pointer to a virtual kernel pointer for
-+ * /dev/mem access.
-+ */
-+#define xlate_dev_kmem_ptr(p)    __va(p)
-+#define xlate_dev_mem_ptr(p)    __va(p)
-+
-+/*
-+ * IO port access primitives.  Hexagon doesn't have special IO access
-+ * instructions; all I/O is memory mapped.
-+ *
-+ * in/out are used for "ports", but we don't have "port instructions",
-+ * so these are really just memory mapped too.
-+ */
-+
-+/*
-+ * readb - read byte from memory mapped device
-+ * @addr:  pointer to memory
-+ *
-+ * Operates on "I/O bus memory space"
-+ */
-+static inline u8 readb(const volatile void __iomem *addr)
-+{
-+	u8 val;
-+	asm volatile(
-+		"%0 = memb(%1);"
-+		: "=&r" (val)
-+		: "r" (addr)
-+	);
-+	return val;
-+}
-+
-+static inline u16 readw(const volatile void __iomem *addr)
-+{
-+	u16 val;
-+	asm volatile(
-+		"%0 = memh(%1);"
-+		: "=&r" (val)
-+		: "r" (addr)
-+	);
-+	return val;
-+}
-+
-+static inline u32 readl(const volatile void __iomem *addr)
-+{
-+	u32 val;
-+	asm volatile(
-+		"%0 = memw(%1);"
-+		: "=&r" (val)
-+		: "r" (addr)
-+	);
-+	return val;
-+}
-+
-+/*
-+ * writeb - write a byte to a memory location
-+ * @data: data to write to
-+ * @addr:  pointer to memory
-+ *
-+ */
-+static inline void writeb(u8 data, volatile void __iomem *addr)
-+{
-+	asm volatile(
-+		"memb(%0) = %1;"
-+		:
-+		: "r" (addr), "r" (data)
-+		: "memory"
-+	);
-+}
-+
-+static inline void writew(u16 data, volatile void __iomem *addr)
-+{
-+	asm volatile(
-+		"memh(%0) = %1;"
-+		:
-+		: "r" (addr), "r" (data)
-+		: "memory"
-+	);
-+
-+}
-+
-+static inline void writel(u32 data, volatile void __iomem *addr)
-+{
-+	asm volatile(
-+		"memw(%0) = %1;"
-+		:
-+		: "r" (addr), "r" (data)
-+		: "memory"
-+	);
-+}
-+
-+#define __raw_writeb writeb
-+#define __raw_writew writew
-+#define __raw_writel writel
-+
-+#define __raw_readb readb
-+#define __raw_readw readw
-+#define __raw_readl readl
-+
-+/*
-+ * Need an mtype somewhere in here, for cache type deals?
-+ * This is probably too long for an inline.
-+ */
-+void __iomem *ioremap_nocache(unsigned long phys_addr, unsigned long size);
-+
-+static inline void __iomem *ioremap(unsigned long phys_addr, unsigned long size)
-+{
-+	return ioremap_nocache(phys_addr, size);
-+}
-+
-+static inline void iounmap(volatile void __iomem *addr)
-+{
-+	__iounmap(addr);
-+}
-+
-+#define __raw_writel writel
-+
-+static inline void memcpy_fromio(void *dst, const volatile void __iomem *src,
-+	int count)
-+{
-+	memcpy(dst, (void *) src, count);
-+}
-+
-+static inline void memcpy_toio(volatile void __iomem *dst, const void *src,
-+	int count)
-+{
-+	memcpy((void *) dst, src, count);
-+}
-+
-+#define PCI_IO_ADDR	(volatile void __iomem *)
-+
-+/*
-+ * inb - read byte from I/O port or something
-+ * @port:  address in I/O space
-+ *
-+ * Operates on "I/O bus I/O space"
-+ */
-+static inline u8 inb(unsigned long port)
-+{
-+	return readb(_IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+static inline u16 inw(unsigned long port)
-+{
-+	return readw(_IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+static inline u32 inl(unsigned long port)
-+{
-+	return readl(_IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+/*
-+ * outb - write a byte to a memory location
-+ * @data: data to write to
-+ * @addr:  address in I/O space
-+ */
-+static inline void outb(u8 data, unsigned long port)
-+{
-+	writeb(data, _IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+static inline void outw(u16 data, unsigned long port)
-+{
-+	writew(data, _IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+static inline void outl(u32 data, unsigned long port)
-+{
-+	writel(data, _IO_BASE + (port & IO_SPACE_LIMIT));
-+}
-+
-+#define outb_p outb
-+#define outw_p outw
-+#define outl_p outl
-+
-+#define inb_p inb
-+#define inw_p inw
-+#define inl_p inl
-+
-+static inline void insb(unsigned long port, void *buffer, int count)
-+{
-+	if (count) {
-+		u8 *buf = buffer;
-+		do {
-+			u8 x = inb(port);
-+			*buf++ = x;
-+		} while (--count);
-+	}
-+}
-+
-+static inline void insw(unsigned long port, void *buffer, int count)
-+{
-+	if (count) {
-+		u16 *buf = buffer;
-+		do {
-+			u16 x = inw(port);
-+			*buf++ = x;
-+		} while (--count);
-+	}
-+}
-+
-+static inline void insl(unsigned long port, void *buffer, int count)
-+{
-+	if (count) {
-+		u32 *buf = buffer;
-+		do {
-+			u32 x = inw(port);
-+			*buf++ = x;
-+		} while (--count);
-+	}
-+}
-+
-+static inline void outsb(unsigned long port, const void *buffer, int count)
-+{
-+	if (count) {
-+		const u8 *buf = buffer;
-+		do {
-+			outb(*buf++, port);
-+		} while (--count);
-+	}
-+}
-+
-+static inline void outsw(unsigned long port, const void *buffer, int count)
-+{
-+	if (count) {
-+		const u16 *buf = buffer;
-+		do {
-+			outw(*buf++, port);
-+		} while (--count);
-+	}
-+}
-+
-+static inline void outsl(unsigned long port, const void *buffer, int count)
-+{
-+	if (count) {
-+		const u32 *buf = buffer;
-+		do {
-+			outl(*buf++, port);
-+		} while (--count);
-+	}
-+}
-+
-+#define flush_write_buffers() do { } while (0)
-+
-+#endif /* __KERNEL__ */
-+
-+#endif
-diff --git a/arch/hexagon/lib/io.c b/arch/hexagon/lib/io.c
-new file mode 100644
-index 0000000..8ae47ba
---- /dev/null
-+++ b/arch/hexagon/lib/io.c
-@@ -0,0 +1,91 @@
-+/*
-+ * I/O access functions for Hexagon
-+ *
-+ * Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ */
-+
-+#include <asm/io.h>
-+
-+/*  These are all FIFO routines!  */
-+
-+/*
-+ * __raw_readsw - read words a short at a time
-+ * @addr:  source address
-+ * @data:  data address
-+ * @len: number of shorts to read
-+ */
-+void __raw_readsw(const void __iomem *addr, void *data, int len)
-+{
-+	const volatile short int *src = (short int *) addr;
-+	short int *dst = (short int *) data;
-+
-+	if ((u32)data & 0x1)
-+		panic("unaligned pointer to readsw");
-+
-+	while (len-- > 0)
-+		*dst++ = *src;
-+
-+}
-+
-+/*
-+ * __raw_writesw - read words a short at a time
-+ * @addr:  source address
-+ * @data:  data address
-+ * @len: number of shorts to read
-+ */
-+void __raw_writesw(void __iomem *addr, const void *data, int len)
-+{
-+	const short int *src = (short int *)data;
-+	volatile short int *dst = (short int *)addr;
-+
-+	if ((u32)data & 0x1)
-+		panic("unaligned pointer to writesw");
-+
-+	while (len-- > 0)
-+		*dst = *src++;
-+
-+
-+}
-+
-+/*  Pretty sure len is pre-adjusted for the length of the access already */
-+void __raw_readsl(const void __iomem *addr, void *data, int len)
-+{
-+	const volatile long *src = (long *) addr;
-+	long *dst = (long *) data;
-+
-+	if ((u32)data & 0x3)
-+		panic("unaligned pointer to readsl");
-+
-+	while (len-- > 0)
-+		*dst++ = *src;
-+
-+
-+}
-+
-+void __raw_writesl(void __iomem *addr, const void *data, int len)
-+{
-+	const long *src = (long *)data;
-+	volatile long *dst = (long *)addr;
-+
-+	if ((u32)data & 0x3)
-+		panic("unaligned pointer to writesl");
-+
-+	while (len-- > 0)
-+		*dst = *src++;
-+
-+
-+}
--- 
-1.7.1
+Thanks,
+Shaohua
 
-
---
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
