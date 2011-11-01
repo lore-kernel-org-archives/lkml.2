@@ -1,178 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051Ab1KATEe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 15:04:34 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:28355 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1KATCR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755076Ab1KATCR (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 1 Nov 2011 15:02:17 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:31640 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab1KATCP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 15:02:15 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, thellstrom@vmware.com, thomas@shipmail.org,
         airlied@redhat.com, jglisse@redhat.com, bskeggs@redhat.com
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 04/11] ttm: Wrap ttm_[put|get]_pages and extract GFP_* and caching states from 'struct ttm_tt'
-Date: Tue,  1 Nov 2011 14:47:25 -0400
-Message-Id: <1320173252-2812-5-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 01/11] swiotlb: Expose swiotlb_nr_tlb function to modules
+Date: Tue,  1 Nov 2011 14:47:22 -0400
+Message-Id: <1320173252-2812-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1320173252-2812-1-git-send-email-konrad.wilk@oracle.com>
 References: <1320173252-2812-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090206.4EB04232.008D,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4EB04231.022E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of passing the 'int flags' and 'enum caching_state caching_state'
-as parameters, pass in the 'struct ttm_tt' and let the ttm_[put|get]_pages
-extract those parameters.
+As a mechanism to detect whether SWIOTLB is enabled or not.
+We also fix the spelling - it was swioltb instead of
+swiotlb.
 
-We also wrap the ttm_[put|get]_pages so that we can extract those two
-parameters from the 'struct ttm_tt'. The reason for wrapping instead
-of just changing the two functions declerations outright is to
-support the next set of patches which will provide an
-override mechanism for 'ttm_[put|get]_pages' functions.
-
-Temporarily we put in a function declerations for the __ttm_put_pages,
-which later on we will remove (by moving the __ttm_put_pages).
-
-Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+[v1: Ripped out swiotlb_enabled]
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/gpu/drm/ttm/ttm_page_alloc.c |   29 +++++++++++++++++++++++------
- drivers/gpu/drm/ttm/ttm_tt.c         |    6 ++----
- include/drm/ttm/ttm_page_alloc.h     |   16 ++++++----------
- 3 files changed, 31 insertions(+), 20 deletions(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ include/linux/swiotlb.h   |    2 +-
+ lib/swiotlb.c             |    5 +++--
+ 3 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index d948575..c30d62b 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -660,13 +660,16 @@ out:
- 	return count;
- }
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 6e8c15a..cbcd8cc 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -149,7 +149,7 @@ void __init xen_swiotlb_init(int verbose)
+ 	int rc;
+ 	unsigned long nr_tbl;
  
-+static void __ttm_put_pages(struct list_head *pages, unsigned page_count,
-+			    int flags, enum ttm_caching_state cstate,
-+			    dma_addr_t *dma_address);
+-	nr_tbl = swioltb_nr_tbl();
++	nr_tbl = swiotlb_nr_tbl();
+ 	if (nr_tbl)
+ 		xen_io_tlb_nslabs = nr_tbl;
+ 	else {
+diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+index 445702c..e872526 100644
+--- a/include/linux/swiotlb.h
++++ b/include/linux/swiotlb.h
+@@ -24,7 +24,7 @@ extern int swiotlb_force;
+ 
+ extern void swiotlb_init(int verbose);
+ extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+-extern unsigned long swioltb_nr_tbl(void);
++extern unsigned long swiotlb_nr_tbl(void);
+ 
  /*
-  * On success pages list will hold count number of correctly
-  * cached pages.
-  */
--int ttm_get_pages(struct list_head *pages, int flags,
--		  enum ttm_caching_state cstate, unsigned count,
--		  dma_addr_t *dma_address)
-+static int __ttm_get_pages(struct list_head *pages, int flags,
-+			   enum ttm_caching_state cstate, unsigned count,
-+			   dma_addr_t *dma_address)
+  * Enumeration for sync targets
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 99093b3..058935e 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -110,11 +110,11 @@ setup_io_tlb_npages(char *str)
+ __setup("swiotlb=", setup_io_tlb_npages);
+ /* make io_tlb_overflow tunable too? */
+ 
+-unsigned long swioltb_nr_tbl(void)
++unsigned long swiotlb_nr_tbl(void)
  {
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
- 	struct page *p = NULL;
-@@ -724,7 +727,7 @@ int ttm_get_pages(struct list_head *pages, int flags,
- 			printk(KERN_ERR TTM_PFX
- 			       "Failed to allocate extra pages "
- 			       "for large request.");
--			ttm_put_pages(pages, 0, flags, cstate, NULL);
-+			__ttm_put_pages(pages, 0, flags, cstate, NULL);
- 			return r;
- 		}
+ 	return io_tlb_nslabs;
+ }
+-
++EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
+ /* Note that this doesn't work with highmem page */
+ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+ 				      volatile void *address)
+@@ -321,6 +321,7 @@ void __init swiotlb_free(void)
+ 		free_bootmem_late(__pa(io_tlb_start),
+ 				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
  	}
-@@ -734,8 +737,9 @@ int ttm_get_pages(struct list_head *pages, int flags,
++	io_tlb_nslabs = 0;
  }
  
- /* Put all pages in pages list to correct pool to wait for reuse */
--void ttm_put_pages(struct list_head *pages, unsigned page_count, int flags,
--		   enum ttm_caching_state cstate, dma_addr_t *dma_address)
-+static void __ttm_put_pages(struct list_head *pages, unsigned page_count,
-+			    int flags, enum ttm_caching_state cstate,
-+			    dma_addr_t *dma_address)
- {
- 	unsigned long irq_flags;
- 	struct ttm_page_pool *pool = ttm_get_pool(flags, cstate);
-@@ -857,3 +861,16 @@ int ttm_page_alloc_debugfs(struct seq_file *m, void *data)
- 	return 0;
- }
- EXPORT_SYMBOL(ttm_page_alloc_debugfs);
-+int ttm_get_pages(struct ttm_tt *ttm, struct list_head *pages,
-+		  unsigned count, dma_addr_t *dma_address)
-+{
-+	return __ttm_get_pages(pages, ttm->page_flags, ttm->caching_state,
-+				count, dma_address);
-+}
-+{
-+void ttm_put_pages(struct ttm_tt *ttm, struct list_head *pages,
-+		   unsigned page_count, dma_addr_t *dma_address)
-+{
-+	__ttm_put_pages(pages, page_count, ttm->page_flags, ttm->caching_state,
-+			dma_address);
-+}
-diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 58c271e..76c982f 100644
---- a/drivers/gpu/drm/ttm/ttm_tt.c
-+++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -110,8 +110,7 @@ static struct page *__ttm_tt_get_page(struct ttm_tt *ttm, int index)
- 
- 		INIT_LIST_HEAD(&h);
- 
--		ret = ttm_get_pages(&h, ttm->page_flags, ttm->caching_state, 1,
--				    &ttm->dma_address[index]);
-+		ret = ttm_get_pages(ttm, &h, 1, &ttm->dma_address[index]);
- 
- 		if (ret != 0)
- 			return NULL;
-@@ -304,8 +303,7 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
- 			count++;
- 		}
- 	}
--	ttm_put_pages(&h, count, ttm->page_flags, ttm->caching_state,
--		      ttm->dma_address);
-+	ttm_put_pages(ttm, &h, count, ttm->dma_address);
- 	ttm->state = tt_unpopulated;
- 	ttm->first_himem_page = ttm->num_pages;
- 	ttm->last_lomem_page = -1;
-diff --git a/include/drm/ttm/ttm_page_alloc.h b/include/drm/ttm/ttm_page_alloc.h
-index 0017b17..0aaac39 100644
---- a/include/drm/ttm/ttm_page_alloc.h
-+++ b/include/drm/ttm/ttm_page_alloc.h
-@@ -32,31 +32,27 @@
- /**
-  * Get count number of pages from pool to pages list.
-  *
-+ * @ttm: ttm which contains flags for page allocation and caching state.
-  * @pages: heado of empty linked list where pages are filled.
-- * @flags: ttm flags for page allocation.
-- * @cstate: ttm caching state for the page.
-  * @count: number of pages to allocate.
-  * @dma_address: The DMA (bus) address of pages - (by default zero).
-  */
--int ttm_get_pages(struct list_head *pages,
--		  int flags,
--		  enum ttm_caching_state cstate,
-+int ttm_get_pages(struct ttm_tt *ttm,
-+		  struct list_head *pages,
- 		  unsigned count,
- 		  dma_addr_t *dma_address);
- /**
-  * Put linked list of pages to pool.
-  *
-+ * @ttm: ttm which contains flags for page allocation and caching state.
-  * @pages: list of pages to free.
-  * @page_count: number of pages in the list. Zero can be passed for unknown
-  * count.
-- * @flags: ttm flags for page allocation.
-- * @cstate: ttm caching state.
-  * @dma_address: The DMA (bus) address of pages (by default zero).
-  */
--void ttm_put_pages(struct list_head *pages,
-+void ttm_put_pages(struct ttm_tt *ttm,
-+		   struct list_head *pages,
- 		   unsigned page_count,
--		   int flags,
--		   enum ttm_caching_state cstate,
- 		   dma_addr_t *dma_address);
- /**
-  * Initialize pool allocator.
+ static int is_swiotlb_buffer(phys_addr_t paddr)
 -- 
 1.7.6.4
 
