@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab1KALry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 07:47:54 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:55959 "EHLO radon.swed.at"
+	id S1754135Ab1KAL6L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 07:58:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50348 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab1KALrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 07:47:53 -0400
-Message-ID: <4EAFDC5D.8030307@nod.at>
-Date: Tue, 01 Nov 2011 12:47:41 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753947Ab1KAL6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 07:58:09 -0400
+Message-ID: <4EAFDECA.3040007@redhat.com>
+Date: Tue, 01 Nov 2011 09:58:02 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: Jeff Dike <jdike@addtoit.com>, Andrew Morton <akpm@linux-foundation.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] um: vDSO: fix vdsop allocation
-References: <alpine.LNX.2.00.1111011207190.348@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1111011207190.348@pobox.suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: linux-next: build failure after merge of the edac tree
+References: <20111101170000.6e7301a30bc21e917631eb88@canb.auug.org.au>
+In-Reply-To: <20111101170000.6e7301a30bc21e917631eb88@canb.auug.org.au>
 X-Enigmail-Version: 1.3.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig4F69D52EC1DE46203943CD0C"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig4F69D52EC1DE46203943CD0C
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Am 01.11.2011 12:09, schrieb Jiri Kosina:
-> The kmalloc() call in init_vdso() has reverse order of arguments.
->=20
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Em 01-11-2011 04:00, Stephen Rothwell escreveu:
+> Hi Mauro,
+> 
+> After merging the edac tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> arch/x86/kernel/cpu/mcheck/mce.c:39:28: fatal error: linux/edac_mce.h: No such file or directory
+> 
+> Caused by commit cdaf4f4e563c ("i7core_edac: Drop the edac_mce
+> facility").  This commit removed the file include/linux/edac_mce.h which
+> is still metioned by the above file (and MAINTAINERS).  Grep is your
+> friend.
 
-Dave sent me already a patch:
-https://lkml.org/lkml/2011/10/24/388
+Sorry, it were caused by a bad merge conflict resolution. The include
+isn't need anymore.
+
+The MAINTAINERS fix is indeed needed.
+
+> I have used the version of the edac tree from next-20111025 for today.
+
+I'm fixing both issues for tomorrow's next.
 
 Thanks,
-//richard
-
-
---------------enig4F69D52EC1DE46203943CD0C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
+Mauro.
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-iQEcBAEBAgAGBQJOr9xjAAoJEN9758yqZn9eAHYH/0u5X9Lwc687Dzl4q0rwsllH
-Aay9D0P3ngEMyvzbzuFLZzjV/ehjY2j6HAG+vmZ8GbQ1Qew6TlzgLu9og+DKKqCV
-51kA08VoLRTSzuTximtkUqEppiLD7zUpR6bfTfXlSpZr6RuBucPL6aIfbBUAPhZx
-re9qKZ2AH0XvSQ378FkE3k+AiVf7F8mjOdWAezCe2QmPwHqV9t81o/BlXOslrG9J
-HRMFEidDyO9vEvhE+TnxGVH3cW4voq/q1aBfJ84naBzo7/ZB168KXAJNjbyJn9Oh
-UMTwxAARhZZ+70frOrA+zlnf45d/svFsdNmzcPjwJ9QfgCHqI1nBZgeD29pEs8g=
-=V7VW
+iQIcBAEBAgAGBQJOr96/AAoJEGO08Bl/PELn/asQAIIqZ+yth5ZEka4FFAnuFOyI
+Cez2u5rU5WKkxnlqn3lDjq5pBR5/uvVGqDvNFurTzGwFFqRb2SNDh4LL8m0nXJ8O
+JF2zs7n6ZtO5h3KMy5j9PuDDQcwFf3FUB9WRY/4LvGINCqNit+inrdYcbSKB1NDD
+M3nF63tdv4HmpsI/7iriKfeUwWYHoOkHYdXFoPRxGdSBabW0GpEtjMAtBw8E1DXG
+1hdOTBnpOyH2m/XIsZwYav09BitdOH/OzoyRRDPvFVOuofvsOLPxAq649x4DCiTo
+XBjMma9JyiiqXjKl2t7T16Vgvp0TSiB5i2LXfIZdMIjpWKvyoEVM6+E75woBgwyX
+iEOKdRrvPIdO0lU7+rkrW0sKVKdZpmpJl0vAVYSApyxpS4yxeBsLxakzbI6RoCdC
+IKSY8QbIe7mj5Mp4LmOxZ+kMXgdttSdeloVfOOQzEtMMLY6Gf5wiodz0uEy19ouX
+iCE8KzZRVgcgop+reG/jqTNv0/RwGMbsOdiaog6PmVDZY8z3WVKkA7IS0tUHCT7E
+oEY+MIaS/OmKhRXhzjAsdkghbKBruZS1ai+kZ5MOl7gkaN1mK0c2FFueda6oxxhV
+4p00mEmL+jwyx8dIKEdOHMMnziRSOlU+8xQubAJLNDnimVJ0eHJXvKlHZIGaVQfp
+1vMymFukiedpFWjKaU4J
+=s7ei
 -----END PGP SIGNATURE-----
-
---------------enig4F69D52EC1DE46203943CD0C--
