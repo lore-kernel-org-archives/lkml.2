@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1KAXdA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:33:00 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:44898 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755986Ab1KAXc5 (ORCPT
+	id S1756165Ab1KAXeQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:34:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38397 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755986Ab1KAXeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:32:57 -0400
-Message-ID: <4EB08189.2@xenotime.net>
-Date: Tue, 01 Nov 2011 16:32:25 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -next] ext4: fix printk format warning in page-io
-References: <20111101205323.c12f2f940f23febba8ab8989@canb.auug.org.au>
-In-Reply-To: <20111101205323.c12f2f940f23febba8ab8989@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Nov 2011 19:34:14 -0400
+Date: Tue, 01 Nov 2011 19:33:05 -0400 (EDT)
+Message-Id: <20111101.193305.2191680732467562808.davem@davemloft.net>
+To: geert@linux-m68k.org
+Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+        linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/ethernet: Move mac89x0.c from apple to cirrus
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1319911741-9977-1-git-send-email-geert@linux-m68k.org>
+References: <1319911741-9977-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 Nov 2011 16:33:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Sat, 29 Oct 2011 20:09:01 +0200
 
-Fix printk format warning:
+> Macintosh CS89x0 based ethernet cards use a Crystal Semiconductor (Now
+> Cirrus Logic) CS89x0 chip, so the mac89x0 driver should be in
+> drivers/net/ethernet/cirrus instead of drivers/net/ethernet/apple.
+> 
+> This also fixes a build problem, as the driver needs a header file from the
+> cirrus directory:
+> 
+> drivers/net/ethernet/apple/mac89x0.c:107:20: error: cs89x0.h: No such file or directory
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-fs/ext4/page-io.c:108:5: warning: format '%d' expects type 'int', but argument 6 has type 'ssize_t'
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	"Theodore Ts'o" <tytso@mit.edu>
-Cc:	Andreas Dilger <adilger.kernel@dilger.ca>
-Cc:	linux-ext4@vger.kernel.org
----
- fs/ext4/page-io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- next-2011-1101.orig/fs/ext4/page-io.c
-+++ next-2011-1101/fs/ext4/page-io.c
-@@ -104,7 +104,7 @@ int ext4_end_io_nolock(ext4_io_end_t *io
- 		ext4_msg(inode->i_sb, KERN_EMERG,
- 			 "failed to convert unwritten extents to written "
- 			 "extents -- potential data loss!  "
--			 "(inode %lu, offset %llu, size %d, error %d)",
-+			 "(inode %lu, offset %llu, size %zd, error %d)",
- 			 inode->i_ino, offset, size, ret);
- 	}
- 
+Applied, thanks.
