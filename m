@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1KAPxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 11:53:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab1KAPxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 11:53:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20111023083636.GA14048@suse.de>
-References: <20111023083636.GA14048@suse.de> <20111023062833.GA8126@kroah.com> <20111023062540.684446582@pistachio.kroah.org> <CA+55aFxkHr75LZU0udv=A+Bg52fMMOEfp47TTxHGbgf51UouRg@mail.gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, stable-review@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Kent <raven@themaw.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Chuck Ebbert <cebbert@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [22/27] VFS: Fix automount for negative autofs dentries
-Date: Tue, 01 Nov 2011 15:51:21 +0000
-Message-ID: <19544.1320162681@redhat.com>
+	id S1753735Ab1KAP7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 11:59:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46435 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab1KAP7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 11:59:52 -0400
+Date: Tue, 1 Nov 2011 08:59:45 -0700
+From: Tejun Heo <htejun@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: trisha yad <trisha1march@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, rientjes@google.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: Issue with core dump
+Message-ID: <20111101155945.GQ18855@google.com>
+References: <CAGr+u+zkPiZpGefstcbJv_cj929icWKXbqFy1uR22Hns1hzFeQ@mail.gmail.com>
+ <20111101152320.GA30466@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101152320.GA30466@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> wrote:
+Hello,
 
-> Ok, that makes a bit more sense, I'll add these if David and Miklos
-> agree that they are ok to add here.  David and Miklos?
+On Tue, Nov 01, 2011 at 04:23:20PM +0100, Oleg Nesterov wrote:
+> Whatever we do, we can't "stop" other threads at the time when
+> thread 'a' traps. All we can do is to try to shrink the window.
 
-Sure.
+Yeah, "at the time" can't even be defined preciesly.  Order of
+operation isn't clearly defined in absence of synchronization
+constructs.  In the described example, there's unspecified amount of
+time (or cycles rather) between the load of the global variable and
+the thread faulting.  Anything could have happened inbetween no matter
+how immediate core dump was.
 
-David
+As long as we're reasonably immediate, which I think we already are, I
+don't think there's much which needs to be changed.
+
+Thanks.
+
+-- 
+tejun
