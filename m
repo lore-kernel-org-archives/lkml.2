@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1KAXfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:35:19 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38420 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755986Ab1KAXfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:35:16 -0400
-Date: Tue, 01 Nov 2011 19:33:18 -0400 (EDT)
-Message-Id: <20111101.193318.633990180703042035.davem@davemloft.net>
-To: cesarb@cesarb.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com, nic_swsd@realtek.com,
-        romieu@fr.zoreil.com, jgarzik@pobox.com, becker@scyld.com
-Subject: Re: [PATCH] net/ethernet: sc92031 is not Realtek
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1319581944-2707-1-git-send-email-cesarb@cesarb.net>
-References: <1319581944-2707-1-git-send-email-cesarb@cesarb.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 Nov 2011 16:33:21 -0700 (PDT)
+	id S1756176Ab1KAXhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:37:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44756 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755986Ab1KAXhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 19:37:12 -0400
+Date: Wed, 2 Nov 2011 00:37:08 +0100
+From: Jan Kara <jack@suse.cz>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] fs: fix dentry leak in simple_fill_super()
+Message-ID: <20111101233708.GK18701@quack.suse.cz>
+References: <20111101121233.15505.87415.stgit@zurg>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101121233.15505.87415.stgit@zurg>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-Date: Tue, 25 Oct 2011 20:32:24 -0200
+On Tue 01-11-11 16:12:33, Konstantin Khlebnikov wrote:
+> put dentry if inode allocation failed, d_genocide() cannot release it
+  Al is currently ill and Christoph Hellwig is taking care of fixes for
+now. Added him to CC...
 
-> While the SC92031 could be found on fake "Realtek" NICs, it has no
-> relationship to Realtek, and is actually from Silan.
-> 
-> Create a new subdirectory for silan and move sc92031 there.
-> 
-> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+								Honza
 
-Applied.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> ---
+>  fs/libfs.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/libfs.c b/fs/libfs.c
+> index c18e9a1..a2c0029 100644
+> --- a/fs/libfs.c
+> +++ b/fs/libfs.c
+> @@ -510,8 +510,10 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
+>  		if (!dentry)
+>  			goto out;
+>  		inode = new_inode(s);
+> -		if (!inode)
+> +		if (!inode) {
+> +			dput(dentry);
+>  			goto out;
+> +		}
+>  		inode->i_mode = S_IFREG | files->mode;
+>  		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+>  		inode->i_fop = files->ops;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
