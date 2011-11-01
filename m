@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345Ab1KAMld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:41:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13560 "EHLO mx1.redhat.com"
+	id S1754565Ab1KAMlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:41:53 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:40840 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753856Ab1KAMlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:41:32 -0400
-Date: Tue, 1 Nov 2011 14:42:23 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [PULL] virtio
-Message-ID: <20111101124223.GA14060@redhat.com>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
- <20111101114542.GA13434@redhat.com>
- <1320150813.3847.24.camel@lappy>
+	id S1754313Ab1KAMlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:41:52 -0400
+X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 08:41:51 EDT
+Message-ID: <4EAFE6DF.8030403@bfs.de>
+Date: Tue, 01 Nov 2011 13:32:31 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320150813.3847.24.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Mark A. Grondona" <mgrondona@llnl.gov>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch] edac: sb_edac: add sanity check to silence static checker
+References: <20111101062852.GA19020@elgon.mountain>
+In-Reply-To: <20111101062852.GA19020@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 02:33:33PM +0200, Sasha Levin wrote:
-> On Tue, 2011-11-01 at 13:45 +0200, Michael S. Tsirkin wrote:
-> > On Tue, Nov 01, 2011 at 10:39:08AM +1030, Rusty Russell wrote:
-> > >  * [new tag]         rusty@rustcorp.com.au-v3.1-7196-gac5be1e -> rusty@rustcorp.com.au-v3.1-7196-gac5be1e
-> > > 
-> > > The following changes since commit 839d8810747bbf39e0a5a7f223b67bffa7945f8d:
-> > > 
-> > >   Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging (2011-10-30 15:54:59 -0700)
-> > > 
-> > > are available in the git repository at:
-> > > 
-> > >   git://github.com/rustyrussell/linux.git master
-> > > 
-> > > Alexey Kardashevskiy (1):
-> > >       virtio-pci: Use PCI MMIO instead of PIO when available
-> > 
-> > I missed this one - wasn't Cc'd neither me, kvm or virtio mailing lists.
-> > 
-> > It's well known that mmio is much slower than pio on kvm, since
-> > mmio needs to be emulated to get at the address.
-> > So I'm expecting this will cause a performance regression.
-> > IMO we should keep using PIO for VQ and interrupt status access
-> > if PIO is available.
-> > 
-> > Another consideration is that in an attempt to pack data
-> > densely in the PIO space the layout became messy.
-> > It would be better to have common config space and
-> > per-device config space in separate pages, possibly
-> > with padding between them.
-> > 
-> > So I'd like a bit more discussion on this patch,
-> > I'm concerned that if this is released in 3.2 as is we'll
-> > have to support this forever. How about a revert for now?
-> 
-> Another thing, the patch tries to map BAR 2 and use it as the
-> configuration space.
-> 
-> It's both not documented properly anywhere, and is not fully backwards
-> compatible - we currently use BAR 2 as part of our MSIX handling in the
-> kvm tool and I'm sure we're not the only ones to assume virtio-pci only
-> uses BAR 0.
-> 
-> A proper solution would be for example a configuration in the PIO config
-> space which points to the MMIO BAR to use instead.
 
-I think it makes sense to put the configuration in PCI
-configuration space, using vendor-specific capability.
-This way we can reuse existing functionality for scanning
-capability lists.
 
-> Unless Michael pointed this patch out, it would have broken (at least)
-> the kvm tool in a non obvious way which would require a rather long
-> session of 'git bisect' to figure out whats wrong.
+Am 01.11.2011 07:28, schrieb Dan Carpenter:
+> I assume the the check on if (limit <= prv) prevents n_tads from
+> actually reaching MAX_TAD.  The problem with that is that it relies
+> on the hardware returning the right value and Smatch complains that
+> if it doesn't we could have a buffer overflow.
 > 
-> -- 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> Feel free to ignore this patch if you want.  I don't have very stong
+> feelings about this either way.
 > 
-> Sasha.
+> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+> index 7a402bf..ebf386c 100644
+> --- a/drivers/edac/sb_edac.c
+> +++ b/drivers/edac/sb_edac.c
+> @@ -970,6 +970,12 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>  			break;
+>  		prv = limit;
+>  	}
+> +	if (n_tads == MAX_TAD) {
+> +		sprintf(msg, "Could not discover the memory channel");
+
+why the sprintf() ? can you not simply:
+	edac_mc_handle_ce_no_info(mci,"Could not discover the memory channel");
+		
+	re,
+ 	 wh
+> +		edac_mc_handle_ce_no_info(mci, msg);
+> +		return -EINVAL;
+> +	}
+> +
+>  	ch_way = TAD_CH(reg) + 1;
+>  	sck_way = TAD_SOCK(reg) + 1;
+>  	/*
