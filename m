@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585Ab1KAMgO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:36:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40505 "EHLO mx2.suse.de"
+	id S1754345Ab1KAMld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:41:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13560 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab1KAMgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:36:12 -0400
-Date: Tue, 1 Nov 2011 12:36:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Colin Cross <ccross@android.com>
-Cc: David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: avoid livelock on !__GFP_FS allocations
-Message-ID: <20111101123608.GD25123@suse.de>
-References: <alpine.DEB.2.00.1110252311030.20273@chino.kir.corp.google.com>
- <CAMbhsRS+-jn7d1bTd4F0_RB9860iWjOHLfOkDsqLfWEUbR3TYA@mail.gmail.com>
- <alpine.DEB.2.00.1110252322220.20273@chino.kir.corp.google.com>
- <CAMbhsRQdrWRLkj7U-u2AZxM11mSUNj5_1K27g58cMBo1Js1Yeg@mail.gmail.com>
- <alpine.DEB.2.00.1110252327270.20273@chino.kir.corp.google.com>
- <CAMbhsRR0z-aJ848gq6ZQATZOgz=EybVsRtaQbjCr42PtCubCzw@mail.gmail.com>
- <alpine.DEB.2.00.1110252347330.20273@chino.kir.corp.google.com>
- <CAMbhsRScgfokDOiT7c9RbmqC7E_ZXrwLEYXE7JZWFGoePjAXvg@mail.gmail.com>
- <alpine.DEB.2.00.1110260006470.23227@chino.kir.corp.google.com>
- <CAMbhsRRZBUcfv5kT4aYm=Z3+kc-usYJVqyc_+1gAEy-4yH_nPQ@mail.gmail.com>
+	id S1753856Ab1KAMlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:41:32 -0400
+Date: Tue, 1 Nov 2011 14:42:23 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [PULL] virtio
+Message-ID: <20111101124223.GA14060@redhat.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+ <20111101114542.GA13434@redhat.com>
+ <1320150813.3847.24.camel@lappy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMbhsRRZBUcfv5kT4aYm=Z3+kc-usYJVqyc_+1gAEy-4yH_nPQ@mail.gmail.com>
+In-Reply-To: <1320150813.3847.24.camel@lappy>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 26, 2011 at 12:22:14AM -0700, Colin Cross wrote:
-> On Wed, Oct 26, 2011 at 12:10 AM, David Rientjes <rientjes@google.com> wrote:
-> > On Tue, 25 Oct 2011, Colin Cross wrote:
-> >
-> >> > gfp_allowed_mask is initialized to GFP_BOOT_MASK to start so that __GFP_FS
-> >> > is never allowed before the slab allocator is completely initialized, so
-> >> > you've now implicitly made all early boot allocations to be __GFP_NORETRY
-> >> > even though they may not pass it.
-> >>
-> >> Only before interrupts are enabled, and then isn't it vulnerable to
-> >> the same livelock?  Interrupts are off, single cpu, kswapd can't run.
-> >> If an allocation ever failed, which seems unlikely, why would retrying
-> >> help?
-> >>
-> >
-> > If you want to claim gfp_allowed_mask as a pm-only entity, then I see no
-> > problem with this approach.  However, if gfp_allowed_mask would be allowed
-> > to temporarily change after init for another purpose then it would make
-> > sense to retry because another allocation with __GFP_FS on another cpu or
-> > kswapd could start making progress could allow for future memory freeing.
-> >
-> > The suggestion to add a hook directly into a pm-interface was so that we
-> > could isolate it only to suspend and, to me, is the most maintainable
-> > solution.
-> >
+On Tue, Nov 01, 2011 at 02:33:33PM +0200, Sasha Levin wrote:
+> On Tue, 2011-11-01 at 13:45 +0200, Michael S. Tsirkin wrote:
+> > On Tue, Nov 01, 2011 at 10:39:08AM +1030, Rusty Russell wrote:
+> > >  * [new tag]         rusty@rustcorp.com.au-v3.1-7196-gac5be1e -> rusty@rustcorp.com.au-v3.1-7196-gac5be1e
+> > > 
+> > > The following changes since commit 839d8810747bbf39e0a5a7f223b67bffa7945f8d:
+> > > 
+> > >   Merge branch 'i2c-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging (2011-10-30 15:54:59 -0700)
+> > > 
+> > > are available in the git repository at:
+> > > 
+> > >   git://github.com/rustyrussell/linux.git master
+> > > 
+> > > Alexey Kardashevskiy (1):
+> > >       virtio-pci: Use PCI MMIO instead of PIO when available
+> > 
+> > I missed this one - wasn't Cc'd neither me, kvm or virtio mailing lists.
+> > 
+> > It's well known that mmio is much slower than pio on kvm, since
+> > mmio needs to be emulated to get at the address.
+> > So I'm expecting this will cause a performance regression.
+> > IMO we should keep using PIO for VQ and interrupt status access
+> > if PIO is available.
+> > 
+> > Another consideration is that in an attempt to pack data
+> > densely in the PIO space the layout became messy.
+> > It would be better to have common config space and
+> > per-device config space in separate pages, possibly
+> > with padding between them.
+> > 
+> > So I'd like a bit more discussion on this patch,
+> > I'm concerned that if this is released in 3.2 as is we'll
+> > have to support this forever. How about a revert for now?
 > 
-> pm_restrict_gfp_mask seems to claim gfp_allowed_mask as owned by pm at runtime:
-> "gfp_allowed_mask also should only be modified with pm_mutex held,
-> unless the suspend/hibernate code is guaranteed not to run in parallel
-> with that modification"
+> Another thing, the patch tries to map BAR 2 and use it as the
+> configuration space.
 > 
-> I think we've wrapped around to Mel's original patch, which adds a
-> pm_suspending() helper that is implemented next to
-> pm_restrict_gfp_mask.  His patch puts the check inside
-> !did_some_progress instead of should_alloc_retry, which I prefer as it
-> at least keeps trying until reclaim isn't working.  Pekka was trying
-> to avoid adding pm-specific checks into the allocator, which is why I
-> stuck to the symptom (__GFP_FS is clear) rather than the cause (PM).
+> It's both not documented properly anywhere, and is not fully backwards
+> compatible - we currently use BAR 2 as part of our MSIX handling in the
+> kvm tool and I'm sure we're not the only ones to assume virtio-pci only
+> uses BAR 0.
 > 
+> A proper solution would be for example a configuration in the PIO config
+> space which points to the MMIO BAR to use instead.
 
-Right now, I'm still no seeing a problem with the pm_suspending() check
-as it's made for a corner-case situation in a very slow path that is
-self-documenting. This thread has died somewhat and there is still no
-fix merged. Is someone cooking up a patch they would prefer as an
-alternative? If not, I'm going to resubmit the fix based on
-pm_suspending.
+I think it makes sense to put the configuration in PCI
+configuration space, using vendor-specific capability.
+This way we can reuse existing functionality for scanning
+capability lists.
 
--- 
-Mel Gorman
-SUSE Labs
+> Unless Michael pointed this patch out, it would have broken (at least)
+> the kvm tool in a non obvious way which would require a rather long
+> session of 'git bisect' to figure out whats wrong.
+> 
+> -- 
+> 
+> Sasha.
