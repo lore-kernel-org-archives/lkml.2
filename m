@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1KAMMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:12:39 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:33867 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753942Ab1KAMMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:12:38 -0400
-Subject: [PATCH] fs: fix dentry leak in simple_fill_super()
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Date: Tue, 01 Nov 2011 16:12:33 +0300
-Message-ID: <20111101121233.15505.87415.stgit@zurg>
-User-Agent: StGit/0.15
+	id S1754284Ab1KAMR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:17:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36184 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab1KAMRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:17:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Tue, 1 Nov 2011 17:47:24 +0530
+Message-ID: <CAGr+u+zkPiZpGefstcbJv_cj929icWKXbqFy1uR22Hns1hzFeQ@mail.gmail.com>
+Subject: Issue with core dump
+From: trisha yad <trisha1march@gmail.com>
+To: linux-mm <linux-mm@kvack.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        kamezawa.hiroyu@jp.fujitsu.com, oleg@redhat.com, mhocko@suse.cz,
+        rientjes@google.com, Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-put dentry if inode allocation failed, d_genocide() cannot release it
+Dear all,
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- fs/libfs.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+I am running a multithreaded  application. So consider a global
+variable x which is used by a, b and c thread.
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index c18e9a1..a2c0029 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -510,8 +510,10 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
- 		if (!dentry)
- 			goto out;
- 		inode = new_inode(s);
--		if (!inode)
-+		if (!inode) {
-+			dput(dentry);
- 			goto out;
-+		}
- 		inode->i_mode = S_IFREG | files->mode;
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
- 		inode->i_fop = files->ops;
+In thread 'a' do abnormal operation(invalid memory access) and kernel
+send signal kill to it. In the mean time Thread 'b' and Thread 'c'
+got schedule and update
+the variable x. when I got the core file, variable x  got updated, and
+I am not  getting actual value that is present at time of crash of
+thread a.
+But In core file I got updated value of x. I want In core file exact
+the same memory status as it at time of abnormal operation(invalid
+memory access)
 
+Is there any solution for such problem. ?
+
+I want in core dump the same status  of memory as at time of abnormal
+operation(invalid memory access).
+
+Thanks
