@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab1KAMY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:24:29 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36446 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab1KAMY2 (ORCPT
+	id S1754402Ab1KAM0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:26:09 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:38913 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754207Ab1KAM0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:24:28 -0400
-MIME-Version: 1.0
-Date: Tue, 1 Nov 2011 08:24:27 -0400
-Message-ID: <CALKntY3E_opsxYBP+3xB0GTFefo=Q2A3A0w+dbXVnqs+CX3Kqw@mail.gmail.com>
-Subject: Linux scheduler Questions
-From: Xin Tong <xerox.time.tech@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Nov 2011 08:26:08 -0400
+Subject: Re: [PATCH][mm:] adjust the logic of checking THP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Guanjun He <heguanbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1320147705-15117-1-git-send-email-heguanbo@gmail.com>
+References: <shaohua.li@intel.com;linux-mm@kvack.org;linux-kernel@vger.kernel.org>
+	 <1320147705-15117-1-git-send-email-heguanbo@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Nov 2011 13:26:05 +0100
+Message-ID: <1320150365.14409.160.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2 questions on Linux 2.6.x scheduler.
+Perhaps a summary would help the people actually knowledgeable about mm
+understand why this adjustment is needed.
 
-1.  in Linux 2.6, when a process is waiting for IO. it will be placed
-on the wait queue. is the wait queue per cpu or global ? I do not see
-any field for the wait queue in the runqueue structure.
-2. Linux 2.6 has the notion of scheduling domain, using an example to
-explain what I am getting at here
+I'll just mention a few obvious things.
 
-In a HT enabled CPU, the CPU has 2 cores, each core has 2 threads.
-there will be 2 levels of domain.
-1. Domain of lev.1 ==> 2 groups, 1 physical core per group.
-2. Domain of lev. 0 ==> 2 groups, 1 logical core per group.
-When the load on the 2 logical cores is imbalanced, Linux will migrate
-some jobs from one to another. What if there is an imbalance of
-workload on the 2 physical cores ?
+On Tue, 2011-11-01 at 19:41 +0800, Guanjun He wrote:
+> Signed-off-by: Guanjun He <heguanbo@gmail.com>
+> ---
+>  mm/memory.c |   32 ++++++++++++++++++--------------
+>  1 files changed, 18 insertions(+), 14 deletions(-)
+> 
+> diff --git a/mm/memory.c b/mm/memory.c
+> index a56e3ba..d6dd6b3 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3465,20 +3465,24 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	pmd = pmd_alloc(mm, pud, address);
+>  	if (!pmd)
+>  		return VM_FAULT_OOM;
+> -	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+> -		if (!vma->vm_ops)
+> -			return do_huge_pmd_anonymous_page(mm, vma, address,
+> -							  pmd, flags);
+> -	} else {
+> -		pmd_t orig_pmd = *pmd;
+> -		barrier();
+> -		if (pmd_trans_huge(orig_pmd)) {
+> -			if (flags & FAULT_FLAG_WRITE &&
+> -			    !pmd_write(orig_pmd) &&
+> -			    !pmd_trans_splitting(orig_pmd))
+> -				return do_huge_pmd_wp_page(mm, vma, address,
+> -							   pmd, orig_pmd);
+> -			return 0;
+> +	if (transparent_hugepage_enabled(vma)) {
+> +		if(pmd_none(*pmd)){
 
-Thanks
+codingstyle (scripts/checkpatch.pl would have caught that one).
 
-Xin
+> +			if (!vma->vm_ops)
+> +				return do_huge_pmd_anonymous_page(mm, vma, address,
+> +						pmd, flags);
+> +		}
+> +		else
+> +		{
+
+codingstyle (ditto). There's probably more.
+
+> +			pmd_t orig_pmd = *pmd;
+> +			barrier();
+> +			if (pmd_trans_huge(orig_pmd)) {
+> +				if (flags & FAULT_FLAG_WRITE &&
+> +						!pmd_write(orig_pmd) &&
+> +						!pmd_trans_splitting(orig_pmd))
+> +					return do_huge_pmd_wp_page(mm, vma, address,
+> +							pmd, orig_pmd);
+> +				return 0;
+> +			}
+>  		}
+>  	}
+>  
+
+
+Paul Bolle
+
