@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab1KAFjJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 01:39:09 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36477 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750742Ab1KAFjH (ORCPT
+	id S1751380Ab1KAGAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:00:12 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:39459 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab1KAGAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 01:39:07 -0400
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Junio C Hamano <gitster@pobox.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        git@vger.kernel.org, Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
-References: <20111026202235.GA20928@havoc.gtf.org>
-	 <1319969101.5215.20.camel@dabdike>
-	 <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
-	 <1320049150.8283.19.camel@dabdike>
-	 <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
-	 <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
-	 <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
-	 <4EAF1F40.3030907@zytor.com>
-	 <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
-	 <4EAF2245.90308@zytor.com> <7vzkggok6u.fsf@alter.siamese.dyndns.org>
-	 <CA+55aFwnVZ-mK3FChvFn778Z-cT107f4v-h0CDmwkP88=Z9aHA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 09:39:01 +0400
-Message-ID: <1320125941.7701.14.camel@dabdike>
+	Tue, 1 Nov 2011 02:00:11 -0400
+Date: Tue, 1 Nov 2011 17:00:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <borislav.petkov@amd.com>
+Subject: linux-next: build failure after merge of the edac tree
+Message-Id: <20111101170000.6e7301a30bc21e917631eb88@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 15:52 -0700, Linus Torvalds wrote:
-> On Mon, Oct 31, 2011 at 3:44 PM, Junio C Hamano <gitster@pobox.com> wrote:
-> >
-> > So nobody is worried about this (quoting from my earlier message)?
-> 
-> No, because you haven't been reading what we write.
-> 
-> The tag is useless.
+--Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's not useless to people who want to verify the tree after it's been
-released by you (say for forensics or something).  As Peter said, we can
-put it in a normally invisible namespace, but having a flag to make it
-visible allows tools like git describe --contains to tell me which
-signed tag was used to send a particular commit.
+Hi Mauro,
 
-> The information *in* the tag is not. But it shouldn't be saved in the
-> tag (or note, or whatever). Because that's just an annoying place for
-> it to be, with no upside.
-> 
-> Save it in the commit we generate. BAM! Useful, readable, permanent,
-> and independently verifiable.
-> 
-> And the advantage is that we can make that same mechanism add
-> "maintainer notes" to the merge message too. Right now some
-> maintainers write good notes about what the merge will bring in, but
-> they are basically lost, because git is so good at merging and doesn't
-> even stop to ask people to edit the merge message.
+After merging the edac tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-A signed empty commit containing the merge message as a comment also
-looks fine to me.  We'd need extra tooling to say which signed merge
-corresponds to this patch, but I'd say its workable.  The only slightly
-counter intuitive thing is that for a non-trivial merge, my signed merge
-description will have to be the next commit below rather than in the
-actual merge you do (because we can't alter a cryptographically signed
-commit).
+arch/x86/kernel/cpu/mcheck/mce.c:39:28: fatal error: linux/edac_mce.h: No s=
+uch file or directory
 
-James
+Caused by commit cdaf4f4e563c ("i7core_edac: Drop the edac_mce
+facility").  This commit removed the file include/linux/edac_mce.h which
+is still metioned by the above file (and MAINTAINERS).  Grep is your
+friend.
 
+I have used the version of the edac tree from next-20111025 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr4rgAAoJEECxmPOUX5FEcuQP/00Hb+k2GilzGPMNaG7evd2E
+AXxBrdbgjo9F4yPSQEdXOicGLEi4wP1G9VKfd+8tuAqmlhJnNlQN7nyBOTI4CN5b
+Yho7w4RbbSZ/ONAFFiaby7MLy4lo1AcB8kTRZ3E+uB4NJZY53f3AIQlmEsCP+Wne
+WfibnqddB/UiZd/M+H9v6JXUvY7AcMFKqx5+wauoOpH5L6ots6TphtJJJ68RhgVz
+lviSthRWLQ6+Kccx1bagIb3klaYjrhxFaM1mXLbsXjJSCOwcRZvLOJUuYUsTACni
+V6cZXeFcUBhPLAvQbD1GewsyfTY+WlOr5toy9yu2isShbfYV0ipnyQFe8jvs8omf
+uZ+IwibYoQ0yGJuiN1P4orKgQFpiwW+ss5CACTyQzmTZHIeicWhbhirGP/ZDv0ly
+Du4o0pANe7qcD+xyFXQ8J9cEKTufB0wKzb6C7SscKim7Dc0/zX0T9jsFtqh0+jQp
+Gacl1SNXrLdyO9bU0rfYjACEixXY58OJ0+u/Se+HwziTHwwrMoK1/hKxWmWqV/w8
++RZKHc3e3YLHGBlZFGjZ28PztIeOi6Uyq5/PJZGqvhzz4DbLunxvhzRSU1OsE6rJ
+O6NOs4vj/Cchv2XIv3oe5LTLw5JP5cRVT17OX0xjiqVtys+5qhzOj7m6iUOyeJSA
+SHpmmV1H8Rh/d45Y8AWM
+=3XpC
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_17_00_00_+1100_cclQH4z7e3WcqmFw--
