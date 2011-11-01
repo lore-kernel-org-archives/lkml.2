@@ -1,154 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab1KAR1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:27:24 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:49437 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755720Ab1KAR1X (ORCPT
+	id S1753799Ab1KAReg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:34:36 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47432 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab1KARef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:27:23 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6517"; a="133017797"
-Date: Tue, 1 Nov 2011 12:27:09 -0500
-From: Richard Kuo <rkuo@codeaurora.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-hexagon@vger.kernel.org
-Subject: Re: [PATCH v5 33/36] Hexagon: Add configuration and makefiles for
- the Hexagon architecture.
-Message-ID: <20111101172709.GA3035@codeaurora.org>
-References: <093448$3uejv7@wolverine01.qualcomm.com>
- <1320139846.14409.129.camel@x61.thuisdomein>
+	Tue, 1 Nov 2011 13:34:35 -0400
+Date: Tue, 1 Nov 2011 18:34:29 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+Message-ID: <20111101173425.GB5863@somewhere.redhat.com>
+References: <20111031082634.GA10348@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320139846.14409.129.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111031082634.GA10348@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 10:30:46AM +0100, Paul Bolle wrote:
-> (I'd like to add some quick comments, Kconfig related. It's too late, I
-> guess.)
-
-Sure, always appreciated.
- 
-> On Mon, 2011-10-31 at 18:55 -0500, Richard Kuo wrote:
-> > +	# select GENERIC_PENDING_IRQ if SMP
+On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
+> Hi Paul,
 > 
-> Is GENERIC_PENDING_IRQ also a pending project?
-
-Yes.
- 
-> > +	# mostly generic routines, with some accelerated ones
+> I got two warnings in rcutree.c. The last working kernels are
+> linux-next 20111014 and linux v3.1.
 > 
-> What does this comment on?
+> [    0.194593] ------------[ cut here ]------------
+> [    0.194707] lockdep: fixing up alternatives.
+> [    0.194730]  #2
+> [    0.194731] smpboot cpu 2: start_ip = 97000
+> [    0.195737] WARNING: at /c/wfg/linux-next/kernel/rcutree.c:444 rcu_idle_exit_common+0xd2/0x117()
+> [    0.196325] Hardware name:         
+> [    0.196603] Modules linked in:
+> [    0.196899] Pid: 0, comm: kworker/0:0 Not tainted 3.1.0-ioless-full-next-20111025+ #881
+> [    0.197459] Call Trace:
+> [    0.197699]  <IRQ>  [<ffffffff81074534>] warn_slowpath_common+0x85/0x9d
+> [    0.201075]  [<ffffffff81074566>] warn_slowpath_null+0x1a/0x1c
+> [    0.201438]  [<ffffffff810d5afd>] rcu_idle_exit_common+0xd2/0x117
+> [    0.201812]  [<ffffffff810d5fff>] rcu_irq_enter+0x75/0xa2
+> [    0.202160]  [<ffffffff8107ac7f>] irq_enter+0x1b/0x74
+> [    0.202496]  [<ffffffff8106f29e>] scheduler_ipi+0x5e/0xd5
+> [    0.202845]  [<ffffffff8104ce6b>] smp_reschedule_interrupt+0x2a/0x2c
+> [    0.203229]  [<ffffffff8198bb73>] reschedule_interrupt+0x73/0x80
+> [    0.203598]  <EOI>  [<ffffffff8198661f>] ? notifier_call_chain+0x63/0x63
+> [    0.204030]  [<ffffffff8103ce2b>] ? mwait_idle+0xef/0x175
+> [    0.204378]  [<ffffffff8103ce22>] ? mwait_idle+0xe6/0x175
+> [    0.204727]  [<ffffffff810351bb>] cpu_idle+0x91/0xb8
+> [    0.205068]  [<ffffffff81978bd5>] start_secondary+0x1de/0x1e2
+> [    0.205454] ---[ end trace 4eaa2a86a8e2da22 ]---
 
-That was an early debugging thing that was removed; missed the comment
-the comment that went with it.
- 
-> > +#config ZONE_DMA
-> > +#	bool
-> > +#	default y
-> 
-> Why is this added commented out?
+I'm seeing something similar but on my boot CPU.
 
-We were using it before, but not anymore.
-
-> > +config HAS_DMA
-> > +	bool
-> > +	select HAVE_DMA_ATTRS
-> > +	default y
-> 
-> HAS_DMA isn't supposed to be used this way, is it? See commit
-> 411f0f3edc141a582190d3605cadd1d993abb6df ("Introduce CONFIG_HAS_DMA").
-> Can't this entry be replaced by a "select HAVE_DMA_ATTRS" line in the
-> "config HEXAGON" entry? That seems to be the common idiom.
-
-Yes, that appears to be the more appropriate way to select it.
-
-> > +config STACKTRACE_SUPPORT
-> > +	def_bool y
-> > +	select STACKTRACE
-> 
-> Some grepping suggests that the tracing infrastructure will "select
-> STACKTRACE" if the architecture sets STACKTRACE_SUPPORT (tile apparently
-> also gets this wrong). Have I grepped this correctly?
-
-Only if DEBUG_KMEMLEAK is selected apparently (?)
-
-> > +config GENERIC_BUG
-> > +	def_bool y
-> > +	depends on BUG
-> > +
-> > +config BUG
-> > +	def_bool y
-> 
-> Why do you have this? Other architecture don't (there's just one BUG
-> entry in all the Kconfig files).
-
-Thought we needed it; didn't realize it was in init/Kconfig.
-
-> > +menu "Machine selection"
-> > +
-> > +choice
-> > +	prompt "System type"
-> > +	default HEXAGON_ARCH_V2
-> > +
-> > +config HEXAGON_COMET
-> > +	bool "Comet Board"
-> > +	select HEXAGON_ARCH_V2
-> > +	---help---
-> > +	  Support for the Comet platform.
-> > +
-> > +endchoice
-> 
-> The default doesn't match the (single) config option here (it should
-> default to HEXAGON_COMET). That shouldn't matter because there's only
-> one option, which the config tools will then pick (that's the way they
-> seem to work). 
-> 
-> But why is this a choice when there's nothing to actually choose?
-> Moreover, just looking at this patch suggests HEXAGON_COMET is yet
-> unused (CONFIG_HEXAGON_COMET is commented out in the Makefile). So at
-> first glance this seems an elaborate way to select HEXAGON_ARCH_V2.
-
-Yes...  need to fix that default.
-
-We felt it was better to remove the platform code for this submission
-as it was not exactly clean and did not use the devtree code.  That's
-why it's commented out of the Makefiles.
-
-> > +config SMP
-> > +	bool "Multi-Processing support"
-> > +	---help---
-> > +	  Enables SMP support in the kernel.  If unsure, say "Y"
-> 
-> Odd. Even x86 and powerpc (the only two architectures I looked at)
-> suggest to say "N" to those not knowing what to do here.
-
-I think for us, I think most people will want an SMP kernel.
-
-> > +config GENERIC_GPIO
-> > +	bool "Generic GPIO support"
-> > +	default n
-> 
-> I know next to nothing about GENERIC_GPIO but does it make sense for
-> Hexagon? If not, wouldn't a "def_bool n" do? (Perhaps you could even
-> drop this entry entirely.)
-
-We have another platform that does use it, but yes, a "def_bool n" 
-will suffice.
-
-I'll have these cleaned up in my local tree and produce a followup
-patch if necessary...
+The problem is that idle_cpu() gives a false negative due to the following
+check:
 
 
-Thanks for the feedback.
--Richard Kuo
- 
+        if (!llist_empty(&rq->wake_list))
+                return 0;
 
--- 
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+When a task gets enqueued for waking, we call the scheduler
+IPI, but since we call irq_enter() -> rcu_irq_enter() before
+that wakee gets processed and flushed from the wake_list,
+this is not a right condition to look at in order to know if
+we are idle.
