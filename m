@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1KAMCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:02:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52229 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753942Ab1KAMCJ (ORCPT
+	id S1754154Ab1KAME6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:04:58 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:36729 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab1KAME5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:02:09 -0400
-Date: Tue, 1 Nov 2011 12:02:07 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the watchdog tree
-Message-ID: <20111101120206.GB10029@opensource.wolfsonmicro.com>
-References: <20111101163748.26d5f1264b56961e36ff0ced@canb.auug.org.au>
+	Tue, 1 Nov 2011 08:04:57 -0400
+X-AuditID: b753bd60-a28adba0000019f4-a1-4eafe0663b68
+X-AuditID: b753bd60-a28adba0000019f4-a1-4eafe0663b68
+Message-ID: <4EAFE05B.6020607@hitachi.com>
+Date: Tue, 01 Nov 2011 21:04:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101163748.26d5f1264b56961e36ff0ced@canb.auug.org.au>
-X-Cookie: Avoid reality at all costs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rabin Vincent <rabin@rab.in>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jason Baron <jbaron@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] x86: call stop_machine_text_poke() on all CPUs
+References: <1319702072-32676-1-git-send-email-rabin@rab.in> <4EAA1357.8060802@hitachi.com> <20111028123002.GA3012@debian>
+In-Reply-To: <20111028123002.GA3012@debian>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:37:48PM +1100, Stephen Rothwell wrote:
+(2011/10/28 21:30), Rabin Vincent wrote:
+> On Fri, Oct 28, 2011 at 11:28:39AM +0900, Masami Hiramatsu wrote:
+>> (2011/10/27 16:54), Rabin Vincent wrote:
+>>> It appears that stop_machine_text_poke() wants to be called on all CPUs,
+>>> like it's done from text_poke_smp().  Fix text_poke_smp_batch() to do
+>>> this.
+>>
+>> cpu_mask==NULL finally falls back to cpu_online_mask, but even though
+>> it should be specified correctly.
+> 
+> Not quite.  Passing NULL to __stop_machine means that the function will
+> be called on any one CPU only, while passing cpu_online_mask means that
+> the function will be called on all CPUs.  So this patch is a behaviour
+> change/bug fix, not just a clarification.
 
-> drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_start':
-> drivers/watchdog/wm831x_wdt.c:56:40: error: 'struct watchdog_device' has no member named 'priv'
-> drivers/watchdog/wm831x_wdt.c: In function 'wm831x_wdt_stop':
+Aah, Right! I just misunderstood.
+Then this must be a bugfix!
 
-Wim, it looks from this error like you've applied the original version of
-this I sent on 20th July against the then current API, not the updated
-version I sent on 25th July (which was resent on 4th October) after you
-revised the API.
+Thanks!
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
