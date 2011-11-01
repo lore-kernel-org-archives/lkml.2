@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab1KAGZX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:25:23 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:33550 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1KAGZW (ORCPT
+	id S1751742Ab1KAG3R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:29:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49111 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380Ab1KAG3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:25:22 -0400
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 02:25:22 EDT
-From: Eric Anholt <eric@anholt.net>
-To: linux-kernel@vger.kernel.org
-Cc: keithp@keithp.com, Eric Anholt <eric@anholt.net>, stable@kernel.org
-Subject: [PATCH] drm/i915: Fix object refcount leak on mmappable size limit error path.
-Date: Mon, 31 Oct 2011 23:16:21 -0700
-Message-Id: <1320128181-3161-1-git-send-email-eric@anholt.net>
-X-Mailer: git-send-email 1.7.7
+	Tue, 1 Nov 2011 02:29:16 -0400
+Date: Tue, 1 Nov 2011 09:28:52 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: "Mark A. Grondona" <mgrondona@llnl.gov>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] edac: sb_edac: add sanity check to silence static checker
+Message-ID: <20111101062852.GA19020@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4EAF91B4.0026,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've been seeing memory leaks on my system in the form of large
-(300-400MB) GEM objects created by now-dead processes laying around
-clogging up memory.  I usually notice when it gets to about 1.2GB of
-them.  Hopefully this clears up the issue, but I just found this bug
-by inspection.
+I assume the the check on if (limit <= prv) prevents n_tads from
+actually reaching MAX_TAD.  The problem with that is that it relies
+on the hardware returning the right value and Smatch complains that
+if it doesn't we could have a buffer overflow.
 
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Cc: stable@kernel.org
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Feel free to ignore this patch if you want.  I don't have very stong
+feelings about this either way.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 6c69cfa..ee78c8e 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1477,7 +1477,7 @@ i915_gem_mmap_gtt(struct drm_file *file,
- 
- 	if (obj->base.size > dev_priv->mm.gtt_mappable_end) {
- 		ret = -E2BIG;
--		goto unlock;
-+		goto out;
+diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
+index 7a402bf..ebf386c 100644
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -970,6 +970,12 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+ 			break;
+ 		prv = limit;
  	}
- 
- 	if (obj->madv != I915_MADV_WILLNEED) {
--- 
-1.7.7
-
++	if (n_tads == MAX_TAD) {
++		sprintf(msg, "Could not discover the memory channel");
++		edac_mc_handle_ce_no_info(mci, msg);
++		return -EINVAL;
++	}
++
+ 	ch_way = TAD_CH(reg) + 1;
+ 	sck_way = TAD_SOCK(reg) + 1;
+ 	/*
