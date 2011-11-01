@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1KAVYy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 17:24:54 -0400
-Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:56344
-	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753292Ab1KAVYw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 17:24:52 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -1
-Date: Tue, 1 Nov 2011 14:24:38 -0700
-From: Ben Widawsky <ben@bwidawsk.net>
-To: Ben Widawsky <ben@bwidawsk.net>
-Cc: Dave Airlie <airlied@redhat.com>, Keith Packard <keithp@keithp.com>,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm/i915: iommu workaround related cleanups
-Message-ID: <20111101142438.57fe7f7e@bwidawsk.net>
-In-Reply-To: <1320172189-3478-1-git-send-email-ben@bwidawsk.net>
-References: <CAPM=9txN-YspvSERzUDjkwdciB-TwOvgHEXiAnG53PKA1PGfgQ@mail.gmail.com>
-	<1320172189-3478-1-git-send-email-ben@bwidawsk.net>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755969Ab1KAVdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 17:33:19 -0400
+Received: from plexity.net ([206.123.115.38]:42170 "EHLO plexity.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614Ab1KAVdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 17:33:16 -0400
+X-Greylist: delayed 495 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 17:33:16 EDT
+Date: Tue, 1 Nov 2011 14:25:25 -0700
+From: Deepak Saxena <dsaxena@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, rmk@arm.linux.org.uk,
+        John Stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] Replace LATCH with PIT_LATCH in i8253 clocksource driver
+Message-ID: <20111101212525.GD31143@plexity.net>
+Reply-To: dsaxena@plexity.net
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Nov 2011 11:29:49 -0700
-Ben Widawsky <ben@bwidawsk.net> wrote:
 
-> Cleanups recommended by Dave Airlie.
-> 
-> Cc: Keith Packard <keithp@keithp.com>
-> Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-> ---
->  drivers/char/agp/intel-agp.h |    6 ++++++
->  drivers/char/agp/intel-gtt.c |    7 ++++---
->  2 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
-> index 5da67f1..d8fa7d6 100644
-> --- a/drivers/char/agp/intel-agp.h
-> +++ b/drivers/char/agp/intel-agp.h
-> @@ -238,4 +238,10 @@
->  int intel_gmch_probe(struct pci_dev *pdev,
->  			       struct agp_bridge_data *bridge);
->  void intel_gmch_remove(struct pci_dev *pdev);
-> +
-> +#ifdef CONFIG_INTEL_IOMMU
-> +/* This is a special note from the iommu driver that we are mapped through it */
-> +extern int intel_iommu_gfx_mapped;
-> +#endif
-> +
->  #endif
-> diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-> index c92424c..11985fb 100644
-> --- a/drivers/char/agp/intel-gtt.c
-> +++ b/drivers/char/agp/intel-gtt.c
-> @@ -1183,14 +1183,13 @@ static void gen6_cleanup(void)
->  {
->  }
->  
-> +#ifdef CONFIG_INTEL_IOMMU
->  /* Certain Gen5 chipsets require require idling the GPU before
->   * unmapping anything from the GTT when VT-d is enabled.
->   */
->  static inline int needs_idle_maps(void)
->  {
-> -#ifdef CONFIG_INTEL_IOMMU
->  	const unsigned short gpu_devid = intel_private.pcidev->device;
-> -	extern int intel_iommu_gfx_mapped;
->  
->  	/* Query intel_iommu to see if we need the workaround. Presumably that
->  	 * was loaded first.
-> @@ -1199,9 +1198,11 @@ static inline int needs_idle_maps(void)
->  	     gpu_devid == PCI_DEVICE_ID_INTEL_IRONLAKE_M_IG) &&
->  	     intel_iommu_gfx_mapped)
->  		return 1;
-> -#endif
->  	return 0;
->  }
-> +#else
-> +static inline bool needs_idle_maps(void) { return false; }
-> +#endif
->  
->  static int i9xx_setup(void)
->  {
+The i8253 clockevent & clocksource driver uses PIT_LATCH
+except for two cases where it uses LATCH:
 
+1)
+	/* VIA686a test code... reset the latch if count > max + 1 */
+	if (count > LATCH) {
 
-I should have kept the ints and bools consistent. So if this patch looks
-interesting to anyone, let's just say:
+LATCH is based on CLOCK_TICK_RATE which is defined as 
+PIT_TICK_RATE on x86 so this should just be the later.
 
-+#else
-+static inline int needs_idle_maps(void) { return 0; }
-+#endif
+2)
+	...
+	switch (mode) {
+	case CLOCK_EVT_MODE_PERIODIC:
+		/* binary, mode 2, LSB/MSB, ch 0 */
+		outb_p(0x34, PIT_MODE);
+		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
+		outb_p(LATCH >> 8 , PIT_CH0);		/* MSB */
+	...
+
+MIPS and ARM are the only other arches that use this driver. In
+the MIPS case CLOCK_TICK_RATE is defined as the same value as
+PIT_TICK_RATE. For ARM, the only machine that uses it is
+Footbridge which has a totally bogus CLOCK_TICK_RATE according
+to the comments. Furthermore, the clockevent_i8253_init()
+initializes the clockevent with PIT_TIC_RATE, so there's
+no reason to use the generic LATCH.
+
+This is part of work to remove and depecrate the global
+CLOCK_TICK_RATE symbol.
+
+Signed-off-by: Deepak Saxena <dsaxena@linaro.org>
+---
+ drivers/clocksource/i8253.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clocksource/i8253.c b/drivers/clocksource/i8253.c
+index 27c49e6..e7cab2d 100644
+--- a/drivers/clocksource/i8253.c
++++ b/drivers/clocksource/i8253.c
+@@ -53,7 +53,7 @@ static cycle_t i8253_read(struct clocksource *cs)
+ 	count |= inb_p(PIT_CH0) << 8;
+ 
+ 	/* VIA686a test code... reset the latch if count > max + 1 */
+-	if (count > LATCH) {
++	if (count > PIT_LATCH) {
+ 		outb_p(0x34, PIT_MODE);
+ 		outb_p(PIT_LATCH & 0xff, PIT_CH0);
+ 		outb_p(PIT_LATCH >> 8, PIT_CH0);
+@@ -114,8 +114,8 @@ static void init_pit_timer(enum clock_event_mode mode,
+ 	case CLOCK_EVT_MODE_PERIODIC:
+ 		/* binary, mode 2, LSB/MSB, ch 0 */
+ 		outb_p(0x34, PIT_MODE);
+-		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
+-		outb_p(LATCH >> 8 , PIT_CH0);		/* MSB */
++		outb_p(PIT_LATCH & 0xff , PIT_CH0);	/* LSB */
++		outb_p(PIT_LATCH >> 8 , PIT_CH0);		/* MSB */
+ 		break;
+ 
+ 	case CLOCK_EVT_MODE_SHUTDOWN:
+-- 
+1.7.4.1
 
