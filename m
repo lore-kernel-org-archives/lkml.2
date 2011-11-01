@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585Ab1KAGC4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:02:56 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:38510 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab1KAGCz (ORCPT
+	id S1751486Ab1KAGQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:16:17 -0400
+Received: from portal.weinmann.de ([62.8.140.122]:19917 "EHLO
+	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab1KAGQQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:02:55 -0400
-Date: Tue, 1 Nov 2011 17:02:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the crypto-current
- tree
-Message-Id: <20111101170251.30878c7f7ce73c863bedee95@canb.auug.org.au>
-In-Reply-To: <20111101051810.GA7519@gondor.apana.org.au>
-References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
-	<20111101152312.5751b7ac8b4a998b6ef867be@canb.auug.org.au>
-	<20111101051810.GA7519@gondor.apana.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf"
+	Tue, 1 Nov 2011 02:16:16 -0400
+X-Greylist: delayed 978 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 02:16:15 EDT
+From: "Voss, Nikolaus" <N.Voss@weinmann.de>
+To: =?iso-8859-1?Q?=27H=E5vard_Skinnemoen=27?= <hskinnemoen@gmail.com>
+CC: "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>
+Date: Tue, 1 Nov 2011 06:59:46 +0100
+Subject: RE: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
+Thread-Topic: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
+Thread-Index: AcyYEyFaeOdsdTETSpy++r5kZdozVQARnrxg
+Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
+References: <EF2E73589CA71846A15D0B2CDF79505D087B34BE51@wm021.weinmann.com>
+ <CAF8ieYXPMgUzekth7PGxC3AgYNKac-HQ21D3vvB5J3SLOatmfQ@mail.gmail.com>
+In-Reply-To: <CAF8ieYXPMgUzekth7PGxC3AgYNKac-HQ21D3vvB5J3SLOatmfQ@mail.gmail.com>
+Accept-Language: en-US, de-DE
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, de-DE
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Havard,
 
-Hi Herbert,
+> {sda,scl}_is_open_drain indicates that the GPIO hardware is set up to
+> do open drain so the software doesn't have to, i.e.
+> gpio_set_value(pin, 1) will turn off the output driver rather than
+> drive the pin high, so the _val functions will do the right thing.
 
-On Tue, 1 Nov 2011 16:18:10 +1100 Herbert Xu <herbert@gondor.apana.org.au> =
-wrote:
->
-> So did the change to depends_on fix it?
+gpio_set_value(pin, 1) drives the output high same as
+gpio_direction_output(pin, 1) does (documented in Documentation/gpio.txt),
+so the gpio will be changed from open-drain to push-pull.
 
-I have not yet had time to test that ...
+In contrast, gpio_direction_input(pin) will turn off the output driver.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Open-drain io is bound to "!is_open_drain" and push-pull io is bound to
+"is_open_drain", so I still think this should be the other way round.
 
---Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf
-Content-Type: application/pgp-signature
+Niko
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOr4uLAAoJEECxmPOUX5FEUiYQAJsC6pgvjmQN77QyUlKBD2D/
-XZZxX/MN0aPTxqVKS0gU1JPCRM/bxaBLaikxOUyYp5MqJ7MNsIgOHPT3LjSVKoGE
-YuT1nTcmUf75J5CfjhAlH7WH8YNP1Vi14FXjDVoK1G/ifY+JmAWqydVr44w8mcpP
-nu0zy7jmGKsR2m2vPr/IxEzaLO9punRiQ6LRRQOyepJuV3G7tgyC2W2HUjuN/1S0
-e0dI/xgzFinRDLLqJn9Oru5cgWLfGG82hAL/0gbpQPsSrYG07Zv/XUJTS5DIZnej
-TKvvJXSHU7sME3buMCbAcE2MHHAkRXnn0GUa4Pubqz/7vMb5e6LRNibgGNn3t4P8
-a0UiChn6/sCVDtkqBLajI3oleJSVcBuQmNVydMKUQuwEEWMHeNgNdGg2P/71oh9E
-gXYZJEFFWv8Q4ZKj76CqRvoiuM9UQVfbxjRIghGOMf2xDydZmTvn4FsJ9sQ8HuKG
-m+mATERpVoIhmcIIf+aM3QPNdtszCpgpoXSNyyrwfyxsOlp8PJpUvPTImlmIbt++
-XytOyajfZb2ISt7GXaqiS94KPV7ovcbsqQHncH/EThLmXf7kQ9eYPavp+ZvxEyxJ
-HIKUqlbgvHC7TXHsIs1iAcmAO1wV2yA5oenLrzcmS+pEreePsbEqKcXHGwZcgxk5
-YYncENYp5aiBC2C2YEgs
-=eiHa
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf--
