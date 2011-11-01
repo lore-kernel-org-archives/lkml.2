@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab1KABKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 21:10:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63745 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798Ab1KABKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 21:10:33 -0400
-Message-ID: <4EAF476C.2060900@cn.fujitsu.com>
-Date: Tue, 01 Nov 2011 09:12:12 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752503Ab1KABKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 21:10:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33658 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1KABKf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 21:10:35 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Ilya Dryomov <idryomov@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tracing: fix event_subsystem ref counting
-References: <1320052062-7846-1-git-send-email-idryomov@gmail.com> <1320077699.4793.5.camel@gandalf.stny.rr.com>
-In-Reply-To: <1320077699.4793.5.camel@gandalf.stny.rr.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-01 09:10:37,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-11-01 09:10:38,
-	Serialize complete at 2011-11-01 09:10:38
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+In-Reply-To: <093448$3uek00@wolverine01.qualcomm.com>
+References: <093448$3uek00@wolverine01.qualcomm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 31 Oct 2011 18:10:13 -0700
+X-Google-Sender-Auth: Y1pWD2ZczLUumCwefqFGYYUgmK0
+Message-ID: <CA+55aFw2T0_mD1rM+dTz28fZPtSVhVDTWCYxXDvohwCwNk+b2g@mail.gmail.com>
+Subject: Re: [PATCH v5 00/36] Hexagon: Add support for Qualcomm Hexagon architecture
+To: Richard Kuo <rkuo@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Mon, 2011-10-31 at 11:07 +0200, Ilya Dryomov wrote:
->> Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
->> ever being released.
->>
->> Ref_count was added to keep track of subsystem users, not for counting
->> events.  Subsystem is created with ref_count = 1, so there is no need to
->> increment it for every event, we have nr_events for that.  Fix this by
->> touching ref_count only when we actually have a new user -
->> subsystem_open().
-> 
-> Good catch, I'll pull this in.
-> 
+On Mon, Oct 31, 2011 at 4:58 PM, Richard Kuo <rkuo@codeaurora.org> wrote:
+>
+> Please let me know if there's anything else you require of these patches.
 
-I made a different fix last week:
+So there's something odd going on with the Sign-off's, which makes me
+unhappy. It also makes me wonder if the authorship is properly
+attributed.
 
-http://marc.info/?l=linux-kernel&m=131978486911595&w=2
+Some of these things are signed off by Linas Vepstas. In fact, some of
+them are *only* signed off on by him, not by you. Which is definitely
+wrong. But it makes me wonder if the authorship is buggered up, and
+those patches maybe should have a "From: Linas Vepstas
+<linas@codeaurora.org>" on them too.
 
-but I guess Ilya's version is a bit better.
+Example of this: "[PATCH v5 12/36] Hexagon: Export ksyms defined in
+assembly files." (but 13/36, 31/36 and 36/36 were that way too).
+
+Others are signed off by both Linas Vepstas and you, but in an odd
+order. Since you're sending them to me, I'd expect your sign-off to be
+last, but it isn't. So the sign-off sequence makes it look like they
+were sent by Linas, even though I got them from you.
+
+So I'd like some clarification on this, and I do need *your* sign-off
+on them all since you're sending them to me.
+
+You don't have to re-send, but you do have to explain whether perhaps
+Linas should be author (and why the odd order of sign-offs) and
+basically do a "yeah, I sign off on those patches" with a full listing
+of the patches in question so that I have it for the record.
+
+                       Linus
