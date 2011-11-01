@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab1KAO05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:26:57 -0400
-Received: from tex.lwn.net ([70.33.254.29]:41383 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754357Ab1KAO0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:26:55 -0400
-Date: Tue, 1 Nov 2011 08:26:53 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: loody <miloody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: some questions about block and scatterlist
-Message-ID: <20111101082653.4fa844e4@bike.lwn.net>
-In-Reply-To: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
-References: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754931Ab1KAOdN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:33:13 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42823 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab1KAOdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 10:33:12 -0400
+Date: Tue, 1 Nov 2011 10:37:15 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Thomas Hellstrom <thomas@shipmail.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, thellstrom@vmware.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, j.glisse@redhat.com,
+        airlied@redhat.com, bskeggs@redhat.com
+Subject: Re: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include two
+ overrides for TTM page pool.
+Message-ID: <20111101143715.GA8631@homer.localdomain>
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
+ <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com>
+ <4EA28FA6.7000006@shipmail.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EA28FA6.7000006@shipmail.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Nov 2011 19:32:38 +0900
-loody <miloody@gmail.com> wrote:
+On Sat, Oct 22, 2011 at 11:40:54AM +0200, Thomas Hellstrom wrote:
+> Konrad,
+> 
+> I was hoping that we could get rid of the dma_address shuffling into
+> core TTM,
+> like I mentioned in the review. From what I can tell it's now only
+> used in the backend and
+> core ttm doesn't care about it.
+> 
+> Is there a particular reason we're still passing it around?
+> 
+> Thanks,
+> /Thomas
+> 
 
-> My questions are below:
+I am working on patchset on top of this that will move dma handling
+back to driver and mostly out of ttm (the page alloc helper will
+still do dma stuff on behalf of driver) So if my patchset is acceptable
+the dma situation is transionary.
 
-As are some answers :)
-
-> 1. Are all struct page 32-bit aligned?
-
-Certainly, I would expect any structures found in the system memory map to
-be so aligned, yes.  If you've created an arbitrary one elsewhere I'm only
-99% sure it would be.
-
-> If so, where is this part of code for handleing struct page be 32-bits aligned?
-
-Note that the size of struct page is carefully considered, and that they
-are packed as densely as possible, both externally and internally.  No
-lesser alignment would make sense.
-
-> 2. if the page of scatterlist is located at high mem, how does
-> dma_map_sg mapping the virtual address?
-
-That depends on a vast array of things.  What are the addressing
-capabilities of the target device?  Is there an IOMMU involved?
-
-> 3. in blk_rq_map_sg, it seems we only copy bvec->bv_page to sg->page_link
->    why don't we add dma_address in bvec and send the bio directly to
-> the lower level driver?
-
-That would be a bit of a mixing of the layers, if nothing else.
-
-> 4. if I plug a USB HD with 3 partitions, will there be 3 request_queues?
-
-No, there is one request queue for the underlying device.
-
-That's an interesting mix of questions.  If you have more in the future,
-you'll likely get more (and more clueful) responses if they're accompanied
-by the code you're working on.
-
-Thanks,
-
-jon
+Cheers,
+Jerome
