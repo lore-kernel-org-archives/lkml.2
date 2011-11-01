@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab1KASSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:18:37 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54894 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab1KASSf (ORCPT
+	id S1755908Ab1KAST5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:19:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44699 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755866Ab1KASTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:18:35 -0400
-Date: Tue, 1 Nov 2011 11:18:21 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Greg KH <gregkh@suse.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Input: Remove unsafe device module references
-Message-ID: <20111101181820.GC15216@core.coreip.homeip.net>
-References: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
- <20111101170156.GA8925@suse.de>
- <CANq1E4S07S2kNTmAxQRa4mEVKrGnS7cTHKqPoHEzLOyu3Mfqzw@mail.gmail.com>
- <20111101180038.GB4241@suse.de>
- <CANq1E4T6urGVLC7xEa_4D=sCGYD0zsiVbH9u_E6O_xwuhR2Z4g@mail.gmail.com>
+	Tue, 1 Nov 2011 14:19:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4T6urGVLC7xEa_4D=sCGYD0zsiVbH9u_E6O_xwuhR2Z4g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1110311110370.3541@pobox.suse.cz>
+References: <1318421062.2336.4.camel@x61.thuisdomein>
+	<alpine.LNX.2.00.1110311110370.3541@pobox.suse.cz>
+Date: Tue, 1 Nov 2011 16:19:54 -0200
+Message-ID: <CAOMZO5DZ6KYa_SLVavorPPyV_Ggspa4Cae+eK7oj1mh=O4J4+w@mail.gmail.com>
+Subject: Re: [PATCH] [TRIVIAL] ARM: imx: Fix typo 'MACH_MX31_3DS_MXC_NAND_USE_BBT'
+From: Fabio Estevam <festevam@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 07:09:27PM +0100, David Herrmann wrote:
-> On Tue, Nov 1, 2011 at 7:00 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Tue, Nov 01, 2011 at 06:52:11PM +0100, David Herrmann wrote:
-> >> My solution: Some parent subsystem of us must take and release this
-> >> module-refcnt instead of us, so this bug doesn't occur.
-> >
-> > Yes, that is the ultimate solution for something like this.
-> >
-> > But, in reality, we don't care about module unloading races as there are
-> > plenty of other issues involved there where things can go bad, so we
-> > just try the best we can :)
-> 
-> Ah, I am kind of relieved that I got this right. I almost started
-> thinking I am insane.. ;)
-> 
-> So your answer is that this is so unlikely that it won't be fixed? I
-> am fine with that, even though I wonder why stuff like "struct
-> file_operations" include "owner" fields to protect callbacks but
-> "struct device_type" does *not* include any protection of it's
-> "release" callback.
+On Mon, Oct 31, 2011 at 8:12 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Wed, 12 Oct 2011, Paul Bolle wrote:
+>
+>> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+>> ---
+>> This is trivial because this is what apparently was intended. On the
+>> other hand this should open code paths that were hidden until now. So
+>> perhaps this needs the maintainer's approval. (I cannot meaningfully
+>> test this.)
+>
+> I'd like to have this tested by some relevant people before taking it
+> myself (added some CCs).
 
-I think adding owner to device_type might not be a bad idea at all...
+On a mx31pdk board I get the following with this patch applied and
+CONFIG_MACH_MX31_3DS_MXC_NAND_USE_BBT selected:
 
-Thanks.
+NAND device: Manufacturer ID: 0xec, Chip ID: 0xaa (Samsung NAND 256MiB
+1,8V 8-bit)
+Bad block table not found for chip 0
+Bad block table not found for chip 0
+Scanning device for bad blocks
+Registering mxc_nand as whole device
 
--- 
-Dmitry
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
