@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab1KAJEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 05:04:06 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51196 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231Ab1KAJEE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 05:04:04 -0400
-Date: Tue, 1 Nov 2011 20:03:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>
-Subject: Re: linux-next: manual merge of the block tree with Linus' tree
-Message-Id: <20111101200355.52daf4662050ed7ad6b67cfa@canb.auug.org.au>
-In-Reply-To: <4EAFA949.5060200@kernel.dk>
-References: <20111101161500.79aebe8d8f30162ea542a818@canb.auug.org.au>
-	<4EAFA949.5060200@kernel.dk>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_20_03_55_+1100_C7YfbfslR0aICgXe"
+	id S1752811Ab1KAJRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 05:17:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33579 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752100Ab1KAJRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 05:17:47 -0400
+Date: Tue, 1 Nov 2011 17:19:39 +0800
+From: Dave Young <dyoung@redhat.com>
+To: kexec@lists.infradead.org, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: vgoyal@redhat.com, horms@verge.net.au, luyu@redhat.com,
+        dwmw2@infradead.org
+Subject: [PATCH retry] intel-iommu:make identity_map default for crash dump
+Message-ID: <20111101091939.GA8985@darkstar.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_20_03_55_+1100_C7YfbfslR0aICgXe
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+kdump kernel sometimes will get DMAR faults which
+is caused by random in-flight dma from 1st kernel
 
-Hi Jens,
+Here make the identity_mapping as default for this case
 
-On Tue, 01 Nov 2011 09:09:45 +0100 Jens Axboe <axboe@kernel.dk> wrote:
->
-> Fixup looks good, however don't you get the same conflict in basically
-> all the raid personalities? Fixup is indeed just the simple int -> void
-> transition, conflict is because of the mddev_t -> struct mddev change
-> that is now in Linus' tree.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ drivers/iommu/intel-iommu.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I got these conflicts in all the raid personalities a while ago.  I am
-not sure why this turned up for just raid10 again.
-
-> I'll push my pending off to Linus today or tomorrow, so this will be
-> resolved shortly.
-
-OK, thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Nov_2011_20_03_55_+1100_C7YfbfslR0aICgXe
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOr7X7AAoJEECxmPOUX5FE57cQAJNRu7v3m3LXDCWDY7cnAjs8
-Pw8jA3zORDGmsJC0YzlSYXMT3SicppcL3FvlBQ0/6rJNvCDY6XnzH2N2HAo55WXG
-z0vChewPSG3VWqzb+xmCDosZL4OcYm54hb/8NQ/sOxcgINVQU8583/e8iwryhLxN
-D2zmMt6dYcmI6NEjDMyb1wAImXYJUAMHrkNVL4bLHF0EBCv2mnP5XpC7jCG/DLP2
-Y7caMdnzm6F3BbbnvFmh1gqyxGqAb2tVex3jfwsLADROsqacCtYOEs74K4T6NERT
-sru8jnhqtkAe7PFUstmUKn8kdkuKTdVuG+2cDydI5NFxxpmprlCdnXOacPQp36Wa
-Ef0H+qhbAFArSNnaKAANCqiWVcLRrzbEkIy8c5HOtAoGyadujgpWtTxulf7toHlN
-wEc7A6YIQyURmCr78fkNaGGsJqOV9szHCJLSCjanCeUzpaDgU++Dmk5MBFGXfReD
-FwYFu9zcv3867fnrG3u04nXHe9AU8hXCxzowAFaPfixLSTUKMiUxlf/SNWdklQeI
-arXm9HKLjqw0D6Z4f8GG6fr+GxHQL4pDYHHgh9hnECuvIxE6EvT0183VKk8chh9E
-1zeVLr9ykoSHaiPz7suEG7EQo8/YvuNei+0gIASyyI1dwRebUhcXs6r8q/lNjPqt
-crfVwiNnmA3tmW3YKeSB
-=Fk6T
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_20_03_55_+1100_C7YfbfslR0aICgXe--
+--- linux-2.6.orig/drivers/iommu/intel-iommu.c	2011-11-01 13:06:18.667505962 +0800
++++ linux-2.6/drivers/iommu/intel-iommu.c	2011-11-01 17:07:50.789137864 +0800
+@@ -40,6 +40,7 @@
+ #include <linux/tboot.h>
+ #include <linux/dmi.h>
+ #include <linux/pci-ats.h>
++#include <linux/crash_dump.h>
+ #include <asm/cacheflush.h>
+ #include <asm/iommu.h>
+ 
+@@ -2488,7 +2489,7 @@ static int __init init_dmars(void)
+ 		}
+ 	}
+ 
+-	if (iommu_pass_through)
++	if (iommu_pass_through || is_kdump_kernel())
+ 		iommu_identity_mapping |= IDENTMAP_ALL;
+ 
+ #ifdef CONFIG_INTEL_IOMMU_BROKEN_GFX_WA
