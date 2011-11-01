@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914Ab1KASuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:50:06 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:33287 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab1KASuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:50:03 -0400
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Jonathan Corbet <corbet@lwn.net>
-In-Reply-To: <bb0996fb-9b83-4de2-a1e4-d9c810c4b48a@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
-	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
-	 <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
-	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
-	 <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
-	 <20111028163053.GC1319@redhat.com>
-	 <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
-	 <20138.62532.493295.522948@quad.stoffel.home>
-	 <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default>
-	 <1320048767.8283.13.camel@dabdike>
-	 <424e9e3a-670d-4835-914f-83e99a11991a@default 1320142403.7701.62.camel@dabdike>
-	 <bb0996fb-9b83-4de2-a1e4-d9c810c4b48a@default>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 11:48:14 -0700
-Message-ID: <1320173294.15403.109.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110118-8974-0000-0000-000001520E24
+	id S1755928Ab1KASvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:51:40 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:49906 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753773Ab1KASvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:51:38 -0400
+X-Sasl-enc: Y9eABs9O9HuJ2aBAzVJ5hY2fiThrGEiq1uuqPSabGaRa 1320173498
+Date: Tue, 1 Nov 2011 11:47:11 -0700
+From: Greg KH <greg@kroah.com>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>, Chris Ball <cjb@laptop.org>,
+        Koji Matsumuro <matsumur@nts.ricoh.co.jp>, stable@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mmc: Always check for lower base frequency quirk for
+ Ricoh 1180:e823
+Message-ID: <20111101184711.GA13637@kroah.com>
+References: <20111005154449.GA2479@zod.bos.redhat.com>
+ <20111014090727.2ad3d774@jbarnes-desktop>
+ <20111014162429.GF1165@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111014162429.GF1165@zod.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-01 at 11:10 -0700, Dan Magenheimer wrote:
-> Case A) CONFIG_FRONTSWAP=n
-> Case B) CONFIG_FRONTSWAP=y and no tmem backend registers
-> Case C) CONFIG_FRONTSWAP=y and a tmem backend DOES register
-...
-> The point is that only Case C has possible interactions
-> so Case A and Case B end-users and kernel developers need
-> not worry about the maintenance. 
+On Fri, Oct 14, 2011 at 12:24:37PM -0400, Josh Boyer wrote:
+> On Fri, Oct 14, 2011 at 09:07:27AM -0700, Jesse Barnes wrote:
+> > On Wed, 5 Oct 2011 11:44:50 -0400
+> > Josh Boyer <jwboyer@redhat.com> wrote:
+> > 
+> > > Commit 15bed0f2f added a quirk for the e823 Ricoh card reader to lower the
+> > > base frequency.  However, the quirk first checks to see if the proprietary
+> > > MMC controller is disabled, and returns if so.  On some devices, such as the
+> > > Lenovo X220, the MMC controller is already disabled by firmware it seems,
+> > > but the frequency change is still needed so sdhci-pci can talk to the cards.
+> > > Since the MMC controller is disabled, the frequency fixup was never being run
+> > > on these machines.
+> > > 
+> > > This moves the e823 check above the MMC controller check so that it always
+> > > gets run.
+> > > 
+> > > This fixes https://bugzilla.redhat.com/show_bug.cgi?id=722509
+> > > 
+> > 
+> > Applied to linux-next, thanks.  I forgot to cc stable on it though;
+> > once it hits Linus's tree you may want to make sure it gets backported
+> > to 3.0.x and 3.1.x.
+> 
+> OK.  Will do.  Thanks Jesse.
 
-I'm personally evaluating this as if all the distributions would turn it
-on.  I'm evaluating as if every one of my employer's systems ships with
-it and as if it is =y my laptop.  Basically, I'm evaluating A/B/C and
-only looking at the worst-case maintenance cost (C).  In other words,
-I'm ignoring A/B and assuming wide use.
+I've queued it up now, no need for you to remind me.
 
-I'm curious where you expect to see the code get turned on and used
-since we might be looking at this from different angles.
-
--- Dave
-
+greg k-h
