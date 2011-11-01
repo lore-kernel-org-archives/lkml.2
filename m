@@ -1,41 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab1KAPGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 11:06:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26834 "EHLO mx1.redhat.com"
+	id S932211Ab1KAPLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 11:11:55 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39778 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755123Ab1KAPGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 11:06:22 -0400
-Date: Tue, 1 Nov 2011 16:05:55 +0100
-From: Johannes Weiner <jweiner@redhat.com>
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fadvise: only initiate writeback for specified range
- with FADV_DONTNEED
-Message-ID: <20111101150555.GC19965@redhat.com>
-References: <1320077819-1494-1-git-send-email-sbohrer@rgmadvisors.com>
+	id S932140Ab1KAPLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 11:11:54 -0400
+Date: Tue, 1 Nov 2011 08:03:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Carsten Emde <C.Emde@osadl.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+Message-ID: <20111101150349.GB2287@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111031082634.GA10348@localhost>
+ <20111031095152.GL6160@linux.vnet.ibm.com>
+ <20111031104325.GA25808@localhost>
+ <20111031114142.GA32555@localhost>
+ <20111031121951.GM6160@linux.vnet.ibm.com>
+ <1320075882.4793.4.camel@gandalf.stny.rr.com>
+ <20111101003434.GR6160@linux.vnet.ibm.com>
+ <20111101070720.GA22936@localhost>
+ <4EB00408.4090202@osadl.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320077819-1494-1-git-send-email-sbohrer@rgmadvisors.com>
+In-Reply-To: <4EB00408.4090202@osadl.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11110115-1976-0000-0000-0000008CFAB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 11:16:59AM -0500, Shawn Bohrer wrote:
-> Previously POSIX_FADV_DONTNEED would start writeback for the entire file
-> when the bdi was not write congested.  This negatively impacts
-> performance if the file contians dirty pages outside of the requested
-> range.  This change uses __filemap_fdatawrite_range() to only initiate
-> writeback for the requested range.
-> 
-> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+On Tue, Nov 01, 2011 at 03:36:56PM +0100, Carsten Emde wrote:
+> On 11/01/2011 08:07 AM, Wu Fengguang wrote:
+> >On Tue, Nov 01, 2011 at 08:34:34AM +0800, Paul E. McKenney wrote:
+> >>On Mon, Oct 31, 2011 at 11:44:42AM -0400, Steven Rostedt wrote:
+> >>>On Mon, 2011-10-31 at 05:19 -0700, Paul E. McKenney wrote:
+> >>>>On Mon, Oct 31, 2011 at 07:41:42PM +0800, Wu Fengguang wrote:
+> >>>>>On Mon, Oct 31, 2011 at 06:43:25PM +0800, Wu Fengguang wrote:
+> >>>>>>On Mon, Oct 31, 2011 at 05:51:52PM +0800, Paul E. McKenney wrote:
+> >>>>>>>On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
+> >>>>>>>>Hi Paul,
+> >>>>>>>>
+> >>>>>>>>I got two warnings in rcutree.c. The last working kernels are
+> >>>>>>>>linux-next 20111014 and linux v3.1.
+> >>>>>>>
+> >>>>>>>Interesting.  Could you please enable RCU event tracing at boot?
+> >>>>>>
+> >>>>>>Sorry I cannot...possibly due to another ftrace bug.
+> >>>>>>
+> >>>>>>>The RCU event tracing is at tracing/events/rcu/enable relative to
+> >>>>>>>the debugfs mount point at runtime, if that helps.
+> >>>>>>
+> >>>>>>It's exactly that linux next 20111025 (comparing to 20111014) no
+> >>>>>>longer produces all the trace events that made me looking into the
+> >>>>>>dmesg and find the warning from RCU (rather than the expected warning
+> >>>>>>from ftrace).
+> >>>>>>
+> >>>>>>The trace output is now:
+> >>>>>>
+> >>>>>>         # tracer: nop
+> >>>>>>         #
+> >>>>>>         # WARNING: FUNCTION TRACING IS CORRUPTED
+> >>>>>>         #          MAY BE MISSING FUNCTION EVENTS
+> >>>>>>         #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+> >>>>>>         #              | |       |          |         |
+> >>>>>>(nothing more)
+> >>>>>
+> >>>>>I checked the other test box and got the same warnings. Below is the
+> >>>>>full dmesg.
+> >>>>>
+> >>>>>No single trace output again..
+> >>>>
+> >>>>Hmmm...  I wonder if it is too early during boot for tracing to work
+> >>>>correctly.
+> >>>>
+> >>>>Gah!  I have rcu/next set ahead to commits that are not supposed to go
+> >>>>upstream yet.  I reset it back to match the stuff that is targeted for
+> >>>>the current merge window.  Still need to find the bug, of course.
+> >>>>
+> >>>>Anyone have any idea why the kworker thread might be trying to enter
+> >>>>the idle loop?  The idle_cpu(smp_processor_id()) call believes that
+> >>>>this is not the idle task.  Or does x86 allow non-idle tasks to enter
+> >>>>the idle loop?  Or to be migrated off-CPU?
+> >>>
+> >>>
+> >>>It's not. Carsten Emde noticed what looked like a bug in ftrace last
+> >>>week at LinuxCon, and looking deeper at it, I found that the swapper
+> >>>task for all but CPU0 is named kworker.  That's because kworker creates
+> >>>the idle task for all other CPUs besides CPU 0 and the idle task takes
+> >>>on kworker name.
+> >>>
+> >>>Carsten posted a patch last week too:
+> >>>
+> >>>https://lkml.org/lkml/2011/10/26/313
+> >>>
+> >>>I'm glad that this bug shows up outside of just ftrace :)
+> >>
+> >>That makes one of us.  ;-)
+> >>
+> >>Fengguang, does Carsten's patch help?
+> >
+> >Nope unfortunately. Here is the new dmesg:
+> >[..]
+> >[    0.196924] WARNING: at /c/wfg/linux-next/kernel/rcutree.c:444 rcu_idle_exit_common+0xd2/0x117()
+> >[    0.197518] Hardware name:
+> >[    0.197796] Modules linked in:
+> >[    0.198093] Pid: 0, comm: swapper/1 Not tainted 3.1.0-ioless-full-bg-all-next-20111025+ #886
+> The patch correctly does what it is supposed to do -> correcting the
+> erroneous command "kworker/0:1" in the original dmesg output to
+> "swapper/1" in the above dmesg output. It never claimed to resolve
+> the origin of the warning at rcu_idle_exit_common(). But it answers
+> Paul's question "Anyone have any idea why the kworker thread might
+> be trying to enter the idle loop?", since it is not the kworker
+> thread but the idle task that is trying to enter the idle loop which
+> obviously makes a lot more sense.
 
-It probably makes sense for some cases to take advantage of the disk
-head being nearby and flush more than requested.
+The other part of the question is why idle_cpu(smp_processor_id()) doesn't
+think that this is an idle thread, but one bug at a time.  ;-)
 
-But I can certainly see this go wrong by taking away the write-caching
-benefits for the rest of the file just because a small part of it was
-fadvised.
+Thank you for the fix, Carsten!
 
-Acked-by: Johannes Weiner <jweiner@redhat.com>
+Oh, and this bug is fatal in mainline -- if idle_cpu(smp_processor_id())
+thinks that a given thread is the idle thread when it in fact is not,
+RCU will break.  In contrast, the RCU implementation in my -rcu tree
+will do the right thing, but complain bitterly while doing it.  At least
+assuming that the task in question had any business entering the idle
+loop in the first place.  ;-)
+
+							Thanx, Paul
+
