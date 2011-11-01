@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab1KABiG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 21:38:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56060 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751215Ab1KABiF (ORCPT
+	id S1752946Ab1KACL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 22:11:58 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39601 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab1KACL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 21:38:05 -0400
-X-Authority-Analysis: v=1.1 cv=PzmnriOiyqYdyw8suerSEFMr8oy2Ua58JL+Rk7iuDKE= c=1 sm=0 a=D8-pIz8dYmQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=gu6fZOg2AAAA:8 a=Vwkkof6LtH_gJOwyVZIA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1320111482.4793.23.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] tracing: fix event_subsystem ref counting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ilya Dryomov <idryomov@gmail.com>, linux-kernel@vger.kernel.org
-Date: Mon, 31 Oct 2011 21:38:02 -0400
-In-Reply-To: <4EAF476C.2060900@cn.fujitsu.com>
-References: <1320052062-7846-1-git-send-email-idryomov@gmail.com>
-	 <1320077699.4793.5.camel@gandalf.stny.rr.com>
-	 <4EAF476C.2060900@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 31 Oct 2011 22:11:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABeCy1Y_OXPJkca6dRvK4-PCfKH8wD_2Aq-9r-JyBBSCetrsOw@mail.gmail.com>
+References: <1316804080-6396-1-git-send-email-venki@google.com>
+	<CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+	<CABeCy1Y_OXPJkca6dRvK4-PCfKH8wD_2Aq-9r-JyBBSCetrsOw@mail.gmail.com>
+Date: Tue, 1 Nov 2011 10:11:56 +0800
+Message-ID: <CAGjg+kFyqWa=Ui+XRDoCvYFLt7eH-vScFk24tk1aZJkfWRMOxQ@mail.gmail.com>
+Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
+From: alex shi <lkml.alex@gmail.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, "Chen, Tim C" <tim.c.chen@intel.com>,
+        alex shi <lkml.alex@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-01 at 09:12 +0800, Li Zefan wrote:
-> Steven Rostedt wrote:
-> > On Mon, 2011-10-31 at 11:07 +0200, Ilya Dryomov wrote:
-> >> Fix a bug introduced by e9dbfae5, which prevents event_subsystem from
-> >> ever being released.
-> >>
-> >> Ref_count was added to keep track of subsystem users, not for counting
-> >> events.  Subsystem is created with ref_count = 1, so there is no need to
-> >> increment it for every event, we have nr_events for that.  Fix this by
-> >> touching ref_count only when we actually have a new user -
-> >> subsystem_open().
-> > 
-> > Good catch, I'll pull this in.
-> > 
-> 
-> I made a different fix last week:
-> 
-> http://marc.info/?l=linux-kernel&m=131978486911595&w=2
-> 
-> but I guess Ilya's version is a bit better.
+> Hi Alex,
+>
+> It should apply cleanly over 3.0. Thanks for testing the patch..
 
-That patch was still in my queue to process, as I missed it during my
-travels to Prague. But yeah, I think Ilya's patch is a better solution.
-
-Thanks!
-
--- Steve
-
-
-
+I tested the patch against 3.1 kernel for specpower benchmark on our
+machine, westmere core laptop Thinkpad t410(internal name lkp-t410),
+and on Romely-EP machine(lkp-sb03). No clear power or performance
+change found. the performance and power has no clear change for every
+level system load. from 0 to 100%.
