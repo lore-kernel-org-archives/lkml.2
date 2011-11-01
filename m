@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab1KADnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 23:43:12 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:45887 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab1KADnK (ORCPT
+	id S1754237Ab1KADnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 23:43:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48679 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753830Ab1KADnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 23:43:10 -0400
-Date: Tue, 1 Nov 2011 14:43:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: linux-next: manual merge of the kbuild tree with the  tree
-Message-Id: <20111101144300.4d9ea5834a874944bd87e823@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+"
+	Mon, 31 Oct 2011 23:43:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EAF66C7.6080909@zytor.com>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com>
+ <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com>
+ <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm> <4EAF66C7.6080909@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 31 Oct 2011 20:42:57 -0700
+X-Google-Sender-Auth: Yx68Kj5Bh_8HePGUbQCMxgKGWak
+Message-ID: <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: david@lang.hm, James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 31, 2011 at 8:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I use IMAP on my phone, and with Thunderpants... I mean Thunderbird...
+> and it works quite nicely.
 
-Hi Michal,
+Including things like searching lkml etc?
 
-Today's linux-next merge of the kbuild tree got a conflict in
-drivers/net/ethernet/stmicro/stmmac/Kconfig (drivers/net/stmmac/Kconfig
-in the kbuild tree) between commit 7ac6653a085b ("stmmac: Move the
-STMicroelectronics driver") from the  tree and commit 2d3def0b73e3
-("stmmac: drop unused Kconfig symbol") from the kbuild tree.
+I've been successful in using IMAP for just reading my inbox (even
+over a cell network). Then IMAP is reasonably fine, at least if you do
+client-side caching.
 
-I just used the latter version.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+But not for actual real *work*, where I actually search for specific
+email authors and words in the body? Not so much.
 
---Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+
-Content-Type: application/pgp-signature
+Maybe it's because I'm used to having all my mail locally, but
+searching all my emails is one of my most common operations. The gmail
+web interface does that fine. IMAP has never worked for me, despite
+some client/server combinations allegedly supporting server-side
+searches. Maybe I never hit the right combination, but I tested things
+that were *supposed* to do it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Actually, most of my attempts at using IMAP have been unacceptably
+slow even when I don't do searches. I used to do huge inboxes, which
+brought just about anything to a standstill. I only got rid of my
+habit of big inboxes thanks to another gmail feature - you don't have
+to save your non-inbox email in a folder, you can just "archive" it
+and it goes away but is still easily searchable.
 
-iQIcBAEBCAAGBQJOr2rEAAoJEECxmPOUX5FEGV8P/2NqifpYSrCuIFJ2WCC6fnXk
-BbEHaGoVU6csLh6BEuYySawdmSEWaqD83CY0nSwYM1icDxFlZnzln5Lmb02TKBlx
-+9+mAQ30Da7Q+/xVJcKoHncNMUntwcjUQGJ6CnQVnIsEwRWVTCGEEBuP/xAvI3a2
-gG6V/+fzDxPaEBkU4QJpK6ZQpWNQfoXrFnyXO1TQSfX4eV1MUD6BujUjC1OsGxQp
-JIrI3AFaRlHdsncQ37R77vpMeb3HY0L3FCQxe6qN4z72clmoOeZmOuSuwPHTp/9K
-okXuXBnIz7V2SbfXSzKnnOQugEBPRNJBxQoC32wGtlhLGkh7KI/7xwMIUcwnz9gG
-r2RFSXNDR5z6nEV/USJv/TtsFYehKa88zB1stqLU7PdGL4H52W6nqzaHaHWU2yTm
-cPIz9b72pLCFVwLBWhIoeoQGdr8YqR8wVuRKmqZOUF3SwflLwp8rU5S9tAltZaqf
-p2cZCVBrlBaxDy0AfoQdlO9lpKNVbeOmYBhqKl+7qmLPz24/j4Pbm2wH6qYMEpXA
-YZLfA4AlGXVAmP/iqXFf5Rh1IZr6Z9fjOFzD6lg9hqzGxr+JM/e85iesfFQlKWMe
-xDCYg2eixoGe4mixUsHuKlIiyXObBdlH1kWNvZofCWZR1eNYm4jYoq5OJNgvBIHT
-mhyl1nHD7xggbtmyQaQ3
-=zJn+
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_14_43_00_+1100_fZCgycJOECBs4Nm+--
+                         Linus
