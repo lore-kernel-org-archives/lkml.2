@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750817Ab1KAFPE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 01:15:04 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44886 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735Ab1KAFPC convert rfc822-to-8bit (ORCPT
+	id S1750932Ab1KAFPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 01:15:18 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:52942 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735Ab1KAFPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 01:15:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <574299906.69412.1320054001912.JavaMail.mail@webmail05>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-	<20111030212644.GA7106@khazad-dum.debian.net>
-	<815860869.50724.1320011477430.JavaMail.mail@webmail17>
-	<20111031091607.GB7106@khazad-dum.debian.net>
-	<574299906.69412.1320054001912.JavaMail.mail@webmail05>
-Date: Mon, 31 Oct 2011 22:15:00 -0700
-Message-ID: <CADVo6625Jg9zY2hejFXD_2TrbZKHm3seNGobaQg2RKta7Nor_Q@mail.gmail.com>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-From: ffab ffa <ffab78@gmail.com>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: hmh@hmh.eng.br, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 1 Nov 2011 01:15:13 -0400
+Date: Tue, 1 Nov 2011 16:15:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>, NeilBrown <neilb@suse.de>
+Subject: linux-next: manual merge of the block tree with Linus' tree
+Message-Id: <20111101161500.79aebe8d8f30162ea542a818@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_16_15_00_+1100_labJD+dRz2rbPf5V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-are you sure of the cpu terminology? I used few  i7-2600K  machine
-and  the  /proc/cpuinfo shows that the cores thread siblings are 0-4,
-1-5, 2-6 and 3-7
-can you share your /proc/cpuinfo
+--Signature=_Tue__1_Nov_2011_16_15_00_+1100_labJD+dRz2rbPf5V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 31, 2011 at 2:40 AM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
->> On Oct 31, 2011, Henrique de Moraes Holschuh  wrote:
->>
->> On Sun, 30 Oct 2011, Artem S. Tashkinov wrote:
->> > > Please make sure both are set to 0.  If they were not 0 at the time you
->> > > ran your tests, please retest and report back.
->> >
->> > That's 0 & 0 for me.
->>
->> How idle is your system during the test?
->
-> load average: 0.00, 0.00, 0.00
->
-> As I've mentioned great many times I run this test on a completely idle system
-> (i.e. I even `init 3` in advance to avoid any unexpected CPU usage spikes
-> caused by unrelated processed).
->
-> I have to insist that people conduct this test on their own without trusting my
-> words. Probably there's something I overlook or don't fully understand but from
-> what I see, there's a serious issue here (at least Microsoft XP and 7 work exactly
-> the way I believe an OS should handle such a load).
->
-> Artem
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Hi Jens,
+
+Today's linux-next merge of the block tree got a conflict in
+drivers/md/raid10.c between commit fd01b88c75a7 ("md: remove typedefs:
+mddev_t -> struct mddev") from Linus' tree and commit 5a7bbad27a41
+("block: remove support for bio remapping from ->make_request") from the
+block tree.
+
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/md/raid10.c
+index c025a82,ea5fc0b..0000000
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@@ -842,11 -830,11 +842,11 @@@ static void unfreeze_array(struct r10co
+  	spin_unlock_irq(&conf->resync_lock);
+  }
+ =20
+- static int make_request(struct mddev *mddev, struct bio * bio)
+ -static void make_request(mddev_t *mddev, struct bio * bio)
+++static void make_request(struct mddev *mddev, struct bio * bio)
+  {
+ -	conf_t *conf =3D mddev->private;
+ -	mirror_info_t *mirror;
+ -	r10bio_t *r10_bio;
+ +	struct r10conf *conf =3D mddev->private;
+ +	struct mirror_info *mirror;
+ +	struct r10bio *r10_bio;
+  	struct bio *read_bio;
+  	int i;
+  	int chunk_sects =3D conf->chunk_mask + 1;
+@@@ -1176,12 -1156,11 +1174,11 @@@ retry_write
+ =20
+  	if (do_sync || !mddev->bitmap || !plugged)
+  		md_wakeup_thread(mddev->thread);
+- 	return 0;
+  }
+ =20
+ -static void status(struct seq_file *seq, mddev_t *mddev)
+ +static void status(struct seq_file *seq, struct mddev *mddev)
+  {
+ -	conf_t *conf =3D mddev->private;
+ +	struct r10conf *conf =3D mddev->private;
+  	int i;
+ =20
+  	if (conf->near_copies < conf->raid_disks)
+
+--Signature=_Tue__1_Nov_2011_16_15_00_+1100_labJD+dRz2rbPf5V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr4BUAAoJEECxmPOUX5FEu94P/25qbjPwzR+36yn5gYsDh2/F
+g0d7zwI4MgxPqRoN3/VOdEQDcl5st1iDXPalkdbTisGVhZg2odVbeMbfb+RCOfa/
+TDrkz0PP4KSSHHKN96g2t8bwBusWg7t7Ocyi8QcQGZlrS1T4VC6HjJrt/Szx6Epv
+u/29GjCBIBdv3XZipEvXGBmBFfFruUbdM/YTO89ubuk5dA+8i8W5/vQOSrvyP3yl
+01BW3rhtVDyXSy9pXbgnqUFM9qJQ77EMo3dnCZoOS8NfPQXXYuF1/VZZf6D2k5hx
+3IjRpNOuaKwBMM0yDzWAawigltE73FPslCPcSAehIzX+80Z/an2VT7t2igE5Ql7Q
+idIanBsREmCFlUbdnuxFQf3YC85FvKNPDIjfGBomm0fT50r2qrUT9MkkJQ4qoh0C
+mkyX2LsXCrrw9qbc2klvbShpQlC6qHrybfkIzc2bOERJf5hPCZe21f6XnfE7GvPj
+BoheDeBNK4RvctmOvwQ6RJ7zCeBZbkDKPZzTHaDyEyvptoilRymc+l9wskLPETrc
+PficEKIDMI2Ixgwz/z+uoiFubNYyfSdBM7fOpUfS1uKAVXsX+rpYxZ94nZ3VkLmS
+EBox7Hwo41xrpf6OC1uI4IoSru0n5bJy4hzBiFWApOqiHAWQqZAVZRBUWbBCAc6i
+Cm6LLJWRsbG0F5p8LW7l
+=cpRD
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_16_15_00_+1100_labJD+dRz2rbPf5V--
