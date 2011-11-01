@@ -1,90 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab1KAS2B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:28:01 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45588 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864Ab1KAS17 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:27:59 -0400
-Date: Tue, 1 Nov 2011 11:27:53 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Jeff Layton <jlayton@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111101182753.GW18855@google.com>
-References: <20111031221743.GA18855@google.com>
- <201111010024.16659.rjw@sisk.pl>
- <20111031233059.GI18855@google.com>
- <20111101005505.GO18855@google.com>
- <20111101041337.39077229@tlielax.poochiereds.net>
- <20111101065958.50addab5@tlielax.poochiereds.net>
- <20111101163059.GR18855@google.com>
- <20111101175953.GB5358@redhat.com>
- <20111101180601.GV18855@google.com>
- <20111101181329.GA6739@redhat.com>
+	id S1755882Ab1KAS3v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:29:51 -0400
+Received: from home.keithp.com ([63.227.221.253]:59540 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023Ab1KAS3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:29:50 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org
+Cc: stable@kernel.org
+Subject: Re: [PATCH] drm/i915: Fix object refcount leak on mmappable size limit error path.
+In-Reply-To: <87pqhb232g.fsf@eliezer.anholt.net>
+References: <1320128181-3161-1-git-send-email-eric@anholt.net> <yunsjm8pbvy.fsf@aiko.keithp.com> <87pqhb232g.fsf@eliezer.anholt.net>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Tue, 01 Nov 2011 11:29:47 -0700
+Message-ID: <yunk47j1ysk.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101181329.GA6739@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Nov 01, 2011 at 07:13:29PM +0100, Oleg Nesterov wrote:
-> On 11/01, Tejun Heo wrote:
-> >
-> > Yeah yeah, Trond already pointed it out.  I forgot about the
-> > sigpending special case in schedule(), which I think is rather odd,
-> 
-> I disagree with "rather odd" ;)
-> 
-> We have a lot of examples of
-> 
-> 	current->state = TASK_INTERRUPTIBLE;
-> 	...
-> 	if (signal_pending())
-> 		break;
-> 	schedule();
-> 
-> Without that special case in schedule() the code above becomes racy.
-> Just consider __wait_event_interruptible().
+On Tue, 01 Nov 2011 09:57:27 -0700, Eric Anholt <eric@anholt.net> wrote:
 
-But __wait_event_interruptible() does proper set-TASK_*, check
-sigpending and schedule() sequence.  As long as the waker performs
-seg-sigpending, wakeup sequence in the correct order, nothing is
-broken (as w/ any other wakeup conditions).  The special case deals
-with callers which don't check sigpending between set-TASK_* and
-schedule() and that's the part I think is a bit odd.  Whether I feel
-odd or not is irrelevant tho - it's already there.
+> I went ahead and finished the read-through, and everything else looks
+> good.
 
-> > Any better ideas?
-> 
-> Well. As a simple (probably temporary) fix, I'd suggest
-> 
-> 	#define wait_event_freezekillable(wq, condition)
-> 	{
-> 		freezer_do_not_count();
-> 		__retval = wait_event_killable(condition);
-> 		freezer_count();
-> 		__retval;
-> 	}
-> 
-> Do you think it can work?
+Thanks. I've merged your patch locally; it's on top of a couple of
+patches that need some work, so I'll reorder stuff and push this out today.
 
-Yeah, probably.  I was hoping to remove count/do_not_count tho.
-Hmmm... maybe we can just flip PF_NOFREEZE instead with a bit of
-modification, I think.
+=2D-=20
+keith.packard@intel.com
 
-Thanks.
+--=-=-=
+Content-Type: application/pgp-signature
 
--- 
-tejun
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrA6mzYtFsjWk68qAQhygQ//S9WCYXniscjxN5ehVc9tf6g83fLYZhIx
+lwPWJO4FLukeYLi2/o+J/gFHlw95ilpNlmGHZ60VBIOhfYIOw25Qd3hzTKuTVOPk
+KoDmUTv+sk/3Q6Apf49dmQTBFBYBUtzeRWxArzEFmeP9FdREATYY1nzOv0a2RY2i
+3dwgHkLWwZ3q3FA8tvI+zjYYUO20+oLV5zoV1r/04nLoKFaMh6MCtU8wNnuhAMxM
+EtPlf8g+GBWSFEAh2TrCoxDgNvhAbQ6aA/tYPwSqYcGl7MctfyuJAjMFDuaF5ewx
++B+XiigtUZOokygx1lIvTSi76hT3xAXISf3ZNkBLkGnlCMh0FEEAq82Yk/wtwFZl
+HV6y/UqZGZZrJ/Cu6VoEfohz3U0hURcxFti34MpOSrbhmpWNS4swVdx6IU0qBRTx
+8hOUcgMohpNe6xoJwm8OFqUBcnxIbQXtreCTPOkfIfGG10pI7q+AtmalaUIeED8S
+VhQ4Oq6lwBE4qNMa7U+KNWujzbSyMmCVMN5lZPh0BbpGafrlotmSEqIMzphlrYJX
+/zuNRf80aBTCohGFNaPZ/r/9iZSo+fB/74BiVwbvknhSTkgVJcU//c4r0hTVbks3
+AKkd9dXj00a8WfaHdq1R7xvo6mvY1hci1GutlD/blkZ3Nwj0+3GNsgYpKn5zPULy
+HIgvVf2AeCg=
+=bZ3e
+-----END PGP SIGNATURE-----
+--=-=-=--
