@@ -1,53 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab1KAOdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:33:13 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42823 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab1KAOdM (ORCPT
+	id S1754940Ab1KAOfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:35:24 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57382 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754Ab1KAOfX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:33:12 -0400
-Date: Tue, 1 Nov 2011 10:37:15 -0400
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Thomas Hellstrom <thomas@shipmail.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, thellstrom@vmware.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, j.glisse@redhat.com,
-        airlied@redhat.com, bskeggs@redhat.com
-Subject: Re: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include two
- overrides for TTM page pool.
-Message-ID: <20111101143715.GA8631@homer.localdomain>
-References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com>
- <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com>
- <4EA28FA6.7000006@shipmail.org>
+	Tue, 1 Nov 2011 10:35:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EA28FA6.7000006@shipmail.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320082040-1190-1-git-send-email-aarcange@redhat.com>
+References: <20111031171441.GD3466@redhat.com>
+	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
+Date: Tue, 1 Nov 2011 22:35:22 +0800
+Message-ID: <CAPQyPG5m4kQaZKeE6Txd5Jt0Lb9xicUanegEvwc7fgnopFAWDQ@mail.gmail.com>
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 22, 2011 at 11:40:54AM +0200, Thomas Hellstrom wrote:
-> Konrad,
-> 
-> I was hoping that we could get rid of the dma_address shuffling into
-> core TTM,
-> like I mentioned in the review. From what I can tell it's now only
-> used in the backend and
-> core ttm doesn't care about it.
-> 
-> Is there a particular reason we're still passing it around?
-> 
-> Thanks,
-> /Thomas
-> 
+On Tue, Nov 1, 2011 at 1:27 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> migrate was doing a rmap_walk with speculative lock-less access on
+> pagetables. That could lead it to not serialize properly against
+> mremap PT locks. But a second problem remains in the order of vmas in
+> the same_anon_vma list used by the rmap_walk.
+>
+> If vma_merge would succeed in copy_vma, the src vma could be placed
+> after the dst vma in the same_anon_vma list. That could still lead
+> migrate to miss some pte.
+>
+> This patch adds a anon_vma_order_tail() function to force the dst vma
+> at the end of the list before mremap starts to solve the problem.
+>
+> If the mremap is very large and there are a lots of parents or childs
+> sharing the anon_vma root lock, this should still scale better than
+> taking the anon_vma root lock around every pte copy practically for
+> the whole duration of mremap.
+>
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+>  include/linux/rmap.h |    1 +
+>  mm/mmap.c            |    8 ++++++++
+>  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 53 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index 2148b12..45eb098 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -120,6 +120,7 @@ void anon_vma_init(void);   /* create anon_vma_cachep */
+>  int  anon_vma_prepare(struct vm_area_struct *);
+>  void unlink_anon_vmas(struct vm_area_struct *);
+>  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
+> +void anon_vma_order_tail(struct vm_area_struct *);
+>  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+>  void __anon_vma_link(struct vm_area_struct *);
+>
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index a65efd4..a5858dc 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+>                 */
+>                if (vma_start >= new_vma->vm_start &&
+>                    vma_start < new_vma->vm_end)
+> +                       /*
+> +                        * No need to call anon_vma_order_tail() in
+> +                        * this case because the same PT lock will
+> +                        * serialize the rmap_walk against both src
+> +                        * and dst vmas.
+> +                        */
+>                        *vmap = new_vma;
+> +               else
+> +                       anon_vma_order_tail(new_vma);
+>        } else {
+>                new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
+>                if (new_vma) {
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 8005080..6dbc165 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+>  }
+>
+>  /*
+> + * Some rmap walk that needs to find all ptes/hugepmds without false
+> + * negatives (like migrate and split_huge_page) running concurrent
+> + * with operations that copy or move pagetables (like mremap() and
+> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
+> + * in a certain order: the dst_vma must be placed after the src_vma in
+> + * the list. This is always guaranteed by fork() but mremap() needs to
+> + * call this function to enforce it in case the dst_vma isn't newly
+> + * allocated and chained with the anon_vma_clone() function but just
+> + * an extension of a pre-existing vma through vma_merge.
+> + *
+> + * NOTE: the same_anon_vma list can still be changed by other
+> + * processes while mremap runs because mremap doesn't hold the
+> + * anon_vma mutex to prevent modifications to the list while it
+> + * runs. All we need to enforce is that the relative order of this
+> + * process vmas isn't changing (we don't care about other vmas
+> + * order). Each vma corresponds to an anon_vma_chain structure so
+> + * there's no risk that other processes calling anon_vma_order_tail()
+> + * and changing the same_anon_vma list under mremap() will screw with
+> + * the relative order of this process vmas in the list, because we
+> + * won't alter the order of any vma that isn't belonging to this
+> + * process. And there can't be another anon_vma_order_tail running
+> + * concurrently with mremap() coming from this process because we hold
+> + * the mmap_sem for the whole mremap(). fork() ordering dependency
+> + * also shouldn't be affected because we only care that the parent
+> + * vmas are placed in the list before the child vmas and
+> + * anon_vma_order_tail won't reorder vmas from either the fork parent
+> + * or child.
+> + */
+> +void anon_vma_order_tail(struct vm_area_struct *dst)
+> +{
+> +       struct anon_vma_chain *pavc;
+> +       struct anon_vma *root = NULL;
+> +
+> +       list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
+> +               struct anon_vma *anon_vma = pavc->anon_vma;
+> +               VM_BUG_ON(pavc->vma != dst);
+> +               root = lock_anon_vma_root(root, anon_vma);
+> +               list_del(&pavc->same_anon_vma);
+> +               list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
+> +       }
+> +       unlock_anon_vma_root(root);
+> +}
 
-I am working on patchset on top of this that will move dma handling
-back to driver and mostly out of ttm (the page alloc helper will
-still do dma stuff on behalf of driver) So if my patchset is acceptable
-the dma situation is transionary.
+I think Pawel might want to sign a "Tested-by", he may have been running this
+patch safely for quite some days. :)
 
-Cheers,
-Jerome
+Reviewed-by: Nai Xia <nai.xia@gmail.com>
