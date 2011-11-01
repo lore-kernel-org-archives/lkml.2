@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1KATbD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 15:31:03 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45710 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab1KATbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 15:31:01 -0400
-Message-ID: <4EB0485F.8010406@us.ibm.com>
-Date: Tue, 01 Nov 2011 14:28:31 -0500
+	id S1751699Ab1KATdf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 15:33:35 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:48293 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab1KATdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 15:33:33 -0400
+Message-ID: <4EB04940.2030506@us.ibm.com>
+Date: Tue, 01 Nov 2011 14:32:16 -0500
 From: Anthony Liguori <aliguori@us.ibm.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
@@ -15,87 +16,108 @@ To: Eric B Munson <emunson@mgebm.net>
 CC: avi@redhat.com, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
         arnd@arndb.de, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com
-Subject: Re: [PATCH 2/6 V2] Add functions to check if the host has stopped
- the vm
-References: <1320091650-24682-1-git-send-email-emunson@mgebm.net> <1320091650-24682-3-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1320091650-24682-3-git-send-email-emunson@mgebm.net>
+Subject: Re: [PATCH 3/6 V2] Add ioctl for KVM_GUEST_STOPPED
+References: <1320091650-24682-1-git-send-email-emunson@mgebm.net> <1320091650-24682-4-git-send-email-emunson@mgebm.net>
+In-Reply-To: <1320091650-24682-4-git-send-email-emunson@mgebm.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-x-cbid: 11110119-8974-0000-0000-000001527AB6
+x-cbid: 11110119-2398-0000-0000-0000018F5368
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 10/31/2011 03:07 PM, Eric B Munson wrote:
-> When a host stops or suspends a VM it will set a flag to show this.  The
-> watchdog will use these functions to determine if a softlockup is real, or the
-> result of a suspended VM.
+> Now that we have a flag that will tell the guest it was suspended, create an
+> interface for that communication using a KVM ioctl.
 >
 > Signed-off-by: Eric B Munson<emunson@mgebm.net>
 > ---
->   arch/x86/include/asm/pvclock.h |    2 ++
->   arch/x86/kernel/kvmclock.c     |   19 +++++++++++++++++++
->   2 files changed, 21 insertions(+), 0 deletions(-)
+> Changes from V1:
+>   Add kvm_set_host_stopped to arch/x86/jvm/x86.c instead of kvmclock.c
+>   Rename KVM_PAUSE_GUEST to KVM_GUEST_PAUSED
+>
+>   arch/x86/include/asm/pvclock.h |    3 +++
+>   arch/x86/kvm/x86.c             |   16 ++++++++++++++++
+>   include/linux/kvm.h            |    2 ++
+>   3 files changed, 21 insertions(+), 0 deletions(-)
 >
 > diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-> index c59cc97..7d3ba41 100644
+> index 7d3ba41..9312814 100644
 > --- a/arch/x86/include/asm/pvclock.h
 > +++ b/arch/x86/include/asm/pvclock.h
-> @@ -13,6 +13,8 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+> @@ -3,6 +3,7 @@
+>
+>   #include<linux/clocksource.h>
+>   #include<asm/pvclock-abi.h>
+> +#include<linux/kvm_host.h>
+>
+>   /* some helper functions for xen and kvm pv clock sources */
+>   cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
+> @@ -13,6 +14,8 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
 >   			    struct timespec *ts);
 >   void pvclock_resume(void);
 >
-> +bool kvm_check_and_clear_host_stopped(int cpu);
+> +void kvm_set_host_stopped(struct kvm_vcpu *vcpu);
 
-A kvm-specific function shouldn't be declared in pvclock.h as this is shared 
-code between KVM and Xen.
+This can't go in pvclock.h.
 
 > +
->   /*
->    * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
->    * yielding a 64-bit result.
-> diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
-> index c1a0188..8ddcfaf 100644
-> --- a/arch/x86/kernel/kvmclock.c
-> +++ b/arch/x86/kernel/kvmclock.c
-> @@ -113,6 +113,25 @@ static void kvm_get_preset_lpj(void)
->   	preset_lpj = lpj;
->   }
+>   bool kvm_check_and_clear_host_stopped(int cpu);
 >
-> +bool kvm_check_and_clear_host_stopped(int cpu)
-> +{
-> +	bool ret = false;
-> +	struct pvclock_vcpu_time_info *src;
-> +
-> +	/*
-> +	 * per_cpu() is safe here because this function is only called from
-> +	 * timer functions where preemption is already disabled.
-> +	 */
-> +	WARN_ON(!in_atomic());
-> +	src =&per_cpu(hv_clock, cpu);
-> +	if ((src->flags&  PVCLOCK_GUEST_STOPPED) != 0) {
-> +		src->flags = src->flags&  (~PVCLOCK_GUEST_STOPPED);
-> +		ret = true;
+>   /*
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c38efd7..592ac3b 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -3295,6 +3295,11 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+>
+>   		goto out;
+>   	}
+> +	case KVM_GUEST_PAUSED: {
+> +		r = 0;
+> +		kvm_set_host_stopped(vcpu);
+> +		break;
 > +	}
+>   	default:
+>   		r = -EINVAL;
+>   	}
+> @@ -6117,6 +6122,17 @@ int kvm_task_switch(struct kvm_vcpu *vcpu, u16 tss_selector, int reason,
+>   }
+>   EXPORT_SYMBOL_GPL(kvm_task_switch);
+>
+> +/*
+> + * kvm_set_host_stopped() indicates to the guest kernel that it has been
+> + * stopped by the hypervisor.  This function will be called from the host only.
+> + */
+> +void kvm_set_host_stopped(struct kvm_vcpu *vcpu)
+> +{
+> +	struct pvclock_vcpu_time_info *src =&vcpu->arch.hv_clock;
+> +	src->flags |= PVCLOCK_GUEST_STOPPED;
 
-It would be helpful to separate out the patches for guest enablement from host 
-enablement.  This is a guest function, correct?
-
-Don't you need an atomic getandset here?  Can the host clear this flag or only 
-set it?
-
-It's ashame we don't have a proper pvclock spec in Documentation/.  I would 
-suggest at least adding a description of how this bit works in the first patch.
+Shouldn't we throw some sort of error if you're trying to set a flag and 
+kvmclock isn't enabled?
 
 Regards,
 
 Anthony Liguori
 
-> +
-> +	return ret;
 > +}
+> +EXPORT_SYMBOL_GPL(kvm_set_host_stopped);
 > +
->   static struct clocksource kvm_clock = {
->   	.name = "kvm-clock",
->   	.read = kvm_clock_get_cycles,
+>   int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+>   				  struct kvm_sregs *sregs)
+>   {
+> diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> index f47fcd3..87cab0d 100644
+> --- a/include/linux/kvm.h
+> +++ b/include/linux/kvm.h
+> @@ -763,6 +763,8 @@ struct kvm_clock_data {
+>   #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
+>   /* Available with KVM_CAP_RMA */
+>   #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
+> +/* VM is being stopped by host */
+> +#define KVM_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
+>
+>   #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1<<  0)
+>
 
