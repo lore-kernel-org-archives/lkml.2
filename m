@@ -1,161 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab1KAHx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 03:53:58 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:26834 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752191Ab1KAHx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 03:53:57 -0400
-Subject: [PATCH v2] mm: add free_hot_cold_page_list helper
-To: linux-mm@kvack.org, akpm@linux-foundation.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, minchan.kim@gmail.com
-Date: Tue, 01 Nov 2011 11:45:02 +0300
-Message-ID: <20111101074502.32668.93131.stgit@zurg>
-In-Reply-To: <20110729075837.12274.58405.stgit@localhost6>
-References: <20110729075837.12274.58405.stgit@localhost6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752452Ab1KAHyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 03:54:36 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:60263 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1KAHye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 03:54:34 -0400
+Date: Tue, 1 Nov 2011 18:54:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: manual merge of the akpm with the scsi tree
+Message-Id: <20111101185413.694c111f8b8bf015326fbc83@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
-It frees pages directly from the list without temporary page-vector.
-It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
+--Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-bloat-o-meter:
+Hi Andrew,
 
-add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
-function                                     old     new   delta
-free_hot_cold_page_list                        -     264    +264
-get_page_from_freelist                      2129    2132      +3
-__pagevec_free                               243     239      -4
-split_free_page                              380     373      -7
-release_pages                                606     510     -96
-free_page_list                               188       -    -188
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/scsi/sd.c between commit 21208ae5a21f ("[SCSI] sd: remove
+arbitrary SD_MAX_DISKS namespace limit") from the scsi tree and
+"drivers/scsi/sd.c: use ida_simple_get() and ida_simple_remove() in place
+of boilerplate code" from the akpm.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- include/linux/gfp.h |    1 +
- mm/page_alloc.c     |   13 +++++++++++++
- mm/swap.c           |   14 +++-----------
- mm/vmscan.c         |   20 +-------------------
- 4 files changed, 18 insertions(+), 30 deletions(-)
+I think that the latter supercedes that former, so I used it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 3a76faf..6562958 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -358,6 +358,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
- extern void __free_pages(struct page *page, unsigned int order);
- extern void free_pages(unsigned long addr, unsigned int order);
- extern void free_hot_cold_page(struct page *page, int cold);
-+extern void free_hot_cold_page_list(struct list_head *list, int cold);
- 
- #define __free_page(page) __free_pages((page), 0)
- #define free_page(addr) free_pages((addr), 0)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 9dd443d..5093114 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1211,6 +1211,19 @@ out:
- }
- 
- /*
-+ * Free a list of 0-order pages
-+ */
-+void free_hot_cold_page_list(struct list_head *list, int cold)
-+{
-+	struct page *page, *next;
-+
-+	list_for_each_entry_safe(page, next, list, lru) {
-+		trace_mm_pagevec_free(page, cold);
-+		free_hot_cold_page(page, cold);
-+	}
-+}
-+
-+/*
-  * split_page takes a non-compound higher-order page, and splits it into
-  * n (1<<order) sub-pages: page[0..n]
-  * Each sub-page must be freed individually.
-diff --git a/mm/swap.c b/mm/swap.c
-index 3a442f1..b9138c7 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -562,11 +562,10 @@ int lru_add_drain_all(void)
- void release_pages(struct page **pages, int nr, int cold)
- {
- 	int i;
--	struct pagevec pages_to_free;
-+	LIST_HEAD(pages_to_free);
- 	struct zone *zone = NULL;
- 	unsigned long uninitialized_var(flags);
- 
--	pagevec_init(&pages_to_free, cold);
- 	for (i = 0; i < nr; i++) {
- 		struct page *page = pages[i];
- 
-@@ -597,19 +596,12 @@ void release_pages(struct page **pages, int nr, int cold)
- 			del_page_from_lru(zone, page);
- 		}
- 
--		if (!pagevec_add(&pages_to_free, page)) {
--			if (zone) {
--				spin_unlock_irqrestore(&zone->lru_lock, flags);
--				zone = NULL;
--			}
--			__pagevec_free(&pages_to_free);
--			pagevec_reinit(&pages_to_free);
--  		}
-+		list_add_tail(&page->lru, &pages_to_free);
- 	}
- 	if (zone)
- 		spin_unlock_irqrestore(&zone->lru_lock, flags);
- 
--	pagevec_free(&pages_to_free);
-+	free_hot_cold_page_list(&pages_to_free, cold);
- }
- EXPORT_SYMBOL(release_pages);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a90c603..77f84ef 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -728,24 +728,6 @@ static enum page_references page_check_references(struct page *page,
- 	return PAGEREF_RECLAIM;
- }
- 
--static noinline_for_stack void free_page_list(struct list_head *free_pages)
--{
--	struct pagevec freed_pvec;
--	struct page *page, *tmp;
--
--	pagevec_init(&freed_pvec, 1);
--
--	list_for_each_entry_safe(page, tmp, free_pages, lru) {
--		list_del(&page->lru);
--		if (!pagevec_add(&freed_pvec, page)) {
--			__pagevec_free(&freed_pvec);
--			pagevec_reinit(&freed_pvec);
--		}
--	}
--
--	pagevec_free(&freed_pvec);
--}
--
- /*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
-@@ -1009,7 +991,7 @@ keep_lumpy:
- 	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
- 		zone_set_flag(zone, ZONE_CONGESTED);
- 
--	free_page_list(&free_pages);
-+	free_hot_cold_page_list(&free_pages, 1);
- 
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
+--Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr6WlAAoJEECxmPOUX5FEj7UQAIflCKAYH09ZpPY2IfB23amD
+7nYHEcp45lVoRYZw8XNNvRCNgUfieTLKAfe2BbbgmD39ZHwDFixQkc0ZALd//yfT
+X0w/6fA4t/LLwBmaYNFGZxTho1uYeJHJ4T5/m3uov3zUVyVVZ4hDc6JZqBBrf82+
+Hf9q6c5iQ/OODCmM2/xLirEf+DqaZelMxQgmsTwUS/1LhNo3Ts0K90XmaHjSm7qq
+n0/mgd0RpbC+DgtpqOcQBrH1a4U20+ioGYQ4xJGphZSxn/thYJ2isE8m0fws//4V
+wOw2VSJVVknXydzVeqroDT/+R6Lk+ALiuDELG/N8eTmdyAz3mSQLz6t7MlFt2oxJ
+mhmRo/XChEVWyji7nYSyzd5nqCJQKu2B6WSdUL0sUnnGqihOgpJZTcWsLZew4+lL
+v1BBkRyVFTQ8vKJuKPseBvTYDBUGc+YG7vBh+WTQGZV+Jcwm3Bei4Au4pVSRFbOO
+cWWgyKNmFKfSA0x2LX+EuOvY3zzr3WHoY33d4KFO0fCZGQ4FiueiwCk1S5SPHC42
+OHil5brS4MVgRoZRtaf88EChTyJEe9yD8hvKHabGNyYlinbsmRuSYERWpYYPQSz9
+uhdclNxIb2vf7ayWvw1KFRVgWVGiog+StxC9LSVEuIFsz9wivK+MUH6WPjZDEaOc
+nhDNXrx0QykD/5fzn+Wp
+=ws2k
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_18_54_13_+1100_ECBrmuEJXcc4varn--
