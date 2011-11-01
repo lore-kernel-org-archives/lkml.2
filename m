@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab1KAAmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 20:42:38 -0400
-Received: from home.kolivas.org ([59.167.196.135]:34460 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755697Ab1KAAmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 20:42:37 -0400
-From: Con Kolivas <con@kolivas.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as it should
-Date: Tue, 01 Nov 2011 11:41:59 +1100
-Message-ID: <2516934.OmMpfqGngS@quad>
-User-Agent: KMail/4.7.2 (Linux/2.6.38.4-ck1; KDE/4.7.2; x86_64; ; )
-In-Reply-To: <1320061348.6389.18.camel@marge.simson.net>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17> <1479015.f2tEjKr9vR@quad> <1320061348.6389.18.camel@marge.simson.net>
+	id S933443Ab1KAAnT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 20:43:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41414 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755716Ab1KAAnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 20:43:17 -0400
+Message-ID: <4EAF4091.2010205@zytor.com>
+Date: Mon, 31 Oct 2011 17:42:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Jeff Garzik <jeff@garzik.org>
+CC: Junio C Hamano <gitster@pobox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com> <4EAF1F40.3030907@zytor.com> <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com> <4EAF2245.90308@zytor.com> <7vzkggok6u.fsf@alter.siamese.dyndns.org> <4EAF3556.3000001@garzik.org>
+In-Reply-To: <4EAF3556.3000001@garzik.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Oct 2011 12:42:28 PM Mike Galbraith wrote:
-> On Mon, 2011-10-31 at 21:06 +1100, Con Kolivas wrote:
-> > On Sun, 30 Oct 2011 07:57:12 PM Artem S. Tashkinov wrote:
-> > > I've found out that even on Linux 3.0.8 the process scheduler
-> > > doesn't
-> > > correctly distributes the load amongst virtual CPUs. E.g. on a
-> > > 4-core
-> > > system (8 total virtual CPUs) the process scheduler often run some
-> > > instances of four different tasks on the same physical CPU.
-> > > 
-> > > Any thoughts? comments? I think this is quite a serious problem.
-> > 
-> > Intense cache locality logic, power saving concepts, cpu frequency
-> > governor behaviour and separate runqueues per CPU within the current
-> > CPU process scheduler in the current mainline linux kernel will
-> > ocasionally do this. Some workloads will be better, while others will
-> > be worse. Feel free to try my BFS cpu scheduler if you wish a CPU
-> > process scheduler that spreads work more evenly across CPUs.
-> > 
-> > Alas the last version I synced up with will not apply cleanly past about
-> > 3.0.6 I believe:
-> > 
-> > http://ck.kolivas.org/patches/bfs/3.0.0/3.0-sched-bfs-413.patch
 > 
-> Yeah, it handles independent tasks well, but cache misses can be
-> excruciatingly painful for the others.
+> The main worry is Linus ($human_who_pulls) gets
+> cryptographically-verified data at the time he pulls.  Once Linus
+> republishes his tree (git push), there will be few, if any, wanting to
+> verify Jeff Garzik's signature.
 > 
-> Q6600 box, configs as identical as possible, tbench 8
+> So no, I don't see that as a _driving_ need in the kernel's case.
 > 
-> 3.0.6-bfs413       728.6 MB/sec
-> 3.0.8             1146.7 MB/sec
+> And IMO the kernel will be a mix of signed and unsigned content for a
+> while, possibly forever.
 > 
-> 	-Mike
 
-Fortunately BFS is about optimising user visible service latency for normal 
-users running normal applications on normal desktops under normal workloads, 
-and not about tbench throughput.
+I think the desire is to be able to deconstruct things if things were to
+go wrong.
 
-Regards,
-Con
+	-hpa
+
 -- 
--ck
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
