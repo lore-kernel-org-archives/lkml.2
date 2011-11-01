@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab1KAXKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:10:53 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53074 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab1KAXKw convert rfc822-to-8bit (ORCPT
+	id S932418Ab1KAXOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:14:35 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:40758 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab1KAXOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:10:52 -0400
+	Tue, 1 Nov 2011 19:14:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6517"; a="133226960"
+Date: Tue, 1 Nov 2011 16:14:30 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] msm fix: fixup machine_desc missed in merge
+Message-ID: <20111101231429.GA3446@huya.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <20111101230320.GH18701@quack.suse.cz>
-References: <CALCETrXbPWsgaZmsvHZGEX-CxB579tG+zusXiYhR-13RcEnGvQ@mail.gmail.com>
- <ACE78D84-0E94-4E7A-99BF-C20583018697@dilger.ca> <CALCETrU23vyCXPG6mJU9qaPeAGOWDQtur5C+LRT154V5FM=Ajg@mail.gmail.com>
- <CALCETrX=-CnNQ9+4tRbqMG4mfuy2FBPXXoJeBVDVPnEiRJYRFQ@mail.gmail.com>
- <CALCETrUcOKQAJTTmCSD3Q3wYS-zLqv6tBa4AdkK50bNobRhDUQ@mail.gmail.com>
- <20111025122618.GA8072@quack.suse.cz> <CALCETrWoZeFpznU5Nv=+PvL9QRkTnS4atiGXx0jqZP_E3TJPqw@mail.gmail.com>
- <20111031231031.GD10107@quack.suse.cz> <CALCETrViG6t1forOFtO-R=bGABvtLcECxJ8m8Tenv6rwxLg_ew@mail.gmail.com>
- <20111101230320.GH18701@quack.suse.cz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 1 Nov 2011 16:10:31 -0700
-Message-ID: <CALCETrVKHyRtizmTs=4hZzOs+7JLnvv0WtkSLYLDmM0fs2ce-w@mail.gmail.com>
-Subject: Re: Latency writing to an mlocked ext4 mapping
-To: Jan Kara <jack@suse.cz>
-Cc: Andreas Dilger <adilger@dilger.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 4:03 PM, Jan Kara <jack@suse.cz> wrote:
-> On Mon 31-10-11 16:14:47, Andy Lutomirski wrote:
->> On Mon, Oct 31, 2011 at 4:10 PM, Jan Kara <jack@suse.cz> wrote:
->> > On Fri 28-10-11 16:37:03, Andy Lutomirski wrote:
->> >> On Tue, Oct 25, 2011 at 5:26 AM, Jan Kara <jack@suse.cz> wrote:
->> >> >>  - Why are we calling file_update_time at all?  Presumably we also
->> >> >> update the time when the page is written back (if not, that sounds
->> >> >> like a bug, since the contents may be changed after something saw the
->> >> >> mtime update), and, if so, why bother updating it on the first write?
->> >> >> Anything that relies on this behavior is, I think, unreliable, because
->> >> >> the page could be made writable arbitrarily early by another program
->> >> >> that changes nothing.
->> >> >  We don't update timestamp when the page is written back. I believe this
->> >> > is mostly because we don't know whether the data has been changed by a
->> >> > write syscall, which already updated the timestamp, or by mmap. That is
->> >> > also the reason why we update the timestamp at page fault time.
->> >> >
->> >> >  The reason why file_update_time() blocks for you is probably that it
->> >> > needs to get access to buffer where inode is stored on disk and because a
->> >> > transaction including this buffer is committing at the moment, your thread
->> >> > has to wait until the transaction commit finishes. This is mostly a problem
->> >> > specific to how ext4 works so e.g. xfs shouldn't have it.
->> >> >
->> >> >  Generally I believe the attempts to achieve any RT-like latencies when
->> >> > writing to a filesystem are rather hopeless. How much hopeless depends on
->> >> > the load of the filesystem (e.g., in your case of mostly idle filesystem I
->> >> > can imagine some tweaks could reduce your latencies to an acceptable level
->> >> > but once the disk gets loaded you'll be screwed). So I'd suggest that
->> >> > having RT thread just store log in memory (or write to a pipe) and have
->> >> > another non-RT thread write the data to disk would be a much more robust
->> >> > design.
->> >>
->> >> Windows seems to do pretty well at this, and I think it should be fixable on
->> >> Linux too.  "All" that needs to be done is to remove the pte_wrprotect from
->> >> page_mkclean_one.  The fallout from that might be unpleasant, though, but
->> >> it would probably speed up a number of workloads.
->> >  Well, but Linux's mm pretty much depends the pte_wrprotect() so that's
->> > unlikely to go away in a forseeable future. The reason is that we need to
->> > reliably account the number of dirty pages so that we can throttle
->> > processes that dirty too much of memory and also protect agaist system
->> > going into out-of-memory problems when too many pages would be dirty (and
->> > thus hard to reclaim). Thus we create clean pages as write-protected, when
->> > they are first written to, we account them as dirtied and unprotect them.
->> > When pages are cleaned by writeback, we decrement number of dirty pages
->> > accordingly and write-protect them again.
->>
->> What about skipping pte_wrprotect for mlocked pages and continuing to
->> account them dirty even if they're actually clean?  This should be a
->> straightforward patch except for the effect on stable pages for
->> writeback.  (It would also have unfortunate side effects on
->> ctime/mtime without my other patch to rearrange that code.)
->  Well, doing proper dirty accounting would be a mess (you'd have to
-> unaccount dirty pages during munlock etc.) and I'm not sure what all would
-> break when page writes would not be coupled with page faults. So I don't
-> think it's really worth it.
 
-I'll add it to my back burner.  I haven't figured out all (any?) of
-the accounting yet.
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->
-> Avoiding IO during a minor fault would be a decent thing which might be
-> worth pursuing. As you properly noted "stable pages during writeback"
-> requirement is one obstacle which won't be that trivial to avoid though...
+The following changes since commit b4beb4bf9934d151bf4581a54ae028927374cb2a:
 
-There's an easy solution that would be good enough for me: add a mount
-option to turn off stable pages.
+  Merge branch 'for-linus/i2c-3.2' of git://git.fluff.org/bjdooks/linux (20=
+11-11-01 15:07:19 -0700)
 
-Is the other problem just a race, perhaps?  __block_page_mkwrite calls
-__block_write_begin (which calls get_block, which I think is where the
-latency comes from) *before* wait_on_page_writeback, which means that
-there might not be any space allocated yet.
+are available in the git repository at:
 
---Andy
+  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
+
+Stephen Boyd (1):
+      msm: boards: Fix fallout from removal of machine_desc in fixup
+
+ arch/arm/mach-msm/board-msm7x30.c |    4 ++--
+ arch/arm/mach-msm/board-msm8960.c |    4 ++--
+ arch/arm/mach-msm/board-msm8x60.c |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+--=20
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOsH1VAAoJEOa6n1xeVN+C+M8QAKTtXkywdF91TdzpPtbDrXU/
+4mfa5o1thMVbj4X3nQS7E+6hwkYwN5EsITNFoKRDXT8M0TqJkFKPqVmlRBFn5Nip
+kL+ROFCulxngrpDTVdzOkHWLfjTQsxUqqGPq0aigqyEyP/MsnIUXr9lAW9zg5qqp
+8LcR+l2wtEZUqgrEaK0lM2f4vwQfxn2OH8dXKLAZdQRMbvW+I1298Yqgwk+aUstf
+dz8EcZHMYwMy4Y7VePkIf4CILeW+B/Jyl+IeRpa8wLvx07I/Mdt9mbOX1yWtuC4x
+bZqOWW3N3vZObMvIW2B97GT+RwcOlRp/y2951fYj8PhtsiRcsmDBYEOI4q0918q7
+Tvt2hS62P05Pck1rkYUpNsqD7+VsLb0m2iQlvRQVDoRv4ip0x8IZY2ofD8HZFt/w
+btiOEybJOrlot59l+cfdfA2/pNKZWIwZrxSSD6AbsE3jv5KhWd2KoxIhhzl17d9v
+QzEChG3rH4qkZsohFrpDHLCoOlDF3+WKzxfRGnER45Ef62CZntn4qepu8FwQAqtS
+CzT1gfF3LjeBq5UTVe8MXIAHS5xwBlptbNG6ZNJ08Ql3JsCbySajDgdFtMcKQxKc
+3N/RvfWXURJbnr0nAoVBsUUKiQ2bBC3CFL4jBqKzB7L2yolBMFKBK43y7vwszf8t
+0OwdIfLYabGQrpZ9878r
+=EiNi
+-----END PGP SIGNATURE-----
+
+--d6Gm4EdcadzBjdND--
