@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1KAEXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 00:23:22 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:36760 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab1KAEXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 00:23:20 -0400
-Date: Tue, 1 Nov 2011 15:23:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the crypto-current
- tree
-Message-Id: <20111101152312.5751b7ac8b4a998b6ef867be@canb.auug.org.au>
-In-Reply-To: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
-References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_15_23_12_+1100_TpEuXExkYPudDulL"
+	id S1751653Ab1KAEZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 00:25:55 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42293 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab1KAEZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 00:25:54 -0400
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com> <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com> <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm> <4EAF66C7.6080909@zytor.com> <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+From: "hpanvin@gmail.com" <hpa@zytor.com>
+Date: Mon, 31 Oct 2011 21:25:41 -0700
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: david@lang.hm, James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <3f01b4a5-8dfa-4eb4-bfa3-490d5ebf0281@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_15_23_12_+1100_TpEuXExkYPudDulL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Body searches are still slow, at least with dovecot on the server.  No idea about gmail as the server.
 
-Hi Herbert,
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Tue, 1 Nov 2011 11:58:51 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+>On Mon, Oct 31, 2011 at 8:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>
+>> I use IMAP on my phone, and with Thunderpants... I mean
+>Thunderbird...
+>> and it works quite nicely.
 >
-> Presumbly caused by commit ea8bdfcff175 ("crypto: user - Add dependency
-> on NET").
->=20
-> I have used the crypto-current tree from next-20111025 for today (i.e. th=
-at
-> commit has not been added to linux-next today).
+>Including things like searching lkml etc?
+>
+>I've been successful in using IMAP for just reading my inbox (even
+>over a cell network). Then IMAP is reasonably fine, at least if you do
+>client-side caching.
+>
+>But not for actual real *work*, where I actually search for specific
+>email authors and words in the body? Not so much.
+>
+>Maybe it's because I'm used to having all my mail locally, but
+>searching all my emails is one of my most common operations. The gmail
+>web interface does that fine. IMAP has never worked for me, despite
+>some client/server combinations allegedly supporting server-side
+>searches. Maybe I never hit the right combination, but I tested things
+>that were *supposed* to do it.
+>
+>Actually, most of my attempts at using IMAP have been unacceptably
+>slow even when I don't do searches. I used to do huge inboxes, which
+>brought just about anything to a standstill. I only got rid of my
+>habit of big inboxes thanks to another gmail feature - you don't have
+>to save your non-inbox email in a folder, you can just "archive" it
+>and it goes away but is still easily searchable.
+>
+>                         Linus
 
-Same problem and solution in the crypto tree (obviously).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Nov_2011_15_23_12_+1100_TpEuXExkYPudDulL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOr3QwAAoJEECxmPOUX5FEBsoP/0V27NAfL13d2/AW6wB2vaef
-u53dxEm9DQdbd7lY5/fjaEhpPBjIR6Bqjj7S9GuspEpxmYFjELRsfb5q4p3JrVOy
-O/wyiEZF/E/c8oD5zh9PNQNDowNFB2/Dzn4lmHqhiHEt3JnTzLyvDghlrkEUNqYa
-cQ44hbAW3rg4l9+7hd6/TEUmRVqo466sdmjf9A+Z7BBr6zMFuLsw8Bt3oHZfKfE0
-OvV/23unb3muW3EqFGfV6ORZWc12uyZTUPXuRjd+sPnMHnWRPZE8MjLmeEnAJPAE
-+gem8zdY0GbJnApJnYKA9sWpmdc7pOCgU410sTR+jDWxJOhy1Zt3uaKSvmV5ezn8
-9CkcrfrEW11oeV0SQAhmtOpDQuCiXysPo6JtT2583+FiA1lngIxgAqsttdl7pM8z
-vD73Mx2AvawEYXn6bCDMARhHy8zvUlJWuDPiDOmvNYP+spHNm24d2MFYci0+BOG/
-wSFY2drynjisB/6iVQ8UWfXLmUhve+Inp0IYwsAbGkACow1eIl8zGboOG14r94t0
-OniO0GiTZ55nzrXxV0OhcOnNbg0hntcKTA0yDj2yWfktRM4NuujMffrOTwsx889D
-3gDRgHzXNPnyLJM0yv8mZayXOH+z3pk9A+5g5a02a11iOUg8b/qDygrDSzietWDu
-EPXIAbL8p0p+x7ghmyPp
-=MdbW
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_15_23_12_+1100_TpEuXExkYPudDulL--
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
