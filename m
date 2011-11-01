@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab1KAXXQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:23:16 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:36957 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400Ab1KAXXP (ORCPT
+	id S932498Ab1KAXXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:23:22 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64179 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754400Ab1KAXXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:23:15 -0400
+	Tue, 1 Nov 2011 19:23:18 -0400
 From: Dan McGee <dpmcgee@gmail.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
@@ -14,9 +14,11 @@ Cc: dave@archlinux.org, tom@archlinux.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
 Subject: [PATCH] VFS: fix statfs() automounter semantics regression
-Date: Tue,  1 Nov 2011 18:23:10 -0500
-Message-Id: <1320189791-21634-1-git-send-email-dpmcgee@gmail.com>
+Date: Tue,  1 Nov 2011 18:23:11 -0500
+Message-Id: <1320189791-21634-2-git-send-email-dpmcgee@gmail.com>
 X-Mailer: git-send-email 1.7.7.1
+In-Reply-To: <1320189791-21634-1-git-send-email-dpmcgee@gmail.com>
+References: <1320189791-21634-1-git-send-email-dpmcgee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
