@@ -1,344 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab1KAWQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 18:16:22 -0400
-Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:43640 "EHLO
-	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932381Ab1KAWPp (ORCPT
+	id S932473Ab1KAWRO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 18:17:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63874 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab1KAWRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 18:15:45 -0400
-From: Omar Ramirez Luna <omar.ramirez@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, lo <linux-omap@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, lm <linux-media@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: [PATCH v3 4/4] OMAP3/4: iommu: adapt to runtime pm
-Date: Tue,  1 Nov 2011 17:15:52 -0500
-Message-Id: <1320185752-568-5-git-send-email-omar.ramirez@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
-References: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
+	Tue, 1 Nov 2011 18:17:12 -0400
+MIME-Version: 1.0
+Date: Tue, 1 Nov 2011 15:17:12 -0700
+Message-ID: <CA+Bv8Xaqih00xNdvSD61BF=+ZMB3ZLkc0HeiYhWnGQC3P-bB6g@mail.gmail.com>
+Subject: BUG on bluetooth mouse attach
+From: Russ Dill <russ.dill@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use runtime PM functionality interfaced with hwmod enable/idle
-functions, to replace direct clock operations, reset and sysconfig
-handling.
+I'm getting a kernel BUG at bluetooth mouse enumeration time. The
+below oops is from 3.1 on a Sony Viao SE, but I've also had the
+problem on a AMD based Acer laptop and at least 3.0, and probably
+several versions before that, but I don't remember exactly which one.
+The crash is always with the same mouse, I don't currently have any
+other ones to test with. The crash happens with 100% consistency.
 
-Tidspbridge uses a macro removed with this patch, for now the value
-is hardcoded to avoid breaking compilation.
-
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- arch/arm/mach-omap2/iommu2.c                      |   17 --------
- arch/arm/mach-omap2/omap-iommu.c                  |    1 -
- arch/arm/plat-omap/include/plat/iommu.h           |    2 -
- arch/arm/plat-omap/include/plat/iommu2.h          |    2 -
- drivers/iommu/omap-iommu.c                        |   46 ++++++++-------------
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c |    2 +-
- 6 files changed, 19 insertions(+), 51 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/iommu2.c b/arch/arm/mach-omap2/iommu2.c
-index 60e3363..5adad97 100644
---- a/arch/arm/mach-omap2/iommu2.c
-+++ b/arch/arm/mach-omap2/iommu2.c
-@@ -25,15 +25,6 @@
-  */
- #define IOMMU_ARCH_VERSION	0x00000011
- 
--/* SYSCONF */
--#define MMU_SYS_IDLE_SHIFT	3
--#define MMU_SYS_IDLE_FORCE	(0 << MMU_SYS_IDLE_SHIFT)
--#define MMU_SYS_IDLE_NONE	(1 << MMU_SYS_IDLE_SHIFT)
--#define MMU_SYS_IDLE_SMART	(2 << MMU_SYS_IDLE_SHIFT)
--#define MMU_SYS_IDLE_MASK	(3 << MMU_SYS_IDLE_SHIFT)
--
--#define MMU_SYS_AUTOIDLE	1
--
- /* IRQSTATUS & IRQENABLE */
- #define MMU_IRQ_MULTIHITFAULT	(1 << 4)
- #define MMU_IRQ_TABLEWALKFAULT	(1 << 3)
-@@ -96,11 +87,6 @@ static int omap2_iommu_enable(struct omap_iommu *obj)
- 	dev_info(obj->dev, "%s: version %d.%d\n", obj->name,
- 		 (l >> 4) & 0xf, l & 0xf);
- 
--	l = iommu_read_reg(obj, MMU_SYSCONFIG);
--	l &= ~MMU_SYS_IDLE_MASK;
--	l |= (MMU_SYS_IDLE_SMART | MMU_SYS_AUTOIDLE);
--	iommu_write_reg(obj, l, MMU_SYSCONFIG);
--
- 	iommu_write_reg(obj, pa, MMU_TTB);
- 
- 	__iommu_set_twl(obj, true);
-@@ -114,7 +100,6 @@ static void omap2_iommu_disable(struct omap_iommu *obj)
- 
- 	l &= ~MMU_CNTL_MASK;
- 	iommu_write_reg(obj, l, MMU_CNTL);
--	iommu_write_reg(obj, MMU_SYS_IDLE_FORCE, MMU_SYSCONFIG);
- 
- 	dev_dbg(obj->dev, "%s is shutting down\n", obj->name);
- }
-@@ -244,8 +229,6 @@ omap2_iommu_dump_ctx(struct omap_iommu *obj, char *buf, ssize_t len)
- 	char *p = buf;
- 
- 	pr_reg(REVISION);
--	pr_reg(SYSCONFIG);
--	pr_reg(SYSSTATUS);
- 	pr_reg(IRQSTATUS);
- 	pr_reg(IRQENABLE);
- 	pr_reg(WALKING_ST);
-diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-omap2/omap-iommu.c
-index 669fd07..cad98c7 100644
---- a/arch/arm/mach-omap2/omap-iommu.c
-+++ b/arch/arm/mach-omap2/omap-iommu.c
-@@ -34,7 +34,6 @@ static int __init omap_iommu_dev_init(struct omap_hwmod *oh, void *unused)
- 	static int i;
- 
- 	pdata.name = oh->name;
--	pdata.clk_name = oh->main_clk;
- 	pdata.nr_tlb_entries = a->nr_tlb_entries;
- 	pdata.da_start = a->da_start;
- 	pdata.da_end = a->da_end;
-diff --git a/arch/arm/plat-omap/include/plat/iommu.h b/arch/arm/plat-omap/include/plat/iommu.h
-index 01927a5..3842e99 100644
---- a/arch/arm/plat-omap/include/plat/iommu.h
-+++ b/arch/arm/plat-omap/include/plat/iommu.h
-@@ -28,7 +28,6 @@ struct iotlb_entry {
- struct omap_iommu {
- 	const char	*name;
- 	struct module	*owner;
--	struct clk	*clk;
- 	void __iomem	*regbase;
- 	struct device	*dev;
- 	void		*isr_priv;
-@@ -119,7 +118,6 @@ struct omap_mmu_dev_attr {
- 
- struct iommu_platform_data {
- 	const char *name;
--	const char *clk_name;
- 	int nr_tlb_entries;
- 	u32 da_start;
- 	u32 da_end;
-diff --git a/arch/arm/plat-omap/include/plat/iommu2.h b/arch/arm/plat-omap/include/plat/iommu2.h
-index d4116b5..1579694 100644
---- a/arch/arm/plat-omap/include/plat/iommu2.h
-+++ b/arch/arm/plat-omap/include/plat/iommu2.h
-@@ -19,8 +19,6 @@
-  * MMU Register offsets
-  */
- #define MMU_REVISION		0x00
--#define MMU_SYSCONFIG		0x10
--#define MMU_SYSSTATUS		0x14
- #define MMU_IRQSTATUS		0x18
- #define MMU_IRQENABLE		0x1c
- #define MMU_WALKING_ST		0x40
-diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
-index bbbf747..3c55be0 100644
---- a/drivers/iommu/omap-iommu.c
-+++ b/drivers/iommu/omap-iommu.c
-@@ -16,11 +16,11 @@
- #include <linux/slab.h>
- #include <linux/interrupt.h>
- #include <linux/ioport.h>
--#include <linux/clk.h>
- #include <linux/platform_device.h>
- #include <linux/iommu.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
-+#include <linux/pm_runtime.h>
- 
- #include <asm/cacheflush.h>
- 
-@@ -123,11 +123,11 @@ static int iommu_enable(struct omap_iommu *obj)
- 	if (!arch_iommu)
- 		return -ENODEV;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_enable(obj->dev);
-+	pm_runtime_get_sync(obj->dev);
- 
- 	err = arch_iommu->enable(obj);
- 
--	clk_disable(obj->clk);
- 	return err;
- }
- 
-@@ -136,11 +136,10 @@ static void iommu_disable(struct omap_iommu *obj)
- 	if (!obj)
- 		return;
- 
--	clk_enable(obj->clk);
--
- 	arch_iommu->disable(obj);
- 
--	clk_disable(obj->clk);
-+	pm_runtime_put_sync(obj->dev);
-+	pm_runtime_disable(obj->dev);
- }
- 
- /*
-@@ -264,7 +263,7 @@ static int load_iotlb_entry(struct omap_iommu *obj, struct iotlb_entry *e)
- 	if (!obj || !obj->nr_tlb_entries || !e)
- 		return -EINVAL;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 
- 	iotlb_lock_get(obj, &l);
- 	if (l.base == obj->nr_tlb_entries) {
-@@ -294,7 +293,7 @@ static int load_iotlb_entry(struct omap_iommu *obj, struct iotlb_entry *e)
- 
- 	cr = iotlb_alloc_cr(obj, e);
- 	if (IS_ERR(cr)) {
--		clk_disable(obj->clk);
-+		pm_runtime_put(obj->dev);
- 		return PTR_ERR(cr);
- 	}
- 
-@@ -308,7 +307,7 @@ static int load_iotlb_entry(struct omap_iommu *obj, struct iotlb_entry *e)
- 		l.vict = l.base;
- 	iotlb_lock_set(obj, &l);
- out:
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- 	return err;
- }
- EXPORT_SYMBOL_GPL(load_iotlb_entry);
-@@ -339,7 +338,7 @@ static void flush_iotlb_page(struct omap_iommu *obj, u32 da)
- 	int i;
- 	struct cr_regs cr;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 
- 	for_each_iotlb_cr(obj, obj->nr_tlb_entries, i, cr) {
- 		u32 start;
-@@ -358,7 +357,7 @@ static void flush_iotlb_page(struct omap_iommu *obj, u32 da)
- 			iommu_write_reg(obj, 1, MMU_FLUSH_ENTRY);
- 		}
- 	}
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- 
- 	if (i == obj->nr_tlb_entries)
- 		dev_dbg(obj->dev, "%s: no page for %08x\n", __func__, da);
-@@ -393,7 +392,7 @@ static void flush_iotlb_all(struct omap_iommu *obj)
- {
- 	struct iotlb_lock l;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 
- 	l.base = 0;
- 	l.vict = 0;
-@@ -401,7 +400,7 @@ static void flush_iotlb_all(struct omap_iommu *obj)
- 
- 	iommu_write_reg(obj, 1, MMU_GFLUSH);
- 
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- }
- EXPORT_SYMBOL_GPL(flush_iotlb_all);
- 
-@@ -416,9 +415,9 @@ EXPORT_SYMBOL_GPL(flush_iotlb_all);
-  */
- void iommu_set_twl(struct omap_iommu *obj, bool on)
- {
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 	arch_iommu->set_twl(obj, on);
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- }
- EXPORT_SYMBOL_GPL(iommu_set_twl);
- 
-@@ -429,11 +428,11 @@ ssize_t omap_iommu_dump_ctx(struct omap_iommu *obj, char *buf, ssize_t bytes)
- 	if (!obj || !buf)
- 		return -EINVAL;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 
- 	bytes = arch_iommu->dump_ctx(obj, buf, bytes);
- 
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- 
- 	return bytes;
- }
-@@ -447,7 +446,7 @@ __dump_tlb_entries(struct omap_iommu *obj, struct cr_regs *crs, int num)
- 	struct cr_regs tmp;
- 	struct cr_regs *p = crs;
- 
--	clk_enable(obj->clk);
-+	pm_runtime_get_sync(obj->dev);
- 	iotlb_lock_get(obj, &saved);
- 
- 	for_each_iotlb_cr(obj, num, i, tmp) {
-@@ -457,7 +456,7 @@ __dump_tlb_entries(struct omap_iommu *obj, struct cr_regs *crs, int num)
- 	}
- 
- 	iotlb_lock_set(obj, &saved);
--	clk_disable(obj->clk);
-+	pm_runtime_put(obj->dev);
- 
- 	return  p - crs;
- }
-@@ -821,9 +820,7 @@ static irqreturn_t iommu_fault_handler(int irq, void *data)
- 	if (!obj->refcount)
- 		return IRQ_NONE;
- 
--	clk_enable(obj->clk);
- 	errs = iommu_report_fault(obj, &da);
--	clk_disable(obj->clk);
- 	if (errs == 0)
- 		return IRQ_HANDLED;
- 
-@@ -1010,10 +1007,6 @@ static int __devinit omap_iommu_probe(struct platform_device *pdev)
- 	if (!obj)
- 		return -ENOMEM;
- 
--	obj->clk = clk_get(&pdev->dev, pdata->clk_name);
--	if (IS_ERR(obj->clk))
--		goto err_clk;
--
- 	obj->nr_tlb_entries = pdata->nr_tlb_entries;
- 	obj->name = pdata->name;
- 	obj->dev = &pdev->dev;
-@@ -1064,8 +1057,6 @@ err_irq:
- err_ioremap:
- 	release_mem_region(res->start, resource_size(res));
- err_mem:
--	clk_put(obj->clk);
--err_clk:
- 	kfree(obj);
- 	return err;
- }
-@@ -1086,7 +1077,6 @@ static int __devexit omap_iommu_remove(struct platform_device *pdev)
- 	release_mem_region(res->start, resource_size(res));
- 	iounmap(obj->regbase);
- 
--	clk_put(obj->clk);
- 	dev_info(&pdev->dev, "%s removed\n", obj->name);
- 	kfree(obj);
- 	return 0;
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-index 8889a8c..0b7c29d 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-@@ -329,7 +329,7 @@ int wake_dsp(struct bridge_dev_context *dev_context, void *pargs)
- 		omap_mbox_restore_ctx(dev_context->mbox);
- 
- 		/* Access MMU SYS CONFIG register to generate a short wakeup */
--		iommu_read_reg(dev_context->mmu, MMU_SYSCONFIG);
-+		iommu_read_reg(dev_context->mmu, 0x10);
- 
- 		dev_context->brd_state = BRD_RUNNING;
- 
--- 
-1.7.0.4
-
+[    0.000000] Linux version 3.1.0-2-generic (buildd@allspice) (gcc
+version 4.6.2 (Ubuntu/Linaro 4.6.2-1ubuntu1) ) #3-Ubuntu SMP Sat Oct
+29 00:48:30 UTC 2011 (Ubuntu 3.1.0-2.3-generic 3.1.0)
+[...]
+[ 3052.905871] Bluetooth: HIDP (Human Interface Emulation) ver 1.2
+[ 3053.009370] VFS: Close: file count is 0
+[ 3053.508389] BUG: unable to handle kernel NULL pointer dereference
+at           (null)
+[ 3053.508432] IP: [<ffffffff8103b9b9>] __ticket_spin_lock+0x9/0x20
+[ 3053.508464] PGD 0
+[ 3053.508475] Oops: 0002 [#1] SMP
+[ 3053.508492] CPU 2
+[ 3053.508501] Modules linked in: hidp psmouse btrfs zlib_deflate
+libcrc32c ufs qnx4 hfsplus hfs minix ntfs vfat msdos fat jfs xfs
+reiserfs msr rfcomm bnep kvm_intel kvm parport_pc ppdev lp parport
+binfmt_misc dm_crypt snd_hda_codec_hdmi snd_hda_codec_realtek uvcvideo
+videodev v4l2_compat_ioctl32 arc4 joydev snd_hda_intel snd_hda_codec
+snd_hwdep snd_pcm snd_seq_midi btusb iwlagn rts_pstor(C) snd_rawmidi
+eeprom bluetooth snd_seq_midi_event snd_seq dm_multipath snd_timer
+snd_seq_device sony_laptop tpm_infineon wmi serio_raw snd mac80211
+sparse_keymap mei(C) pcspkr tpm_tis soundcore cfg80211 snd_page_alloc
+firewire_sbp2 firewire_core crc_itu_t usbhid hid xhci_hcd ahci libahci
+r8169 radeon i915 ttm drm_kms_helper drm i2c_algo_bit video [last
+unloaded: psmouse]
+[ 3053.508857]
+[ 3053.508866] Pid: 8543, comm: khidpd_04580058 Tainted: G         C
+3.1.0-2-generic #3-Ubuntu Sony Corporation VPCSE190X/VAIO
+[ 3053.508913] RIP: 0010:[<ffffffff8103b9b9>]  [<ffffffff8103b9b9>]
+__ticket_spin_lock+0x9/0x20
+[ 3053.508952] RSP: 0018:ffff8801effa7da0  EFLAGS: 00010086
+[ 3053.508976] RAX: 0000000000010000 RBX: 0000000000000286 RCX: 0000000000000002
+[ 3053.509007] RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000000
+[ 3053.509037] RBP: ffff8801effa7da0 R08: ffff8801effa6000 R09: 0000000000000001
+[ 3053.509067] R10: 0000000000000000 R11: 0000000000000001 R12: ffff8801effa7e80
+[ 3053.509098] R13: ffff8801effa7e98 R14: ffff8801e86d6c70 R15: ffff8801e4fa6c00
+[ 3053.509129] FS:  0000000000000000(0000) GS:ffff88025fa80000(0000)
+knlGS:0000000000000000
+[ 3053.509162] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3053.509187] CR2: 0000000000000000 CR3: 0000000252300000 CR4: 00000000000406e0
+[ 3053.509217] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3053.509248] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 3053.509279] Process khidpd_04580058 (pid: 8543, threadinfo
+ffff8801effa6000, task ffff8801efe15c80)
+[ 3053.509317] Stack:
+[ 3053.509327]  ffff8801effa7db0 ffffffff8103ba59 ffff8801effa7dd0
+ffffffff8161f30e
+[ 3053.510999]  0000000000000000 ffff8801effa7e80 ffff8801effa7e00
+ffffffff81087621
+[ 3053.512670]  ffff880225bbc400 0000000000000000 ffff880225bbc400
+ffff8801e4fa6c70
+[ 3053.514350] Call Trace:
+[ 3053.516044]  [<ffffffff8103ba59>] default_spin_lock_flags+0x9/0x10
+[ 3053.517699]  [<ffffffff8161f30e>] _raw_spin_lock_irqsave+0x2e/0x40
+[ 3053.519417]  [<ffffffff81087621>] finish_wait+0x41/0x80
+[ 3053.521126]  [<ffffffffa067c0be>] hidp_session+0x35e/0x4b0 [hidp]
+[ 3053.522815]  [<ffffffff81053a4a>] ? finish_task_switch+0x4a/0xf0
+[ 3053.524418]  [<ffffffff8105c7e0>] ? try_to_wake_up+0x200/0x200
+[ 3053.526113]  [<ffffffff8105c7e0>] ? try_to_wake_up+0x200/0x200
+[ 3053.527814]  [<ffffffff81087550>] ? add_wait_queue+0x60/0x60
+[ 3053.529513]  [<ffffffffa067bd60>] ? hidp_recv_ctrl_frame+0xf0/0xf0 [hidp]
+[ 3053.531167]  [<ffffffff81086abc>] kthread+0x8c/0xa0
+[ 3053.532841]  [<ffffffff81629674>] kernel_thread_helper+0x4/0x10
+[ 3053.534526]  [<ffffffff81086a30>] ? flush_kthread_worker+0xa0/0xa0
+[ 3053.536207]  [<ffffffff81629670>] ? gs_change+0x13/0x13
+[ 3053.537881] Code: 00 00 48 c7 c1 c1 b7 03 81 48 c7 c2 be b7 03 81
+e9 dd fe ff ff 90 90 90 90 90 90 90 90 90 90 90 90 90 55 b8 00 00 01
+00 48 89 e5 <f0> 0f c1 07 0f b7 d0 c1 e8 10 39 c2 74 07 f3 90 0f b7 17
+eb f5
+[ 3053.539723] RIP  [<ffffffff8103b9b9>] __ticket_spin_lock+0x9/0x20
+[ 3053.541497]  RSP <ffff8801effa7da0>
+[ 3053.543233] CR2: 0000000000000000
+[ 3053.606658] ---[ end trace 62991f0c110ba2c0 ]---
