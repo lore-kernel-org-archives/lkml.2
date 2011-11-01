@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab1KAHDJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 03:03:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37331 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab1KAHDH (ORCPT
+	id S1752088Ab1KAHDb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 03:03:31 -0400
+Received: from mailout06.t-online.de ([194.25.134.19]:39252 "EHLO
+	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671Ab1KAHDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 03:03:07 -0400
+	Tue, 1 Nov 2011 03:03:30 -0400
+Message-ID: <4EAF99BD.1010203@t-online.de>
+Date: Tue, 01 Nov 2011 08:03:25 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
-References: <EF2E73589CA71846A15D0B2CDF79505D087B34BE51@wm021.weinmann.com>
-	<CAF8ieYXPMgUzekth7PGxC3AgYNKac-HQ21D3vvB5J3SLOatmfQ@mail.gmail.com>
-	<EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
-Date: Tue, 1 Nov 2011 00:03:05 -0700
-Message-ID: <CAF8ieYWY2RwkgPERgagvw2bby8Y+UFgrYr3zPOb27e=bfOH-vg@mail.gmail.com>
-Subject: Re: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
-From: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: shemminger@linux-foundation.org
+CC: linux-kernel@vger.kernel.org
+Subject: sky2: hung mac
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ID: X7B5ysZBZhLjBjq4ch4q4L7bms1uGeIu59M2kE143ulCvSPUgoAKuR15GrztElRQj0
+X-TOI-MSGID: 4ed487f3-298f-4986-9572-71d85a6aaa44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 10:59 PM, Voss, Nikolaus <N.Voss@weinmann.de> wrote:
-> Hi Havard,
->
->> {sda,scl}_is_open_drain indicates that the GPIO hardware is set up to
->> do open drain so the software doesn't have to, i.e.
->> gpio_set_value(pin, 1) will turn off the output driver rather than
->> drive the pin high, so the _val functions will do the right thing.
->
-> gpio_set_value(pin, 1) drives the output high same as
-> gpio_direction_output(pin, 1) does (documented in Documentation/gpio.txt),
-> so the gpio will be changed from open-drain to push-pull.
+I got a sky2 "hung mac" message.
 
-Normally, yes. But if the pin is configured as open-drain (which is
-not covered by the GPIO API because it's highly platform-specific),
-gpio_set_value(pin, 1) will turn off the output driver.
+grep-ing the logs I realized that this already happened
+  two times, but that was about 8 months ago.
 
-> In contrast, gpio_direction_input(pin) will turn off the output driver.
+system hw: AOpen i915GMm-hfs, Pentium M Dothan 2GB,
+                     2 Yukon-2 EC chips, revision 1.
+system sw: oct: kernel 3.1.0, running since oct 24.
+system sw: oct: latest stable kernel at that time
+system is always on.
 
-Yes, but it's (usually) much more expensive.
+Feb  3 12:04:24 golem kernel: [21332.000035] sky2 0000:02:00.0: eth0: hung mac 124:123 fifo 195 (165:160)
+Feb  3 12:04:24 golem kernel: [21332.000047] sky2 0000:02:00.0: eth0: receiver hang detected
+Feb  3 12:04:27 golem kernel: [21334.950762] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
 
-> Open-drain io is bound to "!is_open_drain" and push-pull io is bound to
-> "is_open_drain", so I still think this should be the other way round.
+Feb  7 20:08:33 golem kernel: [10925.000036] sky2 0000:02:00.0: eth0: hung mac 0:33 fifo 5 (145:155)
+Feb  7 20:08:33 golem kernel: [10925.000048] sky2 0000:02:00.0: eth0: receiver hang detected
+Feb  7 20:08:36 golem kernel: [10928.060855] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
 
-It is never correct to use push-pull I/O for i2c, so the flag does not
-specify the desired behavior of the driver, it specifies what the
-hardware has been configured to do so that the driver can choose the
-cheapest way to do open-drain I/O.
+Oct 31 17:55:55 golem kernel: [29826.000040] sky2 0000:02:00.0: eth0: hung mac 8:28 fifo 0 (173:173)
+Oct 31 17:55:55 golem kernel: [29826.000083] sky2 0000:02:00.0: eth0: receiver hang detected
+Oct 31 17:55:58 golem kernel: [29829.006516] sky2 0000:02:00.0: eth0: Link is up at 1000 Mbps, full duplex, flow control both
 
-And even if you could argue that the flag should be inverted, it has
-had the same meaning since the driver was introduced several years
-ago, so changing it now will break every single platform which
-currently uses i2c-gpio.
+Is it a sign of a bug or should it simply be ignored?
 
-Havard
+cu,
+  Knut
