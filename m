@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab1KAVFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 17:05:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50873 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699Ab1KAVFO (ORCPT
+	id S1754936Ab1KAVSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 17:18:07 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31688 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab1KAVSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 17:05:14 -0400
+	Tue, 1 Nov 2011 17:18:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6517"; a="133171679"
+Date: Tue, 1 Nov 2011 16:17:59 -0500
+From: Richard Kuo <rkuo@codeaurora.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-hexagon@vger.kernel.org
+Subject: Re: [PATCH v5 33/36] Hexagon: Add configuration and makefiles for
+ the Hexagon architecture.
+Message-ID: <20111101211759.GB3035@codeaurora.org>
+References: <093448$3uejv7@wolverine01.qualcomm.com>
+ <1320139846.14409.129.camel@x61.thuisdomein>
+ <20111101172709.GA3035@codeaurora.org>
+ <1320173992.14409.193.camel@x61.thuisdomein>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.00.1111020735080.11087@tundra.namei.org>
-References: <1319672956-17114-1-git-send-email-keescook@chromium.org>
-	<alpine.LRH.2.00.1111020735080.11087@tundra.namei.org>
-Date: Tue, 1 Nov 2011 14:05:13 -0700
-X-Google-Sender-Auth: Qa0UAx7uZBcrH51OwLKlCjZNNCo
-Message-ID: <CAGXu5jJUZoKksT3AY3fF9Nt66FL+6mDbmUnYVGVChpeV=UT_2g@mail.gmail.com>
-Subject: Re: [PATCH v6 0/3] security: Yama LSM
-From: Kees Cook <keescook@chromium.org>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320173992.14409.193.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 1:45 PM, James Morris <jmorris@namei.org> wrote:
-> On Wed, 26 Oct 2011, Kees Cook wrote:
->
-> > As discussed at the Linux Security Summit, I'm resubmitting this
-> > code. As an LSM, it has coherent policy around expanding specific DAC
-> > behaviors. There is no need for it to be a full-blown MAC, since it is
-> > not intended to be one, but rather to be a simplified expansion to DAC,
-> > with system-wide knobs. See the specific patches for details...
->
-> Yes, there was a strong consensus (unanimous I believe) at the security
-> summit on incorporating the Yama LSM as a container for generally useful
-> miscellaneous security hardening features that don't belong elsewhere.
->
-> This means that LSM is no longer 'officially' only for access control
-> mechanisms.
+On Tue, Nov 01, 2011 at 07:59:52PM +0100, Paul Bolle wrote:
+> So, you'll move it up a line?
+>  
+> > > > +#config ZONE_DMA
+> > > > +#	bool
+> > > > +#	default y
+> > > 
+> > > Why is this added commented out?
+> > 
+> > We were using it before, but not anymore.
+> 
+> So, please drop it.
 
-That would be very welcome.
+Yes to both of these.
 
-> We probably need to flesh out criteria for inclusion in Yama and document
-> it.
+> But "config TRACING" (in kernel/trace/Kconfig) also selects it if
+> STACKTRACE_SUPPORT is set. It seems GENERIC_TRACER is the hidden magic
+> here. GENERIC_TRACER is selected by the various tracer options - see
+> kernel/trace/Kconfig again, I'm unfamiliar with this stuff - and will
+> itself select TRACING. So if an arch has STACKTRACE_SUPPORT set it
+> doesn't have to select STACKTRACE itself. (Note that - except for tile -
+> no other arch selects STACKTRACE.) 
+> 
+> But hopefully someone who doesn't have to grep the Kconfig files to
+> understand this, can tell us for sure.
 
-What's the best way for me to help with that documentation?
+Ah...  Well, if nothing else, I'll just try not setting it and see if it
+works as it seems to be intended.
+ 
+> If you really feel you need to add it, but commented out, perhaps a
+> comment can be added to keep people like me from submitting patches to
+> remove it.
+
+Sounds reasonable.  I'll either add a comment or just remove it
+altogether (which is the long term goal).
+
+Not that I mind getting patches, of course.
+
+I'll have all these fixed in my tree and push them out when I can.
+
 
 Thanks,
+Richard Kuo
 
--Kees
+-- 
 
---
-Kees Cook
-ChromeOS Security
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
