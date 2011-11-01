@@ -1,67 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab1KAKMb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 06:12:31 -0400
-Received: from ra.se.axis.com ([195.60.68.13]:42635 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752475Ab1KAKMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 06:12:30 -0400
-Date: Tue, 1 Nov 2011 11:12:27 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
-Subject: Re: [PATCH 00/17] drop unused Kconfig symbols
-Message-ID: <20111101101226.GI26898@axis.com>
-References: <1319456255.2409.30.camel@x61.thuisdomein> <20111031224248.GB25411@sepie.suse.cz> <1320101716.14409.97.camel@x61.thuisdomein> <20111101085930.GF26898@axis.com> <1320140764.14409.135.camel@x61.thuisdomein>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320140764.14409.135.camel@x61.thuisdomein>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753362Ab1KAKPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 06:15:11 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36915 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752847Ab1KAKPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 06:15:09 -0400
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+In-Reply-To: <424e9e3a-670d-4835-914f-83e99a11991a@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
+	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+	 <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+	 <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+	 <20111028163053.GC1319@redhat.com>
+	 <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+	 <20138.62532.493295.522948@quad.stoffel.home>
+	 <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default 1320048767.8283.13.camel@dabdike>
+	 <424e9e3a-670d-4835-914f-83e99a11991a@default>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Nov 2011 14:13:23 +0400
+Message-ID: <1320142403.7701.62.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 10:46:04AM +0100, Paul Bolle wrote:
-> On Tue, 2011-11-01 at 09:59 +0100, Jesper Nilsson wrote:
-> > On Mon, Oct 31, 2011 at 11:55:16PM +0100, Paul Bolle wrote:
-> > > Just today Jesper Nilsson basically dropped that NAK. I assume Jesper
-> > > will try to carry the patch in (one of) their tree(s). Is that correct?
-> > 
-> > The patch that reintroduces the Kconfigs, yes, the one that removes them, no.
+On Mon, 2011-10-31 at 08:39 -0700, Dan Magenheimer wrote:
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
 > 
-> But yesterday you wrote:
-> On Fri, Oct 14, 2011 at 09:11:01PM +0200, Valdis.Kletnieks@vt.edu wrote:
-> [...]
-> > > (Personally, I'm tending towards unless it's going to be in linux-next within
-> > > the next month or so, pull the Kconfig variables out and the driver can re-add
-> > > them when it actually lands)
-> > 
-> > Ok, let's do it the right way and remove them now, and I can re-add
-> > them in the same tree.
+> Hi James --
 > 
-> So your plans have changed? It's OK with me if they change, of course,
-> but now I'm unsure what you intend to do.
+> Thanks for the reply.  You raise some good points but
+> I hope you will read what I believe are reasonable though
+> long-winded answers.
+>  
+> > On Fri, 2011-10-28 at 13:19 -0700, Dan Magenheimer wrote:
+> > > For those who "hack on the VM", I can't imagine why the handful
+> > > of lines in the swap subsystem, which is probably the most stable
+> > > and barely touched subsystem in Linux or any OS on the planet,
+> > > is going to be a burden or much of a cost.
+> > 
+> > Saying things like this doesn't encourage anyone to trust you.  The
+> > whole of the MM is a complex, highly interacting system.  The recent
+> > issues we've had with kswapd and the shrinker code gives a nice
+> > demonstration of this ... and that was caused by well tested code
+> > updates.
+> 
+> I do understand that.  My point was that the hooks are
+> placed _statically_ in largely stable code so it's not
+> going to constantly get in the way of VM developers
+> adding new features and fixing bugs, particularly
+> any developers that don't care about whether frontswap
+> works or not.  I do think that is a very relevant
+> point about maintenance... do you disagree?
 
-Sorry, I was unclear and not complete in my sentence above.
-I was referring above to the tree that the drivers will be added in,
-not the one where the Kconfigs will be removed.
+Well, as I've said, all the mm code is highly interacting, so I don't
+really see it as "stable" in the way you suggest.  What I'm saying is
+that you need to test a variety of workloads to demonstrate there aren't
+any nasty interactions.
 
-I assumed that the removal patch was handled elsewhere, so I didn't
-pick up the original patch which removed them.
+> Runtime interactions can only occur if the code is
+> config'ed and, if config'ed, only if a tmem backend (e.g.
+> Xen or zcache) enables it also at runtime.
 
-So, just to be clear on what I intend to do (now that I know what you meant):
+So this, I don't accept without proof ... that's what we initially said
+about the last set of shrinker updates that caused kswapd to hang
+sandybridge systems ...
 
-- Pick up the removal patch to the CRIS-tree.
-- Create a new tree/branch with the missing drivers and the Kconfigs readded.
+>   When
+> both are enabled, runtime interactions do occur
+> and absolutely must be fully tested.  My point was
+> that any _users_ who don't care about whether frontswap
+> works or not don't need to have any concerns about
+> VM system runtime interactions.  I think this is also
+> a very relevant point about maintenance... do you
+> disagree?
 
-Does this seem allright for you?
+I'm sorry, what point about maintenance?
 
-> Paul Bolle
+> > You can't hand wave away the need for benchmarks and
+> > performance tests.
+> 
+> I'm not.  Conclusive benchmarks are available for one user
+> (Xen) but not (yet) for other users.  I've already acknowledged
+> the feedback desiring benchmarking for zcache, but zcache
+> is already merged (albeit in  staging), and Xen tmem
+> is already merged in both Linux and the Xen hypervisor,
+> and cleancache (the alter ego of frontswap) is already
+> merged.
 
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+The test results for Xen I've seen are simply that "we're faster than
+swapping to disk, and we can be even better if you use self ballooning".
+There's no indication (at least in the Xen Summit presentation) what the
+actual workloads were.
+
+> So the question is not whether benchmarks are waived,
+> but whether one accepts (1) conclusive benchmarks for Xen;
+> PLUS (2) insufficiently benchmarked zcache; PLUS (3) at
+> least two other interesting-but-not-yet-benchmarkable users;
+> as sufficient for adding this small set of hooks into
+> swap code.
+
+That's the point: even for Xen, the benchmarks aren't "conclusive".
+There may be a workload for which transcendent memory works better, but
+make -j8 isn't enough of a variety of workloads)
+
+> I understand that some kernel developers (mostly from one
+> company) continue to completely discount Xen, and
+> thus won't even look at the Xen results.  IMHO
+> that is mudslinging.
+
+OK, so lets look at this another way:  one of the signs of a good ABI is
+generic applicability.  Any good virtualisation ABI should thus work for
+all virtualisation systems (including VMware should they choose to take
+advantage of it).  The fact that transcendent memory only seems to work
+well for Xen is a red flag in this regard.
+
+> > You have also answered all questions about inactive cost by saying "the
+> > code has zero cost when it's compiled out"  This also is a non starter.
+> > For the few use cases it has, this code has to be compiled in.  I
+> > suspect even Oracle isn't going to ship separate frontswap and
+> > non-frontswap kernels in its distro.  So you have to quantify what the
+> > performance impact is when this code is compiled in but not used.
+> > Please do so.
+> 
+> First, no, Oracle is not going to ship separate frontswap and
+> non-frontswap kernels.  It IS going to ship a frontswap-enabled
+> kernel and this can be seen in Oracle's publicly-available
+> kernel git tree (the next release, now in Beta).  Frontswap is
+> compiled in, but still must be enabled at runtime (e.g. for
+> a Xen guest, either manually by the guest's administrator
+> or automagically by the Oracle VM product's management layer).
+> 
+> I did fully quantify the performance impact elsewhere in
+> this thread.  The performance impact with CONFIG_FRONTSWAP=n
+> (which is ZERO) is relevant for distros which choose to
+> ignore it entirely.  The performance impact for CONFIG_FRONTSWAP=y
+> but not-enabled-at-runtume is one compare-pointer-against-NULL
+> per page actually swapped in or out (essentially ZERO);
+> this is relevant for distros which choose to configure it
+> enabled in case they wish to enable it at runtime in
+> the future.
+
+So what I don't like about this style of argument is the sleight of
+hand: I would expect the inactive but configured case to show mostly in
+the shrinker paths, which is where our major problems have been, so that
+would be cleancache, not frontswap, wouldn't it?
+
+> So the remaining question is the performance impact when
+> compile-time AND runtime enabled; this is in the published
+> Xen presentation I've referenced -- the impact is much much
+> less than the performance gain.  IMHO benchmark results can
+> be easily manipulated so I prefer to discuss the theoretical
+> underpinnings which, in short, is that just about anything
+> a tmem backend does (hypercall, compression, deduplication,
+> even moving data across a fast network) is a helluva lot
+> faster than swapping a page to disk.
+> 
+> Are there corner cases and probably even real workloads
+> where the cost exceeds the benefits?  Probably... though
+> less likely for frontswap than for cleancache because ONLY
+> pages that would actually be swapped out/in use frontswap.
+> 
+> But I have never suggested that every kernel should always
+> unconditionally compile-time-enable and run-time-enable
+> frontswap... simply that it should be in-tree so those
+> who wish to enable it are able to enable it.
+
+In practise, most useful ABIs end up being compiled in ... and useful
+basically means useful to any constituency, however small.  If your ABI
+is useless, then fine, we don't have to worry about the configured but
+inactive case (but then again, we wouldn't have to worry about the ABI
+at all).  If it has a use, then kernels will end up shipping with it
+configured in which is why the inactive performance impact is so
+important to quantify.
+
+James
+
+
+
