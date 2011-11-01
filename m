@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab1KAXOf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:14:35 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40758 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab1KAXOb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:14:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6517"; a="133226960"
-Date: Tue, 1 Nov 2011 16:14:30 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] msm fix: fixup machine_desc missed in merge
-Message-ID: <20111101231429.GA3446@huya.qualcomm.com>
+	id S932580Ab1KAXTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:19:08 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:33487 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932086Ab1KAXTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 19:19:06 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 19:19:06 EDT
+Date: Tue, 1 Nov 2011 16:13:14 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
+        James Morris <jmorris@namei.org>
+Subject: [PATCH] Documentation: clarify the purpose of LSMs
+Message-ID: <20111101231314.GA25418@outflux.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Clarify the purpose of the LSM interface with some brief examples and
+pointers to additional documentation.
 
---d6Gm4EdcadzBjdND
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ Documentation/security/00-INDEX        |    2 ++
+ Documentation/security/LSM.txt         |   26 ++++++++++++++++++++++++++
+ Documentation/security/credentials.txt |    6 +++---
+ 3 files changed, 31 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/security/LSM.txt
 
-The following changes since commit b4beb4bf9934d151bf4581a54ae028927374cb2a:
+diff --git a/Documentation/security/00-INDEX b/Documentation/security/00-INDEX
+index 1f33b73..eeed1de 100644
+--- a/Documentation/security/00-INDEX
++++ b/Documentation/security/00-INDEX
+@@ -1,5 +1,7 @@
+ 00-INDEX
+ 	- this file.
++LSM.txt
++	- description of the Linux Security Module framework.
+ SELinux.txt
+ 	- how to get started with the SELinux security enhancement.
+ Smack.txt
+diff --git a/Documentation/security/LSM.txt b/Documentation/security/LSM.txt
+new file mode 100644
+index 0000000..ec93803
+--- /dev/null
++++ b/Documentation/security/LSM.txt
+@@ -0,0 +1,26 @@
++Linux Security Module framework
++-------------------------------
++
++The Linux Security Module (LSM) framework provides a mechanism for
++various security checks to be hooked by new kernel extensions. The name
++"module" is a bit of a misnomer since these extensions are not actually
++loadable kernel modules. Instead, they are selectable at build-time via
++CONFIG_DEFAULT_SECURITY and can be overridden at boot-time via the
++"security=..." kernel command line argument, in the case where multiple
++LSMs were built into a given kernel.
++
++The primary users of the LSM interface are Mandatory Access Control
++(MAC) extensions which provide a comprehensive security policy. Examples
++include SELinux, Smack, Tomoyo, and AppArmor. In addition to the larger
++MAC extensions, other extensions can be built using the LSM to provide
++specific changes to system operation when these tweaks are not available
++in the core functionality of Linux itself.
++
++Without a specific LSM built into the kernel, the default LSM will be the
++Linux capabilities system. Most LSMs choose to extend the capabilities
++system, building their checks on top of the defined capability hooks.
++For more details on capabilities, see capabilities(7) in the Linux
++man-pages project.
++
++For extensive documentation on the available LSM hook interfaces, please
++see include/linux/security.h.
+diff --git a/Documentation/security/credentials.txt b/Documentation/security/credentials.txt
+index fc0366c..8625705 100644
+--- a/Documentation/security/credentials.txt
++++ b/Documentation/security/credentials.txt
+@@ -221,10 +221,10 @@ The Linux kernel supports the following types of credentials:
+  (5) LSM
+ 
+      The Linux Security Module allows extra controls to be placed over the
+-     operations that a task may do.  Currently Linux supports two main
+-     alternate LSM options: SELinux and Smack.
++     operations that a task may do.  Currently Linux supports several LSM
++     options.
+ 
+-     Both work by labelling the objects in a system and then applying sets of
++     Some work by labelling the objects in a system and then applying sets of
+      rules (policies) that say what operations a task with one label may do to
+      an object with another label.
+ 
+-- 
+1.7.5.4
 
-  Merge branch 'for-linus/i2c-3.2' of git://git.fluff.org/bjdooks/linux (20=
-11-11-01 15:07:19 -0700)
 
-are available in the git repository at:
-
-  git://codeaurora.org/quic/kernel/davidb/linux-msm.git msm-fix
-
-Stephen Boyd (1):
-      msm: boards: Fix fallout from removal of machine_desc in fixup
-
- arch/arm/mach-msm/board-msm7x30.c |    4 ++--
- arch/arm/mach-msm/board-msm8960.c |    4 ++--
- arch/arm/mach-msm/board-msm8x60.c |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
---=20
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
---d6Gm4EdcadzBjdND
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsH1VAAoJEOa6n1xeVN+C+M8QAKTtXkywdF91TdzpPtbDrXU/
-4mfa5o1thMVbj4X3nQS7E+6hwkYwN5EsITNFoKRDXT8M0TqJkFKPqVmlRBFn5Nip
-kL+ROFCulxngrpDTVdzOkHWLfjTQsxUqqGPq0aigqyEyP/MsnIUXr9lAW9zg5qqp
-8LcR+l2wtEZUqgrEaK0lM2f4vwQfxn2OH8dXKLAZdQRMbvW+I1298Yqgwk+aUstf
-dz8EcZHMYwMy4Y7VePkIf4CILeW+B/Jyl+IeRpa8wLvx07I/Mdt9mbOX1yWtuC4x
-bZqOWW3N3vZObMvIW2B97GT+RwcOlRp/y2951fYj8PhtsiRcsmDBYEOI4q0918q7
-Tvt2hS62P05Pck1rkYUpNsqD7+VsLb0m2iQlvRQVDoRv4ip0x8IZY2ofD8HZFt/w
-btiOEybJOrlot59l+cfdfA2/pNKZWIwZrxSSD6AbsE3jv5KhWd2KoxIhhzl17d9v
-QzEChG3rH4qkZsohFrpDHLCoOlDF3+WKzxfRGnER45Ef62CZntn4qepu8FwQAqtS
-CzT1gfF3LjeBq5UTVe8MXIAHS5xwBlptbNG6ZNJ08Ql3JsCbySajDgdFtMcKQxKc
-3N/RvfWXURJbnr0nAoVBsUUKiQ2bBC3CFL4jBqKzB7L2yolBMFKBK43y7vwszf8t
-0OwdIfLYabGQrpZ9878r
-=EiNi
------END PGP SIGNATURE-----
-
---d6Gm4EdcadzBjdND--
+-- 
+Kees Cook                                            @outflux.net
