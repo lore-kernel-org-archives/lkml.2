@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab1KASR5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:17:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755824Ab1KASRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:17:55 -0400
-Date: Tue, 1 Nov 2011 19:13:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Layton <jlayton@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
-	fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111101181329.GA6739@redhat.com>
-References: <20111031221743.GA18855@google.com> <201111010024.16659.rjw@sisk.pl> <20111031233059.GI18855@google.com> <20111101005505.GO18855@google.com> <20111101041337.39077229@tlielax.poochiereds.net> <20111101065958.50addab5@tlielax.poochiereds.net> <20111101163059.GR18855@google.com> <20111101175953.GB5358@redhat.com> <20111101180601.GV18855@google.com>
+	id S1755901Ab1KASSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:18:37 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54894 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab1KASSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:18:35 -0400
+Date: Tue, 1 Nov 2011 11:18:21 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: Remove unsafe device module references
+Message-ID: <20111101181820.GC15216@core.coreip.homeip.net>
+References: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
+ <20111101170156.GA8925@suse.de>
+ <CANq1E4S07S2kNTmAxQRa4mEVKrGnS7cTHKqPoHEzLOyu3Mfqzw@mail.gmail.com>
+ <20111101180038.GB4241@suse.de>
+ <CANq1E4T6urGVLC7xEa_4D=sCGYD0zsiVbH9u_E6O_xwuhR2Z4g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111101180601.GV18855@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CANq1E4T6urGVLC7xEa_4D=sCGYD0zsiVbH9u_E6O_xwuhR2Z4g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01, Tejun Heo wrote:
->
-> Yeah yeah, Trond already pointed it out.  I forgot about the
-> sigpending special case in schedule(), which I think is rather odd,
+On Tue, Nov 01, 2011 at 07:09:27PM +0100, David Herrmann wrote:
+> On Tue, Nov 1, 2011 at 7:00 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Tue, Nov 01, 2011 at 06:52:11PM +0100, David Herrmann wrote:
+> >> My solution: Some parent subsystem of us must take and release this
+> >> module-refcnt instead of us, so this bug doesn't occur.
+> >
+> > Yes, that is the ultimate solution for something like this.
+> >
+> > But, in reality, we don't care about module unloading races as there are
+> > plenty of other issues involved there where things can go bad, so we
+> > just try the best we can :)
+> 
+> Ah, I am kind of relieved that I got this right. I almost started
+> thinking I am insane.. ;)
+> 
+> So your answer is that this is so unlikely that it won't be fixed? I
+> am fine with that, even though I wonder why stuff like "struct
+> file_operations" include "owner" fields to protect callbacks but
+> "struct device_type" does *not* include any protection of it's
+> "release" callback.
 
-I disagree with "rather odd" ;)
+I think adding owner to device_type might not be a bad idea at all...
 
-We have a lot of examples of
+Thanks.
 
-	current->state = TASK_INTERRUPTIBLE;
-	...
-	if (signal_pending())
-		break;
-	schedule();
-
-Without that special case in schedule() the code above becomes racy.
-Just consider __wait_event_interruptible().
-
-> Any better ideas?
-
-Well. As a simple (probably temporary) fix, I'd suggest
-
-	#define wait_event_freezekillable(wq, condition)
-	{
-		freezer_do_not_count();
-		__retval = wait_event_killable(condition);
-		freezer_count();
-		__retval;
-	}
-
-Do you think it can work?
-
-Oleg.
-
+-- 
+Dmitry
