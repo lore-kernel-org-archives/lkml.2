@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751437Ab1KAGBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 02:01:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53924 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750778Ab1KAGBv (ORCPT
+	id S1751585Ab1KAGC4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 02:02:56 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:38510 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab1KAGCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 02:01:51 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+J/3Zfm3SJN4aMU1dFcUhPH8w8mBGhiapFC7CayV
-	UJw9KQ0A51ox5u
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-From: Mike Galbraith <efault@gmx.de>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <4EAEF004.8070005@genband.com>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-	 <20111030212644.GA7106@khazad-dum.debian.net>
-	 <4EAEF004.8070005@genband.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 07:01:46 +0100
-Message-ID: <1320127306.6305.82.camel@marge.simson.net>
+	Tue, 1 Nov 2011 02:02:55 -0400
+Date: Tue, 1 Nov 2011 17:02:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the crypto-current
+ tree
+Message-Id: <20111101170251.30878c7f7ce73c863bedee95@canb.auug.org.au>
+In-Reply-To: <20111101051810.GA7519@gondor.apana.org.au>
+References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+	<20111101152312.5751b7ac8b4a998b6ef867be@canb.auug.org.au>
+	<20111101051810.GA7519@gondor.apana.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-10-31 at 12:59 -0600, Chris Friesen wrote:
+--Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I created a tiny cpu burner program that just busy-loops.  Running two 
-> instances on my system they were always scheduled on separate physical 
-> cpus regardless of the values in sched_mc_power_savings or 
-> sched_smt_power_savings.
+Hi Herbert,
 
-A wakeup driven load using sync wakeup hint will wake to siblings of the
-same core if there's too not too much imbalance though.  Whether that's
-good or bad.. depends.
+On Tue, 1 Nov 2011 16:18:10 +1100 Herbert Xu <herbert@gondor.apana.org.au> =
+wrote:
+>
+> So did the change to depends_on fix it?
 
-If you turn SD_SHARE_PKG_RESOURCES off in the sibling sched domain,
-wakees should be awakened CPU affine in sync hint case, or on separate
-cores in no sync hint case.  They are here anyway.
+I have not yet had time to test that ...
 
-	-Mike 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOr4uLAAoJEECxmPOUX5FEUiYQAJsC6pgvjmQN77QyUlKBD2D/
+XZZxX/MN0aPTxqVKS0gU1JPCRM/bxaBLaikxOUyYp5MqJ7MNsIgOHPT3LjSVKoGE
+YuT1nTcmUf75J5CfjhAlH7WH8YNP1Vi14FXjDVoK1G/ifY+JmAWqydVr44w8mcpP
+nu0zy7jmGKsR2m2vPr/IxEzaLO9punRiQ6LRRQOyepJuV3G7tgyC2W2HUjuN/1S0
+e0dI/xgzFinRDLLqJn9Oru5cgWLfGG82hAL/0gbpQPsSrYG07Zv/XUJTS5DIZnej
+TKvvJXSHU7sME3buMCbAcE2MHHAkRXnn0GUa4Pubqz/7vMb5e6LRNibgGNn3t4P8
+a0UiChn6/sCVDtkqBLajI3oleJSVcBuQmNVydMKUQuwEEWMHeNgNdGg2P/71oh9E
+gXYZJEFFWv8Q4ZKj76CqRvoiuM9UQVfbxjRIghGOMf2xDydZmTvn4FsJ9sQ8HuKG
+m+mATERpVoIhmcIIf+aM3QPNdtszCpgpoXSNyyrwfyxsOlp8PJpUvPTImlmIbt++
+XytOyajfZb2ISt7GXaqiS94KPV7ovcbsqQHncH/EThLmXf7kQ9eYPavp+ZvxEyxJ
+HIKUqlbgvHC7TXHsIs1iAcmAO1wV2yA5oenLrzcmS+pEreePsbEqKcXHGwZcgxk5
+YYncENYp5aiBC2C2YEgs
+=eiHa
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Nov_2011_17_02_51_+1100_78RE=y/XYJe3IUDf--
