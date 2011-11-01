@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab1KATYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 15:24:35 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58157 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab1KATYd (ORCPT
+	id S932264Ab1KATaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 15:30:35 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54132 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab1KATae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 15:24:33 -0400
-Message-ID: <4EB046F9.7060306@us.ibm.com>
-Date: Tue, 01 Nov 2011 14:22:33 -0500
-From: Anthony Liguori <aliguori@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: avi@redhat.com, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
-        arnd@arndb.de, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 1/6 V2] Add flag to indicate that a vm was stopped by
- the host
-References: <1320091650-24682-1-git-send-email-emunson@mgebm.net> <1320091650-24682-2-git-send-email-emunson@mgebm.net>
-In-Reply-To: <1320091650-24682-2-git-send-email-emunson@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110119-1780-0000-0000-0000009E5849
+	Tue, 1 Nov 2011 15:30:34 -0400
+From: edward.donovan@numble.net
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, maciej.rutecki@gmail.com
+Subject: [PATCH] genirq: spurious.c: fix regression that broke irqfixup,irqpoll
+Date: Tue,  1 Nov 2011 15:29:44 -0400
+Message-Id: <1320175784-6745-1-git-send-email-edward.donovan@numble.net>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 03:07 PM, Eric B Munson wrote:
-> This flag will be used to check if the vm was stopped by the host when a soft
-> lockup was detected.
->
-> Signed-off-by: Eric B Munson<emunson@mgebm.net>
+From: Edward Donovan <edward.donovan@numble.net>
 
-Adding Jeremy since the pvclock ABI is shared across Xen and KVM.
+commit  d05c65fff0 ("genirq: spurious: Run only one poller at a time")
+introduced a regression, leaving the boot options 'irqfixup' and
+'irqpoll' non-functional.  The patch placed tests in each function, to
+exit if the function is already running.  The test in 'misrouted_irq'
+exited when it should have proceeded, effectively disabling
+'misrouted_irq' and 'poll_spurious_irqs'.  Reversing the "==" operator
+to "!=" fixes the regression.
 
-Regards,
+Signed-off-by: Edward Donovan <edward.donovan@numble.net>
+---
+ kernel/irq/spurious.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Anthony Liguori
-
-> ---
->   arch/x86/include/asm/pvclock-abi.h |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pvclock-abi.h b/arch/x86/include/asm/pvclock-abi.h
-> index 35f2d19..6167fd7 100644
-> --- a/arch/x86/include/asm/pvclock-abi.h
-> +++ b/arch/x86/include/asm/pvclock-abi.h
-> @@ -40,5 +40,6 @@ struct pvclock_wall_clock {
->   } __attribute__((__packed__));
->
->   #define PVCLOCK_TSC_STABLE_BIT	(1<<  0)
-> +#define PVCLOCK_GUEST_STOPPED	(1<<  1)
->   #endif /* __ASSEMBLY__ */
->   #endif /* _ASM_X86_PVCLOCK_ABI_H */
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index aa57d5d..b5f4742 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -115,7 +115,7 @@ static int misrouted_irq(int irq)
+ 	struct irq_desc *desc;
+ 	int i, ok = 0;
+ 
+-	if (atomic_inc_return(&irq_poll_active) == 1)
++	if (atomic_inc_return(&irq_poll_active) != 1)
+ 		goto out;
+ 
+ 	irq_poll_cpu = smp_processor_id();
+-- 
+1.7.5.4
 
