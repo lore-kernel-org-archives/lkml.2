@@ -1,222 +1,414 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab1KAVUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 17:20:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52619 "EHLO mga02.intel.com"
+	id S1755941Ab1KAVUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 17:20:32 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:38019 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab1KAVUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 17:20:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="69938536"
-Subject: Re: 3.1+ iwlwifi lockup
-From: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20111031143408.GA17152@redhat.com>
-References: <20111031143408.GA17152@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 13:27:34 -0700
-Message-ID: <1320179254.31823.130.camel@wwguy-huron>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932259Ab1KAVU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 17:20:28 -0400
+From: Glauber Costa <glommer@parallels.com>
+To: linux-kernel@vger.kernel.org
+Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
+        a.p.zijlstra@chello.nl, jbottomley@parallels.com, pjt@google.com,
+        fweisbec@gmail.com, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH v2 04/14] split kernel stat in two
+Date: Tue,  1 Nov 2011 19:19:10 -0200
+Message-Id: <1320182360-20043-5-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1320182360-20043-1-git-send-email-glommer@parallels.com>
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+In a later patch, we will use cpustat information per-task group.
+However, some of its fields are naturally global, such as the irq
+counters. There is no need to impose the task group overhead to them
+in this case. So better separate them.
 
-On Mon, 2011-10-31 at 07:34 -0700, Dave Jones wrote:
-> I just got this trace, and a driver lockup that caused me to have to
-> unload & reload the iwlwifi module to get networking back.
-> hardware is..
-> 04:00.0 Network controller: Intel Corporation Ultimate N WiFi Link 5300
-> 
-> This is new as of 3.1+  (This kernel was Linus' tree as of last night)
-> 
->         
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+---
+ arch/s390/appldata/appldata_os.c       |   16 +++++-----
+ arch/x86/include/asm/i387.h            |    2 +-
+ drivers/cpufreq/cpufreq_conservative.c |   20 ++++++------
+ drivers/cpufreq/cpufreq_ondemand.c     |   20 ++++++------
+ drivers/macintosh/rack-meter.c         |    6 ++--
+ include/linux/kernel_stat.h            |    8 ++++-
+ kernel/sched.c                         |   54 ++++++++++++++++---------------
+ 7 files changed, 67 insertions(+), 59 deletions(-)
 
-Any more information to help us understand how to re-produce the issue?
-without more data, it is really hard to root cause and fix it.
-
-Thanks
-Wey
-
-> 
-> 9.712377] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712381] Hardware name: Adamo 13
-> [ 2669.712384] wrong command queue 0 (should be 4), sequence 0x0 readp=54 writep=54
-> [ 2669.712386] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712493] Pid: 2332, comm: firefox Not tainted 3.1.0+ #9
-> [ 2669.712495] Call Trace:
-> [ 2669.712497]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712509]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712519]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712529]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712535]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712539]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712544]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712549]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712553]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712557]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712561]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712563]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712570] ---[ end trace e86fa0935f9dc7a5 ]---
-> [ 2669.712573] iwl data: 00000000: 00 00 55 55 00 00 00 00 08 53 e0 00 00 00 00 00  ..UU.....S......
-> [ 2669.712577] iwl data: 00000010: 00 00 00 00 7e 04 19 00 05 00 04 00 94 07 02 00  ....~...........
-> [ 2669.712619] ------------[ cut here ]------------
-> [ 2669.712628] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712631] Hardware name: Adamo 13
-> [ 2669.712634] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.712636] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712729] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.712731] Call Trace:
-> [ 2669.712733]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712743]  [<ffffffff8164de90>] ? _raw_spin_unlock_irqrestore+0x40/0x90
-> [ 2669.712747]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712753]  [<ffffffff810c189f>] ? trace_hardirqs_on_caller+0x1f/0x1b0
-> [ 2669.712762]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712772]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712777]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712781]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712785]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712789]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712792]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712796]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712800]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712802]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712808] ---[ end trace e86fa0935f9dc7a6 ]---
-> [ 2669.712811] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.712815] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2669.712818] ------------[ cut here ]------------
-> [ 2669.712826] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.712829] Hardware name: Adamo 13
-> [ 2669.712832] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.712834] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.712925] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.712928] Call Trace:
-> [ 2669.712930]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.712938]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.712948]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.712958]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.712963]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.712967]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.712971]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.712975]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.712979]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.712982]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.712986]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.712988]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.712994] ---[ end trace e86fa0935f9dc7a7 ]---
-> [ 2669.712997] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.713018] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2669.713136] ------------[ cut here ]------------
-> [ 2669.713146] WARNING: at drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c:927 iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]()
-> [ 2669.713150] Hardware name: Adamo 13
-> [ 2669.713153] wrong command queue 11 (should be 4), sequence 0x6B6B readp=54 writep=54
-> [ 2669.713157] Modules linked in: nfs fscache auth_rpcgss nfs_acl ppdev parport_pc lp parport fuse ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc lockd bnep bluetooth ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables arc4 dell_wmi sparse_keymap uvcvideo videodev snd_usb_audio v4l2_compat_ioctl32 snd_usbmidi_lib cdc_ether snd_rawmidi cdc_wdm usbnet cdc_acm mii snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device dell_laptop iwlwifi dcdbas microcode snd_pcm mac80211 joydev i2c_i801 pcspkr snd_timer iTCO_wdt iTCO_vendor_support snd soundcore cfg80211 snd_page_alloc tg3 rfkill wmi virtio_net kvm_intel kvm uinput sunrpc ipv6 xts gf128mul dm_crypt i915 drm_kms_helper drm i2c_algo_bit i2c_core video [last unloaded: scsi_wait_scan]
-> [ 2669.713292] Pid: 2332, comm: firefox Tainted: G        W   3.1.0+ #9
-> [ 2669.713295] Call Trace:
-> [ 2669.713297]  <IRQ>  [<ffffffff8107d16f>] warn_slowpath_common+0x7f/0xc0
-> [ 2669.713308]  [<ffffffff8107d266>] warn_slowpath_fmt+0x46/0x50
-> [ 2669.713319]  [<ffffffffa038090e>] iwl_tx_cmd_complete+0x2ee/0x330 [iwlwifi]
-> [ 2669.713331]  [<ffffffffa037e280>] iwl_irq_tasklet+0x210/0x8e0 [iwlwifi]
-> [ 2669.713337]  [<ffffffff810851fd>] tasklet_action+0x9d/0x240
-> [ 2669.713342]  [<ffffffff81085e28>] __do_softirq+0xc8/0x3d0
-> [ 2669.713347]  [<ffffffff81657f3c>] call_softirq+0x1c/0x30
-> [ 2669.713353]  [<ffffffff8101c735>] do_softirq+0xa5/0xe0
-> [ 2669.713357]  [<ffffffff810864a6>] irq_exit+0xa6/0xf0
-> [ 2669.713362]  [<ffffffff81658813>] do_IRQ+0x63/0xd0
-> [ 2669.713367]  [<ffffffff8164e5f3>] common_interrupt+0x73/0x73
-> [ 2669.713369]  <EOI>  [<ffffffff81655c7a>] ? sysret_check+0x2e/0x69
-> [ 2669.713377] ---[ end trace e86fa0935f9dc7a8 ]---
-> [ 2669.713380] iwl data: 00000000: 00 00 55 55 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  ..UUkkkkkkkkkkkk
-> [ 2669.713385] iwl data: 00000010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-> [ 2670.784424] iwlwifi 0000:04:00.0: Microcode SW error detected.  Restarting 0x2000000.
-> [ 2670.784431] iwlwifi 0000:04:00.0: Loaded firmware version: 8.83.5.1 build 33692
-> [ 2670.784556] iwlwifi 0000:04:00.0: Start IWL Error Log Dump:
-> [ 2670.784559] iwlwifi 0000:04:00.0: Status: 0x000412E4, count: 5
-> [ 2670.784562] iwlwifi 0000:04:00.0: 0x00000005 | SYSASSERT
-> [ 2670.784565] iwlwifi 0000:04:00.0: 0x000024EC | uPc
-> [ 2670.784568] iwlwifi 0000:04:00.0: 0x000024C8 | branchlink1
-> [ 2670.784570] iwlwifi 0000:04:00.0: 0x000024C8 | branchlink2
-> [ 2670.784573] iwlwifi 0000:04:00.0: 0x00000916 | interruptlink1
-> [ 2670.784576] iwlwifi 0000:04:00.0: 0x00000000 | interruptlink2
-> [ 2670.784578] iwlwifi 0000:04:00.0: 0x000000FF | data1
-> [ 2670.784580] iwlwifi 0000:04:00.0: 0x00000489 | data2
-> [ 2670.784583] iwlwifi 0000:04:00.0: 0x00000489 | line
-> [ 2670.784585] iwlwifi 0000:04:00.0: 0x1A41414C | beacon time
-> [ 2670.784588] iwlwifi 0000:04:00.0: 0x54956EB4 | tsf low
-> [ 2670.784591] iwlwifi 0000:04:00.0: 0x000004FB | tsf hi
-> [ 2670.784593] iwlwifi 0000:04:00.0: 0x00000000 | time gp1
-> [ 2670.784596] iwlwifi 0000:04:00.0: 0x9D4D53F1 | time gp2
-> [ 2670.784598] iwlwifi 0000:04:00.0: 0x00000000 | time gp3
-> [ 2670.784601] iwlwifi 0000:04:00.0: 0x00010853 | uCode version
-> [ 2670.784603] iwlwifi 0000:04:00.0: 0x00000024 | hw version
-> [ 2670.784606] iwlwifi 0000:04:00.0: 0x00480302 | board version
-> [ 2670.784609] iwlwifi 0000:04:00.0: 0x0B15001C | hcmd
-> [ 2670.784611] iwlwifi 0000:04:00.0: CSR values:
-> [ 2670.784614] iwlwifi 0000:04:00.0: (2nd byte of CSR_INT_COALESCING is CSR_INT_PERIODIC_REG)
-> [ 2670.784641] iwlwifi 0000:04:00.0:        CSR_HW_IF_CONFIG_REG: 0X00480302
-> [ 2670.784666] iwlwifi 0000:04:00.0:          CSR_INT_COALESCING: 0X00000040
-> [ 2670.784691] iwlwifi 0000:04:00.0:                     CSR_INT: 0X00000000
-> [ 2670.784715] iwlwifi 0000:04:00.0:                CSR_INT_MASK: 0X00000000
-> [ 2670.784740] iwlwifi 0000:04:00.0:           CSR_FH_INT_STATUS: 0X00000000
-> [ 2670.784765] iwlwifi 0000:04:00.0:                 CSR_GPIO_IN: 0X00000000
-> [ 2670.784790] iwlwifi 0000:04:00.0:                   CSR_RESET: 0X00000000
-> [ 2670.784814] iwlwifi 0000:04:00.0:                CSR_GP_CNTRL: 0X080403c5
-> [ 2670.784839] iwlwifi 0000:04:00.0:                  CSR_HW_REV: 0X00000024
-> [ 2670.784864] iwlwifi 0000:04:00.0:              CSR_EEPROM_REG: 0X00000000
-> [ 2670.784889] iwlwifi 0000:04:00.0:               CSR_EEPROM_GP: 0X90000004
-> [ 2670.784914] iwlwifi 0000:04:00.0:              CSR_OTP_GP_REG: 0X00060000
-> [ 2670.784938] iwlwifi 0000:04:00.0:                 CSR_GIO_REG: 0X00080042
-> [ 2670.784963] iwlwifi 0000:04:00.0:            CSR_GP_UCODE_REG: 0X00007c71
-> [ 2670.784988] iwlwifi 0000:04:00.0:           CSR_GP_DRIVER_REG: 0X00000000
-> [ 2670.785012] iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP1: 0X00000000
-> [ 2670.785037] iwlwifi 0000:04:00.0:           CSR_UCODE_DRV_GP2: 0X00000000
-> [ 2670.785062] iwlwifi 0000:04:00.0:                 CSR_LED_REG: 0X00000058
-> [ 2670.785086] iwlwifi 0000:04:00.0:        CSR_DRAM_INT_TBL_REG: 0X8811a5a0
-> [ 2670.785111] iwlwifi 0000:04:00.0:        CSR_GIO_CHICKEN_BITS: 0X27800200
-> [ 2670.785136] iwlwifi 0000:04:00.0:             CSR_ANA_PLL_CFG: 0X00880300
-> [ 2670.785161] iwlwifi 0000:04:00.0:           CSR_HW_REV_WA_REG: 0X0001001a
-> [ 2670.785186] iwlwifi 0000:04:00.0:        CSR_DBG_HPET_MEM_REG: 0Xffff0000
-> [ 2670.785188] iwlwifi 0000:04:00.0: FH register values:
-> [ 2670.785224] iwlwifi 0000:04:00.0:         FH_RSCSR_CHNL0_STTS_WPTR_REG: 0X1174de00
-> [ 2670.785243] iwlwifi 0000:04:00.0:        FH_RSCSR_CHNL0_RBDCB_BASE_REG: 0X012abbb0
-> [ 2670.785261] iwlwifi 0000:04:00.0:                  FH_RSCSR_CHNL0_WPTR: 0X00000048
-> [ 2670.785280] iwlwifi 0000:04:00.0:         FH_MEM_RCSR_CHNL0_CONFIG_REG: 0X80819104
-> [ 2670.785300] iwlwifi 0000:04:00.0:          FH_MEM_RSSR_SHARED_CTRL_REG: 0X000000fc
-> [ 2670.785343] iwlwifi 0000:04:00.0:            FH_MEM_RSSR_RX_STATUS_REG: 0X02630000
-> [ 2670.785362] iwlwifi 0000:04:00.0:    FH_MEM_RSSR_RX_ENABLE_ERR_IRQ2DRV: 0X00000000
-> [ 2670.785380] iwlwifi 0000:04:00.0:                FH_TSSR_TX_STATUS_REG: 0X07ff0001
-> [ 2670.785389] iwlwifi 0000:04:00.0:                 FH_TSSR_TX_ERROR_REG: 0X00000000
-> [ 2670.785389] iwlwifi 0000:04:00.0: Start IWL Event Log Dump: display last 20 entries
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638087993:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088265:0x00000113:0106
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088266:0x00000000:0302
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088289:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088453:0x00000113:0106
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088455:0x00000000:0302
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088478:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088750:0x0b15001c:0206
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088752:0x00000001:0204
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088755:0x00000001:0214
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638088756:0x01002111:0209
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089055:0x00000000:0210
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089065:0x00000000:0207
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089067:0x01002111:0211
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638089072:0x00000000:0212
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090106:0x00000000:0215
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090108:0x00000008:0220
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090127:0x00000000:0301
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2638090315:0x00000000:0355
-> [ 2670.785389] iwlwifi 0000:04:00.0: EVT_LOGT:2639090696:0x00000000:0125
-> [ 2670.795643] ieee80211 phy0: Hardware restart was requested
-> [ 2670.795729] iwlwifi 0000:04:00.0: L1 Enabled; Disabling L0S
-> [ 2670.798779] iwlwifi 0000:04:00.0: Radio type=0x0-0x2-0x0
-> 
-
+diff --git a/arch/s390/appldata/appldata_os.c b/arch/s390/appldata/appldata_os.c
+index 3d6b672..695388a 100644
+--- a/arch/s390/appldata/appldata_os.c
++++ b/arch/s390/appldata/appldata_os.c
+@@ -115,21 +115,21 @@ static void appldata_get_os_data(void *data)
+ 	j = 0;
+ 	for_each_online_cpu(i) {
+ 		os_data->os_cpu[j].per_cpu_user =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[USER]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[USER]);
+ 		os_data->os_cpu[j].per_cpu_nice =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[NICE]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[NICE]);
+ 		os_data->os_cpu[j].per_cpu_system =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[SYSTEM]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[SYSTEM]);
+ 		os_data->os_cpu[j].per_cpu_idle =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[IDLE]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IDLE]);
+ 		os_data->os_cpu[j].per_cpu_irq =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[IRQ]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IRQ]);
+ 		os_data->os_cpu[j].per_cpu_softirq =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[SOFTIRQ]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[SOFTIRQ]);
+ 		os_data->os_cpu[j].per_cpu_iowait =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[IOWAIT]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[IOWAIT]);
+ 		os_data->os_cpu[j].per_cpu_steal =
+-			cputime_to_jiffies(kstat_cpu(i).cpustat[STEAL]);
++			cputime_to_jiffies(kcpustat_cpu(i).cpustat[STEAL]);
+ 		os_data->os_cpu[j].cpu_id = i;
+ 		j++;
+ 	}
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index 56fa4d7..1f1b536 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -218,7 +218,7 @@ static inline void fpu_fxsave(struct fpu *fpu)
+ #ifdef CONFIG_SMP
+ #define safe_address (__per_cpu_offset[0])
+ #else
+-#define safe_address (kstat_cpu(0).cpustat[USER])
++#define safe_address (__get_cpu_var(kernel_cpustat).cpustat[USER])
+ #endif
+ 
+ /*
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index 2ab538f..a3a739f 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -103,13 +103,13 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+ 	cputime64_t busy_time;
+ 
+ 	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
+-	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
+-			kstat_cpu(cpu).cpustat[SYSTEM]);
++	busy_time = cputime64_add(kcpustat_cpu(cpu).cpustat[USER],
++			kcpustat_cpu(cpu).cpustat[SYSTEM]);
+ 
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[IRQ]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[SOFTIRQ]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[STEAL]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[NICE]);
+ 
+ 	idle_time = cputime64_sub(cur_wall_time, busy_time);
+ 	if (wall)
+@@ -272,7 +272,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
+ 		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
+ 						&dbs_info->prev_cpu_wall);
+ 		if (dbs_tuners_ins.ignore_nice)
+-			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
++			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
+ 	}
+ 	return count;
+ }
+@@ -365,7 +365,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 			cputime64_t cur_nice;
+ 			unsigned long cur_nice_jiffies;
+ 
+-			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
++			cur_nice = cputime64_sub(kcpustat_cpu(j).cpustat[NICE],
+ 					 j_dbs_info->prev_cpu_nice);
+ 			/*
+ 			 * Assumption: nice time between sampling periods will
+@@ -374,7 +374,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 			cur_nice_jiffies = (unsigned long)
+ 					cputime64_to_jiffies64(cur_nice);
+ 
+-			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
++			j_dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
+ 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
+ 		}
+ 
+@@ -503,7 +503,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 						&j_dbs_info->prev_cpu_wall);
+ 			if (dbs_tuners_ins.ignore_nice)
+ 				j_dbs_info->prev_cpu_nice =
+-						kstat_cpu(j).cpustat[NICE];
++						kcpustat_cpu(j).cpustat[NICE];
+ 		}
+ 		this_dbs_info->down_skip = 0;
+ 		this_dbs_info->requested_freq = policy->cur;
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 45d8e17..46e89663 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -127,13 +127,13 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+ 	cputime64_t busy_time;
+ 
+ 	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
+-	busy_time = cputime64_add(kstat_cpu(cpu).cpustat[USER],
+-			kstat_cpu(cpu).cpustat[SYSTEM]);
++	busy_time = cputime64_add(kcpustat_cpu(cpu).cpustat[USER],
++			kcpustat_cpu(cpu).cpustat[SYSTEM]);
+ 
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[IRQ]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[SOFTIRQ]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[STEAL]);
+-	busy_time = cputime64_add(busy_time, kstat_cpu(cpu).cpustat[NICE]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[IRQ]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[SOFTIRQ]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[STEAL]);
++	busy_time = cputime64_add(busy_time, kcpustat_cpu(cpu).cpustat[NICE]);
+ 
+ 	idle_time = cputime64_sub(cur_wall_time, busy_time);
+ 	if (wall)
+@@ -345,7 +345,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
+ 		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
+ 						&dbs_info->prev_cpu_wall);
+ 		if (dbs_tuners_ins.ignore_nice)
+-			dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
++			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
+ 
+ 	}
+ 	return count;
+@@ -458,7 +458,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 			cputime64_t cur_nice;
+ 			unsigned long cur_nice_jiffies;
+ 
+-			cur_nice = cputime64_sub(kstat_cpu(j).cpustat[NICE],
++			cur_nice = cputime64_sub(kcpustat_cpu(j).cpustat[NICE],
+ 					 j_dbs_info->prev_cpu_nice);
+ 			/*
+ 			 * Assumption: nice time between sampling periods will
+@@ -467,7 +467,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
+ 			cur_nice_jiffies = (unsigned long)
+ 					cputime64_to_jiffies64(cur_nice);
+ 
+-			j_dbs_info->prev_cpu_nice = kstat_cpu(j).cpustat[NICE];
++			j_dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[NICE];
+ 			idle_time += jiffies_to_usecs(cur_nice_jiffies);
+ 		}
+ 
+@@ -648,7 +648,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+ 						&j_dbs_info->prev_cpu_wall);
+ 			if (dbs_tuners_ins.ignore_nice)
+ 				j_dbs_info->prev_cpu_nice =
+-						kstat_cpu(j).cpustat[NICE];
++						kcpustat_cpu(j).cpustat[NICE];
+ 		}
+ 		this_dbs_info->cpu = cpu;
+ 		this_dbs_info->rate_mult = 1;
+diff --git a/drivers/macintosh/rack-meter.c b/drivers/macintosh/rack-meter.c
+index c80e49a..c8e67b0 100644
+--- a/drivers/macintosh/rack-meter.c
++++ b/drivers/macintosh/rack-meter.c
+@@ -83,11 +83,11 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu)
+ {
+ 	cputime64_t retval;
+ 
+-	retval = cputime64_add(kstat_cpu(cpu).cpustat[IDLE],
+-			kstat_cpu(cpu).cpustat[IOWAIT]);
++	retval = cputime64_add(kcpustat_cpu(cpu).cpustat[IDLE],
++			kcpustat_cpu(cpu).cpustat[IOWAIT]);
+ 
+ 	if (rackmeter_ignore_nice)
+-		retval = cputime64_add(retval, kstat_cpu(cpu).cpustat[NICE]);
++		retval = cputime64_add(retval, kcpustat_cpu(cpu).cpustat[NICE]);
+ 
+ 	return retval;
+ }
+diff --git a/include/linux/kernel_stat.h b/include/linux/kernel_stat.h
+index 7bfd0fe..f0e31a9 100644
+--- a/include/linux/kernel_stat.h
++++ b/include/linux/kernel_stat.h
+@@ -30,8 +30,11 @@ enum cpu_usage_stat {
+ 	NR_STATS,
+ };
+ 
+-struct kernel_stat {
++struct kernel_cpustat {
+ 	u64 cpustat[NR_STATS];
++};
++
++struct kernel_stat {
+ #ifndef CONFIG_GENERIC_HARDIRQS
+        unsigned int irqs[NR_IRQS];
+ #endif
+@@ -40,10 +43,13 @@ struct kernel_stat {
+ };
+ 
+ DECLARE_PER_CPU(struct kernel_stat, kstat);
++DECLARE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
+ 
+ /* Must have preemption disabled for this to be meaningful. */
+ #define kstat_this_cpu (&__get_cpu_var(kstat))
++#define kcpustat_this_cpu (&__get_cpu_var(kernel_cpustat))
+ #define kstat_cpu(cpu) per_cpu(kstat, cpu)
++#define kcpustat_cpu(cpu) per_cpu(kernel_cpustat, cpu)
+ 
+ extern unsigned long long nr_context_switches(void);
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3f42916..c225e41 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2159,7 +2159,7 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ static int irqtime_account_hi_update(void)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	unsigned long flags;
+ 	u64 latest_ns;
+ 	int ret = 0;
+@@ -2174,7 +2174,7 @@ static int irqtime_account_hi_update(void)
+ 
+ static int irqtime_account_si_update(void)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	unsigned long flags;
+ 	u64 latest_ns;
+ 	int ret = 0;
+@@ -3804,8 +3804,10 @@ unlock:
+ #endif
+ 
+ DEFINE_PER_CPU(struct kernel_stat, kstat);
++DEFINE_PER_CPU(struct kernel_cpustat, kernel_cpustat);
+ 
+ EXPORT_PER_CPU_SYMBOL(kstat);
++EXPORT_PER_CPU_SYMBOL(kernel_cpustat);
+ 
+ /*
+  * Return any ns on the sched_clock that have not yet been accounted in
+@@ -3867,7 +3869,7 @@ unsigned long long task_sched_runtime(struct task_struct *p)
+ void account_user_time(struct task_struct *p, cputime_t cputime,
+ 		       cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	u64 tmp;
+ 
+ 	/* Add user time to process. */
+@@ -3898,7 +3900,7 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 			       cputime_t cputime_scaled)
+ {
+ 	u64 tmp;
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 
+ 	tmp = cputime_to_cputime64(cputime);
+ 
+@@ -3954,7 +3956,7 @@ void __account_system_time(struct task_struct *p, cputime_t cputime,
+ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 			 cputime_t cputime, cputime_t cputime_scaled)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	u64 *target_cputime64;
+ 
+ 	if ((p->flags & PF_VCPU) && (irq_count() - hardirq_offset == 0)) {
+@@ -3978,7 +3980,7 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+  */
+ void account_steal_time(cputime_t cputime)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	u64 cputime64 = cputime_to_cputime64(cputime);
+ 
+ 	cpustat[STEAL] += cputime64;
+@@ -3990,7 +3992,7 @@ void account_steal_time(cputime_t cputime)
+  */
+ void account_idle_time(cputime_t cputime)
+ {
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 	u64 cputime64 = cputime_to_cputime64(cputime);
+ 	struct rq *rq = this_rq();
+ 
+@@ -4048,7 +4050,7 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
+ {
+ 	cputime_t one_jiffy_scaled = cputime_to_scaled(cputime_one_jiffy);
+ 	u64 tmp = cputime_to_cputime64(cputime_one_jiffy);
+-	u64 *cpustat = kstat_this_cpu->cpustat;
++	u64 *cpustat = kcpustat_this_cpu->cpustat;
+ 
+ 	if (steal_account_process_tick())
+ 		return;
+@@ -9511,7 +9513,7 @@ static u64 get_idle_time(int cpu)
+ 
+ 	if (idle_time == -1ULL) {
+ 		/* !NO_HZ so we can rely on cpustat.idle */
+-		idle = kstat_cpu(cpu).cpustat[IDLE];
++		idle = kcpustat_cpu(cpu).cpustat[IDLE];
+ 		idle += arch_idle_time(cpu);
+ 	} else
+ 		idle = usecs_to_cputime(idle_time);
+@@ -9525,7 +9527,7 @@ static u64 get_iowait_time(int cpu)
+ 
+ 	if (iowait_time == -1ULL)
+ 		/* !NO_HZ so we can rely on cpustat.iowait */
+-		iowait = kstat_cpu(cpu).cpustat[IOWAIT];
++		iowait = kcpustat_cpu(cpu).cpustat[IOWAIT];
+ 	else
+ 		iowait = usecs_to_cputime(iowait_time);
+ 
+@@ -9550,16 +9552,16 @@ int cpu_cgroup_proc_stat(struct seq_file *p)
+ 	jif = boottime.tv_sec;
+ 
+ 	for_each_possible_cpu(i) {
+-		user += kstat_cpu(i).cpustat[USER];
+-		nice += kstat_cpu(i).cpustat[NICE];
+-		system += kstat_cpu(i).cpustat[SYSTEM];
++		user += kcpustat_cpu(i).cpustat[USER];
++		nice += kcpustat_cpu(i).cpustat[NICE];
++		system += kcpustat_cpu(i).cpustat[SYSTEM];
+ 		idle += get_idle_time(i);
+ 		iowait += get_iowait_time(i);
+-		irq += kstat_cpu(i).cpustat[IRQ];
+-		softirq += kstat_cpu(i).cpustat[SOFTIRQ];
+-		steal += kstat_cpu(i).cpustat[STEAL];
+-		guest += kstat_cpu(i).cpustat[GUEST];
+-		guest_nice += kstat_cpu(i).cpustat[GUEST_NICE];
++		irq += kcpustat_cpu(i).cpustat[IRQ];
++		softirq += kcpustat_cpu(i).cpustat[SOFTIRQ];
++		steal += kcpustat_cpu(i).cpustat[STEAL];
++		guest += kcpustat_cpu(i).cpustat[GUEST];
++		guest_nice += kcpustat_cpu(i).cpustat[GUEST_NICE];
+ 
+ 		for (j = 0; j < NR_SOFTIRQS; j++) {
+ 			unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
+@@ -9584,16 +9586,16 @@ int cpu_cgroup_proc_stat(struct seq_file *p)
+ 		(unsigned long long)cputime64_to_clock_t(guest_nice));
+ 	for_each_online_cpu(i) {
+ 		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
+-		user = kstat_cpu(i).cpustat[USER];
+-		nice = kstat_cpu(i).cpustat[NICE];
+-		system = kstat_cpu(i).cpustat[SYSTEM];
++		user = kcpustat_cpu(i).cpustat[USER];
++		nice = kcpustat_cpu(i).cpustat[NICE];
++		system = kcpustat_cpu(i).cpustat[SYSTEM];
+ 		idle = get_idle_time(i);
+ 		iowait = get_iowait_time(i);
+-		irq = kstat_cpu(i).cpustat[IRQ];
+-		softirq = kstat_cpu(i).cpustat[SOFTIRQ];
+-		steal = kstat_cpu(i).cpustat[STEAL];
+-		guest = kstat_cpu(i).cpustat[GUEST];
+-		guest_nice = kstat_cpu(i).cpustat[GUEST_NICE];
++		irq = kcpustat_cpu(i).cpustat[IRQ];
++		softirq = kcpustat_cpu(i).cpustat[SOFTIRQ];
++		steal = kcpustat_cpu(i).cpustat[STEAL];
++		guest = kcpustat_cpu(i).cpustat[GUEST];
++		guest_nice = kcpustat_cpu(i).cpustat[GUEST_NICE];
+ 		seq_printf(p,
+ 			"cpu%d %llu %llu %llu %llu %llu %llu %llu %llu %llu "
+ 			"%llu\n",
+-- 
+1.7.6.4
 
