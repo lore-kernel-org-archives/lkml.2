@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab1KARwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:52:45 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49215 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab1KARwo convert rfc822-to-8bit (ORCPT
+	id S932184Ab1KARyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:54:16 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:2727
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753752Ab1KARyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:52:44 -0400
+	Tue, 1 Nov 2011 13:54:15 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zz1432N98dK4015Lzz1202hzz8275bhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LTZTQ5-02-5IO-02
+X-M-MSG: 
+Date: Tue, 1 Nov 2011 18:54:05 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: Re: [V2][PATCH 5/5] oprofile, x86: Reimplement nmi timer mode using
+ perf event
+Message-ID: <20111101175405.GP20173@erda.amd.com>
+References: <1319050075-23901-1-git-send-email-robert.richter@amd.com>
+ <1319050075-23901-6-git-send-email-robert.richter@amd.com>
+ <20111023112728.GB5156@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <CALKntY3E_opsxYBP+3xB0GTFefo=Q2A3A0w+dbXVnqs+CX3Kqw@mail.gmail.com>
-References: <CALKntY3E_opsxYBP+3xB0GTFefo=Q2A3A0w+dbXVnqs+CX3Kqw@mail.gmail.com>
-Date: Tue, 1 Nov 2011 23:52:43 +0600
-Message-ID: <CADZ9YHhcFs9pw09sgrraJzQ3BGs=nOaXAe_966R5ZrgF6BpWRw@mail.gmail.com>
-Subject: Re: Linux scheduler Questions
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Xin Tong <xerox.time.tech@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111023112728.GB5156@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 6:24 PM, Xin Tong <xerox.time.tech@gmail.com> wrote:
-> 2 questions on Linux 2.6.x scheduler.
->
-> 1.  in Linux 2.6, when a process is waiting for IO. it will be placed
-> on the wait queue. is the wait queue per cpu or global ? I do not see
-> any field for the wait queue in the runqueue structure.
+On 23.10.11 07:27:28, Ingo Molnar wrote:
+> 
+> * Robert Richter <robert.richter@amd.com> wrote:
+> 
+> > The legacy x86 nmi watchdog code was removed with the implementation
+> > of the perf based nmi watchdog. This broke Oprofile's nmi timer
+> > mode. To run nmi timer mode we relied on a continuous ticking nmi
+> > source which the nmi watchdog provided. The nmi tick was no longer
+> > available and current watchdog can not be used anymore since it runs
+> > with very long periods in the range of seconds. This patch
+> > reimplements the nmi timer mode using a perf counter nmi source.
+> > 
+> > V2:
+> > * removing pr_info()
+> > * fix undefined reference to `__udivdi3' for 32 bit build
+> > * fix section mismatch of .cpuinit.data:nmi_timer_cpu_nb
+> > * removed nmi timer setup in arch/x86
+> > * implemented function stubs for op_nmi_init/exit()
+> > * made code more readable in oprofile_init()
+> > 
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: Robert Richter <robert.richter@amd.com>
+> > ---
+> >  arch/Kconfig                      |    4 +
+> >  arch/x86/oprofile/Makefile        |    3 +-
+> >  arch/x86/oprofile/init.c          |   30 ++-----
+> >  arch/x86/oprofile/nmi_timer_int.c |   66 --------------
+> >  drivers/oprofile/nmi_timer_int.c  |  173 +++++++++++++++++++++++++++++++++++++
+> >  drivers/oprofile/oprof.c          |   24 +++---
+> >  drivers/oprofile/oprof.h          |    9 ++
+> >  kernel/events/core.c              |    2 +
+> >  8 files changed, 208 insertions(+), 103 deletions(-)
+> >  delete mode 100644 arch/x86/oprofile/nmi_timer_int.c
+> >  create mode 100644 drivers/oprofile/nmi_timer_int.c
+> 
+> Looks clean to me. Peter, any objections?
 
-Where a particular process will wait depends on which scheduling
-policy it will use. For a process which has SCHED_FIFO/SCHED_RR
-policy, it will be handled by sched_rt scheduler. Where processes are
-kept in priority-queue structure. Look for "struct rt_rq" structure.
-If it's other than rt process, then processes are kept on red-black
-tree (look at "struct cfs_rq" structure).
-
-> 2. Linux 2.6 has the notion of scheduling domain, using an example to
-> explain what I am getting at here
->
-> In a HT enabled CPU, the CPU has 2 cores, each core has 2 threads.
-> there will be 2 levels of domain.
-> 1. Domain of lev.1 ==> 2 groups, 1 physical core per group.
-> 2. Domain of lev. 0 ==> 2 groups, 1 logical core per group.
-> When the load on the 2 logical cores is imbalanced, Linux will migrate
-> some jobs from one to another. What if there is an imbalance of
-> workload on the 2 physical cores ?
->
-Will also try to migrate some jobs from busiest to less busiest core.
-First, load balancer will try to find which core has less load, then
-will try to find which logical CPU has less load.
+Peter, I guess V2 is ok for you too?
 
 Thanks,
-Rakib
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
