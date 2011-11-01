@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1KAReg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 13:34:36 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:47432 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab1KARef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 13:34:35 -0400
-Date: Tue, 1 Nov 2011 18:34:29 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: linux-next 20111025: warnings in
- rcu_idle_exit_common()/rcu_idle_enter_common()
-Message-ID: <20111101173425.GB5863@somewhere.redhat.com>
-References: <20111031082634.GA10348@localhost>
+	id S1755428Ab1KARuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 13:50:20 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:39672 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab1KARuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 13:50:18 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH] regulator: Provide dummy supply support
+Date: Tue, 1 Nov 2011 13:50:14 -0400
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc4; KDE/4.6.5; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>, Tony Lindgren <tony@atomide.com>,
+        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+References: <1319833618-25190-1-git-send-email-s.hauer@pengutronix.de> <20111028215931.GA30366@opensource.wolfsonmicro.com> <20111028224757.GG23421@pengutronix.de>
+In-Reply-To: <20111028224757.GG23421@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031082634.GA10348@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1776660.LEMsXGfj8t";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111011350.17425.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
-> Hi Paul,
-> 
-> I got two warnings in rcutree.c. The last working kernels are
-> linux-next 20111014 and linux v3.1.
-> 
-> [    0.194593] ------------[ cut here ]------------
-> [    0.194707] lockdep: fixing up alternatives.
-> [    0.194730]  #2
-> [    0.194731] smpboot cpu 2: start_ip = 97000
-> [    0.195737] WARNING: at /c/wfg/linux-next/kernel/rcutree.c:444 rcu_idle_exit_common+0xd2/0x117()
-> [    0.196325] Hardware name:         
-> [    0.196603] Modules linked in:
-> [    0.196899] Pid: 0, comm: kworker/0:0 Not tainted 3.1.0-ioless-full-next-20111025+ #881
-> [    0.197459] Call Trace:
-> [    0.197699]  <IRQ>  [<ffffffff81074534>] warn_slowpath_common+0x85/0x9d
-> [    0.201075]  [<ffffffff81074566>] warn_slowpath_null+0x1a/0x1c
-> [    0.201438]  [<ffffffff810d5afd>] rcu_idle_exit_common+0xd2/0x117
-> [    0.201812]  [<ffffffff810d5fff>] rcu_irq_enter+0x75/0xa2
-> [    0.202160]  [<ffffffff8107ac7f>] irq_enter+0x1b/0x74
-> [    0.202496]  [<ffffffff8106f29e>] scheduler_ipi+0x5e/0xd5
-> [    0.202845]  [<ffffffff8104ce6b>] smp_reschedule_interrupt+0x2a/0x2c
-> [    0.203229]  [<ffffffff8198bb73>] reschedule_interrupt+0x73/0x80
-> [    0.203598]  <EOI>  [<ffffffff8198661f>] ? notifier_call_chain+0x63/0x63
-> [    0.204030]  [<ffffffff8103ce2b>] ? mwait_idle+0xef/0x175
-> [    0.204378]  [<ffffffff8103ce22>] ? mwait_idle+0xe6/0x175
-> [    0.204727]  [<ffffffff810351bb>] cpu_idle+0x91/0xb8
-> [    0.205068]  [<ffffffff81978bd5>] start_secondary+0x1de/0x1e2
-> [    0.205454] ---[ end trace 4eaa2a86a8e2da22 ]---
+--nextPart1776660.LEMsXGfj8t
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-I'm seeing something similar but on my boot CPU.
+On Friday 28 October 2011 18:47:57 Sascha Hauer wrote:
+> On Fri, Oct 28, 2011 at 11:59:31PM +0200, Mark Brown wrote:
+> > On Fri, Oct 28, 2011 at 10:26:58PM +0200, Sascha Hauer wrote:
+> > >  drivers/regulator/Makefile        |    2 +-
+> > >  drivers/regulator/dummy-supply.c  |   88
+> > >  +++++++++++++++++++++++++++++++++++++
+> >=20
+> > We already have a dummy regulator driver and a fixed voltage regulator
+> > driver, we shouldn't be adding a third implementation of the same thing.
+> > Just use the fixed voltage regulator for this.
+>=20
+> I explained in my mail why I think that the current implementation of
+> the dummy regulator is not suitable for things apart from debugging.
 
-The problem is that idle_cpu() gives a false negative due to the following
-check:
+your complaints seem to be specific to how the dummy regulator gets hooked =
+in=20
+and not in the specific regulator implementation.  so it seems like the rig=
+ht=20
+thing would be to split the kconfig knobs:
 
+ config REGULATOR_DUMMY
+=2D	bool "Provide a dummy regulator if regulator lookups fail"
++	bool "Provide a dummy regulator"
++config REGULATOR_DUMMY_FALLBACK
++	bool "Fallback to dummy regulator if lookup fails"
++	depends on REGULATOR_DUMMY
 
-        if (!llist_empty(&rq->wake_list))
-                return 0;
+(and then obviously update the .c files accordingly)
+=2Dmike
 
-When a task gets enqueued for waking, we call the scheduler
-IPI, but since we call irq_enter() -> rcu_irq_enter() before
-that wakee gets processed and flushed from the wake_list,
-this is not a right condition to look at in order to know if
-we are idle.
+--nextPart1776660.LEMsXGfj8t
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJOsDFZAAoJEEFjO5/oN/WBw/0QAOPNXxnKtpFmoL8PdBc8traj
+EPqZvtb7CTVjOR12pTMzp0+1me8JPb05so6j9QX3saJdYcX4hKqmbhT2P7yfv/+2
+SLVk0eEqk1NUPOBv040z6blvhzJEQSLAjcvavMSpOMkC9TsNZ7NuOoRIRTWBGL3Q
+U4CElHYcprYS4RjX3eY+qcHLe4+w3HWEZAHctoT+W4b247l40qvhSKxjRhqerTYT
+XdO6b+dEJnFBZgTR8tzIX6PURr2lomcPLIo38layhZ/ikF1yRE/Pq1Osp5gxMmbv
+BSOAmmGmUqCPbAwZUpsWYfrtXGLPPEtQoGXsWZwZuXEhmoewXEUklC8bDucK9ecv
+/UiZWehK+Ne5QqcfWZMYUtbd6PrNwjIZ1EL3rVpVgTkT4XRvLUwMtFI7Esv285vv
+Supr/vZpAwMaC9qOXjethgeq+B26b6X9zXxXI9iwOTFVRBfBYHCCAdQejfrFQ3fy
+AkfciebOigxUM/yfkEq33VWQMwIxlF9MVkkkQkOk/+4+2mY9c5xbftm9JFFGQpsz
+Mz/xLOHhuzHs+0rVzfI3fxDDnmOjqNdchS9i31gzNrqffF5DHBaMqPP2XUVLRMtr
+6kTCXTG1TOcVAXpPjpyYQatDWRHi/MS2tWBprOnrifOiGwnwDrLKO/I85G7pUL3M
+6DtFDB9oaS/p6eqN87BS
+=ndsl
+-----END PGP SIGNATURE-----
+
+--nextPart1776660.LEMsXGfj8t--
