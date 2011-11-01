@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab1KAVnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 17:43:42 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:40705 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754914Ab1KAVnl (ORCPT
+	id S1756054Ab1KAVxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 17:53:32 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52868 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab1KAVxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 17:43:41 -0400
-Message-ID: <4EB067ED.60106@xenotime.net>
-Date: Tue, 01 Nov 2011 14:43:09 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lior Dotan <liodot@gmail.com>,
-        Christopher Harrer <charrer@alacritech.com>
-Subject: [PATCH -next] staging: slicoss depends on NET
-References: <20111101205323.c12f2f940f23febba8ab8989@canb.auug.org.au>
-In-Reply-To: <20111101205323.c12f2f940f23febba8ab8989@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 1 Nov 2011 17:53:30 -0400
+Date: Tue, 01 Nov 2011 17:53:23 -0400 (EDT)
+Message-Id: <20111101.175323.1446639403785720039.davem@davemloft.net>
+To: wpan@redhat.com
+Cc: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bonding:update speed/duplex for NETDEV_CHANGE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <9765cb601d0b4330cf7775ec3cd6b9e1ea13c71e.1320117071.git.wpan@redhat.com>
+References: <14973.1320093129@death>
+	<9765cb601d0b4330cf7775ec3cd6b9e1ea13c71e.1320117071.git.wpan@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 Nov 2011 14:53:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+From: Weiping Pan <wpan@redhat.com>
+Date: Tue,  1 Nov 2011 11:20:48 +0800
 
-The slicoss driver uses network interfaces so it should depend
-on NET.  Fixes the following build errors:
+> Zheng Liang(lzheng@redhat.com) found a bug that if we config bonding with
+> arp monitor, sometimes bonding driver cannot get the speed and duplex from
+> its slaves, it will assume them to be 100Mb/sec and Full, please see
+> /proc/net/bonding/bond0.
+> But there is no such problem when uses miimon.
+> 
+> (Take igb for example)
+> I find that the reason is that after dev_open() in bond_enslave(),
+> bond_update_speed_duplex() will call igb_get_settings()
+> , but in that function,
+> it runs ethtool_cmd_speed_set(ecmd, -1); ecmd->duplex = -1;
+> because igb get an error value of status.
+> So even dev_open() is called, but the device is not really ready to get its
+> settings.
+> 
+> Maybe it is safe for us to call igb_get_settings() only after
+> this message shows up, that is "igb: p4p1 NIC Link is Up 1000 Mbps Full Duplex,
+> Flow Control: RX".
+> 
+> So I prefer to update the speed and duplex for a slave when reseices
+> NETDEV_CHANGE/NETDEV_UP event.
+> 
+> Changelog
+> V2:
+> 1 remove the "fake 100/Full" logic in bond_update_speed_duplex(),
+>   set speed and duplex to -1 when it gets error value of speed and duplex.
+> 2 delete the warning in bond_enslave() if bond_update_speed_duplex() returns
+>   error.
+> 3 make bond_info_show_slave() handle bad values of speed and duplex.
+> 
+> Signed-off-by: Weiping Pan <wpan@redhat.com>
 
-ERROR: "eth_change_mtu" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "eth_validate_addr" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "register_netdev" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "alloc_etherdev_mqs" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "__netif_schedule" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "netif_rx" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "eth_type_trans" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "skb_put" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "skb_pull" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "__alloc_skb" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "free_netdev" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "unregister_netdev" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "consume_skb" [drivers/staging/slicoss/slicoss.ko] undefined!
-ERROR: "dev_kfree_skb_irq" [drivers/staging/slicoss/slicoss.ko] undefined!
-
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Lior Dotan <liodot@gmail.com>
-Cc: Christopher Harrer <charrer@alacritech.com>
----
- drivers/staging/slicoss/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- next-2011-1101.orig/drivers/staging/slicoss/Kconfig
-+++ next-2011-1101/drivers/staging/slicoss/Kconfig
-@@ -1,6 +1,6 @@
- config SLICOSS
- 	tristate "Alacritech Gigabit IS-NIC support"
--	depends on PCI && X86
-+	depends on PCI && X86 && NET
- 	default n
- 	help
- 	  This driver supports Alacritech's IS-NIC gigabit ethernet cards.
+Looks good, applied, thanks!
