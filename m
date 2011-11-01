@@ -1,142 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940Ab1KAOfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:35:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57382 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab1KAOfX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:35:23 -0400
+	id S1754996Ab1KAOiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:38:54 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:38178 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754780Ab1KAOix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 10:38:53 -0400
+Message-ID: <4EB00408.4090202@osadl.org>
+Date: Tue, 01 Nov 2011 15:36:56 +0100
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL)
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-In-Reply-To: <1320082040-1190-1-git-send-email-aarcange@redhat.com>
-References: <20111031171441.GD3466@redhat.com>
-	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
-Date: Tue, 1 Nov 2011 22:35:22 +0800
-Message-ID: <CAPQyPG5m4kQaZKeE6Txd5Jt0Lb9xicUanegEvwc7fgnopFAWDQ@mail.gmail.com>
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Subject: Re: linux-next 20111025: warnings in rcu_idle_exit_common()/rcu_idle_enter_common()
+References: <20111031082634.GA10348@localhost> <20111031095152.GL6160@linux.vnet.ibm.com> <20111031104325.GA25808@localhost> <20111031114142.GA32555@localhost> <20111031121951.GM6160@linux.vnet.ibm.com> <1320075882.4793.4.camel@gandalf.stny.rr.com> <20111101003434.GR6160@linux.vnet.ibm.com> <20111101070720.GA22936@localhost>
+In-Reply-To: <20111101070720.GA22936@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 1:27 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
-> migrate was doing a rmap_walk with speculative lock-less access on
-> pagetables. That could lead it to not serialize properly against
-> mremap PT locks. But a second problem remains in the order of vmas in
-> the same_anon_vma list used by the rmap_walk.
+On 11/01/2011 08:07 AM, Wu Fengguang wrote:
+> On Tue, Nov 01, 2011 at 08:34:34AM +0800, Paul E. McKenney wrote:
+>> On Mon, Oct 31, 2011 at 11:44:42AM -0400, Steven Rostedt wrote:
+>>> On Mon, 2011-10-31 at 05:19 -0700, Paul E. McKenney wrote:
+>>>> On Mon, Oct 31, 2011 at 07:41:42PM +0800, Wu Fengguang wrote:
+>>>>> On Mon, Oct 31, 2011 at 06:43:25PM +0800, Wu Fengguang wrote:
+>>>>>> On Mon, Oct 31, 2011 at 05:51:52PM +0800, Paul E. McKenney wrote:
+>>>>>>> On Mon, Oct 31, 2011 at 04:26:34PM +0800, Wu Fengguang wrote:
+>>>>>>>> Hi Paul,
+>>>>>>>>
+>>>>>>>> I got two warnings in rcutree.c. The last working kernels are
+>>>>>>>> linux-next 20111014 and linux v3.1.
+>>>>>>>
+>>>>>>> Interesting.  Could you please enable RCU event tracing at boot?
+>>>>>>
+>>>>>> Sorry I cannot...possibly due to another ftrace bug.
+>>>>>>
+>>>>>>> The RCU event tracing is at tracing/events/rcu/enable relative to
+>>>>>>> the debugfs mount point at runtime, if that helps.
+>>>>>>
+>>>>>> It's exactly that linux next 20111025 (comparing to 20111014) no
+>>>>>> longer produces all the trace events that made me looking into the
+>>>>>> dmesg and find the warning from RCU (rather than the expected warning
+>>>>>> from ftrace).
+>>>>>>
+>>>>>> The trace output is now:
+>>>>>>
+>>>>>>          # tracer: nop
+>>>>>>          #
+>>>>>>          # WARNING: FUNCTION TRACING IS CORRUPTED
+>>>>>>          #          MAY BE MISSING FUNCTION EVENTS
+>>>>>>          #           TASK-PID    CPU#    TIMESTAMP  FUNCTION
+>>>>>>          #              | |       |          |         |
+>>>>>> (nothing more)
+>>>>>
+>>>>> I checked the other test box and got the same warnings. Below is the
+>>>>> full dmesg.
+>>>>>
+>>>>> No single trace output again..
+>>>>
+>>>> Hmmm...  I wonder if it is too early during boot for tracing to work
+>>>> correctly.
+>>>>
+>>>> Gah!  I have rcu/next set ahead to commits that are not supposed to go
+>>>> upstream yet.  I reset it back to match the stuff that is targeted for
+>>>> the current merge window.  Still need to find the bug, of course.
+>>>>
+>>>> Anyone have any idea why the kworker thread might be trying to enter
+>>>> the idle loop?  The idle_cpu(smp_processor_id()) call believes that
+>>>> this is not the idle task.  Or does x86 allow non-idle tasks to enter
+>>>> the idle loop?  Or to be migrated off-CPU?
+>>>
+>>>
+>>> It's not. Carsten Emde noticed what looked like a bug in ftrace last
+>>> week at LinuxCon, and looking deeper at it, I found that the swapper
+>>> task for all but CPU0 is named kworker.  That's because kworker creates
+>>> the idle task for all other CPUs besides CPU 0 and the idle task takes
+>>> on kworker name.
+>>>
+>>> Carsten posted a patch last week too:
+>>>
+>>> https://lkml.org/lkml/2011/10/26/313
+>>>
+>>> I'm glad that this bug shows up outside of just ftrace :)
+>>
+>> That makes one of us.  ;-)
+>>
+>> Fengguang, does Carsten's patch help?
 >
-> If vma_merge would succeed in copy_vma, the src vma could be placed
-> after the dst vma in the same_anon_vma list. That could still lead
-> migrate to miss some pte.
->
-> This patch adds a anon_vma_order_tail() function to force the dst vma
-> at the end of the list before mremap starts to solve the problem.
->
-> If the mremap is very large and there are a lots of parents or childs
-> sharing the anon_vma root lock, this should still scale better than
-> taking the anon_vma root lock around every pte copy practically for
-> the whole duration of mremap.
->
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  include/linux/rmap.h |    1 +
->  mm/mmap.c            |    8 ++++++++
->  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 53 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index 2148b12..45eb098 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -120,6 +120,7 @@ void anon_vma_init(void);   /* create anon_vma_cachep */
->  int  anon_vma_prepare(struct vm_area_struct *);
->  void unlink_anon_vmas(struct vm_area_struct *);
->  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
-> +void anon_vma_order_tail(struct vm_area_struct *);
->  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
->  void __anon_vma_link(struct vm_area_struct *);
->
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index a65efd4..a5858dc 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
->                 */
->                if (vma_start >= new_vma->vm_start &&
->                    vma_start < new_vma->vm_end)
-> +                       /*
-> +                        * No need to call anon_vma_order_tail() in
-> +                        * this case because the same PT lock will
-> +                        * serialize the rmap_walk against both src
-> +                        * and dst vmas.
-> +                        */
->                        *vmap = new_vma;
-> +               else
-> +                       anon_vma_order_tail(new_vma);
->        } else {
->                new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
->                if (new_vma) {
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 8005080..6dbc165 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
->  }
->
->  /*
-> + * Some rmap walk that needs to find all ptes/hugepmds without false
-> + * negatives (like migrate and split_huge_page) running concurrent
-> + * with operations that copy or move pagetables (like mremap() and
-> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
-> + * in a certain order: the dst_vma must be placed after the src_vma in
-> + * the list. This is always guaranteed by fork() but mremap() needs to
-> + * call this function to enforce it in case the dst_vma isn't newly
-> + * allocated and chained with the anon_vma_clone() function but just
-> + * an extension of a pre-existing vma through vma_merge.
-> + *
-> + * NOTE: the same_anon_vma list can still be changed by other
-> + * processes while mremap runs because mremap doesn't hold the
-> + * anon_vma mutex to prevent modifications to the list while it
-> + * runs. All we need to enforce is that the relative order of this
-> + * process vmas isn't changing (we don't care about other vmas
-> + * order). Each vma corresponds to an anon_vma_chain structure so
-> + * there's no risk that other processes calling anon_vma_order_tail()
-> + * and changing the same_anon_vma list under mremap() will screw with
-> + * the relative order of this process vmas in the list, because we
-> + * won't alter the order of any vma that isn't belonging to this
-> + * process. And there can't be another anon_vma_order_tail running
-> + * concurrently with mremap() coming from this process because we hold
-> + * the mmap_sem for the whole mremap(). fork() ordering dependency
-> + * also shouldn't be affected because we only care that the parent
-> + * vmas are placed in the list before the child vmas and
-> + * anon_vma_order_tail won't reorder vmas from either the fork parent
-> + * or child.
-> + */
-> +void anon_vma_order_tail(struct vm_area_struct *dst)
-> +{
-> +       struct anon_vma_chain *pavc;
-> +       struct anon_vma *root = NULL;
-> +
-> +       list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
-> +               struct anon_vma *anon_vma = pavc->anon_vma;
-> +               VM_BUG_ON(pavc->vma != dst);
-> +               root = lock_anon_vma_root(root, anon_vma);
-> +               list_del(&pavc->same_anon_vma);
-> +               list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
-> +       }
-> +       unlock_anon_vma_root(root);
-> +}
+> Nope unfortunately. Here is the new dmesg:
+> [..]
+> [    0.196924] WARNING: at /c/wfg/linux-next/kernel/rcutree.c:444 rcu_idle_exit_common+0xd2/0x117()
+> [    0.197518] Hardware name:
+> [    0.197796] Modules linked in:
+> [    0.198093] Pid: 0, comm: swapper/1 Not tainted 3.1.0-ioless-full-bg-all-next-20111025+ #886
+The patch correctly does what it is supposed to do -> correcting the 
+erroneous command "kworker/0:1" in the original dmesg output to 
+"swapper/1" in the above dmesg output. It never claimed to resolve the 
+origin of the warning at rcu_idle_exit_common(). But it answers Paul's 
+question "Anyone have any idea why the kworker thread might be trying to 
+enter the idle loop?", since it is not the kworker thread but the idle 
+task that is trying to enter the idle loop which obviously makes a lot 
+more sense.
 
-I think Pawel might want to sign a "Tested-by", he may have been running this
-patch safely for quite some days. :)
-
-Reviewed-by: Nai Xia <nai.xia@gmail.com>
+	-Carsten.
