@@ -1,111 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab1KAUKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 16:10:10 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:51895 "EHLO mail.mgebm.net"
+	id S1755765Ab1KAULr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 16:11:47 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:51911 "EHLO mail.mgebm.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750829Ab1KAUKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 16:10:08 -0400
-Date: Tue, 1 Nov 2011 16:10:07 -0400
+	id S1752105Ab1KAULq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 16:11:46 -0400
+Date: Tue, 1 Nov 2011 16:11:44 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: Anthony Liguori <aliguori@us.ibm.com>
 Cc: avi@redhat.com, mingo@redhat.com, x86@kernel.org, hpa@zytor.com,
         arnd@arndb.de, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         linux-arch@vger.kernel.org, ryanh@linux.vnet.ibm.com
-Subject: Re: [PATCH 6/6 V2] Add age out of guest paused flag
-Message-ID: <20111101201007.GD9852@mgebm.net>
+Subject: Re: [PATCH 3/6 V2] Add ioctl for KVM_GUEST_STOPPED
+Message-ID: <20111101201144.GE9852@mgebm.net>
 References: <1320091650-24682-1-git-send-email-emunson@mgebm.net>
- <1320091650-24682-7-git-send-email-emunson@mgebm.net>
- <4EB049C3.7080206@us.ibm.com>
- <20111101195111.GA9852@mgebm.net>
- <4EB04F5F.4010709@us.ibm.com>
+ <1320091650-24682-4-git-send-email-emunson@mgebm.net>
+ <4EB04940.2030506@us.ibm.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zbGR4y+acU1DwHSi"
+	protocol="application/pgp-signature"; boundary="imjhCm/Pyz7Rq5F2"
 Content-Disposition: inline
-In-Reply-To: <4EB04F5F.4010709@us.ibm.com>
+In-Reply-To: <4EB04940.2030506@us.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---zbGR4y+acU1DwHSi
+--imjhCm/Pyz7Rq5F2
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 On Tue, 01 Nov 2011, Anthony Liguori wrote:
 
-> On 11/01/2011 02:51 PM, Eric B Munson wrote:
-> >On Tue, 01 Nov 2011, Anthony Liguori wrote:
+> On 10/31/2011 03:07 PM, Eric B Munson wrote:
+> >Now that we have a flag that will tell the guest it was suspended, creat=
+e an
+> >interface for that communication using a KVM ioctl.
 > >
-> >>On 10/31/2011 03:07 PM, Eric B Munson wrote:
-> >>>The KVM_GUEST_PAUSED flag will prevent a guest from compaining about a=
- soft
-> >>>lockup but it can mask real soft lockups if the flag isn't cleared whe=
-n it is
-> >>>no longer relevant.  This patch adds a kvm ioctl that the hypervisor w=
-ill use
-> >>>when it resumes a guest to start a timer for aging out the flag.  The =
-time out
-> >>>will be specified by the hypervisor in the ioctl call.
-> >>>
-> >>>Signed-off-by: Eric B Munson<emunson@mgebm.net>
-> >>
-> >>Why not have the guest clear the flag when it acknowledges it?
-> >>
-> >>The hypervisor would unconditionally set the bit, and the guest
-> >>would do a testandclear to check if the bit is set.  I think that
-> >>avoids the whole aging business.
-> >>
-> >>Regards,
-> >>
-> >>Anthony Liguori
+> >Signed-off-by: Eric B Munson<emunson@mgebm.net>
+> >---
+> >Changes from V1:
+> >  Add kvm_set_host_stopped to arch/x86/jvm/x86.c instead of kvmclock.c
+> >  Rename KVM_PAUSE_GUEST to KVM_GUEST_PAUSED
 > >
-> >If you have a look at patch 5 of this series, the flag is cleared when t=
-he
-> >guest checks the validity of a soft lockup.  However, the aging is meant=
- to
-> >cover the case where the guest never sees a soft lockup.  We don't want =
-this
-> >flag to be stored for ever and end up delaying real soft lockup messages=
-=2E  With
-> >that case in mind, I thought this was a good/simple compramise.
+> >  arch/x86/include/asm/pvclock.h |    3 +++
+> >  arch/x86/kvm/x86.c             |   16 ++++++++++++++++
+> >  include/linux/kvm.h            |    2 ++
+> >  3 files changed, 21 insertions(+), 0 deletions(-)
+> >
+> >diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclo=
+ck.h
+> >index 7d3ba41..9312814 100644
+> >--- a/arch/x86/include/asm/pvclock.h
+> >+++ b/arch/x86/include/asm/pvclock.h
+> >@@ -3,6 +3,7 @@
+> >
+> >  #include<linux/clocksource.h>
+> >  #include<asm/pvclock-abi.h>
+> >+#include<linux/kvm_host.h>
+> >
+> >  /* some helper functions for xen and kvm pv clock sources */
+> >  cycle_t pvclock_clocksource_read(struct pvclock_vcpu_time_info *src);
+> >@@ -13,6 +14,8 @@ void pvclock_read_wallclock(struct pvclock_wall_clock =
+*wall,
+> >  			    struct timespec *ts);
+> >  void pvclock_resume(void);
+> >
+> >+void kvm_set_host_stopped(struct kvm_vcpu *vcpu);
 >=20
-> If the guest clears the flag, then I don't think you have to worry about =
-this.
+> This can't go in pvclock.h.
+>=20
+
+Will move for V3.
+
+> >+
+> >  bool kvm_check_and_clear_host_stopped(int cpu);
+> >
+> >  /*
+> >diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >index c38efd7..592ac3b 100644
+> >--- a/arch/x86/kvm/x86.c
+> >+++ b/arch/x86/kvm/x86.c
+> >@@ -3295,6 +3295,11 @@ long kvm_arch_vcpu_ioctl(struct file *filp,
+> >
+> >  		goto out;
+> >  	}
+> >+	case KVM_GUEST_PAUSED: {
+> >+		r =3D 0;
+> >+		kvm_set_host_stopped(vcpu);
+> >+		break;
+> >+	}
+> >  	default:
+> >  		r =3D -EINVAL;
+> >  	}
+> >@@ -6117,6 +6122,17 @@ int kvm_task_switch(struct kvm_vcpu *vcpu, u16 ts=
+s_selector, int reason,
+> >  }
+> >  EXPORT_SYMBOL_GPL(kvm_task_switch);
+> >
+> >+/*
+> >+ * kvm_set_host_stopped() indicates to the guest kernel that it has been
+> >+ * stopped by the hypervisor.  This function will be called from the ho=
+st only.
+> >+ */
+> >+void kvm_set_host_stopped(struct kvm_vcpu *vcpu)
+> >+{
+> >+	struct pvclock_vcpu_time_info *src =3D&vcpu->arch.hv_clock;
+> >+	src->flags |=3D PVCLOCK_GUEST_STOPPED;
+>=20
+> Shouldn't we throw some sort of error if you're trying to set a flag
+> and kvmclock isn't enabled?
 >=20
 > Regards,
 >=20
 > Anthony Liguori
+>=20
 
-Except that the soft lockup doesn't trigger on every qemu "stop", only some=
- of
-them.  The flag isn't cleared until the detector is triggered.
+Is kvmclock a compile time only option or something set at runtime?
 
-Eric
+> >+}
+> >+EXPORT_SYMBOL_GPL(kvm_set_host_stopped);
+> >+
+> >  int kvm_arch_vcpu_ioctl_set_sregs(struct kvm_vcpu *vcpu,
+> >  				  struct kvm_sregs *sregs)
+> >  {
+> >diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+> >index f47fcd3..87cab0d 100644
+> >--- a/include/linux/kvm.h
+> >+++ b/include/linux/kvm.h
+> >@@ -763,6 +763,8 @@ struct kvm_clock_data {
+> >  #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_sp=
+apr_tce)
+> >  /* Available with KVM_CAP_RMA */
+> >  #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
+> >+/* VM is being stopped by host */
+> >+#define KVM_GUEST_PAUSED	  _IO(KVMIO,   0xaa)
+> >
+> >  #define KVM_DEV_ASSIGN_ENABLE_IOMMU	(1<<  0)
+> >
+>=20
 
---zbGR4y+acU1DwHSi
+--imjhCm/Pyz7Rq5F2
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJOsFIeAAoJEKhG9nGc1bpJ2Z4P/0bUvJwMZLKKRjhtnoC9pkZY
-UZRFbJj3RFFoFpLXo66Bc8c3XcPfqWYOtwy+BXhwBIpVsfHrIyrXvV3yxOlTmPF5
-+ycqNwgnSEDGz2F/nduw+6PLNnVHuHfpCtzBR+UU7tk5e/QF830X6ZgnM7gcjrSm
-t7Ki9qK8NOwvE80Bnuv3kPQrH4spsZWssMUKW/pj86UbMXz3VuDIvhOjh490Aspm
-nAAkXAXlvlSZSuRXs2LSnwMZSZKWzuDCFpLvvqxa2AtcG0DPYYPM8Sko3In0GnJY
-yQAZ7P5A0ehi7nkmpRGkn8dmjDBvoKf3pQb5Vaf+ONolA00O0EtCmT6vXlt5aP/M
-3CX2/PsUWtugXGHYu+IW1Tj7OsOlr1p+4rMsYGY5c+OrILR0+8a5mlO+3YM5/9DC
-4/rFrTCD6oVq8HBhT4B5AS7tQOaAroc2cqdwpECl55N6YCcZusUrbkwdFTLOMva0
-Ihk49ALroxog67tOY5fym4DkkjHPv5bh80Jj2bZlwd78kiCdpuvwtXS31o04Sx2q
-6bwD9tuORZMRSd5gPCt3ZaRSqxHlGJ5ZR2SQW7eCozW0nY/+2C0dNngTu2Di7JVy
-bKFpREy7t4i0evcsy8f/dOkso/JFK4qc+pPbGMT9l5q8mLYeRHkyiiz33alN0EwQ
-TwuK1xGluzu1bfYgMPPP
-=UEvx
+iQIcBAEBAgAGBQJOsFKAAAoJEKhG9nGc1bpJkKkP/R9ixoEQeJGOdjrZJpl4DlqP
+VygkN579YcVsJfg0jfiZP7zn3rBjoyv8ywGBTl1ngZ6v3x7CCMixXm1Xas3pUgpM
+/5SwJN8EFlWXlQwVHa9Nu/CMqlmRgi4Gb4pg/f6OgmTLLFoY2gUEthSyf6f0aPRz
+Clj/v1zeI7E2DliQemYsVBbAh6wJwW+3xFhBUzrHJriwRGTWO+ZLezeSTV5Sj3lo
+1MQhc731Ol96uaGOtrEybB4+1fOeEtIvIgaSx4PIYCeJs7Q9yzbWbBm8CvvLuBM1
+LWts+r9JXDVQ41B/n4bHFqdnptKSqhNbFHmo+1fAIB+mmLThavPVfNyzGmOgARWQ
+CfbfYpEz5M+iwXW/CYRcymREkkU9+JRxokUB8gcM8p/LbXK1MNe5/G6q/1FlXGot
+DSwzCWE92SAgNUU/UlWF4rczzjVuCyswSQnKfUpb2P9jwtUMATx8hz+XSjRofFr+
+qnAgmt8AeOXIqNQvey0scZ1aAEXGMmq5+I5XLAFbcFn6SK7Myp6S0soqF5D2O7xL
+NluY+HgIK9z+X8yEqDVu9NE3js3VYfTXq1EqJXg0ZmoM/HpN3h9AshQ77R/ZfMw+
+8563beQH9IAPJp8jSGtyg5wfrk7pdqevIjLz9lvUCt5czaPX1EDQZ7RfB2qbXkyV
+HGFCkKUM/3kksRaBf0Hf
+=51vE
 -----END PGP SIGNATURE-----
 
---zbGR4y+acU1DwHSi--
+--imjhCm/Pyz7Rq5F2--
