@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab1KAIOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 04:14:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39409 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752247Ab1KAIOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 04:14:06 -0400
-Date: Tue, 1 Nov 2011 04:13:37 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Steve French <sfrench@samba.org>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111101041337.39077229@tlielax.poochiereds.net>
-In-Reply-To: <20111101005505.GO18855@google.com>
-References: <20111031221743.GA18855@google.com>
-	<201111010024.16659.rjw@sisk.pl>
-	<20111031233059.GI18855@google.com>
-	<20111101005505.GO18855@google.com>
+	id S1752620Ab1KAIQQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 04:16:16 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47100 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab1KAIQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 04:16:14 -0400
+Date: Tue, 1 Nov 2011 19:16:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tao Ma <boyu.mt@taobao.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20111101191602.bb64237e8ab87671d3964ca9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__1_Nov_2011_19_16_02_+1100_ZYtQiD8_.hz2cykh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Oct 2011 17:55:05 -0700
-Tejun Heo <tj@kernel.org> wrote:
+--Signature=_Tue__1_Nov_2011_19_16_02_+1100_ZYtQiD8_.hz2cykh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hey, again.
-> 
-> On Mon, Oct 31, 2011 at 04:30:59PM -0700, Tejun Heo wrote:
-> > I can't remember one off the top of my head but I'm pretty sure there
-> > at least are few which expect tight inter-locking between sleeps and
-> > wakeups.  I'll look for examples and post reply.  ISTR them being
-> > kernel threads so this might not apply directly but it's still a
-> > dangerous game to play.
-> 
-> Hmm... I couldn't find KILLABLE used like that but here are two
-> UNINTERRUPTIBLE sleep examples.
-> 
-> * kthread_start() depends on the fact that a kthread won't be woken up
->   from UNINTERRUPTIBLE sleep spuriously.
-> 
-> * jfs_flush_journal() doesn't check whether the wakeup was spurious
->   after waiting if !tblkGC_COMMITTED.
-> 
-> Maybe we can re-define KILLABLE as killable && freezable but IMHO that
-> requires pretty strong rationales.  If at all possible, let's not
-> diddle with that if it can be worked around some other way.
-> 
-> Thank you.
-> 
+Hi Andrew,
 
-(cc'ing Trond and the linux-nfs mailing list -- fwiw, he maintains the
-NFS client code -- Bruce is the NFS server maintainer and probably has
-little interest in this thread).
+Today's linux-next merge of the akpm tree got a conflict in
+fs/direct-io.c between commit eb28be2b4c0a ("direct-io: separate fields
+only used in the submission path from struct dio") from Linus' tree and
+commit "fs/direct-io.c: salcuate fs_count correctly in get_more_blocks()"
+from the akpm tree.
 
-The main reason for this change is primarily that we have people with
-laptops and nfs and cifs mounts that sometimes fail to suspend.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-IIUC, the TASK_KILLABLE was mostly added to ensure that file-store
-writes would be uninterruptible, but still allow those tasks to be
-killed if the process is going down anyway.
+diff --cc fs/direct-io.c
+index d740ab6,b05f24e..0000000
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@@ -575,14 -564,13 +575,13 @@@ static inline int dio_bio_reap(struct d
+   * buffer_mapped().  However the direct-io code will only process holes o=
+ne
+   * block at a time - it will repeatedly call get_block() as it walks the =
+hole.
+   */
+ -static int get_more_blocks(struct dio *dio)
+ +static int get_more_blocks(struct dio *dio, struct dio_submit *sdio,
+ +			   struct buffer_head *map_bh)
+  {
+  	int ret;
+ -	struct buffer_head *map_bh =3D &dio->map_bh;
+  	sector_t fs_startblk;	/* Into file, in filesystem-sized blocks */
++ 	sector_t fs_endblk;	/* Into file, in filesystem-sized blocks */
+  	unsigned long fs_count;	/* Number of filesystem-sized blocks */
+- 	unsigned long dio_count;/* Number of dio_block-sized blocks */
+- 	unsigned long blkmask;
+  	int create;
+ =20
+  	/*
+@@@ -591,13 -579,10 +590,10 @@@
+  	 */
+  	ret =3D dio->page_errors;
+  	if (ret =3D=3D 0) {
+ -		BUG_ON(dio->block_in_file >=3D dio->final_block_in_request);
+ -		fs_startblk =3D dio->block_in_file >> dio->blkfactor;
+ -		fs_endblk =3D (dio->final_block_in_request - 1) >> dio->blkfactor;
+ +		BUG_ON(sdio->block_in_file >=3D sdio->final_block_in_request);
+ +		fs_startblk =3D sdio->block_in_file >> sdio->blkfactor;
+- 		dio_count =3D sdio->final_block_in_request - sdio->block_in_file;
+- 		fs_count =3D dio_count >> sdio->blkfactor;
+- 		blkmask =3D (1 << sdio->blkfactor) - 1;
+- 		if (dio_count & blkmask)=09
+- 			fs_count++;
+++		fs_endblk =3D (sdio->final_block_in_request - 1) >> sdio->blkfactor;
++ 		fs_count =3D fs_endblk - fs_startblk + 1;
+ =20
+  		map_bh->b_state =3D 0;
+  		map_bh->b_size =3D fs_count << dio->inode->i_blkbits;
 
-The intr/nointr mount options in NFS have been deprecated since
-TASK_KILLABLE was added. The scheme now is basically that those sleeps
-ignore any signals except for fatal ones. So, that knob is meaningless
-and has been for a long time now.
+--Signature=_Tue__1_Nov_2011_19_16_02_+1100_ZYtQiD8_.hz2cykh
+Content-Type: application/pgp-signature
 
-cifs never had a working intr/nointr knob, but signal handling while
-waiting for replies was always a difficult thing to handle correctly. I
-don't think the right answer is to go back to using such a knob in cifs
-or nfs.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I suppose we could look at going back to the world of complicated
-signal handling and TASK_INTERRUPTIBLE, but that's not a trivial change
-either. The TASK_WAKE_FREEZABLE flag you mention might make more sense
-than doing that.
+iQIcBAEBCAAGBQJOr6rCAAoJEECxmPOUX5FE8xMP/1UGsktqrQ3z9xEmqfLy2/GN
+eY4qACetBXaOub6A3gnL2p32YV9Uen4rrjT1WxF9YrMeOHQVIpqbkEAOU12AfOBE
+H9dpxBt4qannNPed3agiZYpimMKZDbV/QLthWnhBezeWxG7CmbBwAetG8J2qeVIO
+uzvVbFcK5sxMEQnedZWUimr7Z+KI31kWGewnIzyA6DFfSRMi5IZq3adK8AN+yFIJ
+UTFTiU+uxggjnUT8+VeHPfrP3hEGy9rQHYODjsEmyZU3iNO0t2l7oPzY2wkUQlIp
+ftgLse1/QAkCZyBhxtMCNUF9zcIlcnHb0Y9/rNVCIhJTIlnP8c3kkBrNKI/bf0mO
+VFCe8mZ+5vtdq3ZSGugEKhP+FlOtaizxf9UyCgzcWZIe8olTdLDt5bHmEi9l816v
+WNGwrh9St6DLgzuDO9HLDvLiDRqT+Ty6lu+71gl1IGYp3XmMnC7yyWMgGnCwXwIG
+agdpm7O194DlRh694nvSc9mmUYA5mHHejzQJCS9LiX+8d6zHkh2wJV8B01h4BAbg
+N1z8Ny62Fn+TPReTgFHxczw1fVYu81K+Joikvm+cl/mgtLIdwsDmbvbHO7d6YA65
+G5UCY915yDlPokeHhRy/HG2qYdUv4y+gUC2jwMKDohVaNORo0TRZQg0Iuu6bxDaz
+XXsItQMGWLlAFRE2LU2B
+=AGUA
+-----END PGP SIGNATURE-----
 
--- 
-Jeff Layton <jlayton@redhat.com>
+--Signature=_Tue__1_Nov_2011_19_16_02_+1100_ZYtQiD8_.hz2cykh--
