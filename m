@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab1KAOnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:43:19 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42425 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab1KAOnR (ORCPT
+	id S1755087Ab1KAOux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:50:53 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:59258 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754542Ab1KAOuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:43:17 -0400
-Date: Tue, 1 Nov 2011 14:43:12 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linda Walsh <lkml@tlinx.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: ACPI ERROR SMBus or IPMI write requires Buff of len 66, found
- 32...???? linux-3.0.0
-Message-ID: <20111101144312.GA25790@srcf.ucam.org>
-References: <4EAF1021.2090004@tlinx.org>
- <CAErSpo4GaQfoBWs2iPk1ppx69Ccnz3dZvt31vSp8R7zka8a6=g@mail.gmail.com>
+	Tue, 1 Nov 2011 10:50:52 -0400
+Message-ID: <4EB006B8.8080001@vmware.com>
+Date: Tue, 01 Nov 2011 15:48:24 +0100
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4GaQfoBWs2iPk1ppx69Ccnz3dZvt31vSp8R7zka8a6=g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Jerome Glisse <j.glisse@gmail.com>
+CC: Thomas Hellstrom <thomas@shipmail.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, j.glisse@redhat.com,
+        airlied@redhat.com, bskeggs@redhat.com
+Subject: Re: [PATCH 06/11] ttm/driver: Expand ttm_backend_func to include
+ two overrides for TTM page pool.
+References: <1319062772-2793-1-git-send-email-konrad.wilk@oracle.com> <1319062772-2793-7-git-send-email-konrad.wilk@oracle.com> <4EA28FA6.7000006@shipmail.org> <20111101143715.GA8631@homer.localdomain>
+In-Reply-To: <20111101143715.GA8631@homer.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 08:05:49AM -0600, Bjorn Helgaas wrote:
-> [+cc linux-acpi]
-> 
-> On Mon, Oct 31, 2011 at 3:16 PM, Linda Walsh <lkml@tlinx.org> wrote:
-> >
-> >
-> > Was looking through boot log messages, and this one seemed 'new'...
-> 
-> Can you confirm that this error did not occur on a previous version?
-> What is the most recent version where it did not occur?
+On 11/01/2011 03:37 PM, Jerome Glisse wrote:
+> On Sat, Oct 22, 2011 at 11:40:54AM +0200, Thomas Hellstrom wrote:
+>    
+>> Konrad,
+>>
+>> I was hoping that we could get rid of the dma_address shuffling into
+>> core TTM,
+>> like I mentioned in the review. From what I can tell it's now only
+>> used in the backend and
+>> core ttm doesn't care about it.
+>>
+>> Is there a particular reason we're still passing it around?
+>>
+>> Thanks,
+>> /Thomas
+>>
+>>      
+> I am working on patchset on top of this that will move dma handling
+> back to driver and mostly out of ttm (the page alloc helper will
+> still do dma stuff on behalf of driver) So if my patchset is acceptable
+> the dma situation is transionary.
+>
+> Cheers,
+> Jerome
+>    
+Cool.
 
-ACPI IPMI support was only added recently, so it's not surprising that 
-it didn't show up previously. The spec is quite clear that IPMI message 
-buffers should be 66 bytes, but a lot of firmware seems to disagree. Not 
-sure what the best thing to do here is.
+Thanks, Jerome.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+/Thomas
+
