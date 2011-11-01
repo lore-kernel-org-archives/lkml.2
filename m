@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab1KASg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:36:29 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:45749 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798Ab1KASg2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:36:28 -0400
+	id S1755445Ab1KASrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:47:49 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:51044 "EHLO smtp.multi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023Ab1KASrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:47:48 -0400
+Message-ID: <4EB03E22.2090304@mageia.org>
+Date: Tue, 01 Nov 2011 20:44:50 +0200
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Message-ID: <e51b28f7-da4a-4c53-889d-4f12b8dd701a@default>
-Date: Tue, 1 Nov 2011 11:35:28 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>, Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
-        gregkh@suse.de, devel@driverdev.osuosl.org, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: RE: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>
- <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
- <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
- <4E72284B.2040907@linux.vnet.ibm.com> <4E738B81.2070005@vflare.org
- 1320168615.15403.80.camel@nimitz>
-In-Reply-To: <1320168615.15403.80.camel@nimitz>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4EB03BF5.00E6,ss=1,re=0.000,fgs=0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: spamm of cfg80211: Calling CRDA to update world regulatory domain
+References: <4EB00DD3.7090701@gmail.com>
+In-Reply-To: <4EB00DD3.7090701@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
-> Sent: Tuesday, November 01, 2011 11:30 AM
-> To: Nitin Gupta
-> Cc: Seth Jennings; Greg KH; gregkh@suse.de; devel@driverdev.osuosl.org; Dan Magenheimer;
-> cascardo@holoscopio.com; linux-kernel@vger.kernel.org; linux-mm@kvack.org; brking@linux.vnet.ibm.com;
-> rcj@linux.vnet.ibm.com
-> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-> 
-> On Fri, 2011-09-16 at 13:46 -0400, Nitin Gupta wrote:
-> > I think replacing allocator every few weeks isn't a good idea. So, I
-> > guess better would be to let me work for about 2 weeks and try the slab
-> > based approach.  If nothing works out in this time, then maybe xcfmalloc
-> > can be integrated after further testing.
-> 
-> Hi Nitin,
-> 
-> It's been about six weeks. :)
-> 
-> Can we talk about putting xcfmalloc() in staging now?
+Justin P. Mattock skrev 1.11.2011 17:18:
+> is there a way to get rid of this annoying spamming of the regulatory?
+>
+>
+> [ 338.519037] cfg80211: Calling CRDA to update world regulatory domain
+> [ 338.523266] cfg80211: World regulatory domain updated:
+> [ 338.523269] cfg80211: (start_freq - end_freq @ bandwidth),
+> (max_antenna_gain, max_eirp)
+> [ 338.523272] cfg80211: (2402000 KHz - 2472000 KHz @ 40000 KHz), (300
+> mBi, 2000 mBm)
+> [ 338.523276] cfg80211: (2457000 KHz - 2482000 KHz @ 20000 KHz), (300
+> mBi, 2000 mBm)
+> [ 338.523279] cfg80211: (2474000 KHz - 2494000 KHz @ 20000 KHz), (300
+> mBi, 2000 mBm)
+> [ 338.523281] cfg80211: (5170000 KHz - 5250000 KHz @ 40000 KHz), (300
+> mBi, 2000 mBm)
+> [ 338.523284] cfg80211: (5735000 KHz - 5835000 KHz @ 40000 KHz), (300
+> mBi, 2000 mBm)
+> [ 340.948738] wlan1: authenticate with 00:1d:a2:d8:7e:70 (try 1)
+> [ 340.950479] wlan1: authenticated
+> [ 340.950707] wlan1: associate with 00:1d:a2:d8:7e:70 (try 1)
+> [ 340.953611] wlan1: RX ReassocResp from 00:1d:a2:d8:7e:70 (capab=0x401
+> status=0 aid=79)
+> [ 340.953614] wlan1: associated
+> [ 458.646604] wlan1: deauthenticated from 00:1d:a2:d8:7e:70 (Reason: 2)
+>
+>
+> my entire syslog is filled with the above.
+>
 
-FWIW, given that I am quoting "code rules!" to the gods of Linux
-on another lkml thread, I can hardly disagree here.
 
-If Nitin continues to develop his allocator and it proves
-better than xcfmalloc (and especially if it can replace
-zbud as well), we can consider replacing xcfmalloc later.
-Until zcache is promoted from staging, I think we have
-that flexibility.
+Are you using networkmanager or systemd or even both ?
+Atleast at some point networkmanager have had problems when trying to
+activate wireless faster than the hw like, so you get into
+auth/deauth loop, and for every time interface restart gets detected,
+setting crda gets triggered.
 
-(Shameless advertisement though:  The xcfmalloc allocator
-only applies to pages passed via frontswap, and on
-that other lkml thread lurk many people intent on shooting
-frontswap down.  So, frankly, I'd prefer time to be spent
-on benchmarking zcache rather than on arguing about
-allocators which, as things currently feel to me on that
-other lkml thread, is not unlike rearranging deck chairs
-on the Titanic. Half-:-).
+For me systemd also has had the same problems for me from time to time,
+and the only way to get wireless up then is to disable it for a
+~5+ seconds with the hw killswitch, and when I re-enable it, network 
+comes up as intended.
 
-Dan
+This happends for me with atleast 3.0 and 3.1 kernels and Intel 4965AGN 
+wireless connecting to a 11N 5GHz AP.
+
+--
+Thomas
