@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1KAMx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 08:53:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9896 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753947Ab1KAMx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 08:53:26 -0400
-Message-ID: <4EAFEBBE.3070604@redhat.com>
-Date: Tue, 01 Nov 2011 10:53:18 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754752Ab1KAMyK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 08:54:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55521 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab1KAMyI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 08:54:08 -0400
 MIME-Version: 1.0
-To: wharms@bfs.de
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        "Mark A. Grondona" <mgrondona@llnl.gov>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] edac: sb_edac: add sanity check to silence static checker
-References: <20111101062852.GA19020@elgon.mountain> <4EAFE6DF.8030403@bfs.de>
-In-Reply-To: <4EAFE6DF.8030403@bfs.de>
-X-Enigmail-Version: 1.3.2
+In-Reply-To: <4EAFEA3D.9030103@metafoo.de>
+References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
+ <1320108191-6647-1-git-send-email-pali.rohar@gmail.com> <1320108191-6647-8-git-send-email-pali.rohar@gmail.com>
+ <4EAFE184.5010409@metafoo.de> <CAHYPw2EPdmmbk+DM1SgFKa8LGAKQEp7ppX+0Zjpkdx7hOcwzJA@mail.gmail.com>
+ <4EAFEA3D.9030103@metafoo.de>
+From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+Date: Tue, 1 Nov 2011 13:53:26 +0100
+Message-ID: <CAHYPw2F3mYD2R4C_XCDc6wBbsEfz_wscEGdmHONhKRr9jbeEaw@mail.gmail.com>
+Subject: Re: [PATCH 8/9] bq27x00: Add miscdevice for each battery with ioctl
+ for reading registers
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, Anton Vorontsov <cbou@mail.ru>,
+        syed rafiuddin <rafiuddin.sayed@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>,
+        David Woodhouse <dwmw2@infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 01-11-2011 10:32, walter harms escreveu:
-> 
-> 
-> Am 01.11.2011 07:28, schrieb Dan Carpenter:
->> I assume the the check on if (limit <= prv) prevents n_tads from
->> actually reaching MAX_TAD.  The problem with that is that it relies
->> on the hardware returning the right value and Smatch complains that
->> if it doesn't we could have a buffer overflow.
+2011/11/1 Lars-Peter Clausen <lars@metafoo.de>:
+> On 11/01/2011 01:23 PM, Pali Rohár wrote:
+>> 2011/11/1 Lars-Peter Clausen <lars@metafoo.de>:
+>>> On 11/01/2011 01:43 AM, Pali Rohár wrote:
+>>>> * When bq27x00_battery module is loaded it take control of bq27200 i2c battery chip and then it is not possible to use i2cget program from user space (returns -EBUSY)
+>>>> * This patch adds new miscdevice for each battery which has ioctl BQ27X00_READ_REG for reading battery registers from user space
+>>>>
+>>>> * ioctl cmd:
+>>>>   #define BQ27X00_READ_REG _IO(MISC_MAJOR, 0)
+>>>>
+>>>> * ioctl arg:
+>>>>   struct bq27x00_reg_parms {
+>>>>     int reg; /* battery register (in) */
+>>>>     int single; /* 1 - 8bit register, 0 - 16bit register (in) */
+>>>>     int ret; /* register status, negative indicate error (out) */
+>>>>   };
+>>>>
+>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+>>>
+>>> I'm not sure if this is such a good idea. Why do you need to read the registers
+>>> from userspace? Shouldn't all relevant information be available in a
+>>> standardized format through the power_supply userspace API? If you want to use
+>>> it for debugging it might be a better idea to provide a debugfs file.
+>>>
+>>> - Lars
+>>>
 >>
->> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->> ---
->> Feel free to ignore this patch if you want.  I don't have very stong
->> feelings about this either way.
->>
->> diff --git a/drivers/edac/sb_edac.c b/drivers/edac/sb_edac.c
->> index 7a402bf..ebf386c 100644
->> --- a/drivers/edac/sb_edac.c
->> +++ b/drivers/edac/sb_edac.c
->> @@ -970,6 +970,12 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
->>  			break;
->>  		prv = limit;
->>  	}
->> +	if (n_tads == MAX_TAD) {
->> +		sprintf(msg, "Could not discover the memory channel");
-> 
-> why the sprintf() ? can you not simply:
-> 	edac_mc_handle_ce_no_info(mci,"Could not discover the memory channel");
+>> bq27200 chip has a lot of registers (for diagnostic) which is usefull
+>> on Nokia N900. power_supply interface is not very abstract to handle
+>> all of them.
+>
+> Which registers are we talking about here. And if this generally useful
+> information does it make sense to add a new property to the power_supply interface?
 
-Yes, please us the edac-specific call. I'm working on some patches that will
-provide an additional functionality to those edac report calls. So, using
-sprintf() won't do the right thing after applying those patches (likely for
-Kernel v3.3).
+I think it is usefull only for bq, see shell script
+http://enivax.net/jk/n900/bq.tar
 
-> 		
-> 	re,
->  	 wh
->> +		edac_mc_handle_ce_no_info(mci, msg);
->> +		return -EINVAL;
->> +	}
->> +
->>  	ch_way = TAD_CH(reg) + 1;
->>  	sck_way = TAD_SOCK(reg) + 1;
->>  	/*
+>
+>> Also on Nokia N900 is needed proprietary pogram BME for
+>> battery charging which need to access to bq27200 registers. A simple
+>> LD_PRELOAD library which wrap i2c-dev access to this device provided
+>> by this patch is here:
+>> https://code.launchpad.net/~pali/+junk/maemo_libbqioctl
+>
+> Yes, but that really is a hack to work around the closed source nature of the
+> BME program. I don't think we should put such hacks into the kernel.
+>
 
+Not only BME. All programs (and shell scripts and all which use
+i2cget) need this interface, bacuse loading bq module will block
+ic2-dev.
+
+-- 
+Pali Rohár
+pali.rohar@gmail.com
