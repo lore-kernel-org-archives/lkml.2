@@ -1,96 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab1KADKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 23:10:20 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:40677 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab1KADKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 23:10:19 -0400
-Date: Tue, 1 Nov 2011 14:10:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Prasad Joshi <prasadjoshi.linux@gmail.com>,
-        =?UTF-8?B?IkrDtnJuIEVuZ2Vs?= =?UTF-8?B?Ig==?= <joern@logfs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Josef Bacik <josef@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: linux-next: manual merge of the logfs tree with Linus' tree
-Message-Id: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__1_Nov_2011_14_10_00_+1100_7LzjNqVIugOtRnGS"
+	id S1753711Ab1KADUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 23:20:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab1KADUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Oct 2011 23:20:45 -0400
+From: Weiping Pan <wpan@redhat.com>
+To: netdev@vger.kernel.org
+Cc: fubar@us.ibm.com, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        Weiping Pan <wpan@redhat.com>
+Subject: [PATCH] bonding:update speed/duplex for NETDEV_CHANGE
+Date: Tue,  1 Nov 2011 11:20:48 +0800
+Message-Id: <9765cb601d0b4330cf7775ec3cd6b9e1ea13c71e.1320117071.git.wpan@redhat.com>
+In-Reply-To: <14973.1320093129@death>
+References: <14973.1320093129@death>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Nov_2011_14_10_00_+1100_7LzjNqVIugOtRnGS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Zheng Liang(lzheng@redhat.com) found a bug that if we config bonding with
+arp monitor, sometimes bonding driver cannot get the speed and duplex from
+its slaves, it will assume them to be 100Mb/sec and Full, please see
+/proc/net/bonding/bond0.
+But there is no such problem when uses miimon.
 
-Hi all,
+(Take igb for example)
+I find that the reason is that after dev_open() in bond_enslave(),
+bond_update_speed_duplex() will call igb_get_settings()
+, but in that function,
+it runs ethtool_cmd_speed_set(ecmd, -1); ecmd->duplex = -1;
+because igb get an error value of status.
+So even dev_open() is called, but the device is not really ready to get its
+settings.
 
-Today's linux-next merge of the logfs tree got a conflict in
-fs/logfs/file.c between commit 02c24a82187d ("fs: push i_mutex and
-filemap_write_and_wait down into ->fsync() handlers") from Linus' tree
-and commit 39da12ef4bbe ("logfs: take write mutex lock during fsync and
-sync") from the logfs tree.
+Maybe it is safe for us to call igb_get_settings() only after
+this message shows up, that is "igb: p4p1 NIC Link is Up 1000 Mbps Full Duplex,
+Flow Control: RX".
 
-I have no idea what needs to be done here.  I fixed it like below to make
-it build, but a better fix is needed.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+So I prefer to update the speed and duplex for a slave when reseices
+NETDEV_CHANGE/NETDEV_UP event.
 
-diff --cc fs/logfs/file.c
-index b548c87,f85d603..0000000
---- a/fs/logfs/file.c
-+++ b/fs/logfs/file.c
-@@@ -219,20 -219,13 +219,22 @@@ long logfs_ioctl(struct file *file, uns
-  	}
-  }
- =20
- -int logfs_fsync(struct file *file, int datasync)
- +int logfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
-  {
-  	struct super_block *sb =3D file->f_mapping->host->i_sb;
- +	struct inode *inode =3D file->f_mapping->host;
- +	int ret;
- +
- +	ret =3D filemap_write_and_wait_range(inode->i_mapping, start, end);
- +	if (ret)
- +		return ret;
- =20
- +	mutex_lock(&inode->i_mutex);
-+ 	logfs_get_wblocks(sb, NULL, WF_LOCK);
-  	logfs_write_anchor(sb);
-+ 	logfs_put_wblocks(sb, NULL, WF_LOCK);
- +	mutex_unlock(&inode->i_mutex);
- +
-  	return 0;
-  }
- =20
+Changelog
+V2:
+1 remove the "fake 100/Full" logic in bond_update_speed_duplex(),
+  set speed and duplex to -1 when it gets error value of speed and duplex.
+2 delete the warning in bond_enslave() if bond_update_speed_duplex() returns
+  error.
+3 make bond_info_show_slave() handle bad values of speed and duplex.
 
---Signature=_Tue__1_Nov_2011_14_10_00_+1100_7LzjNqVIugOtRnGS
-Content-Type: application/pgp-signature
+Signed-off-by: Weiping Pan <wpan@redhat.com>
+---
+ drivers/net/bonding/bond_main.c   |   37 ++++++++++++-------------------------
+ drivers/net/bonding/bond_procfs.c |   12 ++++++++++--
+ 2 files changed, 22 insertions(+), 27 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index c34cc1e..b2b9109 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -550,7 +550,7 @@ down:
+ /*
+  * Get link speed and duplex from the slave's base driver
+  * using ethtool. If for some reason the call fails or the
+- * values are invalid, fake speed and duplex to 100/Full
++ * values are invalid, set speed and duplex to -1,
+  * and return error.
+  */
+ static int bond_update_speed_duplex(struct slave *slave)
+@@ -560,9 +560,8 @@ static int bond_update_speed_duplex(struct slave *slave)
+ 	u32 slave_speed;
+ 	int res;
+ 
+-	/* Fake speed and duplex */
+-	slave->speed = SPEED_100;
+-	slave->duplex = DUPLEX_FULL;
++	slave->speed = -1;
++	slave->duplex = -1;
+ 
+ 	res = __ethtool_get_settings(slave_dev, &ecmd);
+ 	if (res < 0)
+@@ -1751,16 +1750,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+ 		new_slave->link  = BOND_LINK_DOWN;
+ 	}
+ 
+-	if (bond_update_speed_duplex(new_slave) &&
+-	    (new_slave->link != BOND_LINK_DOWN)) {
+-		pr_warning("%s: Warning: failed to get speed and duplex from %s, assumed to be 100Mb/sec and Full.\n",
+-			   bond_dev->name, new_slave->dev->name);
+-
+-		if (bond->params.mode == BOND_MODE_8023AD) {
+-			pr_warning("%s: Warning: Operation of 802.3ad mode requires ETHTOOL support in base driver for proper aggregator selection.\n",
+-				   bond_dev->name);
+-		}
+-	}
++	bond_update_speed_duplex(new_slave);
+ 
+ 	if (USES_PRIMARY(bond->params.mode) && bond->params.primary[0]) {
+ 		/* if there is a primary slave, remember it */
+@@ -3220,6 +3210,7 @@ static int bond_slave_netdev_event(unsigned long event,
+ {
+ 	struct net_device *bond_dev = slave_dev->master;
+ 	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave = NULL;
+ 
+ 	switch (event) {
+ 	case NETDEV_UNREGISTER:
+@@ -3230,20 +3221,16 @@ static int bond_slave_netdev_event(unsigned long event,
+ 				bond_release(bond_dev, slave_dev);
+ 		}
+ 		break;
++	case NETDEV_UP:
+ 	case NETDEV_CHANGE:
+-		if (bond->params.mode == BOND_MODE_8023AD || bond_is_lb(bond)) {
+-			struct slave *slave;
++		slave = bond_get_slave_by_dev(bond, slave_dev);
++		if (slave) {
++			u32 old_speed = slave->speed;
++			u8  old_duplex = slave->duplex;
+ 
+-			slave = bond_get_slave_by_dev(bond, slave_dev);
+-			if (slave) {
+-				u32 old_speed = slave->speed;
+-				u8  old_duplex = slave->duplex;
+-
+-				bond_update_speed_duplex(slave);
+-
+-				if (bond_is_lb(bond))
+-					break;
++			bond_update_speed_duplex(slave);
+ 
++			if (bond->params.mode == BOND_MODE_8023AD) {
+ 				if (old_speed != slave->speed)
+ 					bond_3ad_adapter_speed_changed(slave);
+ 				if (old_duplex != slave->duplex)
+diff --git a/drivers/net/bonding/bond_procfs.c b/drivers/net/bonding/bond_procfs.c
+index 95de93b..d2ff52e 100644
+--- a/drivers/net/bonding/bond_procfs.c
++++ b/drivers/net/bonding/bond_procfs.c
+@@ -157,8 +157,16 @@ static void bond_info_show_slave(struct seq_file *seq,
+ 	seq_printf(seq, "\nSlave Interface: %s\n", slave->dev->name);
+ 	seq_printf(seq, "MII Status: %s\n",
+ 		   (slave->link == BOND_LINK_UP) ?  "up" : "down");
+-	seq_printf(seq, "Speed: %d Mbps\n", slave->speed);
+-	seq_printf(seq, "Duplex: %s\n", slave->duplex ? "full" : "half");
++	if (slave->speed == -1)
++		seq_printf(seq, "Speed: %s\n", "Unknown");
++	else
++		seq_printf(seq, "Speed: %d Mbps\n", slave->speed);
++
++	if (slave->duplex == -1)
++		seq_printf(seq, "Duplex: %s\n", "Unknown");
++	else
++		seq_printf(seq, "Duplex: %s\n", slave->duplex ? "full" : "half");
++
+ 	seq_printf(seq, "Link Failure Count: %u\n",
+ 		   slave->link_failure_count);
+ 
+-- 
+1.7.4
 
-iQIcBAEBCAAGBQJOr2MIAAoJEECxmPOUX5FE2GIP/0xPNlty3ICEwD5TxH/zSXiP
-Dwy7ClqkZlLK+sBLMFmEhsHrn7JpKWFUNekpCWSQ9yuzUppd+2zKT4Y5kblBEau/
-UEWcXHf2wiiumimoAkUvl8zSLaImCQCYw/91ruA2gdDj7lryR85AIZbEhftd5p6o
-9F9Wa5YDIIF9Wj87ehiPoaipr0vjG48JQovNbgnLcQo/O/I0raDOXH8W+bszTpMX
-fBGObsdzy18OoeHmFHXfBCLDwtjeO+18Y5K26qZGJrgLtbLAdNKB6ZYWPhP2IJK7
-tdy5UFlJCFYH4ozhDvDmQcKKgu6uUaqccr/TSv7L+VZJWkbFLUk41qxVUzXvXMNF
-wQqMkH1jig4r9KeMCwSLuUQkwv+Ivxo2vISbmXga34c1hcMEVdSDIcwO51297tWr
-UzB/039gQt3Ozk9sduGTGUCIiFL+tKg3oIDlfiDsUXPtPUnRKfmW7sND2Ig5rccM
-OvJXoagU1wFe4ZeRX9ItB2dxkp9bhdf/2H0XJET29mo0rNGxhHhBV3QQ/darKiE6
-+N5SS2nTU61JaQ793ob6W3ySqT2dEzTZBMk5IypMQWlVlSCVyWb/z+RcqoNQ1H0X
-spIjMGH+3Cxh92MrBwY/WtIFonAJ40yKPaw7yFeiQx3DjQRvNHmCMF7Wt+I4i2u4
-NDKfoF1pZ0N4Ywy+fqQs
-=3oHY
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Nov_2011_14_10_00_+1100_7LzjNqVIugOtRnGS--
