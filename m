@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab1KAWIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 18:08:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756057Ab1KAWIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 18:08:50 -0400
-Date: Tue, 1 Nov 2011 18:08:45 -0400
-From: Dave Jones <davej@redhat.com>
-To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: 3.1+ iwlwifi lockup
-Message-ID: <20111101220845.GA16080@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	"Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"ilw@linux.intel.com" <ilw@linux.intel.com>,
-	"linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-References: <20111031143408.GA17152@redhat.com>
- <1320179254.31823.130.camel@wwguy-huron>
+	id S1756091Ab1KAWPH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 18:15:07 -0400
+Received: from sendmail1.youbroadband.in ([203.187.192.25]:64023 "HELO
+	sendmail1.youbroadband.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753733Ab1KAWPE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 18:15:04 -0400
+X-Antivirus-YOUBROADBAND-Mail-From: beacon_bgl@youbroadband.in via sendmail1.youbroadband.in
+X-Antivirus-YOUBROADBAND: 1.25-st-qms (Clear:RC:1(203.187.192.78):. Processed in 1.537829 secs Process 51218)
+Message-ID: <20111102034438.2jqztfv1cgo4g00c@webmail.youbroadband.in>
+Date: Wed, 02 Nov 2011 03:44:38 +0530
+From: BBC NATIONAL AWARD <beacon_bgl@youbroadband.in>
+Reply-to: bbconline224@hotmail.com
+To: undisclosed-recipients:;
+Subject: Congratulations
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <1320179254.31823.130.camel@wwguy-huron>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 01:27:34PM -0700, Guy, Wey-Yi wrote:
- > Dave,
- > 
- > On Mon, 2011-10-31 at 07:34 -0700, Dave Jones wrote:
- > > I just got this trace, and a driver lockup that caused me to have to
- > > unload & reload the iwlwifi module to get networking back.
- > > hardware is..
- > > 04:00.0 Network controller: Intel Corporation Ultimate N WiFi Link 5300
- > > 
- > > This is new as of 3.1+  (This kernel was Linus' tree as of last night)
- > > 
- > >         
- > 
- > Any more information to help us understand how to re-produce the issue?
- > without more data, it is really hard to root cause and fix it.
- > 
- > Thanks
- > Wey
 
-Wasn't doing anything special.  ssh, firefox, git clones.
 
-	Dave
+BBC E-MAIL PROMOTION WINNERS NOTICE,
+WINNING NOTIFICATION !!!
+BBC NATIONAL LOTTERY PROMO
+UK HEAD OFFICE.
+SUITES 23-30,LION TOWERS
+CENTRAL LONDON
+ENGLAND
+http://www.bbc.co.uk/lottery/
+
+Your Email Address was selected thereby Winning for you,£1,000,000  
+(One Million
+pounds) in the British Broadcasting corporation (BBC) Online Promo Held on the
+1st of November 2011, and you are to acknowledge the receipt of this mail with
+the
+details below to.
+CLAIMS DIRECTOR BBC ONLINE PROMOTION.
+
+1.Full name:
+2.Tel:
+3.Country :
+
+Sincerely,
+Mr. Scott Carson
 
