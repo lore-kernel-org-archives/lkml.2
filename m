@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab1KAOWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 10:22:10 -0400
-Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:34136 "EHLO
-	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753966Ab1KAOWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 10:22:09 -0400
-X-Greylist: delayed 1281 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Nov 2011 10:22:09 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=IHaXB0sp3eWCICVBiSlGSX0mPGVaRXK3cC6NCZv6BuPvgCMIqQOMnwodM85/PfZG;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4EAFFB8E.20605@earthlink.net>
-Date: Tue, 01 Nov 2011 10:00:46 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Theodore Tso <tytso@MIT.EDU>
-CC: Vincent Pelletier <plr.vincent@gmail.com>, linux-kernel@vger.kernel.org
-Subject: =?windows-1252?Q?Re=3A_ext4_bug_=3F_=22Intel_320_SSD?=
- =?windows-1252?Q?_write_performance_=96_contd=2E=22?=
-References: <CAF78GY1_HwP2QZsMLqHeJechjps44Jq2o1VDSFC0TriXB1riPQ@mail.gmail.com> <20111031210951.GK16825@thunk.org> <4EAFF54C.7010406@earthlink.net> <C838F22F-D7B1-4911-B6F6-214240A77859@mit.edu>
-In-Reply-To: <C838F22F-D7B1-4911-B6F6-214240A77859@mit.edu>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec7986788bb61a7412da1c3e1079a445054c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+	id S1754889Ab1KAO05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 10:26:57 -0400
+Received: from tex.lwn.net ([70.33.254.29]:41383 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754357Ab1KAO0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 10:26:55 -0400
+Date: Tue, 1 Nov 2011 08:26:53 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: loody <miloody@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: some questions about block and scatterlist
+Message-ID: <20111101082653.4fa844e4@bike.lwn.net>
+In-Reply-To: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
+References: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 09:41 AM, Theodore Tso wrote:
-> On Nov 1, 2011, at 9:34 AM, Stephen Clark wrote:
->
->    
->>> You can enable the trim behaviour by default by adding to your
->>> /etc/mke2fs.conf file:
->>>
->>> [defaults]
->>> 	discard = true
->>>
->>> But then it's on your head if anything bad happens.  :-/
->>>
->>>          	      	      	      - Ted
->>>
->>>
->>>        
->> <snip>
->>
->> What about using discard in fstab like:
->> LABEL=/ /                      ext4    defaults,discard,noatime,nodiratime        1 1
->>      
-> That does something different; this does continuous discards as you delete files.   This is probably the best thing to do if you are using thin-provisioning.   However, with SATA devices, a discard requires a queue flush, which can be a performance disaster.   (Also some cheaper SSD's also have real performance difficulties if there are frequent trims.)   There have also been reports that high frequency discards can trigger bugs that cause crappier SSD's to turn themselves into bricks.   The performance problems and the possibility of bricking crappier SSD's is why this isn't turned on by default.
->
-> Because of this, another method is to do FITRIM's periodically using cron.   This has less of a performance impact, so it's probably the better approach in many cases.
->
-> Basically, with SSD's and thin-provisioning systems, we are very much at the mercy at the competence of firmware authors.   As we know, sometimes firmware authors can be quite competent, or very, extremely incompetent.   So there will be a wide range of outcomes, which is one of the reasons why the best answer is to test to see what works best for you, preferably before you put use your systems in production.
->
-> -- Ted
->    
-So what I hear if that if you are using sata interface and not doing 
-virtualization we should be using FITRIMS's from  a cron job. At what 
-frequency should
-we be doing this?
+On Tue, 1 Nov 2011 19:32:38 +0900
+loody <miloody@gmail.com> wrote:
+
+> My questions are below:
+
+As are some answers :)
+
+> 1. Are all struct page 32-bit aligned?
+
+Certainly, I would expect any structures found in the system memory map to
+be so aligned, yes.  If you've created an arbitrary one elsewhere I'm only
+99% sure it would be.
+
+> If so, where is this part of code for handleing struct page be 32-bits aligned?
+
+Note that the size of struct page is carefully considered, and that they
+are packed as densely as possible, both externally and internally.  No
+lesser alignment would make sense.
+
+> 2. if the page of scatterlist is located at high mem, how does
+> dma_map_sg mapping the virtual address?
+
+That depends on a vast array of things.  What are the addressing
+capabilities of the target device?  Is there an IOMMU involved?
+
+> 3. in blk_rq_map_sg, it seems we only copy bvec->bv_page to sg->page_link
+>    why don't we add dma_address in bvec and send the bio directly to
+> the lower level driver?
+
+That would be a bit of a mixing of the layers, if nothing else.
+
+> 4. if I plug a USB HD with 3 partitions, will there be 3 request_queues?
+
+No, there is one request queue for the underlying device.
+
+That's an interesting mix of questions.  If you have more in the future,
+you'll likely get more (and more clueful) responses if they're accompanied
+by the code you're working on.
 
 Thanks,
-Steve
 
--- 
-
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+jon
