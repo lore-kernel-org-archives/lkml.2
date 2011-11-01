@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab1KABKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Oct 2011 21:10:38 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33658 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab1KABKf (ORCPT
+	id S1752024Ab1KABLc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Oct 2011 21:11:32 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:32790 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab1KABLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Oct 2011 21:10:35 -0400
+	Mon, 31 Oct 2011 21:11:31 -0400
+Date: Tue, 1 Nov 2011 12:11:29 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the crypto-current
+	tree
+Message-ID: <20111101011128.GA30055@gondor.apana.org.au>
+References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <093448$3uek00@wolverine01.qualcomm.com>
-References: <093448$3uek00@wolverine01.qualcomm.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 31 Oct 2011 18:10:13 -0700
-X-Google-Sender-Auth: Y1pWD2ZczLUumCwefqFGYYUgmK0
-Message-ID: <CA+55aFw2T0_mD1rM+dTz28fZPtSVhVDTWCYxXDvohwCwNk+b2g@mail.gmail.com>
-Subject: Re: [PATCH v5 00/36] Hexagon: Add support for Qualcomm Hexagon architecture
-To: Richard Kuo <rkuo@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, Linas Vepstas <linas@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 4:58 PM, Richard Kuo <rkuo@codeaurora.org> wrote:
->
-> Please let me know if there's anything else you require of these patches.
+On Tue, Nov 01, 2011 at 11:58:51AM +1100, Stephen Rothwell wrote:
+> Hi Herbert,
+> 
+> After merging the crypto-current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+>   GEN     /scratch/sfr/x86_64_allmodconfig/Makefile
+> scripts/kconfig/conf --allmodconfig Kconfig
+> net/Kconfig:5:error: recursive dependency detected!
+> net/Kconfig:5:	symbol NET is selected by CRYPTO_USER
+> crypto/Kconfig:103:	symbol CRYPTO_USER depends on CRYPTO
+> crypto/Kconfig:15:	symbol CRYPTO is selected by BT
+> net/bluetooth/Kconfig:5:	symbol BT depends on NET
+> warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2X_FCOE) selects NETDEVICES which has unmet direct dependencies (NET)
+> warning: (SCSI_CXGB3_ISCSI && SCSI_CXGB4_ISCSI && SCSI_BNX2_ISCSI && SCSI_BNX2X_FCOE) selects ETHERNET which has unmet direct dependencies (NETDEVICES && NET)
 
-So there's something odd going on with the Sign-off's, which makes me
-unhappy. It also makes me wonder if the authorship is properly
-attributed.
+Hmm, don't know why I didn't see that here.
 
-Some of these things are signed off by Linas Vepstas. In fact, some of
-them are *only* signed off on by him, not by you. Which is definitely
-wrong. But it makes me wonder if the authorship is buggered up, and
-those patches maybe should have a "From: Linas Vepstas
-<linas@codeaurora.org>" on them too.
+Does making it a dependency cause this to go away?
 
-Example of this: "[PATCH v5 12/36] Hexagon: Export ksyms defined in
-assembly files." (but 13/36, 31/36 and 36/36 were that way too).
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 259dea9..527a857 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -102,8 +102,8 @@ config CRYPTO_MANAGER2
+ 
+ config CRYPTO_USER
+ 	tristate "Userspace cryptographic algorithm configuration"
++	depends on NET
+ 	select CRYPTO_MANAGER
+-	select NET
+ 	help
+ 	  Userapace configuration for cryptographic instantiations such as
+ 	  cbc(aes).
 
-Others are signed off by both Linas Vepstas and you, but in an odd
-order. Since you're sending them to me, I'd expect your sign-off to be
-last, but it isn't. So the sign-off sequence makes it look like they
-were sent by Linas, even though I got them from you.
-
-So I'd like some clarification on this, and I do need *your* sign-off
-on them all since you're sending them to me.
-
-You don't have to re-send, but you do have to explain whether perhaps
-Linas should be author (and why the odd order of sign-offs) and
-basically do a "yeah, I sign off on those patches" with a full listing
-of the patches in question so that I have it for the record.
-
-                       Linus
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
