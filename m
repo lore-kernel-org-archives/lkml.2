@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755845Ab1KASRg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 14:17:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:50045 "EHLO e3.ny.us.ibm.com"
+	id S1755892Ab1KASR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 14:17:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15508 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755342Ab1KASRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 14:17:35 -0400
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
-        gregkh@suse.de, devel@driverdev.osuosl.org, dan.magenheimer@oracle.com,
-        cascardo@holoscopio.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-In-Reply-To: <4E738B81.2070005@vflare.org>
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com>
-	 <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org>
-	 <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org>
-	 <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org>
-	 <4E72284B.2040907@linux.vnet.ibm.com>  <4E738B81.2070005@vflare.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Nov 2011 10:30:15 -0700
-Message-ID: <1320168615.15403.80.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110118-8974-0000-0000-000001508D2A
+	id S1755824Ab1KASRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 14:17:55 -0400
+Date: Tue, 1 Nov 2011 19:13:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jeff Layton <jlayton@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
+	fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Message-ID: <20111101181329.GA6739@redhat.com>
+References: <20111031221743.GA18855@google.com> <201111010024.16659.rjw@sisk.pl> <20111031233059.GI18855@google.com> <20111101005505.GO18855@google.com> <20111101041337.39077229@tlielax.poochiereds.net> <20111101065958.50addab5@tlielax.poochiereds.net> <20111101163059.GR18855@google.com> <20111101175953.GB5358@redhat.com> <20111101180601.GV18855@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101180601.GV18855@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-09-16 at 13:46 -0400, Nitin Gupta wrote:
-> I think replacing allocator every few weeks isn't a good idea. So, I
-> guess better would be to let me work for about 2 weeks and try the slab
-> based approach.  If nothing works out in this time, then maybe xcfmalloc
-> can be integrated after further testing.
+On 11/01, Tejun Heo wrote:
+>
+> Yeah yeah, Trond already pointed it out.  I forgot about the
+> sigpending special case in schedule(), which I think is rather odd,
 
-Hi Nitin,
+I disagree with "rather odd" ;)
 
-It's been about six weeks. :)
+We have a lot of examples of
 
-Can we talk about putting xcfmalloc() in staging now?
+	current->state = TASK_INTERRUPTIBLE;
+	...
+	if (signal_pending())
+		break;
+	schedule();
 
--- Dave
+Without that special case in schedule() the code above becomes racy.
+Just consider __wait_event_interruptible().
+
+> Any better ideas?
+
+Well. As a simple (probably temporary) fix, I'd suggest
+
+	#define wait_event_freezekillable(wq, condition)
+	{
+		freezer_do_not_count();
+		__retval = wait_event_killable(condition);
+		freezer_count();
+		__retval;
+	}
+
+Do you think it can work?
+
+Oleg.
 
