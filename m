@@ -1,100 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755165Ab1KAN70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 09:59:26 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:63344 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755080Ab1KAN7W (ORCPT
+	id S1755210Ab1KAN76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 09:59:58 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44940 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab1KAN6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 09:59:22 -0400
-Date: Tue, 1 Nov 2011 16:59:45 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: wharms@bfs.de, "Mark A. Grondona" <mgrondona@llnl.gov>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] edac: sb_edac: add sanity check to silence static checker
-Message-ID: <20111101135945.GA4682@mwanda>
-References: <20111101062852.GA19020@elgon.mountain>
- <4EAFE6DF.8030403@bfs.de>
- <4EAFEBBE.3070604@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-In-Reply-To: <4EAFEBBE.3070604@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4EAFFB34.0051,ss=1,re=0.000,fgs=0
+	Tue, 1 Nov 2011 09:58:53 -0400
+From: Pekka Enberg <penberg@kernel.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        Arun Sharma <asharma@fb.com>, Pekka Enberg <penberg@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH v2 4/7] x86, mm: Wrap ZONE_DMA32 with CONFIG_ZONE_DMA32
+Date: Tue,  1 Nov 2011 15:58:19 +0200
+Message-Id: <1320155902-10424-4-git-send-email-penberg@kernel.org>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1320155902-10424-1-git-send-email-penberg@kernel.org>
+References: <1320155902-10424-1-git-send-email-penberg@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In preparation for unifying 32-bit and 64-bit zone_sizes_init() make sure
+ZONE_DMA32 is wrapped in CONFIG_ZONE_DMA32.
 
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Arun Sharma <asharma@fb.com>
+Signed-off-by: Pekka Enberg <penberg@kernel.org>
+---
+ arch/x86/mm/init_64.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-On Tue, Nov 01, 2011 at 10:53:18AM -0200, Mauro Carvalho Chehab wrote:
-> >> --- a/drivers/edac/sb_edac.c
-> >> +++ b/drivers/edac/sb_edac.c
-> >> @@ -970,6 +970,12 @@ static int get_memory_error_data(struct mem_ctl_i=
-nfo *mci,
-> >>  			break;
-> >>  		prv =3D limit;
-> >>  	}
-> >> +	if (n_tads =3D=3D MAX_TAD) {
-> >> +		sprintf(msg, "Could not discover the memory channel");
-> >=20
-> > why the sprintf() ? can you not simply:
-> > 	edac_mc_handle_ce_no_info(mci,"Could not discover the memory channel");
->=20
-> Yes, please us the edac-specific call. I'm working on some patches that w=
-ill
-> provide an additional functionality to those edac report calls. So, using
-> sprintf() won't do the right thing after applying those patches (likely f=
-or
-> Kernel v3.3).
->=20
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 3ddda59..a9214e6 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -620,7 +620,9 @@ static void __init zone_sizes_init(void)
+ #ifdef CONFIG_ZONE_DMA
+ 	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
+ #endif
++#ifdef CONFIG_ZONE_DMA32
+ 	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
++#endif
+ 	max_zone_pfns[ZONE_NORMAL] = max_pfn;
+ 
+ 	free_area_init_nodes(max_zone_pfns);
+-- 
+1.7.6.4
 
-I did use the edac-specific call.  Walter is saying that the
-sprintf() is not needed because I could just pass the string
-directly.  That's true enough, but I'd prefer to leave it how I wrote
-it so it matches everything else in this file.  Also passing it
-directly as edac_mc_handle_ce_no_info(mci,"Could not discover the memory ch=
-annel");
-makes the line too long for the 80 character limit so someone will
-complain if I do that.  This isn't a fast path so the sprintf()
-doesn't hurt anything.
-
-Also looking at it now, I suspect this patch might be a bug fix
-instead of just to silence the warning.  We have a similar check for
-the MAX_SAD loop earlier to the check that I added here for MAX_TAD.
-
-regards,
-dan carpenter
-
-
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOr/tQAAoJEOnZkXI/YHqR8y8P/0wFwk8/j1xDxtb47yNsBVGB
-6DUIA8DebxrcMi59jJIQG30a9IDu4rirGs61xuR9GHcJyp//7MaB/JwvF9GA9p3X
-Bd+RdHLvGHaqzbnKaQ18Mz+pGMb4jy3CqhNXCa7C2WIZnSwoUcseDo3O3eDQ63XG
-LEDmVS8JZGIMFSHAehneG6MS54kR49yMGUmOAVGYaAxq5wIYjpMNGcYuueovJ+7D
-ppzaIDOYSaPiDJIa4dX1fPLVmumqk/xqMhx9O8UY9dBRX8DM8TbH1aERr6XdEbCQ
-5rKyfHCOMGRKtX+2JDK1ZcnAaCdPgFGaCcu//ArrFUdEqPU2mXTFqyW0BHJopl82
-phZ3XPiSCvQnXWMtAOrn5ddqSG6BZwXwzw0OX2Oj+ZisCYK8lOHsLjiASNU4P1cV
-5d6qPj2Xaf1uNyf4ciF41GMdOjshGf2v45zmYedp+unphIY9nWqAPm1XRu5xW99Q
-1ECfUhLAhd4tsG4cWo8hM2WOqNPDCmZgeGnfNKZ3kZ78lrlWZNzIrgldZanh4mXX
-K5HT9vCsDlQbdUBHmBfRuIofFX7Rz+LyPP4slIh0G/o5PYBX1uNlzndi5y5Rp32J
-9GfFFfFUmkdI3VQccfeB32nHbNI/h9E893Ubw9X4XjgeCNNPpvumdQVxlboSM/2w
-TOYRim0Im5bhS6Vfok8k
-=oZ86
------END PGP SIGNATURE-----
-
---ZPt4rx8FFjLCG7dd--
