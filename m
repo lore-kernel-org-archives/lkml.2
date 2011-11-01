@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab1KAXrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:47:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37379 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086Ab1KAXrC (ORCPT
+	id S932636Ab1KAXsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:48:01 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38653 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756237Ab1KAXq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:47:02 -0400
+	Tue, 1 Nov 2011 19:46:56 -0400
 From: Tejun Heo <tj@kernel.org>
 To: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com
 Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         containers@lists.linux-foundation.org, fweisbec@gmail.com,
         matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@Jp.fujitsu.com, Tejun Heo <tj@kernel.org>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@Jp.fujitsu.com>,
-        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 08/10] cgroup: don't use subsys->can_attach_task() or ->attach_task()
-Date: Tue,  1 Nov 2011 16:46:31 -0700
-Message-Id: <1320191193-8110-9-git-send-email-tj@kernel.org>
+        kamezawa.hiroyu@Jp.fujitsu.com, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 06/10] cgroup: improve old cgroup handling in cgroup_attach_proc()
+Date: Tue,  1 Nov 2011 16:46:29 -0700
+Message-Id: <1320191193-8110-7-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1320191193-8110-1-git-send-email-tj@kernel.org>
 References: <1320191193-8110-1-git-send-email-tj@kernel.org>
@@ -28,385 +23,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that subsys->can_attach() and attach() take @tset instead of
-@task, they can handle per-task operations.  Convert
-->can_attach_task() and ->attach_task() users to use ->can_attach()
-and attach() instead.  Most converions are straight-forward.
-Noteworthy changes are,
+cgroup_attach_proc() behaves differently from cgroup_attach_task() in
+the following aspects.
 
-* In cgroup_freezer, remove unnecessary NULL assignments to unused
-  methods.  It's useless and very prone to get out of sync, which
-  already happened.
+* All hooks are invoked even if no task is actually being moved.
 
-* In cpuset, PF_THREAD_BOUND test is checked for each task.  This
-  doesn't make any practical difference but is conceptually cleaner.
+* ->can_attach_task() is called for all tasks in the group whether the
+  new cgrp is different from the current cgrp or not; however,
+  ->attach_task() is skipped if new equals new.  This makes the calls
+  asymmetric.
+
+This patch improves old cgroup handling in cgroup_attach_proc() by
+looking up the current cgroup at the head, recording it in the flex
+array along with the task itself, and using it to remove the above two
+differences.  This will also ease further changes.
+
+-v2: nr_todo renamed to nr_migrating_tasks as per Paul Menage's
+     suggestion.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Paul Menage <paul@paulmenage.org>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Balbir Singh <bsingharora@gmail.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: James Morris <jmorris@namei.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- block/blk-cgroup.c      |   45 +++++++++++++++++++-----------
- kernel/cgroup_freezer.c |   25 ++++++-----------
- kernel/cpuset.c         |   70 +++++++++++++++++++++-------------------------
- kernel/events/core.c    |   13 +++++---
- kernel/sched.c          |   31 +++++++++++++--------
- 5 files changed, 96 insertions(+), 88 deletions(-)
+ kernel/cgroup.c |   66 +++++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 42 insertions(+), 24 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b596e54..b5e3fef 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -30,8 +30,10 @@ EXPORT_SYMBOL_GPL(blkio_root_cgroup);
- 
- static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
- 						  struct cgroup *);
--static int blkiocg_can_attach_task(struct cgroup *, struct task_struct *);
--static void blkiocg_attach_task(struct cgroup *, struct task_struct *);
-+static int blkiocg_can_attach(struct cgroup_subsys *, struct cgroup *,
-+			      struct cgroup_taskset *);
-+static void blkiocg_attach(struct cgroup_subsys *, struct cgroup *,
-+			   struct cgroup_taskset *);
- static void blkiocg_destroy(struct cgroup_subsys *, struct cgroup *);
- static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
- 
-@@ -44,8 +46,8 @@ static int blkiocg_populate(struct cgroup_subsys *, struct cgroup *);
- struct cgroup_subsys blkio_subsys = {
- 	.name = "blkio",
- 	.create = blkiocg_create,
--	.can_attach_task = blkiocg_can_attach_task,
--	.attach_task = blkiocg_attach_task,
-+	.can_attach = blkiocg_can_attach,
-+	.attach = blkiocg_attach,
- 	.destroy = blkiocg_destroy,
- 	.populate = blkiocg_populate,
- #ifdef CONFIG_BLK_CGROUP
-@@ -1609,30 +1611,39 @@ done:
-  * of the main cic data structures.  For now we allow a task to change
-  * its cgroup only if it's the only owner of its ioc.
-  */
--static int blkiocg_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static int blkiocg_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+			      struct cgroup_taskset *tset)
- {
-+	struct task_struct *task;
- 	struct io_context *ioc;
- 	int ret = 0;
- 
- 	/* task_lock() is needed to avoid races with exit_io_context() */
--	task_lock(tsk);
--	ioc = tsk->io_context;
--	if (ioc && atomic_read(&ioc->nr_tasks) > 1)
--		ret = -EINVAL;
--	task_unlock(tsk);
--
-+	cgroup_taskset_for_each(task, cgrp, tset) {
-+		task_lock(task);
-+		ioc = task->io_context;
-+		if (ioc && atomic_read(&ioc->nr_tasks) > 1)
-+			ret = -EINVAL;
-+		task_unlock(task);
-+		if (ret)
-+			break;
-+	}
- 	return ret;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 3679fb6..19396d6 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1757,6 +1757,11 @@ int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen)
  }
+ EXPORT_SYMBOL_GPL(cgroup_path);
  
--static void blkiocg_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static void blkiocg_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+			   struct cgroup_taskset *tset)
- {
-+	struct task_struct *task;
- 	struct io_context *ioc;
- 
--	task_lock(tsk);
--	ioc = tsk->io_context;
--	if (ioc)
--		ioc->cgroup_changed = 1;
--	task_unlock(tsk);
-+	cgroup_taskset_for_each(task, cgrp, tset) {
-+		task_lock(task);
-+		ioc = task->io_context;
-+		if (ioc)
-+			ioc->cgroup_changed = 1;
-+		task_unlock(task);
-+	}
- }
- 
- void blkio_policy_register(struct blkio_policy_type *blkiop)
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index a72d5fa..68ef861 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -163,10 +163,19 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 			      struct cgroup_taskset *tset)
- {
- 	struct freezer *freezer;
-+	struct task_struct *task;
- 
- 	/*
- 	 * Anything frozen can't move or be moved to/from.
- 	 */
-+	rcu_read_lock();
-+	cgroup_taskset_for_each(task, new_cgroup, tset) {
-+		if (__cgroup_freezing_or_frozen(task)) {
-+			rcu_read_unlock();
-+			return -EBUSY;
-+		}
-+	}
-+	rcu_read_unlock();
- 
- 	freezer = cgroup_freezer(new_cgroup);
- 	if (freezer->state != CGROUP_THAWED)
-@@ -175,17 +184,6 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 	return 0;
- }
- 
--static int freezer_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
--{
--	rcu_read_lock();
--	if (__cgroup_freezing_or_frozen(tsk)) {
--		rcu_read_unlock();
--		return -EBUSY;
--	}
--	rcu_read_unlock();
--	return 0;
--}
--
- static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- {
- 	struct freezer *freezer;
-@@ -381,10 +379,5 @@ struct cgroup_subsys freezer_subsys = {
- 	.populate	= freezer_populate,
- 	.subsys_id	= freezer_subsys_id,
- 	.can_attach	= freezer_can_attach,
--	.can_attach_task = freezer_can_attach_task,
--	.pre_attach	= NULL,
--	.attach_task	= NULL,
--	.attach		= NULL,
- 	.fork		= freezer_fork,
--	.exit		= NULL,
- };
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 2e5825b..472ddd6 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1372,33 +1372,34 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			     struct cgroup_taskset *tset)
- {
- 	struct cpuset *cs = cgroup_cs(cgrp);
-+	struct task_struct *task;
-+	int ret;
- 
- 	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
- 		return -ENOSPC;
- 
--	/*
--	 * Kthreads bound to specific cpus cannot be moved to a new cpuset; we
--	 * cannot change their cpu affinity and isolating such threads by their
--	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
--	 * applicable for such threads.  This prevents checking for success of
--	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
--	 * be changed.
--	 */
--	if (cgroup_taskset_first(tset)->flags & PF_THREAD_BOUND)
--		return -EINVAL;
--
-+	cgroup_taskset_for_each(task, cgrp, tset) {
-+		/*
-+		 * Kthreads bound to specific cpus cannot be moved to a new
-+		 * cpuset; we cannot change their cpu affinity and
-+		 * isolating such threads by their set of allowed nodes is
-+		 * unnecessary.  Thus, cpusets are not applicable for such
-+		 * threads.  This prevents checking for success of
-+		 * set_cpus_allowed_ptr() on all attached tasks before
-+		 * cpus_allowed may be changed.
-+		 */
-+		if (task->flags & PF_THREAD_BOUND)
-+			return -EINVAL;
-+		if ((ret = security_task_setscheduler(task)))
-+			return ret;
-+	}
- 	return 0;
- }
- 
--static int cpuset_can_attach_task(struct cgroup *cgrp, struct task_struct *task)
--{
--	return security_task_setscheduler(task);
--}
--
++struct task_and_cgroup {
++	struct task_struct	*task;
++	struct cgroup		*cgrp;
++};
++
  /*
-  * Protected by cgroup_lock. The nodemasks must be stored globally because
-  * dynamically allocating them is not allowed in pre_attach, and they must
-- * persist among pre_attach, attach_task, and attach.
-+ * persist among pre_attach, and attach.
+  * cgroup_task_migrate - move a task from one cgroup to another.
+  *
+@@ -2008,15 +2013,15 @@ static int css_set_prefetch(struct cgroup *cgrp, struct css_set *cg,
   */
- static cpumask_var_t cpus_attach;
- static nodemask_t cpuset_attach_nodemask_from;
-@@ -1417,39 +1418,34 @@ static void cpuset_pre_attach(struct cgroup *cont)
- 	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
- }
- 
--/* Per-thread attachment work. */
--static void cpuset_attach_task(struct cgroup *cont, struct task_struct *tsk)
--{
--	int err;
--	struct cpuset *cs = cgroup_cs(cont);
--
--	/*
--	 * can_attach beforehand should guarantee that this doesn't fail.
--	 * TODO: have a better way to handle failure here
--	 */
--	err = set_cpus_allowed_ptr(tsk, cpus_attach);
--	WARN_ON_ONCE(err);
--
--	cpuset_change_task_nodemask(tsk, &cpuset_attach_nodemask_to);
--	cpuset_update_task_spread_flag(cs, tsk);
--}
--
- static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			  struct cgroup_taskset *tset)
+ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
  {
- 	struct mm_struct *mm;
--	struct task_struct *tsk = cgroup_taskset_first(tset);
-+	struct task_struct *task;
-+	struct task_struct *leader = cgroup_taskset_first(tset);
- 	struct cgroup *oldcgrp = cgroup_taskset_cur_cgroup(tset);
- 	struct cpuset *cs = cgroup_cs(cgrp);
- 	struct cpuset *oldcs = cgroup_cs(oldcgrp);
- 
-+	cgroup_taskset_for_each(task, cgrp, tset) {
-+		/*
-+		 * can_attach beforehand should guarantee that this doesn't
-+		 * fail.  TODO: have a better way to handle failure here
-+		 */
-+		WARN_ON_ONCE(set_cpus_allowed_ptr(task, cpus_attach));
+-	int retval, i, group_size;
++	int retval, i, group_size, nr_migrating_tasks;
+ 	struct cgroup_subsys *ss, *failed_ss = NULL;
+ 	bool cancel_failed_ss = false;
+ 	/* guaranteed to be initialized later, but the compiler needs this */
+-	struct cgroup *oldcgrp = NULL;
+ 	struct css_set *oldcg;
+ 	struct cgroupfs_root *root = cgrp->root;
+ 	/* threadgroup list cursor and array */
+ 	struct task_struct *tsk;
++	struct task_and_cgroup *tc;
+ 	struct flex_array *group;
+ 	/*
+ 	 * we need to make sure we have css_sets for all the tasks we're
+@@ -2035,8 +2040,7 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	 */
+ 	group_size = get_nr_threads(leader);
+ 	/* flex_array supports very large thread-groups better than kmalloc. */
+-	group = flex_array_alloc(sizeof(struct task_struct *), group_size,
+-				 GFP_KERNEL);
++	group = flex_array_alloc(sizeof(*tc), group_size, GFP_KERNEL);
+ 	if (!group)
+ 		return -ENOMEM;
+ 	/* pre-allocate to guarantee space while iterating in rcu read-side. */
+@@ -2060,8 +2064,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	}
+ 	/* take a reference on each task in the group to go in the array. */
+ 	tsk = leader;
+-	i = 0;
++	i = nr_migrating_tasks = 0;
+ 	do {
++		struct task_and_cgroup ent;
 +
-+		cpuset_change_task_nodemask(task, &cpuset_attach_nodemask_to);
-+		cpuset_update_task_spread_flag(cs, task);
-+	}
+ 		/* @tsk either already exited or can't exit until the end */
+ 		if (tsk->flags & PF_EXITING)
+ 			continue;
+@@ -2073,14 +2079,23 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		 * saying GFP_ATOMIC has no effect here because we did prealloc
+ 		 * earlier, but it's good form to communicate our expectations.
+ 		 */
+-		retval = flex_array_put_ptr(group, i, tsk, GFP_ATOMIC);
++		ent.task = tsk;
++		ent.cgrp = task_cgroup_from_root(tsk, root);
++		retval = flex_array_put(group, i, &ent, GFP_ATOMIC);
+ 		BUG_ON(retval != 0);
+ 		i++;
++		if (ent.cgrp != cgrp)
++			nr_migrating_tasks++;
+ 	} while_each_thread(leader, tsk);
+ 	/* remember the number of threads in the array for later. */
+ 	group_size = i;
+ 	rcu_read_unlock();
+ 
++	/* methods shouldn't be called if no task is actually migrating */
++	retval = 0;
++	if (!nr_migrating_tasks)
++		goto out_put_tasks;
 +
  	/*
- 	 * Change mm, possibly for multiple threads in a threadgroup. This is
- 	 * expensive and may sleep.
+ 	 * step 1: check that we can legitimately attach to the cgroup.
  	 */
- 	cpuset_attach_nodemask_from = oldcs->mems_allowed;
- 	cpuset_attach_nodemask_to = cs->mems_allowed;
--	mm = get_task_mm(tsk);
-+	mm = get_task_mm(leader);
- 	if (mm) {
- 		mpol_rebind_mm(mm, &cpuset_attach_nodemask_to);
- 		if (is_memory_migrate(cs))
-@@ -1905,9 +1901,7 @@ struct cgroup_subsys cpuset_subsys = {
- 	.create = cpuset_create,
- 	.destroy = cpuset_destroy,
- 	.can_attach = cpuset_can_attach,
--	.can_attach_task = cpuset_can_attach_task,
- 	.pre_attach = cpuset_pre_attach,
--	.attach_task = cpuset_attach_task,
- 	.attach = cpuset_attach,
- 	.populate = cpuset_populate,
- 	.post_clone = cpuset_post_clone,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index d1a1bee..ed35211 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7136,10 +7136,13 @@ static int __perf_cgroup_move(void *info)
- 	return 0;
- }
+@@ -2096,8 +2111,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 		if (ss->can_attach_task) {
+ 			/* run on each task in the threadgroup. */
+ 			for (i = 0; i < group_size; i++) {
+-				tsk = flex_array_get_ptr(group, i);
+-				retval = ss->can_attach_task(cgrp, tsk);
++				tc = flex_array_get(group, i);
++				if (tc->cgrp == cgrp)
++					continue;
++				retval = ss->can_attach_task(cgrp, tc->task);
+ 				if (retval) {
+ 					failed_ss = ss;
+ 					cancel_failed_ss = true;
+@@ -2113,18 +2130,17 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	 */
+ 	INIT_LIST_HEAD(&newcg_list);
+ 	for (i = 0; i < group_size; i++) {
+-		tsk = flex_array_get_ptr(group, i);
++		tc = flex_array_get(group, i);
+ 		/* nothing to do if this task is already in the cgroup */
+-		oldcgrp = task_cgroup_from_root(tsk, root);
+-		if (cgrp == oldcgrp)
++		if (tc->cgrp == cgrp)
+ 			continue;
+ 		/* get old css_set pointer */
+-		task_lock(tsk);
+-		oldcg = tsk->cgroups;
++		task_lock(tc->task);
++		oldcg = tc->task->cgroups;
+ 		get_css_set(oldcg);
+-		task_unlock(tsk);
++		task_unlock(tc->task);
+ 		/* see if the new one for us is already in the list? */
+-		if (css_set_check_fetched(cgrp, tsk, oldcg, &newcg_list)) {
++		if (css_set_check_fetched(cgrp, tc->task, oldcg, &newcg_list)) {
+ 			/* was already there, nothing to do. */
+ 			put_css_set(oldcg);
+ 		} else {
+@@ -2147,19 +2163,18 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 			ss->pre_attach(cgrp);
+ 	}
+ 	for (i = 0; i < group_size; i++) {
+-		tsk = flex_array_get_ptr(group, i);
++		tc = flex_array_get(group, i);
+ 		/* leave current thread as it is if it's already there */
+-		oldcgrp = task_cgroup_from_root(tsk, root);
+-		if (cgrp == oldcgrp)
++		if (tc->cgrp == cgrp)
+ 			continue;
  
--static void
--perf_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *task)
-+static void perf_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+			       struct cgroup_taskset *tset)
- {
--	task_function_call(task, __perf_cgroup_move, task);
-+	struct task_struct *task;
-+
-+	cgroup_taskset_for_each(task, cgrp, tset)
-+		task_function_call(task, __perf_cgroup_move, task);
- }
+-		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
++		retval = cgroup_task_migrate(cgrp, tc->cgrp, tc->task, true);
+ 		BUG_ON(retval != 0);
  
- static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
-@@ -7153,7 +7156,7 @@ static void perf_cgroup_exit(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 	if (!(task->flags & PF_EXITING))
- 		return;
+ 		/* attach each task to each subsystem */
+ 		for_each_subsys(root, ss) {
+ 			if (ss->attach_task)
+-				ss->attach_task(cgrp, tsk);
++				ss->attach_task(cgrp, tc->task);
+ 		}
+ 	}
+ 	/* nothing is sensitive to fork() after this point. */
+@@ -2170,8 +2185,10 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
+ 	 * being moved, this call will need to be reworked to communicate that.
+ 	 */
+ 	for_each_subsys(root, ss) {
+-		if (ss->attach)
+-			ss->attach(ss, cgrp, oldcgrp, leader);
++		if (ss->attach) {
++			tc = flex_array_get(group, 0);
++			ss->attach(ss, cgrp, tc->cgrp, tc->task);
++		}
+ 	}
  
--	perf_cgroup_attach_task(cgrp, task);
-+	task_function_call(task, __perf_cgroup_move, task);
- }
- 
- struct cgroup_subsys perf_subsys = {
-@@ -7162,6 +7165,6 @@ struct cgroup_subsys perf_subsys = {
- 	.create		= perf_cgroup_create,
- 	.destroy	= perf_cgroup_destroy,
- 	.exit		= perf_cgroup_exit,
--	.attach_task	= perf_cgroup_attach_task,
-+	.attach		= perf_cgroup_attach,
- };
- #endif /* CONFIG_CGROUP_PERF */
-diff --git a/kernel/sched.c b/kernel/sched.c
-index d87c6e5..49e3605 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -9129,24 +9129,31 @@ cpu_cgroup_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
- 	sched_destroy_group(tg);
- }
- 
--static int
--cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static int cpu_cgroup_can_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+				 struct cgroup_taskset *tset)
- {
-+	struct task_struct *task;
-+
-+	cgroup_taskset_for_each(task, cgrp, tset) {
- #ifdef CONFIG_RT_GROUP_SCHED
--	if (!sched_rt_can_attach(cgroup_tg(cgrp), tsk))
--		return -EINVAL;
-+		if (!sched_rt_can_attach(cgroup_tg(cgrp), task))
-+			return -EINVAL;
- #else
--	/* We don't support RT-tasks being in separate groups */
--	if (tsk->sched_class != &fair_sched_class)
--		return -EINVAL;
-+		/* We don't support RT-tasks being in separate groups */
-+		if (task->sched_class != &fair_sched_class)
-+			return -EINVAL;
- #endif
-+	}
- 	return 0;
- }
- 
--static void
--cpu_cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
-+static void cpu_cgroup_attach(struct cgroup_subsys *ss, struct cgroup *cgrp,
-+			      struct cgroup_taskset *tset)
- {
--	sched_move_task(tsk);
-+	struct task_struct *task;
-+
-+	cgroup_taskset_for_each(task, cgrp, tset)
-+		sched_move_task(task);
- }
- 
- static void
-@@ -9482,8 +9489,8 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- 	.name		= "cpu",
- 	.create		= cpu_cgroup_create,
- 	.destroy	= cpu_cgroup_destroy,
--	.can_attach_task = cpu_cgroup_can_attach_task,
--	.attach_task	= cpu_cgroup_attach_task,
-+	.can_attach	= cpu_cgroup_can_attach,
-+	.attach		= cpu_cgroup_attach,
- 	.exit		= cpu_cgroup_exit,
- 	.populate	= cpu_cgroup_populate,
- 	.subsys_id	= cpu_cgroup_subsys_id,
+ 	/*
+@@ -2200,10 +2217,11 @@ out_cancel_attach:
+ 				ss->cancel_attach(ss, cgrp, leader);
+ 		}
+ 	}
++out_put_tasks:
+ 	/* clean up the array of referenced threads in the group. */
+ 	for (i = 0; i < group_size; i++) {
+-		tsk = flex_array_get_ptr(group, i);
+-		put_task_struct(tsk);
++		tc = flex_array_get(group, i);
++		put_task_struct(tc->task);
+ 	}
+ out_free_group_list:
+ 	flex_array_free(group);
 -- 
 1.7.3.1
 
