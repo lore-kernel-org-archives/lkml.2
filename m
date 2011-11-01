@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653Ab1KAEZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 00:25:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42293 "EHLO mail.zytor.com"
+	id S1752088Ab1KAEot (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 00:44:49 -0400
+Received: from ozlabs.org ([203.10.76.45]:34065 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817Ab1KAEZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 00:25:54 -0400
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <4EAF1731.2070908@zytor.com> <CA+55aFy-qDrzi21EWWV1yxDoRzh5xzLR6ai6Cq1b+hMrNTk6Sw@mail.gmail.com> <4EAF1FF6.3000500@zytor.com> <CA+55aFw-kvshWmAVFVSa11cNU0AbAu3R5djboR8ysj0tYp1p-A@mail.gmail.com> <alpine.DEB.2.02.1110311915160.31794@asgard.lang.hm> <4EAF66C7.6080909@zytor.com> <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CA+55aFwycceEN7itYama6H4gwAK-OQdqZ5uo9Pdg9ATqPTPtWQ@mail.gmail.com>
+	id S1751399Ab1KAEos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 00:44:48 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jason Baron <jbaron@redhat.com>, Nick Bowler <nbowler@elliptictech.com>,
+        Greg KH <greg@kroah.com>, Dave Jones <davej@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Debian kernel maintainers <debian-kernel@lists.debian.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Subject: Re: [PATCH] module: Enable dynamic debugging regardless of taint
+In-Reply-To: <1320119973.30281.7.camel@deadeye>
+References: <1319773094.6759.32.camel@deadeye> <87obwxq5tz.fsf@rustcorp.com.au> <1320068657.6759.107.camel@deadeye> <87r51svbit.fsf@rustcorp.com.au> <1320119973.30281.7.camel@deadeye>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Tue, 01 Nov 2011 15:11:10 +1030
+Message-ID: <87lis0v4ih.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-From: "hpanvin@gmail.com" <hpa@zytor.com>
-Date: Mon, 31 Oct 2011 21:25:41 -0700
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: david@lang.hm, James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Message-ID: <3f01b4a5-8dfa-4eb4-bfa3-490d5ebf0281@email.android.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Body searches are still slow, at least with dovecot on the server.  No idea about gmail as the server.
+On Tue, 01 Nov 2011 03:59:33 +0000, Ben Hutchings <ben@decadent.org.uk> wrote:
+> Dynamic debugging is currently disabled for tainted modules, except
+> for TAINT_CRAP.  This prevents use of dynamic debugging for
+> out-of-tree modules now that they are also tainted.
+> 
+> This condition was apparently intended to avoid a crash if a force-
+> loaded module has an incompatible definition of dynamic debug
+> structures.  However, a administrator that forces us to load a module
+> is claiming that it *is* compatible even though it fails our version
+> checks.  If they are mistaken, there are any number of ways the module
+> could crash the system.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Thanks, applied, unless Mathieu objects...
 
->On Mon, Oct 31, 2011 at 8:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> I use IMAP on my phone, and with Thunderpants... I mean
->Thunderbird...
->> and it works quite nicely.
->
->Including things like searching lkml etc?
->
->I've been successful in using IMAP for just reading my inbox (even
->over a cell network). Then IMAP is reasonably fine, at least if you do
->client-side caching.
->
->But not for actual real *work*, where I actually search for specific
->email authors and words in the body? Not so much.
->
->Maybe it's because I'm used to having all my mail locally, but
->searching all my emails is one of my most common operations. The gmail
->web interface does that fine. IMAP has never worked for me, despite
->some client/server combinations allegedly supporting server-side
->searches. Maybe I never hit the right combination, but I tested things
->that were *supposed* to do it.
->
->Actually, most of my attempts at using IMAP have been unacceptably
->slow even when I don't do searches. I used to do huge inboxes, which
->brought just about anything to a standstill. I only got rid of my
->habit of big inboxes thanks to another gmail feature - you don't have
->to save your non-inbox email in a folder, you can just "archive" it
->and it goes away but is still easily searchable.
->
->                         Linus
-
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Cheers,
+Rusty.
