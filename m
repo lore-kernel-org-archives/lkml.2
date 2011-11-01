@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab1KALAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 07:00:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23566 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab1KALAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 07:00:50 -0400
-Date: Tue, 1 Nov 2011 06:59:58 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, linux-pm@vger.kernel.org,
-        linux-cifs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, trond.myklebust@netapp.com,
-        linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111101065958.50addab5@tlielax.poochiereds.net>
-In-Reply-To: <20111101041337.39077229@tlielax.poochiereds.net>
-References: <20111031221743.GA18855@google.com>
-	<201111010024.16659.rjw@sisk.pl>
-	<20111031233059.GI18855@google.com>
-	<20111101005505.GO18855@google.com>
-	<20111101041337.39077229@tlielax.poochiereds.net>
+	id S1753923Ab1KALH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 07:07:57 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:44193 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab1KALH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 07:07:56 -0400
+Subject: Re: [PATCH] Stageing: bcm: fixed spacing coding style in
+ led_control.c
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ciaran McCormick <ciaranmccormick@gmail.com>
+Cc: gregkh@suse.de, shemminger@vyatta.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
+References: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Nov 2011 12:07:45 +0100
+Message-ID: <1320145665.14409.149.camel@x61.thuisdomein>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Nov 2011 04:13:37 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+Stageing? And you might as well drop the filename from the summary. By
+the way, are the other files (if any) of this driver any better (I
+haven't checked)?
 
-> On Mon, 31 Oct 2011 17:55:05 -0700
-> Tejun Heo <tj@kernel.org> wrote:
+On Tue, 2011-11-01 at 10:44 +0000, Ciaran McCormick wrote:
+> ---
+>  drivers/staging/bcm/led_control.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> > Hey, again.
-> > 
-> > On Mon, Oct 31, 2011 at 04:30:59PM -0700, Tejun Heo wrote:
-> > > I can't remember one off the top of my head but I'm pretty sure there
-> > > at least are few which expect tight inter-locking between sleeps and
-> > > wakeups.  I'll look for examples and post reply.  ISTR them being
-> > > kernel threads so this might not apply directly but it's still a
-> > > dangerous game to play.
-> > 
-> > Hmm... I couldn't find KILLABLE used like that but here are two
-> > UNINTERRUPTIBLE sleep examples.
-> > 
-> > * kthread_start() depends on the fact that a kthread won't be woken up
-> >   from UNINTERRUPTIBLE sleep spuriously.
-> > 
-> > * jfs_flush_journal() doesn't check whether the wakeup was spurious
-> >   after waiting if !tblkGC_COMMITTED.
-> > 
-> > Maybe we can re-define KILLABLE as killable && freezable but IMHO that
-> > requires pretty strong rationales.  If at all possible, let's not
-> > diddle with that if it can be worked around some other way.
-> > 
-> > Thank you.
-> > 
-> 
-> (cc'ing Trond and the linux-nfs mailing list -- fwiw, he maintains the
-> NFS client code -- Bruce is the NFS server maintainer and probably has
-> little interest in this thread).
-> 
-> The main reason for this change is primarily that we have people with
-> laptops and nfs and cifs mounts that sometimes fail to suspend.
-> 
-> IIUC, the TASK_KILLABLE was mostly added to ensure that file-store
-> writes would be uninterruptible, but still allow those tasks to be
-> killed if the process is going down anyway.
-> 
-> The intr/nointr mount options in NFS have been deprecated since
-> TASK_KILLABLE was added. The scheme now is basically that those sleeps
-> ignore any signals except for fatal ones. So, that knob is meaningless
-> and has been for a long time now.
-> 
-> cifs never had a working intr/nointr knob, but signal handling while
-> waiting for replies was always a difficult thing to handle correctly. I
-> don't think the right answer is to go back to using such a knob in cifs
-> or nfs.
-> 
-> I suppose we could look at going back to the world of complicated
-> signal handling and TASK_INTERRUPTIBLE, but that's not a trivial change
-> either. The TASK_WAKE_FREEZABLE flag you mention might make more sense
-> than doing that.
-> 
+> diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/led_control.c
+> index 16e939f..28c3382 100644
+> --- a/drivers/staging/bcm/led_control.c
+> +++ b/drivers/staging/bcm/led_control.c
+> @@ -5,8 +5,8 @@
+>  
+>  static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
+>  {
+> -	B_UINT16 	u16CheckSum=0;
+> -	while(u32Size--) {
+> +	B_UINT16	u16CheckSum = 0;
+> +	while (u32Size--) {
+>  		u16CheckSum += (B_UINT8)~(*pu8Buffer);
 
-Also, since task state and signal handling clearly isn't my forte...can
-you clarify what the main difference is in using a TASK_KILLABLE sleep
-vs. TASK_INTERRUPTIBLE with all signals but SIGKILL blocked?
+I'd say this line might need a space after the cast.
 
-I know that the process state would end up different (S vs. D state).
-Is there anything else we'd need to be concerned with if we converted
-all these call sites to use such a scheme in lieu of a new
-TASK_WAKE_FREEZABLE flag or similar?
+>  	    pu8Buffer++;
+>  	}
+> @@ -16,7 +16,7 @@ BOOLEAN IsReqGpioIsLedInNVM(PMINI_ADAPTER Adapter, UINT gpios)
+>  {
+>  	INT Status ;
+>  	Status = (Adapter->gpioBitMap & gpios) ^ gpios ;
 
--- 
-Jeff Layton <jlayton@redhat.com>
+You missed the space before the semicolons here.
+
+> -	if(Status)
+> +	if (Status)
+>  		return FALSE;
+>  	else
+>  		return TRUE;
+
+But, more importantly, why only do whitespace related stuff? Almost
+every second word apparently needs to be restyled here. Is doing just
+whitespace related stuff worthwhile? (This is not a rhetorical question.
+I'm actually wondering what Greg prefers).
+
+
+Paul Bolle
+
