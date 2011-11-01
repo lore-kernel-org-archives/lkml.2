@@ -1,108 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932711Ab1KAXxl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 19:53:41 -0400
-Received: from tundra.namei.org ([65.99.196.166]:40354 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab1KAXxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 19:53:39 -0400
-Date: Wed, 2 Nov 2011 10:53:37 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Security subsystem update
-Message-ID: <alpine.LRH.2.00.1111021049080.12545@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1756191Ab1KAXzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 19:55:52 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62865 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab1KAXzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 19:55:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAGjg+kFyqWa=Ui+XRDoCvYFLt7eH-vScFk24tk1aZJkfWRMOxQ@mail.gmail.com>
+References: <1316804080-6396-1-git-send-email-venki@google.com>
+	<CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+	<CABeCy1Y_OXPJkca6dRvK4-PCfKH8wD_2Aq-9r-JyBBSCetrsOw@mail.gmail.com>
+	<CAGjg+kFyqWa=Ui+XRDoCvYFLt7eH-vScFk24tk1aZJkfWRMOxQ@mail.gmail.com>
+Date: Tue, 1 Nov 2011 16:55:50 -0700
+Message-ID: <CABeCy1aFW7z+-s2m-Fx6Fhcj7Dpa3Mm5hEh7fPiD3_CxFdQbPA@mail.gmail.com>
+Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
+From: Venki Pallipadi <venki@google.com>
+To: alex shi <lkml.alex@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull this fix for Tomoyo.
+On Mon, Oct 31, 2011 at 7:11 PM, alex shi <lkml.alex@gmail.com> wrote:
+>> Hi Alex,
+>>
+>> It should apply cleanly over 3.0. Thanks for testing the patch..
+>
+> I tested the patch against 3.1 kernel for specpower benchmark on our
+> machine, westmere core laptop Thinkpad t410(internal name lkp-t410),
+> and on Romely-EP machine(lkp-sb03). No clear power or performance
+> change found. the performance and power has no clear change for every
+> level system load. from 0 to 100%.
 
+Thanks Alex for testing this. Likely that with specpower there are not
+many active timers. Was the run with run level 5 and with all the system daemons
+that come with distro active?
 
-The following changes since commit b4beb4bf9934d151bf4581a54ae028927374cb2a:
-  Linus Torvalds (1):
-        Merge branch 'for-linus/i2c-3.2' of git://git.fluff.org/bjdooks/linux
-
-are available in the git repository at:
-
-  git://git.selinuxproject.org/~jmorris/linux-security for-linus
-
-Tetsuo Handa (1):
-      TOMOYO: Fix interactive judgment functionality.
-
- security/tomoyo/common.c |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
-
-diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
-index d41900d..610b535 100644
---- a/security/tomoyo/common.c
-+++ b/security/tomoyo/common.c
-@@ -963,6 +963,9 @@ static bool tomoyo_manager(void)
- 	return found;
- }
- 
-+static struct tomoyo_domain_info *tomoyo_find_domain_by_qid
-+(unsigned int serial);
-+
- /**
-  * tomoyo_select_domain - Parse select command.
-  *
-@@ -996,6 +999,8 @@ static bool tomoyo_select_domain(struct tomoyo_io_buffer *head,
- 	} else if (!strncmp(data, "domain=", 7)) {
- 		if (tomoyo_domain_def(data + 7))
- 			domain = tomoyo_find_domain(data + 7);
-+	} else if (sscanf(data, "Q=%u", &pid) == 1) {
-+		domain = tomoyo_find_domain_by_qid(pid);
- 	} else
- 		return false;
- 	head->w.domain = domain;
-@@ -1891,6 +1896,7 @@ static DECLARE_WAIT_QUEUE_HEAD(tomoyo_answer_wait);
- /* Structure for query. */
- struct tomoyo_query {
- 	struct list_head list;
-+	struct tomoyo_domain_info *domain;
- 	char *query;
- 	size_t query_len;
- 	unsigned int serial;
-@@ -2041,6 +2047,7 @@ int tomoyo_supervisor(struct tomoyo_request_info *r, const char *fmt, ...)
- 		goto out;
- 	}
- 	len = tomoyo_round2(entry.query_len);
-+	entry.domain = r->domain;
- 	spin_lock(&tomoyo_query_list_lock);
- 	if (tomoyo_memory_quota[TOMOYO_MEMORY_QUERY] &&
- 	    tomoyo_memory_used[TOMOYO_MEMORY_QUERY] + len
-@@ -2088,6 +2095,29 @@ out:
- }
- 
- /**
-+ * tomoyo_find_domain_by_qid - Get domain by query id.
-+ *
-+ * @serial: Query ID assigned by tomoyo_supervisor().
-+ *
-+ * Returns pointer to "struct tomoyo_domain_info" if found, NULL otherwise.
-+ */
-+static struct tomoyo_domain_info *tomoyo_find_domain_by_qid
-+(unsigned int serial)
-+{
-+	struct tomoyo_query *ptr;
-+	struct tomoyo_domain_info *domain = NULL;
-+	spin_lock(&tomoyo_query_list_lock);
-+	list_for_each_entry(ptr, &tomoyo_query_list, list) {
-+		if (ptr->serial != serial || ptr->answer)
-+			continue;
-+		domain = ptr->domain;
-+		break;
-+	}
-+	spin_unlock(&tomoyo_query_list_lock);
-+	return domain;
-+}
-+
-+/**
-  * tomoyo_poll_query - poll() for /sys/kernel/security/tomoyo/query.
-  *
-  * @file: Pointer to "struct file".
-
+Thanks,
+Venki
