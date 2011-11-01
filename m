@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1KAKom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 06:44:42 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35328 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab1KAKol (ORCPT
+	id S1753524Ab1KAKrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 06:47:40 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:60136 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753057Ab1KAKri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 06:44:41 -0400
-From: Ciaran McCormick <ciaranmccormick@gmail.com>
-To: gregkh@suse.de, shemminger@vyatta.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ciaran McCormick <ciaranmccormick@gmail.com>
-Subject: [PATCH] Stageing: bcm: fixed spacing coding style in led_control.c
-Date: Tue,  1 Nov 2011 10:44:19 +0000
-Message-Id: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-Signed-off-by: Ciaran McCormick <ciaranmccormick@gmail.com>
+	Tue, 1 Nov 2011 06:47:38 -0400
+Message-ID: <4EAFCE44.2050102@tao.ma>
+Date: Tue, 01 Nov 2011 18:47:32 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tao Ma <boyu.mt@taobao.com>
+Subject: Re: linux-next: manual merge of the akpm tree with Linus' tree
+References: <20111101191602.bb64237e8ab87671d3964ca9@canb.auug.org.au>
+In-Reply-To: <20111101191602.bb64237e8ab87671d3964ca9@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- drivers/staging/bcm/led_control.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Hi Stephen,
+	Thanks for the merge.
+On 11/01/2011 04:16 PM, Stephen Rothwell wrote:
+> Hi Andrew,
+> 
+> Today's linux-next merge of the akpm tree got a conflict in
+> fs/direct-io.c between commit eb28be2b4c0a ("direct-io: separate fields
+> only used in the submission path from struct dio") from Linus' tree and
+> commit "fs/direct-io.c: salcuate fs_count correctly in get_more_blocks()"
+> from the akpm tree.
+Actually I have another patch which is rebased to current linus' tree.
 
-diff --git a/drivers/staging/bcm/led_control.c b/drivers/staging/bcm/led_control.c
-index 16e939f..28c3382 100644
---- a/drivers/staging/bcm/led_control.c
-+++ b/drivers/staging/bcm/led_control.c
-@@ -5,8 +5,8 @@
- 
- static B_UINT16 CFG_CalculateChecksum(B_UINT8 *pu8Buffer, B_UINT32 u32Size)
- {
--	B_UINT16 	u16CheckSum=0;
--	while(u32Size--) {
-+	B_UINT16	u16CheckSum = 0;
-+	while (u32Size--) {
- 		u16CheckSum += (B_UINT8)~(*pu8Buffer);
- 	    pu8Buffer++;
- 	}
-@@ -16,7 +16,7 @@ BOOLEAN IsReqGpioIsLedInNVM(PMINI_ADAPTER Adapter, UINT gpios)
- {
- 	INT Status ;
- 	Status = (Adapter->gpioBitMap & gpios) ^ gpios ;
--	if(Status)
-+	if (Status)
- 		return FALSE;
- 	else
- 		return TRUE;
--- 
-1.7.5.4
+So Andrew, would you mind replace the old one with the patch named
+"[PATCH for 3.2] fs/direct-io.c: Calculate fs_count correctly in
+get_more_blocks."
 
+Thanks
+Tao
