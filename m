@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab1KAWGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 18:06:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57171 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab1KAWGM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 18:06:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111031211240.GK2840@agk-dp.fab.redhat.com>
-References: <20111031211240.GK2840@agk-dp.fab.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 1 Nov 2011 15:05:50 -0700
-X-Google-Sender-Auth: QLHl6uBMnjCAdLOkcJQ5qBk27mc
-Message-ID: <CA+55aFz9NzgAJnpzRdkG7ia2vk4rjfQ1K6-Oac7oEP8JNQ-qdg@mail.gmail.com>
-Subject: Re: [git pull] device-mapper enhancements for 3.2
-To: Linus Torvalds <torvalds@linux-foundation.org>, dm-devel@redhat.com,
-        linux-kernel@vger.kernel.org, Mike Snitzer <snitzer@redhat.com>,
-        Milan Broz <mbroz@redhat.com>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Joe Thornber <thornber@redhat.com>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Neil Brown <neilb@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755994Ab1KAWIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 18:08:42 -0400
+Received: from tex.lwn.net ([70.33.254.29]:43726 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab1KAWIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 18:08:39 -0400
+Date: Tue, 1 Nov 2011 16:08:37 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] crypto: Fix rwsem leak in crypto_user
+Message-ID: <20111101160837.7da3ef6d@bike.lwn.net>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31, 2011 at 2:12 PM, Alasdair G Kergon <agk@redhat.com> wrote:
-> Please pull from:
->
->  http://people.redhat.com/agk/git/linux-dm for-linus
+The list_empty case in crypto_alg_match() will return without calling
+up_read() on crypto_alg_sem.  We could do the "goto out" routine, but the
+function will clearly do the right thing with that test simply removed.
 
-No. At least last time I tried, that redhat server is regular dumb
-http, not the "git protocol over port-80". And it takes forever and is
-annoying as hell.
+Signed-off-by: Jonathan Corbet <corbet@lwn.net>
 
-Get a kernel.org account, or get a real server. Not that crap. It's unusable.
-
-                     Linus
+diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
+index 2abca78..0605a2b 100644
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -44,9 +44,6 @@ static struct crypto_alg *crypto_alg_match(struct crypto_user_alg *p, int exact)
+ 
+ 	down_read(&crypto_alg_sem);
+ 
+-	if (list_empty(&crypto_alg_list))
+-		return NULL;
+-
+ 	list_for_each_entry(q, &crypto_alg_list, cra_list) {
+ 		int match = 0;
+ 
