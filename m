@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934702Ab1KCBl4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:41:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51363 "EHLO mx2.suse.de"
+	id S934734Ab1KCBmF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:42:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51381 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934672Ab1KCBlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:41:50 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:46 2011
-Message-Id: <20111102222746.055891789@clark.kroah.org>
+	id S934659Ab1KCBmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:42:00 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
+Message-Id: <20111102222742.903424161@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:53 -0700
+Date: Wed, 02 Nov 2011 15:26:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
-Subject: [069/101] Update email address for stable patch submission
+        alan@lxorguk.ukuu.org.uk,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [035/101] hvc_console: Improve tty/console put_chars handling
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,50 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
 
-commit 5fa224295f0e0358c8bc0e5390702338df889def upstream.
+commit 8c2381af0d3ef62a681dac5a141b6dabb27bf2e1 upstream.
 
-The stable@kernel.org email address has been replaced with the
-stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-reference the new list instead of the semi-defunct email alias.
+Currently, the hvc_console_print() function drops console output if the
+hvc backend's put_chars() returns 0.  This patch changes this behavior
+to allow a retry through returning -EAGAIN.
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+This change also affects the hvc_push() function.  Both functions are
+changed to handle -EAGAIN and to retry the put_chars() operation.
+
+If a hvc backend returns -EAGAIN, the retry handling differs:
+
+  - hvc_console_print() spins to write the complete console output.
+  - hvc_push() behaves the same way as for returning 0.
+
+Now hvc backends can indirectly control the way how console output is
+handled through the hvc console layer.
+
+Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Acked-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/stable_kernel_rules.txt |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/char/hvc_console.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -25,10 +25,10 @@ Rules on what kind of patches are accept
- Procedure for submitting patches to the -stable tree:
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -162,8 +162,10 @@ static void hvc_console_print(struct con
+ 		} else {
+ 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
+ 			if (r <= 0) {
+-				/* throw away chars on error */
+-				i = 0;
++				/* throw away characters on error
++				 * but spin in case of -EAGAIN */
++				if (r != -EAGAIN)
++					i = 0;
+ 			} else if (r > 0) {
+ 				i -= r;
+ 				if (i > 0)
+@@ -442,7 +444,7 @@ static int hvc_push(struct hvc_struct *h
  
-  - Send the patch, after verifying that it follows the above rules, to
--   stable@kernel.org.
-+   stable@vger.kernel.org.
-  - To have the patch automatically included in the stable tree, add the
-    the tag
--     Cc: stable@kernel.org
-+     Cc: stable@vger.kernel.org
-    in the sign-off area. Once the patch is merged it will be applied to
-    the stable tree without anything else needing to be done by the author
-    or subsystem maintainer.
-@@ -36,10 +36,10 @@ Procedure for submitting patches to the
-    cherry-picked than this can be specified in the following format in
-    the sign-off area:
- 
--     Cc: <stable@kernel.org> # .32.x: a1f84a3: sched: Check for idle
--     Cc: <stable@kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
--     Cc: <stable@kernel.org> # .32.x: fd21073: sched: Fix affinity logic
--     Cc: <stable@kernel.org> # .32.x
-+     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
-+     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
-+     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
-+     Cc: <stable@vger.kernel.org> # .32.x
-     Signed-off-by: Ingo Molnar <mingo@elte.hu>
- 
-    The tag sequence has the meaning of:
+ 	n = hp->ops->put_chars(hp->vtermno, hp->outbuf, hp->n_outbuf);
+ 	if (n <= 0) {
+-		if (n == 0) {
++		if (n == 0 || n == -EAGAIN) {
+ 			hp->do_wakeup = 1;
+ 			return 0;
+ 		}
 
 
