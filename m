@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab1KBO4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:56:34 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:52518 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932203Ab1KBO4b convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:56:31 -0400
+	id S932431Ab1KBO6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:58:45 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:42682 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753369Ab1KBO6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 10:58:43 -0400
+Date: Wed, 2 Nov 2011 07:44:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+Message-ID: <20111102144403.GA22445@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111031082634.GA10348@localhost>
+ <20111031095152.GL6160@linux.vnet.ibm.com>
+ <20111031104325.GA25808@localhost>
+ <20111031114142.GA32555@localhost>
+ <20111031121951.GM6160@linux.vnet.ibm.com>
+ <1320075882.4793.4.camel@gandalf.stny.rr.com>
+ <20111101003434.GR6160@linux.vnet.ibm.com>
+ <20111101070720.GA22936@localhost>
+ <20111101160014.GH2287@linux.vnet.ibm.com>
+ <20111101163212.GA19501@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
-References: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
-Date: Wed, 2 Nov 2011 09:56:28 -0500
-Message-ID: <CAB-zwWiTA7O4CiP7HmY3hEA3sZ-05FbR0WsA1NVJD4aExE5wow@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] OMAP: iommu: hwmod support and runtime PM
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, lo <linux-omap@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, lm <linux-media@vger.kernel.org>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        iommu@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101163212.GA19501@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11110214-6078-0000-0000-0000038301AD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Joerg, iommu-list
+On Wed, Nov 02, 2011 at 12:32:12AM +0800, Wu Fengguang wrote:
+> > Hmmmm...  Please see below for a diagnostic patch that prints out who
+> > the kernel believes the idle thread is.  Could you please give this
+> > a go?
+> 
+> Sure. Here it goes :)
 
-On Tue, Nov 1, 2011 at 5:15 PM, Omar Ramirez Luna <omar.ramirez@ti.com> wrote:
-> Introduced hwmod support for OMAP3 (iva, isp) and OMAP4 (ipu, dsp),
-> along with the corresponding runtime PM routines to deassert reset
-> lines, enable/disable clocks and configure sysc registers.
->
-> v3:
-> - Rebased to 3.1-rc10 lo rebuilt, added structure terminators, and
-> removed .omap_chip field.
->
-> v2:
-> - Added oh reset info to assert/deassert mmu reset lines.
-> - Addressed previous comments on v1
-> http://www.spinics.net/lists/arm-kernel/msg103271.html
->
-> Due to compatibility an ifdef needs to be propagated (previously on
-> iommu resource info) to hwmod data in OMAP3, so users of iommu and
-> tidspbridge can avoid issues of two modules managing mmu data/irqs/resets;
-> this until tidspbridge can be safely migrated to iommu framework.
->
-> Omar Ramirez Luna (4):
->  OMAP3: hwmod data: add mmu data for iva and isp
->  OMAP4: hwmod data: add mmu hwmod for ipu and dsp
->  OMAP3/4: iommu: migrate to hwmod framework
->  OMAP3/4: iommu: adapt to runtime pm
->
->  arch/arm/mach-omap2/iommu2.c                      |   36 -----
->  arch/arm/mach-omap2/omap-iommu.c                  |  162 ++++-----------------
->  arch/arm/mach-omap2/omap_hwmod_3xxx_data.c        |  131 +++++++++++++++++
->  arch/arm/mach-omap2/omap_hwmod_44xx_data.c        |  154 ++++++++++++++++++--
->  arch/arm/plat-omap/include/plat/iommu.h           |   17 ++-
->  arch/arm/plat-omap/include/plat/iommu2.h          |    2 -
->  drivers/iommu/omap-iommu.c                        |   49 +++----
->  drivers/media/video/omap3isp/isp.c                |    2 +-
->  drivers/staging/tidspbridge/core/tiomap3430_pwr.c |    2 +-
->  9 files changed, 339 insertions(+), 216 deletions(-)
+And here is a possible fix.  Could you please test it?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Fix idle-task checks
+
+RCU has traditionally relied on idle_cpu() to determine whether a given
+CPU is running in the context of an idle task, but recent changes have
+invalidated this approach.  This commit therefore switches from idle_cpu
+to "current->pid != 0".
+
+Suggested-by: Carsten Emde <C.Emde@osadl.org>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index f4e7bc3..35f8a07 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -65,7 +65,7 @@ static void rcu_idle_enter_common(long long oldval)
+ 		return;
+ 	}
+ 	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
+-	if (!idle_cpu(smp_processor_id())) {
++	if (current->pid != 0) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+ 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
+@@ -119,7 +119,7 @@ static void rcu_idle_exit_common(long long oldval)
+ 		return;
+ 	}
+ 	RCU_TRACE(trace_rcu_dyntick("End", oldval, rcu_dynticks_nesting));
+-	if (!idle_cpu(smp_processor_id())) {
++	if (!current->pid != 0) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+ 		RCU_TRACE(trace_rcu_dyntick("Error on exit: not idle task",
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3d7b474..414af68 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -355,7 +355,7 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
+ 		return;
+ 	}
+ 	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
+-	if (!idle_cpu(smp_processor_id())) {
++	if (current->pid != 0) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+ 		trace_rcu_dyntick("Error on entry: not idle task",
+@@ -449,7 +449,7 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
+ 	smp_mb__after_atomic_inc();  /* See above. */
+ 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
+ 	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
+-	if (!idle_cpu(smp_processor_id())) {
++	if (current->pid != 0) {
+ 		struct task_struct *idle = idle_task(smp_processor_id());
+ 
+ 		trace_rcu_dyntick("Error on exit: not idle task",
+
