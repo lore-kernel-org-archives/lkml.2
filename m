@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751420Ab1KBUEz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:04:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54456 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840Ab1KBUEx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:04:53 -0400
+	id S1751446Ab1KBUFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:05:30 -0400
+Received: from home.keithp.com ([63.227.221.253]:52059 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751284Ab1KBUF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:05:28 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Adam Jackson <ajax@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 3/7] drm/i915: Treat PCH eDP like DP in most places
+In-Reply-To: <4EB19BB4.6030505@redhat.com>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-4-git-send-email-keithp@keithp.com> <20111102092019.3a635632@jbarnes-desktop> <4EB17A50.6050804@redhat.com> <yun8vnywhvh.fsf@aiko.keithp.com> <4EB19BB4.6030505@redhat.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 02 Nov 2011 13:05:23 -0700
+Message-ID: <yunipn2uw70.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <7vk47jld5s.fsf@alter.siamese.dyndns.org>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Nov 2011 13:04:30 -0700
-X-Google-Sender-Auth: _zKSswQEQMX8QTtG301TtzynOoo
-Message-ID: <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-To: Junio C Hamano <gitster@pobox.com>
-Cc: git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 2:56 PM, Junio C Hamano <gitster@pobox.com> wrote:
->
-> But on the other hand, in many ways, publishing your commit to the outside
-> world, not necessarily for getting pulled into the final destination
-> (i.e. your tree) but merely for other people to try it out, is the point
-> of no return (aka "don't rewind or rebase once you publish").  "pushing
-> out" might be less special than "please pull", but it still is special.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-So I really think that signing the top commit itself is fundamentally wrong.
+On Wed, 02 Nov 2011 15:36:20 -0400, Adam Jackson <ajax@redhat.com> wrote:
 
-That commit may not even be *yours*. You may have pulled it from a
-sub-lieutenant as a fast-forward, or similar. Amending it later would
-be actively very very *wrong*.
+> The VBT is going to be crap.
 
-So quite frankly, I think the stuff in pu (or next?) is completely
-mis-designed. Doing it in the commit is wrong for fundamental reasons,
-which all boil down to a simple issue:
+The only question then is what to do with hardware that doesn't have the
+DPCD value -- that's "new" in revision 0x11, after all.
 
- - you absolutely *need* to add the signature later. You *cannot* do
-it at "git commit" time.
+How about this:
 
-That's a fundamental issue both from a "workflow model" issue (ie you
-want to sign stuff after it has passed testing etc, but you may need
-to commit it in order to *get* testing), as well as from a
-"fundamental git datastructures" issue (ie you would want to sign
-commits that aren't yours.
+commit 34ebe02cc78f20ae6b7865c5087c3b5ac7810185
+Author: Keith Packard <keithp@keithp.com>
+Date:   Wed Nov 2 13:03:47 2011 -0700
 
-"git commit --amend" is not the answer - that destroys the fundamental
-concept of history being immutable, and while it works for your local
-commits, it doesn't work for anybody elses commits, or for stuff you
-already pushed out.
+    drm/i915: Use DPCD value for max DP lanes where possible
+=20=20=20=20
+    Fall back to the VBT value for eDP monitors only when DPCD is missing
+    the value.
+=20=20=20=20
+    Signed-off-by: Keith Packard <keithp@keithp.com>
 
-And "add a fake empty commit just for the signature" is not the answer
-either - because that is clearly inferior to the tags we already had.
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_d=
+p.c
+index 02b56ce..93b082a 100644
+=2D-- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -154,6 +154,8 @@ intel_edp_link_config(struct intel_encoder *intel_encod=
+er,
+ static int
+ intel_dp_max_lane_count(struct intel_dp *intel_dp)
+ {
++       struct drm_device *dev =3D intel_dp->base.base.dev;
++       struct drm_i915_private *dev_priv =3D dev->dev_private;
+        int max_lane_count =3D 4;
+=20
+        if (intel_dp->dpcd[DP_DPCD_REV] >=3D 0x11) {
+@@ -164,6 +166,8 @@ intel_dp_max_lane_count(struct intel_dp *intel_dp)
+                default:
+                        max_lane_count =3D 4;
+                }
++       } else if (is_edp(intel_dp)) {
++               max_lane_count =3D dev_priv->edp.lanes;
+        }
+        return max_lane_count;
+ }
+@@ -765,12 +769,11 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_di=
+splay_mode *mode,
+                        continue;
+=20
+                intel_dp =3D enc_to_intel_dp(encoder);
+=2D               if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT |=
+| is_pch_edp(intel_dp)) {
++               if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT ||
++                   intel_dp->base.type =3D=3D INTEL_OUTPUT_EDP)
++               {
+                        lane_count =3D intel_dp->lane_count;
+                        break;
+=2D               } else if (is_cpu_edp(intel_dp)) {
+=2D                       lane_count =3D dev_priv->edp.lanes;
+=2D                       break;
+                }
+        }
+=20
 
-I dunno. Did I miss something? As far as I can tell, the signed tags
-that we've had since day one are *clearly* much better in very
-fundamental ways.
 
-                             Linus
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrGigzYtFsjWk68qAQj2ow/+M/NfNYe/9l132wJLHLK2l1z9/QdqjoFe
+naZipuUWtWeZ9der142UMZCZiO3WE+8IvIDghoOxinc/8vHSQ4S55UvVnRM3BpCo
+HAdjvszumKcZlMCZ84AmV5bt9V0+1lUaHkor7S0/nT7ZBnqZwFHT4sDt58wDPkJe
+O/oTG1kbF8VPZImHn09IC82lFXkTkKYa2TDXnL9us/AvTLFVKbKa0w5+Hkna8iXy
+vPipqbMn7N7s1TvpDlA/L23qrxFOgiI1mmiCCHPwnK6d8AndwOuAygCHptwjEL+I
+5dcehonzdrxWkGaCE6/2aO8ZKaE9fQ2u5anxzZgwCCLVDA0d+sYzsp4AlgomQS1h
+X6Z3rO+RQ2y1y1xoJPMmhNbuYmleqxCN8SWcRI1ccGyN9QZUVhLi8vrnfeueuT8d
+dHpBRn6IB3l3P2vak0OmaoPb+bk4pY0ZGofuLDcbC/92om8InhJyhZ+vcUTSJR6T
+xcB8bmkGt8vP3XtXxcy1rw3cZXWHLQRIbnuXsodQ3z5mZ1fYTn9iRUE/LY8Oq9gE
+TOcp6/hWUSYNFF4uaEnSx9FyYlJEf2GnugHzCoZX9lHftHTbqNou6FwKIuXSxluq
+URhZyx+VM+5vTygilUBspbFXgZDn+V1XREoBjXQDBQNYJM1CNmWrItHq9ktqSZ9H
+WEXTv1A4WaM=
+=506D
+-----END PGP SIGNATURE-----
+--=-=-=--
