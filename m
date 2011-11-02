@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab1KBIQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 04:16:27 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:21072 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530Ab1KBIQY (ORCPT
+	id S1754744Ab1KBISn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 04:18:43 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:52243 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1KBISm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 04:16:24 -0400
-Date: Wed, 2 Nov 2011 11:16:42 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: re: [SCSI] compat_ioct: fix bsg SG_IO
-Message-ID: <20111102081642.GD4751@mwanda>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4EB0FC4B.00A6,ss=1,re=0.000,fgs=0
+	Wed, 2 Nov 2011 04:18:42 -0400
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        dh.han@samsung.com, Seungwon Jeon <tgih.jun@samsung.com>
+Subject: [PATCH 0/2] mmc: core: Support packed command feature of eMMC4.5
+Date: Wed,  2 Nov 2011 16:58:55 +0900
+Message-Id: <1320220735-10330-1-git-send-email-tgih.jun@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch-set adds support of packed command feature
+for eMMC4.5 devices.
 
---2Z2K0IlrPCVsbNpk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Seungwon Jeon (2):
+	mmc: core: Add packed command feature of eMMC4.5
+	mmc: core: Support packed command for eMMC4.5 device
 
-84eb8fb42c120 "[SCSI] compat_ioct: fix bsg SG_IO" introduces an
-uninitialized variable use.
+ drivers/mmc/card/block.c |  355 ++++++++++++++++++++++++++++++++++++++++++++--
+ drivers/mmc/card/queue.c |   48 ++++++-
+ drivers/mmc/card/queue.h |   12 ++
+ drivers/mmc/core/mmc.c   |   22 ++++++++++++++++++++++
+ include/linux/mmc/core.h |    3 +
+ include/linux/mmc/card.h |    3 +++
+ include/linux/mmc/host.h |    1 +
+ include/linux/mmc/mmc.h  |   15 +++++++++++++++
+ 8 files changed, 445 insertions(+), 14 deletions(-)
+--
+1.7.2.3
 
-   278  static int sg_ioctl_trans(unsigned int fd, unsigned int cmd,
-   279                          sg_io_hdr32_t __user *sgio32)
-   280  {
-   281          sg_io_hdr_t __user *sgio;
-   282          u16 iovec_count;
-   283          u32 data;
-   284          void __user *dxferp;
-   285          int err;
-   286          int interface_id;
-   287 =20
-   288          if (get_user(interface_id, &sgio32->interface_id))
-                                            ^^^^^^
-sgio32 is unitialized here.  Unfortunately Gcc doesn't warn about it.
-
-   289                  return -EFAULT;
-   290          if (interface_id !=3D 'S')
-   291                  return sys_ioctl(fd, cmd, (unsigned long)sgio32);
-
-regards,
-dan carpenter
-
---2Z2K0IlrPCVsbNpk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsPxpAAoJEOnZkXI/YHqRpH4QAJKBnxS4xKj+3yAoMHuqnoLz
-m22f4V7BQBecfitjT0yoGtain68Vp880p7goRjTX9jkwkRYzMNl7DyNqvUVYCx2h
-vbtakAea+Vk70Q0DgG/MdX0OIVKO3uSehEDRi0oi4ALJOuxH0T/xa5kFOMVrkx4A
-6TPgYuONbdw2uueJKmjryRTwUwrhBjRh33Furx8J4p31eAoJskOH6U0cY3ZlUEzS
-Fema/3E0TnJ02Q5Kp2YupiZHmkUwCOfHvUSyccR82Hyhza+WzuMqxONpdQSgfErC
-Qu5Oqwph4mNg5ik90DVooPbajUiUWzjYM2nO4g+zLhJcsi9lRERe2i/OUvGE4D97
-b16awlS/QzWm/Xvt6hx6MvGtNyeDmYkpN9PLz5nR59fwOrcHXsu/VfSmLlnqsqvd
-XU4dGtdJIV7tXIz+q8s/bTS2A2g338gEPSg/zkU0GxhKUOLfblhCsLCFOQvdzzbB
-QAg2AkVXFxoKTUCGThL1c2xFtEfFx8AbrHcYghRpH8TRu6ftSjNWdFIngjUyjqkX
-pGQPRXYb6/iLYPikOho4pAkh018GceYClq7wLLcw7cXrpUYispQk3NpYhNONVZz5
-nkISW7JF1OYwsgDCSbCgIHBGD3PaET04TAino+JRO/KOdgc0gzG2cELM4gN7wmVi
-iPTeNPRWDw9zZAQN5tPK
-=SIw6
------END PGP SIGNATURE-----
-
---2Z2K0IlrPCVsbNpk--
