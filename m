@@ -1,125 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab1KBUpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:45:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42592 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab1KBUpn (ORCPT
+	id S1751959Ab1KBUqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:46:19 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:24285 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab1KBUqR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:45:43 -0400
-X-Authority-Analysis: v=1.1 cv=rFxaVhpzdNKRsWyFDFmDbYx/QEtlW7L1Gw9MiLxO4aw= c=1 sm=0 a=DJOu6W8zkUMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VrwLg1RDDlTrUvbtMcMA:9 a=9eQMlsPDHhmqyXIoE8YA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1320266741.4793.50.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] tracing: Restore system filter behavior
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Nov 2011 16:45:41 -0400
-In-Reply-To: <1320259868.4793.46.camel@gandalf.stny.rr.com>
-References: <4EAF46CF.8040408@cn.fujitsu.com>
-	 <1320258167.4793.45.camel@gandalf.stny.rr.com>
-	 <1320259868.4793.46.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 2 Nov 2011 16:46:17 -0400
+MIME-Version: 1.0
+Message-ID: <571bc7cd-f97f-4882-960c-06b2944f1c4a@default>
+Date: Wed, 2 Nov 2011 13:45:52 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>
+ <20111028163053.GC1319@redhat.com>
+ <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>
+ <20138.62532.493295.522948@quad.stoffel.home>
+ <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default>
+ <20139.5644.583790.903531@quad.stoffel.home>
+ <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default>
+ <1320005162.15403.14.camel@nimitz 4EB19DE5.4080108@redhat.com>
+In-Reply-To: <4EB19DE5.4080108@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4EB1AC06.001A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 14:51 -0400, Steven Rostedt wrote:
-> On Wed, 2011-11-02 at 14:22 -0400, Steven Rostedt wrote:
+> From: Rik van Riel [mailto:riel@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
 > 
-> > The above shows how things are just ambiguous. I have no problem in
-> > using the top filter to set multiple events. But the top filter should
-> > not keep the state of what was set. Perhaps just have system event
-> > filters always show default text. Like:
-> > 
-> > # cat /debug/tracing/events/sched/filter
-> > ### global filter ###
-> > # Use this to set multiple event filters
-> > # Only affects events that have the event fields specified in the filter
-> > 
-> > 
-> > I'll add your patch, but are you OK with the above always printing for
-> > system event filters?  Just to remove the ambiguous state.
+> On 10/30/2011 04:06 PM, Dave Hansen wrote:
+> > On Sun, 2011-10-30 at 12:18 -0700, Dan Magenheimer wrote:
+> >>> since they're the ones who will have to understand this stuff and know
+> >>> how to maintain it.  And keeping this maintainable is a key goal.
+> >>
+> >> Absolutely agree.  Count the number of frontswap lines that affect
+> >> the current VM core code and note also how they are very clearly
+> >> identified.  It really is a very VERY small impact to the core VM
+> >> code (e.g. in the files swapfile.c and page_io.c).
+> >
+> > Granted, the impact on the core VM in lines of code is small.  But, I
+> > think the behavioral impact is potentially huge since tmem's hooks add
+> > non-trivial amounts of framework underneath the VM in core paths.  In
+> > zcache's case, this means a bunch of allocations and an entirely new
+> > allocator memory allocator being used in the swap paths.
 > 
+> My only real behaviour concern with tmem is that
+> /proc/sys/overcommit_memory will no longer be able
+> to do anything useful, since we'll never know in
+> advance how much memory is available.
+
+True, for Case C (as defined in James Bottomley subthread).
+For Case A and Case B (ie. no tmem backend enabled),
+end-users can still rely on that existing mechanism,
+so they have a choice.
+ 
+> That may be outweighed by the benefits of having
+> more memory available than before, and a reasonable
+> tradeoff to make for the users.
 > 
-> As the filter is also used to show errors, I'll only have it print the
-> "message" if the filter worked. If there's an error, then the error
-> message will display instead.
-> 
+> That leaves us with having the code cleaned up to
+> reasonable standards.  To be honest, I would rather
+> have larger hooks in the existing mm code, than
+> exported variables and having the hooks live elsewhere
+> (where people changing the "normal" mm code won't see
+> it, and are more likely to break it).
 
-What's your thought on the below patch?
+Hmmm... the original hooks in 2009 were larger, but there
+was lots of feedback to hide the ugly details as much as
+possible.  As a side effect, higher level info is
+passed via the hooks, e.g. a "struct page *" rather
+than swaptype/entry, so backends have more flexibility
+(and IIUC it looks like Andrea's proposed changes to
+zcache may need the higher level info).
 
--- Steve
+But if you want to propose some code showing what
+you mean by "larger" hooks and they result in the
+same information available in the backends, and
+if others agree your hooks are more maintainable,
+I am certainly open to changing them and re-posting.
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 86040d9..6dee2b5 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -27,6 +27,12 @@
- #include "trace.h"
- #include "trace_output.h"
- 
-+#define DEFAULT_SYS_FILTER_MESSAGE					\
-+	"### global filter ###\n"					\
-+	"# Use this to set filters for multiple events.\n"		\
-+	"# Only events with the given fields will be affected.\n"	\
-+	"# If no events are modified, an error message will be displayed here"
-+
- enum filter_op_ids
- {
- 	OP_OR,
-@@ -646,7 +652,7 @@ void print_subsystem_event_filter(struct event_subsystem *system,
- 	if (filter && filter->filter_string)
- 		trace_seq_printf(s, "%s\n", filter->filter_string);
- 	else
--		trace_seq_printf(s, "none\n");
-+		trace_seq_printf(s, DEFAULT_SYS_FILTER_MESSAGE "\n");
- 	mutex_unlock(&event_mutex);
- }
- 
-@@ -1838,7 +1844,8 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
- 	if (!filter)
- 		goto out;
- 
--	replace_filter_string(filter, filter_string);
-+	/* System filters just show a default message */
-+	replace_filter_string(filter, DEFAULT_SYS_FILTER_MESSAGE);
- 	/*
- 	 * No event actually uses the system filter
- 	 * we can free it without synchronize_sched().
-@@ -1848,14 +1855,12 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
- 
- 	parse_init(ps, filter_ops, filter_string);
- 	err = filter_parse(ps);
--	if (err) {
--		append_filter_err(ps, system->filter);
--		goto out;
--	}
-+	if (err)
-+		goto err_filter;
- 
- 	err = replace_system_preds(system, ps, filter_string);
- 	if (err)
--		append_filter_err(ps, system->filter);
-+		goto err_filter;
- 
- out:
- 	filter_opstack_clear(ps);
-@@ -1865,6 +1870,11 @@ out_unlock:
- 	mutex_unlock(&event_mutex);
- 
- 	return err;
-+
-+err_filter:
-+	replace_filter_string(filter, filter_string);
-+	append_filter_err(ps, system->filter);
-+	goto out;
- }
- 
- #ifdef CONFIG_PERF_EVENTS
+Note that this could happen post-frontswap-merge too
+though which would, naturally, be my preference ;-)
 
-
+Dan
