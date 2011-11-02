@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673Ab1KCBlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:41:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51354 "EHLO mx2.suse.de"
+	id S934657Ab1KCBlq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:41:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51350 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934575Ab1KCBlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:41:44 -0400
+	id S934506Ab1KCBll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:41:41 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:45 2011
-Message-Id: <20111102222745.869577363@clark.kroah.org>
+Message-Id: <20111102222745.784757050@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:51 -0700
+Date: Wed, 02 Nov 2011 15:26:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Stuge <peter@stuge.se>
-Subject: [067/101] USB: ftdi_sio: Support TI/Luminary Micro Stellaris BD-ICDI Board
+        alan@lxorguk.ukuu.org.uk, Hakan Kvist <hakan.kvist@sonyericsson.com>,
+        Oskar Andero <oskar.andero@sonyericsson.com>
+Subject: [066/101] USB: ftdi_sio: add PID for Sony Ericsson Urban
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,47 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Stuge <peter@stuge.se>
+From: Hakan Kvist <hakan.kvist@sonyericsson.com>
 
-commit 3687f641307eeff6f7fe31a88dc39db88e89238b upstream.
+commit 74bdf22b5c3858b06af46f19d05c23e76c40a3bb upstream.
 
-Some Stellaris evaluation kits have the JTAG/SWD FTDI chip onboard,
-and some, like EK-LM3S9B90, come with a separate In-Circuit Debugger
-Interface Board. The ICDI board can also be used stand-alone, for
-other boards and chips than the kit it came with. The ICDI has both
-old style 20-pin JTAG connector and new style JTAG/SWD 10-pin 1.27mm
-pitch connector.
+Add PID 0xfc8a, 0xfc8b for device Sony Ericsson Urban
 
-Tested with EK-LM3S9B90, where the BD-ICDI board is included.
-
-Signed-off-by: Peter Stuge <peter@stuge.se>
+Signed-off-by: Hakan Kvist <hakan.kvist@sonyericsson.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
  drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -744,6 +744,8 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, LMI_LM3S_EVAL_BOARD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
-+	{ USB_DEVICE(FTDI_VID, LMI_LM3S_ICDI_BOARD_PID),
-+		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_TURTELIZER_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
+@@ -205,6 +205,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_640_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_642_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DSS20_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_0_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_1_PID) },
+ 	{ USB_DEVICE(FTDI_NF_RIC_VID, FTDI_NF_RIC_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_VNHCPCUSB_D_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MTXORB_0_PID) },
 --- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -48,6 +48,7 @@
- /* FTDI 2332C Dual channel device, side A=245 FIFO (JTAG), Side B=RS232 UART */
- #define LMI_LM3S_DEVEL_BOARD_PID	0xbcd8
- #define LMI_LM3S_EVAL_BOARD_PID		0xbcd9
-+#define LMI_LM3S_ICDI_BOARD_PID		0xbcda
+@@ -399,9 +399,11 @@
+ #define PROTEGO_SPECIAL_4	0xFC73	/* special/unknown device */
  
- #define FTDI_TURTELIZER_PID	0xBDC8 /* JTAG/RS-232 adapter by egnite GmBH */
+ /*
+- * DSS-20 Sync Station for Sony Ericsson P800
++ * Sony Ericsson product ids
+  */
+-#define FTDI_DSS20_PID          0xFC82
++#define FTDI_DSS20_PID		0xFC82	/* DSS-20 Sync Station for Sony Ericsson P800 */
++#define FTDI_URBAN_0_PID	0xFC8A	/* Sony Ericsson Urban, uart #0 */
++#define FTDI_URBAN_1_PID	0xFC8B	/* Sony Ericsson Urban, uart #1 */
  
+ /* www.irtrans.de device */
+ #define FTDI_IRTRANS_PID 0xFC60 /* Product Id */
 
 
