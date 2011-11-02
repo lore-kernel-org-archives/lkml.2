@@ -1,41 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751657Ab1KBVFh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:05:37 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:44410 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079Ab1KBVFe (ORCPT
+	id S1752802Ab1KBVGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:06:12 -0400
+Received: from lnksmtp.cgmh.org.tw ([60.250.255.94]:46834 "EHLO
+	lnksmtp.cgmh.org.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab1KBVGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:05:34 -0400
-X-Sasl-enc: Wf/nvYwNfRCqWgdKGwxTw94ntljN1FhoNnhninJ9Lp2K 1320267932
-Message-ID: <4EB1B099.5030701@drmicha.warpmail.net>
-Date: Wed, 02 Nov 2011 22:05:29 +0100
-From: Michael J Gruber <git@drmicha.warpmail.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Wed, 2 Nov 2011 17:06:11 -0400
+From: "Mr. Wen Lee" <wen23@adm.cgmh.org.tw>
+Reply-To: mr.wenl@yahoo.com.tw
+Subject: Partnership..
+Date: Thu, 3 Nov 2011 05:03:12 +0800
+Message-Id: <20111102210312.M1394@adm.cgmh.org.tw>
+X-Mailer: Open WebMail 2.51 20050512
+X-OriginatingIP: 41.67.191.114 (kao328)
 MIME-Version: 1.0
-To: Junio C Hamano <gitster@pobox.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com> <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com> <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <4EB12122.7010803@drmicha.warpmail.net> <7v1utqjqre.fsf@alter.siamese.dyndns.org>
-In-Reply-To: <7v1utqjqre.fsf@alter.siamese.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=big5
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano venit, vidit, dixit 02.11.2011 19:58:
-> Michael J Gruber <git@drmicha.warpmail.net> writes:
-> 
->> The advantage of tags is that they can be added without rewriting the
->> commit, of course.
-> 
-> And you did neither think about the downsides of tags, nor read what
-> others already explained for you?
-
-We're just weighing things differently here, and no accusations of
-"misinformation" or "not thinking" will change this.
+I am Mr. Wen Lee director of operations of the Bank Of Taipei Taiwan. I have 
+an obscured business proposal for you. Reply if interested.
