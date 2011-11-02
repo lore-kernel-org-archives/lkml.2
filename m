@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124Ab1KBMlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 08:41:16 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61691 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab1KBMlF convert rfc822-to-8bit (ORCPT
+	id S932148Ab1KBMlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 08:41:51 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39249 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab1KBMlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 08:41:05 -0400
+	Wed, 2 Nov 2011 08:41:49 -0400
+From: Roberto Sassu <roberto.sassu@polito.it>
+To: keyrings@linux-nfs.org
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        safford@watson.ibm.com, zohar@us.ibm.com, dhowells@redhat.com,
+        jmorris@namei.org, Roberto Sassu <roberto.sassu@polito.it>
+Subject: [PATCH 1/2] trusted-key: allow overwriting the migratable flag
+Date: Wed,  2 Nov 2011 13:41:18 +0100
+Message-Id: <1320237682-3857-1-git-send-email-roberto.sassu@polito.it>
+X-Mailer: git-send-email 1.7.6.4
 MIME-Version: 1.0
-In-Reply-To: <20111102102554.1f443b9c@laptop.homenet>
-References: <20111102102554.1f443b9c@laptop.homenet>
-From: "Sergey S. Kostyliov" <rathamahata@gmail.com>
-Date: Wed, 2 Nov 2011 14:40:44 +0200
-Message-ID: <CA+QCeVRFsh0_q3E-B6GWyGQgWOe4VhMkPNLuQLAL-YvEVRA8jA@mail.gmail.com>
-Subject: Re: HDA Intel microphone regression in 3.1.0
-To: Chris Vine <chris@cvine.freeserve.co.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----2A02F66388F696A441594133055C4E0A"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 November 2011 12:25, Chris Vine <chris@cvine.freeserve.co.uk> wrote:
-> My Lenovo S12 IdeaPad netbook uses a HDA Intel sound card with Realtek
-> ALC269 chip.  With the 3.1.0 kernel, all microphone input (both with the
-> internal microphone and any external microphone) is permanently
-> muted, although sound output works OK.  Microphone input works correctly
-> with the 3.0 and earlier kernels.
-Could you please say do you have CONFIG_SND_HDA_GENERIC == y ?
-I had experienced the same problem with CONFIG_SND_HDA_GENERIC = y
-Turning it off it cured the problem for me.
+This is an S/MIME signed message
 
->
-> The only obvious difference between the 3.0 and 3.1 kernels is that
-> with kernel 3.0.7, 'dmesg | grep HDA' gives this:
->
->  HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
->  HDA Intel 0000:00:1b.0: setting latency timer to 64
->  input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input10
->  input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
->  input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
->
-> whereas with kernel 3.1.0 it just gives:
->
->  input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input9
->  input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input10
->  input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
->
-> lspci -v gives the following audio hardware information:
->
->  00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
->        Subsystem: Lenovo Device 3be9
->        Flags: bus master, fast devsel, latency 0, IRQ 22
->        Memory at fc140000 (64-bit, non-prefetchable) [size=16K]
->        Capabilities: [50] Power Management version 2
->        Capabilities: [60] MSI: Enable- Count=1/1 Maskable- 64bit+
->        Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
->        Capabilities: [100] Virtual Channel
->        Capabilities: [130] Root Complex Link
->        Kernel driver in use: snd_hda_intel
->        Kernel modules: snd-hda-intel
->
-> lsmod | egrep "snd|sound" gives:
->
->  snd_seq_dummy           1023  0
->  snd_seq_oss            23792  0
->  snd_seq_midi_event      4408  1 snd_seq_oss
->  snd_seq                39673  5 snd_seq_dummy,snd_seq_oss,snd_seq_midi_event
->  snd_seq_device          4121  3 snd_seq_dummy,snd_seq_oss,snd_seq
->  snd_pcm_oss            33087  0
->  snd_mixer_oss          12647  1 snd_pcm_oss
->  snd_hda_codec_realtek   205307  1
->  snd_hda_intel          18347  2
->  snd_hda_codec          64459  2 snd_hda_codec_realtek,snd_hda_intel
->  snd_hwdep               4420  1 snd_hda_codec
->  snd_pcm                57725  3 snd_pcm_oss,snd_hda_intel,snd_hda_codec
->  snd_timer              14567  2 snd_seq,snd_pcm
->  snd                    40539  15 snd_seq_oss,snd_seq,snd_seq_device,snd_pcm_oss,snd_mixer_oss,snd_hda_codec_realtek,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm,snd_timer
->  soundcore               4129  1 snd
->  snd_page_alloc          5445  2 snd_hda_intel,snd_pcm
->
-> Chris
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+------2A02F66388F696A441594133055C4E0A
+
+The migratable should be modifiable during the key update() method. This
+allows for example to update a migratable trusted key, wrapped by a TPM
+key, to a a non-migratable one sealed under the SRK with a PCR set.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+---
+ security/keys/trusted.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+index 0c33e2e..8777015 100644
+--- a/security/keys/trusted.c
++++ b/security/keys/trusted.c
+@@ -1036,7 +1036,6 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
+ 		goto out;
+ 	}
+ 	/* copy old key values, and reseal with new pcrs */
+-	new_p->migratable = p->migratable;
+ 	new_p->key_len = p->key_len;
+ 	memcpy(new_p->key, p->key, p->key_len);
+ 	dump_payload(p);
+-- 
+1.7.6.4
+
+
+------2A02F66388F696A441594133055C4E0A
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
+Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
+HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
+MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
+ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
+NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
+TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
+XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
+da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
+yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
+BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
+BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
+HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
+GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
+qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
+cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
+CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
+BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
+AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
+NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
+X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
+LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
+S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
+oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
+JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
+YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
+MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
+aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
+Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTExMDIxMjQxMjJaMCMGCSqG
+SIb3DQEJBDEWBBSeXxY14kHSYWOL4fyWDFK9b8Qi/DB5BgkqhkiG9w0BCQ8xbDBq
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
+DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQA2VK92M2j1EraY34cmGVPfnpsl
+hJ7cEpl+r688EidEYBdQicRcd4/4+UsB2Qs6EfJZStcNV1ZG3+JQiU6bOJMNDlD5
+hrIJzjppLVPWbu2RWMU+peNQmtKBGpCxaw8eMijJ05xR7uyELevzdmuHf7O4fOP4
+wLceZ5FLcOHplT4bdbCym1pPy8DsS9VBLNN3aOHpWezRAZ2gm787kzBwP9kZ5X34
+xF1pj5LYfhRcOgTfIv+AHZFN2etcB/vDPBkLY0+GSs+G+TdYdCrOwVk25PgMeRon
+nZ0PG0kQJd3Wi2iw8Zp4GLaREY258Yuaca2eAhR94xO31OlFa+lBo1AUO2Hp
+
+------2A02F66388F696A441594133055C4E0A--
+
+
