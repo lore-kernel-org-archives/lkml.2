@@ -1,204 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932619Ab1KBAOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 20:14:43 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37016 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199Ab1KBAOk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 20:14:40 -0400
-Message-ID: <1320192874.4728.19.camel@edumazet-laptop>
-Subject: Re: >Re: [RFC] should VM_BUG_ON(cond) really evaluate cond
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 02 Nov 2011 01:14:34 +0100
-In-Reply-To: <CA+55aFws7bm1mr7fhAheD2t3wTchWx_gEbKhSggSROf2UT86Hg@mail.gmail.com>
-References: <1319772566.6759.27.camel@deadeye>
-	 <1319777025.23112.67.camel@edumazet-laptop>
-	 <CA+55aFzHf563auNYdNeJnsbbry1OUfkepkiVHt7Fy-bG64Fruw@mail.gmail.com>
-	 <1319803781.23112.113.camel@edumazet-laptop>
-	 <CA+55aFxzgc5pC1p6J8YADNDwmAjUYNRKLvir6OQMueWqUXOaEQ@mail.gmail.com>
-	 <CA+55aFxy6VSBbikFrfXwUPOafihR+MOdi+yKSp_6qz7_Vax_YA@mail.gmail.com>
-	 <1319813252.23112.122.camel@edumazet-laptop>
-	 <CA+55aFxvcvUopBc-Q6Fp87asTuBohev8Xdm67jcKfy4Z4_BZRg@mail.gmail.com>
-	 <CA+55aFz=sxRjw6u-ww0P=9hhvWaZP=+QJZ68W+B9WtvQqj9Ogg@mail.gmail.com>
-	 <1319964754.13597.26.camel@edumazet-laptop>
-	 <20111030095918.GA19676@one.firstfloor.org>
-	 <1319987765.13597.60.camel@edumazet-laptop>
-	 <CA+55aFyGEhBMv31QXN7q9PJc36TVtHLOvdFYB1+6NTo+nKSkbQ@mail.gmail.com>
-	 <1319996494.13597.69.camel@edumazet-laptop>
-	 <CA+55aFz-mp8k7qdF3LaOjgX19TbzrCirGuCmGwqVMq9SwQ8yvw@mail.gmail.com>
-	 <1319997593.13597.76.camel@edumazet-laptop>
-	 <CA+55aFws7bm1mr7fhAheD2t3wTchWx_gEbKhSggSROf2UT86Hg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1756155Ab1KBAUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 20:20:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:54778 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab1KBAUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 20:20:04 -0400
+Date: Tue, 1 Nov 2011 17:20:01 -0700
+From: Kees Cook <kees@outflux.net>
+To: linux-kernel@vger.kernel.org
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2] Documentation: clarify the purpose of LSMs
+Message-ID: <20111102002001.GA28092@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 30 octobre 2011 à 11:09 -0700, Linus Torvalds a écrit :
+Clarify the purpose of the LSM interface with some brief examples and
+pointers to additional documentation.
 
-> Argh. Ok. Testing a refcount in a const struct doesn't make much
-> sense, but there does seem to be perfectly valid uses of it
-> (sk_wmem_alloc etc).
-> 
-> Annoying. I guess we have to have those casts. Grr.
-> 
-
-OK, please check following patch then.
-
-Thanks !
-
-[PATCH v3] atomic: introduce ACCESS_AT_MOST_ONCE() helper
-
-In commit 4e60c86bd9e (gcc-4.6: mm: fix unused but set warnings)
-Andi forced VM_BUG_ON(cond) to evaluate cond, even if CONFIG_DEBUG_VM is
-not set :
-
-#ifdef CONFIG_DEBUG_VM
-#define VM_BUG_ON(cond) BUG_ON(cond)
-#else
-#define VM_BUG_ON(cond) do { (void)(cond); } while (0)
-#endif
-
-As a side effect, get_page()/put_page_testzero() are performing more bus
-transactions on contended cache line on some workloads (tcp_sendmsg()
-for example, where a page is acting as a shared buffer)
-
-0,05 :  ffffffff815e4775:    je     ffffffff815e4970 <tcp_sendmsg+0xc80>
-0,05 :  ffffffff815e477b:    mov    0x1c(%r9),%eax    // useless
-3,32 :  ffffffff815e477f:    mov    (%r9),%rax        // useless
-0,51 :  ffffffff815e4782:    lock incl 0x1c(%r9)
-3,87 :  ffffffff815e4787:    mov    (%r9),%rax
-0,00 :  ffffffff815e478a:    test   $0x80,%ah
-0,00 :  ffffffff815e478d:    jne    ffffffff815e49f2 <tcp_sendmsg+0xd02>
-
-Thats because both atomic_read() and constant_test_bit() use a volatile
-attribute and thus compiler is forced to perform a read, even if the
-result is optimized away.
-
-Linus suggested using an asm("") trick and place it in a variant of
-ACCESS_ONCE(), allowing compiler to omit reading memory if result is
-unused.
-
-This patch introduces ACCESS_AT_MOST_ONCE() helper and use it in the x86
-implementation of atomic_read() and constant_test_bit()
-
-It's also used on x86_64 atomic64_read() implementation.
-
-on x86_64, we thus reduce vmlinux text a bit (if CONFIG_DEBUG_VM=n)
-
-# size vmlinux.old vmlinux.new
-   text    data     bss     dec     hex filename
-10706848        2894216 1540096 15141160         e70928 vmlinux.old
-10704040        2894216 1540096 15138352         e6fe30 vmlinux.new
-
-Basically an extension of a prior patch from Linus
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- arch/x86/include/asm/atomic.h      |    5 +----
- arch/x86/include/asm/atomic64_64.h |    6 ++----
- arch/x86/include/asm/bitops.h      |    6 ++++--
- include/asm-generic/atomic.h       |    2 +-
- include/linux/compiler.h           |   10 ++++++++++
- 5 files changed, 18 insertions(+), 11 deletions(-)
+v2:
+    - based on feedback from James Morris, added reference to
+      http://kerneltrap.org/Linux/Documenting_Security_Module_Intent
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index 58cb6d4..2581008 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
-@@ -20,10 +20,7 @@
-  *
-  * Atomically reads the value of @v.
-  */
--static inline int atomic_read(const atomic_t *v)
--{
--	return (*(volatile int *)&(v)->counter);
--}
-+#define atomic_read(v) ACCESS_AT_MOST_ONCE(*(int *)&(v)->counter)
- 
- /**
-  * atomic_set - set atomic variable
-diff --git a/arch/x86/include/asm/atomic64_64.h b/arch/x86/include/asm/atomic64_64.h
-index 0e1cbfc..15bbad4 100644
---- a/arch/x86/include/asm/atomic64_64.h
-+++ b/arch/x86/include/asm/atomic64_64.h
-@@ -1,6 +1,7 @@
- #ifndef _ASM_X86_ATOMIC64_64_H
- #define _ASM_X86_ATOMIC64_64_H
- 
-+#include <linux/compiler.h>
- #include <linux/types.h>
- #include <asm/alternative.h>
- #include <asm/cmpxchg.h>
-@@ -16,10 +17,7 @@
-  * Atomically reads the value of @v.
-  * Doesn't imply a read memory barrier.
-  */
--static inline long atomic64_read(const atomic64_t *v)
--{
--	return (*(volatile long *)&(v)->counter);
--}
-+#define atomic64_read(v) ACCESS_AT_MOST_ONCE(*(long *)&(v)->counter);
- 
- /**
-  * atomic64_set - set atomic64 variable
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 1775d6e..6dcf4b1 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -308,8 +308,10 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
- 
- static __always_inline int constant_test_bit(unsigned int nr, const volatile unsigned long *addr)
- {
--	return ((1UL << (nr % BITS_PER_LONG)) &
--		(addr[nr / BITS_PER_LONG])) != 0;
-+	unsigned long *word = (unsigned long *)addr + (nr / BITS_PER_LONG);
-+	unsigned long bit = 1UL << (nr % BITS_PER_LONG);
+ Documentation/security/00-INDEX        |    2 +
+ Documentation/security/LSM.txt         |   34 ++++++++++++++++++++++++++++++++
+ Documentation/security/credentials.txt |    6 ++--
+ 3 files changed, 39 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/security/LSM.txt
+
+diff --git a/Documentation/security/00-INDEX b/Documentation/security/00-INDEX
+index 1f33b73..eeed1de 100644
+--- a/Documentation/security/00-INDEX
++++ b/Documentation/security/00-INDEX
+@@ -1,5 +1,7 @@
+ 00-INDEX
+ 	- this file.
++LSM.txt
++	- description of the Linux Security Module framework.
+ SELinux.txt
+ 	- how to get started with the SELinux security enhancement.
+ Smack.txt
+diff --git a/Documentation/security/LSM.txt b/Documentation/security/LSM.txt
+new file mode 100644
+index 0000000..7245316
+--- /dev/null
++++ b/Documentation/security/LSM.txt
+@@ -0,0 +1,34 @@
++Linux Security Module framework
++-------------------------------
 +
-+	return (bit & ACCESS_AT_MOST_ONCE(*word)) != 0;
- }
- 
- static inline int variable_test_bit(int nr, volatile const unsigned long *addr)
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index e37963c..76ab683 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -39,7 +39,7 @@
-  * Atomically reads the value of @v.
-  */
- #ifndef atomic_read
--#define atomic_read(v)	(*(volatile int *)&(v)->counter)
-+#define atomic_read(v)	ACCESS_AT_MOST_ONCE(*(int *)&(v)->counter)
- #endif
- 
- /**
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 320d6c9..307f342 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -308,4 +308,14 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
-  */
- #define ACCESS_ONCE(x) (*(volatile typeof(x) *)&(x))
- 
-+/*
-+ * Like ACCESS_ONCE, but can be optimized away if nothing uses the value,
-+ * and/or merged with previous non-ONCE accesses.
-+ */
-+#define ACCESS_AT_MOST_ONCE(x)			\
-+	({	typeof(x) __y;			\
-+		asm("":"=r" (__y):"0" (x));	\
-+		__y;				\
-+	})
++The Linux Security Module (LSM) framework provides a mechanism for
++various security checks to be hooked by new kernel extensions. The name
++"module" is a bit of a misnomer since these extensions are not actually
++loadable kernel modules. Instead, they are selectable at build-time via
++CONFIG_DEFAULT_SECURITY and can be overridden at boot-time via the
++"security=..." kernel command line argument, in the case where multiple
++LSMs were built into a given kernel.
 +
- #endif /* __LINUX_COMPILER_H */
++The primary users of the LSM interface are Mandatory Access Control
++(MAC) extensions which provide a comprehensive security policy. Examples
++include SELinux, Smack, Tomoyo, and AppArmor. In addition to the larger
++MAC extensions, other extensions can be built using the LSM to provide
++specific changes to system operation when these tweaks are not available
++in the core functionality of Linux itself.
++
++Without a specific LSM built into the kernel, the default LSM will be the
++Linux capabilities system. Most LSMs choose to extend the capabilities
++system, building their checks on top of the defined capability hooks.
++For more details on capabilities, see capabilities(7) in the Linux
++man-pages project.
++
++Based on http://kerneltrap.org/Linux/Documenting_Security_Module_Intent,
++a new LSM is accepted into the kernel when its intent (a description of
++what it tries to protect against and in what cases one would expect to
++use it) has been appropriately documented in Documentation/security/.
++This allows an LSM's code to be easily compared to its goals, and so
++that end users and distros can make a more informed decision about which
++LSMs suit their requirements.
++
++For extensive documentation on the available LSM hook interfaces, please
++see include/linux/security.h.
+diff --git a/Documentation/security/credentials.txt b/Documentation/security/credentials.txt
+index fc0366c..8625705 100644
+--- a/Documentation/security/credentials.txt
++++ b/Documentation/security/credentials.txt
+@@ -221,10 +221,10 @@ The Linux kernel supports the following types of credentials:
+  (5) LSM
+ 
+      The Linux Security Module allows extra controls to be placed over the
+-     operations that a task may do.  Currently Linux supports two main
+-     alternate LSM options: SELinux and Smack.
++     operations that a task may do.  Currently Linux supports several LSM
++     options.
+ 
+-     Both work by labelling the objects in a system and then applying sets of
++     Some work by labelling the objects in a system and then applying sets of
+      rules (policies) that say what operations a task with one label may do to
+      an object with another label.
+ 
+-- 
+1.7.5.4
 
 
+-- 
+Kees Cook                                            @outflux.net
