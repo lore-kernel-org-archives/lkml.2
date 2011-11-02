@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab1KCBid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:38:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50958 "EHLO mx2.suse.de"
+	id S1754853Ab1KCCB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:01:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50964 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab1KCBi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:38:29 -0400
+	id S1755357Ab1KCBic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:38:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:40 2011
-Message-Id: <20111102222740.688830436@clark.kroah.org>
+Message-Id: <20111102222740.779922521@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:25:55 -0700
+Date: Wed, 02 Nov 2011 15:25:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marek Marczykowski <marmarek@mimuw.edu.pl>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [011/101] xen-blkfront: fix data size for xenbus_gather in blkfront_connect
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [012/101] md/linear: avoid corrupting structure while waiting for rcu_free to complete.
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +24,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Marczykowski <marmarek@mimuw.edu.pl>
+From: NeilBrown <neilb@suse.de>
 
-commit 4352b47ab7918108b389a48d2163c9a4c2aaf139 upstream.
+commit 1b6afa17581027218088a18a9ceda600e0ddba7a upstream.
 
-barrier variable is int, not long. This overflow caused another variable
-override: "err" (in PV code) and "binfo" (in xenlinux code -
-drivers/xen/blkfront/blkfront.c). The later caused incorrect device
-flags (RO/removable etc).
+I don't know what I was thinking putting 'rcu' after a dynamically
+sized array!  The array could still be in use when we call rcu_free()
+(That is the point) so we mustn't corrupt it.
 
-Signed-off-by: Marek Marczykowski <marmarek@mimuw.edu.pl>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Changed title]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/xen-blkfront.c |    2 +-
+ drivers/md/linear.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -890,7 +890,7 @@ static void blkfront_connect(struct blkf
- 	}
+--- a/drivers/md/linear.h
++++ b/drivers/md/linear.h
+@@ -10,9 +10,9 @@ typedef struct dev_info dev_info_t;
  
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
--			    "feature-barrier", "%lu", &info->feature_barrier,
-+			    "feature-barrier", "%d", &info->feature_barrier,
- 			    NULL);
- 	if (err)
- 		info->feature_barrier = 0;
+ struct linear_private_data
+ {
++	struct rcu_head		rcu;
+ 	sector_t		array_sectors;
+ 	dev_info_t		disks[0];
+-	struct rcu_head		rcu;
+ };
+ 
+ 
 
 
