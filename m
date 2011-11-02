@@ -1,158 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab1KBUHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:07:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840Ab1KBUHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:07:18 -0400
-From: Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH] pci: Fix PRI and PASID consistency
-To: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-        joerg.roedel@amd.com, bhelgaas@google.com
-Date: Wed, 02 Nov 2011 14:07:15 -0600
-Message-ID: <20111102200647.8266.62606.stgit@bling.home>
-User-Agent: StGIT/0.14.3
+	id S1751246Ab1KBUIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:08:39 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35542 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817Ab1KBUIi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:08:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Message-ID: <2baa4c1a-1fe0-4395-a428-f30703e8c435@default>
+Date: Wed, 2 Nov 2011 13:08:14 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+ <20111031181651.GF3466@redhat.com> <1320142590.7701.64.camel@dabdike>
+ <49255b17-02bb-4a4a-b85a-cd5a879beb98@default
+ 1320221686.3091.40.camel@dabdike>
+In-Reply-To: <1320221686.3091.40.camel@dabdike>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4EB1A334.0073,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are extended capabilities, rename and move to proper
-group for consistency.
+> From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+> 
+> > Not quite sure what you mean here (especially for frontswap)...
+> 
+> I mean could it be used in a more controlled situation than an
+> alternative to swap?
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
+I think it could, but have focused on the cases which reduce
+disk I/O: cleancache, which replaces refaults, and frontswap,
+which replaces swap in/outs.  Did you have some other
+kernel data in mind?
+ 
+> OK, I still don't think you understand what I'm saying.  Machines in a
+> Data Centre tend to be provisioned to criticality.  What this means is
+> that the Data Centre has a bunch of mandatory work and a bunch of Best
+> Effort work (and grades in between).  We load up the mandatory work
+> according to the resource limits being careful not to overprovision the
+> capacity then we look at the spare capacity and slot in the Best effort
+> stuff.  We want the machine to run at capacity, not over it; plus we
+> need to respond instantly for demands of the mandatory work, which
+> usually involves either dialling down or pushing away best effort work.
+> In this situation, action is taken long before the swap paths become
+> active because if they activate, the entire machine bogs and you've just
+> blown the SLA on the mandatory work.
+> 
+> > It's true, those that are memory-rich and can spend nearly
+> > infinite amounts on more RAM (and on high-end platforms that
+> > can expand to hold massive amounts of RAM) are not tmem's
+> > target audience.
+> 
+> Where do you get the infinite RAM idea from?  The most concrete example
+> of what I said above are Lean Data Centres, which are highly resource
+> constrained but they want to run at (or just below) criticality so that
+> they get through all of the Mandatory and as much of the best effort
+> work as they can.
 
- drivers/pci/ats.c        |   20 ++++++++++----------
- include/linux/pci_regs.h |    4 ++--
- 2 files changed, 12 insertions(+), 12 deletions(-)
+OK, I think you are asking the same question as I answered for
+Kame earlier today.
 
-diff --git a/drivers/pci/ats.c b/drivers/pci/ats.c
-index 7ec56fb..831e192 100644
---- a/drivers/pci/ats.c
-+++ b/drivers/pci/ats.c
-@@ -174,7 +174,7 @@ int pci_enable_pri(struct pci_dev *pdev, u32 reqs)
- 	u32 max_requests;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return -EINVAL;
- 
-@@ -205,7 +205,7 @@ void pci_disable_pri(struct pci_dev *pdev)
- 	u16 control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return;
- 
-@@ -226,7 +226,7 @@ bool pci_pri_enabled(struct pci_dev *pdev)
- 	u16 control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return false;
- 
-@@ -248,7 +248,7 @@ int pci_reset_pri(struct pci_dev *pdev)
- 	u16 control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return -EINVAL;
- 
-@@ -281,7 +281,7 @@ bool pci_pri_stopped(struct pci_dev *pdev)
- 	u16 control, status;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return true;
- 
-@@ -310,7 +310,7 @@ int pci_pri_status(struct pci_dev *pdev)
- 	u16 status, control;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PRI_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PRI);
- 	if (!pos)
- 		return -EINVAL;
- 
-@@ -341,7 +341,7 @@ int pci_enable_pasid(struct pci_dev *pdev, int features)
- 	u16 control, supported;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
- 	if (!pos)
- 		return -EINVAL;
- 
-@@ -375,7 +375,7 @@ void pci_disable_pasid(struct pci_dev *pdev)
- 	u16 control = 0;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
- 	if (!pos)
- 		return;
- 
-@@ -399,7 +399,7 @@ int pci_pasid_features(struct pci_dev *pdev)
- 	u16 supported;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
- 	if (!pos)
- 		return -EINVAL;
- 
-@@ -425,7 +425,7 @@ int pci_max_pasids(struct pci_dev *pdev)
- 	u16 supported;
- 	int pos;
- 
--	pos = pci_find_ext_capability(pdev, PCI_PASID_CAP);
-+	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_PASID);
- 	if (!pos)
- 		return -EINVAL;
- 
-diff --git a/include/linux/pci_regs.h b/include/linux/pci_regs.h
-index b5d9657..090d3a9 100644
---- a/include/linux/pci_regs.h
-+++ b/include/linux/pci_regs.h
-@@ -537,7 +537,9 @@
- #define PCI_EXT_CAP_ID_ARI	14
- #define PCI_EXT_CAP_ID_ATS	15
- #define PCI_EXT_CAP_ID_SRIOV	16
-+#define PCI_EXT_CAP_ID_PRI	19
- #define PCI_EXT_CAP_ID_LTR	24
-+#define PCI_EXT_CAP_ID_PASID	27
- 
- /* Advanced Error Reporting */
- #define PCI_ERR_UNCOR_STATUS	4	/* Uncorrectable Error Status */
-@@ -664,7 +666,6 @@
- #define  PCI_ATS_MIN_STU	12	/* shift of minimum STU block */
- 
- /* Page Request Interface */
--#define PCI_PRI_CAP		0x13    /* PRI capability ID */
- #define PCI_PRI_CONTROL_OFF	0x04	/* Offset of control register */
- #define PCI_PRI_STATUS_OFF	0x06	/* Offset of status register */
- #define PCI_PRI_ENABLE		0x0001	/* Enable mask */
-@@ -676,7 +677,6 @@
- #define PCI_PRI_ALLOC_REQ_OFF	0x0c	/* Cap offset for max reqs allowed */
- 
- /* PASID capability */
--#define PCI_PASID_CAP		0x1b    /* PASID capability ID */
- #define PCI_PASID_CAP_OFF	0x04    /* PASID feature register */
- #define PCI_PASID_CONTROL_OFF   0x06    /* PASID control register */
- #define PCI_PASID_ENABLE	0x01	/* Enable/Supported bit */
+By "infinite" I am glibly describing any environment where the
+data centre administrator positively knows the maximum working
+set of every machine (physical or virtual) and can ensure in
+advance that the physical RAM always exceeds that maximum
+working set.  As you say, these machines need not be configured
+with a swap device as they, by definition, will never swap.
 
+The point of tmem is to use RAM more efficiently by taking
+advantage of all the unused RAM when the current working set
+size is less than the maximum working set size.  This is very
+common in many data centers too, especially virtualized.  It
+turned out that an identical set of hooks made pagecache compression
+possible, and swappage compression more flexible than zram,
+and that became the single-kernel user, zcache.
+
+RAM optimization and QoS guarantees are generally mutually
+exclusive, so this doesn't seem like a good test case for tmem
+(but see below).
+
+> > > This isn't an inherent design flaw, but it does ask the question "is
+> > > your design scope too narrow?"
+> >
+> > Considering all the hazing that I've gone through to get
+> > this far, you think I should _expand_ my design scope?!? :-)
+> > Thanks, I guess I'll pass. :-)
+
+(Sorry again for the sarcasm :-(
+
+> Sure, I think the conclusion that Transcendent Memory has no
+> applicability to a lean Data Centre isn't unreasonable; I was just
+> probing to see if it was the only conclusion.
+
+Now that I understand it better, I think it does have
+a limited application for your Lean Data Centre...
+but only to optimize the "best effort" part of the
+data centre workload.  That would probably be a relatively
+easy enhancement... but, please, my brain is full now and
+my typing fingers hurt, so can we consider it post-merge?
+
+Thanks,
+Dan
