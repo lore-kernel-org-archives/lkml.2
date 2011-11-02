@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab1KBWit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:38:49 -0400
-Received: from www17.your-server.de ([213.133.104.17]:55505 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab1KBWis (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:38:48 -0400
-Message-ID: <1320273520.29441.12.camel@localhost.localdomain>
-Subject: Re: Bug: [Toshiba Satellite A200] SD card recognised but not
- automounted
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Lampra <lamprakisa@yahoo.gr>, oakad@yahoo.com
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 02 Nov 2011 23:38:40 +0100
-In-Reply-To: <1320271853.29441.8.camel@localhost.localdomain>
-References: <1320269478.98312.YahooMailNeo@web27408.mail.ukl.yahoo.com>
-	 <1320271853.29441.8.camel@localhost.localdomain>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-i/DgjoQX+P+We4F1vxX3"
-X-Mailer: Evolution 3.2.1 (3.2.1-1.fc16) 
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	id S1753314Ab1KBWk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:40:27 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:11082 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab1KBWkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:40:25 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, avagin@openvz.org,
+        devel@openvz.org
+Subject: [PATCH] event: fix TP_printk() argument in sched_switch
+Date: Thu,  3 Nov 2011 01:40:11 +0300
+Message-Id: <1320273611-2463347-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+process_arg(...) can't parse "__entry->prev_state & (TASK_STATE_MAX-1)",
+because a complicated argument should be within brackets.
 
---=-i/DgjoQX+P+We4F1vxX3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Without this patch "perf report" prints following errors:
+$ ./perf record -ag -e sched:sched_switch
+...
+$ ./perf report
+  Warning: Error: expected type 5 but read 4
+  Warning: Error: expected type 4 but read 0
+  Fatal: bad op token {
 
-Am Mittwoch, den 02.11.2011, 23:10 +0100 schrieb Thomas Meyer:
-> Am Mittwoch, den 02.11.2011, 21:31 +0000 schrieb Lampra:
-> >=20
-> > Hi,
->=20
-> Hi Lampra.
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ include/trace/events/sched.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Added maintainer.
-
->=20
-> >  this is my first bug report upstream.=20
-> >=20
-> > I use Ubuntu 11.10, when i insert an SD card in my laptop Toshiba
-> > Satellite A200, the card is recognised but not auto mounted.=20
->=20
-> the correct link seems to be: https://bugs.launchpad.net/bugs/878594
-> >=20
-> > Lamprakis
-
-
-
-
---=-i/DgjoQX+P+We4F1vxX3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOscZwAAoJEK2Y/UtDbsHsMvgH/iRFBw2pqaa1Drmv7A9Bbs2z
-qMAsa8Pm5y8YAJbvc/CtYQWPZ8eDl0gcu+PyGcV/GqIj/zO2yZvbqyjAWkhaT+US
-eSGsHkg7OB+p8H8sXJKhG+AiLYG83ucc42PaWFdhgONr5SqYuivzWeuZyJT7DGQo
-oGSAg+pzbPdeoRrfrqfc7BpicEKTR1jGfYEmDs/ZTksWLgLfc792oUs+WmQvzpL4
-Z0XxP2QBKkY4B/aaQ2Qr16MCfI4jnwaOKN6FVVPl3ahzUzUj7dGbJHClIAAg3cQI
-ZdlqyfewvJTeBamuBc+dGfYqSjvM6gmh3e7x9qiAyDtOj8Vr7nr/FAfRrUzT2ec=
-=GsRD
------END PGP SIGNATURE-----
-
---=-i/DgjoQX+P+We4F1vxX3--
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 959ff18..1838237 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -140,7 +140,7 @@ TRACE_EVENT(sched_switch,
+ 	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
+ 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
+ 		__entry->prev_state & (TASK_STATE_MAX-1) ?
+-		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
++		  __print_flags((__entry->prev_state & (TASK_STATE_MAX-1)), "|",
+ 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
+ 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
+ 				{ 128, "W" }) : "R",
+-- 
+1.7.1
 
