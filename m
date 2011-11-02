@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab1KBVQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:16:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35323 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750911Ab1KBVQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:16:43 -0400
-Message-ID: <4EB1B337.1090501@redhat.com>
-Date: Wed, 02 Nov 2011 17:16:39 -0400
-From: Adam Jackson <ajax@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1753309Ab1KBVRS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:17:18 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34564 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750911Ab1KBVRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 17:17:15 -0400
+X-Sasl-enc: SP/zWbsd1FhHOlnl9SsaieCyLMiLMUE60MCKiyf6kdrr 1320268634
+Date: Wed, 2 Nov 2011 14:17:08 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
+Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
+ system sleep (v2)
+Message-ID: <20111102211708.GA19025@kroah.com>
+References: <201106260054.20578.rjw@sisk.pl>
+ <201106292329.04163.rjw@sisk.pl>
+ <201106292334.24518.rjw@sisk.pl>
+ <CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
+ <20111102191432.GC29355@kroah.com>
+ <CACRpkdY8zAw_pdwn2yUEJPdfYPS+VCcLrpucZzhCyNsVPYehdg@mail.gmail.com>
+ <20111102201101.GA5581@kroah.com>
+ <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com>
 MIME-Version: 1.0
-To: Keith Packard <keithp@keithp.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 3/7] drm/i915: Treat PCH eDP like DP in most
- places
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-4-git-send-email-keithp@keithp.com> <20111102092019.3a635632@jbarnes-desktop> <4EB17A50.6050804@redhat.com> <yun8vnywhvh.fsf@aiko.keithp.com> <4EB19BB4.6030505@redhat.com> <yunipn2uw70.fsf@aiko.keithp.com> <4EB1A9A7.8070900@redhat.com> <yun7h3iut1z.fsf@aiko.keithp.com>
-In-Reply-To: <yun7h3iut1z.fsf@aiko.keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/2/11 5:13 PM, Keith Packard wrote:
-> On Wed, 02 Nov 2011 16:35:51 -0400, Adam Jackson<ajax@redhat.com>  wrote:
->
->> It is?  The DP 1.1a text for lane count is "For Rev.1.1, only the
->> following three values are supported. All other values are reserved."
->
-> Yeah, if you look at the MAX_LINK_RATE field, we assume that it has a
-> useful value. I'll bet they were thinking of letting the spec support
-> things like alternate clock rates or 3 lanes or something, and the 1.1
-> version just tied things down to allow only sensible values there.
->
-> How about we just always use the DPCD value?
+On Wed, Nov 02, 2011 at 10:00:39PM +0100, Linus Walleij wrote:
+> On Wed, Nov 2, 2011 at 9:11 PM, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Nov 02, 2011 at 09:06:02PM +0100, Linus Walleij wrote:
+> >> On Wed, Nov 2, 2011 at 8:14 PM, Greg KH <greg@kroah.com> wrote:
+> >> > So, what specific git commits do you want to see in the 3.0-stable
+> >> > tree, and in what order should they be applied in?
+> >>
+> >> So to my untrained eye it looks like it should be applied like this (top to
+> >> bottom) using the reverse commit order from the mainline kernel:
+> >>
+> >> e529192 PM: Introduce generic "noirq" callback routines for subsystems (v2)
+> >> 455716e PM / Runtime: Update documentation of interactions with system sleep
+> >> 1e2ef05 PM: Limit race conditions between runtime PM and system sleep (v2)
+> >> f3393b6 PM / Runtime: Add new helper function: pm_runtime_status_suspended()
+> >>
+> >> So (2) documents the problem, (3) fixes it, whereas (1) and (4) makes
+> >> it possible
+> >> to write proper _noirq() code that does not race, IIRC.
+> >
+> > But, after this, it's just adding new infrastructure that drivers will
+> > then be able to use.  As I'm not adding new drivers to 3.0, there will
+> > not be any users of this code, so why add it in the first place?  It
+> > doesn't look like this follows the rules of the stable kernel tree at
+> > all, does it?
+> 
+> We'll have to get some feedback from Rafael, but the way I percieved
+> it, the patch (2) fixes a very real race, then fixing that makes it
+> necessary for drivers using runtime_pm to do things differently to
+> be on the safe side. But none were really fixed when first merging
+> it.
+> 
+> So on second thought you probably only want patch (2)
+> "PM: Limit race conditions between runtime PM and system sleep (v2)"
+> for stable.
 
-Looks good.
+Ok, Rafael, any objection to me applying just this one?
 
-Reviewed-by: Adam Jackson <ajax@redhat.com>
+Linus, have you tested the 3.0 kernel with just this patch applied?  If
+not, please do so and let me know.  I'll wait for that before doing
+anything.
 
-- ajax
+thanks,
 
+greg k-h
