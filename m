@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934015Ab1KCBin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:38:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50972 "EHLO mx2.suse.de"
+	id S934060Ab1KCBix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:38:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50990 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933857Ab1KCBij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:38:39 -0400
+	id S933997Ab1KCBit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:38:49 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
-Message-Id: <20111102222740.954115104@clark.kroah.org>
+Message-Id: <20111102222741.214197724@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:25:58 -0700
+Date: Wed, 02 Nov 2011 15:26:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Igor Mammedov <imammedo@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [014/101] xen: x86_32: do not enable iterrupts when returning from exception in interrupt context
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [017/101] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +24,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Mammedov <imammedo@redhat.com>
+From: NeilBrown <neilb@suse.de>
 
-commit d198d499148a0c64a41b3aba9e7dd43772832b91 upstream.
+commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
 
-If vmalloc page_fault happens inside of interrupt handler with interrupts
-disabled then on exit path from exception handler when there is no pending
-interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
+0.90 metadata uses an unsigned 32bit number to count the number of
+kilobytes used from each device.
+This should allow up to 4TB per device.
+However we multiply this by 2 (to get sectors) before casting to a
+larger type, so sizes above 2TB get truncated.
 
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-	sete XEN_vcpu_info_mask(%eax)
+Also we allow rdev->sectors to be larger than 4TB, so it is possible
+for the array to be resized larger than the metadata can handle.
+So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
+used.
 
-will enable interrupts even if they has been previously disabled according to
-eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
+Also the sanity check at the end of super_90_load should include level
+1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
 
-	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
-	setz XEN_vcpu_info_mask(%eax)
-
-Solution is in setting XEN_vcpu_info_mask only when it should be set
-according to
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-but not clearing it if there isn't any pending events.
-
-Reproducer for bug is attached to RHBZ 707552
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/xen-asm_32.S |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/md/md.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -113,11 +113,13 @@ xen_iret_start_crit:
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -980,8 +980,11 @@ static int super_90_load(mdk_rdev_t *rde
+ 			ret = 0;
+ 	}
+ 	rdev->sectors = rdev->sb_start;
++	/* Limit to 4TB as metadata cannot record more than that */
++	if (rdev->sectors >= (2ULL << 32))
++		rdev->sectors = (2ULL << 32) - 2;
  
- 	/*
- 	 * If there's something pending, mask events again so we can
--	 * jump back into xen_hypervisor_callback
-+	 * jump back into xen_hypervisor_callback. Otherwise do not
-+	 * touch XEN_vcpu_info_mask.
- 	 */
--	sete XEN_vcpu_info_mask(%eax)
-+	jne 1f
-+	movb $1, XEN_vcpu_info_mask(%eax)
+-	if (rdev->sectors < sb->size * 2 && sb->level > 1)
++	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
+ 		/* "this cannot possibly happen" ... */
+ 		ret = -EINVAL;
  
--	popl %eax
-+1:	popl %eax
- 
- 	/*
- 	 * From this point on the registers are restored and the stack
+@@ -1016,7 +1019,7 @@ static int super_90_validate(mddev_t *md
+ 		mddev->clevel[0] = 0;
+ 		mddev->layout = sb->layout;
+ 		mddev->raid_disks = sb->raid_disks;
+-		mddev->dev_sectors = sb->size * 2;
++		mddev->dev_sectors = ((sector_t)sb->size) * 2;
+ 		mddev->events = ev1;
+ 		mddev->bitmap_info.offset = 0;
+ 		mddev->bitmap_info.default_offset = MD_SB_BYTES >> 9;
+@@ -1255,6 +1258,11 @@ super_90_rdev_size_change(mdk_rdev_t *rd
+ 	rdev->sb_start = calc_dev_sboffset(rdev->bdev);
+ 	if (!num_sectors || num_sectors > rdev->sb_start)
+ 		num_sectors = rdev->sb_start;
++	/* Limit to 4TB as metadata cannot record more than that.
++	 * 4TB == 2^32 KB, or 2*2^32 sectors.
++	 */
++	if (num_sectors >= (2ULL << 32))
++		num_sectors = (2ULL << 32) - 2;
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
+ 	md_super_wait(rdev->mddev);
 
 
