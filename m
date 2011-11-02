@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933978Ab1KBSmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:42:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:18118 "EHLO
+	id S933935Ab1KBSmD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:42:03 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:18091 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933254Ab1KBShC (ORCPT
+	with ESMTP id S933272Ab1KBShC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Nov 2011 14:37:02 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133706965"
+X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133706985"
 From: David Brown <davidb@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
 Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH 07/34] msm: clock-debug: Use clk_enable()/clk_disable() directly
-Date: Wed,  2 Nov 2011 11:36:04 -0700
-Message-Id: <1320258991-22325-8-git-send-email-davidb@codeaurora.org>
+Subject: [RFC PATCH 16/34] msm: clock-pcom: Expose pc_clk_reset
+Date: Wed,  2 Nov 2011 11:36:13 -0700
+Message-Id: <1320258991-22325-17-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1320258991-22325-1-git-send-email-davidb@codeaurora.org>
 References: <1320258991-22325-1-git-send-email-davidb@codeaurora.org>
@@ -26,34 +26,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen Boyd <sboyd@codeaurora.org>
 
-The debugfs operations currently sidestep the top level
-enable/disable code and directly call the ops->enable/disable
-functions. This won't work well when we generically enable parent
-clocks in the toplevel clock code. Therefore call enable/disable
-directly from the debugfs code to get proper parent enabling.
+The 7x30 clock driver needs to perform clock resets and the only
+way that is possible is through proc_comm. Expose the reset
+functionality as a new function callable from the 7x30 clock
+driver.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-msm/clock-debug.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-msm/clock-pcom.c |   13 +++++++++----
+ arch/arm/mach-msm/clock-pcom.h |    2 ++
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-msm/clock-debug.c b/arch/arm/mach-msm/clock-debug.c
-index bddcbc9..a8db06d 100644
---- a/arch/arm/mach-msm/clock-debug.c
-+++ b/arch/arm/mach-msm/clock-debug.c
-@@ -55,9 +55,9 @@ static int clock_debug_enable_set(void *data, u64 val)
- 	int rc = 0;
- 
- 	if (val)
--		rc = clock->ops->enable(clock);
-+		rc = clk_enable(clock);
- 	else
--		clock->ops->disable(clock);
-+		clk_disable(clock);
- 
- 	return rc;
+diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
+index e11ef57..f441247 100644
+--- a/arch/arm/mach-msm/clock-pcom.c
++++ b/arch/arm/mach-msm/clock-pcom.c
+@@ -41,10 +41,9 @@ static void pc_clk_disable(struct clk *clk)
+ 	msm_proc_comm(PCOM_CLKCTL_RPC_DISABLE, &id, NULL);
  }
+ 
+-int pc_clk_reset(struct clk *clk, enum clk_reset_action action)
++int pc_clk_reset(unsigned id, enum clk_reset_action action)
+ {
+ 	int rc;
+-	unsigned id = to_pcom_clk(clk)->id;
+ 
+ 	if (action == CLK_RESET_ASSERT)
+ 		rc = msm_proc_comm(PCOM_CLKCTL_RPC_RESET_ASSERT, &id, NULL);
+@@ -57,6 +56,12 @@ int pc_clk_reset(struct clk *clk, enum clk_reset_action action)
+ 		return (int)id < 0 ? -EINVAL : 0;
+ }
+ 
++static int pc_reset(struct clk *clk, enum clk_reset_action action)
++{
++	unsigned id = to_pcom_clk(clk)->id;
++	return pc_clk_reset(id, action);
++}
++
+ static int pc_clk_set_rate(struct clk *clk, unsigned rate)
+ {
+ 	/* The rate _might_ be rounded off to the nearest KHz value by the
+@@ -135,7 +140,7 @@ struct clk_ops clk_ops_pcom = {
+ 	.enable = pc_clk_enable,
+ 	.disable = pc_clk_disable,
+ 	.auto_off = pc_clk_disable,
+-	.reset = pc_clk_reset,
++	.reset = pc_reset,
+ 	.set_rate = pc_clk_set_rate,
+ 	.set_min_rate = pc_clk_set_min_rate,
+ 	.set_max_rate = pc_clk_set_max_rate,
+@@ -165,7 +170,7 @@ struct clk_ops clk_ops_pcom_div2 = {
+ 	.enable = pc_clk_enable,
+ 	.disable = pc_clk_disable,
+ 	.auto_off = pc_clk_disable,
+-	.reset = pc_clk_reset,
++	.reset = pc_reset,
+ 	.set_rate = pc_clk_set_rate2,
+ 	.set_min_rate = pc_clk_set_min_rate2,
+ 	.set_flags = pc_clk_set_flags,
+diff --git a/arch/arm/mach-msm/clock-pcom.h b/arch/arm/mach-msm/clock-pcom.h
+index 23807ff..c3beb47 100644
+--- a/arch/arm/mach-msm/clock-pcom.h
++++ b/arch/arm/mach-msm/clock-pcom.h
+@@ -120,6 +120,8 @@
+ 
+ #define P_NR_CLKS		102
+ 
++extern int pc_clk_reset(unsigned id, enum clk_reset_action action);
++
+ struct clk_ops;
+ extern struct clk_ops clk_ops_pcom;
+ extern struct clk_ops clk_ops_pcom_div2;
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
