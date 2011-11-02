@@ -1,56 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab1KBII1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 04:08:27 -0400
-Received: from isrv.corpit.ru ([86.62.121.231]:46549 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab1KBIIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 04:08:22 -0400
-Message-ID: <4EB0FA73.1020600@msgid.tls.msk.ru>
-Date: Wed, 02 Nov 2011 12:08:19 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Kay Sievers <kay.sievers@vrfy.org>,
-        Lennart Poettering <mzxreary@0pointer.de>, greg@kroah.com,
-        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
-        david@fubar.dk, Linux Containers <lxc-devel@lists.sourceforge.net>,
-        Linux Containers <containers@lists.osdl.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>, harald@redhat.com
-Subject: Re: [lxc-devel] Detecting if you are running in a container
-References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org> <20111010214148.GB26510@tango.0pointer.de> <CAPXgP13npxh6UoEtXNiZ+Lhe_QxpO8-7r==WuUXDnNr+sHGXMw@mail.gmail.com> <4EB06D27.4020507@msgid.tls.msk.ru> <m17h3js8p1.fsf@fess.ebiederm.org>
-In-Reply-To: <m17h3js8p1.fsf@fess.ebiederm.org>
-X-Enigmail-Version: 1.2.1
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754222Ab1KBIPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 04:15:12 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39318 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752410Ab1KBIPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 04:15:08 -0400
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+In-Reply-To: <49255b17-02bb-4a4a-b85a-cd5a879beb98@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
+	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+	 <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
+	 <20111031181651.GF3466@redhat.com 1320142590.7701.64.camel@dabdike>
+	 <49255b17-02bb-4a4a-b85a-cd5a879beb98@default>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Nov 2011 12:14:46 +0400
+Message-ID: <1320221686.3091.40.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.11.2011 03:51, Eric W. Biederman wrote:
-[]
->> And having CAP_MKNOD in container may not be that bad either, while
->> cgroup device.permission is set correctly - some nodes may need to
->> be created still, even in an unprivileged containers.  Who filters
->> out CAP_MKNOD during container startup (I don't see it in the code,
->> which only removes CAP_SYS_BOOT, and even that due to current
->> limitation), and which evil things can be done if it is not filtered?
+On Tue, 2011-11-01 at 11:21 -0700, Dan Magenheimer wrote:
+> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
+> > Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> > 
+> > Actually, I think there's an unexpressed fifth requirement:
+> > 
+> > 5. The optimised use case should be for non-paging situations.
 > 
-> If you don't filter which device nodes you a process can read/write then
-> that process can access any device on the system.  Steal the keyboard,
-> the X display, access any filesystem, directly access memory.  Basically
-> the process can escalate that permission to full control of the system
-> without needing any kernel bugs to help it.
+> Not quite sure what you mean here (especially for frontswap)...
 
-There's cap_mknod, and cgroup/devices.{allow,deny}.  Even with CAP_MKNOD,
-container can not _use_ devices not allowed in the latter.  That's what
-I'm talking about - there's more fine control exist than CAP_MKNOD.  And
-my question was about this context - with proper cgroup-level device
-control in place, what bad CAP_MKNOD have?
+I mean could it be used in a more controlled situation than an
+alternative to swap?
 
-Thanks,
+> > The problem here is that almost every data centre person tries very hard
+> > to make sure their systems never tip into the swap zone.  A lot of
+> > hosting datacentres use tons of cgroup controllers for this and
+> > deliberately never configure swap which makes transcendent memory
+> > useless to them under the current API.  I'm not sure this is fixable,
+> 
+> I can't speak for cgroups, but the generic "state-of-the-art"
+> that you describe is a big part of what frontswap DOES try
+> to fix, or at least ameliorate.  Tipping "into the swap zone"
+> is currently very bad.  Very very bad.  Frontswap doesn't
+> "solve" swapping, but it is the foundation for some of the
+> first things in a long time that aren't just "add more RAM."
 
-/mjt
+OK, I still don't think you understand what I'm saying.  Machines in a
+Data Centre tend to be provisioned to criticality.  What this means is
+that the Data Centre has a bunch of mandatory work and a bunch of Best
+Effort work (and grades in between).  We load up the mandatory work
+according to the resource limits being careful not to overprovision the
+capacity then we look at the spare capacity and slot in the Best effort
+stuff.  We want the machine to run at capacity, not over it; plus we
+need to respond instantly for demands of the mandatory work, which
+usually involves either dialling down or pushing away best effort work.
+In this situation, action is taken long before the swap paths become
+active because if they activate, the entire machine bogs and you've just
+blown the SLA on the mandatory work.
+
+This is why a lot of data centres simply never configure swap for this
+reason.  Putting frontswap in the swap paths means that the data centre
+job scheduler has taken action long before frontswap ever activates, so
+it can never be used which is why I wrote the above.  
+
+> > but it's the reason why a large swathe of users would never be
+> > interested in the patches, because they by design never operate in the
+> > region transcended memory is currently looking to address.
+> 
+> It's true, those that are memory-rich and can spend nearly
+> infinite amounts on more RAM (and on high-end platforms that
+> can expand to hold massive amounts of RAM) are not tmem's
+> target audience.
+
+Where do you get the infinite RAM idea from?  The most concrete example
+of what I said above are Lean Data Centres, which are highly resource
+constrained but they want to run at (or just below) criticality so that
+they get through all of the Mandatory and as much of the best effort
+work as they can.
+
+> > This isn't an inherent design flaw, but it does ask the question "is
+> > your design scope too narrow?"
+> 
+> Considering all the hazing that I've gone through to get
+> this far, you think I should _expand_ my design scope?!? :-)
+> Thanks, I guess I'll pass. :-)
+
+Sure, I think the conclusion that Transcendent Memory has no
+applicability to a lean Data Centre isn't unreasonable; I was just
+probing to see if it was the only conclusion.
+
+James
+
+
