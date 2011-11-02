@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183Ab1KCBfh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:35:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50584 "EHLO mx2.suse.de"
+	id S933353Ab1KCBfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:35:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50615 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab1KCBf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:35:28 -0400
+	id S933168Ab1KCBfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:35:44 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221455.963189955@clark.kroah.org>
+Message-Id: <20111102221456.335891562@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:30 -0700
+Date: Wed, 02 Nov 2011 15:14:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Benoit <eric@ecks.ca>
-Subject: [064/107] USB: pl2303: add id for SMART device
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
+Subject: [068/107] Update email address for stable patch submission
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Benoit <eric@ecks.ca>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit 598f0b703506da841d3459dc0c48506be14d1778 upstream.
+commit 5fa224295f0e0358c8bc0e5390702338df889def upstream.
 
-Add vendor and product ID for the SMART USB to serial adapter. These
-were meant to be used with their SMART Board whiteboards, but can be
-re-purposed for other tasks. Tested and working (at at least 9600 bps).
+The stable@vger.kernel.org email address has been replaced with the
+stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+reference the new list instead of the semi-defunct email alias.
 
-Signed-off-by: Eric Benoit <eric@ecks.ca>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    5 +++++
- 2 files changed, 6 insertions(+)
+ Documentation/stable_kernel_rules.txt |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -102,6 +102,7 @@ static struct usb_device_id id_table []
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
- 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
- 	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
-+	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
- };
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -25,13 +25,13 @@ Rules on what kind of patches are accept
+ Procedure for submitting patches to the -stable tree:
  
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -148,3 +148,8 @@
- /* WinChipHead USB->RS 232 adapter */
- #define WINCHIPHEAD_VENDOR_ID		0x4348
- #define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
-+
-+/* SMART USB Serial Adapter */
-+#define SMART_VENDOR_ID	0x0b8c
-+#define SMART_PRODUCT_ID	0x2303
-+
+  - Send the patch, after verifying that it follows the above rules, to
+-   stable@vger.kernel.org.
++   stable@vger.kernel.org.
+  - The sender will receive an ACK when the patch has been accepted into the
+    queue, or a NAK if the patch is rejected.  This response might take a few
+    days, according to the developer's schedules.
+  - If accepted, the patch will be added to the -stable queue, for review by
+    other developers and by the relevant subsystem maintainer.
+- - If the stable@vger.kernel.org address is added to a patch, when it goes into
++ - If the stable@vger.kernel.org address is added to a patch, when it goes into
+    Linus's tree it will automatically be emailed to the stable team.
+  - Security patches should not be sent to this alias, but instead to the
+    documented security@kernel.org address.
 
 
