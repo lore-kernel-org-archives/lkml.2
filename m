@@ -1,164 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1KBUmg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:42:36 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:26947 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab1KBUmd (ORCPT
+	id S1751829Ab1KBUpo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:45:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42592 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab1KBUpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:42:33 -0400
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Mark Lord <kernel@teksavvy.com>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EB19BBE.5050602@teksavvy.com>
-References: <4EA89972.5060101@teksavvy.com>
-	 <20111026.194045.2019668159403582571.davem@davemloft.net>
-	 <4EA8B283.3010105@teksavvy.com>
-	 <20111026.221719.2216112919297458522.davem@davemloft.net>
-	 <4EB19BBE.5050602@teksavvy.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Wed, 2 Nov 2011 20:42:29 +0000
-Message-ID: <1320266549.2782.21.camel@bwh-desktop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	Wed, 2 Nov 2011 16:45:43 -0400
+X-Authority-Analysis: v=1.1 cv=rFxaVhpzdNKRsWyFDFmDbYx/QEtlW7L1Gw9MiLxO4aw= c=1 sm=0 a=DJOu6W8zkUMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VrwLg1RDDlTrUvbtMcMA:9 a=9eQMlsPDHhmqyXIoE8YA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320266741.4793.50.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Restore system filter behavior
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Nov 2011 16:45:41 -0400
+In-Reply-To: <1320259868.4793.46.camel@gandalf.stny.rr.com>
+References: <4EAF46CF.8040408@cn.fujitsu.com>
+	 <1320258167.4793.45.camel@gandalf.stny.rr.com>
+	 <1320259868.4793.46.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18486.004
-X-TM-AS-Result: No--10.551400-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 02 Nov 2011 20:42:33.0638 (UTC) FILETIME=[F2A0DC60:01CC999F]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 15:36 -0400, Mark Lord wrote:
-[...]
-> First cut (for review) at updating the in-kernel asix usb/network driver
-> from the latest vendor GPL version of the driver, obtained from here:
+On Wed, 2011-11-02 at 14:51 -0400, Steven Rostedt wrote:
+> On Wed, 2011-11-02 at 14:22 -0400, Steven Rostedt wrote:
 > 
->   http://www.asix.com.tw/download.php?sub=searchresult&PItemID=84&download=driver
+> > The above shows how things are just ambiguous. I have no problem in
+> > using the top filter to set multiple events. But the top filter should
+> > not keep the state of what was set. Perhaps just have system event
+> > filters always show default text. Like:
+> > 
+> > # cat /debug/tracing/events/sched/filter
+> > ### global filter ###
+> > # Use this to set multiple event filters
+> > # Only affects events that have the event fields specified in the filter
+> > 
+> > 
+> > I'll add your patch, but are you OK with the above always printing for
+> > system event filters?  Just to remove the ambiguous state.
 > 
-> The original vendor copy used a local "axusbnet" middleware (rather than "usbnet").
-> I've converted it back to using "usbnet", made a ton of cosmetic changes
-> to get it to pass checkpatch.pl, and removed a small amount of code duplication.
 > 
-> It can use more work going forward, but it is important to get it upstream
-> sooner than later -- the current in-kernel driver fails with many devices,
-> both old and new.  This updated version works with everything I have available
-> to test with, and also handles suspend / resume (unlike the in-kernel one).
+> As the filter is also used to show errors, I'll only have it print the
+> "message" if the filter worked. If there's an error, then the error
+> message will display instead.
 > 
-> Signed-off-by: Mark Lord <mlord@pobox.com>
-> 
-> --- linux-3.0/drivers/net/usb/asix.c	2011-10-12 17:59:03.000000000 -0400
-> +++ linux/drivers/net/usb/asix.c	2011-11-01 19:00:50.051289683 -0400
-[...]
-> +static u32 ax88772b_get_tx_csum(struct net_device *netdev)
-[...]
-> +static u32 ax88772b_get_rx_csum(struct net_device *netdev)
-[...]
-> +static int ax88772b_set_rx_csum(struct net_device *netdev, u32 val)
-[...]
-> +static int ax88772b_set_tx_csum(struct net_device *netdev, u32 val)
-[...]
-> +static struct ethtool_ops ax88772b_ethtool_ops = {
-> +	.get_drvinfo		= ax8817x_get_drvinfo,
-> +	.get_link		= ethtool_op_get_link,
-> +	.get_msglevel		= usbnet_get_msglevel,
-> +	.set_msglevel		= usbnet_set_msglevel,
-> +	.get_wol		= ax8817x_get_wol,
-> +	.set_wol		= ax8817x_set_wol,
-> +	.get_eeprom_len		= ax8817x_get_eeprom_len,
-> +	.get_eeprom		= ax8817x_get_eeprom,
-> +	.get_settings		= ax8817x_get_settings,
-> +	.set_settings		= ax8817x_set_settings,
-> +	.set_tx_csum		= ax88772b_set_tx_csum,
-> +	.get_tx_csum		= ax88772b_get_tx_csum,
-> +	.get_rx_csum		= ax88772b_get_rx_csum,
-> +	.set_rx_csum		= ax88772b_set_rx_csum,
-> +};
-[...]
 
-The various ethtool operations for offload flags are being (or have
-been) removed.  The driver must set net_device::hw_features and
-implement net_device_ops::ndo_set_features instead.
+What's your thought on the below patch?
 
-> --- pristine/drivers/net/usb/asix.h	1969-12-31 19:00:00.000000000 -0500
-> +++ linux/drivers/net/usb/asix.h	2011-11-02 15:15:34.099164264 -0400
-[...]
-> +struct {unsigned short size, byte_cnt, threshold; } AX88772B_BULKIN_SIZE[] = {
-> +	{2048, 0x8000, 0x8001},		/* 2k */
-> +	{4096, 0x8100, 0x8147},		/* 4k */
-> +	{6144, 0x8200, 0x81EB},		/* 6k */
-> +	{8192, 0x8300, 0x83D7},		/* 8k */
-> +	{16384, 0x8400, 0x851E},	/* 16 */
-> +	{20480, 0x8500, 0x8666},	/* 20k */
-> +	{24576, 0x8600, 0x87AE},	/* 24k */
-> +	{32768, 0x8700, 0x8A3D},	/* 32k */
-> +};
+-- Steve
 
-Either define this as a macro and use it in the .c file, or just define
-it there.  In either case, declare it as 'static const'.
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 86040d9..6dee2b5 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -27,6 +27,12 @@
+ #include "trace.h"
+ #include "trace_output.h"
+ 
++#define DEFAULT_SYS_FILTER_MESSAGE					\
++	"### global filter ###\n"					\
++	"# Use this to set filters for multiple events.\n"		\
++	"# Only events with the given fields will be affected.\n"	\
++	"# If no events are modified, an error message will be displayed here"
++
+ enum filter_op_ids
+ {
+ 	OP_OR,
+@@ -646,7 +652,7 @@ void print_subsystem_event_filter(struct event_subsystem *system,
+ 	if (filter && filter->filter_string)
+ 		trace_seq_printf(s, "%s\n", filter->filter_string);
+ 	else
+-		trace_seq_printf(s, "none\n");
++		trace_seq_printf(s, DEFAULT_SYS_FILTER_MESSAGE "\n");
+ 	mutex_unlock(&event_mutex);
+ }
+ 
+@@ -1838,7 +1844,8 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
+ 	if (!filter)
+ 		goto out;
+ 
+-	replace_filter_string(filter, filter_string);
++	/* System filters just show a default message */
++	replace_filter_string(filter, DEFAULT_SYS_FILTER_MESSAGE);
+ 	/*
+ 	 * No event actually uses the system filter
+ 	 * we can free it without synchronize_sched().
+@@ -1848,14 +1855,12 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
+ 
+ 	parse_init(ps, filter_ops, filter_string);
+ 	err = filter_parse(ps);
+-	if (err) {
+-		append_filter_err(ps, system->filter);
+-		goto out;
+-	}
++	if (err)
++		goto err_filter;
+ 
+ 	err = replace_system_preds(system, ps, filter_string);
+ 	if (err)
+-		append_filter_err(ps, system->filter);
++		goto err_filter;
+ 
+ out:
+ 	filter_opstack_clear(ps);
+@@ -1865,6 +1870,11 @@ out_unlock:
+ 	mutex_unlock(&event_mutex);
+ 
+ 	return err;
++
++err_filter:
++	replace_filter_string(filter, filter_string);
++	append_filter_err(ps, system->filter);
++	goto out;
+ }
+ 
+ #ifdef CONFIG_PERF_EVENTS
 
-[...]
-> +/* GMII register numbers */
-> +#define GMII_PHY_CONTROL		0x00	/* control */
-> +#define GMII_PHY_STATUS			0x01	/* status */
-> +#define GMII_PHY_OUI			0x02	/* most of the OUI bits */
-> +#define GMII_PHY_MODEL			0x03	/* model/rev & rest of OUI */
-> +#define GMII_PHY_ANAR			0x04	/* AN advertisement */
-> +#define GMII_PHY_ANLPAR			0x05	/* AN Link Partner */
-> +#define GMII_PHY_ANER			0x06	/* AN expansion */
-> +#define GMII_PHY_1000BT_CONTROL		0x09	/* control for 1000BT */
-> +#define GMII_PHY_1000BT_STATUS		0x0A	/* status for 1000BT */
-
-These are MDIO registers and we have names for them in <linux/mii.h>.
-Similarly for the following bit definitions.
-
-[...]
-> +/* Bit definitions: 1000BaseT AUX Control.
-> + * FD="Full-Duplex", HD="Half-Duplex"
-> + */
-> +#define GMII_1000_AUX_CTRL_MASTER_SLAVE		0x1000
-> +#define GMII_1000_AUX_CTRL_FD_CAPABLE		0x0200
-> +#define GMII_1000_AUX_CTRL_HD_CAPABLE		0x0100
-> +
-> +/* Bit definitions: 1000BaseT AUX Status */
-> +#define GMII_1000_AUX_STATUS_FD_CAPABLE		0x0800
-> +#define GMII_1000_AUX_STATUS_HD_CAPABLE		0x0400
-> +
-> +/* Cicada MII Registers */
-> +#define GMII_AUX_CTRL_STATUS			0x1C
-> +#define GMII_AUX_ANEG_CPLT			0x8000
-> +#define GMII_AUX_FDX				0x0020
-> +#define GMII_AUX_SPEED_1000			0x0010
-> +#define GMII_AUX_SPEED_100			0x0008
-
-These appear to be extensions and would have to be kept.
-
-> +#ifndef ADVERTISE_PAUSE_CAP
-> +#define ADVERTISE_PAUSE_CAP			0x0400
-> +#endif
-> +
-> +#ifndef MII_STAT1000
-> +#define MII_STAT1000				0x000A
-> +#endif
-> +
-> +#ifndef LPA_1000FULL
-> +#define LPA_1000FULL				0x0800
-> +#endif
-[...]
-
-These are exact duplicates of definitions in <linux/mii.h>, so should be
-removed.
-
-Ben.
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
 
