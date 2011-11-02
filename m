@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab1KBV1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:27:44 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:51497 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab1KBV1m (ORCPT
+	id S1752315Ab1KBVeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:34:06 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:25859 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751653Ab1KBVeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:27:42 -0400
-From: Thieu Le <thieule@chromium.org>
-To: hch@infradead.org
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thieu Le <thieule@chromium.org>
-Subject: [PATCH] vfs: Export fallocate facility to kernel modules
-Date: Wed,  2 Nov 2011 14:27:05 -0700
-Message-Id: <1320269225-18489-1-git-send-email-thieule@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20111102075328.GA28954@infradead.org>
-References: <20111102075328.GA28954@infradead.org>
-X-System-Of-Record: true
+	Wed, 2 Nov 2011 17:34:04 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133820725"
+Message-ID: <4EB1B74B.8060006@codeaurora.org>
+Date: Wed, 02 Nov 2011 14:34:03 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH 02/34] msm: clock: Always use an array to iterate
+ over clocks
+References: <1320258991-22325-1-git-send-email-davidb@codeaurora.org> <1320258991-22325-3-git-send-email-davidb@codeaurora.org> <20111102194555.GE12913@n2100.arm.linux.org.uk>
+In-Reply-To: <20111102194555.GE12913@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below illustrates the use of vfs_allocate() by ecryptfs.
+On 11/02/11 12:45, Russell King - ARM Linux wrote:
+> On Wed, Nov 02, 2011 at 11:35:59AM -0700, David Brown wrote:
+>> If the array of clk_lookups contains aliases for the same struct
+>> clk, msm_clock_init() will add the clock to the clocks list
+>> twice.  This would cause list corruption so let's just remove the
+>> clocks list and any associated code and iterate over the array
+>> instead.
+> Hmm...
+>
+>> @@ -158,13 +152,13 @@ void __init msm_clock_init(struct clk_lookup *clock_tbl, unsigned num_clocks)
+>>   */
+>>  static int __init clock_late_init(void)
+>>  {
+>> +	unsigned i, count = 0;
+>>  	unsigned long flags;
+>> -	struct clk *clk;
+>> -	unsigned count = 0;
+>>  
+>>  	clock_debug_init();
+>> -	mutex_lock(&clocks_mutex);
+>> -	list_for_each_entry(clk, &clocks, list) {
+>> +	for (i = 0; i < msm_num_clocks; i++) {
+>> +		struct clk *clk = msm_clocks[i].clk;
+>> +
+>>  		clock_debug_add(clk);
+> This means you'll end up calling clock_debug_add() twice for the same
+> struct clk - this sounds like a bad idea in itself.  It looks like
+> there's no protection within that function against it being called
+> twice with the same struct clk.
+>
+> Are you sure this is safe?
 
----
+This hasn't proven to be a problem so far because debugfs returns an
+error when you create a directory with the same name twice. If we ever
+do something more in clock_debug_add() we would have a problem.
 
-eCryptfs does not allocate space in the lower file until writepage.  In
-low free space situation, this leads to the application thinking the
-write succeeds but it actually fails later when the page is written out.
-This patch preallocates the space in the write path using fallocate()
-first.  For lower file systems that do not support fallocate(), it falls back
-to writing the encrypted page directly to the lower file.  The
-preallocation is only done for writes that extend the file.
-
-Signed-off-by: Thieu Le <thieule@chromium.org>
----
- fs/ecryptfs/mmap.c |   26 ++++++++++++++++++++++++--
- 1 files changed, 24 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-index 6a44148..ed0eace 100644
---- a/fs/ecryptfs/mmap.c
-+++ b/fs/ecryptfs/mmap.c
-@@ -520,9 +520,29 @@ static int ecryptfs_write_end(struct file *file,
- 		goto out;
- 	}
- 	set_page_dirty(page);
--	unlock_page(page);
--	need_unlock_page = 0;
- 	if (pos + copied > i_size_read(ecryptfs_inode)) {
-+		struct ecryptfs_inode_info *inode_info =
-+			ecryptfs_inode_to_private(ecryptfs_inode);
-+		loff_t offset = ecryptfs_lower_header_size(crypt_stat) + pos;
-+		BUG_ON(!inode_info->lower_file);
-+		rc = vfs_fallocate(inode_info->lower_file, 0, offset,
-+				   PAGE_CACHE_SIZE);
-+		if (rc == -EOPNOTSUPP)
-+			rc = ecryptfs_encrypt_page(page);
-+		if (rc) {
-+			if (rc != -ENOSPC) {
-+				ecryptfs_printk(KERN_ERR,
-+						"Error preallocating page "
-+						"(upper index "
-+						"[0x%.16lx], rc = [%d])\n",
-+						index, rc);
-+			}
-+			goto out;
-+		}
-+
-+		unlock_page(page);
-+		need_unlock_page = 0;
-+
- 		i_size_write(ecryptfs_inode, pos + copied);
- 		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
- 			"[0x%.16llx]\n",
-@@ -540,6 +560,8 @@ out:
- 	if (need_unlock_page)
- 		unlock_page(page);
- 	page_cache_release(page);
-+	if (rc)
-+		truncate_inode_pages(mapping, i_size_read(ecryptfs_inode));
- 	return rc;
- }
- 
 -- 
-1.7.3.1
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
