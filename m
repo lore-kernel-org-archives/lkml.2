@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab1KBPqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 11:46:31 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:14655 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab1KBPq1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 11:46:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 02 Nov 2011 08:46:15 -0700
-Date: Wed, 2 Nov 2011 17:46:10 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
- cardhu
-Message-ID: <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
-References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
- <1320242948-21061-9-git-send-email-pdeschrijver@nvidia.com>
+	id S933202Ab1KBPv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 11:51:28 -0400
+Received: from cernmx31.cern.ch ([137.138.144.179]:9015 "EHLO CERNMX31.cern.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932383Ab1KBPvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 11:51:25 -0400
+From: Manohar Vanga <manohar.vanga@cern.ch>
+To: <gregkh@suse.de>
+CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
+Subject: [PATCH 1/1] staging: vme: fix address cast warnings for 64 bit architectures
+Date: Wed, 2 Nov 2011 16:47:06 +0100
+Message-ID: <1320248826-18593-1-git-send-email-manohar.vanga@cern.ch>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1320242948-21061-9-git-send-email-pdeschrijver@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Originating-IP: [137.138.192.18]
+Keywords: CERN SpamKiller Note: -50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 03:09:07PM +0100, Peter De Schrijver wrote:
-> Add support for the tegra30 based cardhu development board. Cardhu is a tablet
-> formfactor reference design for tegra30. The patch provides a device tree for
-> the board, updates Makefile.boot to build the dtb, includes the platform in
-> Kconfig and updates board-dt.c.
-> 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  arch/arm/boot/dts/tegra-cardhu.dts |   36 ++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-tegra/Kconfig        |    7 +++++++
->  arch/arm/mach-tegra/Makefile.boot  |    1 +
->  arch/arm/mach-tegra/board-dt.c     |    1 +
->  4 files changed, 45 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/boot/dts/tegra-cardhu.dts
-> 
-> diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
-> new file mode 100644
-> index 0000000..70c41fc
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/tegra-cardhu.dts
-> @@ -0,0 +1,36 @@
-> +/dts-v1/;
-> +
-> +/include/ "tegra30.dtsi"
-> +
-> +/ {
-> +	model = "NVIDIA Tegra30 Cardhu evaluation board";
+Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+---
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-And this should probably be removed.
+diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+index 0e4feac..b768563 100644
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -876,13 +876,13 @@ static ssize_t ca91cx42_master_read(struct vme_master_resource *image,
+ 	 * maximal configured data cycle is used and splits it
+ 	 * automatically for non-aligned addresses.
+ 	 */
+-	if ((int)addr & 0x1) {
++	if ((uintptr_t)addr & 0x1) {
+ 		*(u8 *)buf = ioread8(addr);
+ 		done += 1;
+ 		if (done == count)
+ 			goto out;
+ 	}
+-	if ((int)addr & 0x2) {
++	if ((uintptr_t)addr & 0x2) {
+ 		if ((count - done) < 2) {
+ 			*(u8 *)(buf + done) = ioread8(addr + done);
+ 			done += 1;
+@@ -930,13 +930,13 @@ static ssize_t ca91cx42_master_write(struct vme_master_resource *image,
+ 	/* Here we apply for the same strategy we do in master_read
+ 	 * function in order to assure D16 cycle when required.
+ 	 */
+-	if ((int)addr & 0x1) {
++	if ((uintptr_t)addr & 0x1) {
+ 		iowrite8(*(u8 *)buf, addr);
+ 		done += 1;
+ 		if (done == count)
+ 			goto out;
+ 	}
+-	if ((int)addr & 0x2) {
++	if ((uintptr_t)addr & 0x2) {
+ 		if ((count - done) < 2) {
+ 			iowrite8(*(u8 *)(buf + done), addr + done);
+ 			done += 1;
+@@ -990,7 +990,7 @@ static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+ 	/* Lock image */
+ 	spin_lock(&image->lock);
+ 
+-	pci_addr = (u32)image->kern_base + offset;
++	pci_addr = (uintptr_t)image->kern_base + offset;
+ 
+ 	/* Address must be 4-byte aligned */
+ 	if (pci_addr & 0x3) {
+-- 
+1.7.4.1
 
-> +	compatible = "nvidia,cardhu", "nvidia,tegra30";
-> +
-> +	memory {
-> +		reg = < 0x80000000 0x40000000 >;
-> +	};
-> +
-> +	serial@70006000 {
-> +		clock-frequency = < 408000000 >;
-> +	};
-> +
-> +	i2c@7000c000 {
-> +		clock-frequency = <100000>;
-> +	};
-> +
-> +	i2c@7000c400 {
-> +		clock-frequency = <100000>;
-> +	};
-> +
-> +	i2c@7000c500 {
-> +		clock-frequency = <100000>;
-> +	};
-> +
-> +	i2c@7000c700 {
-> +		clock-frequency = <100000>;
-> +	};
-> +
-> +	i2c@7000d000 {
-> +		clock-frequency = <100000>;
-> +	};
-> +};
-> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-> index f2eb6d1..43a6352 100644
-> --- a/arch/arm/mach-tegra/Kconfig
-> +++ b/arch/arm/mach-tegra/Kconfig
-> @@ -83,6 +83,13 @@ config MACH_VENTANA
->         help
->           Support for the nVidia Ventana development platform
->  
-> +config MACH_CARDHU
-> +       bool "Cardhu board"
-> +       depends on ARCH_TEGRA_3x_SOC
-> +       select MACH_TEGRA_DT
-> +       help
-> +         Support for the nVidia Cardhu development platform
-
-This should have been NVIDIA. Will be fixed in the next version. Most other
-nvidia boards use 'nVidia' in their description. What should we do?
-
-Cheers,
-
-Peter.
