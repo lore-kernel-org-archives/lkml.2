@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751228Ab1KBUCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:02:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43817 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab1KBUCh (ORCPT
+	id S1751420Ab1KBUEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:04:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54456 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab1KBUEx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:02:37 -0400
-Message-ID: <4EB1A1CF.7090300@googlemail.com>
-Date: Wed, 02 Nov 2011 21:02:23 +0100
-From: =?UTF-8?B?RnJhbmsgU2Now6RmZXI=?= <fschaefer.oss@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Lightning/1.0b2 Thunderbird/3.1.15
+	Wed, 2 Nov 2011 16:04:53 -0400
 MIME-Version: 1.0
-To: Oliver Neukum <oliver@neukum.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: kernel panic on device removal when using a workqueue and delayed_work
-References: <4EADA32E.6030200@googlemail.com> <20111031031136.GA18057@zhy> <4EAE77F2.80102@googlemail.com> <201110311129.25277.oliver@neukum.org>
-In-Reply-To: <201110311129.25277.oliver@neukum.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <7vk47jld5s.fsf@alter.siamese.dyndns.org>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Nov 2011 13:04:30 -0700
+X-Google-Sender-Auth: _zKSswQEQMX8QTtG301TtzynOoo
+Message-ID: <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: Junio C Hamano <gitster@pobox.com>
+Cc: git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 31.10.2011 11:29, schrieb Oliver Neukum:
-> Am Montag, 31. Oktober 2011, 11:26:58 schrieb Frank SchÃ¤fer:
->> Am 31.10.2011 04:11, schrieb Yong Zhang:
->>>> This is the first time I'm using a workqueue, so there is a good
->>>> chance that I missed something...
->>> You should cancel the work you have armed before exit.
->>> See cancel_delayed_work().
->> That's what I'm doing (see above).
->> Did you read the code ? ;-)
-> Does it work if you set a flag and resubmit the work only conditionally
-> on it?
-What do you mean ? Which flag should I set and what's the condition to 
-check for ?
+On Tue, Nov 1, 2011 at 2:56 PM, Junio C Hamano <gitster@pobox.com> wrote:
+>
+> But on the other hand, in many ways, publishing your commit to the outside
+> world, not necessarily for getting pulled into the final destination
+> (i.e. your tree) but merely for other people to try it out, is the point
+> of no return (aka "don't rewind or rebase once you publish").  "pushing
+> out" might be less special than "please pull", but it still is special.
 
-Regards,
-Frank
-> 	Regards
-> 		Oliver
+So I really think that signing the top commit itself is fundamentally wrong.
 
+That commit may not even be *yours*. You may have pulled it from a
+sub-lieutenant as a fast-forward, or similar. Amending it later would
+be actively very very *wrong*.
+
+So quite frankly, I think the stuff in pu (or next?) is completely
+mis-designed. Doing it in the commit is wrong for fundamental reasons,
+which all boil down to a simple issue:
+
+ - you absolutely *need* to add the signature later. You *cannot* do
+it at "git commit" time.
+
+That's a fundamental issue both from a "workflow model" issue (ie you
+want to sign stuff after it has passed testing etc, but you may need
+to commit it in order to *get* testing), as well as from a
+"fundamental git datastructures" issue (ie you would want to sign
+commits that aren't yours.
+
+"git commit --amend" is not the answer - that destroys the fundamental
+concept of history being immutable, and while it works for your local
+commits, it doesn't work for anybody elses commits, or for stuff you
+already pushed out.
+
+And "add a fake empty commit just for the signature" is not the answer
+either - because that is clearly inferior to the tags we already had.
+
+I dunno. Did I miss something? As far as I can tell, the signed tags
+that we've had since day one are *clearly* much better in very
+fundamental ways.
+
+                             Linus
