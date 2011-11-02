@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752739Ab1KBWbW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:31:22 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:57911 "HELO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750889Ab1KBWbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:31:21 -0400
+	id S1753177Ab1KBWcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:32:17 -0400
+Received: from fieldses.org ([174.143.236.118]:55170 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751907Ab1KBWcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:32:16 -0400
+Date: Wed, 2 Nov 2011 18:32:13 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benny Halevy <bhalevy@panasas.com>
+Subject: nfsd typo fix for 3.2
+Message-ID: <20111102223213.GC12883@fieldses.org>
 MIME-Version: 1.0
-Date: Wed, 2 Nov 2011 18:31:19 -0400
-Message-ID: <CACCWSY-uTxnbUFY7_PqTWd3TZKqTuireGPqsg8kFG2i58HiPfA@mail.gmail.com>
-Subject: Question about new ARP reply behaviour since 2.6.31
-From: Fred Qiu <fqiu@sourcefire.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+I've got one typo fix in for-3.2 branch at:
 
-I recently found out that the kernel since version 2.6.31 does not
-send ARP reply out on interface which is not the first routing
-destination. This behaviour breaks things in my setup which relies on
-the old behaviour. The kernel before 2.6.31 sends out ARP replies out
-on the interface from which the ARP request has been received
-regardless the routing table.
+  git://linux-nfs.org/~bfields/linux.git for-3.2
 
-For example, I have a box with two interfaces, eth0 & eth1, which
-connect to two different networks. The two interfaces are configured
-with overlapping subnets, i.e. 192.168.0.1/24 and 192.168.0.2/24. The
-first routing entry for network 192.168.0.0/24 is on eth0. Now the ARP
-requests for 192.168.0.2 received by eth1 from the second network are
-never being answered.
+Please pull--and thanks to Benny for catching it!
 
-Could someone please point me to any document regarding this change?
-Why is this change needed in the first place? Also any suggestion on
-forcing the kernel to reply the ARP request on secondary interface
-would be very helpful.
+--b.
 
-Thanks!
+Benny Halevy (1):
+      nfsd4: typo logical vs bitwise negate in nfsd4_decode_share_access
 
-Fred
+ fs/nfsd/nfs4xdr.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit fc0d14fe2d6403eb21202fd0c1cf67cd2c85ca67
+Author: Benny Halevy <bhalevy@tonian.com>
+Date:   Thu Oct 27 20:43:01 2011 +0200
+
+    nfsd4: typo logical vs bitwise negate in nfsd4_decode_share_access
+    
+    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 66d095d..b6fa792 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -655,7 +655,7 @@ static __be32 nfsd4_decode_share_access(struct nfsd4_compoundargs *argp, u32 *x)
+ 	default:
+ 		return nfserr_bad_xdr;
+ 	}
+-	w &= !NFS4_SHARE_ACCESS_MASK;
++	w &= ~NFS4_SHARE_ACCESS_MASK;
+ 	if (!w)
+ 		return nfs_ok;
+ 	if (!argp->minorversion)
