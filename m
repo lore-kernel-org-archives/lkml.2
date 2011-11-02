@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab1KBUdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:33:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33363 "EHLO e8.ny.us.ibm.com"
+	id S1752837Ab1KBUds (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:33:48 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:60703 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752226Ab1KBUcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:32:04 -0400
+	id S1751284Ab1KBUdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:33:43 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,103 +14,110 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
         patches@linaro.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 22/28] rcu: Fix early call to rcu_idle_enter()
-Date: Wed,  2 Nov 2011 13:30:43 -0700
-Message-Id: <1320265849-5744-22-git-send-email-paulmck@linux.vnet.ibm.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH RFC tip/core/rcu 14/28] rcu: Warn when rcu_read_lock() is used in extended quiescent state
+Date: Wed,  2 Nov 2011 13:30:35 -0700
+Message-Id: <1320265849-5744-14-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20111102203017.GA3830@linux.vnet.ibm.com>
 References: <20111102203017.GA3830@linux.vnet.ibm.com>
-x-cbid: 11110220-9360-0000-0000-00000045A4F3
+x-cbid: 11110220-5112-0000-0000-0000019EA423
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Frederic Weisbecker <fweisbec@gmail.com>
 
-On the irq exit path, tick_nohz_irq_exit()
-may raise a softirq, which action leads to the wake up
-path and select_task_rq_fair() that makes use of rcu
-to iterate the domains.
+We are currently able to detect uses of rcu_dereference_check() inside
+extended quiescent states (such as the RCU-free window in idle).
+But rcu_read_lock() and friends can be used without rcu_dereference(),
+so that the earlier commit checking for use of rcu_dereference() and
+friends while in RCU idle mode miss some error conditions.  This commit
+therefore adds extended quiescent state checking to rcu_read_lock() and
+friends.
 
-This is an illegal use of RCU because we may be in RCU
-extended quiescent state if we interrupted an RCU-idle
-window in the idle loop:
-
-[  132.978883] ===============================
-[  132.978883] [ INFO: suspicious RCU usage. ]
-[  132.978883] -------------------------------
-[  132.978883] kernel/sched_fair.c:1707 suspicious rcu_dereference_check() usage!
-[  132.978883]
-[  132.978883] other info that might help us debug this:
-[  132.978883]
-[  132.978883]
-[  132.978883] rcu_scheduler_active = 1, debug_locks = 0
-[  132.978883] RCU used illegally from extended quiescent state!
-[  132.978883] 2 locks held by swapper/0:
-[  132.978883]  #0:  (&p->pi_lock){-.-.-.}, at: [<ffffffff8105a729>] try_to_wake_up+0x39/0x2f0
-[  132.978883]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff8105556a>] select_task_rq_fair+0x6a/0xec0
-[  132.978883]
-[  132.978883] stack backtrace:
-[  132.978883] Pid: 0, comm: swapper Tainted: G        W   3.0.0+ #178
-[  132.978883] Call Trace:
-[  132.978883]  <IRQ>  [<ffffffff810a01f6>] lockdep_rcu_suspicious+0xe6/0x100
-[  132.978883]  [<ffffffff81055c49>] select_task_rq_fair+0x749/0xec0
-[  132.978883]  [<ffffffff8105556a>] ? select_task_rq_fair+0x6a/0xec0
-[  132.978883]  [<ffffffff812fe494>] ? do_raw_spin_lock+0x54/0x150
-[  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
-[  132.978883]  [<ffffffff8105a7c3>] try_to_wake_up+0xd3/0x2f0
-[  132.978883]  [<ffffffff81094f98>] ? ktime_get+0x68/0xf0
-[  132.978883]  [<ffffffff8105aa35>] wake_up_process+0x15/0x20
-[  132.978883]  [<ffffffff81069dd5>] raise_softirq_irqoff+0x65/0x110
-[  132.978883]  [<ffffffff8108eb65>] __hrtimer_start_range_ns+0x415/0x5a0
-[  132.978883]  [<ffffffff812fe3ee>] ? do_raw_spin_unlock+0x5e/0xb0
-[  132.978883]  [<ffffffff8108ed08>] hrtimer_start+0x18/0x20
-[  132.978883]  [<ffffffff8109c9c3>] tick_nohz_stop_sched_tick+0x393/0x450
-[  132.978883]  [<ffffffff810694f2>] irq_exit+0xd2/0x100
-[  132.978883]  [<ffffffff81829e96>] do_IRQ+0x66/0xe0
-[  132.978883]  [<ffffffff81820d53>] common_interrupt+0x13/0x13
-[  132.978883]  <EOI>  [<ffffffff8103434b>] ? native_safe_halt+0xb/0x10
-[  132.978883]  [<ffffffff810a1f2d>] ? trace_hardirqs_on+0xd/0x10
-[  132.978883]  [<ffffffff810144ea>] default_idle+0xba/0x370
-[  132.978883]  [<ffffffff810147fe>] amd_e400_idle+0x5e/0x130
-[  132.978883]  [<ffffffff8100a9f6>] cpu_idle+0xb6/0x120
-[  132.978883]  [<ffffffff817f217f>] rest_init+0xef/0x150
-[  132.978883]  [<ffffffff817f20e2>] ? rest_init+0x52/0x150
-[  132.978883]  [<ffffffff81ed9cf3>] start_kernel+0x3da/0x3e5
-[  132.978883]  [<ffffffff81ed9346>] x86_64_start_reservations+0x131/0x135
-[  132.978883]  [<ffffffff81ed944d>] x86_64_start_kernel+0x103/0x112
-
-Fix this by calling rcu_idle_enter() after tick_nohz_irq_exit().
+Uses of RCU from within RCU-idle mode are totally ignored by
+RCU, hence the importance of these checks.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/softirq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/rcupdate.h |   52 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 42 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index d2be0e0..328aabb 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -347,12 +347,12 @@ void irq_exit(void)
- 	if (!in_interrupt() && local_softirq_pending())
- 		invoke_softirq();
- 
--	rcu_irq_exit();
- #ifdef CONFIG_NO_HZ
- 	/* Make sure that timer wheel updates are propagated */
- 	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
- 		tick_nohz_irq_exit();
- #endif
-+	rcu_irq_exit();
- 	preempt_enable_no_resched();
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index bf91fcf..d201c15 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -237,21 +237,53 @@ static inline int rcu_is_cpu_idle(void)
  }
+ #endif /* else !CONFIG_PROVE_RCU */
+ 
++static inline void rcu_lock_acquire(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_is_cpu_idle());
++	lock_acquire(map, 0, 0, 2, 1, NULL, _THIS_IP_);
++}
++
++static inline void rcu_lock_release(struct lockdep_map *map)
++{
++	WARN_ON_ONCE(rcu_is_cpu_idle());
++	lock_release(map, 1, _THIS_IP_);
++}
++
+ extern struct lockdep_map rcu_lock_map;
+-# define rcu_read_acquire() \
+-		lock_acquire(&rcu_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release()	lock_release(&rcu_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire(void)
++{
++	rcu_lock_acquire(&rcu_lock_map);
++}
++
++static inline void rcu_read_release(void)
++{
++	rcu_lock_release(&rcu_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_bh_lock_map;
+-# define rcu_read_acquire_bh() \
+-		lock_acquire(&rcu_bh_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_bh()	lock_release(&rcu_bh_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_bh(void)
++{
++	rcu_lock_acquire(&rcu_bh_lock_map);
++}
++
++static inline void rcu_read_release_bh(void)
++{
++	rcu_lock_release(&rcu_bh_lock_map);
++}
+ 
+ extern struct lockdep_map rcu_sched_lock_map;
+-# define rcu_read_acquire_sched() \
+-		lock_acquire(&rcu_sched_lock_map, 0, 0, 2, 1, NULL, _THIS_IP_)
+-# define rcu_read_release_sched() \
+-		lock_release(&rcu_sched_lock_map, 1, _THIS_IP_)
++
++static inline void rcu_read_acquire_sched(void)
++{
++	rcu_lock_acquire(&rcu_sched_lock_map);
++}
++
++static inline void rcu_read_release_sched(void)
++{
++	rcu_lock_release(&rcu_sched_lock_map);
++}
+ 
+ extern int debug_lockdep_rcu_enabled(void);
  
 -- 
 1.7.3.2
