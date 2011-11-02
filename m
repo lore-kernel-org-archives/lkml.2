@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab1KBJGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:06:11 -0400
-Received: from void.printf.net ([89.145.121.20]:38578 "EHLO void.printf.net"
+	id S1755294Ab1KBJHd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:07:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33457 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754391Ab1KBJGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:06:07 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg KH <greg@kroah.com>,
-        linux-omap@vger.kernel.org, "Gutierrez\, Juan" <jgutierrez@ti.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mmc@vger.kernel.org,
-        Girish K S <girish.shivananjappa@linaro.org>
-Subject: Re: [GIT PULL] hwspinlock changes for 3.2
-References: <CAK=WgbZso1qk5XUTjB1bLXYbezv80SbgyEXJ3Q32U28+cQMfZA@mail.gmail.com>
-	<CAK=Wgbb9yfFeubc8jfTe5urMz4WoCpOL=LwP9=Lr7mYaWrt1Vw@mail.gmail.com>
-Date: Wed, 02 Nov 2011 05:05:03 -0400
-In-Reply-To: <CAK=Wgbb9yfFeubc8jfTe5urMz4WoCpOL=LwP9=Lr7mYaWrt1Vw@mail.gmail.com>
-	(Ohad Ben-Cohen's message of "Wed, 2 Nov 2011 09:45:11 +0200")
-Message-ID: <m2ehxqao8w.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1754391Ab1KBJH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:07:29 -0400
+Message-ID: <4EB1084F.4020206@suse.cz>
+Date: Wed, 02 Nov 2011 10:07:27 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Matthias Schniedermeyer <ms@citd.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com> <20111027193448.GA3514@merkur.ravnborg.org> <20111028070336.GF12995@elte.hu> <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com> <20111028075432.GB8626@elte.hu> <20111028120856.GA29174@citd.de> <20111028122902.GA25323@elte.hu> <20111028130535.GA2752@citd.de> <20111102084124.GB18771@elte.hu>
+In-Reply-To: <20111102084124.GB18771@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2.11.2011 09:41, Ingo Molnar wrote:
+> 
+> * Matthias Schniedermeyer <ms@citd.de> wrote:
+> 
+>> And AFAICS there currently is no "modconfig", only an 
+>> "allmodconfig" (and "localmodconfig")
+>>
+>> With no letters dropped it would be less ambiguous. make 
+>> modifyconfig=kvm
+> 
+> Yeah. Note that it's more like an 'add' operation, not a modify 
+> operation, thus:
+> 
+> 	make addconfig=kvm
+> 
+> or:
+> 
+> 	make addconfig kvm
+> 
+> would be intuitive and would work well too.
+> 
+> Sam, Michal, which one would you prefer? The latter might have the 
+> advantage that it's additive, enabling future usages like:
+> 
+> 	make addconfig kvm debug
 
-On Wed, Nov 02 2011, Ohad Ben-Cohen wrote:
-> There also seems to be a (trivial) omap_hsmmc build issue which I've
-> fixed and pushed to that branch (Chris I'm also attaching it below in
-> case you prefer to take it through the mmc tree).
+The problem is that neither of these fit into the make command syntax:
 
-I already have it in mmc-next, but it's fine to send it through your
-branch instead:
+    make addconfig kvm debug
 
-Acked-by: Chris Ball <cjb@laptop.org>
+tells make to build three different targets, and
 
-Thanks,
+    make addconfig=kvm
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+tells make to create a variable named addconfig with the value kvm and
+build the default target. And BTW, you or someone else reassured me
+earlier in the thread that this is going to be needed for the kvm case
+solely, so why are you inventing something generic now? :)
+
+Michal
