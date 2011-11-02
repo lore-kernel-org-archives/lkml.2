@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934253Ab1KCBjc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51070 "EHLO mx2.suse.de"
+	id S934230Ab1KCBj2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51056 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934104Ab1KCBja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:30 -0400
+	id S934104Ab1KCBjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:23 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
-Message-Id: <20111102222742.257879783@clark.kroah.org>
+Message-Id: <20111102222742.043567570@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:12 -0700
+Date: Wed, 02 Nov 2011 15:26:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [028/101] cifs: fix possible memory corruption in CIFSFindNext
+        alan@lxorguk.ukuu.org.uk,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [026/101] ALSA: HDA: Cirrus - fix "Surround Speaker" volume control name
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 9438fabb73eb48055b58b89fc51e0bc4db22fabd upstream.
+commit 2e1210bc3d065a6e26ff5fef228a9a7e08921d2c upstream.
 
-The name_len variable in CIFSFindNext is a signed int that gets set to
-the resume_name_len in the cifs_search_info. The resume_name_len however
-is unsigned and for some infolevels is populated directly from a 32 bit
-value sent by the server.
+This patch fixes "Surround Speaker Playback Volume" being cut off.
+(Commit b4dabfc452a10 was probably meant to fix this, but it fixed
+only the "Switch" name, not the "Volume" name.)
 
-If the server sends a very large value for this, then that value could
-look negative when converted to a signed int. That would make that
-value pass the PATH_MAX check later in CIFSFindNext. The name_len would
-then be used as a length value for a memcpy. It would then be treated
-as unsigned again, and the memcpy scribbles over a ton of memory.
-
-Fix this by making the name_len an unsigned value in CIFSFindNext.
-
-Reported-by: Darren Lavender <dcl@hppine99.gbr.hp.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifssmb.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_cirrus.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -3596,7 +3596,8 @@ int CIFSFindNext(const int xid, struct c
- 	T2_FNEXT_RSP_PARMS *parms;
- 	char *response_data;
- 	int rc = 0;
--	int bytes_returned, name_len;
-+	int bytes_returned;
-+	unsigned int name_len;
- 	__u16 params, byte_count;
- 
- 	cFYI(1, ("In FindNext"));
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -508,7 +508,7 @@ static int add_volume(struct hda_codec *
+ 		      int index, unsigned int pval, int dir,
+ 		      struct snd_kcontrol **kctlp)
+ {
+-	char tmp[32];
++	char tmp[44];
+ 	struct snd_kcontrol_new knew =
+ 		HDA_CODEC_VOLUME_IDX(tmp, index, 0, 0, HDA_OUTPUT);
+ 	knew.private_value = pval;
 
 
