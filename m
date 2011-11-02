@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab1KBWzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:55:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34350 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab1KBWzc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:55:32 -0400
-Message-ID: <4EB1CA4F.3090403@gmail.com>
-Date: Wed, 02 Nov 2011 23:55:11 +0100
-From: Eric Dumazet <eric.dumazet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
-References: <20111102224317.GM31337@atomide.com>
-In-Reply-To: <20111102224317.GM31337@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753372Ab1KBW7q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:59:46 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:24631 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752077Ab1KBW7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:59:44 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org,
+        devel@openvz.org
+Subject: [PATCH 0/4] Profiling sleep times
+Date: Thu,  3 Nov 2011 01:59:40 +0300
+Message-Id: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/11/2011 23:43, Tony Lindgren wrote:
+The problem is that events sched_stat_* contain call-chains of
+non-target tasks.
+About month ago I sent series of patches:
 
-> Commit 87fb4b7b533073eeeaed0b6bf7c2328995f6c075 (net: more
-> accurate skb truesize) changed the alignment of size. This
-> can cause problems at least on some machines with NFS root:
-> 
-> Unhandled fault: alignment exception (0x801) at 0xc183a43a
-> Internal error: : 801 [#1] PREEMPT
-> Modules linked in:
-> CPU: 0    Not tainted  (3.1.0-08784-g5eeee4a #733)
-> pc : [<c02fbba0>]    lr : [<c02fbb9c>]    psr: 60000013
-> sp : c180fef8  ip : 00000000  fp : c181f580
-> r10: 00000000  r9 : c044b28c  r8 : 00000001
-> r7 : c183a3a0  r6 : c1835be0  r5 : c183a412  r4 : 000001f2
-> r3 : 00000000  r2 : 00000000  r1 : ffffffe6  r0 : c183a43a
-> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 0005317f  Table: 10004000  DAC: 00000017
-> Process swapper (pid: 1, stack limit = 0xc180e270)
-> Stack: (0xc180fef8 to 0xc1810000)
-> fee0:                                                       00000024 00000000
-> ff00: 00000000 c183b9c0 c183b8e0 c044b28c c0507ccc c019dfc4 c180ff2c c0503cf8
-> ff20: c180ff4c c180ff4c 00000000 c1835420 c182c740 c18349c0 c05233c0 00000000
-> ff40: 00000000 c00e6bb8 c180e000 00000000 c04dd82c c0507e7c c050cc18 c183b9c0
-> ff60: c05233c0 00000000 00000000 c01f34f4 c0430d70 c019d364 c04dd898 c04dd898
-> ff80: c04dd82c c0507e7c c180e000 00000000 c04c584c c01f4918 c04dd898 c04dd82c
-> ffa0: c04ddd28 c180e000 00000000 c0008758 c181fa60 3231d82c 00000037 00000000
-> ffc0: 00000000 c04dd898 c04dd82c c04ddd28 00000013 00000000 00000000 00000000
-> ffe0: 00000000 c04b2224 00000000 c04b21a0 c001056c c001056c 00000000 00000000
-> Function entered at [<c02fbba0>] from [<c019dfc4>]
-> Function entered at [<c019dfc4>] from [<c01f34f4>]
-> Function entered at [<c01f34f4>] from [<c01f4918>]
-> Function entered at [<c01f4918>] from [<c0008758>]
-> Function entered at [<c0008758>] from [<c04b2224>]
-> Function entered at [<c04b2224>] from [<c001056c>]
-> Code: e1a00005 e3a01028 ebfa7cb0 e35a0000 (e5858028)
-> 
-> Here PC is at __alloc_skb and &shinfo->dataref is unaligned because
-> skb->end can be unaligned without this patch.
-> 
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> 
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -189,6 +189,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
->  	 * aligned memory blocks, unless SLUB/SLAB debug is enabled.
->  	 * Both skb->head and skb_shared_info are cache line aligned.
->  	 */
-> +	size = SKB_DATA_ALIGN(size);
->  	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
->  	data = kmalloc_node_track_caller(size, gfp_mask, node);
->  	if (!data)
+[PATCH 0/3] trace: add ability to collect call chains of non current task.
 
+Peter and Frederic explained me, that this solve isn't good and will be
+better to make it in userspace.
 
+Now it's in userspace. This series expands "perf inject" to be able to
+merge sched_switch events and sched_stat* events. sched_switch events
+contain correct call-chains and sched_stat contains a correct time
+slices.
 
-Hmm, I dont think this is the right way to fix the bug.
+Known issues:
+Now some samples may be lost due to throttling. The number of samples is
+restricted by sysctl_perf_event_sample_rate/HZ.  A trace event is divided on
+some samples according to event's period.  I don't sure, that we should
+generate more than one sample on each trace event. I think the better way to
+use SAMPLE_PERIOD and now I think in this direction.
+This problem isn't in my patches, so you can review it, while I'm working on
+this issue.
 
-There is a problem with your kmalloc() or alignments on your architecture.
+Andrew Vagin:
+  perf: teach "perf inject" to work with files
+  perf: teach perf inject to merge sched_stat_* and sched_switch events
+  perf: add scripts for profiling sleep times
 
-What is the SMP_CACHE_BYTES value ?
+ tools/perf/builtin-inject.c                     |  120 ++++++++++++++++++++++-
+ tools/perf/scripts/python/bin/sched-stat-record |    2 +
+ tools/perf/scripts/python/bin/sched-stat-report |    6 +
+ 3 files changed, 126 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/scripts/python/bin/sched-stat-record
+ create mode 100644 tools/perf/scripts/python/bin/sched-stat-report
 
