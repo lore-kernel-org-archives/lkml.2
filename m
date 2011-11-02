@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab1KBLco (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 07:32:44 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:52134 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751655Ab1KBLcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 07:32:42 -0400
-Date: Wed, 2 Nov 2011 11:30:31 +0000
-From: Ralf Baechle <ralf@linux-mips.org>
-To: trisha yad <trisha1march@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, rientjes@google.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>
-Subject: Re: Issue with core dump
-Message-ID: <20111102113030.GE22462@linux-mips.org>
-References: <CAGr+u+zkPiZpGefstcbJv_cj929icWKXbqFy1uR22Hns1hzFeQ@mail.gmail.com>
- <20111101152320.GA30466@redhat.com>
- <CAGr+u+wgAYVWgdcG6o+6F0mDzuyNzoOxvsFwq0dMsR3JNnZ-cA@mail.gmail.com>
+	id S1756286Ab1KBLdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 07:33:15 -0400
+Received: from oker.escape.de ([194.120.234.254]:39795 "EHLO oker.escape.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753060Ab1KBLdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 07:33:13 -0400
+X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 07:33:12 EDT
+Date: Wed, 2 Nov 2011 12:20:18 +0100
+From: Jochen Striepe <jochen@tolot.escape.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Junio C Hamano <gitster@pobox.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+Message-ID: <20111102112018.GF17259@pompeji.miese-zwerge.org>
+References: <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+ <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <4EAF1F40.3030907@zytor.com>
+ <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
+ <4EAF2245.90308@zytor.com>
+ <CA+55aFzedaAzzWfzhqVf8y8ZW0jeb56hZwdV3UodSp8Q_Qhc2A@mail.gmail.com>
+ <7vvcr4ojvp.fsf@alter.siamese.dyndns.org>
+ <CA+55aFyKWLUMQFfaeKJKGFPV_7kfOGjf+pSZ1Y8afzkT4OYQ9Q@mail.gmail.com>
+ <20111102091126.GG18903@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGr+u+wgAYVWgdcG6o+6F0mDzuyNzoOxvsFwq0dMsR3JNnZ-cA@mail.gmail.com>
+In-Reply-To: <20111102091126.GG18903@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 12:03:39PM +0530, trisha yad wrote:
+	Hi,
 
-> Thanks all for your answer.
+On Wed, Nov 02, 2011 at 10:11:26AM +0100, Ingo Molnar wrote:
+> If this approach is used then it would be nice to have a .gitconfig 
+> switch to require trusted pulls by default: to not allow doing 
+> non-signed or untrusted pulls accidentally, or for Git to warn in a 
+> visible, hard to miss way if there's a non-signed pull.
 > 
-> In loaded embedded system the time at with code hit do_user_fault()
-> and core_dump_wait() is bit
-> high, I check on my  system it took 2.7 sec. so it is very much
-> possible that core dump is not correct.
-> It  contain global value updated.
-> 
-> So is it possible at time of send_signal() we can stop modification of
-> faulty thread memory ?
+> This adds social uncertainty (and an element of a silent alarm) to a 
+> realistic attack: the attacker wouldnt know exactly how the puller 
+> checks signed pull requests, it's kept private.
 
-On existing hardware it is impossible to take a consistent snapshot of a
-multi-threaded application at the time of one thread faulting.
+But that way you get a false sense of alarm when someone sent a
+perfectly trustable pull request, e.g. by signed email.
 
-A software simulator can handle this sort of race condition but of course
-this approach has other disadvantages.
 
-  Ralf
+Another question: If store the actual pgp/gpg signatures in the git tree,
+how do you handle signatures by keys which were valid by the time the
+signature was made but expired when checking some time afterwards? AFAICT,
+gpg will only tell you the key is expired _now_, and will make no statement
+regarding the time the actual signature was made.
+
+
+Thanks,
+Jochen.
