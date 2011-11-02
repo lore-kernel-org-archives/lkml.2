@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932580Ab1KBCm1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 22:42:27 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:42353 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab1KBCmZ (ORCPT
+	id S1756236Ab1KBCoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 22:44:18 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:57776 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753470Ab1KBCoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 22:42:25 -0400
-Message-ID: <4EB0AE0E.8040709@vflare.org>
-Date: Tue, 01 Nov 2011 22:42:22 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
-        gregkh@suse.de, devel@driverdev.osuosl.org, cascardo@holoscopio.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        brking@linux.vnet.ibm.com, rcj@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
-References: <1315404547-20075-1-git-send-email-sjenning@linux.vnet.ibm.com> <20110909203447.GB19127@kroah.com> <4E6ACE5B.9040401@vflare.org> <4E6E18C6.8080900@linux.vnet.ibm.com> <4E6EB802.4070109@vflare.org> <4E6F7DA7.9000706@linux.vnet.ibm.com> <4E6FC8A1.8070902@vflare.org> <4E72284B.2040907@linux.vnet.ibm.com> <4E738B81.2070005@vflare.org 1320168615.15403.80.camel@nimitz> <e51b28f7-da4a-4c53-889d-4f12b8dd701a@default>
-In-Reply-To: <e51b28f7-da4a-4c53-889d-4f12b8dd701a@default>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Nov 2011 22:44:17 -0400
+Date: Wed, 2 Nov 2011 13:44:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, rusty@rustcorp.com.au,
+        mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] introduce export.h; reduce module.h usage
+Message-Id: <20111102134403.ac0356474f31c16998ef5103@canb.auug.org.au>
+In-Reply-To: <CA+55aFz7dRWdQy_39+sCMeuqkavg8gYYyH_4u-n66OFVYzAWTg@mail.gmail.com>
+References: <20111101004542.GA18671@windriver.com>
+	<CA+55aFz7dRWdQy_39+sCMeuqkavg8gYYyH_4u-n66OFVYzAWTg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_Nov_2011_13_44_03_+1100_BiD2zDh+dUFJShmu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 02:35 PM, Dan Magenheimer wrote:
+--Signature=_Wed__2_Nov_2011_13_44_03_+1100_BiD2zDh+dUFJShmu
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> From: Dave Hansen [mailto:dave@linux.vnet.ibm.com]
->> Sent: Tuesday, November 01, 2011 11:30 AM
->> To: Nitin Gupta
->> Cc: Seth Jennings; Greg KH; gregkh@suse.de; devel@driverdev.osuosl.org; Dan Magenheimer;
->> cascardo@holoscopio.com; linux-kernel@vger.kernel.org; linux-mm@kvack.org; brking@linux.vnet.ibm.com;
->> rcj@linux.vnet.ibm.com
->> Subject: Re: [PATCH v2 0/3] staging: zcache: xcfmalloc support
->>
->> On Fri, 2011-09-16 at 13:46 -0400, Nitin Gupta wrote:
->>> I think replacing allocator every few weeks isn't a good idea. So, I
->>> guess better would be to let me work for about 2 weeks and try the slab
->>> based approach.  If nothing works out in this time, then maybe xcfmalloc
->>> can be integrated after further testing.
->>
->> Hi Nitin,
->>
->> It's been about six weeks. :)
->>
->> Can we talk about putting xcfmalloc() in staging now?
-> 
-> FWIW, given that I am quoting "code rules!" to the gods of Linux
-> on another lkml thread, I can hardly disagree here.
-> 
+Hi Linus,
 
-
-I agree with you Dan. It took me really long to bring the new allocator
-into some shape and still I'm not very confident that it's ready to be
-integrated with zcache.
-
-> If Nitin continues to develop his allocator and it proves
-> better than xcfmalloc (and especially if it can replace
-> zbud as well), we can consider replacing xcfmalloc later.
-> Until zcache is promoted from staging, I think we have
-> that flexibility.
-> 
-
-
-Agreed.  Though I still consider slab based design much better, having
-already tried xcfmalloc like design much earlier in the project history,
-I would still favor xcfmalloc integration since xvmalloc weakness with
->PAGE_SIZE/2 objects is probably too much to bear.
-
-
-> (Shameless advertisement though:  The xcfmalloc allocator
-> only applies to pages passed via frontswap, and on
-> that other lkml thread lurk many people intent on shooting
-> frontswap down.  So, frankly, I'd prefer time to be spent
-> on benchmarking zcache rather than on arguing about
-> allocators which, as things currently feel to me on that
-> other lkml thread, is not unlike rearranging deck chairs
-> on the Titanic. Half-:-).
-> 
+On Tue, 1 Nov 2011 16:59:53 -0700 Linus Torvalds <torvalds@linux-foundation=
+.org> wrote:
 >
+> On Mon, Oct 31, 2011 at 5:45 PM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+> >
+> > Please pull the below to get the module.h split content. =C2=A0It has b=
+een
+> > tested on v3.1-rc6, soaked in linux-next, and re-tested again lots more
+> > today after rebasing it to allow most of the linux-next finds to be
+> > blended in, where they could not be on the original v3.1-rc6 baseline.
+>=20
+> Does it bisect cleanly?
+>=20
+> Quite frankly, for something fairly trivial like this where the upside
+> is mainly "slightly faster compile" (and hey, perhaps cleaner source
+> tree), the downsides needs to be minimized.  And just looking at the
+> shortlog makes me go: this will be a bisection disaster - people will
+> look for bugs, bisect will go into this series, and things won't
+> compile.
+>=20
+> But maybe it's ordered so that the actual module.h split comes last,
+> exactly so that it would be safe and bisectable? I just don't know,
+> and I'd like to know before I pull..
 
+Well, from the commit comments, it looks like Paul has made some attempt
+to make it bisectable (see e.g. commit de47725421ad ("include: replace
+linux/module.h with "struct module" wherever possible") near the end).
+And the actual split (even though it is right at the start) is not really
+a problem becuase the new export.h is included in module.h anyway.  The
+problems come when you remove module.h from a file or replace it with
+export.h.
 
-Thanks,
-Nitin
+One the other hand, there are some commits near the end that are cleanrly
+just fixing up problems caused by earlier commits.  They could probably
+be included earlier in the series (most of them are trivial).
 
+Anyway, Paul can speak for himself.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__2_Nov_2011_13_44_03_+1100_BiD2zDh+dUFJShmu
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOsK5zAAoJEECxmPOUX5FEOfEP/Rx8GBz8g0J0p0lGe5Mvc4TU
+OtLIGCM7QF6Edz0L0aBB3zgPRJwKncor/xIF0yHu+/zaL1TmpIg9bEnOreHEJgL4
+EiqjDhuE7Ueq3iXhh9EujDZh55QOh29wAjtX4oJcnNQkx82ls6ebXAy6Fgv1lgKV
+HJkVOnQ+iXnSDTpwyySB9tZ/n1as5/oeQrepBlR8VL/ArS02WTubDYIFOtzYxYp6
+QywhwHwRNFdGfcalbhJZw8sB+K4RUDEXHUIhoHkbvVVI8uEopqpymGoVVO5QoXAg
+5+sr4TeDeqTwBv9bPvADaN/tDdGy+anmTI9hafQFmtTqfYwf70XarrWEgWvHyd4x
+swLSuTS/TN9y/kiNN6eXwn1jbEfDhB4vVyG+TzA2Q7NVYm5MpUDxMMf1Wippuy8l
+unGgu8JZnXbFFYiM716Gt92y4WP+nvXoA85oYIRcmAIODYe6fL3Zv8ERL/Seh2Qh
+whbVuIcVmIPDIsaozEOEMfbMZpv9z4/mtEPOyHROjVa6fbNL1BZpZyW3lRcVww9h
+DlwFMNuNfaSwOuTnBaPlKiKdt0NI6Cj/w5DoxEKWrHn9qZNjaso8OPv4KdbEeSCW
+v27SEZTJ/FOvp1FBVWOmiZaK8zSQBmLRG8FUWKabDo1tfiGqzQBnQW5oL6XcdfDR
+AW7GNwUdZVVwzLhK2dR6
+=b69+
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__2_Nov_2011_13_44_03_+1100_BiD2zDh+dUFJShmu--
