@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab1KBTGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:06:14 -0400
-Received: from smtp-1.sys.kth.se ([130.237.32.175]:39319 "EHLO
-	smtp-1.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab1KBTGL (ORCPT
+	id S933095Ab1KBTGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:06:33 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:39500 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab1KBTGb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:06:11 -0400
-X-KTH-Auth: niso [89.253.77.162]
-X-KTH-mail-from: niso@kth.se
-From: =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
-To: mchehab@redhat.com
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
-Subject: [PATCH] i7core_edac: make lookup arrays const
-Date: Wed,  2 Nov 2011 20:05:49 +0100
-Message-Id: <1320260749-5819-1-git-send-email-niso@kth.se>
-X-Mailer: git-send-email 1.7.7.2
+	Wed, 2 Nov 2011 15:06:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Message-ID: <2bc86220-1e48-40e5-b502-dcd093956fd5@default>
+Date: Wed, 2 Nov 2011 12:06:02 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
+ <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default20111031223717.GI3466@redhat.com>
+ <1b2e4f74-7058-4712-85a7-84198723e3ee@default20111101012017.GJ3466@redhat.com>
+ <6a9db6d9-6f13-4855-b026-ba668c29ddfa@default20111101180702.GL3466@redhat.com>
+ <b8a0ca71-a31b-488a-9a92-2502d4a6e9bf@default
+ 20111102013122.GA18879@redhat.com>
+In-Reply-To: <20111102013122.GA18879@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090202.4EB194A2.0033,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the arrays don't need to be specified. This also fixes a
-erroneous size of one of the lookup arrays.
+> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> 
+> Hi Dan.
+> 
+> On Tue, Nov 01, 2011 at 02:00:34PM -0700, Dan Magenheimer wrote:
+> > Pardon me for complaining about my typing fingers, but it seems
+> > like you are making statements and asking questions as if you
+> > are not reading the whole reply before you start responding
+> > to the first parts.  So it's going to be hard to answer each
+> > sub-thread in order.  So let me hit a couple of the high
+> > points first.
+> 
+> I'm actually reading all your reply, if I skip some part it may be
+> because the email is too long already :). I'm just trying to
+> understand it and I wish I had more time to dedicate to this too but
+> I've other pending stuff too.
 
-Signed-off-by: Niklas Söderlund <niso@kth.se>
----
- drivers/edac/i7core_edac.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Hi Andrea --
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index 70ad892..f50acfb 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -417,21 +417,21 @@ static inline int numdimms(u32 dimms)
- 
- static inline int numrank(u32 rank)
- {
--	static int ranks[4] = { 1, 2, 4, -EINVAL };
-+	static const int ranks[] = { 1, 2, 4, -EINVAL };
- 
- 	return ranks[rank & 0x3];
- }
- 
- static inline int numbank(u32 bank)
- {
--	static int banks[4] = { 4, 8, 16, -EINVAL };
-+	static const int banks[] = { 4, 8, 16, -EINVAL };
- 
- 	return banks[bank & 0x3];
- }
- 
- static inline int numrow(u32 row)
- {
--	static int rows[8] = {
-+	static const int rows[] = {
- 		1 << 12, 1 << 13, 1 << 14, 1 << 15,
- 		1 << 16, -EINVAL, -EINVAL, -EINVAL,
- 	};
-@@ -441,7 +441,7 @@ static inline int numrow(u32 row)
- 
- static inline int numcol(u32 col)
- {
--	static int cols[8] = {
-+	static const int cols[] = {
- 		1 << 10, 1 << 11, 1 << 12, -EINVAL,
- 	};
- 	return cols[col & 0x3];
--- 
-1.7.7.2
+First, let me apologize for yesterday.  I was unnecessarily
+sarcastic and disrespectful, and I am sorry.  I very much appreciate
+your time and discussion, and good hard technical questions
+that have allowed me to clarify some of the design and
+implementation under discussion.
 
+I agree this email is too long, though it has been very useful.
+You've got some great feedback and insights in improving
+zcache, so let me be the first to cry "uncle" (surrender)
+and cut to the end....
+
+> If you confirm it's free to go and there's no ABI/API we get stuck
+> into, I'm fairly positive about it, it's clearly "alpha" feature
+> behavior (almost no improvement with zram today) but it could very
+> well be in the right direction and give huge benefit compared to zram
+> in the future. I definitely don't pretend things to be perfect... but
+> they must be in the right design direction for me to be sold off on
+> those. Just like KVM in virt space.
+
+Confirmed.  Anything below the "struct frontswap_ops" (and
+"struct cleancache_ops), that is anything in the staging/zcache
+directory, is wide open for your ideas and improvement.
+In fact, I would very much welcome your contribution and
+I think IBM and Nitin would also.
+
+Thanks,
+Dan
