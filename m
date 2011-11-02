@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab1KCBmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:42:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51381 "EHLO mx2.suse.de"
+	id S934642Ab1KCBli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:41:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51316 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934659Ab1KCBmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:42:00 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
-Message-Id: <20111102222742.903424161@clark.kroah.org>
+	id S934598Ab1KCBlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:41:31 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:45 2011
+Message-Id: <20111102222745.512746709@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:19 -0700
+Date: Wed, 02 Nov 2011 15:26:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [035/101] hvc_console: Improve tty/console put_chars handling
+        alan@lxorguk.ukuu.org.uk, Serge Hallyn <serge.hallyn@canonical.com>
+Subject: [063/101] USB: pid_ns: ensure pid is not freed during kill_pid_info_as_uid
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,57 +24,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+From: Serge Hallyn <serge.hallyn@canonical.com>
 
-commit 8c2381af0d3ef62a681dac5a141b6dabb27bf2e1 upstream.
+commit aec01c5895051849ed842dc5b8794017a7751f28 upstream.
 
-Currently, the hvc_console_print() function drops console output if the
-hvc backend's put_chars() returns 0.  This patch changes this behavior
-to allow a retry through returning -EAGAIN.
+Alan Stern points out that after spin_unlock(&ps->lock) there is no
+guarantee that ps->pid won't be freed.  Since kill_pid_info_as_uid() is
+called after the spin_unlock(), the pid passed to it must be pinned.
 
-This change also affects the hvc_push() function.  Both functions are
-changed to handle -EAGAIN and to retry the put_chars() operation.
-
-If a hvc backend returns -EAGAIN, the retry handling differs:
-
-  - hvc_console_print() spins to write the complete console output.
-  - hvc_push() behaves the same way as for returning 0.
-
-Now hvc backends can indirectly control the way how console output is
-handled through the hvc console layer.
-
-Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Acked-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/hvc_console.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/usb/core/devio.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/char/hvc_console.c
-+++ b/drivers/char/hvc_console.c
-@@ -162,8 +162,10 @@ static void hvc_console_print(struct con
- 		} else {
- 			r = cons_ops[index]->put_chars(vtermnos[index], c, i);
- 			if (r <= 0) {
--				/* throw away chars on error */
--				i = 0;
-+				/* throw away characters on error
-+				 * but spin in case of -EAGAIN */
-+				if (r != -EAGAIN)
-+					i = 0;
- 			} else if (r > 0) {
- 				i -= r;
- 				if (i > 0)
-@@ -442,7 +444,7 @@ static int hvc_push(struct hvc_struct *h
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -403,7 +403,7 @@ static void async_completed(struct urb *
+ 		sinfo.si_errno = as->status;
+ 		sinfo.si_code = SI_ASYNCIO;
+ 		sinfo.si_addr = as->userurb;
+-		pid = as->pid;
++		pid = get_pid(as->pid);
+ 		uid = as->uid;
+ 		euid = as->euid;
+ 		secid = as->secid;
+@@ -416,9 +416,11 @@ static void async_completed(struct urb *
+ 		cancel_bulk_urbs(ps, as->bulk_addr);
+ 	spin_unlock(&ps->lock);
  
- 	n = hp->ops->put_chars(hp->vtermno, hp->outbuf, hp->n_outbuf);
- 	if (n <= 0) {
--		if (n == 0) {
-+		if (n == 0 || n == -EAGAIN) {
- 			hp->do_wakeup = 1;
- 			return 0;
- 		}
+-	if (signr)
++	if (signr) {
+ 		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
+ 				      euid, secid);
++		put_pid(pid);
++	}
+ 
+ 	wake_up(&ps->wait);
+ }
 
 
