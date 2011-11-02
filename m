@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1KBXCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:02:07 -0400
-Received: from mail113c7.megamailservers.com ([69.49.98.213]:39103 "EHLO
-	mail113c7.megamailservers.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752621Ab1KBXCF (ORCPT
+	id S1753622Ab1KBXCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:02:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54715 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab1KBXCp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:02:05 -0400
-X-Greylist: delayed 1237 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 19:02:04 EDT
-X-POP-User: p_authtest.testsitesc7.hostopia.com
-Message-ID: <20111102163954.e1hq9bfwpuogoo0k@webmail.sasktel.net>
-From: "=?utf-8?b?T1dFTiBTVEVWRU4=?=" <kanem@sasktel.net>
-Reply-to: kanem@sasktel.net
-To: undisclosed-recipients:;
-Subject: 
-Date: Wed, 02 Nov 2011 16:39:54 -0600
-X-Priority: 3
+	Wed, 2 Nov 2011 19:02:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Webmail 6.0
-X-CSC: 0
-X-CHA: v=1.1 cv=BkLMrz4z41WHOdwV/HrUBdwxOr5869pv+e4B19XtC6M= c=1 sm=1
-		a=Q5QLeeme7KwA:10 a=YxfxW3ofkq8A:10 a=O4itPxsZJmoA:10 a=IkcTkHD0fZMA:10
-		a=69EAbJreAAAA:8 a=eFiPdjdW99X8VjJ5jVsA:9 a=AYqybelhGungq0I1HNkA:7
-		a=QEXdDO2ut3YA:10 a=mwmPwK6qIvYA:10 a=EfJqPEOeqlMA:10 a=MNXH8t_pjTlAMc8o:21
-		a=Jew4UxWsdNnO77mB:21 wl=host:8 a=WkljmVdYkabdwxfqvArNOQ==:117
+In-Reply-To: <20111102002412.GA14977@suse.de>
+References: <cover.1320191327.git.david.decotigny@google.com>
+ <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com>
+ <20111102002412.GA14977@suse.de>
+From: David Decotigny <david.decotigny@google.com>
+Date: Wed, 2 Nov 2011 16:02:24 -0700
+Message-ID: <CAG88wWaZZj8k4KmgHdtYUiWQRcVTOaBDS0ik3bqj+VXzm5SQjQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] param: make /sys/module/*/paramaters optional
+To: Greg KH <gregkh@suse.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Michal Schmidt <mschmidt@redhat.com>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Dmitry Torokhov <dtor@vmware.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thank you all for your feedback.
+
+FYI, this patch was meant to be an answer to a negative feedback I
+received when I proposed changing a few module_param(... perm=S_IRUGO)
+in forcedeth driver. But I agree the "price to pay" is very low.
+
+Should I drop this patch?
+
+--
+David Decotigny
 
 
-I am Mr Owen Steven from a bank,i need you to keep this confidential to yourself, president Muammar  Gaddafi has a secret account which worth 15.5 million dollars he opened this account since he was 27years old he has even forgotten,i am ready to share 50/50 if you are willing to receive this money for me. SEND YOUR REPLY TO (owensteven11@hotmail.com)
 
+On Tue, Nov 1, 2011 at 5:24 PM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Nov 01, 2011 at 04:50:35PM -0700, David Decotigny wrote:
+>> From: David Decotigny <decot@google.com>
+>>
+>> With this patch, we allow systems that don't want to pay the price for
+>> /sys/module/*/paramaters to be compiled without that feature.
+>
+> The "price"?  What kind of price is it?  How much memory is really saved
+> here?
+>
+> greg k-h
+>
