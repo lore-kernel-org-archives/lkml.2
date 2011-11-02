@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933528Ab1KBT1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:27:42 -0400
-Received: from [85.183.114.52] ([85.183.114.52]:56059 "EHLO Dublin.logfs.org"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932850Ab1KBT1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:27:39 -0400
-X-Greylist: delayed 1669 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 15:27:39 EDT
-Date: Wed, 2 Nov 2011 20:00:46 +0100
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josef Bacik <josef@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the logfs tree with Linus' tree
-Message-ID: <20111102190046.GB3485@logfs.org>
-References: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au>
+	id S1756364Ab1KBTaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:30:06 -0400
+Received: from relay01ant.iops.be ([212.53.4.34]:40921 "EHLO
+	relay01ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726Ab1KBTaD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:30:03 -0400
+X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 15:30:03 EDT
+From: Bart Van Assche <bvanassche@acm.org>
+To: linux-acpi@vger.kernel.org
+Subject: [PATCH, RESEND] ACPI: Fix CONFIG_ACPI_DOCK=n compiler warning
+Date: Wed, 2 Nov 2011 20:16:05 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.38.8-scst; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201109231958.55067.bvanassche@acm.org>
+In-Reply-To: <201109231958.55067.bvanassche@acm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111022016.05979.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 November 2011 14:10:00 +1100, Stephen Rothwell wrote:
-> 
-> Hi all,
-> 
-> Today's linux-next merge of the logfs tree got a conflict in
-> fs/logfs/file.c between commit 02c24a82187d ("fs: push i_mutex and
-> filemap_write_and_wait down into ->fsync() handlers") from Linus' tree
-> and commit 39da12ef4bbe ("logfs: take write mutex lock during fsync and
-> sync") from the logfs tree.
-> 
-> I have no idea what needs to be done here.  I fixed it like below to make
-> it build, but a better fix is needed.
+Recently the ACPI ops structs were constified but the inline version
+of register_hotplug_dock_device() was overlooked (see also commit
+9c8b04b, June 25 2011). Update the inline function
+register_hotplug_dock_device() that is enabled with
+CONFIG_ACPI_DOCK=n too. This patch fixes at least the following
+compiler warnings:
 
->From a code perspective your fix below is correct, to the best of my
-judgement.  I'm less sure what to do from a git perspective.
-Explicitly tell Linus about it in the logfs pull request?
+drivers/ata/libata-acpi.c: In function .ata_acpi_associate.:
+drivers/ata/libata-acpi.c:266:11: warning: passing argument 2 of .register_hotplug_dock_device. discards qualifiers from pointer target type
+include/acpi/acpi_drivers.h:146:19: note: expected .struct acpi_dock_ops *. but argument is of type .const struct acpi_dock_ops *.
+drivers/ata/libata-acpi.c:275:11: warning: passing argument 2 of .register_hotplug_dock_device. discards qualifiers from pointer target type
+include/acpi/acpi_drivers.h:146:19: note: expected .struct acpi_dock_ops *. but argument is of type .const struct acpi_dock_ops *.
 
-> diff --cc fs/logfs/file.c
-> index b548c87,f85d603..0000000
-> --- a/fs/logfs/file.c
-> +++ b/fs/logfs/file.c
-> @@@ -219,20 -219,13 +219,22 @@@ long logfs_ioctl(struct file *file, uns
->   	}
->   }
->   
->  -int logfs_fsync(struct file *file, int datasync)
->  +int logfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
->   {
->   	struct super_block *sb = file->f_mapping->host->i_sb;
->  +	struct inode *inode = file->f_mapping->host;
->  +	int ret;
->  +
->  +	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
->  +	if (ret)
->  +		return ret;
->   
->  +	mutex_lock(&inode->i_mutex);
-> + 	logfs_get_wblocks(sb, NULL, WF_LOCK);
->   	logfs_write_anchor(sb);
-> + 	logfs_put_wblocks(sb, NULL, WF_LOCK);
->  +	mutex_unlock(&inode->i_mutex);
->  +
->   	return 0;
->   }
->   
+Cc: Len Brown <len.brown@intel.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Jeff Garzik <jgarzik@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@vger.kernel.org
+---
+ include/acpi/acpi_drivers.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-
-Jörn
-
+diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
+index e49c36d..bb145e4 100644
+--- a/include/acpi/acpi_drivers.h
++++ b/include/acpi/acpi_drivers.h
+@@ -144,7 +144,7 @@ static inline void unregister_dock_notifier(struct notifier_block *nb)
+ {
+ }
+ static inline int register_hotplug_dock_device(acpi_handle handle,
+-					       struct acpi_dock_ops *ops,
++					       const struct acpi_dock_ops *ops,
+ 					       void *context)
+ {
+ 	return -ENODEV;
 -- 
-You can take my soul, but not my lack of enthusiasm.
--- Wally
+1.7.3.4
