@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab1KBJKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:10:22 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49800
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753277Ab1KBJKV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:10:21 -0400
-Date: Wed, 2 Nov 2011 05:10:12 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
-        Curt Wohlgemuth <curtw@google.com>, Michael Rubin <mrubin@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Tang Feng <feng.tang@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, xfs@oss.sgi.com
-Subject: Re: writeback tree status (for 3.2 merge window)
-Message-ID: <20111102091012.GA25879@infradead.org>
-References: <20111101074347.GA23644@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101074347.GA23644@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755265Ab1KBJMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:12:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:60942 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754131Ab1KBJMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:12:20 -0400
+Message-Id: <e39f63$2h6thv@fmsmga002.fm.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,443,1315206000"; 
+   d="scan'208";a="85161535"
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 6/7] drm/i915: Try harder during dp pattern 1 link training
+To: Keith Packard <keithp@keithp.com>, intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>
+In-Reply-To: <1320214830-12696-7-git-send-email-keithp@keithp.com>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-7-git-send-email-keithp@keithp.com>
+Date: Wed, 02 Nov 2011 09:12:13 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 03:43:47PM +0800, Wu Fengguang wrote:
-> Hi,
+On Tue,  1 Nov 2011 23:20:29 -0700, Keith Packard <keithp@keithp.com> wrote:
+> Instead of going through the sequence just once, run through the whole
+> set up to 5 times to see if something can work. This isn't part of the
+> DP spec, but the BIOS seems to do it, and given that link training
+> failure is so bad, it seems reasonable to follow suit.
 > 
-> There are 3 patchsets sitting in the writeback tree.
+> Signed-off-by: Keith Packard <keithp@keithp.com>
+> ---
+>  drivers/gpu/drm/i915/intel_dp.c |   41 +++++++++++++++++++++++++-------------
+>  1 files changed, 27 insertions(+), 14 deletions(-)
 > 
->         1) IO-less dirty throttling v12
->         https://github.com/fengguang/linux/commits/dirty-throttling-v12
-> 
->         2) writeback reasons tracing from Curt Wohlgemuth
->         https://github.com/fengguang/linux/commits/writeback-reason
-> 
->         3) writeback queuing changes from Jan Kara and me
->         https://github.com/fengguang/linux/commits/requeue-io-wait
-> 
-> They have been merged into this branch testing in linux-next for a while:
-> 
-> https://github.com/fengguang/linux/commits/writeback-for-next
-> 
-> Since (3) still has an unresolved issue (detailed in the below
-> links), it looks better to hold it back for this merge window.
+> diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+> index 6be6a04..bf20a35 100644
+> --- a/drivers/gpu/drm/i915/intel_dp.c
+> +++ b/drivers/gpu/drm/i915/intel_dp.c
+> @@ -1576,8 +1576,9 @@ intel_dp_set_link_train(struct intel_dp *intel_dp,
+>  
+>  	ret = intel_dp_aux_native_write(intel_dp,
+>  					DP_TRAINING_LANE0_SET,
+> -					intel_dp->train_set, 4);
+> -	if (ret != 4)
+> +					intel_dp->train_set,
+> +					intel_dp->lane_count);
+> +	if (ret != intel_dp->lane_count)
+>  		return false;
 
-Given that we have run into issues so much with it that's proably
-the better idea.
+This would seem to be a separate chunk to initiate training on only the
+lanes we intend to use.
+-Chris
 
-To fix the originally reported issue with the missing file size updates
-in XFS we plan to simply log all filesize changes in XFS.  Currently I
-had this in the 3.3 queue, but in the worst case we might have to move
-this forward to 3.2.
-
-> The patches from (1,2) together with 2 tracing patches essential for
-> debugging (1) have been pushed to the "writeback-for-linus" branch:
-> 
->         http://git.kernel.org/?p=linux/kernel/git/wfg/linux.git;a=shortlog;h=refs/heads/writeback-for-linus
-> 
-> If no objections, I'll send a pull request to Linus soon.
-
-Please do so.  I'm really looking forward to see the I/O-less
-balance_dirty_pages in ASAP.
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
