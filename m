@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab1KCBcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:32:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50293 "EHLO mx2.suse.de"
+	id S1754977Ab1KCBdC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:33:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50310 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754863Ab1KCBct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:49 -0400
+	id S1754759Ab1KCBc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:32:59 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:52 2011
-Message-Id: <20111102221451.937860715@clark.kroah.org>
+Message-Id: <20111102221452.112592846@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:46 -0700
+Date: Wed, 02 Nov 2011 15:13:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Van Hensbergen <ericvh@gmail.com>
-Subject: [020/107] net/9p: fix client code to fail more gracefully on protocol error
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Venkateswararao=20Jujjuri=20@suse.de,
+        "?= <jvrao@linux.vnet.ibm.com>, "@suse.de, Aneesh@suse.de,
+        Kumar@suse.de, K.V@suse.de,
+        " <aneesh.kumar@linux.vnet.ibm.com>, Eric Van Hensbergen <ericvh@gmail.com>"@suse.de
+Subject: [022/107] net/9p: Fix the msize calculation.
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Van Hensbergen <ericvh@gmail.com>
+From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
 
-commit b85f7d92d7bd7e3298159e8b1eed8cb8cbbb0348 upstream.
+commit c9ffb05ca5b5098d6ea468c909dd384d90da7d54 upstream.
 
-There was a BUG_ON to protect against a bad id which could be dealt with
-more gracefully.
+msize represents the maximum PDU size that includes P9_IOHDRSZ.
 
-Reported-by: Natalie Orlin <norlin@us.ibm.com>
+Signed-off-by: Venkateswararao Jujjuri "<jvrao@linux.vnet.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/9p/client.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/9p/client.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 --- a/net/9p/client.c
 +++ b/net/9p/client.c
-@@ -221,7 +221,8 @@ struct p9_req_t *p9_tag_lookup(struct p9
- 	 * buffer to read the data into */
- 	tag++;
+@@ -698,8 +698,8 @@ struct p9_client *p9_client_create(const
+ 	if (err)
+ 		goto error;
  
--	BUG_ON(tag >= c->max_tag);
-+	if(tag >= c->max_tag)
-+		return NULL;
+-	if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
+-		clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
++	if (clnt->msize > clnt->trans_mod->maxsize)
++		clnt->msize = clnt->trans_mod->maxsize;
  
- 	row = tag / P9_ROW_MAXTAG;
- 	col = tag % P9_ROW_MAXTAG;
+ 	err = p9_client_version(clnt);
+ 	if (err)
 
 
