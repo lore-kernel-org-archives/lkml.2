@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab1KBSOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:14:01 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62662 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752834Ab1KBSOA convert rfc822-to-8bit (ORCPT
+	id S1756158Ab1KBSWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:22:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53062 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab1KBSWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 14:14:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
-References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
-Date: Wed, 2 Nov 2011 11:13:59 -0700
-X-Google-Sender-Auth: 91vjL4mK58c8b6FtxVpkaMJ4sFU
-Message-ID: <CAMbhsRQ7JwzQDmFYf7frwfBvvtkUqdENkmrxtMLRvb-PFbixiw@mail.gmail.com>
-Subject: Re: [PATCH] arm/tegra: add support for tegra30 interrupts
-From: Colin Cross <ccross@android.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 2 Nov 2011 14:22:49 -0400
+X-Authority-Analysis: v=1.1 cv=rFxaVhpzdNKRsWyFDFmDbYx/QEtlW7L1Gw9MiLxO4aw= c=1 sm=0 a=DJOu6W8zkUMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=d91OG6ziQ8P09lIm3SsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320258167.4793.45.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Restore system filter behavior
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Nov 2011 14:22:47 -0400
+In-Reply-To: <4EAF46CF.8040408@cn.fujitsu.com>
+References: <4EAF46CF.8040408@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 8:38 AM, Peter De Schrijver
-<pdeschrijver@nvidia.com> wrote:
-> Tegra30 has 1 extra legacy interrupt controller. Use the GIC ITLinesNumber
-> field to determine how many interrupt controllers we have and initialize
-> appropriately. Also make room for the extra tegra30 interrupts by moving
-> the GPIO IRQ base. This shouldn't affect existing code as it determines the
-> correct IRQ number for GPIOs using TEGRA_GPIO_TO_IRQ()
->
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> ---
->  arch/arm/mach-tegra/include/mach/iomap.h |    3 +++
->  arch/arm/mach-tegra/include/mach/irqs.h  |   14 +++++++-------
->  arch/arm/mach-tegra/irq.c                |   15 ++++++++++-----
->  3 files changed, 20 insertions(+), 12 deletions(-)
->
+On Tue, 2011-11-01 at 09:09 +0800, Li Zefan wrote:
+> Though not all events have field 'prev_pid', it was allowed to do this:
+> 
+>   # echo 'prev_pid == 100' > events/sched/filter
+> 
+> but commit 75b8e98263fdb0bfbdeba60d4db463259f1fe8a2 (tracing/filter: Swap
+> entire filter of events) broke it without any reason.
 
-<snip>
+I wouldn't say "without any reason" as there was a reason.
 
-> diff --git a/arch/arm/mach-tegra/irq.c b/arch/arm/mach-tegra/irq.c
-> index 8ad82af..aad335b 100644
-> --- a/arch/arm/mach-tegra/irq.c
-> +++ b/arch/arm/mach-tegra/irq.c
-<snip>
-> @@ -112,8 +114,12 @@ static int tegra_retrigger(struct irq_data *d)
->  void __init tegra_init_irq(void)
->  {
->        int i;
-> +       void __iomem *distbase;
-> +
-> +       distbase = IO_ADDRESS(TEGRA_ARM_INT_DIST_BASE);
-> +       num_ictlrs = readl_relaxed(distbase + GIC_DIST_CTR) & 0x1f;
+But I'm not pleased with the way this all works still.
 
-Check num_ictlrs against ARRAY_SIZE(ictlr_reg_base)
+# echo 'prev_pid == 100' > /debug/tracing/events/sched/filter
+# cat /debug/tracing/events/sched/filter
+prev_pid == 100
 
-Other than that:
-Acked-by: Colin Cross <ccross@android.com>
+# cat /debug/tracing/events/sched/sched_migrate_task/filter
+none
+
+# echo 'orig_cpu == 1' > /debug/tracing/events/sched/sched_migrate_task/filter
+# cat /debug/tracing/events/sched/sched_migrate_task/filter
+orig_cpu == 1
+
+# cat /debug/tracing/events/sched/filter
+prev_pid == 100
+
+
+The above shows how things are just ambiguous. I have no problem in
+using the top filter to set multiple events. But the top filter should
+not keep the state of what was set. Perhaps just have system event
+filters always show default text. Like:
+
+# cat /debug/tracing/events/sched/filter
+### global filter ###
+# Use this to set multiple event filters
+# Only affects events that have the event fields specified in the filter
+
+
+I'll add your patch, but are you OK with the above always printing for
+system event filters?  Just to remove the ambiguous state.
+
+-- Steve
+
+
