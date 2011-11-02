@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab1KCCEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:04:52 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:51671 "EHLO imr4.ericy.com"
+	id S933742Ab1KCBh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:37:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50834 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932124Ab1KCCEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:04:48 -0400
-Date: Wed, 2 Nov 2011 19:03:01 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Lars =?iso-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: Hardware running hot and without the fan
-Message-ID: <20111103020301.GA22333@ericsson.com>
-References: <4EB1108F.6070009@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EB1108F.6070009@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755324Ab1KCBhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:37:24 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:59 2011
+Message-Id: <20111102221459.091971994@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 02 Nov 2011 15:15:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Manoj Iyer <manoj.iyer@canonical.com>,
+        Andy Lutomirski <luto@mit.edu>, Matthew Garrett <mjg@redhat.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        =?ISO-8859-15?q?Bj=F8rn=20Mork?= <bjorn@mork.no>
+Subject: [098/107] thinkpad-acpi: module autoloading for newer Lenovo ThinkPads.
+In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From LKML:
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-On Wed, Nov 02, 2011 at 05:42:39AM -0400, Lars Noodén wrote:
-> There seem to be two problems here, one is that the hardware is getting
-> WAY too hot, another is that the fan is not turning on when the hardware
-> gets too hot.
-> 
->   $ uname -a
->   Linux xubuntu 3.1.0-999-generic #201110270406 SMP Thu Oct 27
->   08:07:41 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
-> 
-> I've reported the problem to Ubuntu
-> 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
-> and the suggestion there was to report it upstream.
-> 
-> On the notebook computer, parts become very hot to the touch while
-> running Ubuntu, but the fan does not run even after it gets hot.  When I
-> boot back to OS X, the fan kicks in and runs until the computer returns
-> to being cool to the touch.  Similar for the desktop, though I must
-> follow the temperature with /usr/bin/sensors.
-> 
-> The notebook is a MacBookPro8,2 and the desktop is a Macmini3,1
-> 
-> What metrics do I need to collect to help fix the problem?  I've already
-> reported the problem to Ubuntu[2] and the recommendation was to try
-> reporting upstream.
-> 
-> Please CC me in the replies.
-> /Lars
-> 
-> [1] http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
-> 
-> [2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
+------------------
 
-I see
-	applesmc: : read arg fail
-in the dmesg log. No idea what that means. Maybe the driver maintainer 
-or someone else on the lm-sensors mailing list can help.
+From: Manoj Iyer <manoj.iyer@canonical.com>
 
-Not sure I understand your comment about having to follow the output of the
-sensors command. Can you clarify ? Also, do you get any output from the sensors
-command on the notebook ?
+commit 9fbdaeb4f4dd14a0caa9fc35c496d5440c251a3a upstream.
 
-Thanks,
-Guenter
+The newer Lenovo ThinkPads have HKEY HID of LEN0068 instead
+of IBM0068. Added new HID so that thinkpad_acpi module will
+auto load on these newer Lenovo ThinkPads.
+
+Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: stable@vger.kernel.org
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/platform/x86/thinkpad_acpi.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -118,7 +118,9 @@ enum {
+ };
+ 
+ /* ACPI HIDs */
+-#define TPACPI_ACPI_HKEY_HID		"IBM0068"
++#define TPACPI_ACPI_IBM_HKEY_HID	"IBM0068"
++#define TPACPI_ACPI_LENOVO_HKEY_HID	"LEN0068"
++#define TPACPI_ACPI_EC_HID		"PNP0C09"
+ 
+ /* Input IDs */
+ #define TPACPI_HKEY_INPUT_PRODUCT	0x5054 /* "TP" */
+@@ -3840,7 +3842,8 @@ errexit:
+ }
+ 
+ static const struct acpi_device_id ibm_htk_device_ids[] = {
+-	{TPACPI_ACPI_HKEY_HID, 0},
++	{TPACPI_ACPI_IBM_HKEY_HID, 0},
++	{TPACPI_ACPI_LENOVO_HKEY_HID, 0},
+ 	{"", 0},
+ };
+ 
+
 
