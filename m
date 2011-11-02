@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977Ab1KCBdC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:33:02 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50310 "EHLO mx2.suse.de"
+	id S1754989Ab1KCBdH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:33:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50315 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754759Ab1KCBc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:59 -0400
+	id S1754984Ab1KCBdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:33:02 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:52 2011
-Message-Id: <20111102221452.112592846@clark.kroah.org>
+Message-Id: <20111102221452.201109316@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:48 -0700
+Date: Wed, 02 Nov 2011 15:13:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Venkateswararao=20Jujjuri=20@suse.de,
-        "?= <jvrao@linux.vnet.ibm.com>, "@suse.de, Aneesh@suse.de,
-        Kumar@suse.de, K.V@suse.de,
-        " <aneesh.kumar@linux.vnet.ibm.com>, Eric Van Hensbergen <ericvh@gmail.com>"@suse.de
-Subject: [022/107] net/9p: Fix the msize calculation.
+        alan@lxorguk.ukuu.org.uk, Randy Dunlap <randy.dunlap@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [023/107] irda: fix smsc-ircc2 section mismatch warning
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,33 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit c9ffb05ca5b5098d6ea468c909dd384d90da7d54 upstream.
+commit f470e5ae34d68880a38aa79ee5c102ebc2a1aef6 upstream.
 
-msize represents the maximum PDU size that includes P9_IOHDRSZ.
+Fix section mismatch warning:
 
-Signed-off-by: Venkateswararao Jujjuri "<jvrao@linux.vnet.ibm.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+WARNING: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open()
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/9p/client.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/irda/smsc-ircc2.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/9p/client.c
-+++ b/net/9p/client.c
-@@ -698,8 +698,8 @@ struct p9_client *p9_client_create(const
- 	if (err)
- 		goto error;
- 
--	if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
--		clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
-+	if (clnt->msize > clnt->trans_mod->maxsize)
-+		clnt->msize = clnt->trans_mod->maxsize;
- 
- 	err = p9_client_version(clnt);
- 	if (err)
+--- a/drivers/net/irda/smsc-ircc2.c
++++ b/drivers/net/irda/smsc-ircc2.c
+@@ -515,7 +515,7 @@ static const struct net_device_ops smsc_
+  *    Try to open driver instance
+  *
+  */
+-static int __init smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
++static int __devinit smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
+ {
+ 	struct smsc_ircc_cb *self;
+ 	struct net_device *dev;
 
 
