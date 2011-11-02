@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571Ab1KCBuu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:50:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51389 "EHLO mx2.suse.de"
+	id S934618Ab1KCBvN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:51:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51374 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934684Ab1KCBmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:42:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:43 2011
-Message-Id: <20111102222742.989627088@clark.kroah.org>
+	id S934672Ab1KCBl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:41:57 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
+Message-Id: <20111102222742.817084435@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:20 -0700
+Date: Wed, 02 Nov 2011 15:26:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [036/101] TPM: Call tpm_transmit with correct size
+        alan@lxorguk.ukuu.org.uk, Kiran Patil <kiran.patil@intel.com>,
+        Robert Love <robert.w.love@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [034/101] [SCSI] fcoe: Unable to select the exchangeID from offload pool for storage targets
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <huewe.external.infineon@googlemail.com>
+From: Kiran Patil <kiran.patil@intel.com>
 
-commit 6b07d30aca7e52f2881b8c8c20c8a2cd28e8b3d3 upstream.
+commit 1ff9918b625457ce20d450d00f9ed0a12ba191b7 upstream.
 
-This patch changes the call of tpm_transmit by supplying the size of the
-userspace buffer instead of TPM_BUFSIZE.
+Problem: When initiator sends write command to target, target tries to
+assign new sequence. It allocates new exchangeID (RX_ID)
+always from non-offloaded pool (Non-offload EMA)
 
-This got assigned CVE-2011-1161.
+Fix: Enhanced fcoe_oem_match routine to look at F_CTL flags and if it
+is exchange responder and command type is WRITEDATA, then function
+returns TRUE instead of FALSE. This function is used to determine
+which pool to use (offload pool of exchange is used only if this
+function returns TRUE).
 
-[The first hunk didn't make sense given one could expect
- way less data than TPM_BUFSIZE, so added tpm_transmit boundary
- check over bufsiz instead
- The last parameter of tpm_transmit() reflects the amount
- of data expected from the device, and not the buffer size
- being supplied to it. It isn't ideal to parse it directly,
- so we just set it to the maximum the input buffer can handle
- and let the userspace API to do such job.]
+Technical Notes: N/A
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Kiran Patil <kiran.patil@intel.com>
+Signed-off-by: Robert Love <robert.w.love@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/fcoe/fcoe.c |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -374,6 +374,9 @@ static ssize_t tpm_transmit(struct tpm_c
- 	u32 count, ordinal;
- 	unsigned long stop;
- 
-+	if (bufsiz > TPM_BUFSIZE)
-+		bufsiz = TPM_BUFSIZE;
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -704,12 +704,27 @@ static int fcoe_shost_config(struct fc_l
+  * The offload EM that this routine is associated with will handle any
+  * packets that are for SCSI read requests.
+  *
++ * This has been enhanced to work when FCoE stack is operating in target
++ * mode.
++ *
+  * Returns: True for read types I/O, otherwise returns false.
+  */
+ bool fcoe_oem_match(struct fc_frame *fp)
+ {
+-	return fc_fcp_is_read(fr_fsp(fp)) &&
+-		(fr_fsp(fp)->data_len > fcoe_ddp_min);
++	struct fc_frame_header *fh = fc_frame_header_get(fp);
++	struct fcp_cmnd *fcp;
 +
- 	count = be32_to_cpu(*((__be32 *) (buf + 2)));
- 	ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
- 	if (count == 0)
++	if (fc_fcp_is_read(fr_fsp(fp)) &&
++	    (fr_fsp(fp)->data_len > fcoe_ddp_min))
++		return true;
++	else if (!(ntoh24(fh->fh_f_ctl) & FC_FC_EX_CTX)) {
++		fcp = fc_frame_payload_get(fp, sizeof(*fcp));
++		if (ntohs(fh->fh_rx_id) == FC_XID_UNKNOWN &&
++		    fcp && (ntohl(fcp->fc_dl) > fcoe_ddp_min) &&
++		    (fcp->fc_flags & FCP_CFL_WRDATA))
++			return true;
++	}
++	return false;
+ }
+ 
+ /**
 
 
