@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab1KBGNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 02:13:18 -0400
-Received: from portal.weinmann.de ([62.8.140.122]:9386 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab1KBGNQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 02:13:16 -0400
-X-Greylist: delayed 971 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 02:13:15 EDT
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'H Hartley Sweeten'" <hartleys@visionengravers.com>,
-        =?iso-8859-1?Q?=27H=E5vard_Skinnemoen=27?= <hskinnemoen@gmail.com>
-CC: "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 2 Nov 2011 06:56:50 +0100
-Subject: RE: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
-Thread-Topic: [PATCH] i2c-gpio.c: correct logic of pdata->scl_is_open_drain
-Thread-Index: AcyYZE/mlvGDbQhsR7a2xIKWGvqqQgABwoQgABHIWCAAG9UGYA==
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B34C115@wm021.weinmann.com>
-References: <EF2E73589CA71846A15D0B2CDF79505D087B34BE51@wm021.weinmann.com>
-	<CAF8ieYXPMgUzekth7PGxC3AgYNKac-HQ21D3vvB5J3SLOatmfQ@mail.gmail.com>
-	<EF2E73589CA71846A15D0B2CDF79505D087B34BE8B@wm021.weinmann.com>
-	<CAF8ieYWY2RwkgPERgagvw2bby8Y+UFgrYr3zPOb27e=bfOH-vg@mail.gmail.com>
- <EF2E73589CA71846A15D0B2CDF79505D087B34BEE2@wm021.weinmann.com>
- <ADE657CA350FB648AAC2C43247A983F001F39DF77673@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F39DF77673@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	id S1753623Ab1KBGUt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 02:20:49 -0400
+Received: from home.keithp.com ([63.227.221.253]:58234 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752730Ab1KBGUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 02:20:46 -0400
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>
+Subject: [PATCH 0/7] drm/i915: Fix PCH eDP support for SNB
+Date: Tue,  1 Nov 2011 23:20:23 -0700
+Message-Id: <1320214830-12696-1-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If the "is_open_drain" flags are not set, the I2C bus works correctly
-> regardless of the existence of the pull-ups.
+Here's a patch sequence which makes my PCH-connected eDP panel
+work. The main bug was a pile of places where the driver was
+incorrectly treating a PCH connected eDP panel like a CPU connected
+eDP panel, setting incorrect bits in the DP_CTL register and failing
+to configure the TRANS_DP_CTL register entirely.
 
-No, I2C can only work with anything pulling up SDA weakly, usually an
-external pullup. This is independent of the "is_open_drain" property
-which only describes how the driver internally accomplishes the high
-impedance state.
+Beyond that, this eDP panel appears very sensitive to panel power
+sequencing, and I found a bunch of minor errors there. I switched from
+using blind timings to polling the panel power sequencing status
+register to make sure we waited until that thought things were done,
+and so that any panel power sequencing errors would show up in the
+kernel log.
 
-SCL can be driven push-pull ("scl_is_output_only") but will not be
-I2C-compliant any more (no clock stretching), and only clients not relying
-on that feature will work.
+Finally, I noticed that the BIOS tried harder to get the link trained,
+by simply starting over when it failed and trying the whole sequence
+up to 5 times. This is not part of the DP spec, but given how bad
+failing to train a panel is, it seems like it might be a good idea.
 
-Niko
+The three most interesting patches are the one which handles PCH eDP
+more like PCH DP, the one which switches to using the panel power
+sequencing hardware for all delays and finally the patch which tries
+to do the panel power-up/down in the same order for both
+dp_prepare/commit and dp_dpms.
+
+All of these patches are on my pch-edp-fixes branch at
+
+	git://people.freedesktop.org/~keithp/linux
+
+If you've got a PCH connected eDP display, I'd love to know if this
+makes it work. If you've got a CPU connected eDP display or PCH
+connected DP, please see if this causes any problems.
+
+(I've got several machines failing to resume with this patch, but I've
+checked and it's not the fault of anything in the i915 directory;
+applying this sequence to v3.1 makes suspend/resume work fine).
 
