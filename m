@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277Ab1KCCKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:10:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50626 "EHLO mx2.suse.de"
+	id S1755404Ab1KCCLN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:11:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50620 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933241Ab1KCBfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:35:51 -0400
+	id S933303Ab1KCBfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:35:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221456.513177008@clark.kroah.org>
+Message-Id: <20111102221456.420361190@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:36 -0700
+Date: Wed, 02 Nov 2011 15:14:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [070/107] kmod: prevent kmod_loop_msg overflow in __request_module()
+        alan@lxorguk.ukuu.org.uk, Milan Broz <mbroz@redhat.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: [069/107] kobj_uevent: Ignore if some listeners cannot handle message
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Milan Broz <mbroz@redhat.com>
 
-commit 37252db6aa576c34fd794a5a54fb32d7a8b3a07a upstream.
+commit ebf4127cd677e9781b450e44dfaaa1cc595efcaa upstream.
 
-Due to post-increment in condition of kmod_loop_msg in __request_module(),
-the system log can be spammed by much more than 5 instances of the 'runaway
-loop' message if the number of events triggering it makes the kmod_loop_msg
-to overflow.
+kobject_uevent() uses a multicast socket and should ignore
+if one of listeners cannot handle messages or nobody is
+listening at all.
 
-Fix that by making sure we never increment it past the threshold.
+Easily reproducible when a process in system is cloned
+with CLONE_NEWNET flag.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+(See also http://article.gmane.org/gmane.linux.kernel.device-mapper.dm-crypt/5256)
+
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+Acked-by: Kay Sievers <kay.sievers@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/kmod.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ lib/kobject_uevent.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -106,10 +106,12 @@ int __request_module(bool wait, const ch
- 	atomic_inc(&kmod_concurrent);
- 	if (atomic_read(&kmod_concurrent) > max_modprobes) {
- 		/* We may be blaming an innocent here, but unlikely */
--		if (kmod_loop_msg++ < 5)
-+		if (kmod_loop_msg < 5) {
- 			printk(KERN_ERR
- 			       "request_module: runaway loop modprobe %s\n",
- 			       module_name);
-+			kmod_loop_msg++;
-+		}
- 		atomic_dec(&kmod_concurrent);
- 		return -ENOMEM;
- 	}
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -235,7 +235,7 @@ int kobject_uevent_env(struct kobject *k
+ 			retval = netlink_broadcast(uevent_sock, skb, 0, 1,
+ 						   GFP_KERNEL);
+ 			/* ENOBUFS should be handled in userspace */
+-			if (retval == -ENOBUFS)
++			if (retval == -ENOBUFS || retval == -ESRCH)
+ 				retval = 0;
+ 		} else
+ 			retval = -ENOMEM;
 
 
