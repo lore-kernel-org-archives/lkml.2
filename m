@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab1KBWnZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:43:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:44004 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753403Ab1KBWnU (ORCPT
+	id S1753442Ab1KBWoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:44:23 -0400
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:65275 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751079Ab1KBWoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:43:20 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+oA476LcCwpdkqLQld1P+X
-Date: Wed, 2 Nov 2011 15:43:17 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [PATCH] net: Add back alignment for size for __alloc_skb
-Message-ID: <20111102224317.GM31337@atomide.com>
+	Wed, 2 Nov 2011 18:44:18 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAI/HsU4Y9geI/2dsb2JhbAAMOIR4ommFDQEBAQEDI1UBEAsODAIFFgsCAgkDAgECAUUGDQEHAQGqeZI1gTCGTIEUBKYV
+X-IronPort-AV: E=Sophos;i="4.69,446,1315195200"; 
+   d="scan'208";a="145988440"
+Message-ID: <4EB1C7BC.1040801@teksavvy.com>
+Date: Wed, 02 Nov 2011 18:44:12 -0400
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>
+In-Reply-To: <1320266549.2782.21.camel@bwh-desktop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 87fb4b7b533073eeeaed0b6bf7c2328995f6c075 (net: more
-accurate skb truesize) changed the alignment of size. This
-can cause problems at least on some machines with NFS root:
+On 11-11-02 04:42 PM, Ben Hutchings wrote:
+[various good notes on things that still need fixing]
 
-Unhandled fault: alignment exception (0x801) at 0xc183a43a
-Internal error: : 801 [#1] PREEMPT
-Modules linked in:
-CPU: 0    Not tainted  (3.1.0-08784-g5eeee4a #733)
-pc : [<c02fbba0>]    lr : [<c02fbb9c>]    psr: 60000013
-sp : c180fef8  ip : 00000000  fp : c181f580
-r10: 00000000  r9 : c044b28c  r8 : 00000001
-r7 : c183a3a0  r6 : c1835be0  r5 : c183a412  r4 : 000001f2
-r3 : 00000000  r2 : 00000000  r1 : ffffffe6  r0 : c183a43a
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 0005317f  Table: 10004000  DAC: 00000017
-Process swapper (pid: 1, stack limit = 0xc180e270)
-Stack: (0xc180fef8 to 0xc1810000)
-fee0:                                                       00000024 00000000
-ff00: 00000000 c183b9c0 c183b8e0 c044b28c c0507ccc c019dfc4 c180ff2c c0503cf8
-ff20: c180ff4c c180ff4c 00000000 c1835420 c182c740 c18349c0 c05233c0 00000000
-ff40: 00000000 c00e6bb8 c180e000 00000000 c04dd82c c0507e7c c050cc18 c183b9c0
-ff60: c05233c0 00000000 00000000 c01f34f4 c0430d70 c019d364 c04dd898 c04dd898
-ff80: c04dd82c c0507e7c c180e000 00000000 c04c584c c01f4918 c04dd898 c04dd82c
-ffa0: c04ddd28 c180e000 00000000 c0008758 c181fa60 3231d82c 00000037 00000000
-ffc0: 00000000 c04dd898 c04dd82c c04ddd28 00000013 00000000 00000000 00000000
-ffe0: 00000000 c04b2224 00000000 c04b21a0 c001056c c001056c 00000000 00000000
-Function entered at [<c02fbba0>] from [<c019dfc4>]
-Function entered at [<c019dfc4>] from [<c01f34f4>]
-Function entered at [<c01f34f4>] from [<c01f4918>]
-Function entered at [<c01f4918>] from [<c0008758>]
-Function entered at [<c0008758>] from [<c04b2224>]
-Function entered at [<c04b2224>] from [<c001056c>]
-Code: e1a00005 e3a01028 ebfa7cb0 e35a0000 (e5858028)
+Thanks Ben, those are exactly the kind of things
+I was hoping for people like you to point out here.
 
-Here PC is at __alloc_skb and &shinfo->dataref is unaligned because
-skb->end can be unaligned without this patch.
+Also, I have now opened a line of communications with ASIX themselves,
+and have their blessing for this project.  They've also now sent me
+a newer code dump than the one I was using.  I'll diff the two and
+add in any relevant changes for the next iteration.
 
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -189,6 +189,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	 * aligned memory blocks, unless SLUB/SLAB debug is enabled.
- 	 * Both skb->head and skb_shared_info are cache line aligned.
- 	 */
-+	size = SKB_DATA_ALIGN(size);
- 	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
- 	data = kmalloc_node_track_caller(size, gfp_mask, node);
- 	if (!data)
+Cheers
