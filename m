@@ -1,61 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab1KBEy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 00:54:59 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56307 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab1KBEy4 (ORCPT
+	id S1751910Ab1KBFVY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 01:21:24 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36192 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab1KBFVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 00:54:56 -0400
-Subject: Re: [PULL] virtio
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-In-Reply-To: <8739e7uy87.fsf@rustcorp.com.au>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
-	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
-	 <20111101124223.GA14060@redhat.com>  <8739e7uy87.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 02 Nov 2011 06:52:44 +0200
-Message-ID: <1320209564.9173.6.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Nov 2011 01:21:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111101113607.15b254c6@bob.linux.org.uk>
+References: <CA+Y=x3=xEa6XVspsodhbKOArtZ7VMYSMLhpF4WZ1sFNfaJ_E9g@mail.gmail.com>
+	<20111101113607.15b254c6@bob.linux.org.uk>
+Date: Wed, 2 Nov 2011 16:21:21 +1100
+Message-ID: <CA+Y=x3k+jxN7LEk64mHkFQkkQhWa_KX7Uh+Uwuk0u87c+FiG_Q@mail.gmail.com>
+Subject: Re: [PATCH] Fix Corruption issue in USB ftdi driver drivers/usb/serial/ftdi_sio.c
+From: Andrew Worsley <amworsley@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>,
+        Johan Hovold <jhovold@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 11:39 +1030, Rusty Russell wrote:
-> On Tue, 1 Nov 2011 14:42:23 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Tue, Nov 01, 2011 at 02:33:33PM +0200, Sasha Levin wrote:
-> > > Unless Michael pointed this patch out, it would have broken (at least)
-> > > the kvm tool in a non obvious way which would require a rather long
-> > > session of 'git bisect' to figure out whats wrong.
-> 
-> I assumed not, until QEMU provided the second BAR it would simply fall
-> back.  Or am I completely misunderstanding?
+Avoid unnecessary Control URBs that reset the data/parity or baud rate
+to the currently set settings which can cause the FTDI chip to glitch
+it's serial output and cause a corruption of a character it is
+currently outputting.
 
-QEMU uses two bars within each virtio-pci device. First one (BAR 0) is
-the PIO config BAR, and the second one (BAR 1) is the MSI-X BAR used for
-the MSI-X table and the PBA.
+Signed-off-by: amworsley@gmail.com
 
-Since the PCI spec allows you to have the MSI-X table and the PBA in
-completely different regions pointed by two different BARs, we did so in
-kvm tools and have BAR 1 pointing to the MSI-X table, and BAR 2 pointing
-to the PBA ( - we *already* provided the second BAR and used it for
-something else).
+---
 
-This means that with this patch, we'd load BAR 2 and use it as the
-config space, instead of the PBA table which it really represents.
+On 1 November 2011 22:36, Alan Cox <alan@linux.intel.com> wrote:
+>> I don't know why it repeatedly tries to set this all the time - it
+>> would appear to be quite a lot of work so perhaps there is something
+>> else that could be cleaned up. This was the simplest safe change that
+>> fixed my problem. It appears this code hasn't changed very much since
+>> the first history information in git that I could see - so perhaps
+>> nobody else is really noticing this issue for some reason?
+>
+> It could be a problem specific to some firmware or revision. We've had
+> a similar quirk with a different USB adapter. The actual calls to keep
+> changing it are coming from your application however.
 
--- 
+"My" application is getty via inittab e.g.
+T0:23:respawn:/sbin/getty -L ttyUSB0 115200 vt100
 
-Sasha.
+  Something I would expect to be fairly common. Actually after login
+it is "bash" which is running presumably the getty set the tty
+parameters like speed and flow control.
 
+>
+>>         cflag = termios->c_cflag;
+>>
+>> -       /* FIXME -For this cut I don't care if the line is really
+>> changing or
+>> -          not  - so just do the change regardless  - should be able
+>> to
+>> -          compare old_termios and tty->termios */
+>> +       /* compare old_termios and tty->termios */
+>> +    if (old_termios->c_cflag == termios->c_cflag)
+>> +        goto no_c_cflag_changes;
+>
+> You can't do it this way because the speed data is not entirely within
+> c_cflag. Check c_ispeed and c_ospeed match and for the parity if you want to skip
+> that check if the parity bits change specifically.
+>
+This is getting into magic flags I don't understand. There are so few
+bits in c_cflag not related to speed and data/parity I am hesitant  to
+write a complex check I might well get wrong. But flow control appears
+to be switched off / on frequently during data flow,
+my guess as part of flow controlling the input and I suggest a speed
+change is likely to be a once per login or line usage occurrence.
+
+Here's a more sophisticated version of this which attempts to do this.
+It works on my 2.6.32 kernel and compiles the latest kernel.
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 8fe034d..66a2d09 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2104,13 +2104,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
+
+        cflag = termios->c_cflag;
+
+-       /* FIXME -For this cut I don't care if the line is really changing or
+-          not  - so just do the change regardless  - should be able to
+-          compare old_termios and tty->termios */
++       /* compare old_termios and tty->termios */
++    if (old_termios->c_cflag == termios->c_cflag
++      && old_termios->c_ispeed == termios->c_ispeed
++      && old_termios->c_ospeed == termios->c_ospeed
++      )
++        goto no_c_cflag_changes;
++
+        /* NOTE These routines can get interrupted by
+           ftdi_sio_read_bulk_callback  - need to examine what this means -
+           don't see any problems yet */
+
++    if ((old_termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)) ==
++        (termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)))
++        goto no_data_parity_stop_changes;
+        /* Set number of data bits, parity, stop bits */
+
+        urb_value = 0;
+@@ -2150,6 +2157,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
+                        "databits/stopbits/parity\n", __func__);
+        }
+
++no_data_parity_stop_changes:
+        /* Now do the baudrate */
+        if ((cflag & CBAUD) == B0) {
+                /* Disable flow control */
+@@ -2176,6 +2184,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
+                        set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+        }
+
++no_c_cflag_changes:
+        /* Set flow control */
+        /* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
+        if (cflag & CRTSCTS) {
