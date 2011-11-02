@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1KCB5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:57:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51126 "EHLO mx2.suse.de"
+	id S1755009Ab1KCB57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:57:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51115 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934303Ab1KCBkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:40:00 -0400
+	id S933296Ab1KCBjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:53 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:40 2011
-Message-Id: <20111102222740.604862267@clark.kroah.org>
+Message-Id: <20111102222740.418720371@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:25:54 -0700
+Date: Wed, 02 Nov 2011 15:25:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michal Schmidt <mschmidt@redhat.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [010/101] GRO: fix merging a paged skb after non-paged skbs
+        alan@lxorguk.ukuu.org.uk, Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Apollon Oikonomopoulos <apoikos@gmail.com>,
+        Faidon Liambotis <paravoid@debian.org>
+Subject: [008/101] ipv6: Add GSO support on forwarding path
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Schmidt <mschmidt@redhat.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit d1dc7abf2fafa34b0ffcd070fd59405aa9c0a4d8 upstream.
+commit 0aa68271510ae2b221d4b60892103837be63afe4 upstream.
 
-Suppose that several linear skbs of the same flow were received by GRO. They
-were thus merged into one skb with a frag_list. Then a new skb of the same flow
-arrives, but it is a paged skb with data starting in its frags[].
+Currently we disallow GSO packets on the IPv6 forward path.
+This patch fixes this.
 
-Before adding the skb to the frag_list skb_gro_receive() will of course adjust
-the skb to throw away the headers. It correctly modifies the page_offset and
-size of the frag, but it leaves incorrect information in the skb:
- ->data_len is not decreased at all.
- ->len is decreased only by headlen, as if no change were done to the frag.
-Later in a receiving process this causes skb_copy_datagram_iovec() to return
--EFAULT and this is seen in userspace as the result of the recv() syscall.
+Note that I discovered that our existing GSO MTU checks (e.g.,
+IPv4 forwarding) are buggy in that they skip the check altogether,
+when they really should be checking gso_size + header instead.
 
-In practice the bug can be reproduced with the sfc driver. By default the
-driver uses an adaptive scheme when it switches between using
-napi_gro_receive() (with skbs) and napi_gro_frags() (with pages). The bug is
-reproduced when under rx load with enough successful GRO merging the driver
-decides to switch from the former to the latter.
+I have also been lazy here in that I haven't bothered to segment
+the GSO packet by hand before generating an ICMP message.  Someone
+should add that to be 100% correct.
 
-Manual control is also possible, so reproducing this is easy with netcat:
- - on machine1 (with sfc): nc -l 12345 > /dev/null
- - on machine2: nc machine1 12345 < /dev/zero
- - on machine1:
-   echo 1 > /sys/module/sfc/parameters/rx_alloc_method  # use skbs
-   echo 2 > /sys/module/sfc/parameters/rx_alloc_method  # use pages
- - See that nc has quit suddenly.
-
-[v2: Modified by Eric Dumazet to avoid advancing skb->data past the end
-     and to use a temporary variable.]
-
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Apollon Oikonomopoulos <apoikos@gmail.com>
+Signed-off-by: Faidon Liambotis <paravoid@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/core/skbuff.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/ipv6/ip6_output.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2745,8 +2745,12 @@ int skb_gro_receive(struct sk_buff **hea
- 
- merge:
- 	if (offset > headlen) {
--		skbinfo->frags[0].page_offset += offset - headlen;
--		skbinfo->frags[0].size -= offset - headlen;
-+		unsigned int eat = offset - headlen;
-+
-+		skbinfo->frags[0].page_offset += eat;
-+		skbinfo->frags[0].size -= eat;
-+		skb->data_len -= eat;
-+		skb->len -= eat;
- 		offset = headlen;
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -509,7 +509,7 @@ int ip6_forward(struct sk_buff *skb)
+ 		}
  	}
  
+-	if (skb->len > dst_mtu(dst)) {
++	if (skb->len > dst_mtu(dst) && !skb_is_gso(skb)) {
+ 		/* Again, force OUTPUT device used as source address */
+ 		skb->dev = dst->dev;
+ 		icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, dst_mtu(dst), skb->dev);
 
 
