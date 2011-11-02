@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1KBWk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:40:27 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:11082 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab1KBWkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:40:25 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, avagin@openvz.org,
-        devel@openvz.org
-Subject: [PATCH] event: fix TP_printk() argument in sched_switch
-Date: Thu,  3 Nov 2011 01:40:11 +0300
-Message-Id: <1320273611-2463347-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
+	id S1753405Ab1KBWnM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:43:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52490 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab1KBWnJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:43:09 -0400
+Message-ID: <4EB1C770.7070605@gmail.com>
+Date: Wed, 02 Nov 2011 23:42:56 +0100
+From: Eric Dumazet <eric.dumazet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Simon Kirby <sim@hostway.ca>
+CC: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Network Development <netdev@vger.kernel.org>,
+        Balazs Scheidler <bazsi@balabit.hu>,
+        KOVACS Krisztian <hidden@balabit.hu>
+Subject: Re: Linux 3.1-rc9
+References: <1318928713.21167.4.camel@twins> <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos> <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca> <20111031173246.GA10614@hostway.ca> <alpine.LFD.2.02.1111021725550.2829@ionos> <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111102191621.GF5971@hostway.ca>
+In-Reply-To: <20111102191621.GF5971@hostway.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-process_arg(...) can't parse "__entry->prev_state & (TASK_STATE_MAX-1)",
-because a complicated argument should be within brackets.
+On 02/11/2011 20:16, Simon Kirby wrote:
 
-Without this patch "perf report" prints following errors:
-$ ./perf record -ag -e sched:sched_switch
-...
-$ ./perf report
-  Warning: Error: expected type 5 but read 4
-  Warning: Error: expected type 4 but read 0
-  Fatal: bad op token {
+ 
+> Actually, we have an anti-abuse daemon that injects blackhole routes, so
+> this makes sense. (The daemon was written before ipsets were merged and
+> normal netfilter rules make it fall over under attack.)
+> 
+> I'll try with this patch. Thanks!
+> 
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
+
+Thanks !
+
+Here is the official submission, please add your 'Tested-by' signature
+when you can confirm problem goes away.
+
+(It did here, when I injected random NULL returns from
+inet_csk_route_child_sock(), so I am confident this is the problem you hit )
+
+[PATCH] net: add missing bh_unlock_sock() calls
+
+Simon Kirby reported lockdep warnings and following messages :
+
+[104661.897577] huh, entered softirq 3 NET_RX ffffffff81613740
+preempt_count 00000101, exited with 00000102?
+
+[104661.923653] huh, entered softirq 3 NET_RX ffffffff81613740
+preempt_count 00000101, exited with 00000102?
+
+Problem comes from commit 0e734419
+(ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
+
+If inet_csk_route_child_sock() returns NULL, we should release socket
+lock before freeing it.
+
+Another lock imbalance exists if __inet_inherit_port() returns an error
+since commit 093d282321da ( tproxy: fix hash locking issue when using
+port redirection in __inet_inherit_port()) a backport is also needed for
+>= 2.6.37 kernels.
+
+Reported-by: Dimon Kirby <sim@hostway.ca>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Balazs Scheidler <bazsi@balabit.hu>
+CC: KOVACS Krisztian <hidden@balabit.hu>
 ---
- include/trace/events/sched.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/dccp/ipv4.c     |    1 +
+ net/ipv4/tcp_ipv4.c |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index 959ff18..1838237 100644
---- a/include/trace/events/sched.h
-+++ b/include/trace/events/sched.h
-@@ -140,7 +140,7 @@ TRACE_EVENT(sched_switch,
- 	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
- 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
- 		__entry->prev_state & (TASK_STATE_MAX-1) ?
--		  __print_flags(__entry->prev_state & (TASK_STATE_MAX-1), "|",
-+		  __print_flags((__entry->prev_state & (TASK_STATE_MAX-1)), "|",
- 				{ 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" },
- 				{ 16, "Z" }, { 32, "X" }, { 64, "x" },
- 				{ 128, "W" }) : "R",
--- 
-1.7.1
-
+diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
+index 332639b..90a919a 100644
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -433,6 +433,7 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
++	bh_unlock_sock(newsk);
+ 	sock_put(newsk);
+ 	goto exit;
+ }
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 0ea10ee..683d97a 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1510,6 +1510,7 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
++	bh_unlock_sock(newsk);
+ 	sock_put(newsk);
+ 	goto exit;
+ }
