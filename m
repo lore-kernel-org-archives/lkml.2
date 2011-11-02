@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab1KBPv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 11:51:28 -0400
-Received: from cernmx31.cern.ch ([137.138.144.179]:9015 "EHLO CERNMX31.cern.ch"
+	id S933263Ab1KBPy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 11:54:56 -0400
+Received: from cernmx30.cern.ch ([137.138.144.177]:8840 "EHLO CERNMX30.cern.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932383Ab1KBPvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 11:51:25 -0400
+	id S932383Ab1KBPyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 11:54:55 -0400
 From: Manohar Vanga <manohar.vanga@cern.ch>
 To: <gregkh@suse.de>
 CC: <martyn.welch@ge.com>, <cota@braap.org>, <devel@driverdev.osuosl.org>,
         <linux-kernel@vger.kernel.org>, Manohar Vanga <manohar.vanga@cern.ch>
 Subject: [PATCH 1/1] staging: vme: fix address cast warnings for 64 bit architectures
-Date: Wed, 2 Nov 2011 16:47:06 +0100
-Message-ID: <1320248826-18593-1-git-send-email-manohar.vanga@cern.ch>
+Date: Wed, 2 Nov 2011 16:50:39 +0100
+Message-ID: <1320249039-21569-1-git-send-email-manohar.vanga@cern.ch>
 X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,11 +24,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
 ---
- drivers/staging/vme/bridges/vme_ca91cx42.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/vme/bridges/vme_ca91cx42.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
-index 0e4feac..b768563 100644
+index 0e4feac..f563a00 100644
 --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
 +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
 @@ -876,13 +876,13 @@ static ssize_t ca91cx42_master_read(struct vme_master_resource *image,
@@ -63,7 +63,17 @@ index 0e4feac..b768563 100644
  		if ((count - done) < 2) {
  			iowrite8(*(u8 *)(buf + done), addr + done);
  			done += 1;
-@@ -990,7 +990,7 @@ static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+@@ -973,7 +973,8 @@ static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+ 	unsigned int mask, unsigned int compare, unsigned int swap,
+ 	loff_t offset)
+ {
+-	u32 pci_addr, result;
++	u32 result;
++	uintptr_t pci_addr;
+ 	int i;
+ 	struct ca91cx42_driver *bridge;
+ 	struct device *dev;
+@@ -990,7 +991,7 @@ static unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
  	/* Lock image */
  	spin_lock(&image->lock);
  
