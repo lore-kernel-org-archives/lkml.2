@@ -1,116 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab1KBUFa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:05:30 -0400
-Received: from home.keithp.com ([63.227.221.253]:52059 "EHLO keithp.com"
+	id S1751519Ab1KBUFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:05:40 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:55823 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab1KBUF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:05:28 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Adam Jackson <ajax@redhat.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 3/7] drm/i915: Treat PCH eDP like DP in most places
-In-Reply-To: <4EB19BB4.6030505@redhat.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-4-git-send-email-keithp@keithp.com> <20111102092019.3a635632@jbarnes-desktop> <4EB17A50.6050804@redhat.com> <yun8vnywhvh.fsf@aiko.keithp.com> <4EB19BB4.6030505@redhat.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 02 Nov 2011 13:05:23 -0700
-Message-ID: <yunipn2uw70.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1751146Ab1KBUFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:05:34 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] clocksource: Avoid selecting mult values that might overflow when adjusted
+Date: Wed,  2 Nov 2011 13:01:27 -0700
+Message-Id: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+x-cbid: 11110220-5112-0000-0000-0000019E712D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+For some frequqencies, the clocks_calc_mult_shift() function will
+unfortunately select mult values very close to 0xffffffff.  This
+has the potential to overflow when NTP adjusts the clock, adding
+to the mult value.
 
-On Wed, 02 Nov 2011 15:36:20 -0400, Adam Jackson <ajax@redhat.com> wrote:
+This patch adds a clocksource.maxadj value, which provides
+an approximation of an 11% adjustment(NTP limits adjustments to
+500ppm and the tick adjustment is limited to 10%), which could
+be made to the clocksource.mult value. This is then used to both
+check that the current mult value won't overflow/underflow, as
+well as warning us if the timekeeping_adjust() code pushes over
+that 11% boundary.
 
-> The VBT is going to be crap.
+CC: Yong Zhang <yong.zhang0@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Reported-by: Chen Jie <chenj@lemote.com>
+Reported-by: zhangfx <zhangfx@lemote.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/clocksource.h |    3 +-
+ kernel/time/clocksource.c   |   53 ++++++++++++++++++++++++++++++++++--------
+ kernel/time/timekeeping.c   |    3 ++
+ 3 files changed, 48 insertions(+), 11 deletions(-)
 
-The only question then is what to do with hardware that doesn't have the
-DPCD value -- that's "new" in revision 0x11, after all.
-
-How about this:
-
-commit 34ebe02cc78f20ae6b7865c5087c3b5ac7810185
-Author: Keith Packard <keithp@keithp.com>
-Date:   Wed Nov 2 13:03:47 2011 -0700
-
-    drm/i915: Use DPCD value for max DP lanes where possible
-=20=20=20=20
-    Fall back to the VBT value for eDP monitors only when DPCD is missing
-    the value.
-=20=20=20=20
-    Signed-off-by: Keith Packard <keithp@keithp.com>
-
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_d=
-p.c
-index 02b56ce..93b082a 100644
-=2D-- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -154,6 +154,8 @@ intel_edp_link_config(struct intel_encoder *intel_encod=
-er,
- static int
- intel_dp_max_lane_count(struct intel_dp *intel_dp)
- {
-+       struct drm_device *dev =3D intel_dp->base.base.dev;
-+       struct drm_i915_private *dev_priv =3D dev->dev_private;
-        int max_lane_count =3D 4;
-=20
-        if (intel_dp->dpcd[DP_DPCD_REV] >=3D 0x11) {
-@@ -164,6 +166,8 @@ intel_dp_max_lane_count(struct intel_dp *intel_dp)
-                default:
-                        max_lane_count =3D 4;
-                }
-+       } else if (is_edp(intel_dp)) {
-+               max_lane_count =3D dev_priv->edp.lanes;
-        }
-        return max_lane_count;
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 139c4db..c86c940 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -156,6 +156,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
+  * @mult:		cycle to nanosecond multiplier
+  * @shift:		cycle to nanosecond divisor (power of two)
+  * @max_idle_ns:	max idle time permitted by the clocksource (nsecs)
++ * @maxadj		maximum adjustment value to mult (~11%)
+  * @flags:		flags describing special properties
+  * @archdata:		arch-specific data
+  * @suspend:		suspend function for the clocksource, if necessary
+@@ -172,7 +173,7 @@ struct clocksource {
+ 	u32 mult;
+ 	u32 shift;
+ 	u64 max_idle_ns;
+-
++	u32 maxadj;
+ #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
+ 	struct arch_clocksource_data archdata;
+ #endif
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index cf52fda..d49b7ba 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -492,6 +492,21 @@ void clocksource_touch_watchdog(void)
  }
-@@ -765,12 +769,11 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_di=
-splay_mode *mode,
-                        continue;
-=20
-                intel_dp =3D enc_to_intel_dp(encoder);
-=2D               if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT |=
-| is_pch_edp(intel_dp)) {
-+               if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT ||
-+                   intel_dp->base.type =3D=3D INTEL_OUTPUT_EDP)
-+               {
-                        lane_count =3D intel_dp->lane_count;
-                        break;
-=2D               } else if (is_cpu_edp(intel_dp)) {
-=2D                       lane_count =3D dev_priv->edp.lanes;
-=2D                       break;
-                }
-        }
-=20
+ 
+ /**
++ * clocksource_max_adjustment- Returns max adjustment amount
++ * @cs:         Pointer to clocksource
++ *
++ */
++static u32 clocksource_max_adjustment(struct clocksource *cs)
++{
++	/*
++	 * We won't try to correct for more then 11% adjustments (110,000 ppm),
++	 * which approximates to 1/8 or 1/2^3. Thus 1 << (shift - 3) is the
++	 * largest mult adjustment we'll support.
++	 */
++	return 1 << (cs->shift-3);
++}
++
++/**
+  * clocksource_max_deferment - Returns max time the clocksource can be deferred
+  * @cs:         Pointer to clocksource
+  *
+@@ -503,25 +518,28 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	/*
+ 	 * Calculate the maximum number of cycles that we can pass to the
+ 	 * cyc2ns function without overflowing a 64-bit signed result. The
+-	 * maximum number of cycles is equal to ULLONG_MAX/cs->mult which
+-	 * is equivalent to the below.
+-	 * max_cycles < (2^63)/cs->mult
+-	 * max_cycles < 2^(log2((2^63)/cs->mult))
+-	 * max_cycles < 2^(log2(2^63) - log2(cs->mult))
+-	 * max_cycles < 2^(63 - log2(cs->mult))
+-	 * max_cycles < 1 << (63 - log2(cs->mult))
++	 * maximum number of cycles is equal to ULLONG_MAX/(cs->mult+cs->maxadj)
++	 * which is equivalent to the below.
++	 * max_cycles < (2^63)/(cs->mult + cs->maxadj)
++	 * max_cycles < 2^(log2((2^63)/(cs->mult + cs->maxadj)))
++	 * max_cycles < 2^(log2(2^63) - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 2^(63 - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 1 << (63 - log2(cs->mult + cs->maxadj))
+ 	 * Please note that we add 1 to the result of the log2 to account for
+ 	 * any rounding errors, ensure the above inequality is satisfied and
+ 	 * no overflow will occur.
+ 	 */
+-	max_cycles = 1ULL << (63 - (ilog2(cs->mult) + 1));
++	max_cycles = 1ULL << (63 - (ilog2(cs->mult + cs->maxadj) + 1));
+ 
+ 	/*
+ 	 * The actual maximum number of cycles we can defer the clocksource is
+ 	 * determined by the minimum of max_cycles and cs->mask.
++	 * Note: Here we subtract the maxadj to make sure we don't sleep for
++	 * too long if there's a large negative adjustment.
+ 	 */
+ 	max_cycles = min_t(u64, max_cycles, (u64) cs->mask);
+-	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult, cs->shift);
++	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult - cs->maxadj,
++					cs->shift);
+ 
+ 	/*
+ 	 * To ensure that the clocksource does not wrap whilst we are idle,
+@@ -640,7 +658,6 @@ static void clocksource_enqueue(struct clocksource *cs)
+ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ {
+ 	u64 sec;
+-
+ 	/*
+ 	 * Calc the maximum number of seconds which we can run before
+ 	 * wrapping around. For clocksources which have a mask > 32bit
+@@ -661,6 +678,20 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 
+ 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+ 			       NSEC_PER_SEC / scale, sec * scale);
++
++	/*
++	 * for clocksources that have large mults, to avoid overflow.
++	 * Since mult may be adjusted by ntp, add an safety extra margin
++	 *
++	 */
++	cs->maxadj = clocksource_max_adjustment(cs);
++	while ((cs->mult + cs->maxadj < cs->mult)
++		|| (cs->mult - cs->maxadj > cs->mult)) {
++		cs->mult >>= 1;
++		cs->shift--;
++		cs->maxadj = clocksource_max_adjustment(cs);
++	}
++
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
+ }
+ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+@@ -701,6 +732,8 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+  */
+ int clocksource_register(struct clocksource *cs)
+ {
++	/* calculate max adjustment for given mult/shift */
++	cs->maxadj = clocksource_max_adjustment(cs);
+ 	/* calculate max idle time permitted for this clocksource */
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 2b021b0e..d37c9e3 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -820,6 +820,9 @@ static void timekeeping_adjust(s64 offset)
+ 	} else
+ 		return;
+ 
++	WARN_ONCE(timekeeper.mult+adj >
++			timekeeper.clock->mult + timekeeper.clock->maxadj,
++			"Adjusting more then 11%%");
+ 	timekeeper.mult += adj;
+ 	timekeeper.xtime_interval += interval;
+ 	timekeeper.xtime_nsec -= offset;
+-- 
+1.7.3.2.146.gca209
 
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrGigzYtFsjWk68qAQj2ow/+M/NfNYe/9l132wJLHLK2l1z9/QdqjoFe
-naZipuUWtWeZ9der142UMZCZiO3WE+8IvIDghoOxinc/8vHSQ4S55UvVnRM3BpCo
-HAdjvszumKcZlMCZ84AmV5bt9V0+1lUaHkor7S0/nT7ZBnqZwFHT4sDt58wDPkJe
-O/oTG1kbF8VPZImHn09IC82lFXkTkKYa2TDXnL9us/AvTLFVKbKa0w5+Hkna8iXy
-vPipqbMn7N7s1TvpDlA/L23qrxFOgiI1mmiCCHPwnK6d8AndwOuAygCHptwjEL+I
-5dcehonzdrxWkGaCE6/2aO8ZKaE9fQ2u5anxzZgwCCLVDA0d+sYzsp4AlgomQS1h
-X6Z3rO+RQ2y1y1xoJPMmhNbuYmleqxCN8SWcRI1ccGyN9QZUVhLi8vrnfeueuT8d
-dHpBRn6IB3l3P2vak0OmaoPb+bk4pY0ZGofuLDcbC/92om8InhJyhZ+vcUTSJR6T
-xcB8bmkGt8vP3XtXxcy1rw3cZXWHLQRIbnuXsodQ3z5mZ1fYTn9iRUE/LY8Oq9gE
-TOcp6/hWUSYNFF4uaEnSx9FyYlJEf2GnugHzCoZX9lHftHTbqNou6FwKIuXSxluq
-URhZyx+VM+5vTygilUBspbFXgZDn+V1XREoBjXQDBQNYJM1CNmWrItHq9ktqSZ9H
-WEXTv1A4WaM=
-=506D
------END PGP SIGNATURE-----
---=-=-=--
