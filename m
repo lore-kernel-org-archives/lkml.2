@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab1KBBNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 21:13:24 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:44385 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab1KBBNX (ORCPT
+	id S1756143Ab1KBBP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 21:15:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60907 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab1KBBP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 21:13:23 -0400
-Date: Wed, 2 Nov 2011 12:13:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <gregkh@suse.de>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, miche@google.com,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        virtualization@lists.linux-foundation.org,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Amit Shah <amit.shah@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: Regression: patch
- " hvc_console: display printk messages on console." causing infinite loop
- with 3.2-rc0 + Xen.
-Message-Id: <20111102121309.4dbb0d2ac90d2879130820dd@canb.auug.org.au>
-In-Reply-To: <20111027054806.GA1377@suse.de>
-References: <20111027053007.GA32765@phenom.dumpdata.com>
-	<20111027054806.GA1377@suse.de>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+	Tue, 1 Nov 2011 21:15:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 2 Nov 2011 10:14:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Message-Id: <20111102101414.457e0a08.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <f62e02cd-fa41-44e8-8090-efe2ef052f64@default>
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+	<20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
+	<ef778e79-72d0-4c58-99e8-3b36d85fa30d@default
+ 20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com>
+	<f62e02cd-fa41-44e8-8090-efe2ef052f64@default>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 1 Nov 2011 08:25:38 -0700 (PDT)
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-Hi Greg,
+> >   - At discussing an fujitsu user support guy (just now), he asked
+> >     'why it's not designed as device driver ?"
+> >     I couldn't answered.
+> > 
+> >     So, I have small concerns with frontswap.ops ABI design.
+> >     Do we need ABI and other modules should be pluggable ?
+> >     Can frontswap be implemented as something like
+> > 
+> >     # setup frontswap via device-mapper or some.
+> >     # swapon /dev/frontswap
+> >     ?
+> >     It seems required hooks are just before/after read/write swap device.
+> >     other hooks can be implemented in notifier..no ?
+> 
+> A good question, and it is answered in FAQ #4 included in
+> the patchset (Documentation/vm/frontswap.txt).  The short
+> answer is that the tmem ABI/API used by frontswap is
+> intentionally very very dynamic -- ANY attempt to put
+> a page into it can be rejected by the backend.  This is
+> not possible with block I/O or swap, at least without
+> a massive rewrite.  And this dynamic capability is the
+> key to supporting the many users that frontswap supports.
+> 
+Hmm.
 
-On Thu, 27 Oct 2011 07:48:06 +0200 Greg KH <gregkh@suse.de> wrote:
->
-> On Thu, Oct 27, 2011 at 01:30:08AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Hey Miche.
-> >=20
-> > The git commit 361162459f62dc0826b82c9690a741a940f457f0:
-> >=20
-> >     hvc_console: display printk messages on console.
-> >=20
-> > is causing an infinite loop when booting Linux under Xen, as so:
->=20
-> Ick, not good, thanks for letting us know.
+> By the way, what your fujitsu user support guy suggests is
+> exactly what zram does.  The author of zram (Nitin Gupta)
+> agrees that frontswap has many advantages over zram,
+> see https://lkml.org/lkml/2011/10/28/8 and he supports
+> merging frontswap.  And Ed Tomlinson, a current user
+> of zram says that he would use frontswap instead of
+> zram: https://lkml.org/lkml/2011/10/29/53 
+> 
+> Kame, can I add you to the list of people who support
+> merging frontswap, assuming more good performance numbers
+> are posted?
+> 
+Before answer, let me explain my attitude to this project.
 
-Indeed. I am wondering why it was put in a tree and sent to Linus without
-any Acks or even being replied to by anyone.  It appeared in the tty tree
-between Oct 14 and Oct 25 (while I was unfortunately on vacation).  If
-anyone had tried to boot this on any PowerPC server, it would have been
-immediately obvious (as it was when I booted Linus' tree last night).
+As hobby, I like this kind of work which allows me to imagine what kind
+of new fancy features it will allow us. Then, I reviewed patches.
 
-And the original author expressed doubts as to his understanding of how
-it should all work anyway.
+As people who sells enterprise system and support, I can't recommend this
+to our customers. IIUC, cleancache/frontswap/zcache hides its avaiable
+resources from user's view and making the system performance unvisible and
+not-predictable. That's one of the reason why I asksed whether or not
+you have plans to make frontswap(cleancache) cgroup aware.
+(Hmm, but at making a product which offers best-effort-performance to customers,
+ this project may make sense. But I am not very interested in best-effort
+ service very much.)
 
-Just a little more care, please.
+I wonder if there are 'static size simple victim cache per cgroup' project
+under frontswap/cleancache and it helps all user's workload isolation
+even if there is no VM or zcache, tmem.  It sounds wonderful.
 
-I would vote for reverting the original and having it resubmitted with
-corrections at some later date.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+So, I'd like to ask whether you have any enhancement plans in future ?
+rather than 'current' peformance. The reason I hesitate to say "Okay!",
+is that I can't see enterprise usage of this, a feature which cannot
+be controlled by admins and make perfomrance prediction difficult in busy system.
 
---Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E
-Content-Type: application/pgp-signature
+Thanks,
+-Kame
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOsJklAAoJEECxmPOUX5FE9UYP/2GMqOVKG+lC9uiq85ulDaGJ
-rIfH6kGOwyMER5NpeTdJM4XaOnJwVKum0R4vA1F/Uz4JpO7CtWZjc8+bOYyGHLtV
-uVc1Hf8dv8hLmy0YEFuVE+SvuacI70txycM9Uv6eGEYvCwh/c1BkOZk2/kb27vK2
-zkDQ24l7BblWIm3fE31xPgtH8X2mmmHrMpdbq1fmOxz83Xa3IS82yksD0/fGjDNn
-54RLMtxXwe4bdIRiDhUxLSqJT3UKmXZRiI24SwzSNzC//rIxxe9M39CaxWHCdWXL
-0PCEbzE2EQof7aWypkDVJmOHYQGNg2uxdP7ZxeNZNkGR7scblvxHxtq906/xG53N
-uVg6e6qS8CwjHPMlQl6WSRTBEXReMDKffeAQ9aACEvQAHtFW1HVqDOLSU1lS45vy
-Y9LRGMB8WqvsLw35MaY74/yidnD60Zgl2pDN5KL2RTfh1wgEGh5YilunXvCxaD8l
-J8hHXpFtG0n1r/pfsq876AGmNEnOF1IdfFmrsa8ZnUnCKNgGAuw7cUem8X8t7k8y
-U1KM6Qu0cWdaCVMcvAP3bcfKlYYgYnclDxH/jXtjgFJlujb3ZZ5Yj4IHaq3mDS2I
-A1qWnbU3FvI5ck5C81gEUqoL0Zp5EeN7g9wDLGVLKPO3f/HH7sMONlAL8nmBhyna
-YbsmYz14IPXe4mZ02U2c
-=/vwG
------END PGP SIGNATURE-----
-
---Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E--
