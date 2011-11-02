@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751922Ab1KBUxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:53:42 -0400
-Received: from balrog.mythic-beasts.com ([93.93.130.6]:58666 "EHLO
-	balrog.mythic-beasts.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab1KBUxl (ORCPT
+	id S1751750Ab1KBU5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:57:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12243 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750889Ab1KBU5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:53:41 -0400
-X-Greylist: delayed 2501 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 16:53:40 EDT
-Date: Wed, 2 Nov 2011 20:09:13 +0000
-From: Luis Henriques <henrix@camandro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>
-Subject: Re: linux-next: build failure after merge of the crypto-current tree
-Message-ID: <20111102200900.GA3454@hades>
-References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+	Wed, 2 Nov 2011 16:57:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="70559473"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "holzheu@linux.vnet.ibm.com" <holzheu@linux.vnet.ibm.com>,
+        Don Zickus <dzickus@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        Vivek Goyal <vgoyal@redhat.com>
+Date: Wed, 2 Nov 2011 13:57:26 -0700
+Subject: RE: [PATCH v2] kdump: Fix crash_kexec - smp_send_stop race in panic
+Thread-Topic: [PATCH v2] kdump: Fix crash_kexec - smp_send_stop race in panic
+Thread-Index: AcyZRvGsh57uBKQGQiu0mWK08alnCAAWg/CQ
+Message-ID: <987664A83D2D224EAE907B061CE93D5301F527F980@orsmsx505.amr.corp.intel.com>
+References: <1319639649.3321.11.camel@br98xy6r>
+	 <20111028161143.e5ebf617.akpm@linux-foundation.org>
+	 <1320055036.2796.8.camel@br98xy6r>
+	 <20111031033948.a0edb7f3.akpm@linux-foundation.org>
+	 <1320064459.2796.26.camel@br98xy6r> <20111101200420.GN17705@redhat.com>
+ <1320228239.2776.14.camel@br98xy6r>
+In-Reply-To: <1320228239.2776.14.camel@br98xy6r>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
-X-BlackCat-Spam-Score: -13
-X-Mythic-Debug: Threshold =  On = 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Instead of introducing the panic lock, as an alternative we could move
+> smp_send_stop() to the beginning of panic(). Eric told me that the
+> function is currently "insufficiently reliable" for that, but perhaps we
+> could make it more reliable.
 
-In gmane.linux.kernel, you wrote:
-> --Signature=_Tue__1_Nov_2011_11_58_51_+1100_R__G+wW+4zIqxa7J
-> Content-Type: text/plain; charset=US-ASCII
-> Content-Disposition: inline
-> Content-Transfer-Encoding: quoted-printable
->
-> Hi Herbert,
->
-> After merging the crypto-current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+That's tough to do.  We are in panic because something went horribly
+wrong somewhere in the kernel - so we can make few assumptions about
+which subsystems are still working. In the worst case (for this example)
+our panic was caused by a failure in the code that sends cross-processor
+interrupts ... so calling that same code to stop the other cpus is
+likely to run into the same problem - perhaps causing a nested panic.
 
-I'm not sure if this is related, but I am currently unable to build mainline
-kernel when disabling CONFIG_NET.  This seems to be due to the patch serie:
+So what looks like a good fix for some panic scenarios actually makes
+others worse.
 
-http://news.gmane.org/gmane.linux.kernel.cryptoapi/cutoff=6228
-
-For instance, commit 6ad414fe710d4fd3a8c8c6c2ad8fefcfcc207968 adds a dependency
-over function nla_put(), which is only defined when CONFIG_NET is enabled.
-
-Cheers,
---
-Luis Henriques
+-Tony
