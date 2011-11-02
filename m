@@ -1,75 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab1KBKSO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 06:18:14 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:44512 "EHLO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751703Ab1KBKSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 06:18:12 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: balbi@ti.com
-Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: musb: hdrc: fix dependency on USB_GADGET_DUALSPEED in Kconfig
-Date: Wed,  2 Nov 2011 12:17:59 +0200
-Message-Id: <1320229079-27735-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1753920Ab1KBK0O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 06:26:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777Ab1KBK0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 06:26:10 -0400
+Date: Wed, 2 Nov 2011 10:25:52 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Zdenek Kabelac <zkabelac@redhat.com>,
+        Joe Thornber <thornber@redhat.com>,
+        Jonathan Brassow <jbrassow@redhat.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Neil Brown <neilb@suse.de>, Steven Whitehouse <swhiteho@redhat.com>
+Subject: Re: [dm-devel] [git pull] device-mapper enhancements for 3.2
+Message-ID: <20111102102552.GF2770@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+	Mike Snitzer <snitzer@redhat.com>, Milan Broz <mbroz@redhat.com>,
+	Zdenek Kabelac <zkabelac@redhat.com>,
+	Joe Thornber <thornber@redhat.com>,
+	Jonathan Brassow <jbrassow@redhat.com>,
+	Mandeep Singh Baines <msb@chromium.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Namhyung Kim <namhyung@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	Neil Brown <neilb@suse.de>, Steven Whitehouse <swhiteho@redhat.com>
+References: <20111031211240.GK2840@agk-dp.fab.redhat.com> <CA+55aFz9NzgAJnpzRdkG7ia2vk4rjfQ1K6-Oac7oEP8JNQ-qdg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFz9NzgAJnpzRdkG7ia2vk4rjfQ1K6-Oac7oEP8JNQ-qdg@mail.gmail.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-USB_MUSB_HDRC depends on USB_GADGET_DUALSPEED.  If HDRC is selected
-but DUALSPEED is not, the kernel oopses:
+On Tue, Nov 01, 2011 at 03:05:50PM -0700, Linus Torvalds wrote:
+> On Mon, Oct 31, 2011 at 2:12 PM, Alasdair G Kergon <agk@redhat.com> wrote:
+> > Please pull from:
+> >
+> >  http://people.redhat.com/agk/git/linux-dm for-linus
+> 
+> Get a kernel.org account, or get a real server. Not that crap. It's unusable.
 
-[    3.132781] Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[    3.141296] pgd = c0004000
-[    3.144134] [00000000] *pgd=00000000
-[    3.147918] Internal error: Oops: 5 [#1] SMP
-[    3.152404] Modules linked in:
-[    3.155609] CPU: 0    Not tainted  (3.1.0-rc9-wl+ #417)
-[    3.161132] PC is at composite_setup+0x738/0xbb4
-[    3.165985] LR is at vprintk+0x400/0x47c
-[    3.170135] pc : [<c031df90>]    lr : [<c004c150>]    psr: 60000093
-[    3.170135] sp : c065dd50  ip : dfb1f0fc  fp : c065ddbc
-[    3.182220] r10: 00000000  r9 : df8fcae8  r8 : df8fcaa0
-[    3.187713] r7 : 00000000  r6 : df8eaa20  r5 : dfae8ea0  r4 : 00000000
-[    3.194580] r3 : df8fcae8  r2 : 00010002  r1 : c065dc40  r0 : 00000047
-[    3.201446] Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    3.209228] Control: 10c53c7d  Table: 8000404a  DAC: 00000015
-[    3.215270] Process swapper (pid: 0, stack limit = 0xc065c2f8)
-[    3.221405] Stack: (0xc065dd50 to 0xc065e000)
-[...]
-[    3.415405] [<c031df90>] (composite_setup+0x738/0xbb4) from [<c0310d18>] (musb_g_ep0_irq+0x9d0/0xaf8)
-[    3.425109] [<c0310d18>] (musb_g_ep0_irq+0x9d0/0xaf8) from [<c030fb04>] (musb_interrupt+0xb48/0xc74)
-[    3.434722] [<c030fb04>] (musb_interrupt+0xb48/0xc74) from [<c030fc98>] (generic_interrupt+0x68/0x80)
-[    3.444458] [<c030fc98>] (generic_interrupt+0x68/0x80) from [<c0095204>] (handle_irq_event_percpu+0x9c/0x234)
-[    3.454925] [<c0095204>] (handle_irq_event_percpu+0x9c/0x234) from [<c00953e8>] (handle_irq_event+0x4c/0x6c)
-[    3.465270] [<c00953e8>] (handle_irq_event+0x4c/0x6c) from [<c0097e10>] (handle_fasteoi_irq+0xd8/0x110)
-[    3.475158] [<c0097e10>] (handle_fasteoi_irq+0xd8/0x110) from [<c0094d2c>] (generic_handle_irq+0x34/0x3c)
-[    3.485260] [<c0094d2c>] (generic_handle_irq+0x34/0x3c) from [<c0014ae4>] (handle_IRQ+0x88/0xc8)
-[    3.494537] [<c0014ae4>] (handle_IRQ+0x88/0xc8) from [<c00085b0>] (asm_do_IRQ+0x18/0x1c)
-[    3.503051] [<c00085b0>] (asm_do_IRQ+0x18/0x1c) from [<c0429e78>] (__irq_svc+0x38/0xc0)
+Steve Whitehouse has kindly stepped in to host this for me temporarily
+while, like many other people, I'm waiting to reobtain an account.
 
-This patch changes Kconfig so that USB_GADGET_DUALSPEED is selected
-automatically by USB_MUSB_HDRC.
+So please pull from:
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
- drivers/usb/musb/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/linux-dm.git master
 
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index fc34b8b..8da38b6 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -11,6 +11,7 @@ config USB_MUSB_HDRC
- 	select TWL4030_USB if MACH_OMAP_3430SDP
- 	select TWL6030_USB if MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
- 	select USB_OTG_UTILS
-+	select USB_GADGET_DUALSPEED
- 	tristate 'Inventra Highspeed Dual Role Controller (TI, ADI, ...)'
- 	help
- 	  Say Y here if your system has a dual role high speed USB
--- 
-1.7.4.1
+to get the following device-mapper enhancements for inclusion in 3.2.
+
+The highlight here is thin provisioning.  This includes a new snapshot
+implementation that, unlike the existing implementation, performs well with
+multiple snapshots of the same device (e.g. for backups).
+More-detailed documentation is included in-tree.
+
+The development of userspace LVM support is progressing well and and we
+expect to have the first release of this out in the next month or so.
+(To try this, people should check out git://sources.redhat.com/git/lvm2 and
+follow lvm-devel@redhat.com.)
+
+Thanks,
+Alasdair
+
+Alasdair G Kergon (4):
+      dm table: add singleton feature
+      dm table: add always writeable feature
+      dm table: add immutable feature
+      dm: export dm get md
+
+Joe Thornber (2):
+      dm: add persistent data library
+      dm: add thin provisioning target
+
+Jonathan Brassow (1):
+      dm log userspace: fix comment hyphens
+
+Jonathan E Brassow (2):
+      dm log userspace: add log device dependency
+      dm: raid fix device status indicator when array initializing
+
+Mandeep Singh Baines (1):
+      dm table: propagate non rotational flag
+
+Mikulas Patocka (2):
+      dm kcopyd: add dm_kcopyd_zero to zero an area
+      dm: add bufio
+
+Namhyung Kim (2):
+      dm: use local printk ratelimit
+      dm: remove superfluous smp_mb
+
+ Documentation/device-mapper/dm-log.txt             |    2 +-
+ Documentation/device-mapper/persistent-data.txt    |   84 +
+ Documentation/device-mapper/thin-provisioning.txt  |  285 +++
+ drivers/md/Kconfig                                 |   36 +
+ drivers/md/Makefile                                |    4 +
+ drivers/md/dm-bufio.c                              | 1699 ++++++++++++++
+ drivers/md/dm-bufio.h                              |  112 +
+ drivers/md/dm-ioctl.c                              |   11 +
+ drivers/md/dm-kcopyd.c                             |   31 +-
+ drivers/md/dm-log-userspace-base.c                 |   37 +-
+ drivers/md/dm-raid.c                               |   48 +-
+ drivers/md/dm-table.c                              |   73 +
+ drivers/md/dm-thin-metadata.c                      | 1391 +++++++++++
+ drivers/md/dm-thin-metadata.h                      |  156 ++
+ drivers/md/dm-thin.c                               | 2428 ++++++++++++++++++++
+ drivers/md/dm.c                                    |   21 +-
+ drivers/md/dm.h                                    |    2 +
+ drivers/md/persistent-data/Kconfig                 |    8 +
+ drivers/md/persistent-data/Makefile                |   11 +
+ drivers/md/persistent-data/dm-block-manager.c      |  620 +++++
+ drivers/md/persistent-data/dm-block-manager.h      |  123 +
+ drivers/md/persistent-data/dm-btree-internal.h     |  137 ++
+ drivers/md/persistent-data/dm-btree-remove.c       |  566 +++++
+ drivers/md/persistent-data/dm-btree-spine.c        |  244 ++
+ drivers/md/persistent-data/dm-btree.c              |  805 +++++++
+ drivers/md/persistent-data/dm-btree.h              |  145 ++
+ .../persistent-data/dm-persistent-data-internal.h  |   19 +
+ drivers/md/persistent-data/dm-space-map-checker.c  |  437 ++++
+ drivers/md/persistent-data/dm-space-map-checker.h  |   26 +
+ drivers/md/persistent-data/dm-space-map-common.c   |  705 ++++++
+ drivers/md/persistent-data/dm-space-map-common.h   |  126 +
+ drivers/md/persistent-data/dm-space-map-disk.c     |  335 +++
+ drivers/md/persistent-data/dm-space-map-disk.h     |   25 +
+ drivers/md/persistent-data/dm-space-map-metadata.c |  596 +++++
+ drivers/md/persistent-data/dm-space-map-metadata.h |   33 +
+ drivers/md/persistent-data/dm-space-map.h          |  134 ++
+ .../md/persistent-data/dm-transaction-manager.c    |  400 ++++
+ .../md/persistent-data/dm-transaction-manager.h    |  130 ++
+ include/linux/device-mapper.h                      |   45 +-
+ include/linux/dm-ioctl.h                           |    4 +-
+ include/linux/dm-kcopyd.h                          |    4 +
+ include/linux/dm-log-userspace.h                   |   18 +-
+ 42 files changed, 12079 insertions(+), 37 deletions(-)
+ create mode 100644 Documentation/device-mapper/persistent-data.txt
+ create mode 100644 Documentation/device-mapper/thin-provisioning.txt
+ create mode 100644 drivers/md/dm-bufio.c
+ create mode 100644 drivers/md/dm-bufio.h
+ create mode 100644 drivers/md/dm-thin-metadata.c
+ create mode 100644 drivers/md/dm-thin-metadata.h
+ create mode 100644 drivers/md/dm-thin.c
+ create mode 100644 drivers/md/persistent-data/Kconfig
+ create mode 100644 drivers/md/persistent-data/Makefile
+ create mode 100644 drivers/md/persistent-data/dm-block-manager.c
+ create mode 100644 drivers/md/persistent-data/dm-block-manager.h
+ create mode 100644 drivers/md/persistent-data/dm-btree-internal.h
+ create mode 100644 drivers/md/persistent-data/dm-btree-remove.c
+ create mode 100644 drivers/md/persistent-data/dm-btree-spine.c
+ create mode 100644 drivers/md/persistent-data/dm-btree.c
+ create mode 100644 drivers/md/persistent-data/dm-btree.h
+ create mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-checker.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-checker.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-common.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-common.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-disk.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-disk.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-metadata.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-metadata.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map.h
+ create mode 100644 drivers/md/persistent-data/dm-transaction-manager.c
+ create mode 100644 drivers/md/persistent-data/dm-transaction-manager.h
+
+
+Thanks,
+Alasdair
+
+Alasdair G Kergon (4):
+      dm table: add singleton feature
+      dm table: add always writeable feature
+      dm table: add immutable feature
+      dm: export dm get md
+
+Joe Thornber (2):
+      dm: add persistent data library
+      dm: add thin provisioning target
+
+Jonathan Brassow (1):
+      dm log userspace: fix comment hyphens
+
+Jonathan E Brassow (2):
+      dm log userspace: add log device dependency
+      dm: raid fix device status indicator when array initializing
+
+Mandeep Singh Baines (1):
+      dm table: propagate non rotational flag
+
+Mikulas Patocka (2):
+      dm kcopyd: add dm_kcopyd_zero to zero an area
+      dm: add bufio
+
+Namhyung Kim (2):
+      dm: use local printk ratelimit
+      dm: remove superfluous smp_mb
+
+ Documentation/device-mapper/dm-log.txt             |    2 +-
+ Documentation/device-mapper/persistent-data.txt    |   84 +
+ Documentation/device-mapper/thin-provisioning.txt  |  285 +++
+ drivers/md/Kconfig                                 |   36 +
+ drivers/md/Makefile                                |    4 +
+ drivers/md/dm-bufio.c                              | 1699 ++++++++++++++
+ drivers/md/dm-bufio.h                              |  112 +
+ drivers/md/dm-ioctl.c                              |   11 +
+ drivers/md/dm-kcopyd.c                             |   31 +-
+ drivers/md/dm-log-userspace-base.c                 |   37 +-
+ drivers/md/dm-raid.c                               |   48 +-
+ drivers/md/dm-table.c                              |   73 +
+ drivers/md/dm-thin-metadata.c                      | 1391 +++++++++++
+ drivers/md/dm-thin-metadata.h                      |  156 ++
+ drivers/md/dm-thin.c                               | 2428 ++++++++++++++++++++
+ drivers/md/dm.c                                    |   21 +-
+ drivers/md/dm.h                                    |    2 +
+ drivers/md/persistent-data/Kconfig                 |    8 +
+ drivers/md/persistent-data/Makefile                |   11 +
+ drivers/md/persistent-data/dm-block-manager.c      |  620 +++++
+ drivers/md/persistent-data/dm-block-manager.h      |  123 +
+ drivers/md/persistent-data/dm-btree-internal.h     |  137 ++
+ drivers/md/persistent-data/dm-btree-remove.c       |  566 +++++
+ drivers/md/persistent-data/dm-btree-spine.c        |  244 ++
+ drivers/md/persistent-data/dm-btree.c              |  805 +++++++
+ drivers/md/persistent-data/dm-btree.h              |  145 ++
+ .../persistent-data/dm-persistent-data-internal.h  |   19 +
+ drivers/md/persistent-data/dm-space-map-checker.c  |  437 ++++
+ drivers/md/persistent-data/dm-space-map-checker.h  |   26 +
+ drivers/md/persistent-data/dm-space-map-common.c   |  705 ++++++
+ drivers/md/persistent-data/dm-space-map-common.h   |  126 +
+ drivers/md/persistent-data/dm-space-map-disk.c     |  335 +++
+ drivers/md/persistent-data/dm-space-map-disk.h     |   25 +
+ drivers/md/persistent-data/dm-space-map-metadata.c |  596 +++++
+ drivers/md/persistent-data/dm-space-map-metadata.h |   33 +
+ drivers/md/persistent-data/dm-space-map.h          |  134 ++
+ .../md/persistent-data/dm-transaction-manager.c    |  400 ++++
+ .../md/persistent-data/dm-transaction-manager.h    |  130 ++
+ include/linux/device-mapper.h                      |   45 +-
+ include/linux/dm-ioctl.h                           |    4 +-
+ include/linux/dm-kcopyd.h                          |    4 +
+ include/linux/dm-log-userspace.h                   |   18 +-
+ 42 files changed, 12079 insertions(+), 37 deletions(-)
+ create mode 100644 Documentation/device-mapper/persistent-data.txt
+ create mode 100644 Documentation/device-mapper/thin-provisioning.txt
+ create mode 100644 drivers/md/dm-bufio.c
+ create mode 100644 drivers/md/dm-bufio.h
+ create mode 100644 drivers/md/dm-thin-metadata.c
+ create mode 100644 drivers/md/dm-thin-metadata.h
+ create mode 100644 drivers/md/dm-thin.c
+ create mode 100644 drivers/md/persistent-data/Kconfig
+ create mode 100644 drivers/md/persistent-data/Makefile
+ create mode 100644 drivers/md/persistent-data/dm-block-manager.c
+ create mode 100644 drivers/md/persistent-data/dm-block-manager.h
+ create mode 100644 drivers/md/persistent-data/dm-btree-internal.h
+ create mode 100644 drivers/md/persistent-data/dm-btree-remove.c
+ create mode 100644 drivers/md/persistent-data/dm-btree-spine.c
+ create mode 100644 drivers/md/persistent-data/dm-btree.c
+ create mode 100644 drivers/md/persistent-data/dm-btree.h
+ create mode 100644 drivers/md/persistent-data/dm-persistent-data-internal.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-checker.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-checker.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-common.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-common.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-disk.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-disk.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map-metadata.c
+ create mode 100644 drivers/md/persistent-data/dm-space-map-metadata.h
+ create mode 100644 drivers/md/persistent-data/dm-space-map.h
+ create mode 100644 drivers/md/persistent-data/dm-transaction-manager.c
+ create mode 100644 drivers/md/persistent-data/dm-transaction-manager.h
 
