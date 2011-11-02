@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934203Ab1KCBjY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51051 "EHLO mx2.suse.de"
+	id S934169Ab1KCBjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51037 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934157Ab1KCBjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:19 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
-Message-Id: <20111102222741.942259431@clark.kroah.org>
+	id S1755245Ab1KCBjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:13 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
+Message-Id: <20111102222741.771750124@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:09 -0700
+Date: Wed, 02 Nov 2011 15:26:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [025/101] ASoC: Fix reporting of partial jack updates
+        alan@lxorguk.ukuu.org.uk, Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [023/101] [SCSI] qla2xxx: Correct inadvertent loop state transitions during port-update handling.
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Andrew Vasquez <andrew.vasquez@qlogic.com>
 
-commit 747da0f80e566500421bd7760b2e050fea3fde5e upstream.
+commit 58b48576966ed0afd3f63ef17480ec12748a7119 upstream.
 
-We need to report the entire jack state to the core jack code, not just
-the bits that were being updated by the caller, otherwise the status
-reported by other detection methods will be omitted from the state seen
-by userspace.
+Transitioning to a LOOP_UPDATE loop-state could cause the driver
+to miss normal link/target processing.  LOOP_UPDATE is a crufty
+artifact leftover from at time the driver performed it's own
+internal command-queuing.  Safely remove this state.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- sound/soc/soc-jack.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/qla_init.c |    3 ---
+ drivers/scsi/qla2xxx/qla_isr.c  |    1 -
+ 2 files changed, 4 deletions(-)
 
---- a/sound/soc/soc-jack.c
-+++ b/sound/soc/soc-jack.c
-@@ -95,7 +95,7 @@ void snd_soc_jack_report(struct snd_soc_
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -3481,15 +3481,12 @@ qla2x00_loop_resync(scsi_qla_host_t *vha
+ 		req = vha->req;
+ 	rsp = req->rsp;
  
- 	snd_soc_dapm_sync(codec);
+-	atomic_set(&vha->loop_state, LOOP_UPDATE);
+ 	clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
+ 	if (vha->flags.online) {
+ 		if (!(rval = qla2x00_fw_ready(vha))) {
+ 			/* Wait at most MAX_TARGET RSCNs for a stable link. */
+ 			wait_time = 256;
+ 			do {
+-				atomic_set(&vha->loop_state, LOOP_UPDATE);
+-
+ 				/* Issue a marker after FW becomes ready. */
+ 				qla2x00_marker(vha, req, rsp, 0, 0,
+ 					MK_SYNC_ALL);
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -723,7 +723,6 @@ skip_rio:
+ 			vha->flags.rscn_queue_overflow = 1;
+ 		}
  
--	snd_jack_report(jack->jack, status);
-+	snd_jack_report(jack->jack, jack->status);
+-		atomic_set(&vha->loop_state, LOOP_UPDATE);
+ 		atomic_set(&vha->loop_down_timer, 0);
+ 		vha->flags.management_server_logged_in = 0;
  
- out:
- 	mutex_unlock(&codec->mutex);
 
 
