@@ -1,111 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab1KBRul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 13:50:41 -0400
-Received: from igw2.watson.ibm.com ([129.34.20.6]:59121 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab1KBRui convert rfc822-to-8bit (ORCPT
+	id S1756322Ab1KBRxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 13:53:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33370 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab1KBRxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 13:50:38 -0400
-Subject: Re: [PATCH 1/2] trusted-key: allow overwriting the migratable flag
-From: David Safford <safford@watson.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zohar@us.ibm.com, dhowells@redhat.com,
-        jmorris@namei.org
-Date: Wed, 02 Nov 2011 13:46:32 -0400
-In-Reply-To: <4EB17FE1.7050307@polito.it>
-References: <1320237682-3857-1-git-send-email-roberto.sassu@polito.it>
-	 <1320253136.3225.13.camel@localhost> <4EB17FE1.7050307@polito.it>
+	Wed, 2 Nov 2011 13:53:36 -0400
+Message-ID: <1320256412.2292.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: Linux 3.1-rc9
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Simon Kirby <sim@hostway.ca>,
+        David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Network Development <netdev@vger.kernel.org>
+Date: Wed, 02 Nov 2011 18:53:32 +0100
+In-Reply-To: <CA+55aFxKtA0XXtiKgKC5qHmFuTv2=TbuMEczkegJKY4Uy00a-g@mail.gmail.com>
+References: <1318874090.4172.84.camel@twins>
+	 <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
+	 <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
+	 <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
+	 <20111018182046.GF1309@hostway.ca>
+	 <alpine.LFD.2.02.1110182146440.3240@ionos>
+	 <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca>
+	 <20111031173246.GA10614@hostway.ca>
+	 <alpine.LFD.2.02.1111021725550.2829@ionos>
+	 <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+55aFxKtA0XXtiKgKC5qHmFuTv2=TbuMEczkegJKY4Uy00a-g@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Message-ID: <1320255992.3225.23.camel@localhost>
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 18:37 +0100, Roberto Sassu wrote:
-> On 11/02/2011 05:58 PM, David Safford wrote:
-> > On Wed, 2011-11-02 at 13:41 +0100, Roberto Sassu wrote:
-> >> The migratable should be modifiable during the key update() method. This
-> >> allows for example to update a migratable trusted key, wrapped by a TPM
-> >> key, to a a non-migratable one sealed under the SRK with a PCR set.
-> >>
-> >> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+Le mercredi 02 novembre 2011 à 10:46 -0700, Linus Torvalds a écrit :
+> On Wed, Nov 2, 2011 at 10:27 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
 > >
-> > I can see a use case for updating a migratable key to a non-migratable
-> > one - such as keeping a migratable master on a flash drive, and keeping
-> > only the non-migratable copy on-line. I certainly don't want the
-> > ability to change a non-migratable to migratable, as that would defeat
-> > the entire purpose of non-migratable.
+> > I believe it might come from commit 0e734419
+> > (ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
 > >
-> > I don't think this patch actually does either, though.
-> >
-> >> ---
-> >>   security/keys/trusted.c |    1 -
-> >>   1 files changed, 0 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
-> >> index 0c33e2e..8777015 100644
-> >> --- a/security/keys/trusted.c
-> >> +++ b/security/keys/trusted.c
-> >> @@ -1036,7 +1036,6 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
-> >>   		goto out;
-> >>   	}
-> >>   	/* copy old key values, and reseal with new pcrs */
-> >> -	new_p->migratable = p->migratable;
-> >
-> > Taking out this line appears only to remove a redundant assignment.
-> > We can only get here if the old key is already migratable, and the
-> > earlier trusted_payload_alloc() initializes the new copy to
-> > migratable by default. I don't see how the flag can be changed
-> > with this patch. Perhaps I'm missing something or this was just
-> > the start, and there is more to come?
-> >
+> > In case inet_csk_route_child_sock() returns NULL, we dont release socket
+> > lock.
 > 
-> Hi Dave
+> Hmm. I'm not seeing it. We're not even taking the socket lock there.
+> Or is it hidden somehow?
 > 
-> i think this line should be removed because it overwrites
-> the assignment made in datablob_parse() -> getoptions().
-> 
-> You can see this behaviour by executing the following commands:
-> 
-> 1) keyctl add trusted kmk "new 32" @u
-> 2) keyctl update $(keyctl search @u trusted kmk) "update migratable=0"
-> 3) keyctl update $(keyctl search @u trusted kmk) "update migratable=0"
-> 
-> The third operation should fail because of the lines at the
-> begin of trusted_update():
-> 
-> ---------
-> 	if (!p->migratable)
-> 		return -EPERM;
-> ---------
-> 
-> but instead, without the patch, it is performed successfully.
-> 
-> Thanks
-> 
-> Roberto Sassu
+>                     Linus
 
-Sorry - you are absolutely correct. The patch looks good,
-and it is safe, as it allows only migratable -> non-migratable updates.
-Give me a day to test both...
-dave
+tcp_v4_syn_recv_sock()
+{
+	newsk = tcp_create_openreq_child(sk, req, skb);
 
-> 
-> > dave
-> >
-> >>   	new_p->key_len = p->key_len;
-> >>   	memcpy(new_p->key, p->key, p->key_len);
-> >>   	dump_payload(p);
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> 
+...
+	
+
+}
+
+newsk is locked at this point.
+
+
 
