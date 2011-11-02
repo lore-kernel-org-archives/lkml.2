@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab1KBXIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:08:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:46995 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752077Ab1KBXIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:08:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Date: Thu, 3 Nov 2011 00:11:23 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-References: <20111101041337.39077229@tlielax.poochiereds.net> <20111101215710.GA13803@google.com> <20111102162331.GA31947@redhat.com>
-In-Reply-To: <20111102162331.GA31947@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1753854Ab1KBXKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:10:04 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:53840 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab1KBXKC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 19:10:02 -0400
+Date: Wed, 02 Nov 2011 19:09:55 -0400 (EDT)
+Message-Id: <20111102.190955.1902322759075682192.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4EB1CA4F.3090403@gmail.com>
+References: <20111102224317.GM31337@atomide.com>
+	<4EB1CA4F.3090403@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111030011.24062.rjw@sisk.pl>
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 02 Nov 2011 16:09:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 02, 2011, Oleg Nesterov wrote:
-> Hi,
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 02 Nov 2011 23:55:11 +0100
+
+> There is a problem with your kmalloc() or alignments on your architecture.
 > 
-> On 11/01, Tejun Heo wrote:
-> >
-> > For now, let's go with the count/dont_count.  Can you please write up
-> > a patch for that?  Jeff, does this seem okay to you?
-> 
-> OK, will do in a minute. On top of
-> "[PATCH pm] freezer: fix wait_event_freezable/__thaw_task races"
-> you sent. (btw, thanks, I forgout about it ;)
-> 
-> Rafael, could you remind why freezer_do_not_count/freezer_count check
-> ->mm != NULL ?
+> What is the SMP_CACHE_BYTES value ?
 
-You're asking difficult questions. ;-)
+kmalloc() behavior doesn't have anything to do with this bug.
 
-The intention was to prevent PF_FREEZER_SKIP from having any effect on
-kernel threads, IIRC.  Anyway, there are only two legitimate users of it
-(vfork and apm_ioctl) and in both cases the task in question is user space.
+The issue is calculation of skb->end, which is based upon calculated
+'size' variable.
 
-> The comment says "However, we don't want kernel threads to be frozen",
-> but it is not clear anyway. A kernel thread simply shouldn't use this
-> interface if it doesn't want to freeze.
-> 
-> And in any case, PF_KTHREAD looks better if we really need to filter
-> out the kernel threads.
+skb->end determines alignment of skb_shared_info, which is where the
+alignment problem is occuring for Tony.
 
-PF_FREEZER_SKIP was introduced specifically with vfork in mind and I'm not
-sure if it's a good idea to re-use it for something else (at least not for
-something entirely obvious).
-
-Thanks,
-Rafael
