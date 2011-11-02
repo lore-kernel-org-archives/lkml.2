@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1KBUci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:32:38 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33731 "EHLO e8.ny.us.ibm.com"
+	id S1752642Ab1KBUcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:32:07 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:51525 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab1KBUcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:32:33 -0400
+	id S1752500Ab1KBUcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:32:01 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,315 +13,641 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 25/28] rcu: Deconfuse dynticks entry-exit tracing
-Date: Wed,  2 Nov 2011 13:30:46 -0700
-Message-Id: <1320265849-5744-25-git-send-email-paulmck@linux.vnet.ibm.com>
+        patches@linaro.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: [PATCH RFC tip/core/rcu 18/28] nohz: Separate out irq exit and idle loop dyntick logic
+Date: Wed,  2 Nov 2011 13:30:39 -0700
+Message-Id: <1320265849-5744-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <20111102203017.GA3830@linux.vnet.ibm.com>
 References: <20111102203017.GA3830@linux.vnet.ibm.com>
-x-cbid: 11110220-9360-0000-0000-00000045A621
+x-cbid: 11110220-1976-0000-0000-000000ABADB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-The trace_rcu_dyntick() trace event did not print both the old and
-the new value of the nesting level, and furthermore printed only
-the low-order 32 bits of it.  This could result in some confusion
-when interpreting trace-event dumps, so this commit prints both
-the old and the new value, prints the full 64 bits, and also selects
-the process-entry/exit increment to print nicely in hexadecimal.
+The tick_nohz_stop_sched_tick() function, which tries to delay
+the next timer tick as long as possible, can be called from two
+places:
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+- From the idle loop to start the dytick idle mode
+- From interrupt exit if we have interrupted the dyntick
+idle mode, so that we reprogram the next tick event in
+case the irq changed some internal state that requires this
+action.
+
+There are only few minor differences between both that
+are handled by that function, driven by the ts->inidle
+cpu variable and the inidle parameter. The whole guarantees
+that we only update the dyntick mode on irq exit if we actually
+interrupted the dyntick idle mode, and that we enter in RCU extended
+quiescent state from idle loop entry only.
+
+Split this function into:
+
+- tick_nohz_idle_enter(), which sets ts->inidle to 1, enters
+dynticks idle mode unconditionally if it can, and enters into RCU
+extended quiescent state.
+
+- tick_nohz_irq_exit() which only updates the dynticks idle mode
+when ts->inidle is set (ie: if tick_nohz_idle_enter() has been called).
+
+To maintain symmetry, tick_nohz_restart_sched_tick() has been renamed
+into tick_nohz_idle_exit().
+
+This simplifies the code and micro-optimize the irq exit path (no need
+for local_irq_save there). This also prepares for the split between
+dynticks and rcu extended quiescent state logics. We'll need this split to
+further fix illegal uses of RCU in extended quiescent states in the idle
+loop.
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Frysinger <vapier@gentoo.org>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- include/trace/events/rcu.h |   15 +++++++++------
- kernel/rcu.h               |    7 +++++++
- kernel/rcutiny.c           |   28 +++++++++++++++++-----------
- kernel/rcutree.c           |   35 ++++++++++++++++++++---------------
- 4 files changed, 53 insertions(+), 32 deletions(-)
+ arch/arm/kernel/process.c              |    4 +-
+ arch/avr32/kernel/process.c            |    4 +-
+ arch/blackfin/kernel/process.c         |    4 +-
+ arch/microblaze/kernel/process.c       |    4 +-
+ arch/mips/kernel/process.c             |    4 +-
+ arch/openrisc/kernel/idle.c            |    4 +-
+ arch/powerpc/kernel/idle.c             |    4 +-
+ arch/powerpc/platforms/iseries/setup.c |    8 ++--
+ arch/s390/kernel/process.c             |    4 +-
+ arch/sh/kernel/idle.c                  |    4 +-
+ arch/sparc/kernel/process_64.c         |    4 +-
+ arch/tile/kernel/process.c             |    4 +-
+ arch/um/kernel/process.c               |    4 +-
+ arch/unicore32/kernel/process.c        |    4 +-
+ arch/x86/kernel/process_32.c           |    4 +-
+ arch/x86/kernel/process_64.c           |    4 +-
+ include/linux/tick.h                   |   13 +++--
+ kernel/softirq.c                       |    2 +-
+ kernel/time/tick-sched.c               |   93 +++++++++++++++++++------------
+ 19 files changed, 99 insertions(+), 77 deletions(-)
 
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 172620a..c29fb2f 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -246,21 +246,24 @@ TRACE_EVENT(rcu_fqs,
-  */
- TRACE_EVENT(rcu_dyntick,
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index 1a347f4..f9261d0 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -183,7 +183,7 @@ void cpu_idle(void)
  
--	TP_PROTO(char *polarity, int nesting),
-+	TP_PROTO(char *polarity, long long oldnesting, long long newnesting),
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		leds_event(led_idle_start);
+ 		while (!need_resched()) {
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -210,7 +210,7 @@ void cpu_idle(void)
+ 			}
+ 		}
+ 		leds_event(led_idle_end);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
+index ef5a2a0..6ee7952 100644
+--- a/arch/avr32/kernel/process.c
++++ b/arch/avr32/kernel/process.c
+@@ -34,10 +34,10 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched())
+ 			cpu_idle_sleep();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
+index 6a80a9e..7b141b5 100644
+--- a/arch/blackfin/kernel/process.c
++++ b/arch/blackfin/kernel/process.c
+@@ -88,10 +88,10 @@ void cpu_idle(void)
+ #endif
+ 		if (!idle)
+ 			idle = default_idle;
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+index dbb8124..6dc123e 100644
+--- a/arch/microblaze/kernel/process.c
++++ b/arch/microblaze/kernel/process.c
+@@ -103,10 +103,10 @@ void cpu_idle(void)
+ 		if (!idle)
+ 			idle = default_idle;
  
--	TP_ARGS(polarity, nesting),
-+	TP_ARGS(polarity, oldnesting, newnesting),
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched())
+ 			idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
  
- 	TP_STRUCT__entry(
- 		__field(char *, polarity)
--		__field(int, nesting)
-+		__field(long long, oldnesting)
-+		__field(long long, newnesting)
- 	),
+ 		preempt_enable_no_resched();
+ 		schedule();
+diff --git a/arch/mips/kernel/process.c b/arch/mips/kernel/process.c
+index b30cb25..d50a005 100644
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -56,7 +56,7 @@ void __noreturn cpu_idle(void)
  
- 	TP_fast_assign(
- 		__entry->polarity = polarity;
--		__entry->nesting = nesting;
-+		__entry->oldnesting = oldnesting;
-+		__entry->newnesting = newnesting;
- 	),
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched() && cpu_online(cpu)) {
+ #ifdef CONFIG_MIPS_MT_SMTC
+ 			extern void smtc_idle_loop_hook(void);
+@@ -77,7 +77,7 @@ void __noreturn cpu_idle(void)
+ 		     system_state == SYSTEM_BOOTING))
+ 			play_dead();
+ #endif
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/openrisc/kernel/idle.c b/arch/openrisc/kernel/idle.c
+index d5bc5f8..fb6a9bf 100644
+--- a/arch/openrisc/kernel/idle.c
++++ b/arch/openrisc/kernel/idle.c
+@@ -51,7 +51,7 @@ void cpu_idle(void)
  
--	TP_printk("%s %d", __entry->polarity, __entry->nesting)
-+	TP_printk("%s %llx %llx", __entry->polarity,
-+		  __entry->oldnesting, __entry->newnesting)
- );
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
  
- /*
-@@ -470,7 +473,7 @@ TRACE_EVENT(rcu_torture_read,
- #define trace_rcu_unlock_preempted_task(rcuname, gpnum, pid) do { } while (0)
- #define trace_rcu_quiescent_state_report(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks) do { } while (0)
- #define trace_rcu_fqs(rcuname, gpnum, cpu, qsevent) do { } while (0)
--#define trace_rcu_dyntick(polarity, nesting) do { } while (0)
-+#define trace_rcu_dyntick(polarity, oldnesting, newnesting) do { } while (0)
- #define trace_rcu_callback(rcuname, rhp, qlen) do { } while (0)
- #define trace_rcu_kfree_callback(rcuname, rhp, offset, qlen) do { } while (0)
- #define trace_rcu_batch_start(rcuname, qlen, blimit) do { } while (0)
-diff --git a/kernel/rcu.h b/kernel/rcu.h
-index f600868..aa88baa 100644
---- a/kernel/rcu.h
-+++ b/kernel/rcu.h
-@@ -30,6 +30,13 @@
- #endif /* #else #ifdef CONFIG_RCU_TRACE */
+ 		while (!need_resched()) {
+ 			check_pgt_cache();
+@@ -69,7 +69,7 @@ void cpu_idle(void)
+ 			set_thread_flag(TIF_POLLING_NRFLAG);
+ 		}
  
- /*
-+ * Process-level increment to ->dynticks_nesting field.  This allows for
-+ * architectures that use half-interrupts and half-exceptions from
-+ * process context.
-+ */
-+#define DYNTICK_TASK_NESTING (LLONG_MAX / 2 - 1)
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/powerpc/kernel/idle.c b/arch/powerpc/kernel/idle.c
+index 39a2baa..878572f 100644
+--- a/arch/powerpc/kernel/idle.c
++++ b/arch/powerpc/kernel/idle.c
+@@ -56,7 +56,7 @@ void cpu_idle(void)
+ 
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched() && !cpu_should_die()) {
+ 			ppc64_runlatch_off();
+ 
+@@ -93,7 +93,7 @@ void cpu_idle(void)
+ 
+ 		HMT_medium();
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		if (cpu_should_die())
+ 			cpu_die();
+diff --git a/arch/powerpc/platforms/iseries/setup.c b/arch/powerpc/platforms/iseries/setup.c
+index c25a081..e2f5fad 100644
+--- a/arch/powerpc/platforms/iseries/setup.c
++++ b/arch/powerpc/platforms/iseries/setup.c
+@@ -562,7 +562,7 @@ static void yield_shared_processor(void)
+ static void iseries_shared_idle(void)
+ {
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched() && !hvlpevent_is_pending()) {
+ 			local_irq_disable();
+ 			ppc64_runlatch_off();
+@@ -576,7 +576,7 @@ static void iseries_shared_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 
+ 		if (hvlpevent_is_pending())
+ 			process_iSeries_events();
+@@ -592,7 +592,7 @@ static void iseries_dedicated_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		if (!need_resched()) {
+ 			while (!need_resched()) {
+ 				ppc64_runlatch_off();
+@@ -609,7 +609,7 @@ static void iseries_dedicated_idle(void)
+ 		}
+ 
+ 		ppc64_runlatch_on();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 541a750..db3e930 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -90,10 +90,10 @@ static void default_idle(void)
+ void cpu_idle(void)
+ {
+ 	for (;;) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched())
+ 			default_idle();
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/sh/kernel/idle.c b/arch/sh/kernel/idle.c
+index db4ecd7..6015743 100644
+--- a/arch/sh/kernel/idle.c
++++ b/arch/sh/kernel/idle.c
+@@ -89,7 +89,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 
+ 		while (!need_resched()) {
+ 			check_pgt_cache();
+@@ -111,7 +111,7 @@ void cpu_idle(void)
+ 			start_critical_timings();
+ 		}
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index c158a95..1235f63 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -95,12 +95,12 @@ void cpu_idle(void)
+ 	set_thread_flag(TIF_POLLING_NRFLAG);
+ 
+ 	while(1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 
+ 		while (!need_resched() && !cpu_is_offline(cpu))
+ 			sparc64_yield(cpu);
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 
+ 		preempt_enable_no_resched();
+ 
+diff --git a/arch/tile/kernel/process.c b/arch/tile/kernel/process.c
+index 9c45d8b..920e674 100644
+--- a/arch/tile/kernel/process.c
++++ b/arch/tile/kernel/process.c
+@@ -85,7 +85,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched()) {
+ 			if (cpu_is_offline(cpu))
+ 				BUG();  /* no HOTPLUG_CPU */
+@@ -105,7 +105,7 @@ void cpu_idle(void)
+ 				local_irq_enable();
+ 			current_thread_info()->status |= TS_POLLING;
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
+index 21c1ae7..41acf59 100644
+--- a/arch/um/kernel/process.c
++++ b/arch/um/kernel/process.c
+@@ -245,10 +245,10 @@ void default_idle(void)
+ 		if (need_resched())
+ 			schedule();
+ 
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		nsecs = disable_timer();
+ 		idle_sleep(nsecs);
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 	}
+ }
+ 
+diff --git a/arch/unicore32/kernel/process.c b/arch/unicore32/kernel/process.c
+index ba401df..9999b9a 100644
+--- a/arch/unicore32/kernel/process.c
++++ b/arch/unicore32/kernel/process.c
+@@ -55,7 +55,7 @@ void cpu_idle(void)
+ {
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched()) {
+ 			local_irq_disable();
+ 			stop_critical_timings();
+@@ -63,7 +63,7 @@ void cpu_idle(void)
+ 			local_irq_enable();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 7a3b651..ad93205 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -98,7 +98,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched()) {
+ 
+ 			check_pgt_cache();
+@@ -114,7 +114,7 @@ void cpu_idle(void)
+ 				pm_idle();
+ 			start_critical_timings();
+ 		}
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index f693e44..9ca714e 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -121,7 +121,7 @@ void cpu_idle(void)
+ 
+ 	/* endless idle loop with no priority at all */
+ 	while (1) {
+-		tick_nohz_stop_sched_tick(1);
++		tick_nohz_idle_enter();
+ 		while (!need_resched()) {
+ 
+ 			rmb();
+@@ -147,7 +147,7 @@ void cpu_idle(void)
+ 			__exit_idle();
+ 		}
+ 
+-		tick_nohz_restart_sched_tick();
++		tick_nohz_idle_exit();
+ 		preempt_enable_no_resched();
+ 		schedule();
+ 		preempt_disable();
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index ca40838..0df1d50 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -121,21 +121,22 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
+ #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
+ 
+ # ifdef CONFIG_NO_HZ
+-extern void tick_nohz_stop_sched_tick(int inidle);
+-extern void tick_nohz_restart_sched_tick(void);
++extern void tick_nohz_idle_enter(void);
++extern void tick_nohz_idle_exit(void);
++extern void tick_nohz_irq_exit(void);
+ extern ktime_t tick_nohz_get_sleep_length(void);
+ extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
+ extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
+ # else
+-static inline void tick_nohz_stop_sched_tick(int inidle)
++static inline void tick_nohz_idle_enter(void)
+ {
+-	if (inidle)
+-		rcu_idle_enter();
++	rcu_idle_enter();
+ }
+-static inline void tick_nohz_restart_sched_tick(void)
++static inline void tick_nohz_idle_exit(void)
+ {
+ 	rcu_idle_exit();
+ }
 +
-+/*
-  * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
-  * by call_rcu() and rcu callback execution, and are therefore not part of the
-  * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 089820d..e0df33f 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -54,20 +54,21 @@ static void __call_rcu(struct rcu_head *head,
- 
- #include "rcutiny_plugin.h"
- 
--static long long rcu_dynticks_nesting = LLONG_MAX / 2;
-+static long long rcu_dynticks_nesting = DYNTICK_TASK_NESTING;
- 
- /* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
--static void rcu_idle_enter_common(void)
-+static void rcu_idle_enter_common(long long oldval)
+ static inline ktime_t tick_nohz_get_sleep_length(void)
  {
- 	if (rcu_dynticks_nesting) {
--		RCU_TRACE(trace_rcu_dyntick("--=", rcu_dynticks_nesting));
-+		RCU_TRACE(trace_rcu_dyntick("--=",
-+					    oldval, rcu_dynticks_nesting));
- 		return;
- 	}
--	RCU_TRACE(trace_rcu_dyntick("Start", rcu_dynticks_nesting));
-+	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
- 	if (!idle_cpu(smp_processor_id())) {
- 		WARN_ON_ONCE(1);	/* must be idle task! */
- 		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
--					    rcu_dynticks_nesting));
-+					    oldval, rcu_dynticks_nesting));
- 		ftrace_dump(DUMP_ALL);
- 	}
- 	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
-@@ -80,10 +81,12 @@ static void rcu_idle_enter_common(void)
- void rcu_idle_enter(void)
- {
- 	unsigned long flags;
-+	long long oldval;
+ 	ktime_t len = { .tv64 = NSEC_PER_SEC/HZ };
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index fca82c3..d2be0e0 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -351,7 +351,7 @@ void irq_exit(void)
+ #ifdef CONFIG_NO_HZ
+ 	/* Make sure that timer wheel updates are propagated */
+ 	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
+-		tick_nohz_stop_sched_tick(0);
++		tick_nohz_irq_exit();
+ #endif
+ 	preempt_enable_no_resched();
+ }
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 4692907..52b7ace 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -246,42 +246,17 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
  
- 	local_irq_save(flags);
-+	oldval = rcu_dynticks_nesting;
- 	rcu_dynticks_nesting = 0;
--	rcu_idle_enter_common();
-+	rcu_idle_enter_common(oldval);
- 	local_irq_restore(flags);
+-/**
+- * tick_nohz_stop_sched_tick - stop the idle tick from the idle task
+- *
+- * When the next event is more than a tick into the future, stop the idle tick
+- * Called either from the idle loop or from irq_exit() when an idle period was
+- * just interrupted by an interrupt which did not cause a reschedule.
+- */
+-void tick_nohz_stop_sched_tick(int inidle)
++static void tick_nohz_stop_sched_tick(struct tick_sched *ts)
+ {
+-	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies, flags;
+-	struct tick_sched *ts;
++	unsigned long seq, last_jiffies, next_jiffies, delta_jiffies;
+ 	ktime_t last_update, expires, now;
+ 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
+ 	u64 time_delta;
+ 	int cpu;
+ 
+-	local_irq_save(flags);
+-
+ 	cpu = smp_processor_id();
+ 	ts = &per_cpu(tick_cpu_sched, cpu);
+ 
+-	/*
+-	 * Call to tick_nohz_start_idle stops the last_update_time from being
+-	 * updated. Thus, it must not be called in the event we are called from
+-	 * irq_exit() with the prior state different than idle.
+-	 */
+-	if (!inidle && !ts->inidle)
+-		goto end;
+-
+-	/*
+-	 * Set ts->inidle unconditionally. Even if the system did not
+-	 * switch to NOHZ mode the cpu frequency governers rely on the
+-	 * update of the idle time accounting in tick_nohz_start_idle().
+-	 */
+-	ts->inidle = 1;
+-
+ 	now = tick_nohz_start_idle(cpu, ts);
+ 
+ 	/*
+@@ -297,10 +272,10 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 	}
+ 
+ 	if (unlikely(ts->nohz_mode == NOHZ_MODE_INACTIVE))
+-		goto end;
++		return;
+ 
+ 	if (need_resched())
+-		goto end;
++		return;
+ 
+ 	if (unlikely(local_softirq_pending() && cpu_online(cpu))) {
+ 		static int ratelimit;
+@@ -310,7 +285,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 			       (unsigned int) local_softirq_pending());
+ 			ratelimit++;
+ 		}
+-		goto end;
++		return;
+ 	}
+ 
+ 	ts->idle_calls++;
+@@ -442,10 +417,54 @@ out:
+ 	ts->next_jiffies = next_jiffies;
+ 	ts->last_jiffies = last_jiffies;
+ 	ts->sleep_length = ktime_sub(dev->next_event, now);
+-end:
+-	if (inidle)
+-		rcu_idle_enter();
+-	local_irq_restore(flags);
++}
++
++/**
++ * tick_nohz_idle_enter - stop the idle tick from the idle task
++ *
++ * When the next event is more than a tick into the future, stop the idle tick
++ * Called when we start the idle loop.
++ * This also enters into RCU extended quiescent state so that this CPU doesn't
++ * need anymore to be part of any global grace period completion. This way
++ * the tick can be stopped safely as we don't need to report quiescent states.
++ */
++void tick_nohz_idle_enter(void)
++{
++	struct tick_sched *ts;
++
++	WARN_ON_ONCE(irqs_disabled());
++
++	local_irq_disable();
++
++	ts = &__get_cpu_var(tick_cpu_sched);
++	/*
++	 * set ts->inidle unconditionally. even if the system did not
++	 * switch to nohz mode the cpu frequency governers rely on the
++	 * update of the idle time accounting in tick_nohz_start_idle().
++	 */
++	ts->inidle = 1;
++	tick_nohz_stop_sched_tick(ts);
++	rcu_idle_enter();
++
++	local_irq_enable();
++}
++
++/**
++ * tick_nohz_irq_exit - update next tick event from interrupt exit
++ *
++ * When an interrupt fires while we are idle and it doesn't cause
++ * a reschedule, it may still add, modify or delete a timer, enqueue
++ * an RCU callback, etc...
++ * So we need to re-calculate and reprogram the next tick event.
++ */
++void tick_nohz_irq_exit(void)
++{
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++	if (!ts->inidle)
++		return;
++
++	tick_nohz_stop_sched_tick(ts);
  }
  
-@@ -93,11 +96,13 @@ void rcu_idle_enter(void)
- void rcu_irq_exit(void)
- {
- 	unsigned long flags;
-+	long long oldval;
- 
- 	local_irq_save(flags);
-+	oldval = rcu_dynticks_nesting;
- 	rcu_dynticks_nesting--;
- 	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
--	rcu_idle_enter_common();
-+	rcu_idle_enter_common(oldval);
- 	local_irq_restore(flags);
+ /**
+@@ -487,11 +506,13 @@ static void tick_nohz_restart(struct tick_sched *ts, ktime_t now)
  }
  
-@@ -105,14 +110,15 @@ void rcu_irq_exit(void)
- static void rcu_idle_exit_common(long long oldval)
- {
- 	if (oldval) {
--		RCU_TRACE(trace_rcu_dyntick("++=", rcu_dynticks_nesting));
-+		RCU_TRACE(trace_rcu_dyntick("++=",
-+					    oldval, rcu_dynticks_nesting));
- 		return;
- 	}
--	RCU_TRACE(trace_rcu_dyntick("End", oldval));
-+	RCU_TRACE(trace_rcu_dyntick("End", oldval, rcu_dynticks_nesting));
- 	if (!idle_cpu(smp_processor_id())) {
- 		WARN_ON_ONCE(1);	/* must be idle task! */
- 		RCU_TRACE(trace_rcu_dyntick("Error on exit: not idle task",
--			  oldval));
-+			  oldval, rcu_dynticks_nesting));
- 		ftrace_dump(DUMP_ALL);
- 	}
- }
-@@ -128,7 +134,7 @@ void rcu_idle_exit(void)
- 	local_irq_save(flags);
- 	oldval = rcu_dynticks_nesting;
- 	WARN_ON_ONCE(oldval != 0);
--	rcu_dynticks_nesting = LLONG_MAX / 2;
-+	rcu_dynticks_nesting = DYNTICK_TASK_NESTING;
- 	rcu_idle_exit_common(oldval);
- 	local_irq_restore(flags);
- }
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 28f8f92..cc04876 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -196,7 +196,7 @@ void rcu_note_context_switch(int cpu)
- EXPORT_SYMBOL_GPL(rcu_note_context_switch);
- 
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
--	.dynticks_nesting = LLONG_MAX / 2,
-+	.dynticks_nesting = DYNTICK_TASK_NESTING,
- 	.dynticks = ATOMIC_INIT(1),
- };
- 
-@@ -348,17 +348,17 @@ static int rcu_implicit_offline_qs(struct rcu_data *rdp)
-  * we really have entered idle, and must do the appropriate accounting.
-  * The caller must have disabled interrupts.
-  */
--static void rcu_idle_enter_common(struct rcu_dynticks *rdtp)
-+static void rcu_idle_enter_common(struct rcu_dynticks *rdtp, long long oldval)
- {
- 	if (rdtp->dynticks_nesting) {
--		trace_rcu_dyntick("--=", rdtp->dynticks_nesting);
-+		trace_rcu_dyntick("--=", oldval, rdtp->dynticks_nesting);
- 		return;
- 	}
--	trace_rcu_dyntick("Start", rdtp->dynticks_nesting);
-+	trace_rcu_dyntick("Start", oldval, rdtp->dynticks_nesting);
- 	if (!idle_cpu(smp_processor_id())) {
- 		WARN_ON_ONCE(1);	/* must be idle task! */
- 		trace_rcu_dyntick("Error on entry: not idle task",
--				   rdtp->dynticks_nesting);
-+				   oldval, rdtp->dynticks_nesting);
- 		ftrace_dump(DUMP_ALL);
- 	}
- 	/* CPUs seeing atomic_inc() must see prior RCU read-side crit sects */
-@@ -383,12 +383,14 @@ static void rcu_idle_enter_common(struct rcu_dynticks *rdtp)
- void rcu_idle_enter(void)
- {
- 	unsigned long flags;
-+	long long oldval;
- 	struct rcu_dynticks *rdtp;
- 
- 	local_irq_save(flags);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
-+	oldval = rdtp->dynticks_nesting;
- 	rdtp->dynticks_nesting = 0;
--	rcu_idle_enter_common(rdtp);
-+	rcu_idle_enter_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
- 
-@@ -411,13 +413,15 @@ void rcu_idle_enter(void)
- void rcu_irq_exit(void)
- {
- 	unsigned long flags;
-+	long long oldval;
- 	struct rcu_dynticks *rdtp;
- 
- 	local_irq_save(flags);
- 	rdtp = &__get_cpu_var(rcu_dynticks);
-+	oldval = rdtp->dynticks_nesting;
- 	rdtp->dynticks_nesting--;
- 	WARN_ON_ONCE(rdtp->dynticks_nesting < 0);
--	rcu_idle_enter_common(rdtp);
-+	rcu_idle_enter_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
- 
-@@ -431,7 +435,7 @@ void rcu_irq_exit(void)
- static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
- {
- 	if (oldval) {
--		trace_rcu_dyntick("++=", rdtp->dynticks_nesting);
-+		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
- 		return;
- 	}
- 	smp_mb__before_atomic_inc();  /* Force ordering w/previous sojourn. */
-@@ -439,10 +443,11 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
- 	/* CPUs seeing atomic_inc() must see later RCU read-side crit sects */
- 	smp_mb__after_atomic_inc();  /* See above. */
- 	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks) & 0x1));
--	trace_rcu_dyntick("End", oldval);
-+	trace_rcu_dyntick("End", oldval, rdtp->dynticks_nesting);
- 	if (!idle_cpu(smp_processor_id())) {
- 		WARN_ON_ONCE(1);	/* must be idle task! */
--		trace_rcu_dyntick("Error on exit: not idle task", oldval);
-+		trace_rcu_dyntick("Error on exit: not idle task",
-+				  oldval, rdtp->dynticks_nesting);
- 		ftrace_dump(DUMP_ALL);
- 	}
- }
-@@ -453,8 +458,8 @@ static void rcu_idle_exit_common(struct rcu_dynticks *rdtp, long long oldval)
-  * Exit idle mode, in other words, -enter- the mode in which RCU
-  * read-side critical sections can occur.
+ /**
+- * tick_nohz_restart_sched_tick - restart the idle tick from the idle task
++ * tick_nohz_idle_exit - restart the idle tick from the idle task
   *
-- * We crowbar the ->dynticks_nesting field to LLONG_MAX/2 to allow for
-- * the possibility of usermode upcalls messing up our count
-+ * We crowbar the ->dynticks_nesting field to DYNTICK_TASK_NESTING to
-+ * allow for the possibility of usermode upcalls messing up our count
-  * of interrupt nesting level during the busy period that is just
-  * now starting.
+  * Restart the idle tick when the CPU is woken up from idle
++ * This also exit the RCU extended quiescent state. The CPU
++ * can use RCU again after this function is called.
   */
-@@ -468,7 +473,7 @@ void rcu_idle_exit(void)
- 	rdtp = &__get_cpu_var(rcu_dynticks);
- 	oldval = rdtp->dynticks_nesting;
- 	WARN_ON_ONCE(oldval != 0);
--	rdtp->dynticks_nesting = LLONG_MAX / 2;
-+	rdtp->dynticks_nesting = DYNTICK_TASK_NESTING;
- 	rcu_idle_exit_common(rdtp, oldval);
- 	local_irq_restore(flags);
- }
-@@ -2012,7 +2017,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
- 		rdp->nxttail[i] = &rdp->nxtlist;
- 	rdp->qlen = 0;
- 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
--	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != LLONG_MAX / 2);
-+	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_NESTING);
- 	WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
- 	rdp->cpu = cpu;
- 	rdp->rsp = rsp;
-@@ -2040,7 +2045,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
- 	rdp->qlen_last_fqs_check = 0;
- 	rdp->n_force_qs_snap = rsp->n_force_qs;
- 	rdp->blimit = blimit;
--	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != LLONG_MAX / 2);
-+	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_NESTING);
- 	WARN_ON_ONCE((atomic_read(&rdp->dynticks->dynticks) & 0x1) != 1);
- 	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
- 
+-void tick_nohz_restart_sched_tick(void)
++void tick_nohz_idle_exit(void)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
 -- 
 1.7.3.2
 
