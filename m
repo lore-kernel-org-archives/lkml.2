@@ -1,113 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1KBKCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 06:02:32 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:49080 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab1KBKCb (ORCPT
+	id S1756257Ab1KBKEL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 06:04:11 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58040 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754972Ab1KBKEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 06:02:31 -0400
-Message-ID: <1320228143.2776.12.camel@br98xy6r>
-Subject: [PATCH] kdump: Add missing RAM resource in crash_shrink_memory()
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, heiko.carstens@de.ibm.com,
-        schwidefsky@de.ibm.com, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org
-Date: Wed, 02 Nov 2011 11:02:23 +0100
-Organization: IBM
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 2 Nov 2011 06:04:08 -0400
+Date: Wed, 2 Nov 2011 11:03:56 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Paul Mundt <lethal@linux-sh.org>, Tony Lindgren <tony@atomide.com>,
+        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] regulator: Provide dummy supply support
+Message-ID: <20111102100355.GJ23421@pengutronix.de>
+References: <1319833618-25190-1-git-send-email-s.hauer@pengutronix.de>
+ <20111028215931.GA30366@opensource.wolfsonmicro.com>
+ <20111028224757.GG23421@pengutronix.de>
+ <201111011350.17425.vapier@gentoo.org>
+ <20111101182720.GH10029@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101182720.GH10029@opensource.wolfsonmicro.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:09:05 up 13 days, 15:44, 40 users,  load average: 9.24, 7.74,
+ 6.60
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+On Tue, Nov 01, 2011 at 06:27:21PM +0000, Mark Brown wrote:
+> On Tue, Nov 01, 2011 at 01:50:14PM -0400, Mike Frysinger wrote:
+> > On Friday 28 October 2011 18:47:57 Sascha Hauer wrote:
+> 
+> > > > We already have a dummy regulator driver and a fixed voltage regulator
+> > > > driver, we shouldn't be adding a third implementation of the same thing.
+> > > > Just use the fixed voltage regulator for this.
+> 
+> > > I explained in my mail why I think that the current implementation of
+> > > the dummy regulator is not suitable for things apart from debugging.
+> 
+> > your complaints seem to be specific to how the dummy regulator gets hooked in 
+> > and not in the specific regulator implementation.  so it seems like the right 
+> > thing would be to split the kconfig knobs:
+> 
+> Quite.  Sascha, your mail doesn't refer to the implementation of the
+> regulator itself at all.  Nothing in your changelog even mentions that
+> you're introducing a new regulator driver.
+> 
+> I think there's a big abstraction understanding failure here, reading
+> your changelog I'm not sure you understand the existing mechainsms that
+> are in place.  You say:
+> 
+> | This patch allows a board to register dummy supplies for devices
+> | which need a regulator but which is not software controllable
+> | on this board.
+> 
+> but this is exactly the use case the fixed voltage regulator is there
+> for.
+> 
+> >  config REGULATOR_DUMMY
+> > -	bool "Provide a dummy regulator if regulator lookups fail"
+> > +	bool "Provide a dummy regulator"
+> > +config REGULATOR_DUMMY_FALLBACK
+> > +	bool "Fallback to dummy regulator if lookup fails"
+> > +	depends on REGULATOR_DUMMY
+> 
+> As I think I said earlier I'd use the fixed regulator for this, all
+> Sascha's actually doing here is adding a wrapper to simplify
+> registration of that.
 
-When shrinking crashkernel memory using /sys/kernel/kexec_crash_size for
-the newly added memory no RAM resource is created at the moment.
+There's one difference between the fixed and the dummy regulator though:
+The fixed regulator has a voltage. The same dummy regulator instance can
+be used for all devices which do not have a software controllable
+regulator. I think the same can be done with the fixed regulator aswell,
+but the bogus voltage showing up in the sysfs entry might be confusing
+to users.
+That's the reason I implemented a (second) dummy regulator driver.
+Indeed it's not nice to have two of them.
 
-Example:
+Another approach to this topic would be to allow a board to explicitely
+bind to the existing dummy regulator, like the following (error path
+should of course be implemented before applying this)
 
-$ cat /proc/iomem
-00000000-bfffffff : System RAM
-  00000000-005b7ac3 : Kernel code
-  005b7ac4-009743bf : Kernel data
-  009bb000-00a85c33 : Kernel bss
-c0000000-cfffffff : Crash kernel
-d0000000-ffffffff : System RAM
+Sascha
 
-$ echo 0 > /sys/kernel/kexec_crash_size
-$ cat /proc/iomem
-00000000-bfffffff : System RAM
-  00000000-005b7ac3 : Kernel code
-  005b7ac4-009743bf : Kernel data
-  009bb000-00a85c33 : Kernel bss
-                                 <<-- here is System RAM missing
-d0000000-ffffffff : System RAM
+8<------------------------------------
 
-One result of this bug is that the memory chunk can never be set offline
-using memory hotplug. With this patch I insert a new "System RAM" resource
-for the released memory. Then the upper example looks like the following:
+[PATCH] regulator: allow boards to bind to the dummy regulator
 
-$ echo 0 > /sys/kernel/kexec_crash_size
-$ cat /proc/iomem
-00000000-bfffffff : System RAM
-  00000000-005b7ac3 : Kernel code
-  005b7ac4-009743bf : Kernel data
-  009bb000-00a85c33 : Kernel bss
-c0000000-cfffffff : System RAM   <<-- new rescoure
-d0000000-ffffffff : System RAM
-
-And now I can set chunk c0000000-cfffffff offline.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- kernel/kexec.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ drivers/regulator/core.c          |   19 +++++++++++++++++++
+ include/linux/regulator/machine.h |    8 ++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -1132,6 +1132,7 @@ int crash_shrink_memory(unsigned long ne
- {
- 	int ret = 0;
- 	unsigned long start, end;
-+	struct resource *ram_res;
- 
- 	mutex_lock(&kexec_mutex);
- 
-@@ -1149,6 +1150,12 @@ int crash_shrink_memory(unsigned long ne
- 		goto unlock;
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index d8e6a42..a7a38ba 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1046,6 +1046,25 @@ static void unset_regulator_supplies(struct regulator_dev *rdev)
  	}
+ }
  
-+	ram_res = kzalloc(sizeof(*ram_res), GFP_KERNEL);
-+	if (!ram_res) {
-+		ret = -ENOMEM;
-+		goto unlock;
++int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
++		int num_supplies)
++{
++	int i, ret;
++
++	for (i = 0; i < num_supplies; i++) {
++		ret = set_consumer_device_supply(dummy_regulator_rdev, NULL,
++				supply[i].dev_name, supply[i].supply);
++		if (ret)
++			goto err_out;
 +	}
 +
- 	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
- 	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
- 
-@@ -1157,7 +1164,15 @@ int crash_shrink_memory(unsigned long ne
- 
- 	if ((start == end) && (crashk_res.parent != NULL))
- 		release_resource(&crashk_res);
++	return 0;
++err_out:
++	/* FIXME: unset device supply */
++	return ret;
++}
++EXPORT_SYMBOL_GPL(regulator_add_dummy_supply);
 +
-+	ram_res->start = end;
-+	ram_res->end = crashk_res.end;
-+	ram_res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
-+	ram_res->name = "System RAM";
-+
- 	crashk_res.end = end - 1;
-+
-+	insert_resource(&iomem_resource, ram_res);
- 	crash_unmap_reserved_pages();
+ #define REG_STR_SIZE	64
  
- unlock:
+ static struct regulator *create_regulator(struct regulator_dev *rdev,
+diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
+index ce3127a..89089cd 100644
+--- a/include/linux/regulator/machine.h
++++ b/include/linux/regulator/machine.h
+@@ -192,6 +192,8 @@ int regulator_suspend_finish(void);
+ #ifdef CONFIG_REGULATOR
+ void regulator_has_full_constraints(void);
+ void regulator_use_dummy_regulator(void);
++int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
++		int num_supplies);
+ #else
+ static inline void regulator_has_full_constraints(void)
+ {
+@@ -200,6 +202,12 @@ static inline void regulator_has_full_constraints(void)
+ static inline void regulator_use_dummy_regulator(void)
+ {
+ }
++
++static inline int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
++		int num_supplies)
++{
++	return 0;
++}
+ #endif
+ 
+ #endif
+-- 
+1.7.7
 
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
