@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab1KBQ2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 12:28:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25722 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab1KBQ17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 12:27:59 -0400
-Date: Wed, 2 Nov 2011 17:23:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-cifs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
-        Neil Brown <neilb@suse.de>, trond.myklebust@netapp.com,
-        linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
-	fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111102162331.GA31947@redhat.com>
-References: <20111101041337.39077229@tlielax.poochiereds.net> <20111101065958.50addab5@tlielax.poochiereds.net> <20111101163059.GR18855@google.com> <20111101175953.GB5358@redhat.com> <20111101180601.GV18855@google.com> <20111101181329.GA6739@redhat.com> <20111101182753.GW18855@google.com> <20111101193923.GA9444@redhat.com> <20111101194601.GB9444@redhat.com> <20111101215710.GA13803@google.com>
+	id S933171Ab1KBQbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 12:31:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51537 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932286Ab1KBQbP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 12:31:15 -0400
+Date: Wed, 2 Nov 2011 09:31:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        tj@kernel.org
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111102163109.GA29430@core.coreip.homeip.net>
+References: <20111101124759.GA1326@zeus>
+ <20111102054658.GA29035@core.coreip.homeip.net>
+ <20111102160208.GA6657@zeus>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111101215710.GA13803@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20111102160208.GA6657@zeus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Nov 02, 2011 at 11:02:09AM -0500, Andrew Watts wrote:
+> On Tue, Nov 01, 2011 at 10:46:58PM -0700, Dmitry Torokhov wrote:
+> > 
+> > Are you hibernating from text console or X? Can you try plugging in USB
+> > keyboard and see if you are getting input? What about ssh into the box?
+> 
+> Forgot to answer a few of your questions. Plugging in a USB keyboard does
+> not help.
 
-On 11/01, Tejun Heo wrote:
->
-> For now, let's go with the count/dont_count.  Can you please write up
-> a patch for that?  Jeff, does this seem okay to you?
+OK, it looks like you do have input, what you do not have is X
+functioning.
 
-OK, will do in a minute. On top of
-"[PATCH pm] freezer: fix wait_event_freezable/__thaw_task races"
-you sent. (btw, thanks, I forgout about it ;)
+I am not sure why radeon reports lockup with that patch; serio uses
+system_long_wq to schedule its long-playing works and the only other
+user of system_long_wq seems to be sata, but then concurrency management
+should take care of them sharing the workqueue.
 
-Rafael, could you remind why freezer_do_not_count/freezer_count check
-->mm != NULL ?
+Tejun, do you have any ideas here?
 
-The comment says "However, we don't want kernel threads to be frozen",
-but it is not clear anyway. A kernel thread simply shouldn't use this
-interface if it doesn't want to freeze.
+Thanks.
 
-And in any case, PF_KTHREAD looks better if we really need to filter
-out the kernel threads.
-
-Oleg.
-
+-- 
+Dmitry
