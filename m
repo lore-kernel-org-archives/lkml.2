@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab1KCBex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:34:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50521 "EHLO mx2.suse.de"
+	id S933159Ab1KCBfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:35:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50532 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933056Ab1KCBes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:34:48 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:55 2011
-Message-Id: <20111102221455.079179285@clark.kroah.org>
+	id S933120Ab1KCBe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:34:56 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:53 2011
+Message-Id: <20111102221453.495886972@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:20 -0700
+Date: Wed, 02 Nov 2011 15:14:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk, Mike Christie <michaelc@cs.wisc.edu>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [054/107] [SCSI] ipr: Always initiate hard reset in kdump kernel
+Subject: [037/107] [SCSI] libiscsi_tcp: fix LLD data allocation
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 5d7c20b7fa5c6ca19e871b4050e321c99d32bd43 upstream.
+commit 74dcd0ec735ba9c5bef254b2f6e53068cf3f9ff0 upstream.
 
-During kdump testing I noticed timeouts when initialising each IPR
-adapter. While the driver has logic to detect an adapter in an
-indeterminate state, it wasn't triggering and each adapter went
-through a 5 minute timeout before finally going operational.
+Have libiscsi_tcp have upper layers allocate the LLD data
+along with the iscsi_cls_conn struct, so it is refcounted.
 
-Some analysis showed the needs_hard_reset flag wasn't getting set.
-We can check the reset_devices kernel parameter which is set by
-kdump and force a full reset. This fixes the problem.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Brian King <brking@linux.vnet.ibm.com>
+Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ipr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/libiscsi_tcp.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
---- a/drivers/scsi/ipr.c
-+++ b/drivers/scsi/ipr.c
-@@ -7668,7 +7668,7 @@ static int __devinit ipr_probe_ioa(struc
- 	uproc = readl(ioa_cfg->regs.sense_uproc_interrupt_reg);
- 	if ((mask & IPR_PCII_HRRQ_UPDATED) == 0 || (uproc & IPR_UPROCI_RESET_ALERT))
- 		ioa_cfg->needs_hard_reset = 1;
--	if (interrupts & IPR_PCII_ERROR_INTERRUPTS)
-+	if ((interrupts & IPR_PCII_ERROR_INTERRUPTS) || reset_devices)
- 		ioa_cfg->needs_hard_reset = 1;
- 	if (interrupts & IPR_PCII_IOA_UNIT_CHECKED)
- 		ioa_cfg->ioa_unit_checked = 1;
+--- a/drivers/scsi/libiscsi_tcp.c
++++ b/drivers/scsi/libiscsi_tcp.c
+@@ -1069,7 +1069,8 @@ iscsi_tcp_conn_setup(struct iscsi_cls_se
+ 	struct iscsi_cls_conn *cls_conn;
+ 	struct iscsi_tcp_conn *tcp_conn;
+ 
+-	cls_conn = iscsi_conn_setup(cls_session, sizeof(*tcp_conn), conn_idx);
++	cls_conn = iscsi_conn_setup(cls_session,
++				    sizeof(*tcp_conn) + dd_data_size, conn_idx);
+ 	if (!cls_conn)
+ 		return NULL;
+ 	conn = cls_conn->dd_data;
+@@ -1081,22 +1082,13 @@ iscsi_tcp_conn_setup(struct iscsi_cls_se
+ 
+ 	tcp_conn = conn->dd_data;
+ 	tcp_conn->iscsi_conn = conn;
+-
+-	tcp_conn->dd_data = kzalloc(dd_data_size, GFP_KERNEL);
+-	if (!tcp_conn->dd_data) {
+-		iscsi_conn_teardown(cls_conn);
+-		return NULL;
+-	}
++	tcp_conn->dd_data = conn->dd_data + sizeof(*tcp_conn);
+ 	return cls_conn;
+ }
+ EXPORT_SYMBOL_GPL(iscsi_tcp_conn_setup);
+ 
+ void iscsi_tcp_conn_teardown(struct iscsi_cls_conn *cls_conn)
+ {
+-	struct iscsi_conn *conn = cls_conn->dd_data;
+-	struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
+-
+-	kfree(tcp_conn->dd_data);
+ 	iscsi_conn_teardown(cls_conn);
+ }
+ EXPORT_SYMBOL_GPL(iscsi_tcp_conn_teardown);
 
 
