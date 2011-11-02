@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1KBIPM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 04:15:12 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39318 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752410Ab1KBIPI (ORCPT
+	id S1754515Ab1KBIQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 04:16:27 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:21072 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab1KBIQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 04:15:08 -0400
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-In-Reply-To: <49255b17-02bb-4a4a-b85a-cd5a879beb98@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	 <75efb251-7a5e-4aca-91e2-f85627090363@default>
-	 <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
-	 <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
-	 <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>
-	 <20111031181651.GF3466@redhat.com 1320142590.7701.64.camel@dabdike>
-	 <49255b17-02bb-4a4a-b85a-cd5a879beb98@default>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Nov 2011 12:14:46 +0400
-Message-ID: <1320221686.3091.40.camel@dabdike>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Nov 2011 04:16:24 -0400
+Date: Wed, 2 Nov 2011 11:16:42 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: re: [SCSI] compat_ioct: fix bsg SG_IO
+Message-ID: <20111102081642.GD4751@mwanda>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2Z2K0IlrPCVsbNpk"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4EB0FC4B.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-01 at 11:21 -0700, Dan Magenheimer wrote:
-> > From: James Bottomley [mailto:James.Bottomley@HansenPartnership.com]
-> > Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-> > 
-> > Actually, I think there's an unexpressed fifth requirement:
-> > 
-> > 5. The optimised use case should be for non-paging situations.
-> 
-> Not quite sure what you mean here (especially for frontswap)...
 
-I mean could it be used in a more controlled situation than an
-alternative to swap?
+--2Z2K0IlrPCVsbNpk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > The problem here is that almost every data centre person tries very hard
-> > to make sure their systems never tip into the swap zone.  A lot of
-> > hosting datacentres use tons of cgroup controllers for this and
-> > deliberately never configure swap which makes transcendent memory
-> > useless to them under the current API.  I'm not sure this is fixable,
-> 
-> I can't speak for cgroups, but the generic "state-of-the-art"
-> that you describe is a big part of what frontswap DOES try
-> to fix, or at least ameliorate.  Tipping "into the swap zone"
-> is currently very bad.  Very very bad.  Frontswap doesn't
-> "solve" swapping, but it is the foundation for some of the
-> first things in a long time that aren't just "add more RAM."
+84eb8fb42c120 "[SCSI] compat_ioct: fix bsg SG_IO" introduces an
+uninitialized variable use.
 
-OK, I still don't think you understand what I'm saying.  Machines in a
-Data Centre tend to be provisioned to criticality.  What this means is
-that the Data Centre has a bunch of mandatory work and a bunch of Best
-Effort work (and grades in between).  We load up the mandatory work
-according to the resource limits being careful not to overprovision the
-capacity then we look at the spare capacity and slot in the Best effort
-stuff.  We want the machine to run at capacity, not over it; plus we
-need to respond instantly for demands of the mandatory work, which
-usually involves either dialling down or pushing away best effort work.
-In this situation, action is taken long before the swap paths become
-active because if they activate, the entire machine bogs and you've just
-blown the SLA on the mandatory work.
+   278  static int sg_ioctl_trans(unsigned int fd, unsigned int cmd,
+   279                          sg_io_hdr32_t __user *sgio32)
+   280  {
+   281          sg_io_hdr_t __user *sgio;
+   282          u16 iovec_count;
+   283          u32 data;
+   284          void __user *dxferp;
+   285          int err;
+   286          int interface_id;
+   287 =20
+   288          if (get_user(interface_id, &sgio32->interface_id))
+                                            ^^^^^^
+sgio32 is unitialized here.  Unfortunately Gcc doesn't warn about it.
 
-This is why a lot of data centres simply never configure swap for this
-reason.  Putting frontswap in the swap paths means that the data centre
-job scheduler has taken action long before frontswap ever activates, so
-it can never be used which is why I wrote the above.  
+   289                  return -EFAULT;
+   290          if (interface_id !=3D 'S')
+   291                  return sys_ioctl(fd, cmd, (unsigned long)sgio32);
 
-> > but it's the reason why a large swathe of users would never be
-> > interested in the patches, because they by design never operate in the
-> > region transcended memory is currently looking to address.
-> 
-> It's true, those that are memory-rich and can spend nearly
-> infinite amounts on more RAM (and on high-end platforms that
-> can expand to hold massive amounts of RAM) are not tmem's
-> target audience.
+regards,
+dan carpenter
 
-Where do you get the infinite RAM idea from?  The most concrete example
-of what I said above are Lean Data Centres, which are highly resource
-constrained but they want to run at (or just below) criticality so that
-they get through all of the Mandatory and as much of the best effort
-work as they can.
+--2Z2K0IlrPCVsbNpk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > This isn't an inherent design flaw, but it does ask the question "is
-> > your design scope too narrow?"
-> 
-> Considering all the hazing that I've gone through to get
-> this far, you think I should _expand_ my design scope?!? :-)
-> Thanks, I guess I'll pass. :-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Sure, I think the conclusion that Transcendent Memory has no
-applicability to a lean Data Centre isn't unreasonable; I was just
-probing to see if it was the only conclusion.
+iQIcBAEBAgAGBQJOsPxpAAoJEOnZkXI/YHqRpH4QAJKBnxS4xKj+3yAoMHuqnoLz
+m22f4V7BQBecfitjT0yoGtain68Vp880p7goRjTX9jkwkRYzMNl7DyNqvUVYCx2h
+vbtakAea+Vk70Q0DgG/MdX0OIVKO3uSehEDRi0oi4ALJOuxH0T/xa5kFOMVrkx4A
+6TPgYuONbdw2uueJKmjryRTwUwrhBjRh33Furx8J4p31eAoJskOH6U0cY3ZlUEzS
+Fema/3E0TnJ02Q5Kp2YupiZHmkUwCOfHvUSyccR82Hyhza+WzuMqxONpdQSgfErC
+Qu5Oqwph4mNg5ik90DVooPbajUiUWzjYM2nO4g+zLhJcsi9lRERe2i/OUvGE4D97
+b16awlS/QzWm/Xvt6hx6MvGtNyeDmYkpN9PLz5nR59fwOrcHXsu/VfSmLlnqsqvd
+XU4dGtdJIV7tXIz+q8s/bTS2A2g338gEPSg/zkU0GxhKUOLfblhCsLCFOQvdzzbB
+QAg2AkVXFxoKTUCGThL1c2xFtEfFx8AbrHcYghRpH8TRu6ftSjNWdFIngjUyjqkX
+pGQPRXYb6/iLYPikOho4pAkh018GceYClq7wLLcw7cXrpUYispQk3NpYhNONVZz5
+nkISW7JF1OYwsgDCSbCgIHBGD3PaET04TAino+JRO/KOdgc0gzG2cELM4gN7wmVi
+iPTeNPRWDw9zZAQN5tPK
+=SIw6
+-----END PGP SIGNATURE-----
 
-James
-
-
+--2Z2K0IlrPCVsbNpk--
