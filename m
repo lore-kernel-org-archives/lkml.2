@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab1KCBed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:34:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50472 "EHLO mx2.suse.de"
+	id S933020Ab1KCCPk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:15:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50489 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab1KCBeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:34:22 -0400
+	id S932869Ab1KCBec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:34:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:54 2011
-Message-Id: <20111102221454.325861186@clark.kroah.org>
+Message-Id: <20111102221454.612949436@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:12 -0700
+Date: Wed, 02 Nov 2011 15:14:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Nelson <mdnelson8@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: [046/107] ahci: Enable SB600 64bit DMA on Asus M3A
+        alan@lxorguk.ukuu.org.uk, Matthew Daley <mattjd@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [049/107] x25: Prevent skb overreads when checking call user data
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Nelson <mdnelson8@gmail.com>
+From: Matthew Daley <mattjd@gmail.com>
 
-commit 3c4aa91f21f65b7b40bdfb015eacbcb8453ccae2 upstream.
+commit 7f81e25befdfb3272345a2e775f520e1d515fa20 upstream.
 
-Like e65cc194f7628ecaa02462f22f42fb09b50dcd49 this patch enables 64bit DMA
-for the AHCI SATA controller of a board that has the SB600 southbridge. In
-this case though we're enabling 64bit DMA for the Asus M3A motherboard. It
-is a new enough board that all of the BIOS releases since the initial
-release (0301 from 2007-10-22) work correctly with 64bit DMA enabled.
+x25_find_listener does not check that the amount of call user data given
+in the skb is big enough in per-socket comparisons, hence buffer
+overreads may occur.  Fix this by adding a check.
 
-Signed-off-by: Mark Nelson <mdnelson8@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
+Signed-off-by: Matthew Daley <mattjd@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Hendry <andrew.hendry@gmail.com>
+Acked-by: Andrew Hendry <andrew.hendry@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ net/x25/af_x25.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -2769,6 +2769,18 @@ static bool ahci_sb600_enable_64bit(stru
- 				DMI_MATCH(DMI_BOARD_NAME, "MS-7376"),
- 			},
- 		},
-+		/*
-+		 * All BIOS versions for the Asus M3A support 64bit DMA.
-+		 * (all release versions from 0301 to 1206 were tested)
-+		 */
-+		{
-+			.ident = "ASUS M3A",
-+			.matches = {
-+				DMI_MATCH(DMI_BOARD_VENDOR,
-+					  "ASUSTeK Computer INC."),
-+				DMI_MATCH(DMI_BOARD_NAME, "M3A"),
-+			},
-+		},
- 		{ }
- 	};
- 	const struct dmi_system_id *match;
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -294,7 +294,8 @@ static struct sock *x25_find_listener(st
+ 			 * Found a listening socket, now check the incoming
+ 			 * call user data vs this sockets call user data
+ 			 */
+-			if(skb->len > 0 && x25_sk(s)->cudmatchlength > 0) {
++			if (x25_sk(s)->cudmatchlength > 0 &&
++				skb->len >= x25_sk(s)->cudmatchlength) {
+ 				if((memcmp(x25_sk(s)->calluserdata.cuddata,
+ 					skb->data,
+ 					x25_sk(s)->cudmatchlength)) == 0) {
 
 
