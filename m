@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933334Ab1KBQIH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 12:08:07 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5407 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383Ab1KBQIF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 12:08:05 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 02 Nov 2011 09:07:53 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Wed, 2 Nov 2011 09:07:52 -0700
-Subject: RE: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
- cardhu
-Thread-Topic: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
- cardhu
-Thread-Index: AcyZdo5ETdQN3/r0Q7S1bsyQlxV5PAAAsmXQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A46C4@HQMAIL01.nvidia.com>
-References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
- <1320242948-21061-9-git-send-email-pdeschrijver@nvidia.com>
- <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933375Ab1KBQNh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 12:13:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38598 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932955Ab1KBQNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 12:13:36 -0400
+Message-ID: <4EB16C17.40906@redhat.com>
+Date: Wed, 02 Nov 2011 18:13:11 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <75efb251-7a5e-4aca-91e2-f85627090363@default> <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy> <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com> <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default> <20111031181651.GF3466@redhat.com> <1320142590.7701.64.camel@dabdike> <4EB16572.70209@redhat.com> <20111102160201.GB18879@redhat.com>
+In-Reply-To: <20111102160201.GB18879@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Wednesday, November 02, 2011 9:46 AM:
-> On Wed, Nov 02, 2011 at 03:09:07PM +0100, Peter De Schrijver wrote:
-> > Add support for the tegra30 based cardhu development board. Cardhu is a tablet
-> > formfactor reference design for tegra30. The patch provides a device tree for
-> > the board, updates Makefile.boot to build the dtb, includes the platform in
-> > Kconfig and updates board-dt.c.
-...
-> > diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
-> > new file mode 100644
-> > index 0000000..70c41fc
-> > --- /dev/null
-> > +++ b/arch/arm/boot/dts/tegra-cardhu.dts
-> > @@ -0,0 +1,36 @@
-> > +/dts-v1/;
-> > +
-> > +/include/ "tegra30.dtsi"
-> > +
-> > +/ {
-> > +	model = "NVIDIA Tegra30 Cardhu evaluation board";
-> 
-> And this should probably be removed.
+On 11/02/2011 06:02 PM, Andrea Arcangeli wrote:
+> Hi Avi,
+>
+> On Wed, Nov 02, 2011 at 05:44:50PM +0200, Avi Kivity wrote:
+> > If you look at cleancache, then it addresses this concern - it extends
+> > pagecache through host memory.  When dropping a page from the tail of
+> > the LRU it first goes into tmem, and when reading in a page from disk
+> > you first try to read it from tmem.  However in many workloads,
+> > cleancache is actually detrimental.  If you have a lot of cache misses,
+> > then every one of them causes a pointless vmexit; considering that
+> > servers today can chew hundreds of megabytes per second, this adds up. 
+> > On the other side, if you have a use-once workload, then every page that
+> > falls of the tail of the LRU causes a vmexit and a pointless page copy.
+>
+> I also think it's bad design for Virt usage, but hey, without this
+> they can't even run with cache=writeback/writethrough and they're
+> forced to cache=off, and then they claim specvirt is marketing, so for
+> Xen it's better than nothing I guess.
 
-I don't follow the reasoning here; it seems correct to identify what this
-.dts file applies to, and having a model property is consistent with other
-.dts files, including non-Tegra boards.
+Surely Xen can use the pagecache, it uses Linux for I/O just like kvm.
+
+> I'm trying right now to evaluate it as a pure zcache host side
+> optimization.
+
+zcache style usage is fine.  It's purely internal so no ABI constraints,
+and no hypercalls either.  It's still synchronous though so RAMster like
+approaches will not work well.
+
+
+<snip>
 
 -- 
-nvpublic
+error compiling committee.c: too many arguments to function
 
