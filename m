@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab1KBXAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:00:40 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3428 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559Ab1KBW7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:59:52 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org,
-        devel@openvz.org
-Subject: [PATCH 4/4] perf: add scripts for profiling sleep times
-Date: Thu,  3 Nov 2011 01:59:44 +0300
-Message-Id: <1320274784-2463901-5-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
-References: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
+	id S1753490Ab1KBXCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:02:07 -0400
+Received: from mail113c7.megamailservers.com ([69.49.98.213]:39103 "EHLO
+	mail113c7.megamailservers.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752621Ab1KBXCF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 19:02:05 -0400
+X-Greylist: delayed 1237 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 19:02:04 EDT
+X-POP-User: p_authtest.testsitesc7.hostopia.com
+Message-ID: <20111102163954.e1hq9bfwpuogoo0k@webmail.sasktel.net>
+From: "=?utf-8?b?T1dFTiBTVEVWRU4=?=" <kanem@sasktel.net>
+Reply-to: kanem@sasktel.net
+To: undisclosed-recipients:;
+Subject: 
+Date: Wed, 02 Nov 2011 16:39:54 -0600
+X-Priority: 3
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Webmail 6.0
+X-CSC: 0
+X-CHA: v=1.1 cv=BkLMrz4z41WHOdwV/HrUBdwxOr5869pv+e4B19XtC6M= c=1 sm=1
+		a=Q5QLeeme7KwA:10 a=YxfxW3ofkq8A:10 a=O4itPxsZJmoA:10 a=IkcTkHD0fZMA:10
+		a=69EAbJreAAAA:8 a=eFiPdjdW99X8VjJ5jVsA:9 a=AYqybelhGungq0I1HNkA:7
+		a=QEXdDO2ut3YA:10 a=mwmPwK6qIvYA:10 a=EfJqPEOeqlMA:10 a=MNXH8t_pjTlAMc8o:21
+		a=Jew4UxWsdNnO77mB:21 wl=host:8 a=WkljmVdYkabdwxfqvArNOQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-E.g.:
- # ./perf script record sched-stat -- -e sched:sched_stat_sleep &
- # ./foo;
- # killall -SIGINT perf
- ./perf script report sched-stat
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- tools/perf/scripts/python/bin/sched-stat-record |    2 ++
- tools/perf/scripts/python/bin/sched-stat-report |    6 ++++++
- 2 files changed, 8 insertions(+), 0 deletions(-)
- create mode 100644 tools/perf/scripts/python/bin/sched-stat-record
- create mode 100644 tools/perf/scripts/python/bin/sched-stat-report
 
-diff --git a/tools/perf/scripts/python/bin/sched-stat-record b/tools/perf/scripts/python/bin/sched-stat-record
-new file mode 100644
-index 0000000..b9873d9
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/sched-stat-record
-@@ -0,0 +1,2 @@
-+#!/bin/bash
-+perf record -ag -e sched:sched_switch --filter "prev_state == 1 || prev_state == 2" -e sched:sched_process_exit ${@/--/}
-diff --git a/tools/perf/scripts/python/bin/sched-stat-report b/tools/perf/scripts/python/bin/sched-stat-report
-new file mode 100644
-index 0000000..d225a37
---- /dev/null
-+++ b/tools/perf/scripts/python/bin/sched-stat-report
-@@ -0,0 +1,6 @@
-+#!/bin/bash
-+# description: profiling sleep times
-+# args: -e sched:sched_stat_[smth]
-+perf inject -s -i perf.data -o perf.data.d || exit
-+perf report -i perf.data.d || exit
-+unlink perf.data.d
--- 
-1.7.1
+I am Mr Owen Steven from a bank,i need you to keep this confidential to yourself, president Muammar  Gaddafi has a secret account which worth 15.5 million dollars he opened this account since he was 27years old he has even forgotten,i am ready to share 50/50 if you are willing to receive this money for me. SEND YOUR REPLY TO (owensteven11@hotmail.com)
 
