@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932857Ab1KCCIX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:08:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50715 "EHLO mx2.suse.de"
+	id S933543Ab1KCCIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:08:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50696 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933543Ab1KCBgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:36:36 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:53 2011
-Message-Id: <20111102221453.399845199@clark.kroah.org>
+	id S933495Ab1KCBgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:36:25 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:54 2011
+Message-Id: <20111102221454.052669506@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:02 -0700
+Date: Wed, 02 Nov 2011 15:14:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Subject: [036/107] TPM: Zero buffer after copying to userspace
+        alan@lxorguk.ukuu.org.uk, Jouni Malinen <jouni@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [043/107] cfg80211: Fix validation of AKM suites
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <huewe.external.infineon@googlemail.com>
+From: Jouni Malinen <jouni@qca.qualcomm.com>
 
-commit 3321c07ae5068568cd61ac9f4ba749006a7185c9 upstream.
+commit 1b9ca0272ffae212e726380f66777b30a56ed7a5 upstream.
 
-Since the buffer might contain security related data it might be a good idea to
-zero the buffer after we have copied it to userspace.
+Incorrect variable was used in validating the akm_suites array from
+NL80211_ATTR_AKM_SUITES. In addition, there was no explicit
+validation of the array length (we only have room for
+NL80211_MAX_NR_AKM_SUITES).
 
-This got assigned CVE-2011-1162.
+This can result in a buffer write overflow for stack variables with
+arbitrary data from user space. The nl80211 commands using the affected
+functionality require GENL_ADMIN_PERM, so this is only exposed to admin
+users.
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Signed-off-by: Jouni Malinen <jouni@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tpm/tpm.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ net/wireless/nl80211.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1044,6 +1044,7 @@ ssize_t tpm_read(struct file *file, char
- {
- 	struct tpm_chip *chip = file->private_data;
- 	ssize_t ret_size;
-+	int rc;
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -3364,9 +3364,12 @@ static int nl80211_crypto_settings(struc
+ 		if (len % sizeof(u32))
+ 			return -EINVAL;
  
- 	del_singleshot_timer_sync(&chip->user_read_timer);
- 	flush_scheduled_work();
-@@ -1054,8 +1055,11 @@ ssize_t tpm_read(struct file *file, char
- 			ret_size = size;
- 
- 		mutex_lock(&chip->buffer_mutex);
--		if (copy_to_user(buf, chip->data_buffer, ret_size))
-+		rc = copy_to_user(buf, chip->data_buffer, ret_size);
-+		memset(chip->data_buffer, 0, ret_size);
-+		if (rc)
- 			ret_size = -EFAULT;
++		if (settings->n_akm_suites > NL80211_MAX_NR_AKM_SUITES)
++			return -EINVAL;
 +
- 		mutex_unlock(&chip->buffer_mutex);
- 	}
+ 		memcpy(settings->akm_suites, data, len);
  
+-		for (i = 0; i < settings->n_ciphers_pairwise; i++)
++		for (i = 0; i < settings->n_akm_suites; i++)
+ 			if (!nl80211_valid_akm_suite(settings->akm_suites[i]))
+ 				return -EINVAL;
+ 	}
 
 
