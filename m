@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753936Ab1KBXOV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:14:21 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61835 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1KBXOS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:14:18 -0400
-Message-ID: <4EB1CEC4.3090909@gmail.com>
-Date: Thu, 03 Nov 2011 00:14:12 +0100
-From: Eric Dumazet <eric.dumazet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	id S1753972Ab1KBXOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:14:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47020 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752452Ab1KBXO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 19:14:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [PATCH 3/3] ARM: mach-shmobile: sh7372 A4R support (v4)
+Date: Thu, 3 Nov 2011 00:17:00 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+References: <201110200012.43840.rjw@sisk.pl> <Pine.LNX.4.64.1111021132240.19054@axis700.grange> <CANqRtoS5KTws7rDoHkxrq8DP+js5xq=YF3zQG4MYmmjHEtv5NA@mail.gmail.com>
+In-Reply-To: <CANqRtoS5KTws7rDoHkxrq8DP+js5xq=YF3zQG4MYmmjHEtv5NA@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
-References: <20111102224317.GM31337@atomide.com> <4EB1CA4F.3090403@gmail.com> <20111102.190955.1902322759075682192.davem@davemloft.net>
-In-Reply-To: <20111102.190955.1902322759075682192.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111030017.00780.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 00:09, David Miller wrote:
-
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Wed, 02 Nov 2011 23:55:11 +0100
+On Wednesday, November 02, 2011, Magnus Damm wrote:
+> On Wed, Nov 2, 2011 at 11:38 AM, Guennadi Liakhovetski
+> <g.liakhovetski@gmx.de> wrote:
+> > On Thu, 20 Oct 2011, Rafael J. Wysocki wrote:
+> >
+> >> From: Magnus Damm <damm@opensource.se>
+> >>
+> >> This change adds support for the sh7372 A4R power domain.
+> >
+> > This version still breaks I2C (#0) on mackerel. Tested with your
+> > sh7372-test branch of Oct 18th plus these four patches:
+> >
+> > 6b29305a PM / Domains: Add default power off governor function (v2)
+> > 3d578ae PM / Domains: Add device stop governor function (v2)
+> > 6c2cd02 ARM: mach-shmobile: sh7372 A4R support (v4)
+> > 9da11f4 ARM: mach-shmobile: sh7372 A3SP support (v4)
 > 
->> There is a problem with your kmalloc() or alignments on your architecture.
->>
->> What is the SMP_CACHE_BYTES value ?
-> 
-> kmalloc() behavior doesn't have anything to do with this bug.
-> 
-> The issue is calculation of skb->end, which is based upon calculated
-> 'size' variable.
-> 
-> skb->end determines alignment of skb_shared_info, which is where the
-> alignment problem is occuring for Tony.
-> 
+> Exactly how does it break IIC0?
 
+It causes some initialization issues to happen.  I get the following
+messages on every boot:
 
-I understood that David, but check the code, and you can see that exact
-skb->end depends also on ksize()
+i2c-sh_mobile i2c-sh_mobile.0: Transfer request timed out
+i2c-sh_mobile i2c-sh_mobile.0: Polling timed out
 
-So maybe the right fix is to make sure skb->end is properly aligned, say
-with SLOB
+three times in a row (there's a delay too).
 
-So a more generic fix is welcomed.
+The A4R patch is the source of that.
 
+> Does the same happen with the code base for upcoming 3.2-rc1 from
+> latest linux git?
+
+Yes, it does, AFAICT.
+
+Thanks,
+Rafael
