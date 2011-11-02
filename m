@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1KBJo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:44:29 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59310 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752671Ab1KBJoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:44:25 -0400
-Date: Wed, 2 Nov 2011 10:39:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111102093935.GB20916@elte.hu>
-References: <20111028070336.GF12995@elte.hu>
- <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
- <20111028075432.GB8626@elte.hu>
- <20111028120856.GA29174@citd.de>
- <20111028122902.GA25323@elte.hu>
- <20111028130535.GA2752@citd.de>
- <20111102084124.GB18771@elte.hu>
- <4EB1084F.4020206@suse.cz>
- <20111102091747.GH18903@elte.hu>
- <4EB10C3D.6090906@suse.cz>
+	id S1756267Ab1KBJoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:44:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38164 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752671Ab1KBJoe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:44:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB10C3D.6090906@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+In-Reply-To: <20111030201618.GA7696@google.com>
+References: <20110806121247.GC23937@htj.dyndns.org>
+	<20111030044821.GA23741@spacedout.fries.net>
+	<20111030201618.GA7696@google.com>
+Date: Wed, 2 Nov 2011 18:44:31 +0900
+Message-ID: <CAJ0PZbSRX6Rqn5NnnMkVGrPovtSuc2NWasysOYnjr3j9rON1VQ@mail.gmail.com>
+Subject: Re: [linux-pm] hiberante hangs TCP Re: [EXAMPLE CODE] Parasite thread
+ injection and TCP connection hijacking
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: David Fries <david@fries.net>, netdev@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Oct 31, 2011 at 5:16 AM, Tejun Heo <tj@kernel.org> wrote:
+> (cc'ing Rafael and linux-pm)
+>
+> On Sat, Oct 29, 2011 at 11:48:21PM -0500, David Fries wrote:
+>> I saw the write up on this on lwn.net, pretty creative by the way, and
+>> it got me thinking about a different checkpoint/restart problem I've
+>> been running into.  Specifically in hibernating to disk.  In the
+>> hibernate case active TCP connections hang after resuming, while an
+>> idle TCP connection will continue after the system is back up.  My
+>> observation is the kernel checkpoints itself to memory, enables
+>> devices, writes out that checkpoint image to storage, then powers off.
+>> The problem is if TCP packets are received while writing to storage,
+>> the kernel will continue to queue and ack those TCP packets, but the
+>> running kernel and it's network state is shortly lost.  When the
+>> computer resumes, those TCP byte sequences hang the TCP connection for
+>> an extended period of time while the resumed computer refuses to
+>> acknowledge the data that was received after checkpointing and the now
+>> running kernel knew nothing about, and the other computer tries in
+>> vain to resend any data that hadn't yet been acknowledged, which is
+>> always after the data that was lost, until one of them eventually
+>> gives up.
+>>
+>> I've been wondering if it was safe or possible to leave any network
+>> interfaces down after the checkpoint, or what the right solution would
+>> be.  I didn't think marking every TCP connection with a ZOMBIE_KERNEL
+>> bit just after the kernel checkpoint (for the kernel is walking dead
+>> and won't remember anything that happens), and then prevent any TCP
+>> acks from being sent for those connections would be the right
+>> solution.  I've taken to unplugging the physical lan cable,
+>> hibernating to disk, and plugging it back in after the system is down,
+>> to avoid the problem.  Any ideas?
+>
+> Hmmm... sounds like taking down network interfaces before starting
+> hibernation sequence should be enough, which shouldn't be too
+> difficult to implement from userland.  Rafael, what do you think?
+>
+> Thanks.
 
-* Michal Marek <mmarek@suse.cz> wrote:
+Um... it seems that the "thaw" callbacks of network interfaces or TCP
+should do something on this.
 
-> On 2.11.2011 10:17, Ingo Molnar wrote:
-> > * Michal Marek <mmarek@suse.cz> wrote:
-> >> On 2.11.2011 09:41, Ingo Molnar wrote:
-> >>> Yeah. Note that it's more like an 'add' operation, not a modify 
-> >>> operation, thus:
-> >>>
-> >>> 	make addconfig=kvm
-> >>>
-> >>> or:
-> >>>
-> >>> 	make addconfig kvm
-> >>>
-> >>> would be intuitive and would work well too.
-> >>>
-> >>> Sam, Michal, which one would you prefer? The latter might have the 
-> >>> advantage that it's additive, enabling future usages like:
-> >>>
-> >>> 	make addconfig kvm debug
-> >>
-> >> The problem is that neither of these fit into the make command syntax:
-> >>
-> >>     make addconfig kvm debug
-> >>
-> >> tells make to build three different targets, and
-> >>
-> >>     make addconfig=kvm
-> >>
-> >> tells make to create a variable named addconfig with the value kvm 
-> >> and build the default target. And BTW, you or someone else 
-> >> reassured me earlier in the thread that this is going to be needed 
-> >> for the kvm case solely, so why are you inventing something generic 
-> >> now? :)
-> > 
-> > Because we are trying to find *something* that is both usable and 
-> > which you guys are willing to ack.
-> > 
-> > So what's your suggestion? Is 'make kvmconfig' OK?
-> 
-> As I said, make kvmconfig is fine with me, if it's just this single case.
-> 
-> Michal
+Probably, the "thaw" callbacks should make sure that the TCP
+connections are closed?
 
-Great, thanks!
 
-	Ingo
+
+Cheers,
+MyungJoo
+
+
+>
+> --
+> tejun
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/linux-pm
+>
+
+
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
