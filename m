@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933353Ab1KCBfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:35:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50615 "EHLO mx2.suse.de"
+	id S933258Ab1KCBff (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:35:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50576 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933168Ab1KCBfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:35:44 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221456.335891562@clark.kroah.org>
+	id S933188Ab1KCBfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:35:21 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:55 2011
+Message-Id: <20111102221455.788896195@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:34 -0700
+Date: Wed, 02 Nov 2011 15:14:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
-Subject: [068/107] Update email address for stable patch submission
+        alan@lxorguk.ukuu.org.uk, Denis Pershin <dyp@perchine.com>
+Subject: [062/107] usb: cdc-acm: Owen SI-30 support
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,38 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Denis Pershin <dyp@perchine.com>
 
-commit 5fa224295f0e0358c8bc0e5390702338df889def upstream.
+commit 65e52f41fa944cef2e6d4222b8c54f46cc575214 upstream.
 
-The stable@vger.kernel.org email address has been replaced with the
-stable@vger.kernel.org mailing list.  Change the stable kernel rules to
-reference the new list instead of the semi-defunct email alias.
+here is the patch to support Owen SI-30 device.
+This is a pulse counter controller.
+http://www.owen.ru/en/catalog/93788515
 
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+usb-drivers output:
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=02(commc) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=03eb ProdID=0030 Rev=01.01
+C:  #Ifs= 2 Cfg#= 1 Atr=c0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=02(commc) Sub=02 Prot=00 Driver=cdc_acm
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_acm
+
+This patch is installed on my home system which receives data from this
+controller connected to cold water counter.
+
+Signed-off-by: Denis Pershin <dyp@perchine.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/stable_kernel_rules.txt |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -25,13 +25,13 @@ Rules on what kind of patches are accept
- Procedure for submitting patches to the -stable tree:
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1606,6 +1606,9 @@ static struct usb_device_id acm_ids[] =
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x03cd), }, /* Nokia C7 */
+ 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
  
-  - Send the patch, after verifying that it follows the above rules, to
--   stable@vger.kernel.org.
-+   stable@vger.kernel.org.
-  - The sender will receive an ACK when the patch has been accepted into the
-    queue, or a NAK if the patch is rejected.  This response might take a few
-    days, according to the developer's schedules.
-  - If accepted, the patch will be added to the -stable queue, for review by
-    other developers and by the relevant subsystem maintainer.
-- - If the stable@vger.kernel.org address is added to a patch, when it goes into
-+ - If the stable@vger.kernel.org address is added to a patch, when it goes into
-    Linus's tree it will automatically be emailed to the stable team.
-  - Security patches should not be sent to this alias, but instead to the
-    documented security@kernel.org address.
++	/* Support for Owen devices */
++	{ USB_DEVICE(0x03eb, 0x0030), }, /* Owen SI30 */
++
+ 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
+ 
+ 	/* control interfaces without any protocol set */
 
 
