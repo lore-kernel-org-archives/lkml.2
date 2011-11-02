@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933375Ab1KBQNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 12:13:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38598 "EHLO mx1.redhat.com"
+	id S933408Ab1KBQNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 12:13:48 -0400
+Received: from home.keithp.com ([63.227.221.253]:37035 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932955Ab1KBQNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 12:13:36 -0400
-Message-ID: <4EB16C17.40906@redhat.com>
-Date: Wed, 02 Nov 2011 18:13:11 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S932955Ab1KBQNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 12:13:42 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 1/7] drm/i915: Move common PCH_PP_CONTROL setup to ironlake_get_pp_control
+In-Reply-To: <20111102090255.09fa9a61@jbarnes-desktop>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-2-git-send-email-keithp@keithp.com> <20111102090255.09fa9a61@jbarnes-desktop>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 02 Nov 2011 09:13:38 -0700
+Message-ID: <yunty6mwlhp.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <75efb251-7a5e-4aca-91e2-f85627090363@default> <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy> <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com> <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default> <20111031181651.GF3466@redhat.com> <1320142590.7701.64.camel@dabdike> <4EB16572.70209@redhat.com> <20111102160201.GB18879@redhat.com>
-In-Reply-To: <20111102160201.GB18879@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2011 06:02 PM, Andrea Arcangeli wrote:
-> Hi Avi,
->
-> On Wed, Nov 02, 2011 at 05:44:50PM +0200, Avi Kivity wrote:
-> > If you look at cleancache, then it addresses this concern - it extends
-> > pagecache through host memory.  When dropping a page from the tail of
-> > the LRU it first goes into tmem, and when reading in a page from disk
-> > you first try to read it from tmem.  However in many workloads,
-> > cleancache is actually detrimental.  If you have a lot of cache misses,
-> > then every one of them causes a pointless vmexit; considering that
-> > servers today can chew hundreds of megabytes per second, this adds up. 
-> > On the other side, if you have a use-once workload, then every page that
-> > falls of the tail of the LRU causes a vmexit and a pointless page copy.
->
-> I also think it's bad design for Virt usage, but hey, without this
-> they can't even run with cache=writeback/writethrough and they're
-> forced to cache=off, and then they claim specvirt is marketing, so for
-> Xen it's better than nothing I guess.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Surely Xen can use the pagecache, it uses Linux for I/O just like kvm.
+On Wed, 2 Nov 2011 09:02:55 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
 
-> I'm trying right now to evaluate it as a pure zcache host side
-> optimization.
+> Can't we just set UNLOCK_REGS at load time and have asserts sprinkled
+> here and there?
 
-zcache style usage is fine.  It's purely internal so no ABI constraints,
-and no hypercalls either.  It's still synchronous though so RAMster like
-approaches will not work well.
+I think we'd need it at resume time as well; it seemed easier to just
+set it every time we touch the register.
 
+=2D-=20
+keith.packard@intel.com
 
-<snip>
+--=-=-=
+Content-Type: application/pgp-signature
 
--- 
-error compiling committee.c: too many arguments to function
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIVAwUBTrFsMzYtFsjWk68qAQgdwBAA0mDi0q/aLvpEA16dpy5d5kux5GR/0iLv
+OKsUYn++Xps9KGP/DrqbChwumVAP3RzgcVzReQL8znu+sIlYSjPFF3nt3l+4Yj+Q
+vq1RkhX2BPuYix0Jv/Cx68i8vWzpiEu3AmlW/L25UnMOZ0l+eNHIMkgjzJG3IQsx
+wJohxir1uchSq8bdzZIevkOAgfDz9O9alhkTUGKkqYKvDrCKL6W/ajIXsqFJlJCk
+um0xZXuEOp5N0QPUklw2bgAEcvjKoEDTVpkqM1ATa/5Uh80o1ogwlYaTQ3aEYk+I
+sbNLH+62NUHIVKRdBLCNQWZBni/u2utdsiK2JDCGWQarPOPpENKQ6PH1SDmrA1f4
+lc8WPmQXlYFvUTNk6M3nS8NA5irnbxsnRbxGSL14JUW/FIU1fb4DTihKoljsx0Ck
+k7Jg6ChSDHefWljYy5m2vUXlS56Axd6Qim9JQdnpU/W9sAPqKqe5228Q/lA1zsV4
+MrnUJeMgXPITtZYNd926g06eobYxFjFtBDoz7uh/anVDu7ocF0hTf+WMdjolUBtL
+htbWeYvUrTBZm2n2yJInDBMaEwjFEs4Tf/Pbk/bSFc/jSRqIBr3Ht4aLnnmmWY5T
+2UxYsKlo9sTCdQP3HlaqmY5FvBwnhA0fD+24x++XfRGG2VC0q3Q2oaOUjnIhk2o2
+b0DX8doE9rc=
+=ZH/q
+-----END PGP SIGNATURE-----
+--=-=-=--
