@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933428Ab1KCBgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:36:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50648 "EHLO mx2.suse.de"
+	id S933486Ab1KCBgU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:36:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50679 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932553Ab1KCBgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:36:01 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221456.785169950@clark.kroah.org>
+	id S1755282Ab1KCBgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:36:15 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:53 2011
+Message-Id: <20111102221453.769999201@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:39 -0700
+Date: Wed, 02 Nov 2011 15:14:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [073/107] nfsd4: ignore WANT bits in open downgrade
+        alan@lxorguk.ukuu.org.uk, Adam Radford <aradford@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [040/107] [SCSI] 3w-9xxx: fix iommu_iova leak
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit c30e92df30d7d5fe65262fbce5d1b7de675fe34e upstream.
+commit 96067723e46b0dd24ae7b934085ab4eff4d26a1b upstream.
 
-We don't use WANT bits yet--and sending them can probably trigger a
-BUG() further down.
+Following reports on the list, it looks like the 3e-9xxx driver will leak dma
+mappings every time we get a transient queueing error back from the card.
+This is because it maps the sg list in the routine that sends the command, but
+doesn't unmap again in the transient failure path (even though the command is
+sent back to the block layer).  Fix by unmapping before returning the status.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Reported-by: Chris Boot <bootc@bootc.net>
+Tested-by: Chris Boot <bootc@bootc.net>
+Acked-by: Adam Radford <aradford@gmail.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |    2 ++
+ drivers/scsi/3w-9xxx.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3079,6 +3079,8 @@ nfsd4_open_downgrade(struct svc_rqst *rq
- 	if (!access_valid(od->od_share_access, cstate->minorversion)
- 			|| !deny_valid(od->od_share_deny))
- 		return nfserr_inval;
-+	/* We don't yet support WANT bits: */
-+	od->od_share_access &= NFS4_SHARE_ACCESS_MASK;
- 
- 	nfs4_lock_state();
- 	if ((status = nfs4_preprocess_seqid_op(cstate,
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -1786,10 +1786,12 @@ static int twa_scsi_queue(struct scsi_cm
+ 	switch (retval) {
+ 	case SCSI_MLQUEUE_HOST_BUSY:
+ 		twa_free_request_id(tw_dev, request_id);
++		twa_unmap_scsi_data(tw_dev, request_id);
+ 		break;
+ 	case 1:
+ 		tw_dev->state[request_id] = TW_S_COMPLETED;
+ 		twa_free_request_id(tw_dev, request_id);
++		twa_unmap_scsi_data(tw_dev, request_id);
+ 		SCpnt->result = (DID_ERROR << 16);
+ 		done(SCpnt);
+ 		retval = 0;
 
 
