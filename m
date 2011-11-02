@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab1KCBc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:32:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50300 "EHLO mx2.suse.de"
+	id S1754853Ab1KCBcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:32:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50282 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754915Ab1KCBcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:52 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:50 2011
-Message-Id: <20111102221450.253854558@clark.kroah.org>
+	id S1754792Ab1KCBcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:32:42 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:51 2011
+Message-Id: <20111102221451.741179651@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:28 -0700
+Date: Wed, 02 Nov 2011 15:13:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Wang Zhi <zhi.wang@windriver.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [002/107] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
+        alan@lxorguk.ukuu.org.uk, Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: [018/107] ARM: davinci: da850 EVM: read mac address from SPI flash
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Zhi <zhi.wang@windriver.com>
+From: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
 
-commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
+commit 810198bc9c109489dfadc57131c5183ce6ad2d7d upstream.
 
->From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
-PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
-Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
-bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
-the action of clearing PORT_RESUME. This will cause unexpected long
-resume signal on USB bus.
+DA850/OMAP-L138 EMAC driver uses random mac address instead of
+a fixed one because the mac address is not stuffed into EMAC
+platform data.
 
-Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+This patch provides a function which reads the mac address
+stored in SPI flash (registered as MTD device) and populates the
+EMAC platform data. The function which reads the mac address is
+registered as a callback which gets called upon addition of MTD
+device.
+
+NOTE: In case the MAC address stored in SPI flash is erased, follow
+the instructions at [1] to restore it.
+
+[1] http://processors.wiki.ti.com/index.php/GSG:_OMAP-L138_DVEVM_Additional_Procedures#Restoring_MAC_address_on_SPI_Flash
+
+Modifications in v2:
+Guarded registering the mtd_notifier only when MTD is enabled.
+Earlier this was handled using mtd_has_partitions() call, but
+this has been removed in Linux v3.0.
+
+Modifications in v3:
+a. Guarded da850_evm_m25p80_notify_add() function and
+   da850evm_spi_notifier structure with CONFIG_MTD macros.
+b. Renamed da850_evm_register_mtd_user() function to
+   da850_evm_setup_mac_addr() and removed the struct mtd_notifier
+   argument to this function.
+c. Passed the da850evm_spi_notifier structure to register_mtd_user()
+   function.
+
+Modifications in v4:
+Moved the da850_evm_setup_mac_addr() function within the first
+CONFIG_MTD ifdef construct.
+
+Signed-off-by: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-hub.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |   28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -243,7 +243,7 @@ static int ehci_bus_resume (struct usb_h
- 	u32			temp;
- 	u32			power_okay;
- 	int			i;
--	u8			resume_needed = 0;
-+	unsigned long		resume_needed = 0;
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -42,6 +42,32 @@
+ #define DA850_MMCSD_CD_PIN		GPIO_TO_PIN(4, 0)
+ #define DA850_MMCSD_WP_PIN		GPIO_TO_PIN(4, 1)
  
- 	if (time_before (jiffies, ehci->next_statechange))
- 		msleep(5);
-@@ -307,7 +307,7 @@ static int ehci_bus_resume (struct usb_h
- 		if (test_bit(i, &ehci->bus_suspended) &&
- 				(temp & PORT_SUSPEND)) {
- 			temp |= PORT_RESUME;
--			resume_needed = 1;
-+			set_bit(i, &resume_needed);
- 		}
- 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
- 	}
-@@ -322,8 +322,7 @@ static int ehci_bus_resume (struct usb_h
- 	i = HCS_N_PORTS (ehci->hcs_params);
- 	while (i--) {
- 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
--		if (test_bit(i, &ehci->bus_suspended) &&
--				(temp & PORT_SUSPEND)) {
-+		if (test_bit(i, &resume_needed)) {
- 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
- 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
- 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
++#ifdef CONFIG_MTD
++static void da850_evm_m25p80_notify_add(struct mtd_info *mtd)
++{
++	char *mac_addr = davinci_soc_info.emac_pdata->mac_addr;
++	size_t retlen;
++
++	if (!strcmp(mtd->name, "MAC-Address")) {
++		mtd->read(mtd, 0, ETH_ALEN, &retlen, mac_addr);
++		if (retlen == ETH_ALEN)
++			pr_info("Read MAC addr from SPI Flash: %pM\n",
++				mac_addr);
++	}
++}
++
++static struct mtd_notifier da850evm_spi_notifier = {
++	.add	= da850_evm_m25p80_notify_add,
++};
++
++static void da850_evm_setup_mac_addr(void)
++{
++	register_mtd_user(&da850evm_spi_notifier);
++}
++#else
++static void da850_evm_setup_mac_addr(void) { }
++#endif
++
+ static struct mtd_partition da850_evm_norflash_partition[] = {
+ 	{
+ 		.name           = "NOR filesystem",
+@@ -381,6 +407,8 @@ static __init void da850_evm_init(void)
+ 	if (ret)
+ 		pr_warning("da850_evm_init: lcdc registration failed: %d\n",
+ 				ret);
++
++	da850_evm_setup_mac_addr();
+ }
+ 
+ #ifdef CONFIG_SERIAL_8250_CONSOLE
 
 
