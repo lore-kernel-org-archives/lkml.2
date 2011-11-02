@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756364Ab1KBTaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:30:06 -0400
-Received: from relay01ant.iops.be ([212.53.4.34]:40921 "EHLO
-	relay01ant.iops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab1KBTaD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:30:03 -0400
-X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 15:30:03 EDT
-From: Bart Van Assche <bvanassche@acm.org>
-To: linux-acpi@vger.kernel.org
-Subject: [PATCH, RESEND] ACPI: Fix CONFIG_ACPI_DOCK=n compiler warning
-Date: Wed, 2 Nov 2011 20:16:05 +0100
-User-Agent: KMail/1.13.6 (Linux/2.6.38.8-scst; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <201109231958.55067.bvanassche@acm.org>
-In-Reply-To: <201109231958.55067.bvanassche@acm.org>
+	id S1751111Ab1KBTgZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:36:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab1KBTgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:36:24 -0400
+Message-ID: <4EB19BB4.6030505@redhat.com>
+Date: Wed, 02 Nov 2011 15:36:20 -0400
+From: Adam Jackson <ajax@redhat.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Keith Packard <keithp@keithp.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 3/7] drm/i915: Treat PCH eDP like DP in most
+ places
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-4-git-send-email-keithp@keithp.com> <20111102092019.3a635632@jbarnes-desktop> <4EB17A50.6050804@redhat.com> <yun8vnywhvh.fsf@aiko.keithp.com>
+In-Reply-To: <yun8vnywhvh.fsf@aiko.keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111022016.05979.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently the ACPI ops structs were constified but the inline version
-of register_hotplug_dock_device() was overlooked (see also commit
-9c8b04b, June 25 2011). Update the inline function
-register_hotplug_dock_device() that is enabled with
-CONFIG_ACPI_DOCK=n too. This patch fixes at least the following
-compiler warnings:
+On 11/2/11 1:31 PM, Keith Packard wrote:
+> On Wed, 02 Nov 2011 13:13:52 -0400, Adam Jackson<ajax@redhat.com>  wrote:
+>
+>> Given the choice of trusting DPCD or the VBT, I'd definitely prefer
+>> DPCD.
+>
+> Except that the DPCD is coded into the monitor while the VBT is done by
+> the platform. And, it's the platform which may neglect to connect some
+> of the wires.
 
-drivers/ata/libata-acpi.c: In function .ata_acpi_associate.:
-drivers/ata/libata-acpi.c:266:11: warning: passing argument 2 of .register_hotplug_dock_device. discards qualifiers from pointer target type
-include/acpi/acpi_drivers.h:146:19: note: expected .struct acpi_dock_ops *. but argument is of type .const struct acpi_dock_ops *.
-drivers/ata/libata-acpi.c:275:11: warning: passing argument 2 of .register_hotplug_dock_device. discards qualifiers from pointer target type
-include/acpi/acpi_drivers.h:146:19: note: expected .struct acpi_dock_ops *. but argument is of type .const struct acpi_dock_ops *.
+My reasoning about this has been:
 
-Cc: Len Brown <len.brown@intel.com>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Jeff Garzik <jgarzik@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@vger.kernel.org
----
- include/acpi/acpi_drivers.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The maximum link configuration in DPCD is going to fit - and minimally 
+fit - the maximum supported configuration (depth/rate/size/etc), because 
+otherwise the hardware would have been more expensive to produce.
 
-diff --git a/include/acpi/acpi_drivers.h b/include/acpi/acpi_drivers.h
-index e49c36d..bb145e4 100644
---- a/include/acpi/acpi_drivers.h
-+++ b/include/acpi/acpi_drivers.h
-@@ -144,7 +144,7 @@ static inline void unregister_dock_notifier(struct notifier_block *nb)
- {
- }
- static inline int register_hotplug_dock_device(acpi_handle handle,
--					       struct acpi_dock_ops *ops,
-+					       const struct acpi_dock_ops *ops,
- 					       void *context)
- {
- 	return -ENODEV;
--- 
-1.7.3.4
+The VBT is going to be crap.
+
+But as always, "do what the Windows driver does" seems like a good 
+strategy.  Do we know?
+
+> Any bets on how long until we find a machine that has right value in the
+> VBT and the wrong one in DPCD? Or a machine with wrong values in both places?
+
+I will happily pay $20 to the first person to find a monitor with broken 
+link/lane in DPCD, on the understanding that they take it (the $20) to 
+the nearest hardware store, buy a hammer, and smash the monitor. 
+Preferably with the video uploaded to youtube.
+
+- ajax
