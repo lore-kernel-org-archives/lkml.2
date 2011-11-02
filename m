@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934961Ab1KCBn1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:43:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51533 "EHLO mx2.suse.de"
+	id S934948Ab1KCBnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:43:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51527 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934904Ab1KCBnR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:43:17 -0400
+	id S934878Ab1KCBnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:43:14 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:48 2011
-Message-Id: <20111102222748.450955055@clark.kroah.org>
+Message-Id: <20111102222748.365822355@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:27:19 -0700
+Date: Wed, 02 Nov 2011 15:27:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [095/101] NLM: Dont hang forever on NLM unlock requests
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [094/101] scm: lower SCM_MAX_FD
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,78 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit 0b760113a3a155269a3fba93a409c640031dd68f upstream.
+commit bba14de98753cb6599a2dae0e520714b2153522d upstream.
 
-If the NLM daemon is killed on the NFS server, we can currently end up
-hanging forever on an 'unlock' request, instead of aborting. Basically,
-if the rpcbind request fails, or the server keeps returning garbage, we
-really want to quit instead of retrying.
+Lower SCM_MAX_FD from 255 to 253 so that allocations for scm_fp_list are
+halved. (commit f8d570a4 added two pointers in this structure)
 
-Tested-by: Vasily Averin <vvs@sw.ru>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+scm_fp_dup() should not copy whole structure (and trigger kmemcheck
+warnings), but only the used part. While we are at it, only allocate
+needed size.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- fs/lockd/clntproc.c          |    8 +++++++-
- include/linux/sunrpc/sched.h |    4 ++--
- net/sunrpc/clnt.c            |    3 +++
- net/sunrpc/sched.c           |    1 +
- 4 files changed, 13 insertions(+), 3 deletions(-)
+ include/net/scm.h |    5 +++--
+ net/core/scm.c    |   10 ++++++----
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/fs/lockd/clntproc.c
-+++ b/fs/lockd/clntproc.c
-@@ -709,7 +709,13 @@ static void nlmclnt_unlock_callback(stru
+--- a/include/net/scm.h
++++ b/include/net/scm.h
+@@ -10,11 +10,12 @@
+ /* Well, we should have at least one descriptor open
+  * to accept passed FDs 8)
+  */
+-#define SCM_MAX_FD	255
++#define SCM_MAX_FD	253
  
- 	if (task->tk_status < 0) {
- 		dprintk("lockd: unlock failed (err = %d)\n", -task->tk_status);
--		goto retry_rebind;
-+		switch (task->tk_status) {
-+		case -EACCES:
-+		case -EIO:
-+			goto die;
-+		default:
-+			goto retry_rebind;
-+		}
+ struct scm_fp_list {
+ 	struct list_head	list;
+-	int			count;
++	short			count;
++	short			max;
+ 	struct file		*fp[SCM_MAX_FD];
+ };
+ 
+--- a/net/core/scm.c
++++ b/net/core/scm.c
+@@ -78,10 +78,11 @@ static int scm_fp_copy(struct cmsghdr *c
+ 			return -ENOMEM;
+ 		*fplp = fpl;
+ 		fpl->count = 0;
++		fpl->max = SCM_MAX_FD;
  	}
- 	if (status == NLM_LCK_DENIED_GRACE_PERIOD) {
- 		rpc_delay(task, NLMCLNT_GRACE_WAIT);
---- a/include/linux/sunrpc/sched.h
-+++ b/include/linux/sunrpc/sched.h
-@@ -84,8 +84,8 @@ struct rpc_task {
- 	long			tk_rtt;		/* round-trip time (jiffies) */
+ 	fpp = &fpl->fp[fpl->count];
  
- 	pid_t			tk_owner;	/* Process id for batching tasks */
--	unsigned char		tk_priority : 2;/* Task priority */
--
-+	unsigned char		tk_priority : 2,/* Task priority */
-+				tk_rebind_retry : 2;
- #ifdef RPC_DEBUG
- 	unsigned short		tk_pid;		/* debugging aid */
- #endif
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -1052,6 +1052,9 @@ call_bind_status(struct rpc_task *task)
- 			status = -EOPNOTSUPP;
- 			break;
- 		}
-+		if (task->tk_rebind_retry == 0)
-+			break;
-+		task->tk_rebind_retry--;
- 		rpc_delay(task, 3*HZ);
- 		goto retry_timeout;
- 	case -ETIMEDOUT:
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -799,6 +799,7 @@ static void rpc_init_task(struct rpc_tas
- 	/* Initialize retry counters */
- 	task->tk_garb_retry = 2;
- 	task->tk_cred_retry = 2;
-+	task->tk_rebind_retry = 2;
+-	if (fpl->count + num > SCM_MAX_FD)
++	if (fpl->count + num > fpl->max)
+ 		return -EINVAL;
  
- 	task->tk_priority = task_setup_data->priority - RPC_PRIORITY_LOW;
- 	task->tk_owner = current->tgid;
+ 	/*
+@@ -302,11 +303,12 @@ struct scm_fp_list *scm_fp_dup(struct sc
+ 	if (!fpl)
+ 		return NULL;
+ 
+-	new_fpl = kmalloc(sizeof(*fpl), GFP_KERNEL);
++	new_fpl = kmemdup(fpl, offsetof(struct scm_fp_list, fp[fpl->count]),
++			  GFP_KERNEL);
+ 	if (new_fpl) {
+-		for (i=fpl->count-1; i>=0; i--)
++		for (i = 0; i < fpl->count; i++)
+ 			get_file(fpl->fp[i]);
+-		memcpy(new_fpl, fpl, sizeof(*fpl));
++		new_fpl->max = new_fpl->count;
+ 	}
+ 	return new_fpl;
+ }
 
 
