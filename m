@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab1KCBcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:32:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50265 "EHLO mx2.suse.de"
+	id S1754887Ab1KCCVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:21:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50274 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab1KCBcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:36 -0400
+	id S1753793Ab1KCBck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:32:40 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:51 2011
-Message-Id: <20111102221451.555954053@clark.kroah.org>
+Message-Id: <20111102221451.643950623@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:42 -0700
+Date: Wed, 02 Nov 2011 15:13:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Igor Mammedov <imammedo@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
+        alan@lxorguk.ukuu.org.uk, Ian Campbell <Ian.Campbell@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [016/107] xen: x86_32: do not enable iterrupts when returning from exception in interrupt context
+Subject: [017/107] xen/smp: Warn user why they keel over - nosmp or noapic and what to use instead.
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Igor Mammedov <imammedo@redhat.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit d198d499148a0c64a41b3aba9e7dd43772832b91 upstream.
+commit ed467e69f16e6b480e2face7bc5963834d025f91 upstream.
 
-If vmalloc page_fault happens inside of interrupt handler with interrupts
-disabled then on exit path from exception handler when there is no pending
-interrupts, the following code (arch/x86/xen/xen-asm_32.S:112):
+We have hit a couple of customer bugs where they would like to
+use those parameters to run an UP kernel - but both of those
+options turn of important sources of interrupt information so
+we end up not being able to boot. The correct way is to
+pass in 'dom0_max_vcpus=1' on the Xen hypervisor line and
+the kernel will patch itself to be a UP kernel.
 
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-	sete XEN_vcpu_info_mask(%eax)
+Fixes bug: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=637308
 
-will enable interrupts even if they has been previously disabled according to
-eflags from the bounce frame (arch/x86/xen/xen-asm_32.S:99)
-
-	testb $X86_EFLAGS_IF>>8, 8+1+ESP_OFFSET(%esp)
-	setz XEN_vcpu_info_mask(%eax)
-
-Solution is in setting XEN_vcpu_info_mask only when it should be set
-according to
-	cmpw $0x0001, XEN_vcpu_info_pending(%eax)
-but not clearing it if there isn't any pending events.
-
-Reproducer for bug is attached to RHBZ 707552
-
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
-Acked-by: Jeremy Fitzhardinge <jeremy@goop.org>
+Acked-by: Ian Campbell <Ian.Campbell@eu.citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/xen-asm_32.S |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/x86/xen/smp.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -113,11 +113,13 @@ xen_iret_start_crit:
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -30,6 +30,7 @@
+ #include <xen/page.h>
+ #include <xen/events.h>
  
- 	/*
- 	 * If there's something pending, mask events again so we can
--	 * jump back into xen_hypervisor_callback
-+	 * jump back into xen_hypervisor_callback. Otherwise do not
-+	 * touch XEN_vcpu_info_mask.
- 	 */
--	sete XEN_vcpu_info_mask(%eax)
-+	jne 1f
-+	movb $1, XEN_vcpu_info_mask(%eax)
++#include <xen/hvc-console.h>
+ #include "xen-ops.h"
+ #include "mmu.h"
  
--	popl %eax
-+1:	popl %eax
+@@ -179,6 +180,15 @@ static void __init xen_smp_prepare_cpus(
+ {
+ 	unsigned cpu;
  
- 	/*
- 	 * From this point on the registers are restored and the stack
++	if (skip_ioapic_setup) {
++		char *m = (max_cpus == 0) ?
++			"The nosmp parameter is incompatible with Xen; " \
++			"use Xen dom0_max_vcpus=1 parameter" :
++			"The noapic parameter is incompatible with Xen";
++
++		xen_raw_printk(m);
++		panic(m);
++	}
+ 	xen_init_lock_cpu(0);
+ 
+ 	smp_store_cpu_info(0);
 
 
