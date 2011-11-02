@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934895Ab1KCBnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:43:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51499 "EHLO mx2.suse.de"
+	id S934897Ab1KCBsN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:48:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51509 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934858Ab1KCBm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:42:57 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:46 2011
-Message-Id: <20111102222746.254246779@clark.kroah.org>
+	id S934837Ab1KCBnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:43:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:48 2011
+Message-Id: <20111102222748.098596579@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:55 -0700
+Date: Wed, 02 Nov 2011 15:27:15 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [071/101] kmod: prevent kmod_loop_msg overflow in __request_module()
+        alan@lxorguk.ukuu.org.uk, Florian Fainelli <florian@openwrt.org>
+Subject: [091/101] watchdog: mtx1-wdt: fix build failure
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +24,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 37252db6aa576c34fd794a5a54fb32d7a8b3a07a upstream.
+Commit 72b6e8a847 (watchdog: mtx1-wdt: request gpio before using it) was
+backported from upstream. The patch is using a gpiolib call which is only
+available in kernel 2.6.34+. Fix build by using the "old" gpiolib API
+instead.
 
-Due to post-increment in condition of kmod_loop_msg in __request_module(),
-the system log can be spammed by much more than 5 instances of the 'runaway
-loop' message if the number of events triggering it makes the kmod_loop_msg
-to overflow.
-
-Fix that by making sure we never increment it past the threshold.
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/kmod.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/watchdog/mtx-1_wdt.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -106,10 +106,12 @@ int __request_module(bool wait, const ch
- 	atomic_inc(&kmod_concurrent);
- 	if (atomic_read(&kmod_concurrent) > max_modprobes) {
- 		/* We may be blaming an innocent here, but unlikely */
--		if (kmod_loop_msg++ < 5)
-+		if (kmod_loop_msg < 5) {
- 			printk(KERN_ERR
- 			       "request_module: runaway loop modprobe %s\n",
- 			       module_name);
-+			kmod_loop_msg++;
-+		}
- 		atomic_dec(&kmod_concurrent);
- 		return -ENOMEM;
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -211,13 +211,14 @@ static int __devinit mtx1_wdt_probe(stru
+ 	int ret;
+ 
+ 	mtx1_wdt_device.gpio = pdev->resource[0].start;
+-	ret = gpio_request_one(mtx1_wdt_device.gpio,
+-				GPIOF_OUT_INIT_HIGH, "mtx1-wdt");
++	ret = gpio_request(mtx1_wdt_device.gpio, "mtx1-wdt");
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to request gpio");
+ 		return ret;
  	}
+ 
++	gpio_direction_output(mtx1_wdt_device.gpio, 1);
++
+ 	spin_lock_init(&mtx1_wdt_device.lock);
+ 	init_completion(&mtx1_wdt_device.stop);
+ 	mtx1_wdt_device.queue = 0;
 
 
