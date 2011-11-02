@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464Ab1KBFrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 01:47:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58884 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1KBFrG (ORCPT
+	id S1754458Ab1KBFwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 01:52:16 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48138 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab1KBFwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 01:47:06 -0400
-Date: Tue, 1 Nov 2011 22:46:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andrew Watts <akwatts@ymail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        tj@kernel.org
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-Message-ID: <20111102054658.GA29035@core.coreip.homeip.net>
-References: <20111101124759.GA1326@zeus>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101124759.GA1326@zeus>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Nov 2011 01:52:15 -0400
+Date: Wed, 02 Nov 2011 01:50:04 -0400 (EDT)
+Message-Id: <20111102.015004.118482982480965571.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
+References: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 Nov 2011 22:50:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 2 Nov 2011 16:37:08 +1100
 
-On Tue, Nov 01, 2011 at 07:48:19AM -0500, Andrew Watts wrote:
-> Hi.
+> Subject: [PATCH] net: fix typo in drivers/net/ethernet/xilinx/ll_temac_main.c
 > 
-> Hibernate/sleep (echo disk/mem > /sys/power/state) has presented problems
-> for me starting with 2.6.39. Kernel 2.6.37.6 was the last completely bug-free
-> version I used (I skipped the 2.6.38 branch entirely).
+> Commit 9e903e085262 ("net: add skb frag size accessors") used frag_size
+> instead of skb_frag_size in this file.
 > 
-> The symptoms are that upon resume (from sleep/hibernate) there is no video
-> nor any keyboard input with the exception of sysrq.
+> Fixes this build error:
+> 
+> drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
+> drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declaration of function 'frag_size' [-Werror=implicit-function-declaration]
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 
-If SysRq is working that means that i8042, atkbd and input core are
-working properly.
-
-> 
-> It has been a frustrating bug to hunt down because it is not easily
-> reproduced; sometimes the bug doesn't pop up until after a long sequence of
-> hibernate/sleep cycles.
-> 
-> I successfully bisected the problem to: 8ee294cd9def000.
-> 
-> =======
-> Commit: 8ee294cd9def0004887da7f44b80563493b0a097
-> Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Date:   Mon Nov 15 01:39:57 2010 -0800
-> Input: serio - convert to common workqueue instead of a thread
-> =======
-> 
-> Backing out 8ee294cd9def000 (which requires reversing part of
-> 1d64b655dc083df also) fixes this particular problem on 2.6.39.4,
-> 3.0.8, and 3.1.
-
-I am not sure how this commit could cause your "no video" issue...
-Are you hibernating from text console or X? Can you try plugging in USB
-keyboard and see if you are getting input? What about ssh into the box?
-
-Thanks.
-
--- 
-Dmitry
+Applied, thanks!
