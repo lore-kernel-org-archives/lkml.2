@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab1KCBcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:32:22 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:41590 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754496Ab1KCBcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:16 -0400
-X-Sasl-enc: 76dh7LGj7qcaSTPeXqT0YYQL4B2J/YW6/RcNzhL6uh/n 1320283935
-Date: Wed, 2 Nov 2011 18:31:27 -0700
-From: Greg KH <greg@kroah.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
-Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
- system sleep (v2)
-Message-ID: <20111103013127.GA3481@kroah.com>
-References: <201106260054.20578.rjw@sisk.pl>
- <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com>
- <20111102211708.GA19025@kroah.com>
- <201111030128.52823.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111030128.52823.rjw@sisk.pl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754633Ab1KCCWL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:22:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50241 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754499Ab1KCBcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:32:20 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:51 2011
+Message-Id: <20111102221451.194182696@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 02 Nov 2011 15:13:38 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Marek Marczykowski <marmarek@mimuw.edu.pl>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [012/107] xen-blkfront: fix data size for xenbus_gather in blkfront_connect
+In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 01:28:52AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 02, 2011, Greg KH wrote:
-> > On Wed, Nov 02, 2011 at 10:00:39PM +0100, Linus Walleij wrote:
-> > > On Wed, Nov 2, 2011 at 9:11 PM, Greg KH <greg@kroah.com> wrote:
-> > > > On Wed, Nov 02, 2011 at 09:06:02PM +0100, Linus Walleij wrote:
-> > > >> On Wed, Nov 2, 2011 at 8:14 PM, Greg KH <greg@kroah.com> wrote:
-> > > >> > So, what specific git commits do you want to see in the 3.0-stable
-> > > >> > tree, and in what order should they be applied in?
-> > > >>
-> > > >> So to my untrained eye it looks like it should be applied like this (top to
-> > > >> bottom) using the reverse commit order from the mainline kernel:
-> > > >>
-> > > >> e529192 PM: Introduce generic "noirq" callback routines for subsystems (v2)
-> > > >> 455716e PM / Runtime: Update documentation of interactions with system sleep
-> > > >> 1e2ef05 PM: Limit race conditions between runtime PM and system sleep (v2)
-> > > >> f3393b6 PM / Runtime: Add new helper function: pm_runtime_status_suspended()
-> > > >>
-> > > >> So (2) documents the problem, (3) fixes it, whereas (1) and (4) makes
-> > > >> it possible
-> > > >> to write proper _noirq() code that does not race, IIRC.
-> > > >
-> > > > But, after this, it's just adding new infrastructure that drivers will
-> > > > then be able to use.  As I'm not adding new drivers to 3.0, there will
-> > > > not be any users of this code, so why add it in the first place?  It
-> > > > doesn't look like this follows the rules of the stable kernel tree at
-> > > > all, does it?
-> > > 
-> > > We'll have to get some feedback from Rafael, but the way I percieved
-> > > it, the patch (2) fixes a very real race, then fixing that makes it
-> > > necessary for drivers using runtime_pm to do things differently to
-> > > be on the safe side. But none were really fixed when first merging
-> > > it.
-> > > 
-> > > So on second thought you probably only want patch (2)
-> > > "PM: Limit race conditions between runtime PM and system sleep (v2)"
-> > > for stable.
-> > 
-> > Ok, Rafael, any objection to me applying just this one?
-> 
-> Well, I'd prefer not to unless there are reports confirming user problems
-> being fixed specifically by this patch.  It changes the PM core's behavior
-> quite significantly and I'm a little afraid of possible regressions that may
-> result from it.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-Ok, good reason to not apply it, consider it dropped :)
+------------------
 
-greg k-h
+From: Marek Marczykowski <marmarek@mimuw.edu.pl>
+
+commit 4352b47ab7918108b389a48d2163c9a4c2aaf139 upstream.
+
+barrier variable is int, not long. This overflow caused another variable
+override: "err" (in PV code) and "binfo" (in xenlinux code -
+drivers/xen/blkfront/blkfront.c). The later caused incorrect device
+flags (RO/removable etc).
+
+Signed-off-by: Marek Marczykowski <marmarek@mimuw.edu.pl>
+Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
+[v1: Changed title]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/block/xen-blkfront.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -889,7 +889,7 @@ static void blkfront_connect(struct blkf
+ 	}
+ 
+ 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
+-			    "feature-barrier", "%lu", &info->feature_barrier,
++			    "feature-barrier", "%d", &info->feature_barrier,
+ 			    NULL);
+ 	if (err)
+ 		info->feature_barrier = 0;
+
+
