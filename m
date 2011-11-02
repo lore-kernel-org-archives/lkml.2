@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1KBSyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:54:32 -0400
-Received: from home.keithp.com ([63.227.221.253]:44934 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933302Ab1KBSy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 14:54:29 -0400
-From: Keith Packard <keithp@keithp.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 3/7] drm/i915: Treat PCH eDP like DP in most places
-In-Reply-To: <1320214830-12696-4-git-send-email-keithp@keithp.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-4-git-send-email-keithp@keithp.com>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 02 Nov 2011 11:54:25 -0700
-Message-ID: <yunobwuuzha.fsf@aiko.keithp.com>
+	id S932431Ab1KBS5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:57:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38442 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756373Ab1KBS5J convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 14:57:09 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+In-Reply-To: <20111102170619.GJ31337@atomide.com>
+References: <20111102170619.GJ31337@atomide.com>
+Date: Wed, 2 Nov 2011 19:57:08 +0100
+Message-ID: <CABoOg6wtN-t-DRKCWukauMQZ=FRDUcVRxVAVaaYco+sWAqT3Ug@mail.gmail.com>
+Subject: Re: [PATCH] mmc: omap_hsmmc: Fix build for hsmmc
+From: Thomas Weber <thomas.weber.linux@googlemail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-omap@vger.kernel.org,
+        Girish K S <girish.shivananjappa@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hello Tony, hello
+Chris,https://mail.google.com/mail/?shva=1#label/linux-omap/133653efb30ae047
 
-On Tue,  1 Nov 2011 23:20:26 -0700, Keith Packard <keithp@keithp.com> wrote:
+isn't this already fixed?
 
->  		intel_dp =3D enc_to_intel_dp(encoder);
-> -		if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT) {
-> +		if (intel_dp->base.type =3D=3D INTEL_OUTPUT_DISPLAYPORT || is_pch_edp(=
-intel_dp)) {
->  			lane_count =3D intel_dp->lane_count;
->  			break;
-> -		} else if (is_edp(intel_dp)) {
-> +		} else if (is_cpu_edp(intel_dp)) {
->  			lane_count =3D dev_priv->edp.lanes;
->  			break;
+http://marc.info/?l=linux-omap&m=131991921316862&w=2
 
-Thinking about this one more time -- if we ever want to use
-dev_priv->edp.lanes, we should use it in
-intel_dp_max_lane_count. intel_dp_set_m_n should use
-intel_dp->lane_count unconditionally as that's the value we've used
-everywhere else for mode setting.
+[PATCH] omap_hsmmc: fix missing parenthesis in pr_info
 
-Perhaps we should use it for monitors that don't include the
-MAX_LANE_COUNT field in the dpcd? Perhaps we should use it on all eDP
-monitors?
+Thomas
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrGR4jYtFsjWk68qAQgNvRAAznxu+veqm4wCK/LORNY1ZL7jbFxw4FGi
-Lud+m7urf6qK9N1tgi7xgaujMRNPt7TYE6E1rgfkbLsSC7bdC0jiFvK7Cci9ra68
-0iLtqWdhM8v03tkd2BLwpsbh8503n1KZthAF0s4dsO/L4dGM3Y+AEMwfcC453lQE
-U3kM6lP0fDPbYB/SQDedzORR0gadpOK7NCBhZIV4MjHrGC3IG39vqwrOQa9egyZM
-LYKRoSNaZgroTe4VBZpMVWTsjxgapukzyHXMbcoyFqDp0DIcxX+r6PDVmaYDqx/y
-qIXh+uvWQmVhXcqs5W55OFs67rB0XXE0XNa4YRC1VQ+GcW2sCH3Y9tM9MXy0oULC
-jrAcIUOG1OMQfcTIlxIka9zwhKBeYZo9i7vwGkXW9UsgZtE5euFMOhtUU/9IG8na
-jy53VenRcLBZpU+HENxrz/E4qDSKDn9ba0V+y7lk2+Ym44/S6v1qE4908Kc7f2f3
-DeeP7vyd9CSX+AnskUA6qyA0qEMUVXL0MmwDL4A+a1LUpILYVl0bzUa5zur8ri+X
-dPMQfGQdPSDCscW58JQVAd5SqyjOjdHPQ2AX76+yeHV0g2GxR4YS6PzBXuJ2wIjw
-Iecn+T23jvxxDilADC8YvnKuX3qBkliwsIz9xJTHeuHeSSXz/B0Qqkduy65YQtNk
-AX2zZOvY7Mg=
-=FS+f
------END PGP SIGNATURE-----
---=-=-=--
+On Wed, Nov 2, 2011 at 6:06 PM, Tony Lindgren <tony@atomide.com> wrote:
+> Commit a3c76eb9d4a1e68a69dd880cf0bcb8a52418b993 (mmc: replace
+> printk with appropriate display macro) does not compile:
+>
+> drivers/mmc/host/omap_hsmmc.c: In function 'omap_hsmmc_protect_card':
+> drivers/mmc/host/omap_hsmmc.c:1273: error: 'pr_info' undeclared (first use in this function)
+> drivers/mmc/host/omap_hsmmc.c:1273: error: (Each undeclared identifier is reported only once
+> drivers/mmc/host/omap_hsmmc.c:1273: error: for each function it appears in.)
+> drivers/mmc/host/omap_hsmmc.c:1273: error: expected ';' before string constant
+> drivers/mmc/host/omap_hsmmc.c:1275: error: expected statement before ')' token
+> distcc[15197] ERROR: compile drivers/mmc/host/omap_hsmmc.c on localhost failed
+>
+> Cc: Girish K S <girish.shivananjappa@linaro.org>
+> Cc: Chris Ball <cjb@laptop.org>
+> Cc: linux-mmc@vger.kernel.org
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+>
+> --- a/drivers/mmc/host/omap_hsmmc.c
+> +++ b/drivers/mmc/host/omap_hsmmc.c
+> @@ -1270,7 +1270,7 @@ static void omap_hsmmc_protect_card(struct omap_hsmmc_host *host)
+>                }
+>        } else {
+>                if (!host->protect_card) {
+> -                       pr_info"%s: cover is open, "
+> +                       pr_info("%s: cover is open, "
+>                                         "card is now inaccessible\n",
+>                                         mmc_hostname(host->mmc));
+>                        host->protect_card = 1;
+>
