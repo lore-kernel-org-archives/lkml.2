@@ -1,150 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab1KBXke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:40:34 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:42734 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab1KBXkc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:40:32 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+4NU+5ykkCOMurkvSZDyCr
-Date: Wed, 2 Nov 2011 16:40:28 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
-Message-ID: <20111102234028.GP31337@atomide.com>
-References: <4EB1CA4F.3090403@gmail.com>
- <20111102.190955.1902322759075682192.davem@davemloft.net>
- <4EB1CEC4.3090909@gmail.com>
- <20111102.191716.1682282796914825621.davem@davemloft.net>
- <20111102231917.GN31337@atomide.com>
- <4EB1D05B.6020605@gmail.com>
- <20111102232403.GO31337@atomide.com>
- <4EB1D2C7.2070700@gmail.com>
+	id S1754187Ab1KBXmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:42:12 -0400
+Received: from mail.lang.hm ([64.81.33.126]:41961 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752669Ab1KBXmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 19:42:11 -0400
+Date: Wed, 2 Nov 2011 16:41:55 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Junio C Hamano <gitster@pobox.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+In-Reply-To: <7vsjm6gkte.fsf@alter.siamese.dyndns.org>
+Message-ID: <alpine.DEB.2.02.1111021640340.20915@asgard.lang.hm>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike> <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com> <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com> <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vsjm6gkte.fsf@alter.siamese.dyndns.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB1D2C7.2070700@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Eric Dumazet <eric.dumazet@gmail.com> [111102 15:56]:
-> On 03/11/2011 00:24, Tony Lindgren wrote:
-> 
-> 
-> > 
-> > Seems to be SLOB for omap1_defconfig.
-> > 
-> > Tony
-> 
-> 
-> OK this makes sense now
-> 
-> Your patch is absolutely needed, I completely forgot about SLOB :(
-> 
-> since, kmalloc(386) on SLOB gives exactly ksize=386 bytes, not nearest
-> power of two.
-> 
-> [   60.305763] malloc(size=385)->ffff880112c11e38 ksize=386 -> nsize=2
-> [   60.305921] malloc(size=385)->ffff88007c92ce28 ksize=386 -> nsize=2
-> [   60.306898] malloc(size=656)->ffff88007c44ad28 ksize=656 -> nsize=272
-> [   60.325385] malloc(size=656)->ffff88007c575868 ksize=656 -> nsize=272
-> [   60.325531] malloc(size=656)->ffff88011c777230 ksize=656 -> nsize=272
-> [   60.325701] malloc(size=656)->ffff880114011008 ksize=656 -> nsize=272
-> [   60.346716] malloc(size=385)->ffff880114142008 ksize=386 -> nsize=2
-> [   60.346900] malloc(size=385)->ffff88011c777690 ksize=386 -> nsize=2
-> 
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> 
-> Thanks !
+On Wed, 2 Nov 2011, Junio C Hamano wrote:
 
-OK, thanks for explaining why it happens :) I also verified this does
-not happen with SLAB or SLUB, only with SLOB.
-
-I've updated the patch withyour comments and ack, updated patch below.
-
-Regards,
-
-Tony 
-
-
-From: Tony Lindgren <tony@atomide.com>
-Date: Wed, 2 Nov 2011 15:46:41 -0700
-Subject: [PATCH] net: Add back alignment for size for __alloc_skb
-
-Commit 87fb4b7b533073eeeaed0b6bf7c2328995f6c075 (net: more
-accurate skb truesize) changed the alignment of size. This
-can cause problems at least on some machines with NFS root:
-
-Unhandled fault: alignment exception (0x801) at 0xc183a43a
-Internal error: : 801 [#1] PREEMPT
-Modules linked in:
-CPU: 0    Not tainted  (3.1.0-08784-g5eeee4a #733)
-pc : [<c02fbba0>]    lr : [<c02fbb9c>]    psr: 60000013
-sp : c180fef8  ip : 00000000  fp : c181f580
-r10: 00000000  r9 : c044b28c  r8 : 00000001
-r7 : c183a3a0  r6 : c1835be0  r5 : c183a412  r4 : 000001f2
-r3 : 00000000  r2 : 00000000  r1 : ffffffe6  r0 : c183a43a
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 0005317f  Table: 10004000  DAC: 00000017
-Process swapper (pid: 1, stack limit = 0xc180e270)
-Stack: (0xc180fef8 to 0xc1810000)
-fee0:                                                       00000024 00000000
-ff00: 00000000 c183b9c0 c183b8e0 c044b28c c0507ccc c019dfc4 c180ff2c c0503cf8
-ff20: c180ff4c c180ff4c 00000000 c1835420 c182c740 c18349c0 c05233c0 00000000
-ff40: 00000000 c00e6bb8 c180e000 00000000 c04dd82c c0507e7c c050cc18 c183b9c0
-ff60: c05233c0 00000000 00000000 c01f34f4 c0430d70 c019d364 c04dd898 c04dd898
-ff80: c04dd82c c0507e7c c180e000 00000000 c04c584c c01f4918 c04dd898 c04dd82c
-ffa0: c04ddd28 c180e000 00000000 c0008758 c181fa60 3231d82c 00000037 00000000
-ffc0: 00000000 c04dd898 c04dd82c c04ddd28 00000013 00000000 00000000 00000000
-ffe0: 00000000 c04b2224 00000000 c04b21a0 c001056c c001056c 00000000 00000000
-Function entered at [<c02fbba0>] from [<c019dfc4>]
-Function entered at [<c019dfc4>] from [<c01f34f4>]
-Function entered at [<c01f34f4>] from [<c01f4918>]
-Function entered at [<c01f4918>] from [<c0008758>]
-Function entered at [<c0008758>] from [<c04b2224>]
-Function entered at [<c04b2224>] from [<c001056c>]
-Code: e1a00005 e3a01028 ebfa7cb0 e35a0000 (e5858028)
-
-Here PC is at __alloc_skb and &shinfo->dataref is unaligned because
-skb->end can be unaligned without this patch.
-
-As explained by Eric Dumazet <eric.dumazet@gmail.com>, this happens
-only with SLOB, and not with SLAB or SLUB:
-
-* Eric Dumazet <eric.dumazet@gmail.com> [111102 15:56]:
+> Linus Torvalds <torvalds@linux-foundation.org> writes:
 >
-> Your patch is absolutely needed, I completely forgot about SLOB :(
+>> I hate how anonymous our branches are. Sure, we can use good names for
+>> them, but it was a mistake to think we should describe the repository
+>> (for gitweb), rather than the branch.
+>>
+>> Ok, "hate" is a strong word. I don't "hate" it. I don't even think
+>> it's a major design issue. But I do think that it would have been
+>> nicer if we had had some branch description model.
+>> ...
+>> Maybe just verifying the email message (with the suggested kind of
+>> change to "git request-pull") is actually the right approach. And what
+>> I should do is to just wrap my "git pull" in some script that I can
+>> just cut-and-paste the gpg-signed thing into, and which just does the
+>> "gpg --verify" on it, and then does the "git pull" after that.
+>>
+>> Because in many ways, "git request-pull" is when you do want to sign
+>> stuff. A developer might well want to push out his stuff for some
+>> random internal testing (linux-next, for example), and then only later
+>> decide "Ok, it was all good, now I want to make it 'official' and ask
+>> Linus to pull it", and sign it at *that* time, rather than when
+>> actually pushing it out.
 >
-> since, kmalloc(386) on SLOB gives exactly ksize=386 bytes, not nearest
-> power of two.
+> You keep saying cut-and-paste, but do you mind feeding the e-mail text
+> itself to a tool, instead of cut-and-paste?
+
+think webmail (i.e. gmail), to feed the e-mail itself to a tool you either 
+need to cut-n-paste the entire e-mail or you have to first save the mail 
+to a text file. both of which are significantly harder than doing a 
+cut-n-past of a portion of the message.
+
+David Lang
+
+> The reason I am wondering about this is because in another topic (also in
+> 'next') cooking there is an extended support for topic description for the
+> branch that states what the purpose of the topic is why the requestor
+> wants you to have it (this information can be set and updated with "git
+> branch --edit-description").
 >
-> [   60.305763] malloc(size=385)->ffff880112c11e38 ksize=386 -> nsize=2
-> [   60.305921] malloc(size=385)->ffff88007c92ce28 ksize=386 -> nsize=2
-> [   60.306898] malloc(size=656)->ffff88007c44ad28 ksize=656 -> nsize=272
-> [   60.325385] malloc(size=656)->ffff88007c575868 ksize=656 -> nsize=272
-> [   60.325531] malloc(size=656)->ffff88011c777230 ksize=656 -> nsize=272
-> [   60.325701] malloc(size=656)->ffff880114011008 ksize=656 -> nsize=272
-> [   60.346716] malloc(size=385)->ffff880114142008 ksize=386 -> nsize=2
-> [   60.346900] malloc(size=385)->ffff88011c777690 ksize=386 -> nsize=2
-
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -189,6 +189,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
- 	 * aligned memory blocks, unless SLUB/SLAB debug is enabled.
- 	 * Both skb->head and skb_shared_info are cache line aligned.
- 	 */
-+	size = SKB_DATA_ALIGN(size);
- 	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
- 	data = kmalloc_node_track_caller(size, gfp_mask, node);
- 	if (!data)
+> A respond-to-request-pull wrapper you would use could be:
+>
+> - Get the e-mail from the standard input;
+> - Pick up the signed bits and validate the signature;
+> - Perform the requested fetch; and
+> - Record the merge (or prepare .git/MERGE_MSG) with both the signed bits.
+>
+> and the "signed bits" could include:
+>
+>   - the repository and the branch you were expected to pull;
+>   - the topic description.
+>
+> among other things the requestor can edit when request-pull message is
+> prepared.
+>
+> That would get us back to your "the lieutenant tip is not so special, but
+> the merge commit the integrator makes using that tip has the signature for
+> this particular pull" model.
+> --
+> To unsubscribe from this list: send the line "unsubscribe git" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
