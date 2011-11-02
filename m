@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933372Ab1KBQDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 12:03:04 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:52011 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932383Ab1KBQDA (ORCPT
+	id S933334Ab1KBQIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 12:08:07 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:5407 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383Ab1KBQIF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 12:03:00 -0400
-Date: Wed, 2 Nov 2011 09:02:55 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 1/7] drm/i915: Move common PCH_PP_CONTROL
- setup to ironlake_get_pp_control
-Message-ID: <20111102090255.09fa9a61@jbarnes-desktop>
-In-Reply-To: <1320214830-12696-2-git-send-email-keithp@keithp.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com>
-	<1320214830-12696-2-git-send-email-keithp@keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/TEXI+Ttf/5wnmC+hIY+mUjP"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 2 Nov 2011 12:08:05 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 02 Nov 2011 09:07:53 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Wed, 2 Nov 2011 09:07:52 -0700
+Subject: RE: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
+ cardhu
+Thread-Topic: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
+ cardhu
+Thread-Index: AcyZdo5ETdQN3/r0Q7S1bsyQlxV5PAAAsmXQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A46C4@HQMAIL01.nvidia.com>
+References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
+ <1320242948-21061-9-git-send-email-pdeschrijver@nvidia.com>
+ <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TEXI+Ttf/5wnmC+hIY+mUjP
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Peter De Schrijver wrote at Wednesday, November 02, 2011 9:46 AM:
+> On Wed, Nov 02, 2011 at 03:09:07PM +0100, Peter De Schrijver wrote:
+> > Add support for the tegra30 based cardhu development board. Cardhu is a tablet
+> > formfactor reference design for tegra30. The patch provides a device tree for
+> > the board, updates Makefile.boot to build the dtb, includes the platform in
+> > Kconfig and updates board-dt.c.
+...
+> > diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
+> > new file mode 100644
+> > index 0000000..70c41fc
+> > --- /dev/null
+> > +++ b/arch/arm/boot/dts/tegra-cardhu.dts
+> > @@ -0,0 +1,36 @@
+> > +/dts-v1/;
+> > +
+> > +/include/ "tegra30.dtsi"
+> > +
+> > +/ {
+> > +	model = "NVIDIA Tegra30 Cardhu evaluation board";
+> 
+> And this should probably be removed.
 
-On Tue,  1 Nov 2011 23:20:24 -0700
-Keith Packard <keithp@keithp.com> wrote:
+I don't follow the reasoning here; it seems correct to identify what this
+.dts file applies to, and having a model property is consistent with other
+.dts files, including non-Tegra boards.
 
-> Every usage of PCH_PP_CONTROL sets the PANEL_UNLOCK_REGS value to
-> ensure that writes will be respected, move this to a common function
-> to make the driver cleaner.
->=20
-> No functional changes.
->=20
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-> ---
->  drivers/gpu/drm/i915/intel_dp.c |   37 +++++++++++++++++++--------------=
-----
->  1 files changed, 19 insertions(+), 18 deletions(-)
+-- 
+nvpublic
 
-Can't we just set UNLOCK_REGS at load time and have asserts sprinkled
-here and there?
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/TEXI+Ttf/5wnmC+hIY+mUjP
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsWmvAAoJEIEoDkX4Qk9htS0P/jFlkY/Q8wT6qqsTtB+qZSne
-X8mipwdUXFOTEsnEXLx/8jaEhJyySaREHGs+tbwLn8WsfeDn/lcWh/RdHqMp4jxZ
-Y2QMduz/k++3BJkNIgKY1iLW915khUIPss3nwgm1OW3V3AJopjHRIZv8oUgee1E1
-094SaTwcqsOL8Y2Mg/l+KrRGwnxQicR29/yKF+CeqCX2qmIQR4FXPGc1NbRoLdbO
-vstgw72S4tGkKjfG6D3RbxsrjTdbSbZRlVh4cnUgeX48xswzTasZdYWMuDKrwSmt
-l9AgKmQTkdbwlVQXcNJYfgn6hYhN1RU+Td3sG7Lms0nzLRmynehWIx9OK265rOih
-7uTmML5SZ+25yJy+1GlaLpYRWhxifv9O9PXWTTYQbRAzkeGiJYdbtVoY51LwwFpu
-4Wf8IOcrP052GawY67W3fqvBLG4pS1sWvx73oCxryU59I752FFpP+T8/4yGgUbAe
-CsW9vm9WqCbKO5nfQLPB758Ne3MbalC6KlBYXDjRKtB4yTflKlOZq/9N2HPIpDlw
-DJtUnHIfc6QH5qQN3/xpbzhJ1Z2YK4mUQH3+H31g7FSWUFWrwpDsnpFdpVRw8N2A
-ImjswLFtrN+Kg9OqIPWH7CxTGP8q0fr9VbY4yuYZkSQqdoLoYLfHQUkmZiLx3J83
-NxVqwxnFjvuxOO7Nr4pk
-=lxJy
------END PGP SIGNATURE-----
-
---Sig_/TEXI+Ttf/5wnmC+hIY+mUjP--
