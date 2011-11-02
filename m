@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab1KBGdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 02:33:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45321 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316Ab1KBGdl convert rfc822-to-8bit (ORCPT
+	id S1754776Ab1KBGeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 02:34:46 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48582 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab1KBGeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 02:33:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111101152320.GA30466@redhat.com>
-References: <CAGr+u+zkPiZpGefstcbJv_cj929icWKXbqFy1uR22Hns1hzFeQ@mail.gmail.com>
-	<20111101152320.GA30466@redhat.com>
-Date: Wed, 2 Nov 2011 12:03:39 +0530
-Message-ID: <CAGr+u+wgAYVWgdcG6o+6F0mDzuyNzoOxvsFwq0dMsR3JNnZ-cA@mail.gmail.com>
-Subject: Re: Issue with core dump
-From: trisha yad <trisha1march@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-mm <linux-mm@kvack.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, rientjes@google.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Rusty Russell <rusty@rustcorp.com.au>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Nov 2011 02:34:44 -0400
+From: Guanjun He <heguanbo@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Guanjun He <heguanbo@gmail.com>
+Subject: [PATCH][mm] adjust the logic of checking THP
+Date: Wed,  2 Nov 2011 14:34:30 +0800
+Message-Id: <1320215670-10157-1-git-send-email-heguanbo@gmail.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <pebolle@tiscali.nl;linux-kernel@vger.kernel.org;linux-mm@kvack.org;gjhe@suse.com>
+References: <pebolle@tiscali.nl;linux-kernel@vger.kernel.org;linux-mm@kvack.org;gjhe@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks all for your answer.
 
-In loaded embedded system the time at with code hit do_user_fault()
-and core_dump_wait() is bit
-high, I check on my  system it took 2.7 sec. so it is very much
-possible that core dump is not correct.
-It  contain global value updated.
-
-So is it possible at time of send_signal() we can stop modification of
-faulty thread memory ?
+Acturally, pmd_trans_huge(orig_pmd) only checks the _PAGE_PSE bits,
+it's a pmd entry bits, only mark a size, not a flag;As one can easily 
+create the same pmd entry bits for some special use,then the check 
+will get confused.And this patch is to adjust the logic to use the flag, 
+it can perfectly avoid this potential issuse,and basically no impact 
+to the current code.
 
 
-Thanks
+Signed-off-by: Guanjun He <heguanbo@gmail.com>
+---
+ mm/memory.c |   28 +++++++++++++++-------------
+ 1 files changed, 15 insertions(+), 13 deletions(-)
 
+diff --git a/mm/memory.c b/mm/memory.c
+index a56e3ba..a76b17f 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3465,20 +3465,22 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	pmd = pmd_alloc(mm, pud, address);
+ 	if (!pmd)
+ 		return VM_FAULT_OOM;
+-	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+-		if (!vma->vm_ops)
+-			return do_huge_pmd_anonymous_page(mm, vma, address,
+-							  pmd, flags);
+-	} else {
+-		pmd_t orig_pmd = *pmd;
+-		barrier();
+-		if (pmd_trans_huge(orig_pmd)) {
+-			if (flags & FAULT_FLAG_WRITE &&
+-			    !pmd_write(orig_pmd) &&
+-			    !pmd_trans_splitting(orig_pmd))
+-				return do_huge_pmd_wp_page(mm, vma, address,
+-							   pmd, orig_pmd);
++	if (transparent_hugepage_enabled(vma)) {
++		if (pmd_none(*pmd)) {
++			if (!vma->vm_ops)
++				return do_huge_pmd_anonymous_page(mm, vma, address,
++								  pmd, flags);
++		} else {
++			pmd_t orig_pmd = *pmd;
++			barrier();
++			if (pmd_trans_huge(orig_pmd)) {
++				if (flags & FAULT_FLAG_WRITE &&
++				    !pmd_write(orig_pmd) &&
++				    !pmd_trans_splitting(orig_pmd))
++					return do_huge_pmd_wp_page(mm, vma, address,
++								   pmd, orig_pmd);
+ 			return 0;
++			}
+ 		}
+ 	}
+ 
+-- 
+1.7.7
 
-
-On Tue, Nov 1, 2011 at 8:53 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 11/01, trisha yad wrote:
->>
->> Dear all,
->>
->> I am running a multithreaded  application. So consider a global
->> variable x which is used by a, b and c thread.
->>
->> In thread 'a' do abnormal operation(invalid memory access) and kernel
->> send signal kill to it. In the mean time Thread 'b' and Thread 'c'
->> got schedule and update
->> the variable x. when I got the core file, variable x  got updated, and
->> I am not  getting actual value that is present at time of crash of
->> thread a.
->> But In core file I got updated value of x. I want In core file exact
->> the same memory status as it at time of abnormal operation(invalid
->> memory access)
->
-> Yes, this is possible.
->
->> Is there any solution for such problem. ?
->>
->> I want in core dump the same status  of memory as at time of abnormal
->> operation(invalid memory access).
->
-> I don't think we can "fix" this.
->
-> We can probably change complete_signal() to notify other threads
-> "immediately", but this is not simple and obviously can not close
-> the window completely.
->
-> Whatever we do, we can't "stop" other threads at the time when
-> thread 'a' traps. All we can do is to try to shrink the window.
->
-> Oleg.
->
->
