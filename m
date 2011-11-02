@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab1KBGU4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 02:20:56 -0400
-Received: from home.keithp.com ([63.227.221.253]:33638 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932073Ab1KBGUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 02:20:51 -0400
-From: Keith Packard <keithp@keithp.com>
-To: intel-gfx@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH 1/7] drm/i915: Move common PCH_PP_CONTROL setup to ironlake_get_pp_control
-Date: Tue,  1 Nov 2011 23:20:24 -0700
-Message-Id: <1320214830-12696-2-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1320214830-12696-1-git-send-email-keithp@keithp.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com>
+	id S1754648Ab1KBG0g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 02:26:36 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:34220 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752504Ab1KBG0f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 02:26:35 -0400
+Date: Wed, 2 Nov 2011 09:26:51 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, Paul Bolle <pebolle@tiscali.nl>,
+        Ciaran McCormick <ciaranmccormick@gmail.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, shemminger@vyatta.com
+Subject: Re: [PATCH] Stageing: bcm: fixed spacing coding style in
+ led_control.c
+Message-ID: <20111102062651.GE4682@mwanda>
+References: <1320144259-22339-1-git-send-email-ciaranmccormick@gmail.com>
+ <1320145665.14409.149.camel@x61.thuisdomein>
+ <20111101202259.GC4682@mwanda>
+ <1320202495.15779.11.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="19uQFt6ulqmgNgg1"
+Content-Disposition: inline
+In-Reply-To: <1320202495.15779.11.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4EB0E28E.00ED,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every usage of PCH_PP_CONTROL sets the PANEL_UNLOCK_REGS value to
-ensure that writes will be respected, move this to a common function
-to make the driver cleaner.
 
-No functional changes.
+--19uQFt6ulqmgNgg1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_dp.c |   37 +++++++++++++++++++------------------
- 1 files changed, 19 insertions(+), 18 deletions(-)
+On Wed, Nov 02, 2011 at 04:54:55AM +0200, Joe Perches wrote:
+> On Tue, 2011-11-01 at 23:22 +0300, Dan Carpenter wrote:
+> > You're right that this driver needs a lot of work.
+> []
+> > I'd prefer a series of patches:
+>=20
+> Thanks Dan, that's a good summary of useful changes
+> and their best order.  Couple of comments:
+>=20
+> > [patch 1/3] Staging: bcm: fix whitespace in led_control.c
+> > This would address tabs vs spaces, extra prohibited spaces, and
+> > spaces required around certain chars.  Also it would add blank lines
+> > between functions and between declarations and code.
+>=20
+> And verify with git diff -w and object diffs.
+>=20
 
-diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
-index 7259034..efe5f9e 100644
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -906,6 +906,19 @@ static void ironlake_wait_panel_off(struct intel_dp *intel_dp)
- 	msleep(delay);
- }
- 
-+/* Read the current pp_control value, unlocking the register if it
-+ * is locked
-+ */
-+
-+static  u32 ironlake_get_pp_control(struct drm_i915_private *dev_priv)
-+{
-+	u32	control = I915_READ(PCH_PP_CONTROL);
-+
-+	control &= ~PANEL_UNLOCK_MASK;
-+	control |= PANEL_UNLOCK_REGS;
-+	return control;
-+}
-+
- static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
- {
- 	struct drm_device *dev = intel_dp->base.base.dev;
-@@ -926,9 +939,7 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
- 	}
- 
- 	ironlake_wait_panel_off(intel_dp);
--	pp = I915_READ(PCH_PP_CONTROL);
--	pp &= ~PANEL_UNLOCK_MASK;
--	pp |= PANEL_UNLOCK_REGS;
-+	pp = ironlake_get_pp_control(dev_priv);
- 	pp |= EDP_FORCE_VDD;
- 	I915_WRITE(PCH_PP_CONTROL, pp);
- 	POSTING_READ(PCH_PP_CONTROL);
-@@ -951,9 +962,7 @@ static void ironlake_panel_vdd_off_sync(struct intel_dp *intel_dp)
- 	u32 pp;
- 
- 	if (!intel_dp->want_panel_vdd && ironlake_edp_have_panel_vdd(intel_dp)) {
--		pp = I915_READ(PCH_PP_CONTROL);
--		pp &= ~PANEL_UNLOCK_MASK;
--		pp |= PANEL_UNLOCK_REGS;
-+		pp = ironlake_get_pp_control(dev_priv);
- 		pp &= ~EDP_FORCE_VDD;
- 		I915_WRITE(PCH_PP_CONTROL, pp);
- 		POSTING_READ(PCH_PP_CONTROL);
-@@ -1012,9 +1021,7 @@ static void ironlake_edp_panel_on(struct intel_dp *intel_dp)
- 		return;
- 
- 	ironlake_wait_panel_off(intel_dp);
--	pp = I915_READ(PCH_PP_CONTROL);
--	pp &= ~PANEL_UNLOCK_MASK;
--	pp |= PANEL_UNLOCK_REGS;
-+	pp = ironlake_get_pp_control(dev_priv);
- 
- 	if (IS_GEN5(dev)) {
- 		/* ILK workaround: disable reset around power sequence */
-@@ -1049,9 +1056,7 @@ static void ironlake_edp_panel_off(struct drm_encoder *encoder)
- 
- 	if (!is_edp(intel_dp))
- 		return;
--	pp = I915_READ(PCH_PP_CONTROL);
--	pp &= ~PANEL_UNLOCK_MASK;
--	pp |= PANEL_UNLOCK_REGS;
-+	pp = ironlake_get_pp_control(dev_priv);
- 
- 	if (IS_GEN5(dev)) {
- 		/* ILK workaround: disable reset around power sequence */
-@@ -1098,9 +1103,7 @@ static void ironlake_edp_backlight_on(struct intel_dp *intel_dp)
- 	 * allowing it to appear.
- 	 */
- 	msleep(intel_dp->backlight_on_delay);
--	pp = I915_READ(PCH_PP_CONTROL);
--	pp &= ~PANEL_UNLOCK_MASK;
--	pp |= PANEL_UNLOCK_REGS;
-+	pp = ironlake_get_pp_control(dev_priv);
- 	pp |= EDP_BLC_ENABLE;
- 	I915_WRITE(PCH_PP_CONTROL, pp);
- 	POSTING_READ(PCH_PP_CONTROL);
-@@ -1116,9 +1119,7 @@ static void ironlake_edp_backlight_off(struct intel_dp *intel_dp)
- 		return;
- 
- 	DRM_DEBUG_KMS("\n");
--	pp = I915_READ(PCH_PP_CONTROL);
--	pp &= ~PANEL_UNLOCK_MASK;
--	pp |= PANEL_UNLOCK_REGS;
-+	pp = ironlake_get_pp_control(dev_priv);
- 	pp &= ~EDP_BLC_ENABLE;
- 	I915_WRITE(PCH_PP_CONTROL, pp);
- 	POSTING_READ(PCH_PP_CONTROL);
--- 
-1.7.7
+How are you doing the object diff?  I've tried just using diff
+against the object files but the line number changes mess everything
+up.
 
+regards,
+dan carpenter
+
+--19uQFt6ulqmgNgg1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOsOKqAAoJEOnZkXI/YHqRIwgQAKbKT5raImQ+9Ti0i5Rkq8Sd
+R7KK3h1A3H8rrYnQxqUZFquknDzgo0Jsyy4LGieRpLdk5huZqPwkY4VXxM8eCJGU
+6ou1JzUWNRNqQX7a6XIthxHndKZVhOsAOywOsdtTCoQLWzWpl/g5FU4unGXAtZzD
+3bDLrW/kZrT1bUuLrc2kjcZmqJKJ+Fl58nmLxBpW1YJ7eahfwMknjMDAOsOKYHR2
+/xQyEbEPfyNdQbiLCZBDQ+lYIH5SxzSkWlP7lp9Ey4bMRq3DHE4c3KGlxo5Sh9ao
+nc9y/aHfbySjH8HhDMKcOQzk3KclSXGavzrJJZXaReWjaztUkQKPdJCMECjs8yr2
+v1QNW4PXCA0C/8qAaL8lWf3lMUf5XJm4CBghokUM2q8ETdEYL/28BSESoWA6y6si
+wREe7K4Pe0iMTWmHzYVCpE070Zel0y3U949169R/Zagafh5SDwQfswTin/GzOt+l
+mnstMUEMQFws53j3jwXx67f6Ti2VnQwbVwFYdfNL4cW4Ji3vT84exrxRTGK+/Rct
+WvEFDqgwgcZ55cMhSlK/bIj7Flc2xkjHx501bRyOpWtBWOG99dVuRW0cKIWbw6AS
+yoXmv2hP7QBwnp35og6ruZwoTPZXREUcVqzwUsxf5k3oMziU4YamP7NLFstwgwa2
+qybmUsiMKouy/6Q7kFxl
+=JB+f
+-----END PGP SIGNATURE-----
+
+--19uQFt6ulqmgNgg1--
