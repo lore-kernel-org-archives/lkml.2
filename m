@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab1KBCZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 22:25:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57036 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402Ab1KBCXD (ORCPT
+	id S1756266Ab1KBC0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 22:26:50 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:39498 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753347Ab1KBC0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 22:23:03 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL 11/13] arm-soc device tree conversions
-Date: Wed, 2 Nov 2011 03:03:05 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <201111010348.13214.arnd@arndb.de>
-In-Reply-To: <201111010348.13214.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111020303.05784.arnd@arndb.de>
-X-Provags-ID: V02:K0:O4VHeqwcSkGThqJAJ1zCLYdtO+wfnvxfyf5HstEep6z
- 88fWcQhWyaiXRx5Ruz3wTE9wTJNRmROPdLw58YUAUxbL3Af7bP
- x6l0sD/xy5S8H62y1E366r85sQd+FV4XmBUvfcPsVwugqTR5xT
- lyYF6kmMctDn3n+dVhRijsu830A9hFz61hVc7YIn2olQsmACl7
- tToNkLSpkbIQ5BrDugr4sJ3Mz54ETv2gogONd9rflmdjVYwltI
- TopTweYL1ox4iHUj5L/SpSp2yGuhprW5p7j1G5K0Gd35Ywfc94
- BfL405lV00zwUTdmhMCFgRcHK1mmTecdvn/lw52xLiANPKHL5i
- Q14f5hMDJKSsowwKCWV8=
+	Tue, 1 Nov 2011 22:26:47 -0400
+From: Tao Ma <tm@tao.ma>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH V2 for 3.2] fs/direct-io.c: Calculate fs_count correctly in get_more_blocks.
+Date: Wed,  2 Nov 2011 10:26:34 +0800
+Message-Id: <1320200794-2881-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <x49wrblav46.fsf@segfault.boston.devel.redhat.com>
+References: <x49wrblav46.fsf@segfault.boston.devel.redhat.com>
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This branch adds support for device tree based probing in the msm, imx, 
-at91, and omap subarchitectures, moving us closer to obsoleting board
-specific files in those platforms.
+From: Tao Ma <boyu.mt@taobao.com>
 
-	Arnd
+In get_more_blocks, we use dio_count to calculate fs_count to let the
+file system map(maybe also create) blocks. And some tricky things are
+done to increase fs_count if dio_count isn't aligned.
 
-The following changes since commit 38b9c2164fc27127d4a3347c4774c70085b2a77e:
+But actually it still has some cornor case that can't be coverd. See the
+following example:
+./dio_write foo -s 1024 -w 4096(direct write 4096 bytes at offset 1024).
 
-  Merge branch 'next/cleanup2' into for-linus (2011-11-01 17:09:10 +0100)
+In this case, the old calculation counts fs_count to be 1, but actually
+we will write into 2 different blocks(if fs_blocksize=4096). So the
+underlying file system is called twice and leads to some performance
+overhead. So fix it by calculating fs_count correctly and let the file
+system knows what we really want to write.
 
-are available in the git repository at:
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ fs/direct-io.c |   11 ++++-------
+ 1 files changed, 4 insertions(+), 7 deletions(-)
 
-  git://git.linaro.org/people/arnd/arm-soc.git next/dt
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index d740ab6..5582183 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -580,9 +580,8 @@ static int get_more_blocks(struct dio *dio, struct dio_submit *sdio,
+ {
+ 	int ret;
+ 	sector_t fs_startblk;	/* Into file, in filesystem-sized blocks */
++	sector_t fs_endblk;	/* Into file, in filesystem-sized blocks */
+ 	unsigned long fs_count;	/* Number of filesystem-sized blocks */
+-	unsigned long dio_count;/* Number of dio_block-sized blocks */
+-	unsigned long blkmask;
+ 	int create;
+ 
+ 	/*
+@@ -593,11 +592,9 @@ static int get_more_blocks(struct dio *dio, struct dio_submit *sdio,
+ 	if (ret == 0) {
+ 		BUG_ON(sdio->block_in_file >= sdio->final_block_in_request);
+ 		fs_startblk = sdio->block_in_file >> sdio->blkfactor;
+-		dio_count = sdio->final_block_in_request - sdio->block_in_file;
+-		fs_count = dio_count >> sdio->blkfactor;
+-		blkmask = (1 << sdio->blkfactor) - 1;
+-		if (dio_count & blkmask)	
+-			fs_count++;
++		fs_endblk = (sdio->final_block_in_request - 1) >>
++				sdio->blkfactor;
++		fs_count = fs_endblk - fs_startblk + 1;
+ 
+ 		map_bh->b_state = 0;
+ 		map_bh->b_size = fs_count << dio->inode->i_blkbits;
+-- 
+1.7.1
 
-Arnd Bergmann (5):
-      Merge branches 'msm/dt', 'imx/dt' and 'at91/dt' into next/dt
-      Merge branch 'omap/dt' into next/dt
-      Merge branch 'dt/gic' into next/dt
-      ARM: gic: use module.h instead of export.h
-      Merge branch 'imx/devel' into next/dt
-
-David Brown (3):
-      msm_serial: Use relative resources for iomem
-      msm_serial: Add devicetree support
-      ARM: msm: Add devicetree support for msm8660-surf
-
-Jean-Christophe PLAGNIOL-VILLARD (1):
-      ARM: at91: add at91sam9g20 and Calao USB A9G20 DT support
-
-Nicolas Ferre (1):
-      ARM: at91: dt: at91sam9g45 family and board device tree files
-
-Rob Herring (6):
-      Merge remote-tracking branch 'rmk/devel-stable' into HEAD
-      of/irq: introduce of_irq_init
-      irq: support domains with non-zero hwirq base
-      ARM: gic: add irq_domain support
-      ARM: gic: add OF based initialization
-      ARM: gic: fix irq_alloc_descs handling for sparse irq
-
-Shawn Guo (2):
-      arm/mx5: add device tree support for imx53 boards
-      arm/mx5: add device tree support for imx51 babbage
-
- Documentation/devicetree/bindings/arm/fsl.txt      |   19 ++
- Documentation/devicetree/bindings/arm/gic.txt      |   55 ++++
- .../devicetree/bindings/tty/serial/msm_serial.txt  |   27 ++
- arch/arm/boot/dts/at91sam9g20.dtsi                 |  119 ++++++++
- arch/arm/boot/dts/at91sam9g45.dtsi                 |  106 +++++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   35 +++
- arch/arm/boot/dts/imx51-babbage.dts                |  135 +++++++++
- arch/arm/boot/dts/imx51.dtsi                       |  246 ++++++++++++++++
- arch/arm/boot/dts/imx53-ard.dts                    |  113 ++++++++
- arch/arm/boot/dts/imx53-evk.dts                    |  120 ++++++++
- arch/arm/boot/dts/imx53-qsb.dts                    |  125 ++++++++
- arch/arm/boot/dts/imx53-smd.dts                    |  169 +++++++++++
- arch/arm/boot/dts/imx53.dtsi                       |  301 ++++++++++++++++++++
- arch/arm/boot/dts/msm8660-surf.dts                 |   24 ++
- arch/arm/boot/dts/usb_a9g20.dts                    |   30 ++
- arch/arm/common/Kconfig                            |    1 +
- arch/arm/common/gic.c                              |  188 ++++++++----
- arch/arm/include/asm/hardware/gic.h                |   10 +-
- arch/arm/mach-at91/Kconfig                         |   11 +
- arch/arm/mach-at91/Makefile                        |    3 +
- arch/arm/mach-at91/Makefile.boot                   |    2 +
- arch/arm/mach-at91/at91sam9260.c                   |    8 +
- arch/arm/mach-at91/at91sam9g45.c                   |    6 +
- arch/arm/mach-at91/board-dt.c                      |  123 ++++++++
- arch/arm/mach-msm/board-msm8x60.c                  |   58 ++++-
- arch/arm/mach-mx5/Kconfig                          |   21 ++
- arch/arm/mach-mx5/Makefile                         |    3 +
- arch/arm/mach-mx5/board-mx51_babbage.c             |    9 +-
- arch/arm/mach-mx5/board-mx53_ard.c                 |   12 +-
- arch/arm/mach-mx5/board-mx53_evk.c                 |    9 +-
- arch/arm/mach-mx5/board-mx53_loco.c                |    9 +-
- arch/arm/mach-mx5/board-mx53_smd.c                 |    9 +-
- arch/arm/mach-mx5/clock-mx51-mx53.c                |   39 +++
- arch/arm/mach-mx5/imx51-dt.c                       |  116 ++++++++
- arch/arm/mach-mx5/imx53-dt.c                       |  126 ++++++++
- arch/arm/plat-mxc/include/mach/common.h            |    7 +
- drivers/of/irq.c                                   |  107 +++++++
- drivers/tty/serial/msm_serial.c                    |   30 ++-
- include/linux/irqdomain.h                          |   16 +-
- include/linux/of_irq.h                             |    3 +
- kernel/irq/irqdomain.c                             |   12 +-
- 41 files changed, 2461 insertions(+), 101 deletions(-)
