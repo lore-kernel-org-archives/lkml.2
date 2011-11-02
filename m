@@ -1,30 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab1KBHxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 03:53:31 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49376
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752530Ab1KBHxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 03:53:30 -0400
-Date: Wed, 2 Nov 2011 03:53:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Thieu Le <thieule@chromium.org>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: Export fallocate facility to kernel modules
-Message-ID: <20111102075328.GA28954@infradead.org>
-References: <1320088445-12373-1-git-send-email-thieule@chromium.org>
+	id S1753887Ab1KBII1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 04:08:27 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:46549 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751283Ab1KBIIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 04:08:22 -0400
+Message-ID: <4EB0FA73.1020600@msgid.tls.msk.ru>
+Date: Wed, 02 Nov 2011 12:08:19 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:5.0) Gecko/20110805 Icedove/5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320088445-12373-1-git-send-email-thieule@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <mzxreary@0pointer.de>, greg@kroah.com,
+        Paul Menage <paul@paulmenage.org>, linux-kernel@vger.kernel.org,
+        david@fubar.dk, Linux Containers <lxc-devel@lists.sourceforge.net>,
+        Linux Containers <containers@lists.osdl.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>, harald@redhat.com
+Subject: Re: [lxc-devel] Detecting if you are running in a container
+References: <1317943022.1095.25.camel@mop> <20111007074904.GC16723@count0.beaverton.ibm.com> <20111007160113.GB14201@tango.0pointer.de> <m17h4g2jqy.fsf@fess.ebiederm.org> <20111010163140.GA22191@tango.0pointer.de> <m1mxd8lg0x.fsf_-_@fess.ebiederm.org> <20111010214148.GB26510@tango.0pointer.de> <CAPXgP13npxh6UoEtXNiZ+Lhe_QxpO8-7r==WuUXDnNr+sHGXMw@mail.gmail.com> <4EB06D27.4020507@msgid.tls.msk.ru> <m17h3js8p1.fsf@fess.ebiederm.org>
+In-Reply-To: <m17h3js8p1.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.2.1
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mentioned last time please submit together with the actual user for
-review.
+On 02.11.2011 03:51, Eric W. Biederman wrote:
+[]
+>> And having CAP_MKNOD in container may not be that bad either, while
+>> cgroup device.permission is set correctly - some nodes may need to
+>> be created still, even in an unprivileged containers.  Who filters
+>> out CAP_MKNOD during container startup (I don't see it in the code,
+>> which only removes CAP_SYS_BOOT, and even that due to current
+>> limitation), and which evil things can be done if it is not filtered?
+> 
+> If you don't filter which device nodes you a process can read/write then
+> that process can access any device on the system.  Steal the keyboard,
+> the X display, access any filesystem, directly access memory.  Basically
+> the process can escalate that permission to full control of the system
+> without needing any kernel bugs to help it.
+
+There's cap_mknod, and cgroup/devices.{allow,deny}.  Even with CAP_MKNOD,
+container can not _use_ devices not allowed in the latter.  That's what
+I'm talking about - there's more fine control exist than CAP_MKNOD.  And
+my question was about this context - with proper cgroup-level device
+control in place, what bad CAP_MKNOD have?
+
+Thanks,
+
+/mjt
