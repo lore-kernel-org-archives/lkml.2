@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab1KBT0f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:26:35 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:49682 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754793Ab1KBT0c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:26:32 -0400
-Date: Wed, 2 Nov 2011 21:26:26 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Gary King <gking@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm/tegra: add support for tegra30 interrupts
-Message-ID: <20111102192625.GD14372@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A47A7@HQMAIL01.nvidia.com>
- <20111102192112.GC12913@n2100.arm.linux.org.uk>
+	id S933528Ab1KBT1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:27:42 -0400
+Received: from [85.183.114.52] ([85.183.114.52]:56059 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932850Ab1KBT1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:27:39 -0400
+X-Greylist: delayed 1669 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 15:27:39 EDT
+Date: Wed, 2 Nov 2011 20:00:46 +0100
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josef Bacik <josef@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the logfs tree with Linus' tree
+Message-ID: <20111102190046.GB3485@logfs.org>
+References: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+KJYzRxRHjYqLGl5"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111102192112.GC12913@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 1 November 2011 14:10:00 +1100, Stephen Rothwell wrote:
+> 
+> Hi all,
+> 
+> Today's linux-next merge of the logfs tree got a conflict in
+> fs/logfs/file.c between commit 02c24a82187d ("fs: push i_mutex and
+> filemap_write_and_wait down into ->fsync() handlers") from Linus' tree
+> and commit 39da12ef4bbe ("logfs: take write mutex lock during fsync and
+> sync") from the logfs tree.
+> 
+> I have no idea what needs to be done here.  I fixed it like below to make
+> it build, but a better fix is needed.
 
---+KJYzRxRHjYqLGl5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>From a code perspective your fix below is correct, to the best of my
+judgement.  I'm less sure what to do from a git perspective.
+Explicitly tell Linus about it in the logfs pull request?
 
-hi,
+> diff --cc fs/logfs/file.c
+> index b548c87,f85d603..0000000
+> --- a/fs/logfs/file.c
+> +++ b/fs/logfs/file.c
+> @@@ -219,20 -219,13 +219,22 @@@ long logfs_ioctl(struct file *file, uns
+>   	}
+>   }
+>   
+>  -int logfs_fsync(struct file *file, int datasync)
+>  +int logfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+>   {
+>   	struct super_block *sb = file->f_mapping->host->i_sb;
+>  +	struct inode *inode = file->f_mapping->host;
+>  +	int ret;
+>  +
+>  +	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+>  +	if (ret)
+>  +		return ret;
+>   
+>  +	mutex_lock(&inode->i_mutex);
+> + 	logfs_get_wblocks(sb, NULL, WF_LOCK);
+>   	logfs_write_anchor(sb);
+> + 	logfs_put_wblocks(sb, NULL, WF_LOCK);
+>  +	mutex_unlock(&inode->i_mutex);
+>  +
+>   	return 0;
+>   }
+>   
 
-On Wed, Nov 02, 2011 at 07:21:12PM +0000, Russell King - ARM Linux wrote:
-> On Wed, Nov 02, 2011 at 12:09:36PM -0700, Stephen Warren wrote:
-> > To solve this, I recommend definining ARCH_NR_GPIOs for Tegra, to somet=
-hing
-> > large; I see that arch/arm/mach-shmobile defines it to 1024. Failing any
-> > disadvantage of using a number that large, I'd go for that...
->=20
-> I'd suggest that we immediately start solving the ARCH_NR_GPIO
-> definition a single zImage friendly way - rather than throwing a
-> definition into mach/gpio.h, add this into asm/gpio.h:
->=20
-> #if CONFIG_ARCH_NR_GPIO > 0
-> #define ARCH_NR_GPIO CONFIG_ARCH_NR_GPIO
-> #endif
->=20
-> and in arch/arm/Kconfig:
->=20
-> config ARCH_NR_GPIO
-> 	int
-> 	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
-> 	... etc ...
-> 	default 0
->=20
-> The list should be sorted in numeric order, largest first.
->=20
-> This then gives us a path to eliminate the ARCH_NR_GPIO definitions
-> from mach/gpio.h - and should allow more mach/gpio.h to become empty.
 
-would it be better to just change the default value in
-arm-generic/gpio.h to something very large ?
 
-I mean, ideally that wouldn't be gpio_desc wouldn't be an array anyway
-right ?
+Jörn
 
---=20
-balbi
-
---+KJYzRxRHjYqLGl5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIbBAEBAgAGBQJOsZlhAAoJEIaOsuA1yqRE/qEP9jFVgYAbTmL6IJpIBBqj2kCx
-qGNrnSlrJcrlE/4Zfl+QhmqbCu9Oeqy9YWB/MFlSLIQRBvmKzw37g+7VGd4/g73e
-LW8thmHrugYjmKPKeCRaSQ/wio5PhHF7Ry+r6w4NcNT5ozJRaJL9ozVoKIKU1VIj
-zCih8OqSGz/JK4+e3H4S5BldD1+eotmQT3s+CcdfIx2NEsxRuNzYo/7v8eRRWPQd
-PE//593PV4tC/iOSgKBI6vyBuPB77OuUZcR6OEb+xZFMV2IBi0hFMANFoBuAm6L3
-zT3fsWfS7M5JU7dbjjQNiLrRJSxFSLcIgd0MOvNgcvRNvu1GqT/7ij8rLDDVxy7O
-VgGwhXJI55eDCndvJ/CmAIOXHWhh6kfXfES5uQo0RlDBAW1LU6PvsExLqW7VRDYc
-qmojyBxAzIXZ6GIHNRu40dRWAMVrbAsS5BF+JcTFkaGrjdGn9OhGKJ/tOnyNcyWl
-qjYcAPBWBEl5MZqwWZ773DdQUqN8fpv5Q5HZvQ5gCrpqnhXs4ciUkICDbSTQkVZg
-CW+Yk6w4CR7RVnBCGGffJf1jFRZZfFLQ1C8t1hdzn10+O4Zd1PELNAkyACI+tamJ
-rL35G77UtkqmBmG3nGSM375FNdaifkdYXc9uz3OXDxcReXXTwPS+sRIEOfpM3dsj
-EBSHFDRKqwG/6sFU1IY=
-=Kb7I
------END PGP SIGNATURE-----
-
---+KJYzRxRHjYqLGl5--
+-- 
+You can take my soul, but not my lack of enthusiasm.
+-- Wally
