@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab1KBRt0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 13:49:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38699 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097Ab1KBRtY (ORCPT
+	id S1756083Ab1KBRul (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 13:50:41 -0400
+Received: from igw2.watson.ibm.com ([129.34.20.6]:59121 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab1KBRui convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 13:49:24 -0400
-Message-ID: <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Linux 3.1-rc9
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Simon Kirby <sim@hostway.ca>, David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Network Development <netdev@vger.kernel.org>
-Date: Wed, 02 Nov 2011 18:49:17 +0100
-In-Reply-To: <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1318874090.4172.84.camel@twins>
-	 <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
-	 <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
-	 <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
-	 <20111018182046.GF1309@hostway.ca>
-	 <alpine.LFD.2.02.1110182146440.3240@ionos>
-	 <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca>
-	 <20111031173246.GA10614@hostway.ca>
-	 <alpine.LFD.2.02.1111021725550.2829@ionos>
-	 <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	Wed, 2 Nov 2011 13:50:38 -0400
+Subject: Re: [PATCH 1/2] trusted-key: allow overwriting the migratable flag
+From: David Safford <safford@watson.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@us.ibm.com, dhowells@redhat.com,
+        jmorris@namei.org
+Date: Wed, 02 Nov 2011 13:46:32 -0400
+In-Reply-To: <4EB17FE1.7050307@polito.it>
+References: <1320237682-3857-1-git-send-email-roberto.sassu@polito.it>
+	 <1320253136.3225.13.camel@localhost> <4EB17FE1.7050307@polito.it>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1320255992.3225.23.camel@localhost>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 02 novembre 2011 à 18:27 +0100, Eric Dumazet a écrit :
-
-> I believe it might come from commit 0e734419
-> (ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
+On Wed, 2011-11-02 at 18:37 +0100, Roberto Sassu wrote:
+> On 11/02/2011 05:58 PM, David Safford wrote:
+> > On Wed, 2011-11-02 at 13:41 +0100, Roberto Sassu wrote:
+> >> The migratable should be modifiable during the key update() method. This
+> >> allows for example to update a migratable trusted key, wrapped by a TPM
+> >> key, to a a non-migratable one sealed under the SRK with a PCR set.
+> >>
+> >> Signed-off-by: Roberto Sassu<roberto.sassu@polito.it>
+> >
+> > I can see a use case for updating a migratable key to a non-migratable
+> > one - such as keeping a migratable master on a flash drive, and keeping
+> > only the non-migratable copy on-line. I certainly don't want the
+> > ability to change a non-migratable to migratable, as that would defeat
+> > the entire purpose of non-migratable.
+> >
+> > I don't think this patch actually does either, though.
+> >
+> >> ---
+> >>   security/keys/trusted.c |    1 -
+> >>   1 files changed, 0 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+> >> index 0c33e2e..8777015 100644
+> >> --- a/security/keys/trusted.c
+> >> +++ b/security/keys/trusted.c
+> >> @@ -1036,7 +1036,6 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
+> >>   		goto out;
+> >>   	}
+> >>   	/* copy old key values, and reseal with new pcrs */
+> >> -	new_p->migratable = p->migratable;
+> >
+> > Taking out this line appears only to remove a redundant assignment.
+> > We can only get here if the old key is already migratable, and the
+> > earlier trusted_payload_alloc() initializes the new copy to
+> > migratable by default. I don't see how the flag can be changed
+> > with this patch. Perhaps I'm missing something or this was just
+> > the start, and there is more to come?
+> >
 > 
-> In case inet_csk_route_child_sock() returns NULL, we dont release socket
-> lock.
+> Hi Dave
 > 
+> i think this line should be removed because it overwrites
+> the assignment made in datablob_parse() -> getoptions().
 > 
+> You can see this behaviour by executing the following commands:
+> 
+> 1) keyctl add trusted kmk "new 32" @u
+> 2) keyctl update $(keyctl search @u trusted kmk) "update migratable=0"
+> 3) keyctl update $(keyctl search @u trusted kmk) "update migratable=0"
+> 
+> The third operation should fail because of the lines at the
+> begin of trusted_update():
+> 
+> ---------
+> 	if (!p->migratable)
+> 		return -EPERM;
+> ---------
+> 
+> but instead, without the patch, it is performed successfully.
+> 
+> Thanks
+> 
+> Roberto Sassu
 
-Yes, thats the problem. I am testing following patch :
+Sorry - you are absolutely correct. The patch looks good,
+and it is safe, as it allows only migratable -> non-migratable updates.
+Give me a day to test both...
+dave
 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 0ea10ee..683d97a 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1510,6 +1510,7 @@ exit:
- 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
- 	return NULL;
- put_and_exit:
-+	bh_unlock_sock(newsk);
- 	sock_put(newsk);
- 	goto exit;
- }
-
+> 
+> > dave
+> >
+> >>   	new_p->key_len = p->key_len;
+> >>   	memcpy(new_p->key, p->key, p->key_len);
+> >>   	dump_payload(p);
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> 
 
