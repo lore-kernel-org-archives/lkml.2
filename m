@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933507Ab1KBShJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:37:09 -0400
+	id S933682Ab1KBSjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:39:21 -0400
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:18091 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab1KBSg6 (ORCPT
+	with ESMTP id S933467Ab1KBShI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 14:36:58 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133706946"
+	Wed, 2 Nov 2011 14:37:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133707009"
 From: David Brown <davidb@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
+Cc: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH 01/34] msm: clock-pcom: Mark functions static
-Date: Wed,  2 Nov 2011 11:35:58 -0700
-Message-Id: <1320258991-22325-2-git-send-email-davidb@codeaurora.org>
+Subject: [RFC PATCH 27/34] msm-8x60: Add serial support
+Date: Wed,  2 Nov 2011 11:36:24 -0700
+Message-Id: <1320258991-22325-28-git-send-email-davidb@codeaurora.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1320258991-22325-1-git-send-email-davidb@codeaurora.org>
 References: <1320258991-22325-1-git-send-email-davidb@codeaurora.org>
@@ -24,102 +24,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-These functions are only used within clock-pcom.c, therefore mark
-them as static.
+Add the platform data to the board file.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 Signed-off-by: David Brown <davidb@codeaurora.org>
 ---
- arch/arm/mach-msm/clock-pcom.c |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ arch/arm/mach-msm/board-msm8x60.c |   50 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 50 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-msm/clock-pcom.c b/arch/arm/mach-msm/clock-pcom.c
-index 63b7113..a52c970 100644
---- a/arch/arm/mach-msm/clock-pcom.c
-+++ b/arch/arm/mach-msm/clock-pcom.c
-@@ -25,7 +25,7 @@
- /*
-  * glue for the proc_comm interface
-  */
--int pc_clk_enable(unsigned id)
-+static int pc_clk_enable(unsigned id)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_ENABLE, &id, NULL);
- 	if (rc < 0)
-@@ -34,7 +34,7 @@ int pc_clk_enable(unsigned id)
- 		return (int)id < 0 ? -EINVAL : 0;
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 7b8016f..f034bf5 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -73,8 +73,58 @@ static void __init msm8x60_init_irq(void)
+ 		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
  }
  
--void pc_clk_disable(unsigned id)
-+static void pc_clk_disable(unsigned id)
++static struct resource msm_uart12_dm_resources[] = {
++	{
++		.start = 0x19C40000,
++		.end   = 0x19C40000 + PAGE_SIZE - 1,
++		.name  = "uart_resource",
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = INT_UART12DM_IRQ,
++		.end   = INT_UART12DM_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		/* GSBI 12 is UARTDM2 */
++		.start = 0x19C00000,
++		.end   = 0x19C00000 + PAGE_SIZE - 1,
++		.name  = "gsbi_resource",
++		.flags = IORESOURCE_MEM,
++	},
++};
++
++struct platform_device msm_device_uart_dm12 = {
++	.name = "msm_serial",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(msm_uart12_dm_resources),
++	.resource = msm_uart12_dm_resources,
++};
++
++static struct platform_device *devices[] __initdata = {
++	&msm_device_uart_dm12,
++};
++
++static void __init msm8x60_init_uart12dm(void)
++{
++	/* 0x1D000000 now belongs to EBI2:CS3 i.e. USB ISP Controller */
++	void *fpga_mem = ioremap_nocache(0x1D000000, SZ_4K);
++	/* Advanced mode */
++	writew(0xFFFF, fpga_mem + 0x15C);
++	/* FPGA_UART_SEL */
++	writew(0, fpga_mem + 0x172);
++	/* FPGA_GPIO_CONFIG_117 */
++	writew(1, fpga_mem + 0xEA);
++	/* FPGA_GPIO_CONFIG_118 */
++	writew(1, fpga_mem + 0xEC);
++	dmb();
++	iounmap(fpga_mem);
++}
++
+ static void __init msm8x60_init(void)
  {
- 	msm_proc_comm(PCOM_CLKCTL_RPC_DISABLE, &id, NULL);
- }
-@@ -54,7 +54,7 @@ int pc_clk_reset(unsigned id, enum clk_reset_action action)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_rate(unsigned id, unsigned rate)
- {
- 	/* The rate _might_ be rounded off to the nearest KHz value by the
- 	 * remote function. So a return value of 0 doesn't necessarily mean
-@@ -67,7 +67,7 @@ int pc_clk_set_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_min_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_min_rate(unsigned id, unsigned rate)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MIN_RATE, &id, &rate);
- 	if (rc < 0)
-@@ -76,7 +76,7 @@ int pc_clk_set_min_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_max_rate(unsigned id, unsigned rate)
-+static int pc_clk_set_max_rate(unsigned id, unsigned rate)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_MAX_RATE, &id, &rate);
- 	if (rc < 0)
-@@ -85,7 +85,7 @@ int pc_clk_set_max_rate(unsigned id, unsigned rate)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--int pc_clk_set_flags(unsigned id, unsigned flags)
-+static int pc_clk_set_flags(unsigned id, unsigned flags)
- {
- 	int rc = msm_proc_comm(PCOM_CLKCTL_RPC_SET_FLAGS, &id, &flags);
- 	if (rc < 0)
-@@ -94,7 +94,7 @@ int pc_clk_set_flags(unsigned id, unsigned flags)
- 		return (int)id < 0 ? -EINVAL : 0;
- }
- 
--unsigned pc_clk_get_rate(unsigned id)
-+static unsigned pc_clk_get_rate(unsigned id)
- {
- 	if (msm_proc_comm(PCOM_CLKCTL_RPC_RATE, &id, NULL))
- 		return 0;
-@@ -102,7 +102,7 @@ unsigned pc_clk_get_rate(unsigned id)
- 		return id;
- }
- 
--unsigned pc_clk_is_enabled(unsigned id)
-+static unsigned pc_clk_is_enabled(unsigned id)
- {
- 	if (msm_proc_comm(PCOM_CLKCTL_RPC_ENABLED, &id, NULL))
- 		return 0;
-@@ -110,7 +110,7 @@ unsigned pc_clk_is_enabled(unsigned id)
- 		return id;
++	msm8x60_init_uart12dm();
++	platform_add_devices(devices, ARRAY_SIZE(devices));
  }
  
--long pc_clk_round_rate(unsigned id, unsigned rate)
-+static long pc_clk_round_rate(unsigned id, unsigned rate)
- {
- 
- 	/* Not really supported; pc_clk_set_rate() does rounding on it's own. */
+ MACHINE_START(MSM8X60_RUMI3, "QCT MSM8X60 RUMI3")
 -- 
 Sent by an employee of the Qualcomm Innovation Center, Inc.
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
