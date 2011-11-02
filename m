@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932495Ab1KBOz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:55:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab1KBOz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:55:27 -0400
-Date: Wed, 2 Nov 2011 15:51:05 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: hank <pyu@redhat.com>
-Cc: tj@kernel.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] set wo_stat to an init value in do_wait function
-Message-ID: <20111102145105.GA27394@redhat.com>
-References: <4EB0FF81.90808@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB0FF81.90808@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932517Ab1KBO4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:56:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41652 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab1KBO41 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 10:56:27 -0400
+X-Authority-Analysis: v=1.1 cv=rFxaVhpzdNKRsWyFDFmDbYx/QEtlW7L1Gw9MiLxO4aw= c=1 sm=0 a=nDqYd8iKHsYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=meVymXHHAAAA:8 a=xUQEayChb4KHRQSXB00A:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320245786.4793.32.camel@gandalf.stny.rr.com>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Date: Wed, 02 Nov 2011 10:56:26 -0400
+In-Reply-To: <20111102144403.GA22445@linux.vnet.ibm.com>
+References: <20111031082634.GA10348@localhost>
+	 <20111031095152.GL6160@linux.vnet.ibm.com>
+	 <20111031104325.GA25808@localhost> <20111031114142.GA32555@localhost>
+	 <20111031121951.GM6160@linux.vnet.ibm.com>
+	 <1320075882.4793.4.camel@gandalf.stny.rr.com>
+	 <20111101003434.GR6160@linux.vnet.ibm.com>
+	 <20111101070720.GA22936@localhost>
+	 <20111101160014.GH2287@linux.vnet.ibm.com>
+	 <20111101163212.GA19501@localhost>
+	 <20111102144403.GA22445@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02, hank wrote:
->
-> When all of the below conditions become true:
-> 1 parent fork a child
-> 2 parent ignore SIGCHLD signal
-> 3 parent call waitpid function
-> do_wait function won't touch the wo->stat variable.
+On Wed, 2011-11-02 at 07:44 -0700, Paul E. McKenney wrote:
 
-Of course it doesn't, do_wait() fails and does nothing.
-
-The parent ignores SIGCHLD. In this case waitpid(&status) acts as
-if there are no children. Except it sleeps.
-
-IOW,
-
-> int main(int argc, char *argv[])
-> {
->         int pid, child;
->         int status;
->         int *p;
+> rcu: Fix idle-task checks
 > 
->         signal(SIGCHLD, SIG_IGN);
-> 
->         child = fork();
->         if (child == 0) {
->                 sleep(1);
->                 exit(0);
->         } else if (child < 0) {
->                 perror("fork");
->                 exit(1);
->         } else {
->                 status = 0xa5a5;
->                 p = &status;
->                 printf("status addr: %p\n", p);
->                 pid = waitpid(-1, &status, WUNTRACED);
->                 printf("pid=%d status=0x%x\n", pid, status);
->                 exit(0);
->         }
->         return 0;
-> }
-> ========================================================
->
-> After run this program, we can see the value of status is still
-> 0xa5a5,so kernel do not touch this value.
+> RCU has traditionally relied on idle_cpu() to determine whether a given
+> CPU is running in the context of an idle task, but recent changes have
+> invalidated this approach.
 
-Sure, this is correct.
+Correct. idle_cpu() returns if the CPU is idle or not, not if the CPU is
+running the idle thread. If the CPU wakes up on the idle thread and
+there's tasks on the run queue, then idle_cpu() will return false, even
+though the task running is the idle thread. But the CPU itself is not
+technically idle.
 
-> It may be dangerous. Because lots of programs such as 'su' don't set
-> an init value for the variable 'status' when it call waitpid function,
-> and after the waitpid function return, the program may check the value
-> of 'status' to see the state of child.
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-Then this program is buggy. Once again, waitpid() fails. The program
-shouldn't look at status at all.
+-- Steve
 
-Oleg.
+
+
 
