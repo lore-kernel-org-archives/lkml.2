@@ -1,174 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756257Ab1KBKEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 06:04:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58040 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754972Ab1KBKEI (ORCPT
+	id S1756290Ab1KBKEx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 06:04:53 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:50358 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab1KBKEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 06:04:08 -0400
-Date: Wed, 2 Nov 2011 11:03:56 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>, Tony Lindgren <tony@atomide.com>,
-        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] regulator: Provide dummy supply support
-Message-ID: <20111102100355.GJ23421@pengutronix.de>
-References: <1319833618-25190-1-git-send-email-s.hauer@pengutronix.de>
- <20111028215931.GA30366@opensource.wolfsonmicro.com>
- <20111028224757.GG23421@pengutronix.de>
- <201111011350.17425.vapier@gentoo.org>
- <20111101182720.GH10029@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111101182720.GH10029@opensource.wolfsonmicro.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:09:05 up 13 days, 15:44, 40 users,  load average: 9.24, 7.74,
- 6.60
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 2 Nov 2011 06:04:48 -0400
+Message-ID: <1320228239.2776.14.camel@br98xy6r>
+Subject: Re: [PATCH v2] kdump: Fix crash_kexec - smp_send_stop race in panic
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Don Zickus <dzickus@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        Vivek Goyal <vgoyal@redhat.com>
+Date: Wed, 02 Nov 2011 11:03:59 +0100
+In-Reply-To: <20111101200420.GN17705@redhat.com>
+References: <1319639649.3321.11.camel@br98xy6r>
+	 <20111028161143.e5ebf617.akpm@linux-foundation.org>
+	 <1320055036.2796.8.camel@br98xy6r>
+	 <20111031033948.a0edb7f3.akpm@linux-foundation.org>
+	 <1320064459.2796.26.camel@br98xy6r> <20111101200420.GN17705@redhat.com>
+Organization: IBM
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 06:27:21PM +0000, Mark Brown wrote:
-> On Tue, Nov 01, 2011 at 01:50:14PM -0400, Mike Frysinger wrote:
-> > On Friday 28 October 2011 18:47:57 Sascha Hauer wrote:
+On Tue, 2011-11-01 at 16:04 -0400, Don Zickus wrote:
+> On Mon, Oct 31, 2011 at 01:34:19PM +0100, Michael Holzheu wrote:
+> > Hello Andrew, hello linux-arch,
+> > 
+> > > Well OK.  Maybe some architectures do have this problem - who would
+> > > notice?  If that is the case, we just made the failure cases much more
+> > > common.  Could you check, please?
+> > 
+> > @linux-arch: 
+> > 
+> > This patch introduces a spinlock to prevent parallel execution of the
+> > panic code. Andrew pointed out that this might be a problem for
+> > architectures that can't do smp_send_stop() on remote CPUs that have
+> > interrupts disabled. When irq-disabled CPUs execute panic() in parallel,
+> > we then would have looping CPUs.
 > 
-> > > > We already have a dummy regulator driver and a fixed voltage regulator
-> > > > driver, we shouldn't be adding a third implementation of the same thing.
-> > > > Just use the fixed voltage regulator for this.
+> x86 has such problem and I posted a patch recently to fix it
 > 
-> > > I explained in my mail why I think that the current implementation of
-> > > the dummy regulator is not suitable for things apart from debugging.
-> 
-> > your complaints seem to be specific to how the dummy regulator gets hooked in 
-> > and not in the specific regulator implementation.  so it seems like the right 
-> > thing would be to split the kconfig knobs:
-> 
-> Quite.  Sascha, your mail doesn't refer to the implementation of the
-> regulator itself at all.  Nothing in your changelog even mentions that
-> you're introducing a new regulator driver.
-> 
-> I think there's a big abstraction understanding failure here, reading
-> your changelog I'm not sure you understand the existing mechainsms that
-> are in place.  You say:
-> 
-> | This patch allows a board to register dummy supplies for devices
-> | which need a regulator but which is not software controllable
-> | on this board.
-> 
-> but this is exactly the use case the fixed voltage regulator is there
-> for.
-> 
-> >  config REGULATOR_DUMMY
-> > -	bool "Provide a dummy regulator if regulator lookups fail"
-> > +	bool "Provide a dummy regulator"
-> > +config REGULATOR_DUMMY_FALLBACK
-> > +	bool "Fallback to dummy regulator if lookup fails"
-> > +	depends on REGULATOR_DUMMY
-> 
-> As I think I said earlier I'd use the fixed regulator for this, all
-> Sascha's actually doing here is adding a wrapper to simplify
-> registration of that.
+> https://lkml.org/lkml/2011/10/13/426
 
-There's one difference between the fixed and the dummy regulator though:
-The fixed regulator has a voltage. The same dummy regulator instance can
-be used for all devices which do not have a software controllable
-regulator. I think the same can be done with the fixed regulator aswell,
-but the bogus voltage showing up in the sysfs entry might be confusing
-to users.
-That's the reason I implemented a (second) dummy regulator driver.
-Indeed it's not nice to have two of them.
+Ok good, so with this patch x86 has no problem with the panic spinlock.
+Anybody else?
 
-Another approach to this topic would be to allow a board to explicitely
-bind to the existing dummy regulator, like the following (error path
-should of course be implemented before applying this)
+Instead of introducing the panic lock, as an alternative we could move
+smp_send_stop() to the beginning of panic(). Eric told me that the
+function is currently "insufficiently reliable" for that, but perhaps we
+could make it more reliable.
 
-Sascha
+Michael
 
-8<------------------------------------
 
-[PATCH] regulator: allow boards to bind to the dummy regulator
 
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
----
- drivers/regulator/core.c          |   19 +++++++++++++++++++
- include/linux/regulator/machine.h |    8 ++++++++
- 2 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index d8e6a42..a7a38ba 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1046,6 +1046,25 @@ static void unset_regulator_supplies(struct regulator_dev *rdev)
- 	}
- }
- 
-+int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
-+		int num_supplies)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < num_supplies; i++) {
-+		ret = set_consumer_device_supply(dummy_regulator_rdev, NULL,
-+				supply[i].dev_name, supply[i].supply);
-+		if (ret)
-+			goto err_out;
-+	}
-+
-+	return 0;
-+err_out:
-+	/* FIXME: unset device supply */
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(regulator_add_dummy_supply);
-+
- #define REG_STR_SIZE	64
- 
- static struct regulator *create_regulator(struct regulator_dev *rdev,
-diff --git a/include/linux/regulator/machine.h b/include/linux/regulator/machine.h
-index ce3127a..89089cd 100644
---- a/include/linux/regulator/machine.h
-+++ b/include/linux/regulator/machine.h
-@@ -192,6 +192,8 @@ int regulator_suspend_finish(void);
- #ifdef CONFIG_REGULATOR
- void regulator_has_full_constraints(void);
- void regulator_use_dummy_regulator(void);
-+int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
-+		int num_supplies);
- #else
- static inline void regulator_has_full_constraints(void)
- {
-@@ -200,6 +202,12 @@ static inline void regulator_has_full_constraints(void)
- static inline void regulator_use_dummy_regulator(void)
- {
- }
-+
-+static inline int regulator_add_dummy_supply(struct regulator_consumer_supply *supply,
-+		int num_supplies)
-+{
-+	return 0;
-+}
- #endif
- 
- #endif
--- 
-1.7.7
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
