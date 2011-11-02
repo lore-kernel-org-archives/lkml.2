@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab1KBJmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:42:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54963 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115Ab1KBJml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:42:41 -0400
-Message-ID: <4EB1108F.6070009@gmail.com>
-Date: Wed, 02 Nov 2011 11:42:39 +0200
-From: =?ISO-8859-1?Q?Lars_Nood=E9n?= <lars.nooden@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1755269Ab1KBJo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:44:29 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59310 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752671Ab1KBJoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:44:25 -0400
+Date: Wed, 2 Nov 2011 10:39:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Matthias Schniedermeyer <ms@citd.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+Message-ID: <20111102093935.GB20916@elte.hu>
+References: <20111028070336.GF12995@elte.hu>
+ <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
+ <20111028075432.GB8626@elte.hu>
+ <20111028120856.GA29174@citd.de>
+ <20111028122902.GA25323@elte.hu>
+ <20111028130535.GA2752@citd.de>
+ <20111102084124.GB18771@elte.hu>
+ <4EB1084F.4020206@suse.cz>
+ <20111102091747.GH18903@elte.hu>
+ <4EB10C3D.6090906@suse.cz>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Hardware running hot and without the fan
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB10C3D.6090906@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seem to be two problems here, one is that the hardware is getting
-WAY too hot, another is that the fan is not turning on when the hardware
-gets too hot.
 
-  $ uname -a
-  Linux xubuntu 3.1.0-999-generic #201110270406 SMP Thu Oct 27
-  08:07:41 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+* Michal Marek <mmarek@suse.cz> wrote:
 
-I've reported the problem to Ubuntu
-	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
-and the suggestion there was to report it upstream.
+> On 2.11.2011 10:17, Ingo Molnar wrote:
+> > * Michal Marek <mmarek@suse.cz> wrote:
+> >> On 2.11.2011 09:41, Ingo Molnar wrote:
+> >>> Yeah. Note that it's more like an 'add' operation, not a modify 
+> >>> operation, thus:
+> >>>
+> >>> 	make addconfig=kvm
+> >>>
+> >>> or:
+> >>>
+> >>> 	make addconfig kvm
+> >>>
+> >>> would be intuitive and would work well too.
+> >>>
+> >>> Sam, Michal, which one would you prefer? The latter might have the 
+> >>> advantage that it's additive, enabling future usages like:
+> >>>
+> >>> 	make addconfig kvm debug
+> >>
+> >> The problem is that neither of these fit into the make command syntax:
+> >>
+> >>     make addconfig kvm debug
+> >>
+> >> tells make to build three different targets, and
+> >>
+> >>     make addconfig=kvm
+> >>
+> >> tells make to create a variable named addconfig with the value kvm 
+> >> and build the default target. And BTW, you or someone else 
+> >> reassured me earlier in the thread that this is going to be needed 
+> >> for the kvm case solely, so why are you inventing something generic 
+> >> now? :)
+> > 
+> > Because we are trying to find *something* that is both usable and 
+> > which you guys are willing to ack.
+> > 
+> > So what's your suggestion? Is 'make kvmconfig' OK?
+> 
+> As I said, make kvmconfig is fine with me, if it's just this single case.
+> 
+> Michal
 
-On the notebook computer, parts become very hot to the touch while
-running Ubuntu, but the fan does not run even after it gets hot.  When I
-boot back to OS X, the fan kicks in and runs until the computer returns
-to being cool to the touch.  Similar for the desktop, though I must
-follow the temperature with /usr/bin/sensors.
+Great, thanks!
 
-The notebook is a MacBookPro8,2 and the desktop is a Macmini3,1
-
-What metrics do I need to collect to help fix the problem?  I've already
-reported the problem to Ubuntu[2] and the recommendation was to try
-reporting upstream.
-
-Please CC me in the replies.
-/Lars
-
-[1] http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
-
-[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
+	Ingo
