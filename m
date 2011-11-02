@@ -1,105 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab1KBBP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 21:15:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60907 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753542Ab1KBBP1 (ORCPT
+	id S1754105Ab1KBBWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 21:22:25 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:47365 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab1KBBWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 21:15:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 2 Nov 2011 10:14:14 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-Message-Id: <20111102101414.457e0a08.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <f62e02cd-fa41-44e8-8090-efe2ef052f64@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	<20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
-	<ef778e79-72d0-4c58-99e8-3b36d85fa30d@default
- 20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com>
-	<f62e02cd-fa41-44e8-8090-efe2ef052f64@default>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 1 Nov 2011 21:22:23 -0400
+Date: Wed, 2 Nov 2011 12:22:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yong Zhang <yong.zhang0@gmail.com>
+Subject: linux-next: manual merge of the bjdooks-i2c tree with Linus' tree
+Message-Id: <20111102122221.9040e7a07bb0e3e2c46a5188@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Nov 2011 08:25:38 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+--Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >   - At discussing an fujitsu user support guy (just now), he asked
-> >     'why it's not designed as device driver ?"
-> >     I couldn't answered.
-> > 
-> >     So, I have small concerns with frontswap.ops ABI design.
-> >     Do we need ABI and other modules should be pluggable ?
-> >     Can frontswap be implemented as something like
-> > 
-> >     # setup frontswap via device-mapper or some.
-> >     # swapon /dev/frontswap
-> >     ?
-> >     It seems required hooks are just before/after read/write swap device.
-> >     other hooks can be implemented in notifier..no ?
-> 
-> A good question, and it is answered in FAQ #4 included in
-> the patchset (Documentation/vm/frontswap.txt).  The short
-> answer is that the tmem ABI/API used by frontswap is
-> intentionally very very dynamic -- ANY attempt to put
-> a page into it can be rejected by the backend.  This is
-> not possible with block I/O or swap, at least without
-> a massive rewrite.  And this dynamic capability is the
-> key to supporting the many users that frontswap supports.
-> 
-Hmm.
+Hi Ben,
 
-> By the way, what your fujitsu user support guy suggests is
-> exactly what zram does.  The author of zram (Nitin Gupta)
-> agrees that frontswap has many advantages over zram,
-> see https://lkml.org/lkml/2011/10/28/8 and he supports
-> merging frontswap.  And Ed Tomlinson, a current user
-> of zram says that he would use frontswap instead of
-> zram: https://lkml.org/lkml/2011/10/29/53 
-> 
-> Kame, can I add you to the list of people who support
-> merging frontswap, assuming more good performance numbers
-> are posted?
-> 
-Before answer, let me explain my attitude to this project.
+Today's linux-next merge of the bjdooks-i2c tree got a conflict in
+drivers/i2c/busses/i2c-designware-platdrv.c between commit 4311051c358a
+("i2c: irq: Remove IRQF_DISABLED") from Linus' tree and commit
+f8420b7bf6ce ("fixup merge") from the bjdooks-i2c tree.
 
-As hobby, I like this kind of work which allows me to imagine what kind
-of new fancy features it will allow us. Then, I reviewed patches.
+I fixed it up (by removing the IRQF_DISABLED flag) but this change should
+probably be sent to Linus as it appears to have been fixed up incorrectly
+there.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-As people who sells enterprise system and support, I can't recommend this
-to our customers. IIUC, cleancache/frontswap/zcache hides its avaiable
-resources from user's view and making the system performance unvisible and
-not-predictable. That's one of the reason why I asksed whether or not
-you have plans to make frontswap(cleancache) cgroup aware.
-(Hmm, but at making a product which offers best-effort-performance to customers,
- this project may make sense. But I am not very interested in best-effort
- service very much.)
+--Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA
+Content-Type: application/pgp-signature
 
-I wonder if there are 'static size simple victim cache per cgroup' project
-under frontswap/cleancache and it helps all user's workload isolation
-even if there is no VM or zcache, tmem.  It sounds wonderful.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-So, I'd like to ask whether you have any enhancement plans in future ?
-rather than 'current' peformance. The reason I hesitate to say "Okay!",
-is that I can't see enterprise usage of this, a feature which cannot
-be controlled by admins and make perfomrance prediction difficult in busy system.
+iQIcBAEBCAAGBQJOsJtNAAoJEECxmPOUX5FEdPkP/jTKHcgBybapWt3Y3GOA4HyL
+SCbKUULAQhMyed59Sf+ywMjkdZ8XZtORafG5Di6BPQtu3xGSeEsLA6b7n0JE6gju
+gUtoMJVJ4j8jD09psfsEzAlW+iR9hfK2V2I3aJV4jeXsRkAVjl4gG9Bb0KOlwSv1
+/7Gi38xJR4flJ8uMDo060t2FbzgrArf2CvS6IKh5CL/KRMhJOiumDaBoc5S3dMSY
+/x09QWa7BzpBvj9n6QgnAWTQO5W9Rbozua3Qw3XGLoDeG/iQ3zyZwbOBLfbg6nJ2
+z7Vcb/mnQhy82LS8iJ4mUbkdYHuy9shZe9Ni0fpWK2AMwOLQe4KKekoWLATngJtq
+qEFBkL1zNT8XgRbUw3KJclRW7v90OGWo5qIWVzBS7aVjWjnorxKEqRNqzBuaQMkQ
+J3wEcH8zrh8Vz6bNefP8ThAqY72+55VmZeM5JV0IT+37FocXxh9HeIZNgX/2Vq0a
+C7m4APeBTizqwQSErImg7FnMHXhDb9HE/OsnAlnLmGiue3o2c+7VATAwhOysaz+O
+n+jIvY1gcXFueUMyaNsmnTK9i6fhJN29RmmF23wTBcFZZZx4izsCqJf/2xm3P1JG
+b/9cSGwfaG70a6xT4BgZspl++r5eWAiTeuQjFtmzRisWAcMluERL7v0UtlyjUVpd
+3WfT4HjwmLqhfoL5ZP0g
+=Ieio
+-----END PGP SIGNATURE-----
 
-Thanks,
--Kame
-
+--Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA--
