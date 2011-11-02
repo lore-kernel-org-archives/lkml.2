@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab1KCBdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:33:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50315 "EHLO mx2.suse.de"
+	id S932216Ab1KCBdZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:33:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50324 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab1KCBdC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:33:02 -0400
+	id S932088Ab1KCBdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:33:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:52 2011
-Message-Id: <20111102221452.201109316@clark.kroah.org>
+Message-Id: <20111102221452.293730368@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:49 -0700
+Date: Wed, 02 Nov 2011 15:13:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Randy Dunlap <randy.dunlap@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [023/107] irda: fix smsc-ircc2 section mismatch warning
+        alan@lxorguk.ukuu.org.uk, Andrew Vasquez <andrew.vasquez@qlogic.com>,
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [024/107] [SCSI] qla2xxx: Correct inadvertent loop state transitions during port-update handling.
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Andrew Vasquez <andrew.vasquez@qlogic.com>
 
-commit f470e5ae34d68880a38aa79ee5c102ebc2a1aef6 upstream.
+commit 58b48576966ed0afd3f63ef17480ec12748a7119 upstream.
 
-Fix section mismatch warning:
+Transitioning to a LOOP_UPDATE loop-state could cause the driver
+to miss normal link/target processing.  LOOP_UPDATE is a crufty
+artifact leftover from at time the driver performed it's own
+internal command-queuing.  Safely remove this state.
 
-WARNING: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open()
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
 ---
- drivers/net/irda/smsc-ircc2.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/qla_init.c |    3 ---
+ drivers/scsi/qla2xxx/qla_isr.c  |    1 -
+ 2 files changed, 4 deletions(-)
 
---- a/drivers/net/irda/smsc-ircc2.c
-+++ b/drivers/net/irda/smsc-ircc2.c
-@@ -515,7 +515,7 @@ static const struct net_device_ops smsc_
-  *    Try to open driver instance
-  *
-  */
--static int __init smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
-+static int __devinit smsc_ircc_open(unsigned int fir_base, unsigned int sir_base, u8 dma, u8 irq)
- {
- 	struct smsc_ircc_cb *self;
- 	struct net_device *dev;
+--- a/drivers/scsi/qla2xxx/qla_init.c
++++ b/drivers/scsi/qla2xxx/qla_init.c
+@@ -3459,15 +3459,12 @@ qla2x00_loop_resync(scsi_qla_host_t *vha
+ 		req = vha->req;
+ 	rsp = req->rsp;
+ 
+-	atomic_set(&vha->loop_state, LOOP_UPDATE);
+ 	clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
+ 	if (vha->flags.online) {
+ 		if (!(rval = qla2x00_fw_ready(vha))) {
+ 			/* Wait at most MAX_TARGET RSCNs for a stable link. */
+ 			wait_time = 256;
+ 			do {
+-				atomic_set(&vha->loop_state, LOOP_UPDATE);
+-
+ 				/* Issue a marker after FW becomes ready. */
+ 				qla2x00_marker(vha, req, rsp, 0, 0,
+ 					MK_SYNC_ALL);
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -717,7 +717,6 @@ skip_rio:
+ 			vha->flags.rscn_queue_overflow = 1;
+ 		}
+ 
+-		atomic_set(&vha->loop_state, LOOP_UPDATE);
+ 		atomic_set(&vha->loop_down_timer, 0);
+ 		vha->flags.management_server_logged_in = 0;
+ 
 
 
