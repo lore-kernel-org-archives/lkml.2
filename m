@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934277Ab1KCBjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51091 "EHLO mx2.suse.de"
+	id S1755281Ab1KCB6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:58:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51084 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933998Ab1KCBjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:40 -0400
+	id S934260Ab1KCBjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:36 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:40 2011
-Message-Id: <20111102222740.064803929@clark.kroah.org>
+Message-Id: <20111102222739.965341800@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:25:48 -0700
+Date: Wed, 02 Nov 2011 15:25:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [004/101] atm: br2684: Fix oops due to skb->dev being NULL
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [003/101] rt2x00: do not drop usb dev reference counter on suspend
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,53 +26,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit fbe5e29ec1886967255e76946aaf537b8cc9b81e upstream.
+commit 543cc38c8fe86deba4169977c61eb88491036837 upstream.
 
-This oops have been already fixed with commit
+When hibernating ->resume may not be called by usb core, but disconnect
+and probe instead, so we do not increase the counter after decreasing
+it in ->supend. As a result we free memory early, and get crash when
+unplugging usb dongle.
 
-    27141666b69f535a4d63d7bc6d9e84ee5032f82a
+BUG: unable to handle kernel paging request at 6b6b6b9f
+IP: [<c06909b0>] driver_sysfs_remove+0x10/0x30
+*pdpt = 0000000034f21001 *pde = 0000000000000000
+Pid: 20, comm: khubd Not tainted 3.1.0-rc1-wl+ #20 LENOVO 6369CTO/6369CTO
+EIP: 0060:[<c06909b0>] EFLAGS: 00010202 CPU: 1
+EIP is at driver_sysfs_remove+0x10/0x30
+EAX: 6b6b6b6b EBX: f52bba34 ECX: 00000000 EDX: 6b6b6b6b
+ESI: 6b6b6b6b EDI: c0a0ea20 EBP: f61c9e68 ESP: f61c9e64
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process khubd (pid: 20, ti=f61c8000 task=f6138270 task.ti=f61c8000)
+Call Trace:
+ [<c06909ef>] __device_release_driver+0x1f/0xa0
+ [<c0690b20>] device_release_driver+0x20/0x40
+ [<c068fd64>] bus_remove_device+0x84/0xe0
+ [<c068e12a>] ? device_remove_attrs+0x2a/0x80
+ [<c068e267>] device_del+0xe7/0x170
+ [<c06d93d4>] usb_disconnect+0xd4/0x180
+ [<c06d9d61>] hub_thread+0x691/0x1600
+ [<c0473260>] ? wake_up_bit+0x30/0x30
+ [<c0442a39>] ? complete+0x49/0x60
+ [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
+ [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
+ [<c0472eb4>] kthread+0x74/0x80
+ [<c0472e40>] ? kthread_worker_fn+0x150/0x150
+ [<c0809b3e>] kernel_thread_helper+0x6/0x10
 
-    atm: [br2684] Fix oops due to skb->dev being NULL
-
-    It happens that if a packet arrives in a VC between the call to open it on
-    the hardware and the call to change the backend to br2684, br2684_regvcc
-    processes the packet and oopses dereferencing skb->dev because it is
-    NULL before the call to br2684_push().
-
-but have been introduced again with commit
-
-    b6211ae7f2e56837c6a4849316396d1535606e90
-
-    atm: Use SKB queue and list helpers instead of doing it by-hand.
-
-Signed-off-by: Daniel Schwierzeck <daniel.schwierzeck@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/atm/br2684.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00usb.c |   14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
 
---- a/net/atm/br2684.c
-+++ b/net/atm/br2684.c
-@@ -530,12 +530,13 @@ static int br2684_regvcc(struct atm_vcc
- 	spin_unlock_irqrestore(&rq->lock, flags);
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.c
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
+@@ -705,18 +705,8 @@ int rt2x00usb_suspend(struct usb_interfa
+ {
+ 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
+ 	struct rt2x00_dev *rt2x00dev = hw->priv;
+-	int retval;
  
- 	skb_queue_walk_safe(&queue, skb, tmp) {
--		struct net_device *dev = skb->dev;
-+		struct net_device *dev;
-+
-+		br2684_push(atmvcc, skb);
-+		dev = skb->dev;
- 
- 		dev->stats.rx_bytes -= skb->len;
- 		dev->stats.rx_packets--;
+-	retval = rt2x00lib_suspend(rt2x00dev, state);
+-	if (retval)
+-		return retval;
 -
--		br2684_push(atmvcc, skb);
- 	}
- 	__module_get(THIS_MODULE);
- 	return 0;
+-	/*
+-	 * Decrease usbdev refcount.
+-	 */
+-	usb_put_dev(interface_to_usbdev(usb_intf));
+-
+-	return 0;
++	return rt2x00lib_suspend(rt2x00dev, state);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00usb_suspend);
+ 
+@@ -725,8 +715,6 @@ int rt2x00usb_resume(struct usb_interfac
+ 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
+ 	struct rt2x00_dev *rt2x00dev = hw->priv;
+ 
+-	usb_get_dev(interface_to_usbdev(usb_intf));
+-
+ 	return rt2x00lib_resume(rt2x00dev);
+ }
+ EXPORT_SYMBOL_GPL(rt2x00usb_resume);
 
 
