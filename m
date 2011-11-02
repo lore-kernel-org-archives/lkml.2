@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab1KCBjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51037 "EHLO mx2.suse.de"
+	id S934117Ab1KCBjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51021 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755245Ab1KCBjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:13 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
-Message-Id: <20111102222741.771750124@clark.kroah.org>
+	id S934002Ab1KCBjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:03 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:39 2011
+Message-Id: <20111102222739.874514067@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:07 -0700
+Date: Wed, 02 Nov 2011 15:25:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [023/101] [SCSI] qla2xxx: Correct inadvertent loop state transitions during port-update handling.
+        alan@lxorguk.ukuu.org.uk, Wang Zhi <zhi.wang@windriver.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [002/101] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Vasquez <andrew.vasquez@qlogic.com>
+From: Wang Zhi <zhi.wang@windriver.com>
 
-commit 58b48576966ed0afd3f63ef17480ec12748a7119 upstream.
+commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
 
-Transitioning to a LOOP_UPDATE loop-state could cause the driver
-to miss normal link/target processing.  LOOP_UPDATE is a crufty
-artifact leftover from at time the driver performed it's own
-internal command-queuing.  Safely remove this state.
+>From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
+PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
+Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
+bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
+the action of clearing PORT_RESUME. This will cause unexpected long
+resume signal on USB bus.
 
-Signed-off-by: Andrew Vasquez <andrew.vasquez@qlogic.com>
-Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/qla2xxx/qla_init.c |    3 ---
- drivers/scsi/qla2xxx/qla_isr.c  |    1 -
- 2 files changed, 4 deletions(-)
+ drivers/usb/host/ehci-hub.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_init.c
-+++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -3481,15 +3481,12 @@ qla2x00_loop_resync(scsi_qla_host_t *vha
- 		req = vha->req;
- 	rsp = req->rsp;
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -245,7 +245,7 @@ static int ehci_bus_resume (struct usb_h
+ 	u32			temp;
+ 	u32			power_okay;
+ 	int			i;
+-	u8			resume_needed = 0;
++	unsigned long		resume_needed = 0;
  
--	atomic_set(&vha->loop_state, LOOP_UPDATE);
- 	clear_bit(ISP_ABORT_RETRY, &vha->dpc_flags);
- 	if (vha->flags.online) {
- 		if (!(rval = qla2x00_fw_ready(vha))) {
- 			/* Wait at most MAX_TARGET RSCNs for a stable link. */
- 			wait_time = 256;
- 			do {
--				atomic_set(&vha->loop_state, LOOP_UPDATE);
--
- 				/* Issue a marker after FW becomes ready. */
- 				qla2x00_marker(vha, req, rsp, 0, 0,
- 					MK_SYNC_ALL);
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -723,7 +723,6 @@ skip_rio:
- 			vha->flags.rscn_queue_overflow = 1;
+ 	if (time_before (jiffies, ehci->next_statechange))
+ 		msleep(5);
+@@ -309,7 +309,7 @@ static int ehci_bus_resume (struct usb_h
+ 		if (test_bit(i, &ehci->bus_suspended) &&
+ 				(temp & PORT_SUSPEND)) {
+ 			temp |= PORT_RESUME;
+-			resume_needed = 1;
++			set_bit(i, &resume_needed);
  		}
- 
--		atomic_set(&vha->loop_state, LOOP_UPDATE);
- 		atomic_set(&vha->loop_down_timer, 0);
- 		vha->flags.management_server_logged_in = 0;
- 
+ 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 	}
+@@ -324,8 +324,7 @@ static int ehci_bus_resume (struct usb_h
+ 	i = HCS_N_PORTS (ehci->hcs_params);
+ 	while (i--) {
+ 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
+-		if (test_bit(i, &ehci->bus_suspended) &&
+-				(temp & PORT_SUSPEND)) {
++		if (test_bit(i, &resume_needed)) {
+ 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
+ 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
 
 
