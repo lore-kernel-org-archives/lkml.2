@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615Ab1KBW74 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:59:56 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29430 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab1KBW7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:59:48 -0400
-From: Andrew Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org,
-        devel@openvz.org
-Subject: [PATCH 2/4] perf: teach "perf inject" to work with files
-Date: Thu,  3 Nov 2011 01:59:42 +0300
-Message-Id: <1320274784-2463901-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
-References: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
+	id S1753821Ab1KBXAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:00:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33610 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab1KBXAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 19:00:11 -0400
+X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=1uEGqAuTlE5yzDl1I-4A:9 a=K1zGq31wSIvENhwVuVIA:7 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Wed, 2 Nov 2011 19:00:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Simon Kirby <sim@hostway.ca>
+Cc: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111102230009.GB27457@home.goodmis.org>
+References: <1318879396.4172.92.camel@twins>
+ <alpine.LFD.2.02.1110172237030.3240@ionos>
+ <alpine.LFD.2.02.1110181037120.3240@ionos>
+ <1318928713.21167.4.camel@twins>
+ <20111018182046.GF1309@hostway.ca>
+ <alpine.LFD.2.02.1110182146440.3240@ionos>
+ <20111024190203.GA24410@hostway.ca>
+ <20111025202049.GB25043@hostway.ca>
+ <20111031173246.GA10614@hostway.ca>
+ <20111102221023.GA27457@home.goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102221023.GA27457@home.goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this patch "perf inject" can only handle data from pipe.
+On Wed, Nov 02, 2011 at 06:10:23PM -0400, Steven Rostedt wrote:
+> Thomas pointed me here.
+> 
+> On Mon, Oct 31, 2011 at 10:32:46AM -0700, Simon Kirby wrote:
+> > [104661.244767] 
+> > [104661.244767]  Possible unsafe locking scenario:
+> > [104661.244767]        
+> > [104661.244767]        CPU0                    CPU1
+> > [104661.244767]        ----                    ----
+> > [104661.244767]   lock(slock-AF_INET);
+> > [104661.244767]                                lock(slock-AF_INET);
+> > [104661.244767]                                lock(slock-AF_INET);
+> > [104661.244767]   lock(slock-AF_INET);
+> > [104661.244767] 
+> > [104661.244767]  *** DEADLOCK ***
+> > [104661.244767] 
+> 
+> Bah, I used the __print_lock_name() function to show the lock names in
+> the above, which leaves off the subclass number. I'll go write up a
+> patch that fixes that.
+> 
 
-I want to use "perf inject" for reworking events. Look at my following patch.
+Simon,
 
-Signed-off-by: Andrew Vagin <avagin@openvz.org>
----
- tools/perf/builtin-inject.c |   33 +++++++++++++++++++++++++++++++--
- 1 files changed, 31 insertions(+), 2 deletions(-)
+If you are still triggering the bug. Could you do me a favor and apply
+the following patch. Just to make sure it fixes the confusing output
+from above.
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 8dfc12b..8df8b71 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -13,7 +13,12 @@
+Thanks,
+
+-- Steve
+
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 91d67ce..d821ac9 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -490,16 +490,22 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
+ 	usage[i] = '\0';
+ }
  
- #include "util/parse-options.h"
+-static int __print_lock_name(struct lock_class *class)
++static void __print_lock_name(struct lock_class *class)
+ {
+ 	char str[KSYM_NAME_LEN];
+ 	const char *name;
  
--static char		const *input_name = "-";
-+static char		const *input_name	= "-";
-+static const char	*output_name		= "-";
-+static int		pipe_output		= 0;
-+static int		output;
-+static u64		bytes_written		= 0;
-+
- static bool		inject_build_ids;
- 
- static int perf_event__repipe_synth(union perf_event *event,
-@@ -25,12 +30,14 @@ static int perf_event__repipe_synth(union perf_event *event,
- 	size = event->header.size;
- 
- 	while (size) {
--		int ret = write(STDOUT_FILENO, buf, size);
-+		int ret = write(output, buf, size);
- 		if (ret < 0)
- 			return -errno;
- 
- 		size -= ret;
- 		buf += ret;
-+
-+		bytes_written += ret;
- 	}
- 
- 	return 0;
-@@ -213,8 +220,14 @@ static int __cmd_inject(void)
- 	if (session == NULL)
- 		return -ENOMEM;
- 
-+	if (!pipe_output)
-+		lseek(output, session->header.data_offset, SEEK_SET);
- 	ret = perf_session__process_events(session, &inject_ops);
- 
-+	if (!pipe_output) {
-+		session->header.data_size += bytes_written;
-+		perf_session__write_header(session, session->evlist, output, true);
-+	}
- 	perf_session__delete(session);
- 
- 	return ret;
-@@ -228,6 +241,10 @@ static const char * const report_usage[] = {
- static const struct option options[] = {
- 	OPT_BOOLEAN('b', "build-ids", &inject_build_ids,
- 		    "Inject build-ids into the output stream"),
-+	OPT_STRING('i', "input", &input_name, "file",
-+		    "input file name"),
-+	OPT_STRING('o', "output", &output_name, "file",
-+		    "output file name"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose (show build ids, etc)"),
- 	OPT_END()
-@@ -243,6 +260,18 @@ int cmd_inject(int argc, const char **argv, const char *prefix __used)
- 	if (argc)
- 		usage_with_options(report_usage, options);
- 
-+	if (!strcmp(output_name, "-")) {
-+		pipe_output = 1;
-+		output = STDOUT_FILENO;
+ 	name = class->name;
+-	if (!name)
++	if (!name) {
+ 		name = __get_key_name(class->key, str);
+-
+-	return printk("%s", name);
++		printk("%s", name);
 +	} else {
-+		output = open(output_name, O_CREAT| O_WRONLY | O_TRUNC,
-+							S_IRUSR | S_IWUSR);
-+		if (output < 0) {
-+			perror("failed to create output file");
-+			exit(-1);
-+		}
++		printk("%s", name);
++		if (class->name_version > 1)
++			printk("#%d", class->name_version);
++		if (class->subclass)
++			printk("/%d", class->subclass);
 +	}
-+
- 	if (symbol__init() < 0)
- 		return -1;
+ }
  
--- 
-1.7.1
-
+ static void print_lock_name(struct lock_class *class)
+@@ -509,17 +515,8 @@ static void print_lock_name(struct lock_class *class)
+ 
+ 	get_usage_chars(class, usage);
+ 
+-	name = class->name;
+-	if (!name) {
+-		name = __get_key_name(class->key, str);
+-		printk(" (%s", name);
+-	} else {
+-		printk(" (%s", name);
+-		if (class->name_version > 1)
+-			printk("#%d", class->name_version);
+-		if (class->subclass)
+-			printk("/%d", class->subclass);
+-	}
++	printk(" (");
++	__print_lock_name(class);
+ 	printk("){%s}", usage);
+ }
+ 
