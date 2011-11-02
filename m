@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab1KBJNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:13:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50949 "EHLO mx2.mail.elte.hu"
+	id S1754127Ab1KBJWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:22:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36899 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753522Ab1KBJNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:13:11 -0400
-Date: Wed, 2 Nov 2011 10:11:26 +0100
+	id S1751571Ab1KBJWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:22:31 -0400
+Date: Wed, 2 Nov 2011 10:17:47 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Junio C Hamano <gitster@pobox.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-Message-ID: <20111102091126.GG18903@elte.hu>
-References: <1320049150.8283.19.camel@dabdike>
- <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
- <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <4EAF1F40.3030907@zytor.com>
- <CA+55aFxprv9JR4gtt_UDXheHR5G8PrUA3-Mj0CPsU6E5EzNYeg@mail.gmail.com>
- <4EAF2245.90308@zytor.com>
- <CA+55aFzedaAzzWfzhqVf8y8ZW0jeb56hZwdV3UodSp8Q_Qhc2A@mail.gmail.com>
- <7vvcr4ojvp.fsf@alter.siamese.dyndns.org>
- <CA+55aFyKWLUMQFfaeKJKGFPV_7kfOGjf+pSZ1Y8afzkT4OYQ9Q@mail.gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Matthias Schniedermeyer <ms@citd.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+Message-ID: <20111102091747.GH18903@elte.hu>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+ <20111027193448.GA3514@merkur.ravnborg.org>
+ <20111028070336.GF12995@elte.hu>
+ <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
+ <20111028075432.GB8626@elte.hu>
+ <20111028120856.GA29174@citd.de>
+ <20111028122902.GA25323@elte.hu>
+ <20111028130535.GA2752@citd.de>
+ <20111102084124.GB18771@elte.hu>
+ <4EB1084F.4020206@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyKWLUMQFfaeKJKGFPV_7kfOGjf+pSZ1Y8afzkT4OYQ9Q@mail.gmail.com>
+In-Reply-To: <4EB1084F.4020206@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -44,20 +44,54 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+* Michal Marek <mmarek@suse.cz> wrote:
 
-> And the receiving side would just do the "git pull" and 
-> automatically just get notified that "Yes, this push has been 
-> signed by key Xyz Abcdef"
+> On 2.11.2011 09:41, Ingo Molnar wrote:
+> > 
+> > * Matthias Schniedermeyer <ms@citd.de> wrote:
+> > 
+> >> And AFAICS there currently is no "modconfig", only an 
+> >> "allmodconfig" (and "localmodconfig")
+> >>
+> >> With no letters dropped it would be less ambiguous. make 
+> >> modifyconfig=kvm
+> > 
+> > Yeah. Note that it's more like an 'add' operation, not a modify 
+> > operation, thus:
+> > 
+> > 	make addconfig=kvm
+> > 
+> > or:
+> > 
+> > 	make addconfig kvm
+> > 
+> > would be intuitive and would work well too.
+> > 
+> > Sam, Michal, which one would you prefer? The latter might have the 
+> > advantage that it's additive, enabling future usages like:
+> > 
+> > 	make addconfig kvm debug
+> 
+> The problem is that neither of these fit into the make command syntax:
+> 
+>     make addconfig kvm debug
+> 
+> tells make to build three different targets, and
+> 
+>     make addconfig=kvm
+> 
+> tells make to create a variable named addconfig with the value kvm 
+> and build the default target. And BTW, you or someone else 
+> reassured me earlier in the thread that this is going to be needed 
+> for the kvm case solely, so why are you inventing something generic 
+> now? :)
 
-If this approach is used then it would be nice to have a .gitconfig 
-switch to require trusted pulls by default: to not allow doing 
-non-signed or untrusted pulls accidentally, or for Git to warn in a 
-visible, hard to miss way if there's a non-signed pull.
+Because we are trying to find *something* that is both usable and 
+which you guys are willing to ack.
 
-This adds social uncertainty (and an element of a silent alarm) to a 
-realistic attack: the attacker wouldnt know exactly how the puller 
-checks signed pull requests, it's kept private.
+So what's your suggestion? Is 'make kvmconfig' OK? It certainly is 
+intuitive and useful to us and we could move on to more important 
+things to discuss.
 
 Thanks,
 
