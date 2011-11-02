@@ -1,93 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1KBKyv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 06:54:51 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33023 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872Ab1KBKyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 06:54:46 -0400
-Date: Wed, 2 Nov 2011 11:54:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Chris Vine <chris@cvine.freeserve.co.uk>
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sound@vger.kernel.org
-Subject: Re: HDA Intel microphone regression in 3.1.0
-Message-ID: <20111102105442.GA30355@gere.osrc.amd.com>
-References: <20111102102554.1f443b9c@laptop.homenet>
+	id S1756286Ab1KBK6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 06:58:14 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52431 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab1KBK6M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 06:58:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102102554.1f443b9c@laptop.homenet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320220862-10403-1-git-send-email-tgih.jun@samsung.com>
+References: <1320220862-10403-1-git-send-email-tgih.jun@samsung.com>
+Date: Wed, 2 Nov 2011 06:58:10 -0400
+Message-ID: <CAGxe1ZG+3kFXMBqVyVBahM5PhgsYRn9crXgbtBs9FE7o6wFqMg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mmc: core: Add packed command feature of eMMC4.5
+From: Girish K S <girish.shivananjappa@linaro.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        kgene.kim@samsung.com, dh.han@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding some more people to Cc)
+Hi,
 
-On Wed, Nov 02, 2011 at 10:25:54AM +0000, Chris Vine wrote:
-> My Lenovo S12 IdeaPad netbook uses a HDA Intel sound card with Realtek
-> ALC269 chip.  With the 3.1.0 kernel, all microphone input (both with the
-> internal microphone and any external microphone) is permanently
-> muted, although sound output works OK.  Microphone input works correctly
-> with the 3.0 and earlier kernels.
-> 
-> The only obvious difference between the 3.0 and 3.1 kernels is that
-> with kernel 3.0.7, 'dmesg | grep HDA' gives this:
-> 
->  HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
->  HDA Intel 0000:00:1b.0: setting latency timer to 64
->  input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input10
->  input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
->  input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input12
-> 
-> whereas with kernel 3.1.0 it just gives:
-> 
->  input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:1b.0/input/input9
->  input: HDA Intel Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input10
->  input: HDA Intel Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card0/input11
-> 
-> lspci -v gives the following audio hardware information:
-> 
->  00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
-> 	Subsystem: Lenovo Device 3be9
-> 	Flags: bus master, fast devsel, latency 0, IRQ 22
-> 	Memory at fc140000 (64-bit, non-prefetchable) [size=16K]
-> 	Capabilities: [50] Power Management version 2
-> 	Capabilities: [60] MSI: Enable- Count=1/1 Maskable- 64bit+
-> 	Capabilities: [70] Express Root Complex Integrated Endpoint, MSI 00
-> 	Capabilities: [100] Virtual Channel
-> 	Capabilities: [130] Root Complex Link
-> 	Kernel driver in use: snd_hda_intel
-> 	Kernel modules: snd-hda-intel
-> 
-> lsmod | egrep "snd|sound" gives:
-> 
->  snd_seq_dummy           1023  0 
->  snd_seq_oss            23792  0 
->  snd_seq_midi_event      4408  1 snd_seq_oss
->  snd_seq                39673  5 snd_seq_dummy,snd_seq_oss,snd_seq_midi_event
->  snd_seq_device          4121  3 snd_seq_dummy,snd_seq_oss,snd_seq
->  snd_pcm_oss            33087  0 
->  snd_mixer_oss          12647  1 snd_pcm_oss
->  snd_hda_codec_realtek   205307  1 
->  snd_hda_intel          18347  2 
->  snd_hda_codec          64459  2 snd_hda_codec_realtek,snd_hda_intel
->  snd_hwdep               4420  1 snd_hda_codec
->  snd_pcm                57725  3 snd_pcm_oss,snd_hda_intel,snd_hda_codec
->  snd_timer              14567  2 snd_seq,snd_pcm
->  snd                    40539  15 snd_seq_oss,snd_seq,snd_seq_device,snd_pcm_oss,snd_mixer_oss,snd_hda_codec_realtek,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm,snd_timer
->  soundcore               4129  1 snd
->  snd_page_alloc          5445  2 snd_hda_intel,snd_pcm
-> 
-> Chris
+On 2 November 2011 04:01, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> This patch adds packed command feature of eMMC4.5.
+> The maximum number for packing read(or write) is offered
+> and exception event relevant to packed command which is
+> used for error handling is enabled. If host wants to use
+> this feature, MMC_CAP2_PACKED_CMD should be set.
+>
+> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> ---
+>  drivers/mmc/core/mmc.c   |   22 ++++++++++++++++++++++
+>  include/linux/mmc/card.h |    3 +++
+>  include/linux/mmc/host.h |    1 +
+>  include/linux/mmc/mmc.h  |   15 +++++++++++++++
+>  4 files changed, 41 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index 3627044..bf4fa6e 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -487,6 +487,9 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
+>                        ext_csd[EXT_CSD_CACHE_SIZE + 1] << 8 |
+>                        ext_csd[EXT_CSD_CACHE_SIZE + 2] << 16 |
+>                        ext_csd[EXT_CSD_CACHE_SIZE + 3] << 24;
+> +
+> +               card->ext_csd.max_packed_writes = ext_csd[EXT_CSD_MAX_PACKED_WRITES];
+> +               card->ext_csd.max_packed_reads = ext_csd[EXT_CSD_MAX_PACKED_READS];
+>        }
+>
+>  out:
+> @@ -1072,6 +1075,25 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>                card->ext_csd.cache_ctrl = err ? 0 : 1;
+>        }
+>
+> +       if ((host->caps2 & MMC_CAP2_PACKED_CMD) &&
+> +                       (card->ext_csd.max_packed_writes > 0) &&
+> +                       (card->ext_csd.max_packed_reads > 0)) {
+> +               err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> +                               EXT_CSD_EXP_EVENTS_CTRL,
+> +                               EXT_CSD_PACKED_EVENT_EN,
+> +                               card->ext_csd.generic_cmd6_time);
+> +               if (err && err != -EBADMSG)
+> +                       goto free_card;
+> +               if (err) {
+> +                       pr_warning("%s: Enabling packed event failed\n",
+> +                                       mmc_hostname(card->host));
+> +                       card->ext_csd.packed_event_en = 0;
+> +                       err = 0;
+> +               } else {
+> +                       card->ext_csd.packed_event_en = 1;
+> +               }
+> +       }
+> +
+>        if (!oldcard)
+>                host->card = card;
+>
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 415f2db..70ea3d6 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -52,6 +52,9 @@ struct mmc_ext_csd {
+>        u8                      part_config;
+>        u8                      cache_ctrl;
+>        u8                      rst_n_function;
+> +       u8                      max_packed_writes;
+> +       u8                      max_packed_reads;
+> +       u8                      packed_event_en;
+>        unsigned int            part_time;              /* Units: ms */
+>        unsigned int            sa_timeout;             /* Units: 100ns */
+>        unsigned int            generic_cmd6_time;      /* Units: 10ms */
+> diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+> index a3ac9c4..d2e4210 100644
+> --- a/include/linux/mmc/host.h
+> +++ b/include/linux/mmc/host.h
+> @@ -242,6 +242,7 @@ struct mmc_host {
+>  #define MMC_CAP2_CACHE_CTRL    (1 << 1)        /* Allow cache control */
+>  #define MMC_CAP2_POWEROFF_NOTIFY (1 << 2)      /* Notify poweroff supported */
+>  #define MMC_CAP2_NO_MULTI_READ (1 << 3)        /* Multiblock reads don't work */
+> +#define MMC_CAP2_PACKED_CMD    (1 << 4)        /* Allow packed command */
+>
+>        mmc_pm_flag_t           pm_caps;        /* supported pm features */
+>        unsigned int        power_notify_type;
+> diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
+> index 0e71356..1b94c4f 100644
+> --- a/include/linux/mmc/mmc.h
+> +++ b/include/linux/mmc/mmc.h
+> @@ -138,6 +138,7 @@ static inline bool mmc_op_multi(u32 opcode)
+>  #define R1_CURRENT_STATE(x)    ((x & 0x00001E00) >> 9) /* sx, b (4 bits) */
+>  #define R1_READY_FOR_DATA      (1 << 8)        /* sx, a */
+>  #define R1_SWITCH_ERROR                (1 << 7)        /* sx, c */
+> +#define R1_EXP_EVENT           (1 << 6)        /* sr, a */
+>  #define R1_APP_CMD             (1 << 5)        /* sr, c */
+>
+>  #define R1_STATE_IDLE  0
+> @@ -273,6 +274,10 @@ struct _mmc_csd {
+>  #define EXT_CSD_FLUSH_CACHE            32      /* W */
+>  #define EXT_CSD_CACHE_CTRL             33      /* R/W */
+>  #define EXT_CSD_POWER_OFF_NOTIFICATION 34      /* R/W */
+> +#define EXT_CSD_PACKED_FAILURE_INDEX   35      /* RO */
+> +#define EXT_CSD_PACKED_CMD_STATUS      36      /* RO */
+> +#define EXT_CSD_EXP_EVENTS_STATUS      54      /* RO, 2 bytes */
+> +#define EXT_CSD_EXP_EVENTS_CTRL        56      /* R/W, 2 bytes */
+>  #define EXT_CSD_GP_SIZE_MULT           143     /* R/W */
+>  #define EXT_CSD_PARTITION_ATTRIBUTE    156     /* R/W */
+>  #define EXT_CSD_PARTITION_SUPPORT      160     /* RO */
+> @@ -313,6 +318,8 @@ struct _mmc_csd {
+>  #define EXT_CSD_POWER_OFF_LONG_TIME    247     /* RO */
+>  #define EXT_CSD_GENERIC_CMD6_TIME      248     /* RO */
+>  #define EXT_CSD_CACHE_SIZE             249     /* RO, 4 bytes */
+> +#define EXT_CSD_MAX_PACKED_WRITES      500     /* RO */
+> +#define EXT_CSD_MAX_PACKED_READS       501     /* RO */
+>  #define EXT_CSD_HPI_FEATURES           503     /* RO */
+>
+>  /*
+> @@ -364,6 +371,14 @@ struct _mmc_csd {
+>  #define EXT_CSD_PWR_CL_4BIT_MASK       0x0F    /* 8 bit PWR CLS */
+>  #define EXT_CSD_PWR_CL_8BIT_SHIFT      4
+>  #define EXT_CSD_PWR_CL_4BIT_SHIFT      0
+> +
+> +#define EXT_CSD_PACKED_EVENT_EN        (1 << 3)
+> +
+> +#define EXT_CSD_PACKED_FAILURE (1 << 3)
+> +
+> +#define EXT_CSD_PACKED_GENERIC_ERROR   (1 << 0)
+> +#define EXT_CSD_PACKED_INDEXED_ERROR   (1 << 1)
+> +
+>  /*
+>  * MMC_SWITCH access modes
+>  */
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> 1.7.0.4
+>This patch gives some warnings and error, when checkpatch is run on this.
+yet to review more, will do once i return from Q4 connect
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
 > the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Regards/Gruss,
-Boris.
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
