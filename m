@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab1KBO3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:29:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52164 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab1KBO3l (ORCPT
+	id S932166Ab1KBOlw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:41:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34364 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755501Ab1KBOlt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:29:41 -0400
-Date: Wed, 2 Nov 2011 15:29:31 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Paul Mundt <lethal@linux-sh.org>, Tony Lindgren <tony@atomide.com>,
-        linux-sh@vger.kernel.org, linux-omap@vger.kernel.org,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [PATCH] regulator: Provide dummy supply support
-Message-ID: <20111102142931.GL23421@pengutronix.de>
-References: <1319833618-25190-1-git-send-email-s.hauer@pengutronix.de>
- <20111028215931.GA30366@opensource.wolfsonmicro.com>
- <20111028224757.GG23421@pengutronix.de>
- <201111011350.17425.vapier@gentoo.org>
- <20111101182720.GH10029@opensource.wolfsonmicro.com>
- <20111102100355.GJ23421@pengutronix.de>
- <20111102104126.GA2678@opensource.wolfsonmicro.com>
+	Wed, 2 Nov 2011 10:41:49 -0400
+Date: Wed, 2 Nov 2011 10:41:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 1/3] scsi: fix potential dead lock for host runtime pm
+In-Reply-To: <1320214900-2112-2-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1111021034190.2217-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102104126.GA2678@opensource.wolfsonmicro.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 15:25:22 up 13 days, 21:00, 65 users,  load average: 1.00, 1.01,
- 1.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 10:41:27AM +0000, Mark Brown wrote:
-> On Wed, Nov 02, 2011 at 11:03:56AM +0100, Sascha Hauer wrote:
-> > On Tue, Nov 01, 2011 at 06:27:21PM +0000, Mark Brown wrote:
-> 
-> > > As I think I said earlier I'd use the fixed regulator for this, all
-> > > Sascha's actually doing here is adding a wrapper to simplify
-> > > registration of that.
-> 
-> > There's one difference between the fixed and the dummy regulator though:
-> > The fixed regulator has a voltage. The same dummy regulator instance can
-> 
-> No, the voltage is optional.
+On Wed, 2 Nov 2011, Lin Ming wrote:
 
-Ok, didn't know this.
-
+> In later patch hooks will be added to do ata port runtime pm through scsi layer.
+> libata schedules scsi EH to handle suspend, then dead lock happens
+> because scsi EH in turn waits for the ongoing suspend, as below.
 > 
-> > be used for all devices which do not have a software controllable
-> > regulator. I think the same can be done with the fixed regulator aswell,
-> > but the bogus voltage showing up in the sysfs entry might be confusing
-> > to users.
+> <scsi host runtime suspend>
+>  scsi_autopm_put_host
+>    pm_runtime_put_sync
+>      <scsi_host runtime pm status updated to RPM_SUSPENDING>
+>      ......
+>        <call libata hook to do suspend>
+>          <wake up scsi EH to handle suspend>
+>          <wait for scsi EH ...>
 > 
-> I don't think that's a meaningful issue, any in any case it'd be better
-> practice to fill it in so devices can use the information if they want
-> to (which really shouldn't be hard
+> <scsi EH wake up>
+>  scsi_error_handler
+>    <resume scsi host>
+>    scsi_autopm_get_host
+>      pm_runtime_get_sync
+>      .....
+>        <sleep to wait for the ongoing scsi host suspend>
 > 
-> > Another approach to this topic would be to allow a board to explicitely
-> > bind to the existing dummy regulator, like the following (error path
-> > should of course be implemented before applying this)
+> This patch fixes the dead lock by checking if there is ongoing runtime PM request.
+> If there is ongoing runtime PM request, scsi_autopm_get_host_noresume is called to
+> increase the usage count, but don't resume the host.
 > 
-> If you know you've got a fixed voltage supply I don't understand why you
-> wouldn't want to set one up.  There clearly is an actual supply in the
-> system...
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/scsi/scsi_error.c |    4 +++-
+>  drivers/scsi/scsi_pm.c    |   11 +++++++++++
+>  drivers/scsi/scsi_priv.h  |    2 ++
+>  3 files changed, 16 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+> index a4b9cdb..d35d8f7 100644
+> --- a/drivers/scsi/scsi_error.c
+> +++ b/drivers/scsi/scsi_error.c
+> @@ -1804,7 +1804,9 @@ int scsi_error_handler(void *data)
+>  		 * what we need to do to get it up and online again (if we can).
+>  		 * If we fail, we end up taking the thing offline.
+>  		 */
+> -		if (scsi_autopm_get_host(shost) != 0) {
+> +		if (scsi_autopm_host_busy(shost))
+> +			scsi_autopm_get_host_noresume(shost);
+> +		else if (scsi_autopm_get_host(shost) != 0) {
+>  			SCSI_LOG_ERROR_RECOVERY(1,
+>  				printk(KERN_ERR "Error handler scsi_eh_%d "
+>  						"unable to autoresume\n",
 
-It's just that it's simpler for a board to provide all dummy supplies in
-a single array, no matter if the real voltage is 1.8V or 3.3V. Anyway,
-as the voltage is optional in a fixed regulator this is no problem. I'll
-update my patch to use the fixed regulator then.
+Here's what I'm worried about:  Suppose during normal operation, an 
+error occurs.  When the command is completed, runtime PM might start to 
+suspend the host.  But then the error-handler thread starts up, and 
+of course it needs the host to be powered-up in order to recover from 
+the error.  The code you're adding could prevent this from working.
 
-Sascha
+What we really need is a way to prevent host from going into runtime
+suspend while the error-handler is pending or running.  Do you have any
+ideas on how to do this?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index d82a023a..1be6c5a 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -185,6 +185,17 @@ void scsi_autopm_put_host(struct Scsi_Host *shost)
+>  	pm_runtime_put_sync(&shost->shost_gendev);
+>  }
+>  
+> +bool scsi_autopm_host_busy(struct Scsi_Host *shost)
+> +{
+> +	return (shost->shost_gendev.power.runtime_status == RPM_RESUMING
+> +		|| shost->shost_gendev.power.runtime_status == RPM_SUSPENDING);
+> +}
+> +
+> +void scsi_autopm_get_host_noresume(struct Scsi_Host *shost)
+> +{
+> +	pm_runtime_get_noresume(&shost->shost_gendev);
+> +}
+> +
+>  #else
+>  
+>  #define scsi_runtime_suspend	NULL
+> diff --git a/drivers/scsi/scsi_priv.h b/drivers/scsi/scsi_priv.h
+> index 2a58895..1750651 100644
+> --- a/drivers/scsi/scsi_priv.h
+> +++ b/drivers/scsi/scsi_priv.h
+> @@ -156,6 +156,8 @@ extern void scsi_autopm_get_target(struct scsi_target *);
+>  extern void scsi_autopm_put_target(struct scsi_target *);
+>  extern int scsi_autopm_get_host(struct Scsi_Host *);
+>  extern void scsi_autopm_put_host(struct Scsi_Host *);
+> +extern bool scsi_autopm_host_busy(struct Scsi_Host *shost);
+> +extern void scsi_autopm_get_host_noresume(struct Scsi_Host *);
+>  #else
+>  static inline void scsi_autopm_get_target(struct scsi_target *t) {}
+>  static inline void scsi_autopm_put_target(struct scsi_target *t) {}
+
+I bet you didn't try compiling this with CONFIG_PM_RUNTIME turned off.
+
+Alan Stern
+
