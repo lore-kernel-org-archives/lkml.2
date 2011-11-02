@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab1KBRCw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 13:02:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34456 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755120Ab1KBRCv (ORCPT
+	id S932666Ab1KBRDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 13:03:11 -0400
+Received: from igw2.watson.ibm.com ([129.34.20.6]:57973 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab1KBRDG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 13:02:51 -0400
-Date: Wed, 2 Nov 2011 17:02:30 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v7 11/16] ARM: LPAE: Add fault handling support
-Message-ID: <20111102170230.GJ29782@arm.com>
-References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
- <1312988619-16804-12-git-send-email-catalin.marinas@arm.com>
- <20111023115756.GB17912@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111023115756.GB17912@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 2 Nov 2011 13:03:06 -0400
+Subject: Re: [PATCH 1/2] trusted-key: allow overwriting the migratable flag
+From: David Safford <safford@watson.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, zohar@us.ibm.com, dhowells@redhat.com,
+        jmorris@namei.org
+Date: Wed, 02 Nov 2011 12:58:56 -0400
+In-Reply-To: <1320237682-3857-1-git-send-email-roberto.sassu@polito.it>
+References: <1320237682-3857-1-git-send-email-roberto.sassu@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Message-ID: <1320253136.3225.13.camel@localhost>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 23, 2011 at 12:57:56PM +0100, Russell King - ARM Linux wrote:
-> On Wed, Aug 10, 2011 at 04:03:34PM +0100, Catalin Marinas wrote:
-> > @@ -494,6 +508,72 @@ static struct fsr_info {
-> >  	int	code;
-> >  	const char *name;
-> >  } fsr_info[] = {
-> > +#ifdef CONFIG_ARM_LPAE
-...
-> > +#else	/* !CONFIG_ARM_LPAE */
-> >  	/*
-> >  	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
-> >  	 * defines these to be "precise" aborts.
-> > @@ -535,6 +615,7 @@ static struct fsr_info {
-> >  	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
-> >  	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
-> >  	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
-> > +#endif	/* CONFIG_ARM_LPAE */
+On Wed, 2011-11-02 at 13:41 +0100, Roberto Sassu wrote:
+> The migratable should be modifiable during the key update() method. This
+> allows for example to update a migratable trusted key, wrapped by a TPM
+> key, to a a non-migratable one sealed under the SRK with a PCR set.
 > 
-> Can't we do better than this?
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-The first thought was defining the fsr_info array in a different file
-but that would mean exposing functions from the fault.c which are
-currently defined as static.
+I can see a use case for updating a migratable key to a non-migratable
+one - such as keeping a migratable master on a flash drive, and keeping
+only the non-migratable copy on-line. I certainly don't want the 
+ability to change a non-migratable to migratable, as that would defeat
+the entire purpose of non-migratable.
 
-The other variant is including a C file directly in fault.c. It's not
-very nice but at least we remove the big #ifdef.
+I don't think this patch actually does either, though. 
 
--- 
-Catalin
+> ---
+>  security/keys/trusted.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/keys/trusted.c b/security/keys/trusted.c
+> index 0c33e2e..8777015 100644
+> --- a/security/keys/trusted.c
+> +++ b/security/keys/trusted.c
+> @@ -1036,7 +1036,6 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
+>  		goto out;
+>  	}
+>  	/* copy old key values, and reseal with new pcrs */
+> -	new_p->migratable = p->migratable;
+
+Taking out this line appears only to remove a redundant assignment.
+We can only get here if the old key is already migratable, and the
+earlier trusted_payload_alloc() initializes the new copy to
+migratable by default. I don't see how the flag can be changed
+with this patch. Perhaps I'm missing something or this was just 
+the start, and there is more to come?
+
+dave
+
+>  	new_p->key_len = p->key_len;
+>  	memcpy(new_p->key, p->key, p->key_len);
+>  	dump_payload(p);
+
