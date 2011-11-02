@@ -1,42 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1KBWoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:44:23 -0400
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:65275 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751079Ab1KBWoS (ORCPT
+	id S1752884Ab1KBWyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:54:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26661 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab1KBWyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:44:18 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAI/HsU4Y9geI/2dsb2JhbAAMOIR4ommFDQEBAQEDI1UBEAsODAIFFgsCAgkDAgECAUUGDQEHAQGqeZI1gTCGTIEUBKYV
-X-IronPort-AV: E=Sophos;i="4.69,446,1315195200"; 
-   d="scan'208";a="145988440"
-Message-ID: <4EB1C7BC.1040801@teksavvy.com>
-Date: Wed, 02 Nov 2011 18:44:12 -0400
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 2 Nov 2011 18:54:13 -0400
+Date: Wed, 2 Nov 2011 23:59:17 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+cc: "K. Y. Srinivasan" <kys@microsoft.com>, dmitry.torokhov@gmail.com,
+        jkosina@suse.cz, gregkh@suse.de, ohering@suse.com,
+        linux-kernel@vger.kernel.org, virtualization@lists.osdl.org,
+        joe@perches.com, devel@linuxdriverproject.org
+Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+In-Reply-To: <20111029063240.GH14881@longonot.mountain>
+Message-ID: <alpine.LNX.2.00.1111022353530.20903@swampdragon.chaosbits.net>
+References: <1319841316-29136-1-git-send-email-kys@microsoft.com> <alpine.LNX.2.00.1110290041500.31615@swampdragon.chaosbits.net> <20111029063240.GH14881@longonot.mountain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>
-In-Reply-To: <1320266549.2782.21.camel@bwh-desktop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-02 04:42 PM, Ben Hutchings wrote:
-[various good notes on things that still need fixing]
+On Sat, 29 Oct 2011, Dan Carpenter wrote:
 
-Thanks Ben, those are exactly the kind of things
-I was hoping for people like you to point out here.
+> On Sat, Oct 29, 2011 at 12:54:34AM +0200, Jesper Juhl wrote:
+> > > +			default:
+> > > +				pr_err("unhandled packet type %d, tid %llx len %d\n",
+> > > +				   desc->type,
+> > > +				   req_id,
+> > > +				   bytes_recvd);
+> > 
+> > Why not:
+> > 
+> >                                 pr_err("unhandled packet type %d, tid %llx 
+> >                                        len %d\n", desc->type, req_id, bytes_recvd);
+> 
+> Because then the printk would be messed up?  Your final printed
+> string would look like:
+> 
+> "unhandled packet type %d, tid %llx 
+>                                        len %d\n"
+> 
+> Don't break strings up across lines because it breaks grep.  If K. Y.
+> wants to put all the parameters on one line instead of three that
+> would probably be better, but in the end who cares?
+> 
+Right, so I obviously "fat fingered" that and should have read my email 
+once more before sending. *But* the point really was just the "put all the 
+parameters on one line rather than 3" bit...
 
-Also, I have now opened a line of communications with ASIX themselves,
-and have their blessing for this project.  They've also now sent me
-a newer code dump than the one I was using.  I'll diff the two and
-add in any relevant changes for the next iteration.
+As for who cares; well, I cared enough to actually read the patch and send 
+a reply, and I thought we needed more reviewers... When I review something 
+I comment on everything I spot from bugs to trivial stuff - then it is 
+up to the recipient to pick the things they want to address from the 
+reply..
 
-Cheers
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
