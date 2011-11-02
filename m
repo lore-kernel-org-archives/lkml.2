@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1KBI3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 04:29:25 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49547
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755016Ab1KBI3V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 04:29:21 -0400
-Date: Wed, 2 Nov 2011 04:29:15 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andres Freund <andres@anarazel.de>
-Cc: Andi Kleen <andi@firstfloor.org>, robertmhaas@gmail.com,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chris.mason@oracle.com,
-        linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 1/2] LSEEK: BTRFS: Avoid i_mutex for SEEK_{CUR,SET,END}
-Message-ID: <20111102082915.GA28153@infradead.org>
-References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
- <201110012246.13801.andres@anarazel.de>
- <201110012249.27834.andres@anarazel.de>
+	id S1755006Ab1KBIqO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 04:46:14 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39176 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab1KBIqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 04:46:12 -0400
+Date: Wed, 2 Nov 2011 09:41:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Matthias Schniedermeyer <ms@citd.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Sasha Levin <levinsasha928@gmail.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] config: Add 'make kvmconfig'
+Message-ID: <20111102084124.GB18771@elte.hu>
+References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
+ <20111027193448.GA3514@merkur.ravnborg.org>
+ <20111028070336.GF12995@elte.hu>
+ <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
+ <20111028075432.GB8626@elte.hu>
+ <20111028120856.GA29174@citd.de>
+ <20111028122902.GA25323@elte.hu>
+ <20111028130535.GA2752@citd.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201110012249.27834.andres@anarazel.de>
+In-Reply-To: <20111028130535.GA2752@citd.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andres, can you check with Chris that the btrfs changes made it to
-his tree?  The core lseek changes from Andi are in mainline now, but
-I think these bits are better off going through Chrises btrfs tree.
 
-On Sat, Oct 01, 2011 at 10:49:27PM +0200, Andres Freund wrote:
+* Matthias Schniedermeyer <ms@citd.de> wrote:
+
+> And AFAICS there currently is no "modconfig", only an 
+> "allmodconfig" (and "localmodconfig")
 > 
-> Don't need the i_mutex for those cases, only for SEEK_HOLE/DATA.
-> 
-> Really-From: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Andres Freund <andres@anarazel.de>
-> ---
->  fs/btrfs/file.c |   27 +++++++++++----------------
->  1 files changed, 11 insertions(+), 16 deletions(-)
-> 
-> diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-> index 7a13337..5bc7116 100644
-> --- a/fs/btrfs/file.c
-> +++ b/fs/btrfs/file.c
-> @@ -1809,24 +1809,19 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
->  	struct inode *inode = file->f_mapping->host;
->  	int ret;
->  
-> +	if (origin != SEEK_DATA && origin != SEEK_HOLE)
-> +		return generic_file_llseek(file, offset, origin);
-> +
->  	mutex_lock(&inode->i_mutex);
-> -	switch (origin) {
-> -	case SEEK_END:
-> -	case SEEK_CUR:
-> -		offset = generic_file_llseek(file, offset, origin);
-> -		goto out;
-> -	case SEEK_DATA:
-> -	case SEEK_HOLE:
-> -		if (offset >= i_size_read(inode)) {
-> -			mutex_unlock(&inode->i_mutex);
-> -			return -ENXIO;
-> -		}
-> +	if (offset >= i_size_read(inode)) {
-> +		mutex_unlock(&inode->i_mutex);
-> +		return -ENXIO;
-> +	}
->  
-> -		ret = find_desired_extent(inode, &offset, origin);
-> -		if (ret) {
-> -			mutex_unlock(&inode->i_mutex);
-> -			return ret;
-> -		}
-> +	ret = find_desired_extent(inode, &offset, origin);
-> +	if (ret) {
-> +		mutex_unlock(&inode->i_mutex);
-> +		return ret;
->  	}
->  
->  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
-> -- 
-> 1.7.6.409.ge7a85.dirty
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
----end quoted text---
+> With no letters dropped it would be less ambiguous. make 
+> modifyconfig=kvm
+
+Yeah. Note that it's more like an 'add' operation, not a modify 
+operation, thus:
+
+	make addconfig=kvm
+
+or:
+
+	make addconfig kvm
+
+would be intuitive and would work well too.
+
+Sam, Michal, which one would you prefer? The latter might have the 
+advantage that it's additive, enabling future usages like:
+
+	make addconfig kvm debug
+
+as a quick shortcut to enable baseline KVM support and generic kernel 
+debugging features, without having to twiddle with the menuconfig.
+
+Hm? Would be nice to move on this issue, we've painted it to death 
+already ;-)
+
+Thanks,
+
+	Ingo
