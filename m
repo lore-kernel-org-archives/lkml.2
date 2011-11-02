@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab1KBRBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 13:01:20 -0400
-Received: from nm35-vm7.bullet.mail.bf1.yahoo.com ([72.30.238.79]:45364 "HELO
-	nm35-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932609Ab1KBRBQ (ORCPT
+	id S1755902Ab1KBRCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 13:02:52 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34456 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755120Ab1KBRCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 13:01:16 -0400
-X-Yahoo-Newman-Id: 639651.67283.bm@smtp220.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: iJikzLAVM1ka.0zv9O4uQMa5a13epX.Qq8VT1x7b7BB_AYU
- PvM8GjlQOAdNoFIsLTWLNNUhEqtPLy366QQ__JNwD9kXxJvY3kuMzqYljMcE
- 6.BmzPzxrUys.KKN6OR_DXI.LLNJUqPhRNCxaKzlU.G2RTZOFaTogIt9i0ST
- CB2e6jEvaBgTlyYRRx5rGBYzwEYOZ7Y8Wvr_07610N4rRwA3yBfb_RsEH06U
- hLbuUsuALtSt7a71we6PQetVf.bStmXUKkm1wh2rHeMfxax_4Og_nT5u4k9z
- 70X2fSj2_yNsB0nN3Zrw3CItjq8DKnEOvZmjoFIy5YkHqaY4vvrjKtRBBTgG
- VeNIwX5PBVKTEp1WfSB6ZypNOV6ws.bqo0KH9btXHEA3naxONhiPjTGJgoLN
- RVu9JZuVXECNYskAfHJdml0UWdg--
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Wed, 2 Nov 2011 12:01:00 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        tj@kernel.org
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-Message-ID: <20111102170058.GA2388@zeus>
-References: <20111101124759.GA1326@zeus>
- <20111102054658.GA29035@core.coreip.homeip.net>
- <20111102160208.GA6657@zeus>
- <20111102163109.GA29430@core.coreip.homeip.net>
+	Wed, 2 Nov 2011 13:02:51 -0400
+Date: Wed, 2 Nov 2011 17:02:30 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 11/16] ARM: LPAE: Add fault handling support
+Message-ID: <20111102170230.GJ29782@arm.com>
+References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+ <1312988619-16804-12-git-send-email-catalin.marinas@arm.com>
+ <20111023115756.GB17912@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111102163109.GA29430@core.coreip.homeip.net>
+In-Reply-To: <20111023115756.GB17912@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 09:31:09AM -0700, Dmitry Torokhov wrote:
+On Sun, Oct 23, 2011 at 12:57:56PM +0100, Russell King - ARM Linux wrote:
+> On Wed, Aug 10, 2011 at 04:03:34PM +0100, Catalin Marinas wrote:
+> > @@ -494,6 +508,72 @@ static struct fsr_info {
+> >  	int	code;
+> >  	const char *name;
+> >  } fsr_info[] = {
+> > +#ifdef CONFIG_ARM_LPAE
+...
+> > +#else	/* !CONFIG_ARM_LPAE */
+> >  	/*
+> >  	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+> >  	 * defines these to be "precise" aborts.
+> > @@ -535,6 +615,7 @@ static struct fsr_info {
+> >  	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+> >  	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+> >  	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
+> > +#endif	/* CONFIG_ARM_LPAE */
 > 
-> OK, it looks like you do have input, what you do not have is X
-> functioning.
+> Can't we do better than this?
 
-The extent of my tests on input were to notice that the LED for caps
-lock does not toggle when pressing "caps lock" after a bad resume. I
-have also tried to blindly type "reboot" and such in what should be an
-active xterm.
+The first thought was defining the fsr_info array in a different file
+but that would mean exposing functions from the fault.c which are
+currently defined as static.
 
-~ Andy
+The other variant is including a C file directly in fault.c. It's not
+very nice but at least we remove the big #ifdef.
+
+-- 
+Catalin
