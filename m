@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932187Ab1KCBdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:33:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50371 "EHLO mx2.suse.de"
+	id S932434Ab1KCBdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:33:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50388 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab1KCBdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:33:32 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:50 2011
-Message-Id: <20111102221450.345701064@clark.kroah.org>
+	id S1755081Ab1KCBdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:33:38 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:53 2011
+Message-Id: <20111102221453.038714288@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:29 -0700
+Date: Wed, 02 Nov 2011 15:13:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [003/107] rt2x00: do not drop usb dev reference counter on suspend
+        alan@lxorguk.ukuu.org.uk, Michal Sroczynski <msroczyn@gmail.com>
+Subject: [032/107] USB: PL2303: correctly handle baudrates above 115200
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,80 +24,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Michal Sroczynski <msroczyn@gmail.com>
 
-commit 543cc38c8fe86deba4169977c61eb88491036837 upstream.
+commit 8d48fdf689fed2c73c493e5146d1463689246442 upstream.
 
-When hibernating ->resume may not be called by usb core, but disconnect
-and probe instead, so we do not increase the counter after decreasing
-it in ->supend. As a result we free memory early, and get crash when
-unplugging usb dongle.
+PL2303: correctly handle baudrates above 115200
 
-BUG: unable to handle kernel paging request at 6b6b6b9f
-IP: [<c06909b0>] driver_sysfs_remove+0x10/0x30
-*pdpt = 0000000034f21001 *pde = 0000000000000000
-Pid: 20, comm: khubd Not tainted 3.1.0-rc1-wl+ #20 LENOVO 6369CTO/6369CTO
-EIP: 0060:[<c06909b0>] EFLAGS: 00010202 CPU: 1
-EIP is at driver_sysfs_remove+0x10/0x30
-EAX: 6b6b6b6b EBX: f52bba34 ECX: 00000000 EDX: 6b6b6b6b
-ESI: 6b6b6b6b EDI: c0a0ea20 EBP: f61c9e68 ESP: f61c9e64
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process khubd (pid: 20, ti=f61c8000 task=f6138270 task.ti=f61c8000)
-Call Trace:
- [<c06909ef>] __device_release_driver+0x1f/0xa0
- [<c0690b20>] device_release_driver+0x20/0x40
- [<c068fd64>] bus_remove_device+0x84/0xe0
- [<c068e12a>] ? device_remove_attrs+0x2a/0x80
- [<c068e267>] device_del+0xe7/0x170
- [<c06d93d4>] usb_disconnect+0xd4/0x180
- [<c06d9d61>] hub_thread+0x691/0x1600
- [<c0473260>] ? wake_up_bit+0x30/0x30
- [<c0442a39>] ? complete+0x49/0x60
- [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
- [<c06d96d0>] ? hub_disconnect+0xd0/0xd0
- [<c0472eb4>] kthread+0x74/0x80
- [<c0472e40>] ? kthread_worker_fn+0x150/0x150
- [<c0809b3e>] kernel_thread_helper+0x6/0x10
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Michal Sroczynski <msroczyn@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00usb.c |   14 +-------------
- 1 file changed, 1 insertion(+), 13 deletions(-)
+ drivers/usb/serial/pl2303.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00usb.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00usb.c
-@@ -703,18 +703,8 @@ int rt2x00usb_suspend(struct usb_interfa
- {
- 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
--	int retval;
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -617,10 +617,28 @@ static void pl2303_set_termios(struct tt
+ 				baud = 6000000;
+ 		}
+ 		dbg("%s - baud set = %d", __func__, baud);
+-		buf[0] = baud & 0xff;
+-		buf[1] = (baud >> 8) & 0xff;
+-		buf[2] = (baud >> 16) & 0xff;
+-		buf[3] = (baud >> 24) & 0xff;
++		if (baud <= 115200) {
++			buf[0] = baud & 0xff;
++			buf[1] = (baud >> 8) & 0xff;
++			buf[2] = (baud >> 16) & 0xff;
++			buf[3] = (baud >> 24) & 0xff;
++		} else {
++			/* apparently the formula for higher speeds is:
++			 * baudrate = 12M * 32 / (2^buf[1]) / buf[0]
++			 */
++			unsigned tmp = 12*1000*1000*32 / baud;
++			buf[3] = 0x80;
++			buf[2] = 0;
++			buf[1] = (tmp >= 256);
++			while (tmp >= 256) {
++				tmp >>= 2;
++				buf[1] <<= 1;
++			}
++			if (tmp > 256) {
++				tmp %= 256;
++			}
++			buf[0] = tmp;
++		}
+ 	}
  
--	retval = rt2x00lib_suspend(rt2x00dev, state);
--	if (retval)
--		return retval;
--
--	/*
--	 * Decrease usbdev refcount.
--	 */
--	usb_put_dev(interface_to_usbdev(usb_intf));
--
--	return 0;
-+	return rt2x00lib_suspend(rt2x00dev, state);
- }
- EXPORT_SYMBOL_GPL(rt2x00usb_suspend);
- 
-@@ -723,8 +713,6 @@ int rt2x00usb_resume(struct usb_interfac
- 	struct ieee80211_hw *hw = usb_get_intfdata(usb_intf);
- 	struct rt2x00_dev *rt2x00dev = hw->priv;
- 
--	usb_get_dev(interface_to_usbdev(usb_intf));
--
- 	return rt2x00lib_resume(rt2x00dev);
- }
- EXPORT_SYMBOL_GPL(rt2x00usb_resume);
+ 	/* For reference buf[4]=0 is 1 stop bits */
 
 
