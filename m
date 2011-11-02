@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1KBLsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 07:48:35 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46080 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752630Ab1KBLse (ORCPT
+	id S1755341Ab1KBL5Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 07:57:24 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:23181 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab1KBL5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 07:48:34 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Don't create voltage sysfs entries if we can't read voltage
-Date: Wed,  2 Nov 2011 11:48:32 +0000
-Message-Id: <1320234513-13150-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.1
+	Wed, 2 Nov 2011 07:57:22 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-a8-4eb130216701
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: jhbird.choi@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+References: <1319838312-8205-1-git-send-email-jhbird.choi@gmail.com>
+In-reply-to: <1319838312-8205-1-git-send-email-jhbird.choi@gmail.com>
+Subject: RE: [PATCH] ARM: SAMSUNG: Fix compile error due to kfree
+Date: Wed, 02 Nov 2011 20:57:20 +0900
+Message-id: <004e01cc9956$93ad7f40$bb087dc0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyVuuSuiH+xx07ISYeashYF6Ox5rADmHr7A
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+jhbird.choi@gmail.com wrote:
+> 
+> From: Jonghwan Choi <jhbird.choi@gmail.com>
+> 
+> Fix  implicit declaration of function 'kfree'
+> 
+> Signed-off-by: Jonghwan Choi <jhbird.choi@gmail.com>
+> ---
+>  arch/arm/plat-samsung/dev-backlight.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/plat-samsung/dev-backlight.c
+b/arch/arm/plat-samsung/dev-
+> backlight.c
+> index 3cedd4c..2adbeae 100644
+> --- a/arch/arm/plat-samsung/dev-backlight.c
+> +++ b/arch/arm/plat-samsung/dev-backlight.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/pwm_backlight.h>
+> +#include <linux/slab.h>
+> 
+>  #include <plat/devs.h>
+>  #include <plat/gpio-cfg.h>
+> --
+> 1.7.0.4
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 669d021..dc3b31a 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -2503,7 +2503,8 @@ static int add_regulator_attributes(struct regulator_dev *rdev)
- 	int			status = 0;
- 
- 	/* some attributes need specific methods to be displayed */
--	if (ops->get_voltage || ops->get_voltage_sel) {
-+	if ((ops->get_voltage && ops->get_voltage(rdev) >= 0) ||
-+	    (ops->get_voltage_sel && ops->get_voltage_sel(rdev) >= 0) {
- 		status = device_create_file(dev, &dev_attr_microvolts);
- 		if (status < 0)
- 			return status;
--- 
-1.7.7.1
+Yes, applied.
+
+But would be better if you could add description in detail......
+
+Fix following build error.
+    arch/arm/plat-samsung/dev-backlight.c: In function 'samsung_bl_set':
+    arch/arm/plat-samsung/dev-backlight.c:145: error: implicit declaration
+of function 'kfree'
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
