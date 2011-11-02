@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab1KBXRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:17:22 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:36808 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab1KBXRU (ORCPT
+	id S1753793Ab1KBXTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:19:24 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:58334 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752322Ab1KBXTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:17:20 -0400
-Date: Wed, 02 Nov 2011 19:17:16 -0400 (EDT)
-Message-Id: <20111102.191716.1682282796914825621.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: tony@atomide.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org
+	Wed, 2 Nov 2011 19:19:20 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19dW9pdAlCf5vFMr9zHaMS6
+Date: Wed, 2 Nov 2011 16:19:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
 Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4EB1CEC4.3090909@gmail.com>
+Message-ID: <20111102231917.GN31337@atomide.com>
 References: <4EB1CA4F.3090403@gmail.com>
-	<20111102.190955.1902322759075682192.davem@davemloft.net>
-	<4EB1CEC4.3090909@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 02 Nov 2011 16:17:18 -0700 (PDT)
+ <20111102.190955.1902322759075682192.davem@davemloft.net>
+ <4EB1CEC4.3090909@gmail.com>
+ <20111102.191716.1682282796914825621.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102.191716.1682282796914825621.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c> 
-> The issue is calculation of skb->end, which is based upon calculated
-> 'size' variable.
+* David Miller <davem@davemloft.net> [111102 15:42]:
+> c> 
+> > The issue is calculation of skb->end, which is based upon calculated
+> > 'size' variable.
+> > 
+> > skb->end determines alignment of skb_shared_info, which is where the
+> > alignment problem is occuring for Tony.
 > 
-> skb->end determines alignment of skb_shared_info, which is where the
-> alignment problem is occuring for Tony.
+> Right, and SMP_CACHE_BYTES setting should save us in any case.
+> 
+> For ARM, SMP_CACHE_BYTES seems to be set to L1_CACHE_BYTES which in
+> turn is set via ARM_L1_CACHE_SHIFT which can be set seemingly to any
+> value but the defaults are 5 and 6 which should be OK.
+> 
+> So unless Tony is using a non-standard setting of ARM_L1_CACHE_SHIFT,
+> this report is a bit mysterious.
 
-Right, and SMP_CACHE_BYTES setting should save us in any case.
+This is happening at least with omap1_defconfig. In that case we have
+ARM_L1_CACHE_SHIFT=5.
 
-For ARM, SMP_CACHE_BYTES seems to be set to L1_CACHE_BYTES which in
-turn is set via ARM_L1_CACHE_SHIFT which can be set seemingly to any
-value but the defaults are 5 and 6 which should be OK.
+Regards,
 
-So unless Tony is using a non-standard setting of ARM_L1_CACHE_SHIFT,
-this report is a bit mysterious.
+Tony
