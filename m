@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab1KBNcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 09:32:11 -0400
-Received: from mail.windriver.com ([147.11.1.11]:61750 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab1KBNcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 09:32:09 -0400
-Message-ID: <4EB145FB.70906@windriver.com>
-Date: Wed, 2 Nov 2011 08:30:35 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S932213Ab1KBNeH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 09:34:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54828 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932136Ab1KBNeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 09:34:02 -0400
+Date: Wed, 2 Nov 2011 14:34:00 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH] [TRIVIAL] ARM: imx: Fix typo
+ 'MACH_MX31_3DS_MXC_NAND_USE_BBT'
+In-Reply-To: <CAOMZO5DZ6KYa_SLVavorPPyV_Ggspa4Cae+eK7oj1mh=O4J4+w@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1111021433220.348@pobox.suse.cz>
+References: <1318421062.2336.4.camel@x61.thuisdomein> <alpine.LNX.2.00.1110311110370.3541@pobox.suse.cz> <CAOMZO5DZ6KYa_SLVavorPPyV_Ggspa4Cae+eK7oj1mh=O4J4+w@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Decotigny <david.decotigny@google.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kgdb-bugreport@lists.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Dmitry Torokhov <dtor@vmware.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        David Decotigny <decot@google.com>
-Subject: Re: [PATCH v2 3/3] param: make /sys/module/*/paramaters optional
-References: <cover.1320191327.git.david.decotigny@google.com> <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com>
-In-Reply-To: <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 06:50 PM, David Decotigny wrote:
-> From: David Decotigny <decot@google.com>
->
-> With this patch, we allow systems that don't want to pay the price for
-> /sys/module/*/paramaters to be compiled without that feature. This
-> abiltity can in turn encourage module developers to expose more of
-> their parameters with fewer hesitations (eg. memory concerns, etc.);
-> this is desirable to help debugging/auditing of live (larger) systems.
->
-> The new knob to control that is CONFIG_SYSFS_MODULE_PARAM available in
-> Kconfig in expert mode: File systems / Pseudo filesystems / sysfs file
-> system support / Module parameters in sysfs. It is enabled by default,
-> keeping /sys/module/*/paramaters/ available as before.
->
-> As an illustration, on my copy I see 1658 module_param() macros with
-> perm == 0: most of these could be exposed to user (perm != 0).
+On Tue, 1 Nov 2011, Fabio Estevam wrote:
 
-Speaking as an embedded developer who works on very small systems that you can still debug, I am really curious what you actually save here?
+> >> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> >> ---
+> >> This is trivial because this is what apparently was intended. On the
+> >> other hand this should open code paths that were hidden until now. So
+> >> perhaps this needs the maintainer's approval. (I cannot meaningfully
+> >> test this.)
+> >
+> > I'd like to have this tested by some relevant people before taking it
+> > myself (added some CCs).
+> 
+> On a mx31pdk board I get the following with this patch applied and
+> CONFIG_MACH_MX31_3DS_MXC_NAND_USE_BBT selected:
+> 
+> NAND device: Manufacturer ID: 0xec, Chip ID: 0xaa (Samsung NAND 256MiB
+> 1,8V 8-bit)
+> Bad block table not found for chip 0
+> Bad block table not found for chip 0
+> Scanning device for bad blocks
+> Registering mxc_nand as whole device
+> 
+> Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-For dynamic kgdb/kdb this patch is a death sentence.  It would make us have to resurrect the procfs entries for the control point.  There is no possible way to dynamically turn kgdb on and off at all if you remove the /sys/module/kgdboc/parameters/kgdboc entry, and this is certainly something where the typical use case is dynamic enablement.
+Thank you, I will be appplying it.
 
-Jason.
+-- 
+Jiri Kosina
+SUSE Labs
