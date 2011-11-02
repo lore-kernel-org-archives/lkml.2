@@ -1,40 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab1KBC2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 22:28:08 -0400
-Received: from mail.lemote.com ([222.92.8.141]:53043 "EHLO lemote.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754339Ab1KBC2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 22:28:04 -0400
+	id S932378Ab1KBC3O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 22:29:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58213 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754339Ab1KBC3E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 22:29:04 -0400
+Date: Wed, 2 Nov 2011 10:28:50 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the bjdooks-i2c tree with Linus' tree
+Message-ID: <20111102022850.GA5875@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20111102122221.9040e7a07bb0e3e2c46a5188@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1320097228-3612-1-git-send-email-john.stultz@linaro.org>
-References: <1320097228-3612-1-git-send-email-john.stultz@linaro.org>
-From: Chen Jie <chenj@lemote.com>
-Date: Wed, 2 Nov 2011 10:27:25 +0800
-Message-ID: <CAGXxSxUqzu8gBHU3GeCj1zmYdQdbC68dqaE1PeiBaOssPobo-g@mail.gmail.com>
-Subject: Re: [RFC][PATCH] clocksource: Avoid selecting mult values that might
- overflow when adjusted
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20111102122221.9040e7a07bb0e3e2c46a5188@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-We've backported the patch to our kernel, and redo the test[1] that
-formerly caused system stall.
-After 12-hours, no system stall observed.
+On Wed, Nov 02, 2011 at 12:22:21PM +1100, Stephen Rothwell wrote:
+> Hi Ben,
+> 
+> Today's linux-next merge of the bjdooks-i2c tree got a conflict in
+> drivers/i2c/busses/i2c-designware-platdrv.c between commit 4311051c358a
+> ("i2c: irq: Remove IRQF_DISABLED") from Linus' tree and commit
+> f8420b7bf6ce ("fixup merge") from the bjdooks-i2c tree.
+> 
+> I fixed it up (by removing the IRQF_DISABLED flag) but this change should
+> probably be sent to Linus as it appears to have been fixed up incorrectly
+> there.
 
+Yeah, we should remove that flag. And that is what commit 4311051c358a
+want to achieve.
 
+Thanks,
+Yong
 
-Regards,
-Chen Jie
-
-----
-[1] The test is just do "sleep 5 && reboot " on our mips64 compatible
-CPU@500MHz. At each boot time, BIOS will calculate CPU Freq. Some CPU
-Freq(around 500MHz) caused easy-overflow clock mult values in the
-former tests, which then led to "sleep 5" never return.
