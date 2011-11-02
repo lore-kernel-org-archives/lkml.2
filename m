@@ -1,125 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932766Ab1KBPJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 11:09:51 -0400
-Received: from nm24.bullet.mail.bf1.yahoo.com ([98.139.212.183]:24247 "HELO
-	nm24.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932280Ab1KBPJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 11:09:50 -0400
-X-Greylist: delayed 319 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 11:09:50 EDT
-X-Yahoo-Newman-Id: 614040.45964.bm@smtp209.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: _QjYwXoVM1kZ8s7d1tCUYS6P0eth6GY3K8.s9xOkAH2AqUm
- hshoVhaeAYRHeOcbAZqzoJR9hd.WzNB1AygDgw0Iovis_HB9ngZqoYX7zMHO
- Hijy4_.z.D7K.YNltBZff9sgAJo0GbZSQDhBPaOXrRjIPXCaTrQ96WKVWvMR
- UGyTl8k_qdLO1hlItY2HUe6CzCvQIFim5BiITnZK5e54kDdydC6ZI4qfNB9y
- jKNsk_5JMTvoebenf69Rtxi.9wOd.6L9tdhquG41HcieM.S7YvP3eL7udEkH
- .YU6fKzXu1QQ8z_ls87jjl8kFv.y1vsAK9hNOtBlrrH6pnEfWa87ftI0nmde
- K0WeDVHqUhGHxg9TFXAISlZ2_5hz8ifSANdVITrtGEELW2VTPae36U7.9oDG
- ESq9W6.zBodCqgtMipUV7WT0mdWDjQWWiaCsMam2GluSQJLhhzNuTBmSvMhX
- eeeKZ30OelgSoP4ZO
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Wed, 2 Nov 2011 10:04:13 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        tj@kernel.org, rjw@sisk.pl, airlied@linux.ie
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-Message-ID: <20111102150411.GA5457@zeus>
-References: <20111101124759.GA1326@zeus>
- <20111102054658.GA29035@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102054658.GA29035@core.coreip.homeip.net>
+	id S932860Ab1KBPKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 11:10:35 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:47990 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932789Ab1KBPKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 11:10:31 -0400
+Date: Wed, 02 Nov 2011 11:10:28 -0400
+Message-Id: <E1RLcSS-0004UQ-C8@tytso-glaptop.cam.corp.google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 updates for 3.2
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 10:46:58PM -0700, Dmitry Torokhov wrote:
-> 
-> I am not sure how this commit could cause your "no video" issue...
-> Are you hibernating from text console or X? Can you try plugging in USB
-> keyboard and see if you are getting input? What about ssh into the box?
-> 
-> Thanks.
-> 
-> -- 
-> Dmitry
+Hi Linus,
 
-Hi Dmitry et al.
+The starting commit is the last pull request I sent you (against
+v3.1-rc3); this was due to the fact that I had audited the build
+infrastructure of v3.1-rc3 after the kernel.org compromise was
+discovered, and I didn't want to hold up the ext4 tree waiting for the
+post-3.1-rc3 commits in your tree to be reviewed.
 
-Yes, I was hibernating from X. I do not have problems when I hibernate from
-console.
+There is a signed tag tytso-for-linus-20111102 covering this pull
+request.
 
-I conducted the following exercise: a script runs a 20-hibernate loop that
-saves dmesg output to individual files and pings my httpd server (on lo)
-after every resume.
+						- Ted
 
->From X, with the vanilla 2.6.39.4 kernel, I had 5 bad resumes out of 20
-(the script continues though). My httpd server is pinged after all 20 
-resumes and my dmesg is saved to a file. So, even after the bad resumes,
-loopback networking and HD IO are functional.
+The following changes since commit 8c0bec2151a47906bf779c6715a10ce04453ab77:
 
-The five problem resumes all have a similar warning in dmesg (see below).
-I am copying Rafael Wysocki (since I can't seem to post to linux-pm@) 
-and David Airlie (given the 'GPU lockup CP stall' message). [Please see 
-thread https://lkml.org/lkml/2011/11/1/126 for complete history]
+  ext4: remove i_mutex lock in ext4_evict_inode to fix lockdep complaining (2011-08-31 11:50:51 -0400)
 
-The same loop test conducted either a) from console or b) from X after
-reversing commits 8ee294cd9def000 & 1d64b655dc083df encounters no problems
-(all 20 resumes succeed) and there are no GPU lockup messages in my saved
-dmesg output.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
 
-System specs:
-P4 + ATI 9100IGP
+Aditya Kali (3):
+      ext4: Fix bigalloc quota accounting and i_blocks value
+      ext4: add some tracepoints in ext4/extents.c
+      ext4: attempt to fix race in bigalloc code path
 
-~ Andy
+Akira Fujita (1):
+      ext4: fix deadlock in ext4_ordered_write_end()
 
-PS. My messages do not arrive to linux-pm@lists.linux-foundation.org. Does
-    posting require subscription?
+Allison Henderson (5):
+      ext4: Add new ext4_discard_partial_page_buffers routines
+      ext4: fix xfstests 75, 112, 127 punch hole failure
+      ext4: fix 2nd xfstests 127 punch hole failure
+      ext4: fix fsx truncate failure
+      ext4: fix partial page writes
 
------------------------------
+Andreas Dilger (1):
+      ext4: avoid setting directory i_nlink to zero
 
-[  243.626231] radeon 0000:01:05.0: GPU lockup CP stall for more than 82318msec
-[  243.626236] ------------[ cut here ]------------
-[  243.626252] WARNING: at drivers/gpu/drm/radeon/radeon_fence.c:246 radeon_fence_wait+0x2c3/0x311()
-[  243.626256] Hardware name: Pavilion zv5000
-[  243.626259] GPU lockup (waiting for 0x00000F8C last fence id 0x00000F8A)
-[  243.626262] Modules linked in: fan snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss fuse pl2303 snd_atiixp snd_ac97_codec ac97_bus snd_pcm pcmcia snd_timer snd ohci_hcd shpchp processor yenta_socket pcmcia_rsrc ssb video thermal wmi battery button ac ehci_hcd thermal_sys pcmcia_core firewire_ohci snd_page_alloc
-[  243.626311] Pid: 1646, comm: X Tainted: G   M        2.6.39.4 #19
-[  243.626314] Call Trace:
-[  243.626325]  [<c1033164>] warn_slowpath_common+0x67/0x8e
-[  243.626331]  [<c12c082a>] ? radeon_fence_wait+0x2c3/0x311
-[  243.626335]  [<c12c082a>] ? radeon_fence_wait+0x2c3/0x311
-[  243.626339]  [<c1033207>] warn_slowpath_fmt+0x2e/0x30
-[  243.626344]  [<c12c082a>] radeon_fence_wait+0x2c3/0x311
-[  243.626352]  [<c104b12a>] ? wake_up_bit+0x62/0x62
-[  243.626358]  [<c12c0e37>] radeon_sync_obj_wait+0xc/0xe
-[  243.626363]  [<c12908be>] ttm_bo_wait+0xa1/0x108
-[  243.626371]  [<c12d6e7b>] radeon_gem_wait_idle_ioctl+0x76/0xc4
-[  243.626378]  [<c127e62e>] drm_ioctl+0x1c2/0x42c
-[  243.626383]  [<c12d6e05>] ? radeon_gem_set_tiling_ioctl+0x8e/0x8e
-[  243.626389]  [<c109ad9a>] ? perf_pmu_enable+0x1a/0x21
-[  243.626395]  [<c1026eed>] ? update_curr+0x164/0x24d
-[  243.626403]  [<c11f5171>] ? rb_erase+0x16e/0x27a
-[  243.626411]  [<c1007ba8>] ? __switch_to_xtra+0xf7/0x11d
-[  243.626417]  [<c103015e>] ? set_next_entity+0xad/0xc1
-[  243.626422]  [<c127e46c>] ? drm_version+0x8a/0x8a
-[  243.626428]  [<c10e288e>] do_vfs_ioctl+0x79/0x54b
-[  243.626436]  [<c158c95a>] ? schedule+0x29a/0x614
-[  243.626441]  [<c10e2dcb>] sys_ioctl+0x6b/0x70
-[  243.626446]  [<c1593813>] sysenter_do_call+0x12/0x22
-[  243.626449] ---[ end trace 17a119d9361222c9 ]---
-[  243.633615] radeon 0000:01:05.0: GPU reset succeed
-[  243.671128] radeon 0000:01:05.0: WB disabled
-[  243.671170] [drm] radeon: ring at 0x00000000D2001000
-[  243.671189] [drm] ring test succeeded in 0 usecs
-[  243.671200] [drm] ib test succeeded in 1 usecs
-[  243.704033] ohci_hcd 0000:00:13.1: auto-stop root hub
-[  243.704048] ohci_hcd 0000:00:13.0: auto-stop root hub
+Curt Wohlgemuth (1):
+      ext4: handle NULL p_ext in ext4_ext_next_allocated_block()
 
------------------------------
+Dan Carpenter (2):
+      jbd2: use gfp_t instead of int
+      ext4: error handling fix in ext4_ext_convert_to_initialized()
 
+Darrick J. Wong (4):
+      ext4: ext4_rename should dirty dir_bh with the correct directory
+      ext4: ext4_mkdir should dirty dir_block with newly created directory inode
+      ext4: Fix comparison endianness problem in MMP initialization
+      ext4: prevent stack overrun in ext4_file_open
 
+Dmitry Monakhov (6):
+      ext4: Allow quota file use root reservation
+      ext4: cleanup ext4_ext_grow_indepth code
+      ext4: remove messy logic from ext4_ext_rm_leaf
+      ext4: update EOFBLOCKS flag on fallocate properly
+      ext4: migrate cleanup
+      ext4: fix quota accounting during migration
+
+Eric Gouriou (2):
+      ext4: optimize ext4_ext_convert_to_initialized()
+      ext4: optimize memmmove lengths in extent/index insertions
+
+Eric Sandeen (2):
+      ext4: use ext4_reserve_inode_write in ext4_xattr_set_handle
+      ext4: fix race in xattr block allocation path
+
+Eryu Guan (3):
+      ext4: remove comments about extent mount option in ext4_new_inode()
+      jbd/jbd2: validate sb->s_first in journal_get_superblock()
+      jbd2: Unify log messages in jbd2 code
+
+Fabrice Jouhaud (1):
+      ext4: fix ext4 so it works without CONFIG_PROC_FS
+
+Greg Harm (1):
+      ext4: Don't normalize an falloc request if it can fit in 1 extent.
+
+H Hartley Sweeten (3):
+      ext4: functions should not be declared extern
+      ext4: add __user decoration to calls of copy_{from,to}_user()
+      ext4: quiet sparse noise about plain integer as NULL pointer
+
+Kazuya Mio (1):
+      ext4: fix the deadlock in mpage_da_map_and_submit()
+
+Lukas Czerner (1):
+      ext4: remove deprecated oldalloc
+
+Nikitas Angelinas (2):
+      ext4: MMP: kmmpd should use nodename from init_uts_ns.name, not sysname
+      ext4: MMP: fix error message rate-limiting logic in kmmpd
+
+Randy Dunlap (1):
+      jbd2: fix build when CONFIG_BUG is not enabled
+
+Robin Dong (5):
+      ext4: use stream-alloc when mb_group_prealloc set to zero
+      ext4: remove unused variable in ext4_mb_generate_from_pa()
+      ext4: remove unused variable in mb_find_extent()
+      ext4: fix a wrong comment in __mb_check_buddy()
+      ext4: fix a typo in struct ext4_allocation_context
+
+Shaohua Li (1):
+      ext4: add block plug for .writepages
+
+Tao Ma (9):
+      ext4: Free resources in ext4_mb_init()'s error paths
+      ext4: Free resources in some error path in ext4_fill_super
+      ext4: fix the comment describing ext4_ext_search_right()
+      ext4: remove the obsolete/broken EXT4_IOC_WAIT_FOR_READONLY ioctl
+      ext4: use le32_to_cpu for ext4_extent_idx.ei_block in ext4_ext_search_left()
+      ext4: avoid stamping on other memories in ext4_ext_insert_index()
+      ext4: don't check io->flag when setting EXT4_STATE_DIO_UNWRITTEN inode state
+      ext4: Use correct locking for ext4_end_io_nolock()
+      ext4: Create helper function for EXT4_IO_END_UNWRITTEN and i_aiodio_unwritten
+
+Theodore Ts'o (32):
+      ext2,ext3,ext4: don't inherit APPEND_FL or IMMUTABLE_FL for new inodes
+      ext4: fake direct I/O mode for data=journal
+      ext4: call ext4_handle_dirty_metadata with correct inode in ext4_dx_add_entry
+      ext4: improve handling of conflicting mount options
+      jbd2: add debugging information to jbd2_journal_dirty_metadata()
+      ext4: only call ext4_jbd2_file_inode when an inode has been extended
+      ext4: add ext4-specific kludge to avoid an oops after the disk disappears
+      ext4: read-only support for bigalloc file systems
+      ext4: enforce bigalloc restrictions (e.g., no online resizing, etc.)
+      ext4: convert instances of EXT4_BLOCKS_PER_GROUP to EXT4_CLUSTERS_PER_GROUP
+      ext4: factor out block group accounting into functions
+      ext4: split out ext4_free_blocks_after_init()
+      ext4: bigalloc changes to block bitmap initialization functions
+      ext4: convert block group-relative offsets to use clusters
+      ext4: teach mballoc preallocation code about bigalloc clusters
+      ext4: teach ext4_free_blocks() about bigalloc and clusters
+      ext4: teach ext4_ext_map_blocks() about the bigalloc feature
+      ext4: teach ext4_ext_truncate() about the bigalloc feature
+      ext4: convert s_{dirty,free}blocks_counter to s_{dirty,free}clusters_counter
+      ext4: convert the free_blocks field in s_flex_groups to be free_clusters
+      ext4: teach ext4_statfs() to deal with clusters if bigalloc is enabled
+      ext4: tune mballoc's default group prealloc size for bigalloc file systems
+      ext4: enable mounting bigalloc as read/write
+      ext4: Rename ext4_free_blks_{count,set}() to refer to clusters
+      ext4: rename ext4_count_free_blocks() to ext4_count_free_clusters()
+      ext4: rename ext4_free_blocks_after_init() to ext4_free_clusters_after_init()
+      ext4: rename ext4_claim_free_blocks() to ext4_claim_free_clusters()
+      ext4: rename ext4_has_free_blocks() to ext4_has_free_clusters()
+      ext4: documentation: remove acl and user_xattr mount options
+      fs: optimize out 16 bytes worth of padding in struct inode
+      ext4: remove unnecessary call to waitqueue_active()
+      ext4: optimize locking for end_io extent conversion
+
+Thomas Gleixner (1):
+      jdb/jbd2: factor out common functions from the jbd[2] header files
+
+Yongqiang Yang (9):
+      ext4: let ext4_page_mkwrite stop started handle in failure
+      ext4: move variables to their scope
+      ext4: clean up AGGRESSIVE_TEST code
+      ext4: trace punch_hole correctly in ext4_ext_map_blocks
+      ext4: move vars to local scope in ext4_discard_partial_page_buffers_no_lock()
+      ext4: return ENOMEM if find_or_create_pages fails
+      ext4: let ext4_discard_partial_buffers handle unaligned range correctly
+      ext4: fix a syntax error in ext4_ext_insert_extent when debugging enabled
+      ext4: let ext4_ext_rm_leaf work with EXT_DEBUG defined
+
+ Documentation/filesystems/ext4.txt |   41 +-
+ fs/ext4/balloc.c                   |  345 +++++++-----
+ fs/ext4/ext4.h                     |  141 ++++--
+ fs/ext4/ext4_extents.h             |    2 +
+ fs/ext4/ext4_jbd2.c                |    8 +-
+ fs/ext4/extents.c                  | 1168 +++++++++++++++++++++++++++---------
+ fs/ext4/file.c                     |    4 +-
+ fs/ext4/fsync.c                    |   10 +-
+ fs/ext4/ialloc.c                   |  204 +------
+ fs/ext4/indirect.c                 |   20 +-
+ fs/ext4/inode.c                    |  512 ++++++++++++++---
+ fs/ext4/ioctl.c                    |   65 +-
+ fs/ext4/mballoc.c                  |  331 +++++++----
+ fs/ext4/mballoc.h                  |   11 +-
+ fs/ext4/migrate.c                  |  109 ++---
+ fs/ext4/mmp.c                      |   10 +-
+ fs/ext4/move_extent.c              |    1 -
+ fs/ext4/namei.c                    |   21 +-
+ fs/ext4/page-io.c                  |   66 +--
+ fs/ext4/resize.c                   |   10 +-
+ fs/ext4/super.c                    |  263 ++++++---
+ fs/ext4/xattr.c                    |   12 +-
+ fs/jbd/journal.c                   |    8 +
+ fs/jbd2/commit.c                   |   26 +-
+ fs/jbd2/journal.c                  |   44 +-
+ fs/jbd2/recovery.c                 |   28 +-
+ fs/jbd2/transaction.c              |   68 ++-
+ include/linux/ext2_fs.h            |    4 +-
+ include/linux/ext3_fs.h            |    4 +-
+ include/linux/fs.h                 |   10 +-
+ include/linux/jbd.h                |   64 +--
+ include/linux/jbd2.h               |   69 +--
+ include/linux/jbd_common.h         |   68 +++
+ include/trace/events/ext4.h        |  480 +++++++++++++++-
+ 34 files changed, 2898 insertions(+), 1329 deletions(-)
+ create mode 100644 include/linux/jbd_common.h
