@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933516Ab1KBTNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:13:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41097 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164Ab1KBTNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:13:01 -0400
-Date: Wed, 2 Nov 2011 21:14:05 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111102191405.GA13998@redhat.com>
-References: <1320259767.22582.2.camel@lappy>
- <20111102190804.GA13914@redhat.com>
- <1320260832.22582.3.camel@lappy>
+	id S933573Ab1KBTQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:16:27 -0400
+Received: from peace.netnation.com ([204.174.223.2]:49046 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab1KBTQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:16:24 -0400
+Date: Wed, 2 Nov 2011 12:16:21 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: Linux 3.1-rc9
+Message-ID: <20111102191621.GF5971@hostway.ca>
+References: <1318928713.21167.4.camel@twins> <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos> <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca> <20111031173246.GA10614@hostway.ca> <alpine.LFD.2.02.1111021725550.2829@ionos> <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320260832.22582.3.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 09:07:12PM +0200, Sasha Levin wrote:
-> On Wed, 2011-11-02 at 21:08 +0200, Michael S. Tsirkin wrote:
-> > On Wed, Nov 02, 2011 at 08:49:27PM +0200, Sasha Levin wrote:
-> > > This is a proposal for a new layout of the virtio-pci config space.
-> > > 
-> > > We will separate the current configuration into two: A virtio-pci common
-> > > configuration and a device specific configuration. This allows more flexibility
-> > > with adding features and makes usage easier, specifically in cases like the
-> > > ones in virtio-net where device specific configurations depend on device
-> > > specific features.
-> > > 
-> > > The preferred location of the configuration will be a MMIO BAR, therefore
-> > > several size optimizations such as the queue selector which were useful
-> > > on a PIO BAR were removed and linked lists were introduced to add
-> > > flexibility to existing structures in attempt to keep their size and
-> > > offsets constant and not dependent on features.
-> > > 
-> > > While this is not a complete specification, it describes all the main
-> > > structures and should be enough to make sure the idea is solid before
-> > > going into implementation specifics.
-> > > 
-> > > A new virtio-pci capability structure will be introduced. This structure
-> > > will be used to describe the basics of a virtio-pci device. The
-> > > structure is actually a PCI capability structure which wraps the new virtio-pci
-> > > capability structure:
-> > > 
-> > > +------------++------------+------------+------------+--------------+-----------------
-> > > | Bits       || 8          | 8          | 8          | 8            | Cap specific
-> > > +------------++------------+------------+------------+--------------+-----------------
-> > > | Read/Write || R          | R          | R          | R            | Cap specific
-> > > +------------++------------+------------+------------+--------------+-----------------
-> > > | Purpose    || Capability | Capability | virtio-pci | virtio-pci   | Cap specific
-> > > |            || ID         | Next PTR   | Cap ID     | Next Cap PTR |
-> > > +------------++------------+------------+------------+--------------+-----------------
-> > > 
-> > > Currently, only one virtio-pci capability is defined, and is the one that defines
-> > > the layout of the virtio-pci config space.
-> > > 
-> > > VIRTIO_PCI_C_LAYOUT:
-> > > 
-> > > +------------++---------------+---------------+-----------------+-----------------+
-> > > | Bits       || 29            | 3             | 29              | 3               |
-> > > +------------++---------------+---------------+-----------------+-----------------+
-> > > | Read/Write || R             | R             | R               | R               |
-> > > +------------++---------------+---------------+-----------------+-----------------+
-> > > | Purpose    || Common config | Common config | Device specific | Device specific |
-> > > |            || Offset        | BIR           | Offset          | BIR             |
-> > > +------------++---------------+---------------+-----------------+-----------------+
+On Wed, Nov 02, 2011 at 06:58:21PM +0100, Eric Dumazet wrote:
+
+> Le mercredi 02 novembre 2011 ?? 18:49 +0100, Eric Dumazet a ??crit :
+> > Le mercredi 02 novembre 2011 ?? 18:27 +0100, Eric Dumazet a ??crit :
 > > 
-> > I'm implementing a different layout, with
-> > separate capabilities for common and device specific
-> > fields.
+> > > I believe it might come from commit 0e734419
+> > > (ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
+> > > 
+> > > In case inet_csk_route_child_sock() returns NULL, we dont release socket
+> > > lock.
+> > > 
+> > > 
+> > 
+> > Yes, thats the problem. I am testing following patch :
+> > 
+> > diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+> > index 0ea10ee..683d97a 100644
+> > --- a/net/ipv4/tcp_ipv4.c
+> > +++ b/net/ipv4/tcp_ipv4.c
+> > @@ -1510,6 +1510,7 @@ exit:
+> >  	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+> >  	return NULL;
+> >  put_and_exit:
+> > +	bh_unlock_sock(newsk);
+> >  	sock_put(newsk);
+> >  	goto exit;
+> >  }
+> > 
 > 
-> Which is what I have here, no?
-
-No :) Give me a couple of hours I'll send an RFC patch so you can see
-what I mean.
-
-> -- 
 > 
-> Sasha.
+> This indeed solves the problem, but more closer inspection is needed to
+> close all bugs, not this only one.
+> 
+> # netstat -s
+> Ip:
+>     6961157 total packets received
+>     0 forwarded
+>     0 incoming packets discarded
+>     6961157 incoming packets delivered
+>     6961049 requests sent out
+>     2 dropped because of missing route    //// HERE, this is the origin
+
+Actually, we have an anti-abuse daemon that injects blackhole routes, so
+this makes sense. (The daemon was written before ipsets were merged and
+normal netfilter rules make it fall over under attack.)
+
+I'll try with this patch. Thanks!
+
+Simon-
