@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab1KBVAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:00:42 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43112 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab1KBVAk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:00:40 -0400
+	id S1752339Ab1KBVB5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:01:57 -0400
+Received: from home.keithp.com ([63.227.221.253]:56499 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750817Ab1KBVBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 17:01:53 -0400
+From: Keith Packard <keithp@keithp.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, francis.moro@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        francis.moro@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        mingo@elte.hu
+Subject: [REGRESSION]: Resume fails with 'perf: Add PM notifiers to fix CPU hotplug races'
+In-Reply-To: <tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org>
+References: <tip-1cvevybkgmv4s6v5y37t4847@git.kernel.org>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 02 Nov 2011 14:01:48 -0700
+Message-ID: <yunaa8eutkz.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-In-Reply-To: <20111102201101.GA5581@kroah.com>
-References: <201106260054.20578.rjw@sisk.pl>
-	<201106292329.04163.rjw@sisk.pl>
-	<201106292334.24518.rjw@sisk.pl>
-	<CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
-	<20111102191432.GC29355@kroah.com>
-	<CACRpkdY8zAw_pdwn2yUEJPdfYPS+VCcLrpucZzhCyNsVPYehdg@mail.gmail.com>
-	<20111102201101.GA5581@kroah.com>
-Date: Wed, 2 Nov 2011 22:00:39 +0100
-Message-ID: <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com>
-Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
- system sleep (v2)
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Greg KH <greg@kroah.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 9:11 PM, Greg KH <greg@kroah.com> wrote:
-> On Wed, Nov 02, 2011 at 09:06:02PM +0100, Linus Walleij wrote:
->> On Wed, Nov 2, 2011 at 8:14 PM, Greg KH <greg@kroah.com> wrote:
->> > So, what specific git commits do you want to see in the 3.0-stable
->> > tree, and in what order should they be applied in?
->>
->> So to my untrained eye it looks like it should be applied like this (top to
->> bottom) using the reverse commit order from the mainline kernel:
->>
->> e529192 PM: Introduce generic "noirq" callback routines for subsystems (v2)
->> 455716e PM / Runtime: Update documentation of interactions with system sleep
->> 1e2ef05 PM: Limit race conditions between runtime PM and system sleep (v2)
->> f3393b6 PM / Runtime: Add new helper function: pm_runtime_status_suspended()
->>
->> So (2) documents the problem, (3) fixes it, whereas (1) and (4) makes
->> it possible
->> to write proper _noirq() code that does not race, IIRC.
->
-> But, after this, it's just adding new infrastructure that drivers will
-> then be able to use.  As I'm not adding new drivers to 3.0, there will
-> not be any users of this code, so why add it in the first place?  It
-> doesn't look like this follows the rules of the stable kernel tree at
-> all, does it?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-We'll have to get some feedback from Rafael, but the way I percieved
-it, the patch (2) fixes a very real race, then fixing that makes it
-necessary for drivers using runtime_pm to do things differently to
-be on the safe side. But none were really fixed when first merging
-it.
+On Sun, 14 Aug 2011 15:52:52 GMT, tip-bot for Peter Zijlstra <a.p.zijlstra@=
+chello.nl> wrote:
 
-So on second thought you probably only want patch (2)
-"PM: Limit race conditions between runtime PM and system sleep (v2)"
-for stable.
+> Commit-ID:  144060fee07e9c22e179d00819c83c86fbcbf82c
+> Gitweb:     http://git.kernel.org/tip/144060fee07e9c22e179d00819c83c86fbc=
+bf82c
+> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> AuthorDate: Mon, 1 Aug 2011 12:49:14 +0200
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Sun, 14 Aug 2011 11:53:03 +0200
+>=20
+> perf: Add PM notifiers to fix CPU hotplug races
 
-Yours,
-Linus Walleij
+This patch causes two of my machines (Sandybridge MacBook Air and
+another Sandybridge desktop) to fail at resume time.
+
+I reverted this single patch from Linus'
+37be944a0270402f9cda291a930b0286f6dc92f5 and both machines resume
+correctly now.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrGvvDYtFsjWk68qAQg9KBAAxVJjRi87+3RJcTYiev2w3pY8IT83VtZj
+hPB3sW4DUykGN1fO+DHObKE3R43GhV4L42g3eKXuLqL52ASMDcseMJ51TGJPntgD
+kOj7DDBV5NQayu7YfP8cI4Zo3R7TonRLgj/S6rp8Uel6VRK22tvH8cn2shEx+M8t
+vY3bR5g3Oj+Yoz/n1Of5OBOxyZ69fys19wAtD1YmvyFoJWtN/NWmI3TXWhtn7Qbe
+JP0WTUuc+yCvc18Z2dr849RVco7TBkDoJvdntMpJhLTUs8aOAGWwbL2TqZ4ofhK+
+FjpCBzWskezPrk2ZG7tI1CFhIM2ihEQ9Gp/Mm3szLQEQtHQLkow3tp9nFc2LbcfL
+0/udsGkytmhAtOx1KKtRoFOSKC/LwtNHMTAlQKLDWTjY6cGoI7HeJ+FU+6lK6XcT
+PI2qC9IZdbzY/0JkX61yqrJahsy2Rs/JeOzGky9dxS2nfKxXYFmlqc+qq8pUZ/4S
+VVubdKzV+AIVFSURIFOa91Drx36ecYIBVNGgqgrA+arzXF/x9O7O10qqHhLAvEao
+Xso/+Iuzo+KMg15SUbkCE523ujEkv4K7/h+CMMBeuPp0APCm65VvGE8jXU2A1yjI
+8tMVYj2s4yPuaaCXw0KoyWgPSs24R64uh6hOdVvOEyXSygYjgefZUkaq/qIDbLmo
+L3P/qbd4TtI=
+=s8EX
+-----END PGP SIGNATURE-----
+--=-=-=--
