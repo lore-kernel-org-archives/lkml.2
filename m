@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab1KBWyO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:54:14 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26661 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889Ab1KBWyN (ORCPT
+	id S1753430Ab1KBWzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:55:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34350 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab1KBWzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:54:13 -0400
-Date: Wed, 2 Nov 2011 23:59:17 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-cc: "K. Y. Srinivasan" <kys@microsoft.com>, dmitry.torokhov@gmail.com,
-        jkosina@suse.cz, gregkh@suse.de, ohering@suse.com,
-        linux-kernel@vger.kernel.org, virtualization@lists.osdl.org,
-        joe@perches.com, devel@linuxdriverproject.org
-Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
-In-Reply-To: <20111029063240.GH14881@longonot.mountain>
-Message-ID: <alpine.LNX.2.00.1111022353530.20903@swampdragon.chaosbits.net>
-References: <1319841316-29136-1-git-send-email-kys@microsoft.com> <alpine.LNX.2.00.1110290041500.31615@swampdragon.chaosbits.net> <20111029063240.GH14881@longonot.mountain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 2 Nov 2011 18:55:32 -0400
+Message-ID: <4EB1CA4F.3090403@gmail.com>
+Date: Wed, 02 Nov 2011 23:55:11 +0100
+From: Eric Dumazet <eric.dumazet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tony Lindgren <tony@atomide.com>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH] net: Add back alignment for size for __alloc_skb
+References: <20111102224317.GM31337@atomide.com>
+In-Reply-To: <20111102224317.GM31337@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Oct 2011, Dan Carpenter wrote:
+On 02/11/2011 23:43, Tony Lindgren wrote:
 
-> On Sat, Oct 29, 2011 at 12:54:34AM +0200, Jesper Juhl wrote:
-> > > +			default:
-> > > +				pr_err("unhandled packet type %d, tid %llx len %d\n",
-> > > +				   desc->type,
-> > > +				   req_id,
-> > > +				   bytes_recvd);
-> > 
-> > Why not:
-> > 
-> >                                 pr_err("unhandled packet type %d, tid %llx 
-> >                                        len %d\n", desc->type, req_id, bytes_recvd);
+> Commit 87fb4b7b533073eeeaed0b6bf7c2328995f6c075 (net: more
+> accurate skb truesize) changed the alignment of size. This
+> can cause problems at least on some machines with NFS root:
 > 
-> Because then the printk would be messed up?  Your final printed
-> string would look like:
+> Unhandled fault: alignment exception (0x801) at 0xc183a43a
+> Internal error: : 801 [#1] PREEMPT
+> Modules linked in:
+> CPU: 0    Not tainted  (3.1.0-08784-g5eeee4a #733)
+> pc : [<c02fbba0>]    lr : [<c02fbb9c>]    psr: 60000013
+> sp : c180fef8  ip : 00000000  fp : c181f580
+> r10: 00000000  r9 : c044b28c  r8 : 00000001
+> r7 : c183a3a0  r6 : c1835be0  r5 : c183a412  r4 : 000001f2
+> r3 : 00000000  r2 : 00000000  r1 : ffffffe6  r0 : c183a43a
+> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 0005317f  Table: 10004000  DAC: 00000017
+> Process swapper (pid: 1, stack limit = 0xc180e270)
+> Stack: (0xc180fef8 to 0xc1810000)
+> fee0:                                                       00000024 00000000
+> ff00: 00000000 c183b9c0 c183b8e0 c044b28c c0507ccc c019dfc4 c180ff2c c0503cf8
+> ff20: c180ff4c c180ff4c 00000000 c1835420 c182c740 c18349c0 c05233c0 00000000
+> ff40: 00000000 c00e6bb8 c180e000 00000000 c04dd82c c0507e7c c050cc18 c183b9c0
+> ff60: c05233c0 00000000 00000000 c01f34f4 c0430d70 c019d364 c04dd898 c04dd898
+> ff80: c04dd82c c0507e7c c180e000 00000000 c04c584c c01f4918 c04dd898 c04dd82c
+> ffa0: c04ddd28 c180e000 00000000 c0008758 c181fa60 3231d82c 00000037 00000000
+> ffc0: 00000000 c04dd898 c04dd82c c04ddd28 00000013 00000000 00000000 00000000
+> ffe0: 00000000 c04b2224 00000000 c04b21a0 c001056c c001056c 00000000 00000000
+> Function entered at [<c02fbba0>] from [<c019dfc4>]
+> Function entered at [<c019dfc4>] from [<c01f34f4>]
+> Function entered at [<c01f34f4>] from [<c01f4918>]
+> Function entered at [<c01f4918>] from [<c0008758>]
+> Function entered at [<c0008758>] from [<c04b2224>]
+> Function entered at [<c04b2224>] from [<c001056c>]
+> Code: e1a00005 e3a01028 ebfa7cb0 e35a0000 (e5858028)
 > 
-> "unhandled packet type %d, tid %llx 
->                                        len %d\n"
+> Here PC is at __alloc_skb and &shinfo->dataref is unaligned because
+> skb->end can be unaligned without this patch.
 > 
-> Don't break strings up across lines because it breaks grep.  If K. Y.
-> wants to put all the parameters on one line instead of three that
-> would probably be better, but in the end who cares?
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 > 
-Right, so I obviously "fat fingered" that and should have read my email 
-once more before sending. *But* the point really was just the "put all the 
-parameters on one line rather than 3" bit...
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -189,6 +189,7 @@ struct sk_buff *__alloc_skb(unsigned int size, gfp_t gfp_mask,
+>  	 * aligned memory blocks, unless SLUB/SLAB debug is enabled.
+>  	 * Both skb->head and skb_shared_info are cache line aligned.
+>  	 */
+> +	size = SKB_DATA_ALIGN(size);
+>  	size += SKB_DATA_ALIGN(sizeof(struct skb_shared_info));
+>  	data = kmalloc_node_track_caller(size, gfp_mask, node);
+>  	if (!data)
 
-As for who cares; well, I cared enough to actually read the patch and send 
-a reply, and I thought we needed more reviewers... When I review something 
-I comment on everything I spot from bugs to trivial stuff - then it is 
-up to the recipient to pick the things they want to address from the 
-reply..
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+
+Hmm, I dont think this is the right way to fix the bug.
+
+There is a problem with your kmalloc() or alignments on your architecture.
+
+What is the SMP_CACHE_BYTES value ?
 
