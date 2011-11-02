@@ -1,127 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab1KBOPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:15:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21740 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755365Ab1KBOPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:15:32 -0400
-Message-ID: <4EB1507D.9060009@redhat.com>
-Date: Wed, 02 Nov 2011 12:15:25 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S932253Ab1KBORK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:17:10 -0400
+Received: from mailout06.t-online.de ([194.25.134.19]:36308 "EHLO
+	mailout06.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932097Ab1KBORG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 10:17:06 -0400
+Message-ID: <4EB150D3.8040009@t-online.de>
+Date: Wed, 02 Nov 2011 15:16:51 +0100
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [GIT PULL for 3.2-rc1] EDAC drivers updates
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+To: shemminger@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: [BUG] sky2 wol broken for Marvell 88E8053 rev 19
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-ID: TnjgRqZEYhQxSiG7Z3cH6I5db0BnBGhcc5+YxGtkC-wRQe6QXv+GEdau3TzE1jUQVS
+X-TOI-MSGID: c34b6957-496f-460d-ad92-f70fdaa8ae0d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+WOL is broken on an AOpen i915GMm-hfs mobo with kernel 3.1.
 
-Hi Linus,
+lspci
+===
+02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8053 PCI-E Gigabit Ethernet Controller (rev 19)
+         Subsystem: AOPEN Inc. Marvell 88E8053 Gigabit Ethernet Controller (Aopen)
+         Flags: bus master, fast devsel, latency 0, IRQ 44
+         Memory at d0020000 (64-bit, non-prefetchable) [size=16K]
+         I/O ports at c000 [size=256]
+         [virtual] Expansion ROM at 80900000 [disabled] [size=128K]
+         Capabilities: [48] Power Management version 2
+         Capabilities: [50] Vital Product Data
+         Capabilities: [5c] MSI: Enable+ Count=1/2 Maskable- 64bit+
+         Capabilities: [e0] Express Legacy Endpoint, MSI 00
+         Capabilities: [100] Advanced Error Reporting
+         Kernel driver in use: sky2
 
-Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
+03:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8053 PCI-E Gigabit Ethernet Controller (rev 19)
+         Subsystem: AOPEN Inc. Marvell 88E8053 Gigabit Ethernet Controller (Aopen)
+         Flags: bus master, fast devsel, latency 0, IRQ 45
+         Memory at d0120000 (64-bit, non-prefetchable) [size=16K]
+         I/O ports at d000 [size=256]
+         [virtual] Expansion ROM at 80600000 [disabled] [size=128K]
+         Capabilities: [48] Power Management version 2
+         Capabilities: [50] Vital Product Data
+         Capabilities: [5c] MSI: Enable+ Count=1/2 Maskable- 64bit+
+         Capabilities: [e0] Express Legacy Endpoint, MSI 00
+         Capabilities: [100] Advanced Error Reporting
+         Kernel driver in use: sky2
 
-For:
-	- edac core: Move edac main structs to include/linux/edac.h;
-	- removal of edac_mce glue. Now, both AMD and Intel drivers with mce
-	  will use the same glue to allow MCA error reports to go through the
-	  edac API;
-	- i7core edac: add scrub suport, pre-fill DIMM labels and a few fixes;
-	- i7300 edac: a fix at the error cleanup logic;
-	- sb edac: add an experimental EDAC driver for Sandy Bridge-EP family.
+  fix:
+==
 
-Thanks!
-Mauro
+WOL does work with the following two changes:
 
-- -
+diff original/drivers/net/sky2.c new/drivers/net/sky2.c
+826a827
+ >       u32 reg1;
+878a880,884
+ >
+ >       /* Turn on legacy PCI-Express PME mode */
+ >       reg1 = sky2_pci_read32(hw, PCI_DEV_REG1);
+ >       reg1 |= PCI_Y2_PME_LEGACY;
+ >       sky2_pci_write32(hw, PCI_DEV_REG1, reg1);
 
-The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
+diff original/drivers/net/sky2.h new/drivers/net/sky2.h
+374,375c374,375
+<       Y2_HW_WOL_ON    = 1<<15,/* HW WOL On  (Yukon-EC Ultra A1 only) */
+<       Y2_HW_WOL_OFF   = 1<<14,/* HW WOL On  (Yukon-EC Ultra A1 only) */
+---
+ >       Y2_HW_WOL_OFF   = 1<<15,/* HW WOL On  (Yukon-EC Ultra A1 only) */
+ >       Y2_HW_WOL_ON    = 1<<14,/* HW WOL On  (Yukon-EC Ultra A1 only) */
 
-  Linux 3.1 (2011-10-24 09:10:05 +0200)
+The first change reverts commit 87b09f1f25cd1e01d7c50bf423c7fe33027d7511,
+both changes are based on suggestions found in the www.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git linux_next
+WOL only works here if I apply both of them.
 
-Borislav Petkov (3):
-      x86, MCE: Use notifier chain only for MCE decoding
-      i7core_edac: Drop the edac_mce facility
-      EDAC: Correct Kconfig dependencies
+Some authors suggest fix 1, some suggested fix 2, I found no msg requesting to
+apply both. Several bugzilla references are still unreachable ;-(
 
-David Sterba (1):
-      i7core_edac: fix misuse of logical operation in place of bitop
 
-Mark A. Grondona (1):
-      EDAC: Fix incorrect edac mode reporting in sb_edac
+So the big question is:
+=================
 
-Mauro Carvalho Chehab (12):
-      i7core_edac: Fix oops when trying to inject errors
-      edac: Move edac main structs to include/linux/edac.h
-      i7core_edac: Don't enable memory scrubbing for Xeon 35xx
-      MAINTAINERS: remove dropped edac_mce.* from the file
-      i7core_edac: use edac's own way to print errors
-      i7core_edac: return -ENODEV if no MC is found
-      i7core_edac: Initialize memory name with cpu, channel, bank
-      i7300_edac: Fix error cleanup logic
-      edac: Add an experimental new driver to support Sandy Bridge CPU's
-      edac: sb_edac: Add it to the building system
-      edac: tag sb_edac as EXPERIMENTAL, as it requires more testing
-      MAINTAINERS: add an entry for Edac Sandy Bridge driver
+Do those changes fix one system but break other systems?
 
-Nils Carlson (1):
-      i7core_edac: scrubbing fixups
-
-Samuel Gabrielsson (1):
-      i7core_edac: Add scrubbing support
-
-Sedat Dilek (1):
-      i7core_edac: Fix compilation on 32 bits arch
-
-Thomas Renninger (1):
-      EDAC i7core: Use mce socketid for better compatibility
-
- MAINTAINERS                      |    9 +-
- arch/x86/kernel/cpu/mcheck/mce.c |   18 +-
- drivers/edac/Kconfig             |   16 +-
- drivers/edac/Makefile            |    2 +-
- drivers/edac/edac_core.h         |  350 +-------
- drivers/edac/edac_mce.c          |   61 --
- drivers/edac/i7300_edac.c        |   51 +-
- drivers/edac/i7core_edac.c       |  415 ++++++++-
- drivers/edac/sb_edac.c           | 1893 ++++++++++++++++++++++++++++++++++++++
- include/linux/edac.h             |  350 +++++++
- include/linux/edac_mce.h         |   31 -
- 11 files changed, 2671 insertions(+), 525 deletions(-)
- delete mode 100644 drivers/edac/edac_mce.c
- create mode 100644 drivers/edac/sb_edac.c
- delete mode 100644 include/linux/edac_mce.h
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iQIcBAEBAgAGBQJOsVB0AAoJEGO08Bl/PELnXsIP/0htncPpL9Zc1hwzKa2T78Vm
-2MKVilhyT6KRzpMyZt5D1stRgMFSd34A/KPx8bwwalj+Qtna1RxCPEPeRjbo3367
-0sM9WmHXuDi3SXPFSYOjkn7NEuqpJwEq7wfIJI8OEdgx01nUK5w0BYJySURoo2n4
-h3+grX3bK0rwZs+C4ynAQCF0IwYl4Ffgpy4PanxNfHpWb5u0G24laq/Mq1utwBps
-fBlUdJxa85lskNmZ3FuPZFLelzlkbG6Zkhj2M//qe/my4bu8ybue0z+MqPoIX/Rf
-wlX0YBK10rHr9BgAcYR45SstSTGc5tW+3uj86t9LSUw/TmnhraPDRUGeGUe3tx+R
-XHEFbCjV9HJYOezzn62Kt1Wf55b7S88IMG4ECgmgDDcRpknjpDL5uVx1pMxr5Dbd
-q6tiugpvbAaqkulxN0mRQhcsn1uFn2nHXKvZEHKntx7suQ6o2L25F4cBWUPJGiEm
-rQpmU4fmlPOZsyZl+RUZ88Ct3+vEj62IVrM6IYCc7eS90xKgeU4Bxst2g9TfhMwo
-SLY7Ji7JKezXUwg2jQaWeHFfY75hZpYWqf2tcWw4Fg0EJLRSYOhQ6UySGoSXjevx
-w41dg53kE4BSzm1wJdwiGOcjIB+disLqY6LWBvWCCe3FljrpR9LDuUvtaAUTP3hJ
-dJJVBxy6NJpZCqiNt6qr
-=Oc4E
------END PGP SIGNATURE-----
+cu,
+  Knut
