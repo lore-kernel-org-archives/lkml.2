@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933056Ab1KBSFr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:05:47 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35088 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab1KBSFq (ORCPT
+	id S932971Ab1KBSHO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:07:14 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18054 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932240Ab1KBSHL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 14:05:46 -0400
-Message-ID: <1320257141.2292.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: Linux 3.1-rc9
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Simon Kirby <sim@hostway.ca>,
-        David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Network Development <netdev@vger.kernel.org>
-Date: Wed, 02 Nov 2011 19:05:41 +0100
-In-Reply-To: <CA+55aFzYHJcGEmuj900G60DECBvdWDWNC09N393PWutsFUL-oQ@mail.gmail.com>
-References: <1318874090.4172.84.camel@twins>
-	 <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>
-	 <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>
-	 <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
-	 <20111018182046.GF1309@hostway.ca>
-	 <alpine.LFD.2.02.1110182146440.3240@ionos>
-	 <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca>
-	 <20111031173246.GA10614@hostway.ca>
-	 <alpine.LFD.2.02.1111021725550.2829@ionos>
-	 <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFxKtA0XXtiKgKC5qHmFuTv2=TbuMEczkegJKY4Uy00a-g@mail.gmail.com>
-	 <1320256412.2292.17.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFzYHJcGEmuj900G60DECBvdWDWNC09N393PWutsFUL-oQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 2 Nov 2011 14:07:11 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 02 Nov 2011 11:07:00 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 2 Nov 2011 11:06:58 -0700
+Subject: RE: [PATCH] arm/tegra: add support for tegra30 interrupts
+Thread-Topic: [PATCH] arm/tegra: add support for tegra30 interrupts
+Thread-Index: AcyZdXMGsR6VOsqoTM2c7VVpVQL9hAAB+o6wAAMtPWA=
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
+References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 02 novembre 2011 à 11:00 -0700, Linus Torvalds a écrit :
-> On Wed, Nov 2, 2011 at 10:53 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Stephen Warren wrote at Wednesday, November 02, 2011 10:39 AM:
+> Peter De Schrijver wrote by Wednesday, November 02, 2011 9:38 AM:
+> > Tegra30 has 1 extra legacy interrupt controller. Use the GIC ITLinesNumber
+> > field to determine how many interrupt controllers we have and initialize
+> > appropriately. Also make room for the extra tegra30 interrupts by moving
+> > the GPIO IRQ base. This shouldn't affect existing code as it determines the
+> > correct IRQ number for GPIOs using TEGRA_GPIO_TO_IRQ()
 > >
-> > tcp_v4_syn_recv_sock()
-> > {
-> >        newsk = tcp_create_openreq_child(sk, req, skb);
-> >
-> > newsk is locked at this point.
+> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 > 
-> Umm, if that is the case, then the bug predates the commit you point
-> to. There were exit paths before that too.
-> 
+> After fixing one small issue I comment on below,
+> Acked-by: Stephen Warren <swarren@nvidia.com>
 
-Yes, but only when tproxy is used, and in some obscure error
-conditions... Probably nobody ever hit them or complained.
+Also, both this and "arm/tegra: remove unused defines":
 
+Tested-by: Stephen Warren <swarren@nvidia.com>
 
+(on Tegra20 Seaboard/Springbank, not on Tegra30 Cardhu)
+
+-- 
+nvpublic
 
