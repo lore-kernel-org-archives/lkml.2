@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab1KBFwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 01:52:16 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48138 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab1KBFwP (ORCPT
+	id S1754202Ab1KBFw5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 01:52:57 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29278 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752428Ab1KBFw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 01:52:15 -0400
-Date: Wed, 02 Nov 2011 01:50:04 -0400 (EDT)
-Message-Id: <20111102.015004.118482982480965571.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
-References: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 2 Nov 2011 01:52:56 -0400
+Message-ID: <4EB0DAB6.7000106@dsn.lapis-semi.com>
+Date: Wed, 02 Nov 2011 14:52:54 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alan Cox <alan@linux.intel.com>
+CC: gregkh@suse.de, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 2/2] pch_uart: Delete modem status interrupt enable code
+References: <1319697919-5623-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>	<1319697919-5623-2-git-send-email-tomoya-linux@dsn.lapis-semi.com> <20111101125757.4ef7f883@bob.linux.org.uk>
+In-Reply-To: <20111101125757.4ef7f883@bob.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 01 Nov 2011 22:50:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 2 Nov 2011 16:37:08 +1100
+(2011/11/01 21:57), Alan Cox wrote:
+>> (pch_uart device has auto hardware flow control function. So,
+>> pch_uart driver doesn't have to control modem status interrupt.)
+>
+> This is true for flow control bits but not for incoming carrier detect ?
 
-> Subject: [PATCH] net: fix typo in drivers/net/ethernet/xilinx/ll_temac_main.c
-> 
-> Commit 9e903e085262 ("net: add skb frag size accessors") used frag_size
-> instead of skb_frag_size in this file.
-> 
-> Fixes this build error:
-> 
-> drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
-> drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declaration of function 'frag_size' [-Werror=implicit-function-declaration]
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Called ".get_mctrl" function, other software can know incoming carrier 
+detection.
+Or you mean a uart driver must detect incoming carrier with interrupt ?
 
-Applied, thanks!
+>> This patch deletes the code.
+>
+>> +	dev_info(priv->port.dev,
+>> +		"PCH UART : Modem status interrupt is not
+>> supported.\n"); }
+>
+> dev_info seems wrong here. Does the user need to know this ?
+OK, a user doesn't have to know the information.
+I will delete the dev_info.
+
+Thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
