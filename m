@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab1KCCLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:11:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50606 "EHLO mx2.suse.de"
+	id S932858Ab1KCCL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:11:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50597 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932663Ab1KCBfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:35:41 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221456.244353214@clark.kroah.org>
+	id S933244Ab1KCBfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:35:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:53 2011
+Message-Id: <20111102221453.585187482@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:33 -0700
+Date: Wed, 02 Nov 2011 15:14:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerry Huang <r66093@freescale.com>
-Subject: [067/107] QE/FHCI: fixed the CONTROL bug
+        alan@lxorguk.ukuu.org.uk, Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [038/107] cnic: Improve NETDEV_UP event handling
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,64 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerry Huang <r66093@freescale.com>
+From: Michael Chan <mchan@broadcom.com>
 
-commit 273d23574f9dacd9c63c80e7d63639a669aad441 upstream.
+commit db1d350fcb156b58f66a67680617077bcacfe6fc upstream.
 
-For USB CONTROL transaction, when the data length is zero,
-the IN package is needed to finish this transaction in status stage.
+During NETDEV_UP, we use symbol_get() to get the net driver's cnic
+probe function.  This sometimes doesn't work if NETDEV_UP happens
+right after NETDEV_REGISTER and the net driver is still running module
+init code.  As a result, the cnic device may not be discovered.  We
+fix this by probing on all NETDEV events if the device's netif_running
+state is up.
 
-Signed-off-by: Jerry Huang <r66093@freescale.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/fhci-sched.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ drivers/net/cnic.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/fhci-sched.c
-+++ b/drivers/usb/host/fhci-sched.c
-@@ -1,7 +1,7 @@
- /*
-  * Freescale QUICC Engine USB Host Controller Driver
-  *
-- * Copyright (c) Freescale Semicondutor, Inc. 2006.
-+ * Copyright (c) Freescale Semicondutor, Inc. 2006, 2011.
-  *               Shlomi Gridish <gridish@freescale.com>
-  *               Jerry Huang <Chang-Ming.Huang@freescale.com>
-  * Copyright (c) Logic Product Development, Inc. 2007
-@@ -810,9 +810,11 @@ void fhci_queue_urb(struct fhci_hcd *fhc
- 		ed->dev_addr = usb_pipedevice(urb->pipe);
- 		ed->max_pkt_size = usb_maxpacket(urb->dev, urb->pipe,
- 			usb_pipeout(urb->pipe));
-+		/* setup stage */
- 		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++, FHCI_TA_SETUP,
- 			USB_TD_TOGGLE_DATA0, urb->setup_packet, 8, 0, 0, true);
+--- a/drivers/net/cnic.c
++++ b/drivers/net/cnic.c
+@@ -2718,7 +2718,7 @@ static int cnic_netdev_event(struct noti
  
-+		/* data stage */
- 		if (data_len > 0) {
- 			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
- 				usb_pipeout(urb->pipe) ? FHCI_TA_OUT :
-@@ -820,9 +822,18 @@ void fhci_queue_urb(struct fhci_hcd *fhc
- 				USB_TD_TOGGLE_DATA1, data, data_len, 0, 0,
- 				true);
- 		}
--		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
--			usb_pipeout(urb->pipe) ? FHCI_TA_IN : FHCI_TA_OUT,
--			USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+
-+		/* status stage */
-+		if (data_len > 0)
-+			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
-+				(usb_pipeout(urb->pipe) ? FHCI_TA_IN :
-+							  FHCI_TA_OUT),
-+				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+		else
-+			 td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
-+				FHCI_TA_IN,
-+				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+
- 		urb_state = US_CTRL_SETUP;
- 		break;
- 	case FHCI_TF_ISO:
+ 	dev = cnic_from_netdev(netdev);
+ 
+-	if (!dev && (event == NETDEV_REGISTER || event == NETDEV_UP)) {
++	if (!dev && (event == NETDEV_REGISTER || netif_running(netdev))) {
+ 		/* Check for the hot-plug device */
+ 		dev = is_cnic_dev(netdev);
+ 		if (dev) {
+@@ -2734,7 +2734,7 @@ static int cnic_netdev_event(struct noti
+ 		else if (event == NETDEV_UNREGISTER)
+ 			cnic_ulp_exit(dev);
+ 
+-		if (event == NETDEV_UP) {
++		if (event == NETDEV_UP || (new_dev && netif_running(netdev))) {
+ 			if (cnic_register_netdev(dev) != 0) {
+ 				cnic_put(dev);
+ 				goto done;
 
 
