@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932640Ab1KCBeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:34:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50436 "EHLO mx2.suse.de"
+	id S932721Ab1KCBeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:34:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50444 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932388Ab1KCBeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:34:04 -0400
+	id S932635Ab1KCBeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:34:07 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:50 2011
-Message-Id: <20111102221450.714196442@clark.kroah.org>
+Message-Id: <20111102221450.806045624@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:33 -0700
+Date: Wed, 02 Nov 2011 15:13:34 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stratos Psomadakis <psomas@gentoo.org>,
-        Wolfgang Walter <wolfgang.walter@stwm.de>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [007/107] Fix broken backport for IPv6 tunnels
+        alan@lxorguk.ukuu.org.uk, Sridhar Samudrala <sri@us.ibm.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Faidon Liambotis <paravoid@debian.org>
+Subject: [008/107] net: Fix IPv6 GSO type checks in Intel ethernet drivers
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stratos Psomadakis <psomas@gentoo.org>
+From: Sridhar Samudrala <sri@us.ibm.com>
 
-Fix broken backport for IPv6 tunnels in 2.6.32-longterm kernels.
+commit 8e1e8a4779cb23c1d9f51e9223795e07ec54d77a upstream.
 
-upstream commit d5aa407f59f5b83d2c50ec88f5bf56d40f1f8978 ("tunnels: fix
-netns vs proto registration ordering") , which was included in
-2.6.32.44-longterm, was not backported correctly, and results in a NULL
-pointer dereference in ip6_tunnel.c for longterm kernels >=2.6.32.44
+Found this problem when testing IPv6 from a KVM guest to a remote
+host via e1000e device on the host.
+The following patch fixes the check for IPv6 GSO packet in Intel
+ethernet drivers to use skb_is_gso_v6(). SKB_GSO_DODGY is also set
+when packets are forwarded from a guest.
 
-Use [un]register_pernet_gen_device() instead of
-[un]register_pernet_device() to fix it.
-
-Signed-off-by: Stratos Psomadakis <psomas@gentoo.org>
-Cc: Wolfgang Walter <wolfgang.walter@stwm.de>
-Cc: Tim Gardner <tim.gardner@canonical.com>
-Cc: Andy Whitcroft <apw@canonical.com>
+Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Faidon Liambotis <paravoid@debian.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv6/ip6_tunnel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -1466,7 +1466,7 @@ static int __init ip6_tunnel_init(void)
- {
- 	int  err;
- 
--	err = register_pernet_device(&ip6_tnl_net_ops);
-+	err = register_pernet_gen_device(&ip6_tnl_net_id, &ip6_tnl_net_ops);
- 	if (err < 0)
- 		goto out_pernet;
- 
-@@ -1487,7 +1487,7 @@ static int __init ip6_tunnel_init(void)
- out_ip6ip6:
- 	xfrm6_tunnel_deregister(&ip4ip6_handler, AF_INET);
- out_ip4ip6:
--	unregister_pernet_device(&ip6_tnl_net_ops);
-+	unregister_pernet_gen_device(ip6_tnl_net_id, &ip6_tnl_net_ops);
- out_pernet:
- 	return err;
- }
+
+---
+ drivers/net/e1000e/netdev.c    |    2 +-
+ drivers/net/igb/igb_main.c     |    2 +-
+ drivers/net/igbvf/netdev.c     |    2 +-
+ drivers/net/ixgbe/ixgbe_main.c |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/e1000e/netdev.c
++++ b/drivers/net/e1000e/netdev.c
+@@ -3807,7 +3807,7 @@ static int e1000_tso(struct e1000_adapte
+ 								 0);
+ 			cmd_length = E1000_TXD_CMD_IP;
+ 			ipcse = skb_transport_offset(skb) - 1;
+-		} else if (skb_shinfo(skb)->gso_type == SKB_GSO_TCPV6) {
++		} else if (skb_is_gso_v6(skb)) {
+ 			ipv6_hdr(skb)->payload_len = 0;
+ 			tcp_hdr(skb)->check =
+ 				~csum_ipv6_magic(&ipv6_hdr(skb)->saddr,
+--- a/drivers/net/igb/igb_main.c
++++ b/drivers/net/igb/igb_main.c
+@@ -3032,7 +3032,7 @@ static inline int igb_tso_adv(struct igb
+ 							 iph->daddr, 0,
+ 							 IPPROTO_TCP,
+ 							 0);
+-	} else if (skb_shinfo(skb)->gso_type == SKB_GSO_TCPV6) {
++	} else if (skb_is_gso_v6(skb)) {
+ 		ipv6_hdr(skb)->payload_len = 0;
+ 		tcp_hdr(skb)->check = ~csum_ipv6_magic(&ipv6_hdr(skb)->saddr,
+ 						       &ipv6_hdr(skb)->daddr,
+--- a/drivers/net/igbvf/netdev.c
++++ b/drivers/net/igbvf/netdev.c
+@@ -1953,7 +1953,7 @@ static int igbvf_tso(struct igbvf_adapte
+ 		                                         iph->daddr, 0,
+ 		                                         IPPROTO_TCP,
+ 		                                         0);
+-	} else if (skb_shinfo(skb)->gso_type == SKB_GSO_TCPV6) {
++	} else if (skb_is_gso_v6(skb)) {
+ 		ipv6_hdr(skb)->payload_len = 0;
+ 		tcp_hdr(skb)->check = ~csum_ipv6_magic(&ipv6_hdr(skb)->saddr,
+ 		                                       &ipv6_hdr(skb)->daddr,
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -4881,7 +4881,7 @@ static int ixgbe_tso(struct ixgbe_adapte
+ 			                                         IPPROTO_TCP,
+ 			                                         0);
+ 			adapter->hw_tso_ctxt++;
+-		} else if (skb_shinfo(skb)->gso_type == SKB_GSO_TCPV6) {
++		} else if (skb_is_gso_v6(skb)) {
+ 			ipv6_hdr(skb)->payload_len = 0;
+ 			tcp_hdr(skb)->check =
+ 			    ~csum_ipv6_magic(&ipv6_hdr(skb)->saddr,
 
 
