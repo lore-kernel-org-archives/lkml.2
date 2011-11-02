@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab1KBFhV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 01:37:21 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:39613 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab1KBFhS (ORCPT
+	id S1754464Ab1KBFrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 01:47:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58884 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750948Ab1KBFrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 01:37:18 -0400
-Date: Wed, 2 Nov 2011 16:37:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5"
+	Wed, 2 Nov 2011 01:47:06 -0400
+Date: Tue, 1 Nov 2011 22:46:58 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        tj@kernel.org
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111102054658.GA29035@core.coreip.homeip.net>
+References: <20111101124759.GA1326@zeus>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101124759.GA1326@zeus>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Andrew,
 
-Hi all,
+On Tue, Nov 01, 2011 at 07:48:19AM -0500, Andrew Watts wrote:
+> Hi.
+> 
+> Hibernate/sleep (echo disk/mem > /sys/power/state) has presented problems
+> for me starting with 2.6.39. Kernel 2.6.37.6 was the last completely bug-free
+> version I used (I skipped the 2.6.38 branch entirely).
+> 
+> The symptoms are that upon resume (from sleep/hibernate) there is no video
+> nor any keyboard input with the exception of sysrq.
 
-[I thought I had reported this, but it was a similar problem in another
-driver.]
+If SysRq is working that means that i8042, atkbd and input core are
+working properly.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+> 
+> It has been a frustrating bug to hunt down because it is not easily
+> reproduced; sometimes the bug doesn't pop up until after a long sequence of
+> hibernate/sleep cycles.
+> 
+> I successfully bisected the problem to: 8ee294cd9def000.
+> 
+> =======
+> Commit: 8ee294cd9def0004887da7f44b80563493b0a097
+> Author: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Date:   Mon Nov 15 01:39:57 2010 -0800
+> Input: serio - convert to common workqueue instead of a thread
+> =======
+> 
+> Backing out 8ee294cd9def000 (which requires reversing part of
+> 1d64b655dc083df also) fixes this particular problem on 2.6.39.4,
+> 3.0.8, and 3.1.
 
-drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
-drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declarat=
-ion of function 'frag_size' [-Werror=3Dimplicit-function-declaration]
+I am not sure how this commit could cause your "no video" issue...
+Are you hibernating from text console or X? Can you try plugging in USB
+keyboard and see if you are getting input? What about ssh into the box?
 
-Caused by commit 9e903e085262 ("net: add skb frag size accessors").
+Thanks.
 
-I have added this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 2 Nov 2011 16:31:37 +1100
-Subject: [PATCH] net: fix typo in drivers/net/ethernet/xilinx/ll_temac_main=
-.c
-
-Commit 9e903e085262 ("net: add skb frag size accessors") used frag_size
-instead of skb_frag_size in this file.
-
-Fixes this build error:
-
-drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
-drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declarat=
-ion of function 'frag_size' [-Werror=3Dimplicit-function-declaration]
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/net/ethernet/xilinx/ll_temac_main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethe=
-rnet/xilinx/ll_temac_main.c
-index 4d1658e..caf3659 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -716,8 +716,8 @@ static int temac_start_xmit(struct sk_buff *skb, struct=
- net_device *ndev)
- 		cur_p =3D &lp->tx_bd_v[lp->tx_bd_tail];
- 		cur_p->phys =3D dma_map_single(ndev->dev.parent,
- 					     skb_frag_address(frag),
--					     frag_size(frag), DMA_TO_DEVICE);
--		cur_p->len =3D frag_size(frag);
-+					     skb_frag_size(frag), DMA_TO_DEVICE);
-+		cur_p->len =3D skb_frag_size(frag);
- 		cur_p->app0 =3D 0;
- 		frag++;
- 	}
---=20
-1.7.7
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOsNcEAAoJEECxmPOUX5FE5ewP/2ro6ZAHBloRr9LCWHqoMLPC
-AcAArTryTXhV6PspAFwR2YCdUmNEX2grAJV9dN0IQ7FweTaYX6+Y6tG/iB0k4iYk
-lD4EzSpmO61S5GOPRBpxTBFR/onGDXj6+9bE8/tdUwpVO4HPMvECf2EwaJpGvyxZ
-QEVw0JoSmNRlFKv+/JHRmnESx4qCrLTCs2Er63IQo5+ssSCC7ueQZDlOKsPAjJ5H
-24ojHAjZKxqvWCoJPRCb/9fybGqQcFQKZmoOr4NvP8florYX8YTvO61IlORqULry
-kkQFCFyq6zbLlRxCkfDruR6bj4/1fJIdE46syfrR00peZoiad4cElFpHnMXRNGfq
-IfQhRyCxlrxHNYbuSTW5He2Z1m2SgSCAYkNFR6Y6YVFCPNup9FNiZvmO6HSx+njz
-DYo72+UFCzplfab4SkkiNUCnuU5nGhoDrREjDydLySdH3Z3/M3CdQY+sqfZvoTM9
-MXWBczRgg2ecWh/9yZQxI+/whi/XmoNtL2d79/VsTJCp6NmBMCI83cwKnaQOfH69
-2Xaz8UhucdJthTZZrMLFkRwV0Fc5OE4pm+JakFXJPHWHv5o8ElE2j8gV5HXZVmlQ
-OMI+Le29iOEZNWKhX7bsYU5oPF1l6suE7Vp9PEjipWCOD9X79xio30zq4P86KM3/
-xK9VmeTpzrCE11rI52uF
-=ReYY
------END PGP SIGNATURE-----
-
---Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5--
+-- 
+Dmitry
