@@ -1,110 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753335Ab1KBVOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:14:40 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:48625 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab1KBVOg convert rfc822-to-8bit (ORCPT
+	id S1753142Ab1KBVP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:15:56 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:42226 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1KBVPy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:14:36 -0400
-MIME-Version: 1.0
-Message-ID: <cb397723-5297-493d-9bbd-522a6400a5a6@default>
-Date: Wed, 2 Nov 2011 14:14:16 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
- <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default>
- <20111031223717.GI3466@redhat.com>
- <1b2e4f74-7058-4712-85a7-84198723e3ee@default 4EB1AD53.2000600@redhat.com>
-In-Reply-To: <4EB1AD53.2000600@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
+	Wed, 2 Nov 2011 17:15:54 -0400
+Subject: Re: [PATCH V1 02/17] ext4: Add the basic function for inline data support.
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@whamcloud.com>
+In-Reply-To: <4EA97075.4050307@tao.ma>
+Date: Wed, 2 Nov 2011 15:16:14 -0600
+Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "tytso@mit.edu" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090205.4EB1B2AD.0108,ss=1,re=0.000,fgs=0
+Message-Id: <4209A71E-F65C-4335-BD80-ACCABDB6E7D2@whamcloud.com>
+References: <4EA7B788.3040503@tao.ma> <1319614468-11227-1-git-send-email-tm@tao.ma> <1319614468-11227-2-git-send-email-tm@tao.ma> <E38E92E9-2937-47BA-A9F4-B1F75C9FDE4A@dilger.ca> <4EA81B50.1060802@tao.ma> <DACDC44B-F60E-493E-9C15-67EDFCDFD34D@dilger.ca> <4EA8AB25.4030506@tao.ma> <42CED85D-7936-4D51-B405-787F65F0C10A@whamcloud.com> <4EA97075.4050307@tao.ma>
+To: Tao Ma <tm@tao.ma>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Rik van Riel [mailto:riel@redhat.com]
-> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+On 2011-10-27, at 8:53 AM, Tao Ma wrote:
+> On 10/27/2011 05:57 PM, Andreas Dilger wrote:
+>> if ANY other xattr exists it will be pushed to an external block, and
+>> then if this data xattr grows (much more likely than the other xattr
+>> changing) it won't fit into the inode, and now performance is
+>> permanently worse than before.
 > 
-> On 10/31/2011 07:36 PM, Dan Magenheimer wrote:
-> >> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+> OK, since it seems that lustre uses xattr heavily, I will try my best to
+> avoid the performance regression for xattr operations.
+
+I don't even think it is very much a Lustre problem, since it always
+stores file data in a separate filesystem from the metadata, and
+60-byte files are going to have terrible performance either way.
+
+My main concern is for SELinux (enabled by default on most systems
+today).  If the "small file" data is stored in the xattr space, and
+this pushes the SELinux xattr to an external block, we have added
+code complexity and a gratuitous format change (data in inode and
+metadata in block, instead of metadata in inode and data in block)
+with no real benefit at all.
+
+>> In our environment we use at least 512-byte inodes on the metadata server, but I still don't want half if that space wasted on this xattr if so much is not needed.
 > 
-> >>> real work to do instead and (2) that vmexit/vmenter is horribly
-> >>
-> >> Sure the CPU has another 1000 VM to schedule. This is like saying
-> >> virtio-blk isn't needed on desktop virt becauase the desktop isn't
-> >> doing much I/O. Absurd argument, there are another 1000 desktops doing
-> >> I/O at the same time of course.
-> >
-> > But this is truly different, I think at least for the most common
-> > cases, because the guest is essentially out of physical memory if it
-> > is swapping.  And the vmexit/vmenter (I assume, I don't really
-> > know KVM) gives the KVM scheduler the opportunity to schedule
-> > another of those 1000 VMs if it wishes.
-> 
-> I believe the problem Andrea is trying to point out here is
-> that the proposed API cannot handle a batch of pages to be
-> pushed into frontswap/cleancache at one time.
+> btw, I have another idea about using the not-used extent space for
+> storing inline data like what we do for a symlink. So I will still use a
+> xattr entry to indicate whether the inode will have inline data or not.
+> If yes, the initialized xattr value len will be zero while the extent
+> space(60 bytes) will be used to store the inline data. And if the file
+> size is larger than 60, it will begin to insert xattr values. In such
+> case, we supports inline data and don't use too much space after the
+> i_extra_isize. What do you think of it?
 
-That wasn't the part of Andrea's discussion I meant, but I
-am getting foggy now, so let's address your point rather
-than mine.
- 
-> Even if the current back-end implementations are synchronous
-> and can only do one page at a time, I believe it would still
-> be a good idea to have the API able to handle a vector with
-> a bunch of pages all at once.
-> 
-> That way we can optimize the back-ends as required, at some
-> later point in time.
-> 
-> If enough people start using tmem, such bottlenecks will show
-> up at some point :)
+I think this is an interesting idea.  Since only the "data" xattr could
+use this space, it gives us an extra 60 bytes of space to be used in
+the inode and does not consume the xattr space.  The main drawback is
+that this would add special case handling based on the xattr name, but
+I think it is worthwhile to investigate how complex that code is and
+what kind of performance improvement it gives.
 
-It occurs to me that batching could be done locally without
-changing the in-kernel "API" (i.e. frontswap_ops)... the
-guest-side KVM tmem-backend-driver could do the compression
-into guest-side memory and make a single
-hypercall=vmexit/vmenter whenever it has collected enough for
-a batch. The "get" and "flush" would have to search this guest-side
-local cache and, if not local, make a hypercall.
+Looking at my FC13 installation, it seems like a large number of
+files could benefit from just 60 bytes of inline storage.  So more
+than 10% of all of the files on the filesystem would fit in i_blocks.
+This filesystem includes a lot of source and build files, but I also
+think this is pretty typical of normal Linux usage.
 
-This is more or less what RAMster does, except it (currently)
-still transmits the "batch" one (pre-compressed) page at a time.
+# find / -xdev -type f -size -61c | wc -l
+35661
+# find / -xdev -type f | wc -l
+335515
 
-And, when I think about it deeper (with my currently admittedly
-fried brain), this may even be the best way to do batching
-anyway.  I can't think offhand where else you would put
-a "put batch" hook in the swap subsystem because I think
-the current swap subsystem batching code only works with
-adjacent "entry" numbers.
+The "fsstats" tool is useful for collecting interesting data like this:
+(http://www.pdsi-scidac.org/fsstats/files/fsstats-1.4.5.tar.gz)
+and it shows the same is true for directories as well:
 
-And, one more thing occurs to me then... this shows the KVM
-"ABI" (hypercall) is not constrained by the existing Xen
-ABI.  It can be arbitrarily more functional.
 
-/me gets hand slapped remotely from Oracle HQ ;-)
+directory size (entries): Range of entries, count of directories in range,
+ number of dirs in range as a % of total num of dirs, number of dirs in
+ this range or smaller as a % total number of dirs, total entries in range,
+ number of entries in range as a % of total number of entries, number of
+ entries in this range or smaller as a % of total number of entries.
+
+  count=33476 avg=11.38 ents
+  min=0.00 ents max=3848.00 ents
+  [   0-   1 ents]: 11257 (33.63%) ( 33.63%)   9968.00 ents ( 2.62%) (  2.62%)
+  [   2-   3 ents]:  7080 (21.15%) ( 54.78%)  16608.00 ents ( 4.36%) (  6.97%)
+  [   4-   7 ents]:  5793 (17.30%) ( 72.08%)  30674.00 ents ( 8.05%) ( 15.02%)
+  [   8-  15 ents]:  3971 (11.86%) ( 83.94%)  43315.00 ents (11.37%) ( 26.39%)
+  [  16-  31 ents]:  2731 ( 8.16%) ( 92.10%)  59612.00 ents (15.64%) ( 42.04%)
+  [  32-  63 ents]:  1610 ( 4.81%) ( 96.91%)  69326.00 ents (18.19%) ( 60.23%)
+  [  64- 127 ents]:   705 ( 2.11%) ( 99.02%)  61633.00 ents (16.17%) ( 76.40%)
+  [ 128- 255 ents]:   236 ( 0.70%) ( 99.72%)  40005.00 ents (10.50%) ( 86.90%)
+  [ 256- 511 ents]:    66 ( 0.20%) ( 99.92%)  21923.00 ents ( 5.75%) ( 92.66%)
+  [ 512-1023 ents]:    19 ( 0.06%) ( 99.98%)  14249.00 ents ( 3.74%) ( 96.40%)
+  [1024-2047 ents]:     6 ( 0.02%) ( 99.99%)   7756.00 ents ( 2.04%) ( 98.43%)
+  [2048-4095 ents]:     2 ( 0.01%) (100.00%)   5979.00 ents ( 1.57%) (100.00%)
+
+A simple test of the performance gains might be running "file" on
+everything in /etc and /usr, and measuring this with blktrace to
+see what kind of seek reduction is seen from not doing seeks to
+read the small files from an external block.
+
+
+
+I think it is still useful to try to store the data in the large inode
+xattr space if it is larger than i_blocks, especially for larger inodes,
+but if there is not enough space for all the xattrs to fit into the
+inode, I think "data" should be the first one to be pushed out of the
+inode since that changes the format back to a normal ext* file.
+
+
+We might also consider a reiserfs-like approach where multiple small
+files could be packed into the same shared xattr block, but then the
+xattr name would need to change from "data" to e.g. "inode.generation"
+so that it can be located within the block shared between inodes.
+
+Tail packing is more complex, so such a change would only make sense
+if real-world testing showed a benefit.  There is already the concept
+of shared external xattr blocks, so maybe it isn't too bad.  Together
+with bigalloc, it might make sense to be able to pack many small files
+into one cluster if there is a binomial distribution of file sizes?
+
+Cheers, Andreas
+--
+Andreas Dilger 
+Principal Engineer
+Whamcloud, Inc.
+
+
+
