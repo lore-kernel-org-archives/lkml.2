@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab1KBViZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:38:25 -0400
-Received: from nm17.bullet.mail.ukl.yahoo.com ([217.146.183.191]:36250 "HELO
-	nm17.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751629Ab1KBViT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:38:19 -0400
-X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 17:38:19 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 130214.50482.bm@omp1033.mail.ukl.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.gr;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=pAYa0tL8jwg/CddLPbGfE64VNrJJm18bfO5uJND4q5hpWcU+MZMAQbcNffEqsaz7N9bFZ+q0R1CJD+UyNUOP4mXyPIvfTkX5VToBJ8U4ffTW3OqpCBHtvvfnhlu57UFW4//2W4Xcmb8t/kEYG/dwjfMXq14jN/qKMCVaFf3usKQ=;
-X-YMail-OSG: 73n9EhEVM1k.o1xecGAqlMgSvmWZIkUnPQ7ssLnR458Sycd
- spV_RNVgvgkjeNdq5pazLOaxDWj3lwS41dS8YDOwjF47CzuLvZYVEflmPDyw
- Z04CNJA7.0g0DdPlxADHy2F05BUdjykFmQJvIEuw2SZcK5W0xxklCSTPSvoN
- F8IixbB7I33Mxk5rhg7YKHO5RESRBIC0CV6y7ZOC5nTrsdVxO4B6U5NiNC_L
- NgdNRg4rqJbAcCMbj8eGhzAVF6m2MDvSfkuFx.n1tHH.ZL37tOCEGNlRR83x
- HT2qcjWncP3pTeENHVOh0x8GfNvGgwxRKpRb.vpSQ3r72Z.mmsXDFSuR5TK8
- eSHExy3LbAAzLci76D20f38R5r_rAcxCc80rz3czHaFW6FL8_jiP6tEA.Aej
- eg3_QJy8G2ZXRQRf1ftgwA2D4Iw7OaPLK3psP.HjYug2kNo43QvgwRJ19Kpa
- HhkqbpIgpndjyW28tVHSbapEwcqC87fLq2I5fGWbWfiej8UsDiS5NCf6TuCs
- NSrGkP02ToXajE_OtSrAn_lrqwFNfW5Us.HaVFSQAP5xpmV.R5R47kvwX.hc
- BokgUqwcBxeea.FaNWM42wgk8_tGVnj3DCRPe
-X-Mailer: YahooMailWebService/0.8.115.325013
-Message-ID: <1320269478.98312.YahooMailNeo@web27408.mail.ukl.yahoo.com>
-Date: Wed, 2 Nov 2011 21:31:18 +0000 (GMT)
-From: Lampra <lamprakisa@yahoo.gr>
-Reply-To: Lampra <lamprakisa@yahoo.gr>
-Subject: Bug: [Toshiba Satellite A200] SD card recognised but not automounted
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+	id S1752228Ab1KBVm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:42:26 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:33869 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab1KBVmY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 17:42:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Message-ID: <7033410c-13d4-4240-8ffc-007da03d41e3@default>
+Date: Wed, 2 Nov 2011 14:42:06 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
+        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+ <20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
+ <ef778e79-72d0-4c58-99e8-3b36d85fa30d@default>
+ <20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com>
+ <f62e02cd-fa41-44e8-8090-efe2ef052f64@default>
+ <20111101144309.a51c99b5.akpm@linux-foundation.org
+ 4EB1B01E.7030005@redhat.com>
+In-Reply-To: <4EB1B01E.7030005@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4EB1B935.006D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Rik van Riel [mailto:riel@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+> 
+> On 11/01/2011 05:43 PM, Andrew Morton wrote:
+> 
+> > I will confess to and apologise for dropping the ball on cleancache and
+> > frontswap.  I was never really able to convince myself that it met the
+> > (very vague) cost/benefit test,
+> 
+> I believe that it can, but if it does, we also have to
+> operate under the assumption that the major distros will
+> enable it.
+> This means that "no overhead when not compiled in" is
+> not going to apply to the majority of the users out there,
+> and we need clear numbers on what the overhead is when it
+> is enabled, but not used.
 
+Right.  That's Case B (see James Bottomley subthread)
+and the overhead is one pointer comparison against
+NULL per page physically swapin/swapout to a swap
+device (i.e., essentially zero).  Rik, would you
+be willing to examine the code to confirm that
+statement?
+ 
+> We also need an API that can handle arbitrarily heavy
+> workloads, since that is what people will throw at it
+> if it is enabled everywhere.
+> 
+> I believe that means addressing some of Andrea's concerns,
+> specifically that the API should be able to handle vectors
+> of pages and handle them asynchronously.
+> 
+> Even if the current back-ends do not handle that today,
+> chances are that (if tmem were to be enabled everywhere)
+> people will end up throwing workloads at tmem that pretty
+> much require such a thing.
 
-Hi, this is my first bug report upstream. On top bugzilla and http://kernel.org/pub/linux/docs/lkml/reporting-bugs.html are down.
+Wish I'd been a little faster on typing the previous
+message.  Rik, could you ensure you respond to yourself
+here if you are happy with my proposed batching design
+to do the batching that you and Andrea want?  (And if
+you are not happy, provide code to show where you
+would place a new batch-put hook?)
 
-I use Ubuntu 11.10, when i insert an SD card in my laptop Toshiba Satellite A200, the card is recognised but not auto mounted. I tested the latest upstream kernel (http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.1-rc10-oneiric/) and the problem still exists.
+> An asynchronous interface would probably be a requirement
+> for something as high latency as encrypted ramster :)
 
-I opened a bug report at launchpad (https://bugs.https://bugs.launchpad.net/ubuntu/+source/linux/+bug/878594.net/ubuntu/+source/linux/+bug/878594) where i have attached all the details. They asked me to report the bug also at kernel.org.
+Pure asynchrony is a show-stopper for me.  But the
+only synchrony required is to move/transform the
+data locally.  Asynchronous things can still be done
+but as a separate thread AFTER the data has been
+"put" to tmem (which is exactly what RAMster does).
 
-If there is anything more that i need to report for this bug please let me know.
+If asynchrony at frontswap_ops is demanded (and
+I think Andrea has already retracted that), I would
+have to ask you to present alternate code, both hooks
+and driver, that work successfully, because my claim
+is that it can't be done, certainly not without
+massive changes to the swap subsystem (and likely
+corresponding massive changes to VFS for cleancache).
 
-Thank you 
+> API concerns like this are things that should be solved
+> before a merge IMHO, since afterwards we would end up with
+> the "we cannot change the API, because that breaks users"
+> scenario that we always end up finding ourselves in.
 
+I think I've amply demonstrated that the API is
+minimal and extensible, as demonstrated by the
+above points.  Much of Andrea's concerns were due to
+a misunderstanding of the code in staging/zcache,
+thinking it was part of the API; the only "API"
+being considered here is defined by frontswap_ops.
 
-Lamprakis
+Also, the API for frontswap_ops is almost identical to the
+API for cleancache_ops and uses a much simpler, much
+more isolated set of hooks.   Frontswap "finishes"
+tmem, cleancache is already merged. Leaving tmem
+unfinished is worse than not having it all (and
+I can already hear Christoph cackling and jumping
+to his keyboard ;-)
 
+Thanks,
+Dan
+
+OK, I really need to discontinue my participation in
+this for a couple of days for personal/health reasons,
+so I hope I've made my case.
