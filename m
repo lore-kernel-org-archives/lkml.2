@@ -1,126 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab1KBFVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 01:21:24 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36192 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1KBFVW (ORCPT
+	id S1752825Ab1KBFhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 01:37:21 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:39613 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab1KBFhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 01:21:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20111101113607.15b254c6@bob.linux.org.uk>
-References: <CA+Y=x3=xEa6XVspsodhbKOArtZ7VMYSMLhpF4WZ1sFNfaJ_E9g@mail.gmail.com>
-	<20111101113607.15b254c6@bob.linux.org.uk>
-Date: Wed, 2 Nov 2011 16:21:21 +1100
-Message-ID: <CA+Y=x3k+jxN7LEk64mHkFQkkQhWa_KX7Uh+Uwuk0u87c+FiG_Q@mail.gmail.com>
-Subject: Re: [PATCH] Fix Corruption issue in USB ftdi driver drivers/usb/serial/ftdi_sio.c
-From: Andrew Worsley <amworsley@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>,
-        Johan Hovold <jhovold@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Nov 2011 01:37:18 -0400
+Date: Wed, 2 Nov 2011 16:37:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: linux-next: build failure after merge of the final tree (net tree
+ related)
+Message-Id: <20111102163708.75d719e765dea20e0c4c5a04@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid unnecessary Control URBs that reset the data/parity or baud rate
-to the currently set settings which can cause the FTDI chip to glitch
-it's serial output and cause a corruption of a character it is
-currently outputting.
+--Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: amworsley@gmail.com
+Hi all,
 
+[I thought I had reported this, but it was a similar problem in another
+driver.]
+
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
+drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declarat=
+ion of function 'frag_size' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit 9e903e085262 ("net: add skb frag size accessors").
+
+I have added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 2 Nov 2011 16:31:37 +1100
+Subject: [PATCH] net: fix typo in drivers/net/ethernet/xilinx/ll_temac_main=
+.c
+
+Commit 9e903e085262 ("net: add skb frag size accessors") used frag_size
+instead of skb_frag_size in this file.
+
+Fixes this build error:
+
+drivers/net/ethernet/xilinx/ll_temac_main.c: In function 'temac_start_xmit':
+drivers/net/ethernet/xilinx/ll_temac_main.c:717:3: error: implicit declarat=
+ion of function 'frag_size' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-On 1 November 2011 22:36, Alan Cox <alan@linux.intel.com> wrote:
->> I don't know why it repeatedly tries to set this all the time - it
->> would appear to be quite a lot of work so perhaps there is something
->> else that could be cleaned up. This was the simplest safe change that
->> fixed my problem. It appears this code hasn't changed very much since
->> the first history information in git that I could see - so perhaps
->> nobody else is really noticing this issue for some reason?
->
-> It could be a problem specific to some firmware or revision. We've had
-> a similar quirk with a different USB adapter. The actual calls to keep
-> changing it are coming from your application however.
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethe=
+rnet/xilinx/ll_temac_main.c
+index 4d1658e..caf3659 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -716,8 +716,8 @@ static int temac_start_xmit(struct sk_buff *skb, struct=
+ net_device *ndev)
+ 		cur_p =3D &lp->tx_bd_v[lp->tx_bd_tail];
+ 		cur_p->phys =3D dma_map_single(ndev->dev.parent,
+ 					     skb_frag_address(frag),
+-					     frag_size(frag), DMA_TO_DEVICE);
+-		cur_p->len =3D frag_size(frag);
++					     skb_frag_size(frag), DMA_TO_DEVICE);
++		cur_p->len =3D skb_frag_size(frag);
+ 		cur_p->app0 =3D 0;
+ 		frag++;
+ 	}
+--=20
+1.7.7
 
-"My" application is getty via inittab e.g.
-T0:23:respawn:/sbin/getty -L ttyUSB0 115200 vt100
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-  Something I would expect to be fairly common. Actually after login
-it is "bash" which is running presumably the getty set the tty
-parameters like speed and flow control.
+--Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5
+Content-Type: application/pgp-signature
 
->
->>         cflag = termios->c_cflag;
->>
->> -       /* FIXME -For this cut I don't care if the line is really
->> changing or
->> -          not  - so just do the change regardless  - should be able
->> to
->> -          compare old_termios and tty->termios */
->> +       /* compare old_termios and tty->termios */
->> +    if (old_termios->c_cflag == termios->c_cflag)
->> +        goto no_c_cflag_changes;
->
-> You can't do it this way because the speed data is not entirely within
-> c_cflag. Check c_ispeed and c_ospeed match and for the parity if you want to skip
-> that check if the parity bits change specifically.
->
-This is getting into magic flags I don't understand. There are so few
-bits in c_cflag not related to speed and data/parity I am hesitant  to
-write a complex check I might well get wrong. But flow control appears
-to be switched off / on frequently during data flow,
-my guess as part of flow controlling the input and I suggest a speed
-change is likely to be a once per login or line usage occurrence.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Here's a more sophisticated version of this which attempts to do this.
-It works on my 2.6.32 kernel and compiles the latest kernel.
+iQIcBAEBCAAGBQJOsNcEAAoJEECxmPOUX5FE5ewP/2ro6ZAHBloRr9LCWHqoMLPC
+AcAArTryTXhV6PspAFwR2YCdUmNEX2grAJV9dN0IQ7FweTaYX6+Y6tG/iB0k4iYk
+lD4EzSpmO61S5GOPRBpxTBFR/onGDXj6+9bE8/tdUwpVO4HPMvECf2EwaJpGvyxZ
+QEVw0JoSmNRlFKv+/JHRmnESx4qCrLTCs2Er63IQo5+ssSCC7ueQZDlOKsPAjJ5H
+24ojHAjZKxqvWCoJPRCb/9fybGqQcFQKZmoOr4NvP8florYX8YTvO61IlORqULry
+kkQFCFyq6zbLlRxCkfDruR6bj4/1fJIdE46syfrR00peZoiad4cElFpHnMXRNGfq
+IfQhRyCxlrxHNYbuSTW5He2Z1m2SgSCAYkNFR6Y6YVFCPNup9FNiZvmO6HSx+njz
+DYo72+UFCzplfab4SkkiNUCnuU5nGhoDrREjDydLySdH3Z3/M3CdQY+sqfZvoTM9
+MXWBczRgg2ecWh/9yZQxI+/whi/XmoNtL2d79/VsTJCp6NmBMCI83cwKnaQOfH69
+2Xaz8UhucdJthTZZrMLFkRwV0Fc5OE4pm+JakFXJPHWHv5o8ElE2j8gV5HXZVmlQ
+OMI+Le29iOEZNWKhX7bsYU5oPF1l6suE7Vp9PEjipWCOD9X79xio30zq4P86KM3/
+xK9VmeTpzrCE11rI52uF
+=ReYY
+-----END PGP SIGNATURE-----
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 8fe034d..66a2d09 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -2104,13 +2104,20 @@ static void ftdi_set_termios(struct tty_struct *tty,
-
-        cflag = termios->c_cflag;
-
--       /* FIXME -For this cut I don't care if the line is really changing or
--          not  - so just do the change regardless  - should be able to
--          compare old_termios and tty->termios */
-+       /* compare old_termios and tty->termios */
-+    if (old_termios->c_cflag == termios->c_cflag
-+      && old_termios->c_ispeed == termios->c_ispeed
-+      && old_termios->c_ospeed == termios->c_ospeed
-+      )
-+        goto no_c_cflag_changes;
-+
-        /* NOTE These routines can get interrupted by
-           ftdi_sio_read_bulk_callback  - need to examine what this means -
-           don't see any problems yet */
-
-+    if ((old_termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)) ==
-+        (termios->c_cflag & (CSIZE|PARODD|CSTOPB|PARODD)))
-+        goto no_data_parity_stop_changes;
-        /* Set number of data bits, parity, stop bits */
-
-        urb_value = 0;
-@@ -2150,6 +2157,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
-                        "databits/stopbits/parity\n", __func__);
-        }
-
-+no_data_parity_stop_changes:
-        /* Now do the baudrate */
-        if ((cflag & CBAUD) == B0) {
-                /* Disable flow control */
-@@ -2176,6 +2184,7 @@ static void ftdi_set_termios(struct tty_struct *tty,
-                        set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
-        }
-
-+no_c_cflag_changes:
-        /* Set flow control */
-        /* Note device also supports DTR/CD (ugh) and Xon/Xoff in hardware */
-        if (cflag & CRTSCTS) {
+--Signature=_Wed__2_Nov_2011_16_37_08_+1100_Nt6k6I4h11x20WA5--
