@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab1KBHgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 03:36:37 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49297
+	id S1753230Ab1KBHiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 03:38:22 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49310
 	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751301Ab1KBHgg (ORCPT
+	by vger.kernel.org with ESMTP id S1751450Ab1KBHiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 03:36:36 -0400
-Date: Wed, 2 Nov 2011 03:36:32 -0400
+	Wed, 2 Nov 2011 03:38:18 -0400
+Date: Wed, 2 Nov 2011 03:38:12 -0400
 From: Christoph Hellwig <hch@infradead.org>
-To: Tao Ma <tm@tao.ma>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V2 for 3.2] fs/direct-io.c: Calculate fs_count correctly
- in get_more_blocks.
-Message-ID: <20111102073632.GA17580@infradead.org>
-References: <x49wrblav46.fsf@segfault.boston.devel.redhat.com>
- <1320200794-2881-1-git-send-email-tm@tao.ma>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jan Kara <jack@suse.cz>, Andreas Dilger <adilger@dilger.ca>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] mm: Improve cmtime update on shared writable mmaps
+Message-ID: <20111102073812.GB17580@infradead.org>
+References: <CALCETrWoZeFpznU5Nv=+PvL9QRkTnS4atiGXx0jqZP_E3TJPqw@mail.gmail.com>
+ <6e365cb75f3318ab45d7145aededcc55b8ededa3.1319844715.git.luto@amacapital.net>
+ <20111101225342.GG18701@quack.suse.cz>
+ <CALCETrW3ZZ=474cXY0HH1=fHTwKJUo--ufPfD1WLpGRC4_CPrw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320200794-2881-1-git-send-email-tm@tao.ma>
+In-Reply-To: <CALCETrW3ZZ=474cXY0HH1=fHTwKJUo--ufPfD1WLpGRC4_CPrw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -29,6 +30,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch looks good to me, but given that it neither fixes a bug
-nor a regression I'd probably call it 3.3 material at this point.
+On Tue, Nov 01, 2011 at 04:02:24PM -0700, Andy Lutomirski wrote:
+> Hmm.  Isn't it permitted to at least read from an fs while holding the
+> page lock?  I thought that the page lock was held for the entire
+> duration of a read and at the beginning of writeback.
+> 
+> I can push this down to the ->writepage implementations or to the
+> clear_page_dirty_for_io callers, but that will result in a bigger
+> patch.
+
+Besides the current way that seems to be the only reasonable place to
+do it.  Pushing it into ->writepage also has the benefit that
+filesystems could piggy back the ctime update onto the transaction that
+updates the extent tree.
 
