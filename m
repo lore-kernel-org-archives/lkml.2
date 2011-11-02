@@ -1,103 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab1KBUkP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:40:15 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:37988 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751870Ab1KBUkM (ORCPT
+	id S1751913Ab1KBUmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:42:36 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:26947 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab1KBUmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:40:12 -0400
-Date: Wed, 2 Nov 2011 22:40:07 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Balbi <balbi@ti.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Gary King <gking@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm/tegra: add support for tegra30 interrupts
-Message-ID: <20111102204006.GA14564@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A47A7@HQMAIL01.nvidia.com>
- <20111102192112.GC12913@n2100.arm.linux.org.uk>
- <20111102192625.GD14372@legolas.emea.dhcp.ti.com>
- <20111102193947.GD12913@n2100.arm.linux.org.uk>
- <20111102194827.GF14372@legolas.emea.dhcp.ti.com>
- <20111102195404.GF12913@n2100.arm.linux.org.uk>
+	Wed, 2 Nov 2011 16:42:33 -0400
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+In-Reply-To: <4EB19BBE.5050602@teksavvy.com>
+References: <4EA89972.5060101@teksavvy.com>
+	 <20111026.194045.2019668159403582571.davem@davemloft.net>
+	 <4EA8B283.3010105@teksavvy.com>
+	 <20111026.221719.2216112919297458522.davem@davemloft.net>
+	 <4EB19BBE.5050602@teksavvy.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Wed, 2 Nov 2011 20:42:29 +0000
+Message-ID: <1320266549.2782.21.camel@bwh-desktop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-In-Reply-To: <20111102195404.GF12913@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18486.004
+X-TM-AS-Result: No--10.551400-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 02 Nov 2011 20:42:33.0638 (UTC) FILETIME=[F2A0DC60:01CC999F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2011-11-02 at 15:36 -0400, Mark Lord wrote:
+[...]
+> First cut (for review) at updating the in-kernel asix usb/network driver
+> from the latest vendor GPL version of the driver, obtained from here:
+> 
+>   http://www.asix.com.tw/download.php?sub=searchresult&PItemID=84&download=driver
+> 
+> The original vendor copy used a local "axusbnet" middleware (rather than "usbnet").
+> I've converted it back to using "usbnet", made a ton of cosmetic changes
+> to get it to pass checkpatch.pl, and removed a small amount of code duplication.
+> 
+> It can use more work going forward, but it is important to get it upstream
+> sooner than later -- the current in-kernel driver fails with many devices,
+> both old and new.  This updated version works with everything I have available
+> to test with, and also handles suspend / resume (unlike the in-kernel one).
+> 
+> Signed-off-by: Mark Lord <mlord@pobox.com>
+> 
+> --- linux-3.0/drivers/net/usb/asix.c	2011-10-12 17:59:03.000000000 -0400
+> +++ linux/drivers/net/usb/asix.c	2011-11-01 19:00:50.051289683 -0400
+[...]
+> +static u32 ax88772b_get_tx_csum(struct net_device *netdev)
+[...]
+> +static u32 ax88772b_get_rx_csum(struct net_device *netdev)
+[...]
+> +static int ax88772b_set_rx_csum(struct net_device *netdev, u32 val)
+[...]
+> +static int ax88772b_set_tx_csum(struct net_device *netdev, u32 val)
+[...]
+> +static struct ethtool_ops ax88772b_ethtool_ops = {
+> +	.get_drvinfo		= ax8817x_get_drvinfo,
+> +	.get_link		= ethtool_op_get_link,
+> +	.get_msglevel		= usbnet_get_msglevel,
+> +	.set_msglevel		= usbnet_set_msglevel,
+> +	.get_wol		= ax8817x_get_wol,
+> +	.set_wol		= ax8817x_set_wol,
+> +	.get_eeprom_len		= ax8817x_get_eeprom_len,
+> +	.get_eeprom		= ax8817x_get_eeprom,
+> +	.get_settings		= ax8817x_get_settings,
+> +	.set_settings		= ax8817x_set_settings,
+> +	.set_tx_csum		= ax88772b_set_tx_csum,
+> +	.get_tx_csum		= ax88772b_get_tx_csum,
+> +	.get_rx_csum		= ax88772b_get_rx_csum,
+> +	.set_rx_csum		= ax88772b_set_rx_csum,
+> +};
+[...]
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The various ethtool operations for offload flags are being (or have
+been) removed.  The driver must set net_device::hw_features and
+implement net_device_ops::ndo_set_features instead.
 
-Hi,
+> --- pristine/drivers/net/usb/asix.h	1969-12-31 19:00:00.000000000 -0500
+> +++ linux/drivers/net/usb/asix.h	2011-11-02 15:15:34.099164264 -0400
+[...]
+> +struct {unsigned short size, byte_cnt, threshold; } AX88772B_BULKIN_SIZE[] = {
+> +	{2048, 0x8000, 0x8001},		/* 2k */
+> +	{4096, 0x8100, 0x8147},		/* 4k */
+> +	{6144, 0x8200, 0x81EB},		/* 6k */
+> +	{8192, 0x8300, 0x83D7},		/* 8k */
+> +	{16384, 0x8400, 0x851E},	/* 16 */
+> +	{20480, 0x8500, 0x8666},	/* 20k */
+> +	{24576, 0x8600, 0x87AE},	/* 24k */
+> +	{32768, 0x8700, 0x8A3D},	/* 32k */
+> +};
 
-On Wed, Nov 02, 2011 at 07:54:04PM +0000, Russell King - ARM Linux wrote:
-> On Wed, Nov 02, 2011 at 09:48:28PM +0200, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > you forgot to comment on the fact that gpio_desc shouldn't be held in an
-> > array. Any comments ?
->=20
-> I did not comment on that because that's someone elses problem.
+Either define this as a macro and use it in the .c file, or just define
+it there.  In either case, declare it as 'static const'.
 
-fair enough.
+[...]
+> +/* GMII register numbers */
+> +#define GMII_PHY_CONTROL		0x00	/* control */
+> +#define GMII_PHY_STATUS			0x01	/* status */
+> +#define GMII_PHY_OUI			0x02	/* most of the OUI bits */
+> +#define GMII_PHY_MODEL			0x03	/* model/rev & rest of OUI */
+> +#define GMII_PHY_ANAR			0x04	/* AN advertisement */
+> +#define GMII_PHY_ANLPAR			0x05	/* AN Link Partner */
+> +#define GMII_PHY_ANER			0x06	/* AN expansion */
+> +#define GMII_PHY_1000BT_CONTROL		0x09	/* control for 1000BT */
+> +#define GMII_PHY_1000BT_STATUS		0x0A	/* status for 1000BT */
 
-> > What I mean is that, just like irq_descs, we should be able to allocate
-> > them dynamically. Maybe, just like irq_descs, hold them in a radix tree
-> > and maybe even have a matching API "gpio_alloc_descs()".
->=20
-> Probably - I expect Grant would really like to see some patches along
-> those lines.  As I say, someone elses problem.
->=20
-> But what is _our_ problem is what to do with all the ARCH_NR_GPIOs
-> that we have now, and stop them increasing.  There is a trivial solution
-> to that which I outlined which can be used until GPIO gets something
-> along your idea - and which doesn't involve me having to argue with
-> those who think that the kernel should remain as small as possible.
+These are MDIO registers and we have names for them in <linux/mii.h>.
+Similarly for the following bit definitions.
 
-k, I'll see if I can cook something up.
+[...]
+> +/* Bit definitions: 1000BaseT AUX Control.
+> + * FD="Full-Duplex", HD="Half-Duplex"
+> + */
+> +#define GMII_1000_AUX_CTRL_MASTER_SLAVE		0x1000
+> +#define GMII_1000_AUX_CTRL_FD_CAPABLE		0x0200
+> +#define GMII_1000_AUX_CTRL_HD_CAPABLE		0x0100
+> +
+> +/* Bit definitions: 1000BaseT AUX Status */
+> +#define GMII_1000_AUX_STATUS_FD_CAPABLE		0x0800
+> +#define GMII_1000_AUX_STATUS_HD_CAPABLE		0x0400
+> +
+> +/* Cicada MII Registers */
+> +#define GMII_AUX_CTRL_STATUS			0x1C
+> +#define GMII_AUX_ANEG_CPLT			0x8000
+> +#define GMII_AUX_FDX				0x0020
+> +#define GMII_AUX_SPEED_1000			0x0010
+> +#define GMII_AUX_SPEED_100			0x0008
 
---=20
-balbi
+These appear to be extensions and would have to be kept.
 
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +#ifndef ADVERTISE_PAUSE_CAP
+> +#define ADVERTISE_PAUSE_CAP			0x0400
+> +#endif
+> +
+> +#ifndef MII_STAT1000
+> +#define MII_STAT1000				0x000A
+> +#endif
+> +
+> +#ifndef LPA_1000FULL
+> +#define LPA_1000FULL				0x0800
+> +#endif
+[...]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+These are exact duplicates of definitions in <linux/mii.h>, so should be
+removed.
 
-iQIcBAEBAgAGBQJOsaqmAAoJEIaOsuA1yqREUr8QAJiK5oZtuebZJGO/VGU67GoQ
-XCiJ7GNqE+SxPauXi8gmkBXAZ/OzCIp2EIhCQZr0twXFG6e8NrYoYu8qf7ahEGAr
-qpBkYaAOMn8udQg+TPvN+P6Etg2lud28eBV0YAlMuRWyZ+cCXORXNkKR6h+Krdz4
-hVOPeDDF5q/tRvW/0yAiMVBSuvNXVMnY8+bFVjJTjHtIWCNj266Wj21rYrmSQ4hH
-9da7kDP7X4EAyTRAHns7csQMD3oI+qIFvVl4u06EIRaj+Y5cn54OQTLFa/rI0rkT
-FyCt97kj4w8bl09MdOidowLNAwUuk7S6VyVI7dQU16UT8O3C1B8rN2Bljp1PQLeS
-o++8GBZJtJJRyyHfARHzmHGAG+CGnMPiqr7GEGKxpqu6BHxBK1x2DAFDPXEeHOPO
-IMcMDVom8yU2vXz4kBqw9wfUDOgt3DcDWyGRSWbAu+4Sy6f/di8ZUmeukECuVLBU
-q7+2gXdunTgCH/+wAzJsUeiC6LdA+Gh8NF+jJqoSm6HkIKvue7LqFTRExt7fV2/e
-YAcfcwYxQ4mXvt7TSGSGUqzGG9IvTlYkIMdjRA0hO5UqwCmLmZwTOuHsmB0G3PU/
-xZ5qBVblOljb+p9AWvBhfmq8fvUM9Ntws6uUE0ymy4YOArG0oZ1K2OHxKLrDpgeL
-WrtfRFg/h6xTtDJdp1n0
-=7wnv
------END PGP SIGNATURE-----
+Ben.
 
---Q68bSM7Ycu6FN28Q--
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
