@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935011Ab1KCBnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:43:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51574 "EHLO mx2.suse.de"
+	id S935033Ab1KCBoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:44:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51601 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934985Ab1KCBnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:43:37 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:48 2011
-Message-Id: <20111102222748.915840387@clark.kroah.org>
+	id S935040Ab1KCBny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:43:54 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:46 2011
+Message-Id: <20111102222746.727195520@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:27:24 -0700
+Date: Wed, 02 Nov 2011 15:27:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Luciano Coelho <coelho@ti.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [100/101] nl80211: fix overflow in ssid_len
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [076/101] nfsd4: ignore WANT bits in open downgrade
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +24,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luciano Coelho <coelho@ti.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 57a27e1d6a3bb9ad4efeebd3a8c71156d6207536 upstream.
+commit c30e92df30d7d5fe65262fbce5d1b7de675fe34e upstream.
 
-When one of the SSID's length passed in a scan or sched_scan request
-is larger than 255, there will be an overflow in the u8 that is used
-to store the length before checking.  This causes the check to fail
-and we overrun the buffer when copying the SSID.
+We don't use WANT bits yet--and sending them can probably trigger a
+BUG() further down.
 
-Fix this by checking the nl80211 attribute length before copying it to
-the struct.
-
-This is a follow up for the previous commit
-208c72f4fe44fe09577e7975ba0e7fa0278f3d03, which didn't fix the problem
-entirely.
-
-Reported-by: Ido Yariv <ido@wizery.com>
-Signed-off-by: Luciano Coelho <coelho@ti.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/nl80211.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -3078,11 +3078,11 @@ static int nl80211_trigger_scan(struct s
- 	i = 0;
- 	if (info->attrs[NL80211_ATTR_SCAN_SSIDS]) {
- 		nla_for_each_nested(attr, info->attrs[NL80211_ATTR_SCAN_SSIDS], tmp) {
--			request->ssids[i].ssid_len = nla_len(attr);
--			if (request->ssids[i].ssid_len > IEEE80211_MAX_SSID_LEN) {
-+			if (nla_len(attr) > IEEE80211_MAX_SSID_LEN) {
- 				err = -EINVAL;
- 				goto out_free;
- 			}
-+			request->ssids[i].ssid_len = nla_len(attr);
- 			memcpy(request->ssids[i].ssid, nla_data(attr), nla_len(attr));
- 			i++;
- 		}
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -3062,6 +3062,8 @@ nfsd4_open_downgrade(struct svc_rqst *rq
+ 	if (!access_valid(od->od_share_access, cstate->minorversion)
+ 			|| !deny_valid(od->od_share_deny))
+ 		return nfserr_inval;
++	/* We don't yet support WANT bits: */
++	od->od_share_access &= NFS4_SHARE_ACCESS_MASK;
+ 
+ 	nfs4_lock_state();
+ 	if ((status = nfs4_preprocess_seqid_op(cstate,
 
 
