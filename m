@@ -1,125 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933046Ab1KBRzB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 13:55:01 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55880 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097Ab1KBRy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 13:54:58 -0400
-Date: Wed, 2 Nov 2011 18:54:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Simon Kirby <sim@hostway.ca>, David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: Linux 3.1-rc9
-In-Reply-To: <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Message-ID: <alpine.LFD.2.02.1111021849170.2829@ionos>
-References: <1318874090.4172.84.camel@twins>  <CA+55aFwCBy=4YK6amE=H-BYu9-boj4Po2Zkgf4V261mCx0DC4A@mail.gmail.com>  <1318879396.4172.92.camel@twins> <alpine.LFD.2.02.1110172237030.3240@ionos>  <alpine.LFD.2.02.1110181037120.3240@ionos> <1318928713.21167.4.camel@twins>
-  <20111018182046.GF1309@hostway.ca>  <alpine.LFD.2.02.1110182146440.3240@ionos>  <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca>  <20111031173246.GA10614@hostway.ca>  <alpine.LFD.2.02.1111021725550.2829@ionos>
- <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S932993Ab1KBR6C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 13:58:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932097Ab1KBR56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 13:57:58 -0400
+Date: Wed, 2 Nov 2011 18:53:27 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Steve French <sfrench@samba.org>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-cifs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>, trond.myklebust@netapp.com,
+        linux-nfs@vger.kernel.org
+Subject: [PATCH] wait_event_freezekillable: use
+	freezer_do_not_count/freezer_count
+Message-ID: <20111102175327.GA4446@redhat.com>
+References: <20111101041337.39077229@tlielax.poochiereds.net> <20111101065958.50addab5@tlielax.poochiereds.net> <20111101163059.GR18855@google.com> <20111101175953.GB5358@redhat.com> <20111101180601.GV18855@google.com> <20111101181329.GA6739@redhat.com> <20111101182753.GW18855@google.com> <20111101193923.GA9444@redhat.com> <20111101194601.GB9444@redhat.com> <20111101215710.GA13803@google.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-231129083-1320256494=:2829"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101215710.GA13803@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+fake_signal_wake_up() should not wake up the TASK_KILLABLE tasks,
+we are going to fix this. This means that wait_event_freezekillable()
+can't rely on wakeup from freezer. Reimplement it using
+freezer_do_not_count/freezer_count. This is not really nice, just
+a simple fix for now.
 
---8323328-231129083-1320256494=:2829
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-On Wed, 2 Nov 2011, Eric Dumazet wrote:
+ include/linux/freezer.h |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-> Le mercredi 02 novembre 2011 à 17:40 +0100, Thomas Gleixner a écrit :
-> > On Mon, 31 Oct 2011, Simon Kirby wrote:
-> > > On Tue, Oct 25, 2011 at 01:20:49PM -0700, Simon Kirby wrote:
-> > > 
-> > > > On Mon, Oct 24, 2011 at 12:02:03PM -0700, Simon Kirby wrote:
-> > > > 
-> > > > > Ok, hit the hang about 4 more times, but only this morning on a box with
-> > > > > a serial cable attached. Yay!
-> > > > 
-> > > > Here's lockdep output from another box. This one looks a bit different.
-> > > 
-> > > One more, again a bit different. The last few lockups have looked like
-> > > this. Not sure why, but we're hitting this at a few a day now. Thomas,
-> > > this is without your patch, but as you said, that's right before a free
-> > > and should print a separate lockdep warning.
-> > > 
-> > > No "huh" lines until after the trace on this one. I'll move to 3.1 with
-> > 
-> > That means that the lockdep warning hit in the same net_rx cycle
-> > before the leak was detected by the softirq code.
-> > 
-> > > cherry-picked b0691c8e now.
-> > 
-> > Can you please add the debug patch below and try the following:
-> > 
-> > Enable CONFIG_FUNCTION_TRACER & CONFIG_FUNCTION_GRAPH_TRACER
-> > 
-> > # cd $DEBUGFSMOUNTPOINT/tracing
-> > # echo sk_clone >set_ftrace_filter
-> > # echo function >current_tracer
-> > # echo 1 >options/func_stack_trace
-> > 
-> > Now wait until it reproduces (which stops the trace) and read out
-> > 
-> > # cat trace >/tmp/trace.txt
-> > 
-> > Please provide the trace file along with the lockdep splat. That
-> > should tell us which callchain is responsible for the spinlock
-> > leakage.
-> > 
-> > Thanks,
-> > 
-> > 	tglx
-> > 
-> > --------------->
-> >  kernel/softirq.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > Index: linux-2.6/kernel/softirq.c
-> > ===================================================================
-> > --- linux-2.6.orig/kernel/softirq.c
-> > +++ linux-2.6/kernel/softirq.c
-> > @@ -238,6 +238,7 @@ restart:
-> >  			h->action(h);
-> >  			trace_softirq_exit(vec_nr);
-> >  			if (unlikely(prev_count != preempt_count())) {
-> > +				tracing_off();
-> >  				printk(KERN_ERR "huh, entered softirq %u %s %p"
-> >  				       "with preempt_count %08x,"
-> >  				       " exited with %08x?\n", vec_nr,
-> 
-> 
-> I believe it might come from commit 0e734419
-> (ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
-> 
-> In case inet_csk_route_child_sock() returns NULL, we dont release socket
-> lock.
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -143,13 +143,9 @@ static inline void set_freezable_with_si
+ #define wait_event_freezekillable(wq, condition)			\
+ ({									\
+ 	int __retval;							\
+-	for (;;) {							\
+-		__retval = wait_event_killable(wq,			\
+-				(condition) || freezing(current));	\
+-		if (__retval || (condition))				\
+-			break;						\
+-		try_to_freeze();					\
+-	}								\
++	freezer_do_not_count();						\
++	__retval = wait_event_killable(wq, (condition));		\
++	freezer_count();						\
+ 	__retval;							\
+ })
+ 
 
-The same applies for if (__inet_inherit_port(sk, newsk) < 0) a few
-lines further down, but that part was leaking the lock before that
-commit already.
-
-Just for the record, the locking in that code is mind boggling. It
-took me some detective work to find even the place where the success
-code path unlocks the lock :(
-
-Thanks,
-
-	tglx
---8323328-231129083-1320256494=:2829--
