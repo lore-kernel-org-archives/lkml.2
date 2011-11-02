@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab1KCBhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:37:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50867 "EHLO mx2.suse.de"
+	id S933861Ab1KCBh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:37:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50876 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933645Ab1KCBhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:37:41 -0400
+	id S933815Ab1KCBhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:37:48 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:59 2011
-Message-Id: <20111102221459.564844340@clark.kroah.org>
+Message-Id: <20111102221459.745243050@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:15:09 -0700
+Date: Wed, 02 Nov 2011 15:15:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [103/107] vm: fix vm_pgoff wrap in stack expansion
+        alan@lxorguk.ukuu.org.uk, Dan Rosenberg <drosenberg@vsecurity.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [105/107] Bluetooth: Prevent buffer overflow in l2cap config request
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,47 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Dan Rosenberg <drosenberg@vsecurity.com>
 
-commit a626ca6a656450e9f4df91d0dda238fff23285f4 upstream.
+commit 7ac28817536797fd40e9646452183606f9e17f71 upstream.
 
-Commit 982134ba6261 ("mm: avoid wrapping vm_pgoff in mremap()") fixed
-the case of a expanding mapping causing vm_pgoff wrapping when you used
-mremap.  But there was another case where we expand mappings hiding in
-plain sight: the automatic stack expansion.
+A remote user can provide a small value for the command size field in
+the command header of an l2cap configuration request, resulting in an
+integer underflow when subtracting the size of the configuration request
+header.  This results in copying a very large amount of data via
+memcpy() and destroying the kernel heap.  Check for underflow.
 
-This fixes that case too.
-
-This one also found by Robert Święcki, using his nasty system call
-fuzzer tool.  Good job.
-
-Reported-and-tested-by: Robert Święcki <robert@swiecki.net>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- mm/mmap.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1680,10 +1680,13 @@ static int expand_downwards(struct vm_ar
- 		size = vma->vm_end - address;
- 		grow = (vma->vm_start - address) >> PAGE_SHIFT;
+---
+ net/bluetooth/l2cap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/net/bluetooth/l2cap.c
++++ b/net/bluetooth/l2cap.c
+@@ -2720,7 +2720,7 @@ static inline int l2cap_config_req(struc
  
--		error = acct_stack_growth(vma, size, grow);
--		if (!error) {
--			vma->vm_start = address;
--			vma->vm_pgoff -= grow;
-+		error = -ENOMEM;
-+		if (grow <= vma->vm_pgoff) {
-+			error = acct_stack_growth(vma, size, grow);
-+			if (!error) {
-+				vma->vm_start = address;
-+				vma->vm_pgoff -= grow;
-+			}
- 		}
- 	}
- 	anon_vma_unlock(vma);
+ 	/* Reject if config buffer is too small. */
+ 	len = cmd_len - sizeof(*req);
+-	if (l2cap_pi(sk)->conf_len + len > sizeof(l2cap_pi(sk)->conf_req)) {
++	if (len < 0 || l2cap_pi(sk)->conf_len + len > sizeof(l2cap_pi(sk)->conf_req)) {
+ 		l2cap_send_cmd(conn, cmd->ident, L2CAP_CONF_RSP,
+ 				l2cap_build_conf_rsp(sk, rsp,
+ 					L2CAP_CONF_REJECT, flags), rsp);
 
 
