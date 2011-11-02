@@ -1,125 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932742Ab1KBGW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 02:22:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:39863 "EHLO mga02.intel.com"
+	id S932569Ab1KBGU4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 02:20:56 -0400
+Received: from home.keithp.com ([63.227.221.253]:33638 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754773Ab1KBGWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 02:22:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="70086302"
-From: Lin Ming <ming.m.lin@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH 2/3] scsi: add hooks for host runtime power management
-Date: Wed,  2 Nov 2011 14:21:39 +0800
-Message-Id: <1320214900-2112-3-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1320214900-2112-1-git-send-email-ming.m.lin@intel.com>
-References: <1320214900-2112-1-git-send-email-ming.m.lin@intel.com>
+	id S932073Ab1KBGUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 02:20:51 -0400
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Keith Packard <keithp@keithp.com>
+Subject: [PATCH 1/7] drm/i915: Move common PCH_PP_CONTROL setup to ironlake_get_pp_control
+Date: Tue,  1 Nov 2011 23:20:24 -0700
+Message-Id: <1320214830-12696-2-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1320214830-12696-1-git-send-email-keithp@keithp.com>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds ->suspend and ->resume callbacks in struct scsi_host_template
-to do host runtime power management.
+Every usage of PCH_PP_CONTROL sets the PANEL_UNLOCK_REGS value to
+ensure that writes will be respected, move this to a common function
+to make the driver cleaner.
 
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+No functional changes.
+
+Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/scsi/scsi_pm.c   |   34 +++++++++++++++++++++++++++++++---
- include/scsi/scsi_host.h |    8 ++++++++
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |   37 +++++++++++++++++++------------------
+ 1 files changed, 19 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-index 1be6c5a..5742bed2 100644
---- a/drivers/scsi/scsi_pm.c
-+++ b/drivers/scsi/scsi_pm.c
-@@ -42,6 +42,28 @@ static int scsi_dev_type_resume(struct device *dev)
- 	return err;
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 7259034..efe5f9e 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -906,6 +906,19 @@ static void ironlake_wait_panel_off(struct intel_dp *intel_dp)
+ 	msleep(delay);
  }
  
-+static int scsi_host_suspend(struct device *dev)
++/* Read the current pp_control value, unlocking the register if it
++ * is locked
++ */
++
++static  u32 ironlake_get_pp_control(struct drm_i915_private *dev_priv)
 +{
-+	struct Scsi_Host *shost = dev_to_shost(dev);
-+	int err = 0;
++	u32	control = I915_READ(PCH_PP_CONTROL);
 +
-+	if (shost->hostt->suspend)
-+		err = shost->hostt->suspend(shost);
-+
-+	return err;
++	control &= ~PANEL_UNLOCK_MASK;
++	control |= PANEL_UNLOCK_REGS;
++	return control;
 +}
 +
-+static int scsi_host_resume(struct device *dev)
-+{
-+	struct Scsi_Host *shost = dev_to_shost(dev);
-+	int err = 0;
-+
-+	if (shost->hostt->resume)
-+		err = shost->hostt->resume(shost);
-+
-+	return err;
-+}
-+
- #ifdef CONFIG_PM_SLEEP
- 
- static int scsi_bus_suspend_common(struct device *dev, pm_message_t msg)
-@@ -106,7 +128,10 @@ static int scsi_runtime_suspend(struct device *dev)
- 				round_jiffies_up_relative(HZ/10)));
+ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
+ {
+ 	struct drm_device *dev = intel_dp->base.base.dev;
+@@ -926,9 +939,7 @@ static void ironlake_edp_panel_vdd_on(struct intel_dp *intel_dp)
  	}
  
--	/* Insert hooks here for targets, hosts, and transport classes */
-+	/* Insert hooks here for targets and transport classes */
-+
-+	if (scsi_is_host_device(dev))
-+		err = scsi_host_suspend(dev);
+ 	ironlake_wait_panel_off(intel_dp);
+-	pp = I915_READ(PCH_PP_CONTROL);
+-	pp &= ~PANEL_UNLOCK_MASK;
+-	pp |= PANEL_UNLOCK_REGS;
++	pp = ironlake_get_pp_control(dev_priv);
+ 	pp |= EDP_FORCE_VDD;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+@@ -951,9 +962,7 @@ static void ironlake_panel_vdd_off_sync(struct intel_dp *intel_dp)
+ 	u32 pp;
  
- 	return err;
- }
-@@ -119,7 +144,10 @@ static int scsi_runtime_resume(struct device *dev)
- 	if (scsi_is_sdev_device(dev))
- 		err = scsi_dev_type_resume(dev);
+ 	if (!intel_dp->want_panel_vdd && ironlake_edp_have_panel_vdd(intel_dp)) {
+-		pp = I915_READ(PCH_PP_CONTROL);
+-		pp &= ~PANEL_UNLOCK_MASK;
+-		pp |= PANEL_UNLOCK_REGS;
++		pp = ironlake_get_pp_control(dev_priv);
+ 		pp &= ~EDP_FORCE_VDD;
+ 		I915_WRITE(PCH_PP_CONTROL, pp);
+ 		POSTING_READ(PCH_PP_CONTROL);
+@@ -1012,9 +1021,7 @@ static void ironlake_edp_panel_on(struct intel_dp *intel_dp)
+ 		return;
  
--	/* Insert hooks here for targets, hosts, and transport classes */
-+	/* Insert hooks here for targets and transport classes */
-+
-+	if (scsi_is_host_device(dev))
-+		err = scsi_host_resume(dev);
+ 	ironlake_wait_panel_off(intel_dp);
+-	pp = I915_READ(PCH_PP_CONTROL);
+-	pp &= ~PANEL_UNLOCK_MASK;
+-	pp |= PANEL_UNLOCK_REGS;
++	pp = ironlake_get_pp_control(dev_priv);
  
- 	return err;
- }
-@@ -132,7 +160,7 @@ static int scsi_runtime_idle(struct device *dev)
+ 	if (IS_GEN5(dev)) {
+ 		/* ILK workaround: disable reset around power sequence */
+@@ -1049,9 +1056,7 @@ static void ironlake_edp_panel_off(struct drm_encoder *encoder)
  
- 	/* Insert hooks here for targets, hosts, and transport classes */
+ 	if (!is_edp(intel_dp))
+ 		return;
+-	pp = I915_READ(PCH_PP_CONTROL);
+-	pp &= ~PANEL_UNLOCK_MASK;
+-	pp |= PANEL_UNLOCK_REGS;
++	pp = ironlake_get_pp_control(dev_priv);
  
--	if (scsi_is_sdev_device(dev))
-+	if (scsi_is_sdev_device(dev) || scsi_is_host_device(dev))
- 		err = pm_schedule_suspend(dev, 100);
- 	else
- 		err = pm_runtime_suspend(dev);
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index f1f2644..512e2a0 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -356,6 +356,14 @@ struct scsi_host_template {
- 	enum blk_eh_timer_return (*eh_timed_out)(struct scsi_cmnd *);
- 
- 	/*
-+	 * Optional routine for scsi host runtime pm.
-+	 *
-+	 * Status: OPTIONAL
-+	 */
-+	int (*suspend)(struct Scsi_Host *);
-+	int (*resume)(struct Scsi_Host *);
-+
-+	/*
- 	 * Name of proc directory
+ 	if (IS_GEN5(dev)) {
+ 		/* ILK workaround: disable reset around power sequence */
+@@ -1098,9 +1103,7 @@ static void ironlake_edp_backlight_on(struct intel_dp *intel_dp)
+ 	 * allowing it to appear.
  	 */
- 	const char *proc_name;
+ 	msleep(intel_dp->backlight_on_delay);
+-	pp = I915_READ(PCH_PP_CONTROL);
+-	pp &= ~PANEL_UNLOCK_MASK;
+-	pp |= PANEL_UNLOCK_REGS;
++	pp = ironlake_get_pp_control(dev_priv);
+ 	pp |= EDP_BLC_ENABLE;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
+@@ -1116,9 +1119,7 @@ static void ironlake_edp_backlight_off(struct intel_dp *intel_dp)
+ 		return;
+ 
+ 	DRM_DEBUG_KMS("\n");
+-	pp = I915_READ(PCH_PP_CONTROL);
+-	pp &= ~PANEL_UNLOCK_MASK;
+-	pp |= PANEL_UNLOCK_REGS;
++	pp = ironlake_get_pp_control(dev_priv);
+ 	pp &= ~EDP_BLC_ENABLE;
+ 	I915_WRITE(PCH_PP_CONTROL, pp);
+ 	POSTING_READ(PCH_PP_CONTROL);
 -- 
-1.7.2.5
+1.7.7
 
