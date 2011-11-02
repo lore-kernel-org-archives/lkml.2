@@ -1,116 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab1KBViO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:38:14 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49904 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817Ab1KBViM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:38:12 -0400
+	id S1752782Ab1KBViZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:38:25 -0400
+Received: from nm17.bullet.mail.ukl.yahoo.com ([217.146.183.191]:36250 "HELO
+	nm17.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751629Ab1KBViT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 17:38:19 -0400
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 17:38:19 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 130214.50482.bm@omp1033.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.gr;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=pAYa0tL8jwg/CddLPbGfE64VNrJJm18bfO5uJND4q5hpWcU+MZMAQbcNffEqsaz7N9bFZ+q0R1CJD+UyNUOP4mXyPIvfTkX5VToBJ8U4ffTW3OqpCBHtvvfnhlu57UFW4//2W4Xcmb8t/kEYG/dwjfMXq14jN/qKMCVaFf3usKQ=;
+X-YMail-OSG: 73n9EhEVM1k.o1xecGAqlMgSvmWZIkUnPQ7ssLnR458Sycd
+ spV_RNVgvgkjeNdq5pazLOaxDWj3lwS41dS8YDOwjF47CzuLvZYVEflmPDyw
+ Z04CNJA7.0g0DdPlxADHy2F05BUdjykFmQJvIEuw2SZcK5W0xxklCSTPSvoN
+ F8IixbB7I33Mxk5rhg7YKHO5RESRBIC0CV6y7ZOC5nTrsdVxO4B6U5NiNC_L
+ NgdNRg4rqJbAcCMbj8eGhzAVF6m2MDvSfkuFx.n1tHH.ZL37tOCEGNlRR83x
+ HT2qcjWncP3pTeENHVOh0x8GfNvGgwxRKpRb.vpSQ3r72Z.mmsXDFSuR5TK8
+ eSHExy3LbAAzLci76D20f38R5r_rAcxCc80rz3czHaFW6FL8_jiP6tEA.Aej
+ eg3_QJy8G2ZXRQRf1ftgwA2D4Iw7OaPLK3psP.HjYug2kNo43QvgwRJ19Kpa
+ HhkqbpIgpndjyW28tVHSbapEwcqC87fLq2I5fGWbWfiej8UsDiS5NCf6TuCs
+ NSrGkP02ToXajE_OtSrAn_lrqwFNfW5Us.HaVFSQAP5xpmV.R5R47kvwX.hc
+ BokgUqwcBxeea.FaNWM42wgk8_tGVnj3DCRPe
+X-Mailer: YahooMailWebService/0.8.115.325013
+Message-ID: <1320269478.98312.YahooMailNeo@web27408.mail.ukl.yahoo.com>
+Date: Wed, 2 Nov 2011 21:31:18 +0000 (GMT)
+From: Lampra <lamprakisa@yahoo.gr>
+Reply-To: Lampra <lamprakisa@yahoo.gr>
+Subject: Bug: [Toshiba Satellite A200] SD card recognised but not automounted
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20111102141410.4d44a4eb@jbarnes-desktop>
-References: <1314845309-3277-1-git-send-email-dczhu@mips.com>
- <CAErSpo5py82G1=6BOTG4RSAj6_SRzN4fng6sECU2sS+u9quixw@mail.gmail.com>
- <CAErSpo5HNKi7NSKBbyL3o39Ow+Xkncyccrj5PQNaoeMdLHJsFQ@mail.gmail.com>
- <BD04AF0D5BE72443A0B69C1C0486AD3ECE8D8973@exchdb03.mips.com>
- <1318319295.29415.452.camel@pasglop> <CAErSpo5rU8aa=-joApUTYbsQrbrRz9x-7VA3V3H9gDg7k7nj+w@mail.gmail.com>
- <20111102141410.4d44a4eb@jbarnes-desktop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 2 Nov 2011 15:37:51 -0600
-Message-ID: <CAErSpo5_sAPb90JB62JJQFA+Sa8TyzDmQbsYdLra8Z8d0dqJHQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 0/2] Pass resources to pci_create_bus() and fix
- MIPS PCI resources
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "Zhu, DengCheng" <dczhu@mips.com>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "monstr@monstr.eu" <monstr@monstr.eu>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "Barzilay, Eyal" <eyal@mips.com>, "Fortuna, Zenon" <zenon@mips.com>,
-        "dengcheng.zhu@gmail.com" <dengcheng.zhu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 3:14 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Tue, 11 Oct 2011 10:15:34 -0600
-> Bjorn Helgaas <bhelgaas@google.com> wrote:
->
->> On Tue, Oct 11, 2011 at 1:48 AM, Benjamin Herrenschmidt
->> <benh@kernel.crashing.org> wrote:
->>
->> > I must admit I don't completely understand what this patch is about,
->> > other than it will most probably break the way we do resource management
->> > on powerpc :-)
->> >
->> > I don't understand the point about conflicts in scan_slot and I don't
->> > see what you win by "settling down early". Also keep in mind that the
->> > resources read from the device need to be remapped on some archs like
->> > powerpc which we do from a header quirk at the moment.
->>
->> These patches only deal with root bus resources, i.e., the
->> non-architected PCI host bridge windows.  They don't have anything to
->> do with normal PCI BARs.
->>
->> MIPS sets up root buses differently than powerpc, so it has a problem
->> that powerpc doesn't have.  Here's the original MIPS flow (before this
->> series):
->>
->>               pci_scan_bus
->>                 pci_scan_bus_parented
->>                   pci_create_bus        <-- A create root bus
->>                   pci_scan_child_bus
->>                     pci_scan_slot
->>                       pci_scan_single_device
->>                         pci_scan_device
->>                           pci_setup_device
->>                             pci_fixup_device (pci_fixup_early)  <-- B
->>                         pci_device_add
->>                           pci_fixup_device (pci_fixup_header)   <-- C
->>                     pcibios_fixup_bus   <-- D fill in root bus resources
->>
->> At point A, we allocate a struct pci_bus for the root bus.
->> pci_create_bus() fills in defaults for the resources available on that
->> bus: ioport_resource and iomem_resource, which cover all possible
->> address space.  Later at point D, we replace those defaults with the
->> correct resources (hose->io_resource and hose->mem_resource in this
->> MIPS case).
->>
->> The problem is that the root bus resources are wrong during the
->> interval between A and D.  Anything that looks at them may break.  In
->> the case Deng-Cheng found, the quirk_piix4_acpi() fixup at point C
->> claimed a region, which incorrectly became the child of
->> ioport_resource instead of host->io_resource.
->>
->> Deng-Cheng's patches close this window by basically combining the
->> fixup at D with the root bus creation at A.
->>
->> Powerpc doesn't have the same problem because it calls
->> pci_create_bus() directly so it can fix the root bus resources with
->> pcibios_setup_phb_resources() *before* it scans the bus.
->>
->> Even though powerpc and many other architectures don't have the MIPS
->> problem, I think it's worth changing the code because the existing
->> pattern is poor.  In almost all cases, we know what the host bridge
->> apertures are before we create the root bus.  It's error-prone to have
->> pci_create_bus() fill in default resources, then rely on the
->> architecture to fix that up later.  I think it's better to supply the
->> resources up front.
->
-> Ben, with the above explained are you ok with this change?
 
-Note that this thread is for an old version of these patches.  The
-current version of this series (coincidentally also labelled "v3") is
-here:
 
-http://marc.info/?l=linux-pci&m=131984075431810&w=2
+Hi, this is my first bug report upstream. On top bugzilla and http://kernel.org/pub/linux/docs/lkml/reporting-bugs.html are down.
+
+I use Ubuntu 11.10, when i insert an SD card in my laptop Toshiba Satellite A200, the card is recognised but not auto mounted. I tested the latest upstream kernel (http://kernel.ubuntu.com/~kernel-ppa/mainline/v3.1-rc10-oneiric/) and the problem still exists.
+
+I opened a bug report at launchpad (https://bugs.https://bugs.launchpad.net/ubuntu/+source/linux/+bug/878594.net/ubuntu/+source/linux/+bug/878594) where i have attached all the details. They asked me to report the bug also at kernel.org.
+
+If there is anything more that i need to report for this bug please let me know.
+
+Thank you 
+
+
+Lamprakis
+
