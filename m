@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934184Ab1KCBjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51042 "EHLO mx2.suse.de"
+	id S934253Ab1KCBjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51070 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934157Ab1KCBjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:16 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
-Message-Id: <20111102222741.857316554@clark.kroah.org>
+	id S934104Ab1KCBja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:30 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:42 2011
+Message-Id: <20111102222742.257879783@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:08 -0700
+Date: Wed, 02 Nov 2011 15:26:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guy Martin <gmsoft@tuxicoman.be>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Matt Turner <mattst88@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [024/101] e1000: Fix driver to be used on PA RISC C8000 workstations
+        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [028/101] cifs: fix possible memory corruption in CIFSFindNext
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,47 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit e2faeec2de9e2c73958e6ea6065dde1e8cd6f3a2 upstream.
+commit 9438fabb73eb48055b58b89fc51e0bc4db22fabd upstream.
 
-The checksum field in the EEPROM on HPPA is really not a
-checksum but a signature (0x16d6).  So allow 0x16d6 as the
-matching checksum on HPPA systems.
+The name_len variable in CIFSFindNext is a signed int that gets set to
+the resume_name_len in the cifs_search_info. The resume_name_len however
+is unsigned and for some infolevels is populated directly from a 32 bit
+value sent by the server.
 
-This issue is present on longterm/stable kernels, I have
-verified that this patch is applicable back to at least
-2.6.32.y kernels.
+If the server sends a very large value for this, then that value could
+look negative when converted to a signed int. That would make that
+value pass the PATH_MAX check later in CIFSFindNext. The name_len would
+then be used as a length value for a memcpy. It would then be treated
+as unsigned again, and the memcpy scribbles over a ton of memory.
 
-v2- changed ifdef to use CONFIG_PARISC instead of __hppa__
+Fix this by making the name_len an unsigned value in CIFSFindNext.
 
-CC: Guy Martin <gmsoft@tuxicoman.be>
-CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
-CC: Matt Turner <mattst88@gmail.com>
-Reported-by: Mikulas Patocka <mikulas@artax.kerlin.mff.cuni.cz>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Acked-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Darren Lavender <dcl@hppine99.gbr.hp.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000/e1000_hw.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/cifs/cifssmb.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/e1000/e1000_hw.c
-+++ b/drivers/net/e1000/e1000_hw.c
-@@ -3842,6 +3842,12 @@ s32 e1000_validate_eeprom_checksum(struc
- 		checksum += eeprom_data;
- 	}
+--- a/fs/cifs/cifssmb.c
++++ b/fs/cifs/cifssmb.c
+@@ -3596,7 +3596,8 @@ int CIFSFindNext(const int xid, struct c
+ 	T2_FNEXT_RSP_PARMS *parms;
+ 	char *response_data;
+ 	int rc = 0;
+-	int bytes_returned, name_len;
++	int bytes_returned;
++	unsigned int name_len;
+ 	__u16 params, byte_count;
  
-+#ifdef CONFIG_PARISC
-+	/* This is a signature and not a checksum on HP c8000 */
-+	if ((hw->subsystem_vendor_id == 0x103C) && (eeprom_data == 0x16d6))
-+		return E1000_SUCCESS;
-+
-+#endif
- 	if (checksum == (u16) EEPROM_SUM)
- 		return E1000_SUCCESS;
- 	else {
+ 	cFYI(1, ("In FindNext"));
 
 
