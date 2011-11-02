@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932918Ab1KBPTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 11:19:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:54085 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932378Ab1KBPTE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 11:19:04 -0400
-Date: Wed, 2 Nov 2011 11:18:44 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <rusty@rustcorp.com.au>, <mingo@elte.hu>, <akpm@linux-foundation.org>,
-        <sfr@canb.auug.org.au>, <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] introduce export.h; reduce module.h usage
-Message-ID: <20111102151843.GA25190@windriver.com>
-References: <20111101004542.GA18671@windriver.com>
- <CA+55aFz7dRWdQy_39+sCMeuqkavg8gYYyH_4u-n66OFVYzAWTg@mail.gmail.com>
+	id S932953Ab1KBPTO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 11:19:14 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:34919 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932378Ab1KBPTJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 11:19:09 -0400
+Date: Wed, 2 Nov 2011 11:19:03 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jan Kara <jack@suse.cz>
+Cc: Andy Lutomirski <luto@amacapital.net>, Andreas Dilger <adilger@dilger.ca>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] mm: Improve cmtime update on shared writable mmaps
+Message-ID: <20111102151903.GA15045@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	Andy Lutomirski <luto@amacapital.net>,
+	Andreas Dilger <adilger@dilger.ca>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
+References: <CALCETrWoZeFpznU5Nv=+PvL9QRkTnS4atiGXx0jqZP_E3TJPqw@mail.gmail.com>
+ <6e365cb75f3318ab45d7145aededcc55b8ededa3.1319844715.git.luto@amacapital.net>
+ <20111101225342.GG18701@quack.suse.cz>
+ <CALCETrW3ZZ=474cXY0HH1=fHTwKJUo--ufPfD1WLpGRC4_CPrw@mail.gmail.com>
+ <20111102150200.GC31575@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFz7dRWdQy_39+sCMeuqkavg8gYYyH_4u-n66OFVYzAWTg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111102150200.GC31575@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [GIT PULL] introduce export.h; reduce module.h usage] On 01/11/2011 (Tue 16:59) Linus Torvalds wrote:
+On Wed, Nov 02, 2011 at 04:02:00PM +0100, Jan Kara wrote:
+>   That's a good question. Locking of i_flags was always kind of unclear to
+> me. They are certainly read without any locks and in the couple of places
+> where setting can actually race VFS uses i_mutex for serialization which is
+> kind of overkill (and unusable from page fault due to locking constraints).
+> Probably using atomic bitops for setting i_flags would be needed.
 
-> On Mon, Oct 31, 2011 at 5:45 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
-> >
-> > Please pull the below to get the module.h split content.  It has been
-> > tested on v3.1-rc6, soaked in linux-next, and re-tested again lots more
-> > today after rebasing it to allow most of the linux-next finds to be
-> > blended in, where they could not be on the original v3.1-rc6 baseline.
-> 
-> Does it bisect cleanly?
+Adding a set of inode_{test,set,clear}_flag() inline functions, and
+then converting accesses of i_flags to use them would be a great
+cleanup task.  It's been on my mental todo list for a while, but it's
+a pretty invasive change.  What we have right now is definitely racy,
+though, and we only get away with it because i_flags changes happen
+relatively rarely.  Fixing this would be definitely be a Good Thing.
 
-I'd mentioned earlier[1] that I was keeping clean bisection as a goal,
-but that was a while ago, and I probably should have reiterated that
-in this pull request.
-
-> 
-> Quite frankly, for something fairly trivial like this where the upside
-> is mainly "slightly faster compile" (and hey, perhaps cleaner source
-> tree), the downsides needs to be minimized.  And just looking at the
-> shortlog makes me go: this will be a bisection disaster - people will
-> look for bugs, bisect will go into this series, and things won't
-> compile.
-> 
-> But maybe it's ordered so that the actual module.h split comes last,
-> exactly so that it would be safe and bisectable? I just don't know,
-> and I'd like to know before I pull..
-
-Yes, the order was explicitly set out to maintain that.  Which is why
-the dates of the changes are not necessarily in strict increasing
-chronological order.  The set is ordered like this:
-
-   1) move content from module.h to export.h/moduleparam.h
-
-   2) many one line changes to fix implicit header dependencies
-
-   3) fix linux/include/* so that module.h isn't implicitly everywhere
-
-As Stephen said, the two commits that do #1 are inert.  The changes in
-#2 just ensure files that use header X call out header X, and finally
-the changes in #3 are then safe to make because of the work done in #2.
-
-Just to double check that I'd not somehow drifted away from maintaining
-the bisectability, I've just ran 50 x86_64 defconfig builds; for
-checkouts of the 1st 25 commits and the last 25 commits (the latter
-covers all of the changes in #3 above).
-
-If you'd like something else; specific tests or to have this rebased
-onto whatever is in master closer to the end of the week then just ask.
-
-Thanks,
-Paul.
-
-[1] https://lkml.org/lkml/2011/7/28/140
-
-> 
->                     Linus
+						- Ted
