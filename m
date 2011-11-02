@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab1KBBWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 21:22:25 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:47365 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab1KBBWX (ORCPT
+	id S1756155Ab1KBBWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 21:22:45 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50467 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab1KBBWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 21:22:23 -0400
-Date: Wed, 2 Nov 2011 12:22:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yong Zhang <yong.zhang0@gmail.com>
-Subject: linux-next: manual merge of the bjdooks-i2c tree with Linus' tree
-Message-Id: <20111102122221.9040e7a07bb0e3e2c46a5188@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA"
+	Tue, 1 Nov 2011 21:22:42 -0400
+MIME-Version: 1.0
+In-Reply-To: <CABeCy1aFW7z+-s2m-Fx6Fhcj7Dpa3Mm5hEh7fPiD3_CxFdQbPA@mail.gmail.com>
+References: <1316804080-6396-1-git-send-email-venki@google.com>
+	<CAGjg+kH577VE4cyq5zVNR962S6xbGCNnGS0w6N1DVuOppL3Khw@mail.gmail.com>
+	<CABeCy1Y_OXPJkca6dRvK4-PCfKH8wD_2Aq-9r-JyBBSCetrsOw@mail.gmail.com>
+	<CAGjg+kFyqWa=Ui+XRDoCvYFLt7eH-vScFk24tk1aZJkfWRMOxQ@mail.gmail.com>
+	<CABeCy1aFW7z+-s2m-Fx6Fhcj7Dpa3Mm5hEh7fPiD3_CxFdQbPA@mail.gmail.com>
+Date: Wed, 2 Nov 2011 09:22:41 +0800
+Message-ID: <CAGjg+kHMc1r2bFKeSvW3UOw6xELsevT2VZpEpQ111TbAYMU91g@mail.gmail.com>
+Subject: Re: [RFC] Introduce greedy hrtimer walk on idle
+From: alex shi <lkml.alex@gmail.com>
+To: Venki Pallipadi <venki@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        linux-kernel@vger.kernel.org, "Chen, Tim C" <tim.c.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>> I tested the patch against 3.1 kernel for specpower benchmark on our
+>> machine, westmere core laptop Thinkpad t410(internal name lkp-t410),
+>> and on Romely-EP machine(lkp-sb03). No clear power or performance
+>> change found. the performance and power has no clear change for every
+>> level system load. from 0 to 100%.
+>
+> Thanks Alex for testing this. Likely that with specpower there are not
+> many active timers. Was the run with run level 5 and with all the system daemons
+> that come with distro active?
+>
 
-Hi Ben,
+The testing run under level 3, without X system. and there really has
+no many daemons.
+Following is the LOC record on the westmere laptop, before and after
+testing. testing costs 4368'.
 
-Today's linux-next merge of the bjdooks-i2c tree got a conflict in
-drivers/i2c/busses/i2c-designware-platdrv.c between commit 4311051c358a
-("i2c: irq: Remove IRQF_DISABLED") from Linus' tree and commit
-f8420b7bf6ce ("fixup merge") from the bjdooks-i2c tree.
+LOC:      22850      24984      60558      61003   Local timer interrupts
+---
+LOC:    2773346    2772016    2623716    2644598   Local timer interrupts
 
-I fixed it up (by removing the IRQF_DISABLED flag) but this change should
-probably be sent to Linus as it appears to have been fixed up incorrectly
-there.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+There are about 65 interrupts per second on each of cpu. Yes it is not
+too much.
 
---Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA
-Content-Type: application/pgp-signature
+Without your patch, the timer interrupts number as following:
+LOC:      10564      11942      11758      13075   Local timer interrupts
+---
+LOC:    2805402    2800421    2671229    2663266   Local timer interrupts
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+As to X system timers, I didn't find much timers on my working
+desktop, the LOC change just a little during 120'. That is i7, Ubuntu,
+without default daemons and running many APPs like, evolution/firefox
+etc etc.
 
-iQIcBAEBCAAGBQJOsJtNAAoJEECxmPOUX5FEdPkP/jTKHcgBybapWt3Y3GOA4HyL
-SCbKUULAQhMyed59Sf+ywMjkdZ8XZtORafG5Di6BPQtu3xGSeEsLA6b7n0JE6gju
-gUtoMJVJ4j8jD09psfsEzAlW+iR9hfK2V2I3aJV4jeXsRkAVjl4gG9Bb0KOlwSv1
-/7Gi38xJR4flJ8uMDo060t2FbzgrArf2CvS6IKh5CL/KRMhJOiumDaBoc5S3dMSY
-/x09QWa7BzpBvj9n6QgnAWTQO5W9Rbozua3Qw3XGLoDeG/iQ3zyZwbOBLfbg6nJ2
-z7Vcb/mnQhy82LS8iJ4mUbkdYHuy9shZe9Ni0fpWK2AMwOLQe4KKekoWLATngJtq
-qEFBkL1zNT8XgRbUw3KJclRW7v90OGWo5qIWVzBS7aVjWjnorxKEqRNqzBuaQMkQ
-J3wEcH8zrh8Vz6bNefP8ThAqY72+55VmZeM5JV0IT+37FocXxh9HeIZNgX/2Vq0a
-C7m4APeBTizqwQSErImg7FnMHXhDb9HE/OsnAlnLmGiue3o2c+7VATAwhOysaz+O
-n+jIvY1gcXFueUMyaNsmnTK9i6fhJN29RmmF23wTBcFZZZx4izsCqJf/2xm3P1JG
-b/9cSGwfaG70a6xT4BgZspl++r5eWAiTeuQjFtmzRisWAcMluERL7v0UtlyjUVpd
-3WfT4HjwmLqhfoL5ZP0g
-=Ieio
------END PGP SIGNATURE-----
+LOC:        125        114         97         80         63  110108127
+  77084851   77289464   Local timer interrupts
+--
+LOC:        125        114         97         80         63  110112467
+  77087975   77294653   Local timer interrupts
 
---Signature=_Wed__2_Nov_2011_12_22_21_+1100_yvRo.GCh3.I1.JQA--
+So, guess, X system is not good candidate to show the patch effect.
+Any others benchmarks recommend?
