@@ -1,127 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab1KBOlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:41:52 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34364 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755501Ab1KBOlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:41:49 -0400
-Date: Wed, 2 Nov 2011 10:41:48 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Lin Ming <ming.m.lin@intel.com>
-cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH 1/3] scsi: fix potential dead lock for host runtime pm
-In-Reply-To: <1320214900-2112-2-git-send-email-ming.m.lin@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1111021034190.2217-100000@iolanthe.rowland.org>
+	id S932453Ab1KBOnr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:43:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60716 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755469Ab1KBOnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 10:43:46 -0400
+Date: Wed, 2 Nov 2011 07:43:21 -0700
+From: Greg KH <gregkh@suse.de>
+To: David Herrmann <dh.herrmann@googlemail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Input: Remove unsafe device module references
+Message-ID: <20111102144321.GA1299@suse.de>
+References: <1320162100-13494-1-git-send-email-dh.herrmann@googlemail.com>
+ <20111101170156.GA8925@suse.de>
+ <CANq1E4S07S2kNTmAxQRa4mEVKrGnS7cTHKqPoHEzLOyu3Mfqzw@mail.gmail.com>
+ <20111101180038.GB4241@suse.de>
+ <CANq1E4T6urGVLC7xEa_4D=sCGYD0zsiVbH9u_E6O_xwuhR2Z4g@mail.gmail.com>
+ <20111101181820.GC15216@core.coreip.homeip.net>
+ <CANq1E4TLbt0e0jhbkyNoey23Dq9nNioFELskdk1k6BVB=zjhaA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4TLbt0e0jhbkyNoey23Dq9nNioFELskdk1k6BVB=zjhaA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Nov 2011, Lin Ming wrote:
-
-> In later patch hooks will be added to do ata port runtime pm through scsi layer.
-> libata schedules scsi EH to handle suspend, then dead lock happens
-> because scsi EH in turn waits for the ongoing suspend, as below.
+On Wed, Nov 02, 2011 at 02:45:58PM +0100, David Herrmann wrote:
+> On Tue, Nov 1, 2011 at 7:18 PM, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > On Tue, Nov 01, 2011 at 07:09:27PM +0100, David Herrmann wrote:
+> >> On Tue, Nov 1, 2011 at 7:00 PM, Greg KH <gregkh@suse.de> wrote:
+> >> > On Tue, Nov 01, 2011 at 06:52:11PM +0100, David Herrmann wrote:
+> >> >> My solution: Some parent subsystem of us must take and release this
+> >> >> module-refcnt instead of us, so this bug doesn't occur.
+> >> >
+> >> > Yes, that is the ultimate solution for something like this.
+> >> >
+> >> > But, in reality, we don't care about module unloading races as there are
+> >> > plenty of other issues involved there where things can go bad, so we
+> >> > just try the best we can :)
+> >>
+> >> Ah, I am kind of relieved that I got this right. I almost started
+> >> thinking I am insane.. ;)
+> >>
+> >> So your answer is that this is so unlikely that it won't be fixed? I
+> >> am fine with that, even though I wonder why stuff like "struct
+> >> file_operations" include "owner" fields to protect callbacks but
+> >> "struct device_type" does *not* include any protection of it's
+> >> "release" callback.
+> >
+> > I think adding owner to device_type might not be a bad idea at all...
 > 
-> <scsi host runtime suspend>
->  scsi_autopm_put_host
->    pm_runtime_put_sync
->      <scsi_host runtime pm status updated to RPM_SUSPENDING>
->      ......
->        <call libata hook to do suspend>
->          <wake up scsi EH to handle suspend>
->          <wait for scsi EH ...>
-> 
-> <scsi EH wake up>
->  scsi_error_handler
->    <resume scsi host>
->    scsi_autopm_get_host
->      pm_runtime_get_sync
->      .....
->        <sleep to wait for the ongoing scsi host suspend>
-> 
-> This patch fixes the dead lock by checking if there is ongoing runtime PM request.
-> If there is ongoing runtime PM request, scsi_autopm_get_host_noresume is called to
-> increase the usage count, but don't resume the host.
-> 
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> ---
->  drivers/scsi/scsi_error.c |    4 +++-
->  drivers/scsi/scsi_pm.c    |   11 +++++++++++
->  drivers/scsi/scsi_priv.h  |    2 ++
->  3 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-> index a4b9cdb..d35d8f7 100644
-> --- a/drivers/scsi/scsi_error.c
-> +++ b/drivers/scsi/scsi_error.c
-> @@ -1804,7 +1804,9 @@ int scsi_error_handler(void *data)
->  		 * what we need to do to get it up and online again (if we can).
->  		 * If we fail, we end up taking the thing offline.
->  		 */
-> -		if (scsi_autopm_get_host(shost) != 0) {
-> +		if (scsi_autopm_host_busy(shost))
-> +			scsi_autopm_get_host_noresume(shost);
-> +		else if (scsi_autopm_get_host(shost) != 0) {
->  			SCSI_LOG_ERROR_RECOVERY(1,
->  				printk(KERN_ERR "Error handler scsi_eh_%d "
->  						"unable to autoresume\n",
+> Exactly. But Greg does not seem to be very amused by that idea :-/
 
-Here's what I'm worried about:  Suppose during normal operation, an 
-error occurs.  When the command is completed, runtime PM might start to 
-suspend the host.  But then the error-handler thread starts up, and 
-of course it needs the host to be powered-up in order to recover from 
-the error.  The code you're adding could prevent this from working.
+Actually that might work, but again, is it worth it?
 
-What we really need is a way to prevent host from going into runtime
-suspend while the error-handler is pending or running.  Do you have any
-ideas on how to do this?
+Patches, as always, are gladly accepted, if you think this would resolve
+the issue.
 
-> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
-> index d82a023a..1be6c5a 100644
-> --- a/drivers/scsi/scsi_pm.c
-> +++ b/drivers/scsi/scsi_pm.c
-> @@ -185,6 +185,17 @@ void scsi_autopm_put_host(struct Scsi_Host *shost)
->  	pm_runtime_put_sync(&shost->shost_gendev);
->  }
->  
-> +bool scsi_autopm_host_busy(struct Scsi_Host *shost)
-> +{
-> +	return (shost->shost_gendev.power.runtime_status == RPM_RESUMING
-> +		|| shost->shost_gendev.power.runtime_status == RPM_SUSPENDING);
-> +}
-> +
-> +void scsi_autopm_get_host_noresume(struct Scsi_Host *shost)
-> +{
-> +	pm_runtime_get_noresume(&shost->shost_gendev);
-> +}
-> +
->  #else
->  
->  #define scsi_runtime_suspend	NULL
-> diff --git a/drivers/scsi/scsi_priv.h b/drivers/scsi/scsi_priv.h
-> index 2a58895..1750651 100644
-> --- a/drivers/scsi/scsi_priv.h
-> +++ b/drivers/scsi/scsi_priv.h
-> @@ -156,6 +156,8 @@ extern void scsi_autopm_get_target(struct scsi_target *);
->  extern void scsi_autopm_put_target(struct scsi_target *);
->  extern int scsi_autopm_get_host(struct Scsi_Host *);
->  extern void scsi_autopm_put_host(struct Scsi_Host *);
-> +extern bool scsi_autopm_host_busy(struct Scsi_Host *shost);
-> +extern void scsi_autopm_get_host_noresume(struct Scsi_Host *);
->  #else
->  static inline void scsi_autopm_get_target(struct scsi_target *t) {}
->  static inline void scsi_autopm_put_target(struct scsi_target *t) {}
+thanks,
 
-I bet you didn't try compiling this with CONFIG_PM_RUNTIME turned off.
-
-Alan Stern
-
+greg k-h
