@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab1KBM0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 08:26:45 -0400
-Received: from 6.mo3.mail-out.ovh.net ([188.165.43.173]:34224 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752306Ab1KBM0o (ORCPT
+	id S1755454Ab1KBMhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 08:37:41 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:57745 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753088Ab1KBMhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 08:26:44 -0400
-X-Greylist: delayed 19518 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 08:26:44 EDT
-Date: Wed, 2 Nov 2011 08:00:42 +0100
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH] dt: add empty of_alias_get_id() for non-dt builds
-Message-ID: <20111102070042.GA7136@game.jcrosoft.org>
-References: <1319706448-1664-1-git-send-email-nicolas.ferre@atmel.com>
- <4EAAABF6.50803@gmail.com>
- <20111029114905.GA22592@ponder.secretlab.ca>
+	Wed, 2 Nov 2011 08:37:38 -0400
+Message-ID: <4EB13972.30308@ce.jp.nec.com>
+Date: Wed, 02 Nov 2011 21:37:06 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111029114905.GA22592@ponder.secretlab.ca>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 16916083151829904156
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -200
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfedvtddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrheekucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddm
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        Mike Snitzer <snitzer@redhat.com>, gmuelas@de.ibm.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+References: <4E96E2FF.6070601@linux.vnet.ibm.com> <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com> <4E9BEB68.1050707@ce.jp.nec.com> <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com> <4E9D7FA8.9000000@ce.jp.nec.com> <20111018154542.GB3869@osiris.boeblingen.de.ibm.com> <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com> <20111031100557.GA2621@osiris.boeblingen.de.ibm.com> <1320057746.2964.1.camel@dabdike> <4EAE8A7E.8000504@ce.jp.nec.com> <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:49 Sat 29 Oct     , Grant Likely wrote:
-> On Fri, Oct 28, 2011 at 08:19:50AM -0500, Rob Herring wrote:
-> > On 10/27/2011 04:07 AM, Nicolas Ferre wrote:
-> > > Add function of_alias_get_id() reporting -ENOSYS
-> > > for non-dt builds, so that drivers migrating to dt
-> > > can save some '#ifdef CONFIG_OF'.
-> > > 
-> > > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> > 
-> > Acked-by: Rob Herring <rob.herring@calxeda.com>
+On 10/31/11 22:00, Heiko Carstens wrote:
+> On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
+>> Hm, dm_softirq_done is generic completion code of original
+>> request in dm-multipath.
+>> So oops here might be another manifestation of use-after-free.
+>>
+>> Do you always hit the oops at the same address?
 > 
-> Merged, thanks
+> I think we saw this bug the first time. But before that the scsi
+> logging level was higher. Gonzalo is trying to recreate it with
+> the same (old) scsi logging level.
+> Afterwards we will try with barrier=0.
 > 
-> Rob, for stuff like this, please do pick it up into your git tree and
-> reply saying that you've done so.  Then I know I can ignore it because
-> I'll be receiving a pull req from you in short order.
+> Both on v3.0.7 btw.
 > 
-> Similarly, I reply whenever I pick up a patch, so you'll know if I've
-> already delt with it.
-this is still missing in the mainline kernel
+>> Could you find corresponding source code line for
+>> the crashed address, dm_softirq_done+0x72/0x140,
+>> and which pointer was invalid?
+> 
+> It crashes in the inlined function dm_done() when trying to
+> dereference tio (aka clone->end_io_data):
+> 
+> static void dm_done(struct request *clone, int error, bool mapped)
+> {
+>         int r = error;
+>         struct dm_rq_target_io *tio = clone->end_io_data;
+>         dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
 
-the at91 ends broken can one of you send a pull with it to Linus
+Thank you. But, hmm. I have no idea about scenario.
 
-Best Regards,
-J.
+struct dm_rq_target_io is a container of clone request
+and clone->end_io_data points to its container.
+
+  struct dm_rq_target_io {
+        struct mapped_device *md;
+        struct dm_target *ti;
+        struct request *orig, clone;
+        int error;
+        union map_info info;
+  };
+
+If clone can be dereferenced, clone->end_io_data should be, too.
+
+-- 
+Jun'ichi Nomura, NEC Corporation
