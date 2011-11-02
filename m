@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060Ab1KCBix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:38:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50990 "EHLO mx2.suse.de"
+	id S934142Ab1KCBjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51027 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933997Ab1KCBit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:38:49 -0400
+	id S934042Ab1KCBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:06 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
-Message-Id: <20111102222741.214197724@clark.kroah.org>
+Message-Id: <20111102222741.573857486@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:01 -0700
+Date: Wed, 02 Nov 2011 15:26:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
-Subject: [017/101] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Venkateswararao=20Jujjuri=20@suse.de,
+        "?= <jvrao@linux.vnet.ibm.com>, "@suse.de, Aneesh@suse.de,
+        Kumar@suse.de, K.V@suse.de,
+        " <aneesh.kumar@linux.vnet.ibm.com>, Eric Van Hensbergen <ericvh@gmail.com>"@suse.de
+Subject: [021/101] net/9p: Fix the msize calculation.
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,67 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
 
-commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
+commit c9ffb05ca5b5098d6ea468c909dd384d90da7d54 upstream.
 
-0.90 metadata uses an unsigned 32bit number to count the number of
-kilobytes used from each device.
-This should allow up to 4TB per device.
-However we multiply this by 2 (to get sectors) before casting to a
-larger type, so sizes above 2TB get truncated.
+msize represents the maximum PDU size that includes P9_IOHDRSZ.
 
-Also we allow rdev->sectors to be larger than 4TB, so it is possible
-for the array to be resized larger than the metadata can handle.
-So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
-used.
-
-Also the sanity check at the end of super_90_load should include level
-1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
-
-Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Venkateswararao Jujjuri "<jvrao@linux.vnet.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ net/9p/client.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -980,8 +980,11 @@ static int super_90_load(mdk_rdev_t *rde
- 			ret = 0;
- 	}
- 	rdev->sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that */
-+	if (rdev->sectors >= (2ULL << 32))
-+		rdev->sectors = (2ULL << 32) - 2;
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -708,8 +708,8 @@ struct p9_client *p9_client_create(const
+ 	if (err)
+ 		goto destroy_fidpool;
  
--	if (rdev->sectors < sb->size * 2 && sb->level > 1)
-+	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
- 		/* "this cannot possibly happen" ... */
- 		ret = -EINVAL;
+-	if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
+-		clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
++	if (clnt->msize > clnt->trans_mod->maxsize)
++		clnt->msize = clnt->trans_mod->maxsize;
  
-@@ -1016,7 +1019,7 @@ static int super_90_validate(mddev_t *md
- 		mddev->clevel[0] = 0;
- 		mddev->layout = sb->layout;
- 		mddev->raid_disks = sb->raid_disks;
--		mddev->dev_sectors = sb->size * 2;
-+		mddev->dev_sectors = ((sector_t)sb->size) * 2;
- 		mddev->events = ev1;
- 		mddev->bitmap_info.offset = 0;
- 		mddev->bitmap_info.default_offset = MD_SB_BYTES >> 9;
-@@ -1255,6 +1258,11 @@ super_90_rdev_size_change(mdk_rdev_t *rd
- 	rdev->sb_start = calc_dev_sboffset(rdev->bdev);
- 	if (!num_sectors || num_sectors > rdev->sb_start)
- 		num_sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that.
-+	 * 4TB == 2^32 KB, or 2*2^32 sectors.
-+	 */
-+	if (num_sectors >= (2ULL << 32))
-+		num_sectors = (2ULL << 32) - 2;
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
+ 	err = p9_client_version(clnt);
+ 	if (err)
 
 
