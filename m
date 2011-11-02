@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab1KBJHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:07:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754391Ab1KBJH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:07:29 -0400
-Message-ID: <4EB1084F.4020206@suse.cz>
-Date: Wed, 02 Nov 2011 10:07:27 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110907 Thunderbird/6.0.2
+	id S1755161Ab1KBJKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:10:22 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49800
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753277Ab1KBJKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:10:21 -0400
+Date: Wed, 2 Nov 2011 05:10:12 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jan Kara <jack@suse.cz>,
+        Curt Wohlgemuth <curtw@google.com>, Michael Rubin <mrubin@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Andrea Righi <arighi@develer.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Tang Feng <feng.tang@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, xfs@oss.sgi.com
+Subject: Re: writeback tree status (for 3.2 merge window)
+Message-ID: <20111102091012.GA25879@infradead.org>
+References: <20111101074347.GA23644@localhost>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com> <20111027193448.GA3514@merkur.ravnborg.org> <20111028070336.GF12995@elte.hu> <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com> <20111028075432.GB8626@elte.hu> <20111028120856.GA29174@citd.de> <20111028122902.GA25323@elte.hu> <20111028130535.GA2752@citd.de> <20111102084124.GB18771@elte.hu>
-In-Reply-To: <20111102084124.GB18771@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111101074347.GA23644@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2.11.2011 09:41, Ingo Molnar wrote:
+On Tue, Nov 01, 2011 at 03:43:47PM +0800, Wu Fengguang wrote:
+> Hi,
 > 
-> * Matthias Schniedermeyer <ms@citd.de> wrote:
+> There are 3 patchsets sitting in the writeback tree.
 > 
->> And AFAICS there currently is no "modconfig", only an 
->> "allmodconfig" (and "localmodconfig")
->>
->> With no letters dropped it would be less ambiguous. make 
->> modifyconfig=kvm
+>         1) IO-less dirty throttling v12
+>         https://github.com/fengguang/linux/commits/dirty-throttling-v12
 > 
-> Yeah. Note that it's more like an 'add' operation, not a modify 
-> operation, thus:
+>         2) writeback reasons tracing from Curt Wohlgemuth
+>         https://github.com/fengguang/linux/commits/writeback-reason
 > 
-> 	make addconfig=kvm
+>         3) writeback queuing changes from Jan Kara and me
+>         https://github.com/fengguang/linux/commits/requeue-io-wait
 > 
-> or:
+> They have been merged into this branch testing in linux-next for a while:
 > 
-> 	make addconfig kvm
+> https://github.com/fengguang/linux/commits/writeback-for-next
 > 
-> would be intuitive and would work well too.
-> 
-> Sam, Michal, which one would you prefer? The latter might have the 
-> advantage that it's additive, enabling future usages like:
-> 
-> 	make addconfig kvm debug
+> Since (3) still has an unresolved issue (detailed in the below
+> links), it looks better to hold it back for this merge window.
 
-The problem is that neither of these fit into the make command syntax:
+Given that we have run into issues so much with it that's proably
+the better idea.
 
-    make addconfig kvm debug
+To fix the originally reported issue with the missing file size updates
+in XFS we plan to simply log all filesize changes in XFS.  Currently I
+had this in the 3.3 queue, but in the worst case we might have to move
+this forward to 3.2.
 
-tells make to build three different targets, and
+> The patches from (1,2) together with 2 tracing patches essential for
+> debugging (1) have been pushed to the "writeback-for-linus" branch:
+> 
+>         http://git.kernel.org/?p=linux/kernel/git/wfg/linux.git;a=shortlog;h=refs/heads/writeback-for-linus
+> 
+> If no objections, I'll send a pull request to Linus soon.
 
-    make addconfig=kvm
+Please do so.  I'm really looking forward to see the I/O-less
+balance_dirty_pages in ASAP.
 
-tells make to create a variable named addconfig with the value kvm and
-build the default target. And BTW, you or someone else reassured me
-earlier in the thread that this is going to be needed for the kvm case
-solely, so why are you inventing something generic now? :)
-
-Michal
