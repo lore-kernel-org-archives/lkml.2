@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751079Ab1KBTqV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:46:21 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55084 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab1KBTqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:46:19 -0400
-Date: Wed, 2 Nov 2011 19:45:55 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 02/34] msm: clock: Always use an array to iterate
-	over clocks
-Message-ID: <20111102194555.GE12913@n2100.arm.linux.org.uk>
-References: <1320258991-22325-1-git-send-email-davidb@codeaurora.org> <1320258991-22325-3-git-send-email-davidb@codeaurora.org>
+	id S1751255Ab1KBTqm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:46:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab1KBTqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:46:40 -0400
+Message-ID: <4EB19DE5.4080108@redhat.com>
+Date: Wed, 02 Nov 2011 15:45:41 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320258991-22325-3-git-send-email-davidb@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        John Stoffel <john@stoffel.org>, Johannes Weiner <jweiner@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>  <75efb251-7a5e-4aca-91e2-f85627090363@default>  <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>  <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>  <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>  <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com>  <20111028163053.GC1319@redhat.com>  <b86860d2-3aac-4edd-b460-bd95cb1103e6@default>  <20138.62532.493295.522948@quad.stoffel.home>  <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default 20139.5644.583790.903531@quad.stoffel.home>  <3ac142d4-a4ca-4a24-bf0b-69a90bd1d1a0@default> <1320005162.15403.14.camel@nimitz>
+In-Reply-To: <1320005162.15403.14.camel@nimitz>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 11:35:59AM -0700, David Brown wrote:
-> If the array of clk_lookups contains aliases for the same struct
-> clk, msm_clock_init() will add the clock to the clocks list
-> twice.  This would cause list corruption so let's just remove the
-> clocks list and any associated code and iterate over the array
-> instead.
+On 10/30/2011 04:06 PM, Dave Hansen wrote:
+> On Sun, 2011-10-30 at 12:18 -0700, Dan Magenheimer wrote:
+>>> since they're the ones who will have to understand this stuff and know
+>>> how to maintain it.  And keeping this maintainable is a key goal.
+>>
+>> Absolutely agree.  Count the number of frontswap lines that affect
+>> the current VM core code and note also how they are very clearly
+>> identified.  It really is a very VERY small impact to the core VM
+>> code (e.g. in the files swapfile.c and page_io.c).
+>
+> Granted, the impact on the core VM in lines of code is small.  But, I
+> think the behavioral impact is potentially huge since tmem's hooks add
+> non-trivial amounts of framework underneath the VM in core paths.  In
+> zcache's case, this means a bunch of allocations and an entirely new
+> allocator memory allocator being used in the swap paths.
 
-Hmm...
+My only real behaviour concern with tmem is that
+/proc/sys/overcommit_memory will no longer be able
+to do anything useful, since we'll never know in
+advance how much memory is available.
 
-> @@ -158,13 +152,13 @@ void __init msm_clock_init(struct clk_lookup *clock_tbl, unsigned num_clocks)
->   */
->  static int __init clock_late_init(void)
->  {
-> +	unsigned i, count = 0;
->  	unsigned long flags;
-> -	struct clk *clk;
-> -	unsigned count = 0;
->  
->  	clock_debug_init();
-> -	mutex_lock(&clocks_mutex);
-> -	list_for_each_entry(clk, &clocks, list) {
-> +	for (i = 0; i < msm_num_clocks; i++) {
-> +		struct clk *clk = msm_clocks[i].clk;
-> +
->  		clock_debug_add(clk);
+That may be outweighed by the benefits of having
+more memory available than before, and a reasonable
+tradeoff to make for the users.
 
-This means you'll end up calling clock_debug_add() twice for the same
-struct clk - this sounds like a bad idea in itself.  It looks like
-there's no protection within that function against it being called
-twice with the same struct clk.
-
-Are you sure this is safe?
+That leaves us with having the code cleaned up to
+reasonable standards.  To be honest, I would rather
+have larger hooks in the existing mm code, than
+exported variables and having the hooks live elsewhere
+(where people changing the "normal" mm code won't see
+it, and are more likely to break it).
