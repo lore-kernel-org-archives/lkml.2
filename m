@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934341Ab1KCBkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:40:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51142 "EHLO mx2.suse.de"
+	id S934372Ab1KCBkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:40:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51150 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934287Ab1KCBkE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:40:04 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:39 2011
-Message-Id: <20111102222739.775561736@clark.kroah.org>
+	id S934323Ab1KCBkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:40:06 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:43 2011
+Message-Id: <20111102222743.374849195@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:25:45 -0700
+Date: Wed, 02 Nov 2011 15:26:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Gregory Hermant <gregory.hermant@calao-systems.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [001/101] USB: ftdi_sio: add Calao reference board support
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [040/101] ALSA: hda/realtek - Avoid bogus HP-pin assignment
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c96fbdd0ab97235f930ebf24b38fa42a2e3458cf upstream.
+commit 5fe6e0151dbd969f5fbcd94d05c968b76d76952b upstream.
 
-Calao use on there dev kits a FT2232 where the port 0 is used for the JTAG and
-port 1 for the UART
+When the headphone pin is assigned as primary output to line_out_pins[],
+the automatic HP-pin assignment by ASSID must be suppressed.  Otherwise
+a wrong pin might be assigned to the headphone and breaks the auto-mute.
 
-They use the same VID and PID as FTDI Chip but they program the manufacturer
-name in the eeprom
+Reference: https://bugzilla.novell.com/show_bug.cgi?id=716104
 
-So use this information to detect it
-
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -105,6 +105,7 @@ static int   ftdi_jtag_probe(struct usb_
- static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
- static int   ftdi_NDI_device_setup(struct usb_serial *serial);
- static int   ftdi_stmclite_probe(struct usb_serial *serial);
-+static int   ftdi_8u2232c_probe(struct usb_serial *serial);
- static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
- static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
- 
-@@ -132,6 +133,10 @@ static struct ftdi_sio_quirk ftdi_stmcli
- 	.probe	= ftdi_stmclite_probe,
- };
- 
-+static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
-+	.probe	= ftdi_8u2232c_probe,
-+};
-+
- /*
-  * The 8U232AM has the same API as the sio except for:
-  * - it can support MUCH higher baudrates; up to:
-@@ -178,7 +183,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_ALT_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
--	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) ,
-+		.driver_info = (kernel_ulong_t)&ftdi_8u2232c_quirk },
- 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RELAIS_PID) },
-@@ -1739,6 +1745,18 @@ static int ftdi_jtag_probe(struct usb_se
- 
- 	return 0;
- }
-+
-+static int ftdi_8u2232c_probe(struct usb_serial *serial)
-+{
-+	struct usb_device *udev = serial->dev;
-+
-+	dbg("%s", __func__);
-+
-+	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
-+		return ftdi_jtag_probe(serial);
-+
-+	return 0;
-+}
- 
- /*
-  * First and second port on STMCLiteadaptors is reserved for JTAG interface
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1346,7 +1346,9 @@ do_sku:
+ 	 * 15   : 1 --> enable the function "Mute internal speaker
+ 	 *	        when the external headphone out jack is plugged"
+ 	 */
+-	if (!spec->autocfg.hp_pins[0]) {
++	if (!spec->autocfg.hp_pins[0] &&
++	    !(spec->autocfg.line_out_pins[0] &&
++	      spec->autocfg.line_out_type == AUTO_PIN_HP_OUT)) {
+ 		hda_nid_t nid;
+ 		tmp = (ass >> 11) & 0x3;	/* HP to chassis */
+ 		if (tmp == 0)
 
 
