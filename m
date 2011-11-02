@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1KBAYq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 20:24:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45938 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab1KBAYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 20:24:44 -0400
-Date: Tue, 1 Nov 2011 17:24:12 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Decotigny <david.decotigny@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Dmitry Torokhov <dtor@vmware.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        David Decotigny <decot@google.com>
-Subject: Re: [PATCH v2 3/3] param: make /sys/module/*/paramaters optional
-Message-ID: <20111102002412.GA14977@suse.de>
-References: <cover.1320191327.git.david.decotigny@google.com>
- <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com>
+	id S932327Ab1KBAY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 20:24:59 -0400
+Received: from nm9.bullet.mail.bf1.yahoo.com ([98.139.212.168]:33876 "HELO
+	nm9.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755969Ab1KBAY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Nov 2011 20:24:58 -0400
+X-Yahoo-Newman-Id: 125477.25656.bm@smtp211.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 7W9m5s4VM1lN.rhHQQb3RH.MRehaEndpzPb23mGlabY_eKR
+ tZEtw0RuiX027WhQtBQk9PJ2TysVQpaEYJByHkljgz6VT4bsAIG8Bm9.NSto
+ 1j6xwByjvzdtoumdAWOVcxbR9RRgzMlL7bcQVoGZDtE4fvQrQPDjHLZAvurv
+ e307sRw90kD9ioZMZZqy.raR0EofxzukHUY4oGbtCnJHdOkmaOD6HhGzGOwp
+ W7c3n3EBzbsNrHKoTMGPLPSa9TYvHMFyIDJNzs3oGC7nLl67vUYd9cJiD4ol
+ khsHBHLe3obDi_Hy4svyFHn5_mUgYuFm5bt8mevuFTCJPfp0dzoCwZtKLURC
+ nfvhX34diazxHYnqkp3h6C76STgDN9L4S7zu5fZNbplJDuB4wwHnIZZFQNOd
+ xWTzfH1myJWdVjuGwzq57c6a9G94yZgQno6s3NC1y
+X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
+Date: Tue, 1 Nov 2011 19:24:44 -0500
+From: Andrew Watts <akwatts@ymail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+        dmitry.torokhov@gmail.com
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111102002442.GA4793@zeus>
+References: <20111101124759.GA1326@zeus>
+ <20111101164235.GS18855@google.com>
+ <20111101191459.GA2748@zeus>
+ <20111101201902.GA1763@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111101201902.GA1763@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 01, 2011 at 04:50:35PM -0700, David Decotigny wrote:
-> From: David Decotigny <decot@google.com>
+On Tue, Nov 01, 2011 at 01:19:02PM -0700, Tejun Heo wrote:
 > 
-> With this patch, we allow systems that don't want to pay the price for
-> /sys/module/*/paramaters to be compiled without that feature.
+> Odd... how about the following one?  Thanks.
+> 
 
-The "price"?  What kind of price is it?  How much memory is really saved
-here?
+No, the 2nd patch doesn't work either. However, as I mentioned, reversing 
+8ee294cd9def000 (and part of 1d64b655dc083df) does fix it.
 
-greg k-h
+~ Andy
+
+PS I noticed your posts make it to linux-pm@lists.linux-foundation.org.
+   Mine never arrive there. Is that list closed?
+
