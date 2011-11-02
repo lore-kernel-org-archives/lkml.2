@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934454Ab1KCBsz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:48:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51476 "EHLO mx2.suse.de"
+	id S934787Ab1KCBmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:42:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51450 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934801Ab1KCBmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:42:47 -0400
+	id S934750Ab1KCBmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:42:32 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:47 2011
-Message-Id: <20111102222747.755827142@clark.kroah.org>
+Message-Id: <20111102222747.377761109@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:27:11 -0700
+Date: Wed, 02 Nov 2011 15:27:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        Jarek Poplawski <jarkao2@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [087/101] gro: fix different skb headrooms
+        alan@lxorguk.ukuu.org.uk, Ming Lei <ming.lei@canonical.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [083/101] [media] uvcvideo: Set alternate setting 0 on resume if the bus has been reset
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit 3d3be4333fdf6faa080947b331a6a19bce1a4f57 upstream.
+commit d59a7b1dbce8b972ec2dc9fcaaae0bfa23687423 upstream.
 
-Packets entering GRO might have different headrooms, even for a given
-flow (because of implementation details in drivers, like copybreak).
-We cant force drivers to deliver packets with a fixed headroom.
+If the bus has been reset on resume, set the alternate setting to 0.
+This should be the default value, but some devices crash or otherwise
+misbehave if they don't receive a SET_INTERFACE request before any other
+video control request.
 
-1) fix skb_segment()
+Microdia's 0c45:6437 camera has been found to require this change or it
+will stop sending video data after resume.
 
-skb_segment() makes the false assumption headrooms of fragments are same
-than the head. When CHECKSUM_PARTIAL is used, this can give csum_start
-errors, and crash later in skb_copy_and_csum_dev()
+uvc_video.c]
 
-2) allocate a minimal skb for head of frag_list
-
-skb_gro_receive() uses netdev_alloc_skb(headroom + skb_gro_offset(p)) to
-allocate a fresh skb. This adds NET_SKB_PAD to a padding already
-provided by netdevice, depending on various things, like copybreak.
-
-Use alloc_skb() to allocate an exact padding, to reduce cache line
-needs:
-NET_SKB_PAD + NET_IP_ALIGN
-
-bugzilla : https://bugzilla.kernel.org/show_bug.cgi?id=16626
-
-Many thanks to Plamen Petrov, testing many debugging patches !
-With help of Jarek Poplawski.
-
-Reported-by: Plamen Petrov <pvp-lsts@fs.uni-ruse.bg>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Jarek Poplawski <jarkao2@gmail.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/core/skbuff.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/media/video/uvc/uvc_driver.c |    2 +-
+ drivers/media/video/uvc/uvc_video.c  |   10 +++++++++-
+ drivers/media/video/uvc/uvcvideo.h   |    2 +-
+ 3 files changed, 11 insertions(+), 3 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2578,6 +2578,10 @@ struct sk_buff *skb_segment(struct sk_bu
- 		__copy_skb_header(nskb, skb);
- 		nskb->mac_len = skb->mac_len;
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -1891,7 +1891,7 @@ static int __uvc_resume(struct usb_inter
  
-+		/* nskb and skb might have different headroom */
-+		if (nskb->ip_summed == CHECKSUM_PARTIAL)
-+			nskb->csum_start += skb_headroom(nskb) - headroom;
+ 	list_for_each_entry(stream, &dev->streams, list) {
+ 		if (stream->intf == intf)
+-			return uvc_video_resume(stream);
++			return uvc_video_resume(stream, reset);
+ 	}
+ 
+ 	uvc_trace(UVC_TRACE_SUSPEND, "Resume: video streaming USB interface "
+--- a/drivers/media/video/uvc/uvc_video.c
++++ b/drivers/media/video/uvc/uvc_video.c
+@@ -1045,10 +1045,18 @@ int uvc_video_suspend(struct uvc_streami
+  * buffers, making sure userspace applications are notified of the problem
+  * instead of waiting forever.
+  */
+-int uvc_video_resume(struct uvc_streaming *stream)
++int uvc_video_resume(struct uvc_streaming *stream, int reset)
+ {
+ 	int ret;
+ 
++	/* If the bus has been reset on resume, set the alternate setting to 0.
++	 * This should be the default value, but some devices crash or otherwise
++	 * misbehave if they don't receive a SET_INTERFACE request before any
++	 * other video control request.
++	 */
++	if (reset)
++		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
 +
- 		skb_reset_mac_header(nskb);
- 		skb_set_network_header(nskb, skb->mac_len);
- 		nskb->transport_header = (nskb->network_header +
-@@ -2707,8 +2711,8 @@ int skb_gro_receive(struct sk_buff **hea
- 	} else if (skb_gro_len(p) != pinfo->gso_size)
- 		return -E2BIG;
+ 	stream->frozen = 0;
  
--	headroom = skb_headroom(p);
--	nskb = netdev_alloc_skb(p->dev, headroom + skb_gro_offset(p));
-+	headroom = NET_SKB_PAD + NET_IP_ALIGN;
-+	nskb = alloc_skb(headroom + skb_gro_offset(p), GFP_ATOMIC);
- 	if (unlikely(!nskb))
- 		return -ENOMEM;
- 
+ 	ret = uvc_commit_video(stream, &stream->ctrl);
+--- a/drivers/media/video/uvc/uvcvideo.h
++++ b/drivers/media/video/uvc/uvcvideo.h
+@@ -604,7 +604,7 @@ extern const struct v4l2_file_operations
+ /* Video */
+ extern int uvc_video_init(struct uvc_streaming *stream);
+ extern int uvc_video_suspend(struct uvc_streaming *stream);
+-extern int uvc_video_resume(struct uvc_streaming *stream);
++extern int uvc_video_resume(struct uvc_streaming *stream, int reset);
+ extern int uvc_video_enable(struct uvc_streaming *stream, int enable);
+ extern int uvc_probe_video(struct uvc_streaming *stream,
+ 		struct uvc_streaming_control *probe);
 
 
