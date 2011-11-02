@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab1KCBjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:39:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51027 "EHLO mx2.suse.de"
+	id S934184Ab1KCBjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:39:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51042 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934042Ab1KCBjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:39:06 -0400
+	id S934157Ab1KCBjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:39:16 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:41 2011
-Message-Id: <20111102222741.573857486@clark.kroah.org>
+Message-Id: <20111102222741.857316554@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:05 -0700
+Date: Wed, 02 Nov 2011 15:26:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?Venkateswararao=20Jujjuri=20@suse.de,
-        "?= <jvrao@linux.vnet.ibm.com>, "@suse.de, Aneesh@suse.de,
-        Kumar@suse.de, K.V@suse.de,
-        " <aneesh.kumar@linux.vnet.ibm.com>, Eric Van Hensbergen <ericvh@gmail.com>"@suse.de
-Subject: [021/101] net/9p: Fix the msize calculation.
+        alan@lxorguk.ukuu.org.uk, Guy Martin <gmsoft@tuxicoman.be>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>,
+        Matt Turner <mattst88@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [024/101] e1000: Fix driver to be used on PA RISC C8000 workstations
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,33 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Venkateswararao Jujjuri (JV)" <jvrao@linux.vnet.ibm.com>
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
-commit c9ffb05ca5b5098d6ea468c909dd384d90da7d54 upstream.
+commit e2faeec2de9e2c73958e6ea6065dde1e8cd6f3a2 upstream.
 
-msize represents the maximum PDU size that includes P9_IOHDRSZ.
+The checksum field in the EEPROM on HPPA is really not a
+checksum but a signature (0x16d6).  So allow 0x16d6 as the
+matching checksum on HPPA systems.
 
-Signed-off-by: Venkateswararao Jujjuri "<jvrao@linux.vnet.ibm.com>
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Eric Van Hensbergen <ericvh@gmail.com>
+This issue is present on longterm/stable kernels, I have
+verified that this patch is applicable back to at least
+2.6.32.y kernels.
+
+v2- changed ifdef to use CONFIG_PARISC instead of __hppa__
+
+CC: Guy Martin <gmsoft@tuxicoman.be>
+CC: Rolf Eike Beer <eike-kernel@sf-tec.de>
+CC: Matt Turner <mattst88@gmail.com>
+Reported-by: Mikulas Patocka <mikulas@artax.kerlin.mff.cuni.cz>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Acked-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/9p/client.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/e1000/e1000_hw.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/9p/client.c
-+++ b/net/9p/client.c
-@@ -708,8 +708,8 @@ struct p9_client *p9_client_create(const
- 	if (err)
- 		goto destroy_fidpool;
+--- a/drivers/net/e1000/e1000_hw.c
++++ b/drivers/net/e1000/e1000_hw.c
+@@ -3842,6 +3842,12 @@ s32 e1000_validate_eeprom_checksum(struc
+ 		checksum += eeprom_data;
+ 	}
  
--	if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
--		clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
-+	if (clnt->msize > clnt->trans_mod->maxsize)
-+		clnt->msize = clnt->trans_mod->maxsize;
- 
- 	err = p9_client_version(clnt);
- 	if (err)
++#ifdef CONFIG_PARISC
++	/* This is a signature and not a checksum on HP c8000 */
++	if ((hw->subsystem_vendor_id == 0x103C) && (eeprom_data == 0x16d6))
++		return E1000_SUCCESS;
++
++#endif
+ 	if (checksum == (u16) EEPROM_SUM)
+ 		return E1000_SUCCESS;
+ 	else {
 
 
