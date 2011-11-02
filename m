@@ -1,128 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab1KBXAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 19:00:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33610 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab1KBXAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 19:00:11 -0400
-X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=wom5GMh1gUkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=1uEGqAuTlE5yzDl1I-4A:9 a=K1zGq31wSIvENhwVuVIA:7 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Date: Wed, 2 Nov 2011 19:00:10 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>, David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: Linux 3.1-rc9
-Message-ID: <20111102230009.GB27457@home.goodmis.org>
-References: <1318879396.4172.92.camel@twins>
- <alpine.LFD.2.02.1110172237030.3240@ionos>
- <alpine.LFD.2.02.1110181037120.3240@ionos>
- <1318928713.21167.4.camel@twins>
- <20111018182046.GF1309@hostway.ca>
- <alpine.LFD.2.02.1110182146440.3240@ionos>
- <20111024190203.GA24410@hostway.ca>
- <20111025202049.GB25043@hostway.ca>
- <20111031173246.GA10614@hostway.ca>
- <20111102221023.GA27457@home.goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102221023.GA27457@home.goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753838Ab1KBXAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 19:00:40 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:3428 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753559Ab1KBW7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:59:52 -0400
+From: Andrew Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: Arun Sharma <asharma@fb.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, avagin@openvz.org,
+        devel@openvz.org
+Subject: [PATCH 4/4] perf: add scripts for profiling sleep times
+Date: Thu,  3 Nov 2011 01:59:44 +0300
+Message-Id: <1320274784-2463901-5-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
+References: <1320274784-2463901-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 06:10:23PM -0400, Steven Rostedt wrote:
-> Thomas pointed me here.
-> 
-> On Mon, Oct 31, 2011 at 10:32:46AM -0700, Simon Kirby wrote:
-> > [104661.244767] 
-> > [104661.244767]  Possible unsafe locking scenario:
-> > [104661.244767]        
-> > [104661.244767]        CPU0                    CPU1
-> > [104661.244767]        ----                    ----
-> > [104661.244767]   lock(slock-AF_INET);
-> > [104661.244767]                                lock(slock-AF_INET);
-> > [104661.244767]                                lock(slock-AF_INET);
-> > [104661.244767]   lock(slock-AF_INET);
-> > [104661.244767] 
-> > [104661.244767]  *** DEADLOCK ***
-> > [104661.244767] 
-> 
-> Bah, I used the __print_lock_name() function to show the lock names in
-> the above, which leaves off the subclass number. I'll go write up a
-> patch that fixes that.
-> 
+E.g.:
+ # ./perf script record sched-stat -- -e sched:sched_stat_sleep &
+ # ./foo;
+ # killall -SIGINT perf
+ ./perf script report sched-stat
 
-Simon,
+Signed-off-by: Andrew Vagin <avagin@openvz.org>
+---
+ tools/perf/scripts/python/bin/sched-stat-record |    2 ++
+ tools/perf/scripts/python/bin/sched-stat-report |    6 ++++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/scripts/python/bin/sched-stat-record
+ create mode 100644 tools/perf/scripts/python/bin/sched-stat-report
 
-If you are still triggering the bug. Could you do me a favor and apply
-the following patch. Just to make sure it fixes the confusing output
-from above.
+diff --git a/tools/perf/scripts/python/bin/sched-stat-record b/tools/perf/scripts/python/bin/sched-stat-record
+new file mode 100644
+index 0000000..b9873d9
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/sched-stat-record
+@@ -0,0 +1,2 @@
++#!/bin/bash
++perf record -ag -e sched:sched_switch --filter "prev_state == 1 || prev_state == 2" -e sched:sched_process_exit ${@/--/}
+diff --git a/tools/perf/scripts/python/bin/sched-stat-report b/tools/perf/scripts/python/bin/sched-stat-report
+new file mode 100644
+index 0000000..d225a37
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/sched-stat-report
+@@ -0,0 +1,6 @@
++#!/bin/bash
++# description: profiling sleep times
++# args: -e sched:sched_stat_[smth]
++perf inject -s -i perf.data -o perf.data.d || exit
++perf report -i perf.data.d || exit
++unlink perf.data.d
+-- 
+1.7.1
 
-Thanks,
-
--- Steve
-
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 91d67ce..d821ac9 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -490,16 +490,22 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
- 	usage[i] = '\0';
- }
- 
--static int __print_lock_name(struct lock_class *class)
-+static void __print_lock_name(struct lock_class *class)
- {
- 	char str[KSYM_NAME_LEN];
- 	const char *name;
- 
- 	name = class->name;
--	if (!name)
-+	if (!name) {
- 		name = __get_key_name(class->key, str);
--
--	return printk("%s", name);
-+		printk("%s", name);
-+	} else {
-+		printk("%s", name);
-+		if (class->name_version > 1)
-+			printk("#%d", class->name_version);
-+		if (class->subclass)
-+			printk("/%d", class->subclass);
-+	}
- }
- 
- static void print_lock_name(struct lock_class *class)
-@@ -509,17 +515,8 @@ static void print_lock_name(struct lock_class *class)
- 
- 	get_usage_chars(class, usage);
- 
--	name = class->name;
--	if (!name) {
--		name = __get_key_name(class->key, str);
--		printk(" (%s", name);
--	} else {
--		printk(" (%s", name);
--		if (class->name_version > 1)
--			printk("#%d", class->name_version);
--		if (class->subclass)
--			printk("/%d", class->subclass);
--	}
-+	printk(" (");
-+	__print_lock_name(class);
- 	printk("){%s}", usage);
- }
- 
