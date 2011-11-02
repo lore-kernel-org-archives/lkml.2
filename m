@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab1KCCHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:07:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50783 "EHLO mx2.suse.de"
+	id S933617Ab1KCBgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:36:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50738 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933654Ab1KCBhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:37:00 -0400
+	id S933422Ab1KCBgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:36:39 -0400
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:58 2011
-Message-Id: <20111102221458.558850466@clark.kroah.org>
+Message-Id: <20111102221458.014860210@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:58 -0700
+Date: Wed, 02 Nov 2011 15:14:52 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Avi Kivity <avi@redhat.com>,
-        Philipp Hahn <hahn@univention.de>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [092/107] KVM: x86: Reset tsc_timestamp on TSC writes
+        alan@lxorguk.ukuu.org.uk, Jeff Moyer <jmoyer@redhat.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Suresh Jayaraman <sjayaraman@suse.de>
+Subject: [086/107] cfq: merge cooperating cfq_queues
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,86 +27,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Philipp Hahn <hahn@univention.de>
+From: Jeff Moyer <jmoyer@redhat.com>
 
-There is no upstream commit ID for this patch since it is not a straight
-backport from upstream. It is a fix only relevant to 2.6.32.y.
+commit df5fe3e8e13883f58dc97489076bbcc150789a21 upstream.
 
-Since 1d5f066e0b63271b67eac6d3752f8aa96adcbddb from 2.6.37 was
-back-ported to 2.6.32.40 as ad2088cabe0fd7f633f38ba106025d33ed9a2105,
-the following patch is needed to add the needed reset logic to 2.6.32 as
-well.
+When cooperating cfq_queues are detected currently, they are allowed to
+skip ahead in the scheduling order.  It is much more efficient to
+automatically share the cfq_queue data structure between cooperating processes.
+Performance of the read-test2 benchmark (which is written to emulate the
+dump(8) utility) went from 12MB/s to 90MB/s on my SATA disk.  NFS servers
+with multiple nfsd threads also saw performance increases.
 
-
-Bug #23257: Reset tsc_timestamp on TSC writes
-
-vcpu->last_guest_tsc is updated in vcpu_enter_guest() and kvm_arch_vcpu_put()
-by getting the last value of the TSC from the guest.
-On reset, the SeaBIOS resets the TSC to 0, which triggers a bug on the next
-call to kvm_write_guest_time(): Since vcpu->hw_clock.tsc_timestamp still
-contains the old value before the reset, "max_kernel_ns = vcpu->last_guest_tsc
-- vcpu->hw_clock.tsc_timestamp" gets negative. Since the variable is u64, it
- gets translated to a large positive value.
-
-[9333.197080]
-vcpu->last_guest_tsc        =209_328_760_015           ←
-vcpu->hv_clock.tsc_timestamp=209_328_708_109
-vcpu->last_kernel_ns        =9_333_179_830_643
-kernel_ns                   =9_333_197_073_429
-max_kernel_ns               =9_333_179_847_943         ←
-
-[9336.910995]
-vcpu->last_guest_tsc        =9_438_510_584             ←
-vcpu->hv_clock.tsc_timestamp=211_080_593_143
-vcpu->last_kernel_ns        =9_333_763_732_907
-kernel_ns                   =9_336_910_990_771
-max_kernel_ns               =6_148_296_831_006_663_830 ←
-
-For completeness, here are the values for my 3 GHz CPU:
-vcpu->hv_clock.tsc_shift         =-1
-vcpu->hv_clock.tsc_to_system_mul =2_863_019_502
-
-This makes the guest kernel crawl very slowly when clocksource=kvmclock is
-used: sleeps take way longer than expected and don't match wall clock any more.
-The times printed with printk() don't match real time and the reboot often
-stalls for long times.
-
-In linux-git this isn't a problem, since on every MSR_IA32_TSC write
-vcpu->arch.hv_clock.tsc_timestamp is reset to 0, which disables above logic.
-The code there is only in arch/x86/kvm/x86.c, since much of the kvm-clock
-related code has been refactured for 2.6.37:
-	99e3e30a arch/x86/kvm/x86.c 
-        (Zachary Amsden            2010-08-19 22:07:17 -1000 1084)
-        vcpu->arch.hv_clock.tsc_timestamp = 0;                                                      
-
-Signed-off-by: Philipp Hahn <hahn@univention.de>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/svm.c |    1 +
- arch/x86/kvm/vmx.c |    1 +
- 2 files changed, 2 insertions(+)
+ block/cfq-iosched.c |   89 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 87 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -2256,6 +2256,7 @@ static int svm_set_msr(struct kvm_vcpu *
- 		}
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -118,6 +118,8 @@ struct cfq_queue {
+ 	sector_t last_request_pos;
  
- 		svm->vmcb->control.tsc_offset = tsc_offset + g_tsc_offset;
-+		vcpu->arch.hv_clock.tsc_timestamp = 0;
+ 	pid_t pid;
++
++	struct cfq_queue *new_cfqq;
+ };
  
- 		break;
+ /*
+@@ -1052,6 +1054,12 @@ static struct cfq_queue *cfq_close_coope
+ 	if (!cfqq)
+ 		return NULL;
+ 
++	/*
++	 * It only makes sense to merge sync queues.
++	 */
++	if (!cfq_cfqq_sync(cfqq))
++		return NULL;
++
+ 	if (cfq_cfqq_coop(cfqq))
+ 		return NULL;
+ 
+@@ -1173,6 +1181,43 @@ cfq_prio_to_maxrq(struct cfq_data *cfqd,
+ }
+ 
+ /*
++ * Must be called with the queue_lock held.
++ */
++static int cfqq_process_refs(struct cfq_queue *cfqq)
++{
++	int process_refs, io_refs;
++
++	io_refs = cfqq->allocated[READ] + cfqq->allocated[WRITE];
++	process_refs = atomic_read(&cfqq->ref) - io_refs;
++	BUG_ON(process_refs < 0);
++	return process_refs;
++}
++
++static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
++{
++	int process_refs;
++	struct cfq_queue *__cfqq;
++
++	/* Avoid a circular list and skip interim queue merges */
++	while ((__cfqq = new_cfqq->new_cfqq)) {
++		if (__cfqq == cfqq)
++			return;
++		new_cfqq = __cfqq;
++	}
++
++	process_refs = cfqq_process_refs(cfqq);
++	/*
++	 * If the process for the cfqq has gone away, there is no
++	 * sense in merging the queues.
++	 */
++	if (process_refs == 0)
++		return;
++
++	cfqq->new_cfqq = new_cfqq;
++	atomic_add(process_refs, &new_cfqq->ref);
++}
++
++/*
+  * Select a queue for service. If we have a current active queue,
+  * check whether to continue servicing it, or retrieve and set a new one.
+  */
+@@ -1201,11 +1246,14 @@ static struct cfq_queue *cfq_select_queu
+ 	 * If another queue has a request waiting within our mean seek
+ 	 * distance, let it run.  The expire code will check for close
+ 	 * cooperators and put the close queue at the front of the service
+-	 * tree.
++	 * tree.  If possible, merge the expiring queue with the new cfqq.
+ 	 */
+ 	new_cfqq = cfq_close_cooperator(cfqd, cfqq, 0);
+-	if (new_cfqq)
++	if (new_cfqq) {
++		if (!cfqq->new_cfqq)
++			cfq_setup_merge(cfqq, new_cfqq);
+ 		goto expire;
++	}
+ 
+ 	/*
+ 	 * No requests pending. If the active queue still has requests in
+@@ -1516,11 +1564,29 @@ static void cfq_free_io_context(struct i
+ 
+ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ {
++	struct cfq_queue *__cfqq, *next;
++
+ 	if (unlikely(cfqq == cfqd->active_queue)) {
+ 		__cfq_slice_expired(cfqd, cfqq, 0);
+ 		cfq_schedule_dispatch(cfqd);
  	}
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1067,6 +1067,7 @@ static int vmx_set_msr(struct kvm_vcpu *
- 	case MSR_IA32_TSC:
- 		rdtscll(host_tsc);
- 		guest_write_tsc(data, host_tsc);
-+		vcpu->arch.hv_clock.tsc_timestamp = 0;
- 		break;
- 	case MSR_IA32_CR_PAT:
- 		if (vmcs_config.vmentry_ctrl & VM_ENTRY_LOAD_IA32_PAT) {
+ 
++	/*
++	 * If this queue was scheduled to merge with another queue, be
++	 * sure to drop the reference taken on that queue (and others in
++	 * the merge chain).  See cfq_setup_merge and cfq_merge_cfqqs.
++	 */
++	__cfqq = cfqq->new_cfqq;
++	while (__cfqq) {
++		if (__cfqq == cfqq) {
++			WARN(1, "cfqq->new_cfqq loop detected\n");
++			break;
++		}
++		next = __cfqq->new_cfqq;
++		cfq_put_queue(__cfqq);
++		__cfqq = next;
++	}
++
+ 	cfq_put_queue(cfqq);
+ }
+ 
+@@ -2342,6 +2408,16 @@ static void cfq_put_request(struct reque
+ 	}
+ }
+ 
++static struct cfq_queue *
++cfq_merge_cfqqs(struct cfq_data *cfqd, struct cfq_io_context *cic,
++		struct cfq_queue *cfqq)
++{
++	cfq_log_cfqq(cfqd, cfqq, "merging with queue %p", cfqq->new_cfqq);
++	cic_set_cfqq(cic, cfqq->new_cfqq, 1);
++	cfq_put_queue(cfqq);
++	return cic_to_cfqq(cic, 1);
++}
++
+ /*
+  * Allocate cfq data structures associated with this request.
+  */
+@@ -2368,6 +2444,15 @@ cfq_set_request(struct request_queue *q,
+ 	if (!cfqq || cfqq == &cfqd->oom_cfqq) {
+ 		cfqq = cfq_get_queue(cfqd, is_sync, cic->ioc, gfp_mask);
+ 		cic_set_cfqq(cic, cfqq, is_sync);
++	} else {
++		/*
++		 * Check to see if this queue is scheduled to merge with
++		 * another, closely cooperating queue.  The merging of
++		 * queues happens here as it must be done in process context.
++		 * The reference on new_cfqq was taken in merge_cfqqs.
++		 */
++		if (cfqq->new_cfqq)
++			cfqq = cfq_merge_cfqqs(cfqd, cic, cfqq);
+ 	}
+ 
+ 	cfqq->allocated[rw]++;
 
 
