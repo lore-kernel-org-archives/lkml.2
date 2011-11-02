@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab1KBSHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 14:07:14 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18054 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab1KBSHL convert rfc822-to-8bit (ORCPT
+	id S933006Ab1KBSIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 14:08:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43228 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932240Ab1KBSIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 14:07:11 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 02 Nov 2011 11:07:00 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+	Wed, 2 Nov 2011 14:08:17 -0400
+Date: Wed, 2 Nov 2011 18:07:58 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 2 Nov 2011 11:06:58 -0700
-Subject: RE: [PATCH] arm/tegra: add support for tegra30 interrupts
-Thread-Topic: [PATCH] arm/tegra: add support for tegra30 interrupts
-Thread-Index: AcyZdXMGsR6VOsqoTM2c7VVpVQL9hAAB+o6wAAMtPWA=
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
-References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v7 16/16] ARM: LPAE: Add the Kconfig entries
+Message-ID: <20111102180758.GK29782@arm.com>
+References: <1312988619-16804-1-git-send-email-catalin.marinas@arm.com>
+ <1312988619-16804-17-git-send-email-catalin.marinas@arm.com>
+ <20111102172142.GB12913@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102172142.GB12913@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Wednesday, November 02, 2011 10:39 AM:
-> Peter De Schrijver wrote by Wednesday, November 02, 2011 9:38 AM:
-> > Tegra30 has 1 extra legacy interrupt controller. Use the GIC ITLinesNumber
-> > field to determine how many interrupt controllers we have and initialize
-> > appropriately. Also make room for the extra tegra30 interrupts by moving
-> > the GPIO IRQ base. This shouldn't affect existing code as it determines the
-> > correct IRQ number for GPIOs using TEGRA_GPIO_TO_IRQ()
-> >
-> > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+On Wed, Nov 02, 2011 at 05:21:42PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Aug 10, 2011 at 04:03:39PM +0100, Catalin Marinas wrote:
+> > +config ARCH_DMA_ADDR_T_64BIT
+> > +	def_bool ARM_LPAE
+> > +
 > 
-> After fixing one small issue I comment on below,
-> Acked-by: Stephen Warren <swarren@nvidia.com>
+> I think this should be selected only when we have a DMA engine supporting
+> 64-bit addresses.  Technically LPAE itself doesn't give us that assurance.
+> 
+> If you have this kind of a setup:
+> 
+> CPU <==++==> RAM
+>        ||
+>      IOMMU
+>        |
+>    DMA device
+> 
+> where == and || means >32-bit addressing, and | means 32-bit addressing.
 
-Also, both this and "arm/tegra: remove unused defines":
+That's one configuration but there are other configurations with PCI
+devices that can access 64-bit addresses without requiring an IOMMU.
 
-Tested-by: Stephen Warren <swarren@nvidia.com>
+> In such a setup, having dma_addr_t be 64-bit is pointless because it
+> should never see 64-bit addresses (the DMA API should deal with the
+> IOMMU and provide a list of DMA addresses to be placed into RAM for
+> the DMA device which takes account of the mappings setup in the IOMMU.)
+> 
+> So, I think 64-bit dma_addr_t should be a property of the DMA devices
+> present in the system rather than whether the CPUs MMU can deal with
+> >32-bit addresses or not.
 
-(on Tegra20 Seaboard/Springbank, not on Tegra30 Cardhu)
+I agree, that's a property of the device but it doesn't mean that we
+can't have a dma_addr_t as u64.
+
+The current DMA allocator uses pages that can be placed anywhere if the
+mask is 0xffffffff, so just making this type u32 does not change such
+allocation, just ignoring the top bits of the bus address. What I think
+we need for this case is GFP_DMA32, assuming that ZONE_DMA32 is set up:
+
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index e4e7f6c..a51026b 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -81,6 +81,8 @@ static struct page *__dma_alloc_buffer(struct device *dev, size_t size, gfp_t gf
+ 
+ 	if (mask < 0xffffffffULL)
+ 		gfp |= GFP_DMA;
++	else if (mask == 0xffffffffULL)
++		gfp |= GFP_DMA32;
+ 
+ 	page = alloc_pages(gfp, order);
+ 	if (!page)
 
 -- 
-nvpublic
-
+Catalin
