@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933536Ab1KBTJv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:09:51 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:15306 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932164Ab1KBTJt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:09:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 02 Nov 2011 12:09:39 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 2 Nov 2011 12:09:36 -0700
-Subject: RE: [PATCH] arm/tegra: add support for tegra30 interrupts
-Thread-Topic: [PATCH] arm/tegra: add support for tegra30 interrupts
-Thread-Index: AcyZdXMGsR6VOsqoTM2c7VVpVQL9hAAB+o6wAAMtPWAAAgjG8A==
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A47A7@HQMAIL01.nvidia.com>
-References: <1320248292-22736-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A46E5@HQMAIL01.nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4758@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933516Ab1KBTNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:13:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41097 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932164Ab1KBTNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:13:01 -0400
+Date: Wed, 2 Nov 2011 21:14:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: virtio-pci new configuration proposal
+Message-ID: <20111102191405.GA13998@redhat.com>
+References: <1320259767.22582.2.camel@lappy>
+ <20111102190804.GA13914@redhat.com>
+ <1320260832.22582.3.camel@lappy>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320260832.22582.3.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Wednesday, November 02, 2011 12:07 PM:
-> Stephen Warren wrote at Wednesday, November 02, 2011 10:39 AM:
-> > Peter De Schrijver wrote by Wednesday, November 02, 2011 9:38 AM:
-> > > Tegra30 has 1 extra legacy interrupt controller. Use the GIC ITLinesNumber
-> > > field to determine how many interrupt controllers we have and initialize
-> > > appropriately. Also make room for the extra tegra30 interrupts by moving
-> > > the GPIO IRQ base. This shouldn't affect existing code as it determines the
-> > > correct IRQ number for GPIOs using TEGRA_GPIO_TO_IRQ()
-> > >
-> > > Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-> >
-> > After fixing one small issue I comment on below,
-> > Acked-by: Stephen Warren <swarren@nvidia.com>
+On Wed, Nov 02, 2011 at 09:07:12PM +0200, Sasha Levin wrote:
+> On Wed, 2011-11-02 at 21:08 +0200, Michael S. Tsirkin wrote:
+> > On Wed, Nov 02, 2011 at 08:49:27PM +0200, Sasha Levin wrote:
+> > > This is a proposal for a new layout of the virtio-pci config space.
+> > > 
+> > > We will separate the current configuration into two: A virtio-pci common
+> > > configuration and a device specific configuration. This allows more flexibility
+> > > with adding features and makes usage easier, specifically in cases like the
+> > > ones in virtio-net where device specific configurations depend on device
+> > > specific features.
+> > > 
+> > > The preferred location of the configuration will be a MMIO BAR, therefore
+> > > several size optimizations such as the queue selector which were useful
+> > > on a PIO BAR were removed and linked lists were introduced to add
+> > > flexibility to existing structures in attempt to keep their size and
+> > > offsets constant and not dependent on features.
+> > > 
+> > > While this is not a complete specification, it describes all the main
+> > > structures and should be enough to make sure the idea is solid before
+> > > going into implementation specifics.
+> > > 
+> > > A new virtio-pci capability structure will be introduced. This structure
+> > > will be used to describe the basics of a virtio-pci device. The
+> > > structure is actually a PCI capability structure which wraps the new virtio-pci
+> > > capability structure:
+> > > 
+> > > +------------++------------+------------+------------+--------------+-----------------
+> > > | Bits       || 8          | 8          | 8          | 8            | Cap specific
+> > > +------------++------------+------------+------------+--------------+-----------------
+> > > | Read/Write || R          | R          | R          | R            | Cap specific
+> > > +------------++------------+------------+------------+--------------+-----------------
+> > > | Purpose    || Capability | Capability | virtio-pci | virtio-pci   | Cap specific
+> > > |            || ID         | Next PTR   | Cap ID     | Next Cap PTR |
+> > > +------------++------------+------------+------------+--------------+-----------------
+> > > 
+> > > Currently, only one virtio-pci capability is defined, and is the one that defines
+> > > the layout of the virtio-pci config space.
+> > > 
+> > > VIRTIO_PCI_C_LAYOUT:
+> > > 
+> > > +------------++---------------+---------------+-----------------+-----------------+
+> > > | Bits       || 29            | 3             | 29              | 3               |
+> > > +------------++---------------+---------------+-----------------+-----------------+
+> > > | Read/Write || R             | R             | R               | R               |
+> > > +------------++---------------+---------------+-----------------+-----------------+
+> > > | Purpose    || Common config | Common config | Device specific | Device specific |
+> > > |            || Offset        | BIR           | Offset          | BIR             |
+> > > +------------++---------------+---------------+-----------------+-----------------+
+> > 
+> > I'm implementing a different layout, with
+> > separate capabilities for common and device specific
+> > fields.
 > 
-> Also, both this and "arm/tegra: remove unused defines":
+> Which is what I have here, no?
+
+No :) Give me a couple of hours I'll send an RFC patch so you can see
+what I mean.
+
+> -- 
 > 
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> (on Tegra20 Seaboard/Springbank, not on Tegra30 Cardhu)
-
-Actually, I take that back. This patch breaks stuff: just GPIO stuff which
-I didn't test, not IRQ stuff which I did.
-
-This patch changes INT_GPIO_NR from 224 to 256, which in turn changes the
-value of TEGRA_NR_GPIOS. This is the number of GPIOs that the Tegra GPIO
-controller "assigns" to itself when registering with gpiolib. Now, Tegra
-doesn't define ARCH_NR_GPIOs, so it defaults to 256. This means there is
-no GPIO numbering space left for non-Tegra GPIO controllers. In particular,
-the WM8903 audio codec registers with gpiolib, and one of the GPIOs is used
-on most boards to enable/disable the speaker amplifier, which now doesn't
-work since the GPIO ID to control it isn't registered.
-
-To solve this, I recommend definining ARCH_NR_GPIOs for Tegra, to something
-large; I see that arch/arm/mach-shmobile defines it to 1024. Failing any
-disadvantage of using a number that large, I'd go for that...
-
--- 
-nvpublic
-
+> Sasha.
