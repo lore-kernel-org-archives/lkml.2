@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab1KBMJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 08:09:04 -0400
-Received: from smtprelay0201.b.hostedemail.com ([64.98.42.201]:35910 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752969Ab1KBMJC (ORCPT
+	id S1755151Ab1KBMRh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 08:17:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59043 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab1KBMRf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 08:09:02 -0400
-X-Panda: scanned!
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 3946
-Date: Wed, 2 Nov 2011 12:09:00 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: bruce.w.allan@intel.com, jeffrey.t.kirsher@intel.com
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <1615426146.371527.1320235740785.JavaMail.mail@webmail03>
-Subject: About the fix "e1000e: workaround for packet drop on 82579 at
- 100Mbps (commit 0ed013e28fe853244f4972cf18d8e2bd62eeb8fc)"
+	Wed, 2 Nov 2011 08:17:35 -0400
 MIME-Version: 1.0
+In-Reply-To: <1320215670-10157-1-git-send-email-heguanbo@gmail.com>
+References: <1320215670-10157-1-git-send-email-heguanbo@gmail.com>
+Date: Wed, 2 Nov 2011 20:17:23 +0800
+Message-ID: <CAJd=RBD7iov62=OdZOb3L4S+2ok6CEconGMmmPrzFnzWkQJ+Rg@mail.gmail.com>
+Subject: Re: [PATCH][mm] adjust the logic of checking THP
+From: Hillf Danton <dhillf@gmail.com>
+To: Guanjun He <heguanbo@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.161.40]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pA2CHp8S020631
 
-Hello,
+On Wed, Nov 2, 2011 at 2:34 PM, Guanjun He <heguanbo@gmail.com> wrote:
+>
+> Acturally, pmd_trans_huge(orig_pmd) only checks the _PAGE_PSE bits,
+> it's a pmd entry bits, only mark a size, not a flag;As one can easily
+> create the same pmd entry bits for some special use,then the check
+> will get confused.And this patch is to adjust the logic to use the flag,
+> it can perfectly avoid this potential issuse,and basically no impact
+> to the current code.
+>
+>
+> Signed-off-by: Guanjun He <heguanbo@gmail.com>
+> ---
+>  mm/memory.c |   28 +++++++++++++++-------------
+>  1 files changed, 15 insertions(+), 13 deletions(-)
+>
+> diff --git a/mm/memory.c b/mm/memory.c
+> index a56e3ba..a76b17f 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -3465,20 +3465,22 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>        pmd = pmd_alloc(mm, pud, address);
+>        if (!pmd)
+>                return VM_FAULT_OOM;
+> -       if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
+> -               if (!vma->vm_ops)
+> -                       return do_huge_pmd_anonymous_page(mm, vma, address,
+> -                                                         pmd, flags);
+> -       } else {
+> -               pmd_t orig_pmd = *pmd;
+> -               barrier();
+> -               if (pmd_trans_huge(orig_pmd)) {
+> -                       if (flags & FAULT_FLAG_WRITE &&
+> -                           !pmd_write(orig_pmd) &&
+> -                           !pmd_trans_splitting(orig_pmd))
+> -                               return do_huge_pmd_wp_page(mm, vma, address,
+> -                                                          pmd, orig_pmd);
+> +       if (transparent_hugepage_enabled(vma)) {
 
-I'm now running Linux 3.0.8 and I still see this issue:
+Well, how about THP not configured?
 
-$ ifconfig eth0
+Thanks,
+              Hillf
 
-eth0   Link encap:Ethernet  HWaddr f4:6d:04:39:XX:XX
-          inet addr:192.168.0.1  Bcast:192.168.0.255  Mask:255.255.255.0
-          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-          RX packets:123911 errors:0 dropped:386 overruns:0 frame:0
-          TX packets:122441 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000
-          RX bytes:96626066 (92.1 MiB)  TX bytes:15191495 (14.4 MiB)
-          Interrupt:18 Memory:fb500000-fb520000
-
-More about this particular onboard NIC (motherboard ASUS P8P67 PRO Rev 3.0)
-
-# lspci -vvv -s 00:19.0
-
-00:19.0 Ethernet controller: Intel Corporation 82579V Gigabit Network Connection (rev 05)
-        Subsystem: ASUSTeK Computer Inc. Device 849c
-        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Latency: 0
-        Interrupt: pin A routed to IRQ 49
-        Region 0: Memory at fb500000 (32-bit, non-prefetchable) [size=128K]
-        Region 1: Memory at fb528000 (32-bit, non-prefetchable) [size=4K]
-        Region 2: I/O ports at f040 [size=32]
-        Capabilities: [c8] Power Management version 2
-                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=1 PME-
-        Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-                Address: 00000000fee0100c  Data: 416a
-        Capabilities: [e0] PCI Advanced Features
-                AFCap: TP+ FLR+
-                AFCtrl: FLR-
-                AFStatus: TP-
-        Kernel driver in use: e1000e
-        Kernel modules: e1000e
-
-# ethtool eth0
-Settings for eth0:
-        Supported ports: [ TP ]
-        Supported link modes:   10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Full
-        Supports auto-negotiation: Yes
-        Advertised link modes:  10baseT/Half 10baseT/Full
-                                100baseT/Half 100baseT/Full
-                                1000baseT/Full
-        Advertised pause frame use: No
-        Advertised auto-negotiation: Yes
-        Speed: 100Mb/s
-        Duplex: Full
-        Port: Twisted Pair
-        PHYAD: 2
-        Transceiver: internal
-        Auto-negotiation: on
-        MDI-X: off
-        Supports Wake-on: pumbg
-        Wake-on: d
-        Current message level: 0x00000001 (1)
-                               drv
-        Link detected: yes
-
-I'm not absolutely certain about the quality of equipment I'm connected to - so I'd like to know how can I
-remove it out of equation.
-
-My Internet connection seemingly works this way:
-
-My_PC -> 16-port unmanageable Ethernet switch -> Cisco Ethernet switch -> Cisco PPPoE concentrator (the
-first device I can ping via PPPoE connection)
-
-Best wishes,
-
-Artem
+> +               if (pmd_none(*pmd)) {
+> +                       if (!vma->vm_ops)
+> +                               return do_huge_pmd_anonymous_page(mm, vma, address,
+> +                                                                 pmd, flags);
+> +               } else {
+> +                       pmd_t orig_pmd = *pmd;
+> +                       barrier();
+> +                       if (pmd_trans_huge(orig_pmd)) {
+> +                               if (flags & FAULT_FLAG_WRITE &&
+> +                                   !pmd_write(orig_pmd) &&
+> +                                   !pmd_trans_splitting(orig_pmd))
+> +                                       return do_huge_pmd_wp_page(mm, vma, address,
+> +                                                                  pmd, orig_pmd);
+>                        return 0;
+> +                       }
+>                }
+>        }
+>
+> --
+> 1.7.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
