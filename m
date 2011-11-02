@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1KBH0B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 03:26:01 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49251
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751450Ab1KBHZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 03:25:59 -0400
-Date: Wed, 2 Nov 2011 03:25:44 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>, Jens Axboe <axboe@kernel.dk>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] virtio: support unlocked queue kick
-Message-ID: <20111102072544.GA6967@infradead.org>
-References: <20111005195403.407628164@bombadil.infradead.org>
- <20111005195529.964397366@bombadil.infradead.org>
- <87r52qgaf3.fsf@rustcorp.com.au>
- <20111006131828.GC19023@redhat.com>
- <20111101144045.GA15433@redhat.com>
- <87ty6ntdmf.fsf@rustcorp.com.au>
+	id S1752772Ab1KBHbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 03:31:48 -0400
+Received: from home.keithp.com ([63.227.221.253]:44765 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301Ab1KBHbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 03:31:44 -0400
+From: Keith Packard <keithp@keithp.com>
+To: intel-gfx@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 4/7] drm/i915: Let panel power sequencing hardware do its job
+In-Reply-To: <1320214830-12696-5-git-send-email-keithp@keithp.com>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-5-git-send-email-keithp@keithp.com>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Wed, 02 Nov 2011 00:31:40 -0700
+Message-ID: <yunwrbjvv37.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ty6ntdmf.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 01:49:36PM +1030, Rusty Russell wrote:
-> I thought it was still a WIP?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-The whole series - yes.  This patch (and the serial number rewrite): no
-- these are pretty much rock solid.
+On Tue,  1 Nov 2011 23:20:27 -0700, Keith Packard <keithp@keithp.com> wrote:
 
-> Since the problem is contention on the lock inside the block layer, the
-> simplest solution is to have a separate lock to protect the virtqueue.
+> -static void ironlake_wait_panel_off(struct intel_dp *intel_dp)
+> +#define IDLE_ON_MASK		(PP_ON | PP_READY | PP_SEQUENCE_MASK | 0          =
+           | PP_SEQUENCE_STATE_MASK)
+> +#define IDLE_ON_VALUE   	(PP_ON | PP_READY | PP_SEQUENCE_NONE | 0       =
+              | PP_SEQUENCE_STATE_ON_IDLE)
 
-As long as we still use a ->request_fn based driver that is not going
-to buy us anything, in fact it's going to make things worse.
-->request_fn based drivers always have the queue lock held over the
-invocation of ->request_fn anyway, and then need it around the call
-to __blk_end_request_all.  So you might minimally reduce contention
-time, but skyrocket the number of lock acquisations when separating
-them without changes to the block layer.
+A bit more testing -- looks like the MacBook Air doesn't mange to get
+PP_READY set when it's time to turn the panel on. I should look at this
+a bit more closely; there's no reason it shouldn't be set. But, nothing
+bad seems to happen if we simply ignore the PP_READY bit
 
-With the ->make_request_fn based driver vlkb->lock does't protect
-anything but the virtuequeue anyway, but not having to take it
-over the wakeup there is a) done easily and b) neatly fits the model.
++#define IDLE_ON_MASK		(PP_ON | 0      | PP_SEQUENCE_MASK | 0              =
+       | PP_SEQUENCE_STATE_MASK)
++#define IDLE_ON_VALUE   	(PP_ON | 0      | PP_SEQUENCE_NONE | 0           =
+          | PP_SEQUENCE_STATE_ON_IDLE)
 
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrDx3DYtFsjWk68qAQhMcQ//U0tyuQcGO2li2Wqd8pXJsRfaWGHG4s/o
+PQi6s6+S6FBA47Go3BrhAiGNoIkjM7tdOGbJ430vGM0iVSkRxdFeXKdNl2TTmofr
+3WM43h4pO63Tw6b93Rz7juuhX8BWQMk6ApJ3gzS6C7aELxNpjwR+V6ZC2cIrA6/q
+f5PHxNz5FK+6HBO3L7lls9KlK0To0KyUfBwbAoOCayLOZ9mQF8UCT+OyF/e+AiGE
+mRVIMY/6CdSBAB9cdkLc2dO9qogULDjShP4aJIL6MpSYBzC0GueRABvw4ePPURtv
+FJB3MILqDdmt9obKgQolLxrMz8th0vOmkcJL2nYFP6YYAHCIwQl/SDvPjFWSYj1Y
+pxOCTzyfBGHAhXs2dwUVs4AdbaYMjQ3f+dBQf1c9OB/VCHsh86N7dsPm6wNEtYBp
+uczH7mbvRaYwpAEdKezUrwLZ7U/STx2W69W61atIUz6Cusx0WnwtYwHqPC23mtSj
+iJ4A8wdcZt5aSKkIWGnb+Nj9c6mFb2xOl3E0JMfwQhfbArkiYeEe7j+rZgVWaxIv
+nUg6UtzHYRmSrs4BF+27f5klDZCZjtrd5uV33H5pMfG+SaD5e5sj7P/xWOjSu75e
+EG5EPD3mBWd20kFzwJVRiiDuiNruaV4pueO/b36sI3cJGoTdjXToFQP7XNF+oeNq
+gZqCHoTfT48=
+=fvwJ
+-----END PGP SIGNATURE-----
+--=-=-=--
