@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab1KBWcR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 18:32:17 -0400
-Received: from fieldses.org ([174.143.236.118]:55170 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751907Ab1KBWcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 18:32:16 -0400
-Date: Wed, 2 Nov 2011 18:32:13 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Benny Halevy <bhalevy@panasas.com>
-Subject: nfsd typo fix for 3.2
-Message-ID: <20111102223213.GC12883@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1753255Ab1KBWit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 18:38:49 -0400
+Received: from www17.your-server.de ([213.133.104.17]:55505 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1KBWis (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 18:38:48 -0400
+Message-ID: <1320273520.29441.12.camel@localhost.localdomain>
+Subject: Re: Bug: [Toshiba Satellite A200] SD card recognised but not
+ automounted
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Lampra <lamprakisa@yahoo.gr>, oakad@yahoo.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Nov 2011 23:38:40 +0100
+In-Reply-To: <1320271853.29441.8.camel@localhost.localdomain>
+References: <1320269478.98312.YahooMailNeo@web27408.mail.ukl.yahoo.com>
+	 <1320271853.29441.8.camel@localhost.localdomain>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-i/DgjoQX+P+We4F1vxX3"
+X-Mailer: Evolution 3.2.1 (3.2.1-1.fc16) 
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got one typo fix in for-3.2 branch at:
 
-  git://linux-nfs.org/~bfields/linux.git for-3.2
+--=-i/DgjoQX+P+We4F1vxX3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Please pull--and thanks to Benny for catching it!
+Am Mittwoch, den 02.11.2011, 23:10 +0100 schrieb Thomas Meyer:
+> Am Mittwoch, den 02.11.2011, 21:31 +0000 schrieb Lampra:
+> >=20
+> > Hi,
+>=20
+> Hi Lampra.
 
---b.
+Added maintainer.
 
-Benny Halevy (1):
-      nfsd4: typo logical vs bitwise negate in nfsd4_decode_share_access
+>=20
+> >  this is my first bug report upstream.=20
+> >=20
+> > I use Ubuntu 11.10, when i insert an SD card in my laptop Toshiba
+> > Satellite A200, the card is recognised but not auto mounted.=20
+>=20
+> the correct link seems to be: https://bugs.launchpad.net/bugs/878594
+> >=20
+> > Lamprakis
 
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-commit fc0d14fe2d6403eb21202fd0c1cf67cd2c85ca67
-Author: Benny Halevy <bhalevy@tonian.com>
-Date:   Thu Oct 27 20:43:01 2011 +0200
 
-    nfsd4: typo logical vs bitwise negate in nfsd4_decode_share_access
-    
-    Signed-off-by: Benny Halevy <bhalevy@tonian.com>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 66d095d..b6fa792 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -655,7 +655,7 @@ static __be32 nfsd4_decode_share_access(struct nfsd4_compoundargs *argp, u32 *x)
- 	default:
- 		return nfserr_bad_xdr;
- 	}
--	w &= !NFS4_SHARE_ACCESS_MASK;
-+	w &= ~NFS4_SHARE_ACCESS_MASK;
- 	if (!w)
- 		return nfs_ok;
- 	if (!argp->minorversion)
+--=-i/DgjoQX+P+We4F1vxX3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAABAgAGBQJOscZwAAoJEK2Y/UtDbsHsMvgH/iRFBw2pqaa1Drmv7A9Bbs2z
+qMAsa8Pm5y8YAJbvc/CtYQWPZ8eDl0gcu+PyGcV/GqIj/zO2yZvbqyjAWkhaT+US
+eSGsHkg7OB+p8H8sXJKhG+AiLYG83ucc42PaWFdhgONr5SqYuivzWeuZyJT7DGQo
+oGSAg+pzbPdeoRrfrqfc7BpicEKTR1jGfYEmDs/ZTksWLgLfc792oUs+WmQvzpL4
+Z0XxP2QBKkY4B/aaQ2Qr16MCfI4jnwaOKN6FVVPl3ahzUzUj7dGbJHClIAAg3cQI
+ZdlqyfewvJTeBamuBc+dGfYqSjvM6gmh3e7x9qiAyDtOj8Vr7nr/FAfRrUzT2ec=
+=GsRD
+-----END PGP SIGNATURE-----
+
+--=-i/DgjoQX+P+We4F1vxX3--
+
