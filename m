@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932822Ab1KBCZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 22:25:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52482 "EHLO
+	id S932713Ab1KBCZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 22:25:22 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57036 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab1KBCXD (ORCPT
+	with ESMTP id S932402Ab1KBCXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Nov 2011 22:23:03 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL 12/12] arm-soc new soc ports
-Date: Wed, 2 Nov 2011 03:21:56 +0100
+Subject: [GIT PULL 11/13] arm-soc device tree conversions
+Date: Wed, 2 Nov 2011 03:03:05 +0100
 User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 References: <201111010348.13214.arnd@arndb.de>
@@ -19,156 +19,102 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111020321.56389.arnd@arndb.de>
-X-Provags-ID: V02:K0:emJGpxMr9XiMCf+5xCif075cDWom0UdJbgYDhsXQuE9
- bCP8EuaT+xS+OfyR71qKdc6UXJk/jUG0hWbO5ITrhOcn1+V0r8
- PdZMt3GDtzwFkjmpMVUwAePkMmRtm3iMfKgy8xrNZP8lCP8CRz
- a+wMHeGPS6a7OHxJvUdq8YPMZNYtBx21tBRxEdAN0DzE+P34vo
- 5g73frCSTyWCnHCncuCbcisvaNfIiqWGMCI3MsviOAHJSjd0eY
- rjfWqKxwUnu52UYWNBHAcgn93usnWILizvvcsKdkIevAc0ZLBm
- Ybhhu3UUf7h0uacPxYoMZHoY4PQ8Q3KSw+f6qNOvy9tvOvovX/
- rGNrnWwCKbwDHa0+BRPg=
+Message-Id: <201111020303.05784.arnd@arndb.de>
+X-Provags-ID: V02:K0:O4VHeqwcSkGThqJAJ1zCLYdtO+wfnvxfyf5HstEep6z
+ 88fWcQhWyaiXRx5Ruz3wTE9wTJNRmROPdLw58YUAUxbL3Af7bP
+ x6l0sD/xy5S8H62y1E366r85sQd+FV4XmBUvfcPsVwugqTR5xT
+ lyYF6kmMctDn3n+dVhRijsu830A9hFz61hVc7YIn2olQsmACl7
+ tToNkLSpkbIQ5BrDugr4sJ3Mz54ETv2gogONd9rflmdjVYwltI
+ TopTweYL1ox4iHUj5L/SpSp2yGuhprW5p7j1G5K0Gd35Ywfc94
+ BfL405lV00zwUTdmhMCFgRcHK1mmTecdvn/lw52xLiANPKHL5i
+ Q14f5hMDJKSsowwKCWV8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The final request for today, this adds two new subarchitectures (highbank
-and picoxcell) and one new soc family in an existing subarchitecture (imx6q).
-All of these use device tree based probing only so they will never require
-board files in the platform directory.
+This branch adds support for device tree based probing in the msm, imx, 
+at91, and omap subarchitectures, moving us closer to obsoleting board
+specific files in those platforms.
 
-The following changes since commit eed7041a509503610fd0ccb5042a14de5759bd6b:
+	Arnd
 
-  Merge branch 'next/dt' into for-linus (2011-11-01 17:14:14 +0100)
+The following changes since commit 38b9c2164fc27127d4a3347c4774c70085b2a77e:
+
+  Merge branch 'next/cleanup2' into for-linus (2011-11-01 17:09:10 +0100)
 
 are available in the git repository at:
 
-  git://git.linaro.org/people/arnd/arm-soc.git next/soc
+  git://git.linaro.org/people/arnd/arm-soc.git next/dt
 
-Arnd Bergmann (12):
-      Merge branch 'depends/rmk/debug' into tmp
-      Merge branch 'depends/rmk/smp' into tmp
-      Merge branches 'depends/rmk/io', 'depends/rmk/l2x0' and 'depends/rmk/gpio' into highbank/soc
-      Merge branch 'depends/rmk/debug' into highbank/soc
-      Merge branch 'dt/gic' into highbank/soc
-      Merge branch 'depends/rmk/devel-stable' into imx/imx6q
-      Merge branch 'dt/gic' into imx/imx6q
-      Merge branch 'imx/devel' into imx/imx6q
-      Merge branch 'cross-platform/debug_ll' into imx/imx6q
-      Merge branch 'highbank/soc' into next/soc
-      Merge branch 'picoxcell/soc' into next/soc
-      Merge branch 'imx/imx6q' into next/soc
+Arnd Bergmann (5):
+      Merge branches 'msm/dt', 'imx/dt' and 'at91/dt' into next/dt
+      Merge branch 'omap/dt' into next/dt
+      Merge branch 'dt/gic' into next/dt
+      ARM: gic: use module.h instead of export.h
+      Merge branch 'imx/devel' into next/dt
 
-Jamie Iles (5):
-      picoxcell: support for Picochip picoxcell devices
-      picoxcell: add the DTS for pc3x2 and pc3x3 devices
-      picoxcell: add the DTS for the PC7302 board
-      picoxcell: remove custom ioremap implementation
-      picoxcell: add a definition of VMALLOC_END
+David Brown (3):
+      msm_serial: Use relative resources for iomem
+      msm_serial: Add devicetree support
+      ARM: msm: Add devicetree support for msm8660-surf
 
-Martin Bogomolni (1):
-      ARM: highbank: Add cpu hotplug support
+Jean-Christophe PLAGNIOL-VILLARD (1):
+      ARM: at91: add at91sam9g20 and Calao USB A9G20 DT support
+
+Nicolas Ferre (1):
+      ARM: at91: dt: at91sam9g45 family and board device tree files
 
 Rob Herring (6):
-      ARM: l2x0: add empty l2x0_of_init
-      ARM: highbank: add devicetree source
-      ARM: add Highbank core platform support
-      MAINTAINERS: add Calxeda Highbank ARM platform
-      ARM: highbank: add SMP support
-      ARM: highbank: add suspend support
+      Merge remote-tracking branch 'rmk/devel-stable' into HEAD
+      of/irq: introduce of_irq_init
+      irq: support domains with non-zero hwirq base
+      ARM: gic: add irq_domain support
+      ARM: gic: add OF based initialization
+      ARM: gic: fix irq_alloc_descs handling for sparse irq
 
-Sascha Hauer (1):
-      arm/imx: merge i.MX3 and i.MX6
+Shawn Guo (2):
+      arm/mx5: add device tree support for imx53 boards
+      arm/mx5: add device tree support for imx51 babbage
 
-Shawn Guo (8):
-      arm/imx6q: add device tree source
-      arm/imx6q: add core definitions and low-level debug uart
-      arm/imx: add gic_handle_irq function
-      arm/imx6q: add core drivers clock, gpc, mmdc and src
-      arm/imx6q: add smp and cpu hotplug support
-      arm/imx6q: add device tree machine support
-      arm/imx6q: add suspend/resume support
-      MAINTAINERS: add ARM/FREESCALE IMX6 entry
-
- Documentation/devicetree/bindings/arm/calxeda.txt  |    8 +
- Documentation/devicetree/bindings/arm/fsl.txt      |    7 +
- .../devicetree/bindings/arm/picoxcell.txt          |   24 +
- MAINTAINERS                                        |   13 +
- arch/arm/Kconfig                                   |   34 +-
- arch/arm/Kconfig.debug                             |   14 +
- arch/arm/Makefile                                  |    4 +-
- arch/arm/boot/dts/highbank.dts                     |  198 ++
- arch/arm/boot/dts/imx6q-sabreauto.dts              |   62 +
- arch/arm/boot/dts/imx6q.dtsi                       |  575 ++++++
- arch/arm/boot/dts/picoxcell-pc3x2.dtsi             |  249 +++
- arch/arm/boot/dts/picoxcell-pc3x3.dtsi             |  365 ++++
- arch/arm/boot/dts/picoxcell-pc7302-pc3x2.dts       |   86 +
- arch/arm/boot/dts/picoxcell-pc7302-pc3x3.dts       |   92 +
- arch/arm/include/asm/hardware/cache-l2x0.h         |    9 +-
- arch/arm/mach-highbank/Makefile                    |    6 +
- arch/arm/mach-highbank/Makefile.boot               |    1 +
- arch/arm/mach-highbank/clock.c                     |   62 +
- arch/arm/mach-highbank/core.h                      |    9 +
- arch/arm/mach-highbank/highbank.c                  |  145 ++
- arch/arm/mach-highbank/hotplug.c                   |   56 +
- arch/arm/mach-highbank/include/mach/debug-macro.S  |   19 +
- arch/arm/mach-highbank/include/mach/entry-macro.S  |    7 +
- arch/arm/mach-highbank/include/mach/gpio.h         |    1 +
- arch/arm/mach-highbank/include/mach/io.h           |    7 +
- arch/arm/mach-highbank/include/mach/irqs.h         |    6 +
- arch/arm/mach-highbank/include/mach/memory.h       |    1 +
- arch/arm/mach-highbank/include/mach/system.h       |   26 +
- arch/arm/mach-highbank/include/mach/timex.h        |    6 +
- arch/arm/mach-highbank/include/mach/uncompress.h   |    9 +
- arch/arm/mach-highbank/include/mach/vmalloc.h      |    1 +
- arch/arm/mach-highbank/lluart.c                    |   34 +
- arch/arm/mach-highbank/localtimer.c                |   40 +
- arch/arm/mach-highbank/platsmp.c                   |   78 +
- arch/arm/mach-highbank/pm.c                        |   55 +
- arch/arm/mach-highbank/sysregs.h                   |   52 +
- arch/arm/mach-highbank/system.c                    |   33 +
- arch/arm/mach-imx/Kconfig                          |   30 +-
- arch/arm/mach-imx/Makefile                         |   11 +
- arch/arm/mach-imx/Makefile.boot                    |    4 +
- arch/arm/mach-imx/clock-imx6q.c                    | 2012 ++++++++++++++++++++
- arch/arm/mach-imx/gpc.c                            |  113 ++
- arch/arm/mach-imx/head-v7.S                        |   99 +
- arch/arm/mach-imx/hotplug.c                        |   44 +
- arch/arm/mach-imx/lluart.c                         |   32 +
- arch/arm/mach-imx/localtimer.c                     |   35 +
- arch/arm/mach-imx/mach-imx6q.c                     |   84 +
- arch/arm/mach-imx/mmdc.c                           |   72 +
- arch/arm/mach-imx/platsmp.c                        |   85 +
- arch/arm/mach-imx/pm-imx6q.c                       |   70 +
- arch/arm/mach-imx/src.c                            |   49 +
- arch/arm/mach-picoxcell/Makefile                   |    3 +
- arch/arm/mach-picoxcell/Makefile.boot              |    1 +
- arch/arm/mach-picoxcell/common.c                   |   55 +
- arch/arm/mach-picoxcell/common.h                   |   18 +
- arch/arm/mach-picoxcell/include/mach/debug-macro.S |   35 +
- arch/arm/mach-picoxcell/include/mach/entry-macro.S |   19 +
- arch/arm/mach-picoxcell/include/mach/gpio.h        |    1 +
- arch/arm/mach-picoxcell/include/mach/hardware.h    |   21 +
- arch/arm/mach-picoxcell/include/mach/io.h          |   22 +
- arch/arm/mach-picoxcell/include/mach/irqs.h        |   25 +
- arch/arm/mach-picoxcell/include/mach/map.h         |   25 +
- arch/arm/mach-picoxcell/include/mach/memory.h      |    1 +
- .../mach-picoxcell/include/mach/picoxcell_soc.h    |   25 +
- arch/arm/mach-picoxcell/include/mach/system.h      |   31 +
- arch/arm/mach-picoxcell/include/mach/timex.h       |   25 +
- arch/arm/mach-picoxcell/include/mach/uncompress.h  |   21 +
- arch/arm/mach-picoxcell/include/mach/vmalloc.h     |   14 +
- arch/arm/mach-picoxcell/io.c                       |   32 +
- arch/arm/mach-picoxcell/time.c                     |  132 ++
- arch/arm/mm/Kconfig                                |    4 +-
- arch/arm/plat-mxc/Kconfig                          |   11 +-
- arch/arm/plat-mxc/Makefile                         |    2 +-
- arch/arm/plat-mxc/gic.c                            |   48 +
- arch/arm/plat-mxc/include/mach/common.h            |   29 +
- arch/arm/plat-mxc/include/mach/debug-macro.S       |    2 +
- arch/arm/plat-mxc/include/mach/entry-macro.S       |    6 +
- arch/arm/plat-mxc/include/mach/hardware.h          |    6 +
- arch/arm/plat-mxc/include/mach/irqs.h              |   10 +-
- arch/arm/plat-mxc/include/mach/mx6q.h              |   33 +
- 80 files changed, 5778 insertions(+), 13 deletions(-)
-
+ Documentation/devicetree/bindings/arm/fsl.txt      |   19 ++
+ Documentation/devicetree/bindings/arm/gic.txt      |   55 ++++
+ .../devicetree/bindings/tty/serial/msm_serial.txt  |   27 ++
+ arch/arm/boot/dts/at91sam9g20.dtsi                 |  119 ++++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi                 |  106 +++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts             |   35 +++
+ arch/arm/boot/dts/imx51-babbage.dts                |  135 +++++++++
+ arch/arm/boot/dts/imx51.dtsi                       |  246 ++++++++++++++++
+ arch/arm/boot/dts/imx53-ard.dts                    |  113 ++++++++
+ arch/arm/boot/dts/imx53-evk.dts                    |  120 ++++++++
+ arch/arm/boot/dts/imx53-qsb.dts                    |  125 ++++++++
+ arch/arm/boot/dts/imx53-smd.dts                    |  169 +++++++++++
+ arch/arm/boot/dts/imx53.dtsi                       |  301 ++++++++++++++++++++
+ arch/arm/boot/dts/msm8660-surf.dts                 |   24 ++
+ arch/arm/boot/dts/usb_a9g20.dts                    |   30 ++
+ arch/arm/common/Kconfig                            |    1 +
+ arch/arm/common/gic.c                              |  188 ++++++++----
+ arch/arm/include/asm/hardware/gic.h                |   10 +-
+ arch/arm/mach-at91/Kconfig                         |   11 +
+ arch/arm/mach-at91/Makefile                        |    3 +
+ arch/arm/mach-at91/Makefile.boot                   |    2 +
+ arch/arm/mach-at91/at91sam9260.c                   |    8 +
+ arch/arm/mach-at91/at91sam9g45.c                   |    6 +
+ arch/arm/mach-at91/board-dt.c                      |  123 ++++++++
+ arch/arm/mach-msm/board-msm8x60.c                  |   58 ++++-
+ arch/arm/mach-mx5/Kconfig                          |   21 ++
+ arch/arm/mach-mx5/Makefile                         |    3 +
+ arch/arm/mach-mx5/board-mx51_babbage.c             |    9 +-
+ arch/arm/mach-mx5/board-mx53_ard.c                 |   12 +-
+ arch/arm/mach-mx5/board-mx53_evk.c                 |    9 +-
+ arch/arm/mach-mx5/board-mx53_loco.c                |    9 +-
+ arch/arm/mach-mx5/board-mx53_smd.c                 |    9 +-
+ arch/arm/mach-mx5/clock-mx51-mx53.c                |   39 +++
+ arch/arm/mach-mx5/imx51-dt.c                       |  116 ++++++++
+ arch/arm/mach-mx5/imx53-dt.c                       |  126 ++++++++
+ arch/arm/plat-mxc/include/mach/common.h            |    7 +
+ drivers/of/irq.c                                   |  107 +++++++
+ drivers/tty/serial/msm_serial.c                    |   30 ++-
+ include/linux/irqdomain.h                          |   16 +-
+ include/linux/of_irq.h                             |    3 +
+ kernel/irq/irqdomain.c                             |   12 +-
+ 41 files changed, 2461 insertions(+), 101 deletions(-)
