@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1KBBAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Nov 2011 21:00:15 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:56994 "EHLO
+	id S1756127Ab1KBBNY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Nov 2011 21:13:24 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:44385 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114Ab1KBBAM (ORCPT
+	with ESMTP id S1753729Ab1KBBNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Nov 2011 21:00:12 -0400
-Date: Wed, 2 Nov 2011 11:59:57 +1100
+	Tue, 1 Nov 2011 21:13:23 -0400
+Date: Wed, 2 Nov 2011 12:13:09 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the ext3 tree with Linus' tree
-Message-Id: <20111102115957.debce4217875e9f7d4e427da@canb.auug.org.au>
+To: Greg KH <gregkh@suse.de>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, miche@google.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        virtualization@lists.linux-foundation.org,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Amit Shah <amit.shah@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: Regression: patch
+ " hvc_console: display printk messages on console." causing infinite loop
+ with 3.2-rc0 + Xen.
+Message-Id: <20111102121309.4dbb0d2ac90d2879130820dd@canb.auug.org.au>
+In-Reply-To: <20111027054806.GA1377@suse.de>
+References: <20111027053007.GA32765@phenom.dumpdata.com>
+	<20111027054806.GA1377@suse.de>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__2_Nov_2011_11_59_57_+1100_zmTD8GfE=qUl2t/o"
+ boundary="Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__2_Nov_2011_11_59_57_+1100_zmTD8GfE=qUl2t/o
+--Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Jan,
+Hi Greg,
 
-Today's linux-next merge of the ext3 tree got a conflict in
-fs/udf/udfdecl.h between commit b9075fa968a0 ("treewide: use __printf not
-__attribute__((format(printf,...)))") from Linus' tree and commit
-7e273e3b41e3 ("udf: Promote some debugging messages to udf_error") from
-the ext3 tree.
+On Thu, 27 Oct 2011 07:48:06 +0200 Greg KH <gregkh@suse.de> wrote:
+>
+> On Thu, Oct 27, 2011 at 01:30:08AM -0400, Konrad Rzeszutek Wilk wrote:
+> > Hey Miche.
+> >=20
+> > The git commit 361162459f62dc0826b82c9690a741a940f457f0:
+> >=20
+> >     hvc_console: display printk messages on console.
+> >=20
+> > is causing an infinite loop when booting Linux under Xen, as so:
+>=20
+> Ick, not good, thanks for letting us know.
 
-I fixed it up (see below) and can carry the fix as necessary.
+Indeed. I am wondering why it was put in a tree and sent to Linus without
+any Acks or even being replied to by anyone.  It appeared in the tty tree
+between Oct 14 and Oct 25 (while I was unfortunately on vacation).  If
+anyone had tried to boot this on any PowerPC server, it would have been
+immediately obvious (as it was when I booted Linus' tree last night).
+
+And the original author expressed doubts as to his understanding of how
+it should all work anyway.
+
+Just a little more care, please.
+
+I would vote for reverting the original and having it resubmitted with
+corrections at some later date.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-diff --cc fs/udf/udfdecl.h
-index dc8a8dc,79aae3f..0000000
---- a/fs/udf/udfdecl.h
-+++ b/fs/udf/udfdecl.h
-@@@ -16,6 -18,21 +18,21 @@@
-  #define UDF_PREALLOCATE
-  #define UDF_DEFAULT_PREALLOC_BLOCKS	8
- =20
- -__attribute__((format(printf, 3, 4)))
- -extern void _udf_err(struct super_block *sb, const char *function,
- -		     const char *fmt, ...);
-++extern __printf(3, 4) void _udf_err(struct super_block *sb,
-++				     const char *function,
-++				     const char *fmt, ...);
-+ #define udf_err(sb, fmt, ...)					\
-+ 	_udf_err(sb, __func__, fmt, ##__VA_ARGS__)
-+=20
- -__attribute__((format(printf, 3, 4)))
- -extern void _udf_warn(struct super_block *sb, const char *function,
- -		      const char *fmt, ...);
-++extern __printf(3, 4) void _udf_warn(struct super_block *sb,
-++				      const char *function,
-++				      const char *fmt, ...);
-+ #define udf_warn(sb, fmt, ...)					\
-+ 	_udf_warn(sb, __func__, fmt, ##__VA_ARGS__)
-+=20
-+ #define udf_info(fmt, ...)					\
-+ 	pr_info("INFO " fmt, ##__VA_ARGS__)
-+=20
-  #undef UDFFS_DEBUG
- =20
-  #ifdef UDFFS_DEBUG
-
---Signature=_Wed__2_Nov_2011_11_59_57_+1100_zmTD8GfE=qUl2t/o
+--Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOsJYNAAoJEECxmPOUX5FERNMP/1lS/GWeq1m+GSDxd5H/npmX
-/93K24v9lHrBAryNzjFMyGDkE6mCMBkcMn/YrjQ1+sW/BPY/i/bnee+TAdbECX4i
-lcb6bIRs2/dyDVnF2yn9y+AQqzGJVQ37qpnCQ04XIlHsR12QkgyALoIUCbUDQi1p
-AyQemRVpoaQ5n7p2GkQq064WMvRSpITqNXqJyBsxO6sniUTB1DR4K/TdeJoDV+oV
-IvKKsGr4lf/1pBQL3/pTtryKMcwlNl+Ls84yyh6NAPpa90N2C97lKbJCJrt7Wq97
-kr8u9GAojOzsvyE4ML665RZQq7IEyAz3XMoPLg6XNsqX/SF/FBKOIvaxiq2Z6ezF
-lUOi3RSXgUjsAXIt7GO/aH+WC+77u0UnLuqMBN8r2j2g4oWKskoacgdBVGIyZauJ
-fjUwJXsAhB15/V7+JPkz0M1/gI71FxlkDx6a9k8Lph9Y68ixY3PEfzG0aiCGbsXH
-Gzt4+XYGsixkv//rfzK7CjN0MYCZx0cFXlL1+jGJRPRkBajPFkiAmjoK0oWcCHF2
-6U0LBfD29ZxbR+uk9iy0YNkRNPUUjk6X2/xLTIVB7Txe7D/2BJPO5lILvnOKd6wt
-I4o20PdHN9S1Rlc2/Bg0ruw++fVO0gHlBwk8YnyVjLNQOPM9Lk+m7mwH/09zXWbP
-SNY7VA01WcpRre/ogC7Y
-=3zge
+iQIcBAEBCAAGBQJOsJklAAoJEECxmPOUX5FE9UYP/2GMqOVKG+lC9uiq85ulDaGJ
+rIfH6kGOwyMER5NpeTdJM4XaOnJwVKum0R4vA1F/Uz4JpO7CtWZjc8+bOYyGHLtV
+uVc1Hf8dv8hLmy0YEFuVE+SvuacI70txycM9Uv6eGEYvCwh/c1BkOZk2/kb27vK2
+zkDQ24l7BblWIm3fE31xPgtH8X2mmmHrMpdbq1fmOxz83Xa3IS82yksD0/fGjDNn
+54RLMtxXwe4bdIRiDhUxLSqJT3UKmXZRiI24SwzSNzC//rIxxe9M39CaxWHCdWXL
+0PCEbzE2EQof7aWypkDVJmOHYQGNg2uxdP7ZxeNZNkGR7scblvxHxtq906/xG53N
+uVg6e6qS8CwjHPMlQl6WSRTBEXReMDKffeAQ9aACEvQAHtFW1HVqDOLSU1lS45vy
+Y9LRGMB8WqvsLw35MaY74/yidnD60Zgl2pDN5KL2RTfh1wgEGh5YilunXvCxaD8l
+J8hHXpFtG0n1r/pfsq876AGmNEnOF1IdfFmrsa8ZnUnCKNgGAuw7cUem8X8t7k8y
+U1KM6Qu0cWdaCVMcvAP3bcfKlYYgYnclDxH/jXtjgFJlujb3ZZ5Yj4IHaq3mDS2I
+A1qWnbU3FvI5ck5C81gEUqoL0Zp5EeN7g9wDLGVLKPO3f/HH7sMONlAL8nmBhyna
+YbsmYz14IPXe4mZ02U2c
+=/vwG
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__2_Nov_2011_11_59_57_+1100_zmTD8GfE=qUl2t/o--
+--Signature=_Wed__2_Nov_2011_12_13_09_+1100_lsOPgMWQm04RXl/E--
