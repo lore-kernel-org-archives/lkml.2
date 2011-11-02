@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934876Ab1KCBm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:42:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51491 "EHLO mx2.suse.de"
+	id S934996Ab1KCBng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:43:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51565 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934844Ab1KCBmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:42:53 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:48 2011
-Message-Id: <20111102222747.929812358@clark.kroah.org>
+	id S934985Ab1KCBne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:43:34 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:46 2011
+Message-Id: <20111102222746.343490545@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:27:13 -0700
+Date: Wed, 02 Nov 2011 15:26:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <florian@openwrt.org>
-Subject: [089/101] Revert "MIPS: MTX-1: Make au1000_eth probe all PHY
+        alan@lxorguk.ukuu.org.uk, hank <pyu@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: [072/101] time: Change jiffies_to_clock_t() argument type to unsigned long
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: hank <pyu@redhat.com>
 
-Commit 34dce55d was not applicable in 2.6.33 and introduces a build breakage.
-Revert that commit since it is irrelevant for this kernel version.
+commit cbbc719fccdb8cbd87350a05c0d33167c9b79365 upstream.
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
+The parameter's origin type is long. On an i386 architecture, it can
+easily be larger than 0x80000000, causing this function to convert it
+to a sign-extended u64 type.
+
+Change the type to unsigned long so we get the correct result.
+
+Signed-off-by: hank <pyu@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+[ build fix ]
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/mips/alchemy/mtx-1/platform.c |    9 ---------
- 1 file changed, 9 deletions(-)
+ include/linux/jiffies.h |    2 +-
+ kernel/time.c           |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/mips/alchemy/mtx-1/platform.c
-+++ b/arch/mips/alchemy/mtx-1/platform.c
-@@ -28,8 +28,6 @@
- #include <linux/mtd/physmap.h>
- #include <mtd/mtd-abi.h>
- 
--#include <asm/mach-au1x00/au1xxx_eth.h>
--
- static struct gpio_keys_button mtx1_gpio_button[] = {
- 	{
- 		.gpio = 207,
-@@ -142,17 +140,10 @@ static struct __initdata platform_device
- 	&mtx1_mtd,
- };
- 
--static struct au1000_eth_platform_data mtx1_au1000_eth0_pdata = {
--	.phy_search_highest_addr	= 1,
--	.phy1_search_mac0 		= 1,
--};
--
- static int __init mtx1_register_devices(void)
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -303,7 +303,7 @@ extern void jiffies_to_timespec(const un
+ extern unsigned long timeval_to_jiffies(const struct timeval *value);
+ extern void jiffies_to_timeval(const unsigned long jiffies,
+ 			       struct timeval *value);
+-extern clock_t jiffies_to_clock_t(long x);
++extern clock_t jiffies_to_clock_t(unsigned long x);
+ extern unsigned long clock_t_to_jiffies(unsigned long x);
+ extern u64 jiffies_64_to_clock_t(u64 x);
+ extern u64 nsec_to_clock_t(u64 x);
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -593,7 +593,7 @@ EXPORT_SYMBOL(jiffies_to_timeval);
+ /*
+  * Convert jiffies/jiffies_64 to clock_t and back.
+  */
+-clock_t jiffies_to_clock_t(long x)
++clock_t jiffies_to_clock_t(unsigned long x)
  {
- 	int rc;
- 
--	au1xxx_override_eth_cfg(0, &mtx1_au1000_eth0_pdata);
--
- 	rc = gpio_request(mtx1_gpio_button[0].gpio,
- 					mtx1_gpio_button[0].desc);
- 	if (rc < 0) {
+ #if (TICK_NSEC % (NSEC_PER_SEC / USER_HZ)) == 0
+ # if HZ < USER_HZ
 
 
