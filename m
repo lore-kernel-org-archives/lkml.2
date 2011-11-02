@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab1KCB4A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:56:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51193 "EHLO mx2.suse.de"
+	id S1753605Ab1KCB4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:56:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51182 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934414Ab1KCBkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:40:31 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:44 2011
-Message-Id: <20111102222744.044961713@clark.kroah.org>
+	id S934393Ab1KCBkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:40:24 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:27:43 2011
+Message-Id: <20111102222743.846479604@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:26:31 -0700
+Date: Wed, 02 Nov 2011 15:26:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mark Nelson <mdnelson8@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-Subject: [047/101] ahci: Enable SB600 64bit DMA on Asus M3A
+        alan@lxorguk.ukuu.org.uk, Changli Gao <xiaosuo@gmail.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [045/101] splice: direct_splice_actor() should not use pos in sd
 In-Reply-To: <20111102222755.GA10893@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Nelson <mdnelson8@gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
 
-commit 3c4aa91f21f65b7b40bdfb015eacbcb8453ccae2 upstream.
+commit 2cb4b05e7647891b46b91c07c9a60304803d1688 upstream.
 
-Like e65cc194f7628ecaa02462f22f42fb09b50dcd49 this patch enables 64bit DMA
-for the AHCI SATA controller of a board that has the SB600 southbridge. In
-this case though we're enabling 64bit DMA for the Asus M3A motherboard. It
-is a new enough board that all of the BIOS releases since the initial
-release (0301 from 2007-10-22) work correctly with 64bit DMA enabled.
+direct_splice_actor() shouldn't use sd->pos, as sd->pos is for file reading,
+file->f_pos should be used instead.
 
-Signed-off-by: Mark Nelson <mdnelson8@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@pobox.com>
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ahci.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ fs/splice.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -2769,6 +2769,18 @@ static bool ahci_sb600_enable_64bit(stru
- 				DMI_MATCH(DMI_BOARD_NAME, "MS-7376"),
- 			},
- 		},
-+		/*
-+		 * All BIOS versions for the Asus M3A support 64bit DMA.
-+		 * (all release versions from 0301 to 1206 were tested)
-+		 */
-+		{
-+			.ident = "ASUS M3A",
-+			.matches = {
-+				DMI_MATCH(DMI_BOARD_VENDOR,
-+					  "ASUSTeK Computer INC."),
-+				DMI_MATCH(DMI_BOARD_NAME, "M3A"),
-+			},
-+		},
- 		{ }
- 	};
- 	const struct dmi_system_id *match;
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1231,7 +1231,8 @@ static int direct_splice_actor(struct pi
+ {
+ 	struct file *file = sd->u.file;
+ 
+-	return do_splice_from(pipe, file, &sd->pos, sd->total_len, sd->flags);
++	return do_splice_from(pipe, file, &file->f_pos, sd->total_len,
++			      sd->flags);
+ }
+ 
+ /**
 
 
