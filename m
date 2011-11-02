@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933440Ab1KBQN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 12:13:59 -0400
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:38444 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932955Ab1KBQN5 (ORCPT
+	id S932953Ab1KBQTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 12:19:38 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19958 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755755Ab1KBQTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 12:13:57 -0400
-Date: Wed, 2 Nov 2011 09:13:48 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 2/7] drm/i915: Remove link_status field from
- intel_dp structure
-Message-ID: <20111102091348.7f8b956e@jbarnes-desktop>
-In-Reply-To: <1320214830-12696-3-git-send-email-keithp@keithp.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com>
-	<1320214830-12696-3-git-send-email-keithp@keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/VH41fijFfPFKHgOUwtjuDEQ"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Wed, 2 Nov 2011 12:19:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 02 Nov 2011 09:19:22 -0700
+Date: Wed, 2 Nov 2011 18:19:19 +0200
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Stephen Warren <swarren@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 8/8] arm/tegra: add support for tegra30 based board
+ cardhu
+Message-ID: <20111102161919.GM13358@tbergstrom-lnx.Nvidia.com>
+References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
+ <1320242948-21061-9-git-send-email-pdeschrijver@nvidia.com>
+ <20111102154610.GJ13358@tbergstrom-lnx.Nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173F9A46C4@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF173F9A46C4@HQMAIL01.nvidia.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/VH41fijFfPFKHgOUwtjuDEQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 02, 2011 at 05:07:52PM +0100, Stephen Warren wrote:
+> Peter De Schrijver wrote at Wednesday, November 02, 2011 9:46 AM:
+> > On Wed, Nov 02, 2011 at 03:09:07PM +0100, Peter De Schrijver wrote:
+> > > Add support for the tegra30 based cardhu development board. Cardhu is a tablet
+> > > formfactor reference design for tegra30. The patch provides a device tree for
+> > > the board, updates Makefile.boot to build the dtb, includes the platform in
+> > > Kconfig and updates board-dt.c.
+> ...
+> > > diff --git a/arch/arm/boot/dts/tegra-cardhu.dts b/arch/arm/boot/dts/tegra-cardhu.dts
+> > > new file mode 100644
+> > > index 0000000..70c41fc
+> > > --- /dev/null
+> > > +++ b/arch/arm/boot/dts/tegra-cardhu.dts
+> > > @@ -0,0 +1,36 @@
+> > > +/dts-v1/;
+> > > +
+> > > +/include/ "tegra30.dtsi"
+> > > +
+> > > +/ {
+> > > +	model = "NVIDIA Tegra30 Cardhu evaluation board";
+> > 
+> > And this should probably be removed.
+> 
+> I don't follow the reasoning here; it seems correct to identify what this
+> .dts file applies to, and having a model property is consistent with other
+> .dts files, including non-Tegra boards.
 
-On Tue,  1 Nov 2011 23:20:25 -0700
-Keith Packard <keithp@keithp.com> wrote:
+hmm :) Based on your comments on the previous version, I thought you wanted
+to move this do a different patch which also does it for other boards.
 
-> No persistent data was ever stored here, so link_status is instead
-> allocated on the stack as needed.
->=20
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-> ---
+Cheers,
 
-I like this cleanup.
-
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/VH41fijFfPFKHgOUwtjuDEQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsWw8AAoJEIEoDkX4Qk9hEOMQAJ26u5Fs/DtTK2BXMvBTHA1x
-WTuV/+66h03o/HoXFj8ALQYzj8CmEteZ0Z/85gOyDlDXdr3fwEpHUniAQleYfmrN
-GpDnLMw/HqunOkoOZqamaYMWHvl62jJgqBWCYLg+s6N6C7m7vlRF2IN0jHeiMiOA
-1wKZkJl1/Bal7ZuDu0B7seERBizPb48M4+fCLar2yHwwgCFXa8TmBuzpsQRqGpXQ
-I8Mm5i8jGLSym/QQPWdoBVqdnZ6BFYqwrdTja/rH2g/hafxQdi+AlqFsn88gzkg4
-NS/5u7RtZxW95zU/sZxdoh0Cg6RoF9PqSkrZheypW+HO+eOyoNjXk8gZ3r0x+sZs
-1yr/ayUh40aKgirHoeC5QDyge+zTYq8QDmdjIeWnc6PoeC2U753sqEb4Iopj2cCj
-P6p9oE9C5AAKLEheDyuk8qyoyu1BRaMrkKS7Quyb6TWcA9kaMzW/GdPuLnjgffoh
-lwF+ClsLyLx8TBSpwwUKayK4PB0lsFQ6uaj8FE6GEflS8WOmTVWuIbJL/sRunZ3F
-HwNg+TLoZUPvnPnSiBS1204o2khpKRpoLS1M+Gy9SC2q+rWhIWbFlKtyVN7ZuNUA
-wiHlJXRA8WnigqFOwSlrQehxoaTHz9jGioQvjH6guaCphiHaKFmi7Rmyi73Er2ea
-Myg/9M8T5MMVhc4U5srQ
-=w+1k
------END PGP SIGNATURE-----
-
---Sig_/VH41fijFfPFKHgOUwtjuDEQ--
+Peter.
