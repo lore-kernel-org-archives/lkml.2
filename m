@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933095Ab1KBTGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:06:33 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:39500 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab1KBTGb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:06:31 -0400
+	id S933365Ab1KBTHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:07:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2595 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932576Ab1KBTG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 15:06:59 -0400
+Date: Wed, 2 Nov 2011 21:08:06 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>
+Subject: Re: virtio-pci new configuration proposal
+Message-ID: <20111102190804.GA13914@redhat.com>
+References: <1320259767.22582.2.camel@lappy>
 MIME-Version: 1.0
-Message-ID: <2bc86220-1e48-40e5-b502-dcd093956fd5@default>
-Date: Wed, 2 Nov 2011 12:06:02 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
- <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
- <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default20111031223717.GI3466@redhat.com>
- <1b2e4f74-7058-4712-85a7-84198723e3ee@default20111101012017.GJ3466@redhat.com>
- <6a9db6d9-6f13-4855-b026-ba668c29ddfa@default20111101180702.GL3466@redhat.com>
- <b8a0ca71-a31b-488a-9a92-2502d4a6e9bf@default
- 20111102013122.GA18879@redhat.com>
-In-Reply-To: <20111102013122.GA18879@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090202.4EB194A2.0033,ss=1,re=0.000,fgs=0
+Content-Disposition: inline
+In-Reply-To: <1320259767.22582.2.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
-> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+On Wed, Nov 02, 2011 at 08:49:27PM +0200, Sasha Levin wrote:
+> This is a proposal for a new layout of the virtio-pci config space.
 > 
-> Hi Dan.
+> We will separate the current configuration into two: A virtio-pci common
+> configuration and a device specific configuration. This allows more flexibility
+> with adding features and makes usage easier, specifically in cases like the
+> ones in virtio-net where device specific configurations depend on device
+> specific features.
 > 
-> On Tue, Nov 01, 2011 at 02:00:34PM -0700, Dan Magenheimer wrote:
-> > Pardon me for complaining about my typing fingers, but it seems
-> > like you are making statements and asking questions as if you
-> > are not reading the whole reply before you start responding
-> > to the first parts.  So it's going to be hard to answer each
-> > sub-thread in order.  So let me hit a couple of the high
-> > points first.
+> The preferred location of the configuration will be a MMIO BAR, therefore
+> several size optimizations such as the queue selector which were useful
+> on a PIO BAR were removed and linked lists were introduced to add
+> flexibility to existing structures in attempt to keep their size and
+> offsets constant and not dependent on features.
 > 
-> I'm actually reading all your reply, if I skip some part it may be
-> because the email is too long already :). I'm just trying to
-> understand it and I wish I had more time to dedicate to this too but
-> I've other pending stuff too.
+> While this is not a complete specification, it describes all the main
+> structures and should be enough to make sure the idea is solid before
+> going into implementation specifics.
+> 
+> A new virtio-pci capability structure will be introduced. This structure
+> will be used to describe the basics of a virtio-pci device. The
+> structure is actually a PCI capability structure which wraps the new virtio-pci
+> capability structure:
+> 
+> +------------++------------+------------+------------+--------------+-----------------
+> | Bits       || 8          | 8          | 8          | 8            | Cap specific
+> +------------++------------+------------+------------+--------------+-----------------
+> | Read/Write || R          | R          | R          | R            | Cap specific
+> +------------++------------+------------+------------+--------------+-----------------
+> | Purpose    || Capability | Capability | virtio-pci | virtio-pci   | Cap specific
+> |            || ID         | Next PTR   | Cap ID     | Next Cap PTR |
+> +------------++------------+------------+------------+--------------+-----------------
+> 
+> Currently, only one virtio-pci capability is defined, and is the one that defines
+> the layout of the virtio-pci config space.
+> 
+> VIRTIO_PCI_C_LAYOUT:
+> 
+> +------------++---------------+---------------+-----------------+-----------------+
+> | Bits       || 29            | 3             | 29              | 3               |
+> +------------++---------------+---------------+-----------------+-----------------+
+> | Read/Write || R             | R             | R               | R               |
+> +------------++---------------+---------------+-----------------+-----------------+
+> | Purpose    || Common config | Common config | Device specific | Device specific |
+> |            || Offset        | BIR           | Offset          | BIR             |
+> +------------++---------------+---------------+-----------------+-----------------+
 
-Hi Andrea --
-
-First, let me apologize for yesterday.  I was unnecessarily
-sarcastic and disrespectful, and I am sorry.  I very much appreciate
-your time and discussion, and good hard technical questions
-that have allowed me to clarify some of the design and
-implementation under discussion.
-
-I agree this email is too long, though it has been very useful.
-You've got some great feedback and insights in improving
-zcache, so let me be the first to cry "uncle" (surrender)
-and cut to the end....
-
-> If you confirm it's free to go and there's no ABI/API we get stuck
-> into, I'm fairly positive about it, it's clearly "alpha" feature
-> behavior (almost no improvement with zram today) but it could very
-> well be in the right direction and give huge benefit compared to zram
-> in the future. I definitely don't pretend things to be perfect... but
-> they must be in the right design direction for me to be sold off on
-> those. Just like KVM in virt space.
-
-Confirmed.  Anything below the "struct frontswap_ops" (and
-"struct cleancache_ops), that is anything in the staging/zcache
-directory, is wide open for your ideas and improvement.
-In fact, I would very much welcome your contribution and
-I think IBM and Nitin would also.
-
-Thanks,
-Dan
+I'm implementing a different layout, with
+separate capabilities for common and device specific
+fields.
