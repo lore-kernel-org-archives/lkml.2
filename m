@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1KCAAw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:00:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57964 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752614Ab1KCAAv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:00:51 -0400
+	id S1754137Ab1KCAGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:06:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:44807 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753085Ab1KCAGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:06:15 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tim Bird <tim.bird@am.sony.com>, Jason Wessel <jason.wessel@windriver.com>
+Cc: David Decotigny <david.decotigny@google.com>,
+        Kroah-Hartman <gregkh@suse.de>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Richard\@mail2.fw-bc.sony.com" <Richard@mail2.fw-bc.sony.com>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "kgdb-bugreport\@lists.sourceforge.net" 
+	<kgdb-bugreport@lists.sourceforge.net>,
+        Dmitry Torokhov <dtor@vmware.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Michal Schmidt <mschmidt@redhat.com>,
+        "David\@mail2.fw-bc.sony.com" <David@mail2.fw-bc.sony.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Greg\@mail2.fw-bc.sony.com" <Greg@mail2.fw-bc.sony.com>,
+        Satoru Moriya <satoru.moriya@hds.com>, Sievers <kay.sievers@vrfy.org>,
+        Decotigny <decot@google.com>,
+        "Kay\@mail2.fw-bc.sony.com" <Kay@mail2.fw-bc.sony.com>,
+        Kennedy <richard@rsk.demon.co.uk>
+Subject: Re: [Kgdb-bugreport] [PATCH v2 3/3] param: make /sys/module/*/paramaters optional
+In-Reply-To: <4EB16EC3.8020209@am.sony.com>
+References: <cover.1320191327.git.david.decotigny@google.com> <4cfeb61114204047567a77acf5895cb56b745460.1320191327.git.david.decotigny@google.com> <4EB145FB.70906@windriver.com> <4EB16EC3.8020209@am.sony.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 08:21:30 +1030
+Message-ID: <87mxcetcpp.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20111102134900.GB4377@one.firstfloor.org>
-References: <20111102134900.GB4377@one.firstfloor.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Nov 2011 17:00:29 -0700
-X-Google-Sender-Auth: p4NLK3x6TJrDj37UMD9KXwHTiiM
-Message-ID: <CA+55aFwCf41GFOVA656-ZgZB5mBNkpH3KqRfJ_Ornkn3RWF5gQ@mail.gmail.com>
-Subject: Re: REGRESSION: "perf: Add PM notifiers ..." breaks resume
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, rjw@sisk.pl
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter, Ingo, ping?
+On Wed, 2 Nov 2011 09:24:35 -0700, Tim Bird <tim.bird@am.sony.com> wrote:
+> On 11/2/2011 6:30 AM, Jason Wessel wrote:
+> > On 11/01/2011 06:50 PM, David Decotigny wrote:
+> I would also like to see the size numbers.  However, to address
+> Jason's concern, I think it's safe to assume that when someone is
+> getting this aggressive with system size, they'll start leaving debug
+> features on the floor (printk, kdb, etc.).  What would be appropriate,
+> IMHO, would be to add a config dependency for kgdb/kdb and
+> NOT resurrect /proc items.  There's work in progress in linux-tiny
+> to tackle /proc configurability, and adding back /proc interfaces
+> is likely to just have the issue resurface there.
+>   -- Tim
 
-Quite frankly, I'm inclined to revert that patch just for being
-horribly ugly and apparently broken regardless of the fact that it
-also causes a regression.
+This is already CONFIG_EXPERT; I don't think anyone really wants to turn
+this off.
 
-*Notifiers* for doing something like this? smp_call_function? That's
-just utter sh*t, guys.
+Yes, I think the patch comes from a false premise: that the reason that
+people don't expost module params in sysfs is due to memory usage, and
+that providing a way to turn that off will alleviate their fears.
 
-If it is CPU state, then it should damn well be suspended and resumed
-as part of CPU suspend and resume. No IPI cross-calls to ask other
-CPU's to do random work, no crap like that.
+So, my advice to David: just change the perms on any and all module
+parameters you want.  *Then* if someone complains about bloat, you can
+re-submit these patches and cc: me.
 
-Comments? Should I just revert the thing (silence is obviously "yes"
-in cases like this where we are talking about regressions anyway)?
+(BTW, don't like the first patch: static is nice, but keeping related
+code together is nicer).
 
-                   Linus
-
-On Wed, Nov 2, 2011 at 6:49 AM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> Resume stopped working on my Acer Aspire 1830T post 3.1. The screen
-> just stays black after wakeup.
->
-> I bisected it down to
->
-> commit 144060fee07e9c22e179d00819c83c86fbcbf82c
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Mon Aug 1 12:49:14 2011 +0200
->
->    perf: Add PM notifiers to fix CPU hotplug races
->
-> Reverting this patch fixes the problem for me.
->
-> -Andi
->
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+Cheers,
+Rusty.
