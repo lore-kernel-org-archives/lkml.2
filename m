@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab1KCBct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:32:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50287 "EHLO mx2.suse.de"
+	id S1754957Ab1KCBc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:32:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50300 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754315Ab1KCBcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:46 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:51 2011
-Message-Id: <20111102221451.835794746@clark.kroah.org>
+	id S1754915Ab1KCBcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:32:52 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:50 2011
+Message-Id: <20111102221450.253854558@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:45 -0700
+Date: Wed, 02 Nov 2011 15:13:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
-Subject: [019/107] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
+        alan@lxorguk.ukuu.org.uk, Wang Zhi <zhi.wang@windriver.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [002/107] USB: EHCI: Do not rely on PORT_SUSPEND to stop USB resuming in ehci_bus_resume().
 In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,67 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Wang Zhi <zhi.wang@windriver.com>
 
-commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
+commit d0f2fb2500b1c5fe4967eb45d8c9bc758d7aef80 upstream.
 
-0.90 metadata uses an unsigned 32bit number to count the number of
-kilobytes used from each device.
-This should allow up to 4TB per device.
-However we multiply this by 2 (to get sectors) before casting to a
-larger type, so sizes above 2TB get truncated.
+>From EHCI Spec p.28 HC should clear PORT_SUSPEND when SW clears
+PORT_RESUME. In Intel Oaktrail platform, MPH (Multi-Port Host
+Controller) core clears PORT_SUSPEND directly when SW sets PORT_RESUME
+bit. If we rely on PORT_SUSPEND bit to stop USB resume, we will miss
+the action of clearing PORT_RESUME. This will cause unexpected long
+resume signal on USB bus.
 
-Also we allow rdev->sectors to be larger than 4TB, so it is possible
-for the array to be resized larger than the metadata can handle.
-So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
-used.
-
-Also the sanity check at the end of super_90_load should include level
-1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
-
-Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Wang Zhi <zhi.wang@windriver.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-hub.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -848,8 +848,11 @@ static int super_90_load(mdk_rdev_t *rde
- 			ret = 0;
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -243,7 +243,7 @@ static int ehci_bus_resume (struct usb_h
+ 	u32			temp;
+ 	u32			power_okay;
+ 	int			i;
+-	u8			resume_needed = 0;
++	unsigned long		resume_needed = 0;
+ 
+ 	if (time_before (jiffies, ehci->next_statechange))
+ 		msleep(5);
+@@ -307,7 +307,7 @@ static int ehci_bus_resume (struct usb_h
+ 		if (test_bit(i, &ehci->bus_suspended) &&
+ 				(temp & PORT_SUSPEND)) {
+ 			temp |= PORT_RESUME;
+-			resume_needed = 1;
++			set_bit(i, &resume_needed);
+ 		}
+ 		ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
  	}
- 	rdev->sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that */
-+	if (rdev->sectors >= (2ULL << 32))
-+		rdev->sectors = (2ULL << 32) - 2;
- 
--	if (rdev->sectors < sb->size * 2 && sb->level > 1)
-+	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
- 		/* "this cannot possibly happen" ... */
- 		ret = -EINVAL;
- 
-@@ -884,7 +887,7 @@ static int super_90_validate(mddev_t *md
- 		mddev->clevel[0] = 0;
- 		mddev->layout = sb->layout;
- 		mddev->raid_disks = sb->raid_disks;
--		mddev->dev_sectors = sb->size * 2;
-+		mddev->dev_sectors = ((sector_t)sb->size) * 2;
- 		mddev->events = ev1;
- 		mddev->bitmap_offset = 0;
- 		mddev->default_bitmap_offset = MD_SB_BYTES >> 9;
-@@ -1122,6 +1125,11 @@ super_90_rdev_size_change(mdk_rdev_t *rd
- 	rdev->sb_start = calc_dev_sboffset(rdev->bdev);
- 	if (!num_sectors || num_sectors > rdev->sb_start)
- 		num_sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that.
-+	 * 4TB == 2^32 KB, or 2*2^32 sectors.
-+	 */
-+	if (num_sectors >= (2ULL << 32))
-+		num_sectors = (2ULL << 32) - 2;
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
+@@ -322,8 +322,7 @@ static int ehci_bus_resume (struct usb_h
+ 	i = HCS_N_PORTS (ehci->hcs_params);
+ 	while (i--) {
+ 		temp = ehci_readl(ehci, &ehci->regs->port_status [i]);
+-		if (test_bit(i, &ehci->bus_suspended) &&
+-				(temp & PORT_SUSPEND)) {
++		if (test_bit(i, &resume_needed)) {
+ 			temp &= ~(PORT_RWC_BITS | PORT_RESUME);
+ 			ehci_writel(ehci, temp, &ehci->regs->port_status [i]);
+ 			ehci_vdbg (ehci, "resumed port %d\n", i + 1);
 
 
