@@ -1,68 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752505Ab1KBVEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 17:04:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751220Ab1KBVEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 17:04:10 -0400
-Message-ID: <4EB1B01E.7030005@redhat.com>
-Date: Wed, 02 Nov 2011 17:03:26 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com> <ef778e79-72d0-4c58-99e8-3b36d85fa30d@default 20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com> <f62e02cd-fa41-44e8-8090-efe2ef052f64@default> <20111101144309.a51c99b5.akpm@linux-foundation.org>
-In-Reply-To: <20111101144309.a51c99b5.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752572Ab1KBVFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 17:05:31 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:54441 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751079Ab1KBVF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 17:05:27 -0400
+Date: Wed, 2 Nov 2011 14:05:22 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH] pciehp: Retrieve link speed after link is trained
+Message-ID: <20111102140522.411ef343@jbarnes-desktop>
+In-Reply-To: <4E9147DE.3050006@oracle.com>
+References: <4E9147DE.3050006@oracle.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/q6/_Q64coyUiOYoMiqb9kSh"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 05:43 PM, Andrew Morton wrote:
+--Sig_/q6/_Q64coyUiOYoMiqb9kSh
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> I will confess to and apologise for dropping the ball on cleancache and
-> frontswap.  I was never really able to convince myself that it met the
-> (very vague) cost/benefit test,
+On Sun, 09 Oct 2011 00:06:06 -0700
+Yinghai Lu <yinghai.lu@oracle.com> wrote:
 
-I believe that it can, but if it does, we also have to
-operate under the assumption that the major distros will
-enable it.
+>=20
+> During hot plug, board_added will call pciehp_power_on_slot().
+> But link speed is updated in pciehp_power_on_slot().
+>=20
+> We should not update link speed there, because that is too early.
+>=20
+> Move updating to pciehp_check_link_status() after making sure link is tra=
+ined.
+>=20
+> Signed-off-by: Yinghai Lu <yinghai.lu@oracle.com>
+>=20
+> ---
+>  drivers/pci/hotplug/pciehp_hpc.c |   10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+>=20
+> Index: linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.orig/drivers/pci/hotplug/pciehp_hpc.c
+> +++ linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+> @@ -294,6 +294,8 @@ int pciehp_check_link_status(struct cont
+>  		return retval;
+>  	}
+> =20
+> +	pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+> +
+>  	return retval;
+>  }
+> =20
+> @@ -516,14 +518,6 @@ int pciehp_power_on_slot(struct slot * s
+>  	ctrl_dbg(ctrl, "%s: SLOTCTRL %x write cmd %x\n", __func__,
+>  		 pci_pcie_cap(ctrl->pcie->port) + PCI_EXP_SLTCTL, slot_cmd);
+> =20
+> -	retval =3D pciehp_readw(ctrl, PCI_EXP_LNKSTA, &lnk_status);
+> -	if (retval) {
+> -		ctrl_err(ctrl, "%s: Cannot read LNKSTA register\n",
+> -				__func__);
+> -		return retval;
+> -	}
+> -	pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+> -
+>  	return retval;
+>  }
 
-This means that "no overhead when not compiled in" is
-not going to apply to the majority of the users out there,
-and we need clear numbers on what the overhead is when it
-is enabled, but not used.
+Kenji-san or Hidetoshi-san, would it be possible to get tested-bys and
+reviewed-bys from you on this patch?
 
-We also need an API that can handle arbitrarily heavy
-workloads, since that is what people will throw at it
-if it is enabled everywhere.
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-I believe that means addressing some of Andrea's concerns,
-specifically that the API should be able to handle vectors
-of pages and handle them asynchronously.
+--Sig_/q6/_Q64coyUiOYoMiqb9kSh
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Even if the current back-ends do not handle that today,
-chances are that (if tmem were to be enabled everywhere)
-people will end up throwing workloads at tmem that pretty
-much require such a thing.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-An asynchronous interface would probably be a requirement
-for something as high latency as encrypted ramster :)
+iQIcBAEBAgAGBQJOsbCSAAoJEIEoDkX4Qk9h6f8P/3JrJzb0LToRe/5C815xNJ5Y
+FvyHSDizsP0xzDeBo6gLq13kDtoUFg2pnhFabZkayAgsxlNqZ9f4e8Fa8Ns20PiG
+mFZ2R5Cmis4+xygNbcVX4GEYuGfBAuG/Ee8/Yjuo9ORGr0NZ03cGQAeHSjIL5vR0
+BAUZTRhE03inJahOuMlqFa80Qi3FuULDK7n4uodZLHkIQ7rITc1HyAaZZXwnIbez
+n7wKkRiSNSiv+mgxI2GUHWJxs0goOuFOL2bH9mSFXjLJGEWS54SDeJq6b2itV8jv
+YMM4UbrH+V+WmI+HCmt3Lm1d9MBIOys+aEniK0tpw2UiEG4bz5gWa7CTLXrKAmIN
+Snc+yzNEMEFJc8DNd7m5aqnqE4OecTJwEcCYUFtU2E0kB0qwDKmsklkuIZLwWBbT
+oMn9XSps1/M6yaVExqVxOdnTymk8uzBS3gFBn3osIgaCK4sL8Rlr653+561d42m2
+I9VjU8yUIZ7muOsvt5hcVP7OMe64HkxFuhX/7qSFAptlTf11h5I1/Cnat+1PXuFT
+/xtesYL0z1AMsrFv/mP+XoPq7N4Q3XZl8ooa4LHSWUaeDEwmE6cppmQEFAVfMUQw
+Gxu2+S6ft0UAD/sBqg1Z5rqWW5rJVE4dABOycqs9zang4RxmvJ/CXqAPlb1Bb1q9
+5Skfz6+AA9BTMxvMTKOb
+=bHhA
+-----END PGP SIGNATURE-----
 
-API concerns like this are things that should be solved
-before a merge IMHO, since afterwards we would end up with
-the "we cannot change the API, because that breaks users"
-scenario that we always end up finding ourselves in.
+--Sig_/q6/_Q64coyUiOYoMiqb9kSh--
