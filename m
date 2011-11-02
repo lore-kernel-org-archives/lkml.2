@@ -1,68 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751536Ab1KBUwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 16:52:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab1KBUwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 16:52:38 -0400
-Message-ID: <4EB1AD53.2000600@redhat.com>
-Date: Wed, 02 Nov 2011 16:51:31 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20110906 Thunderbird/6.0.2
+	id S1751864Ab1KBUws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 16:52:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57963 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1KBUwm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 16:52:42 -0400
+Date: Wed, 2 Nov 2011 21:52:40 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Magnus Damm <magnus.damm@gmail.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ARM: mach-shmobile: sh7372 A4R support (v4)
+In-Reply-To: <CANqRtoS5KTws7rDoHkxrq8DP+js5xq=YF3zQG4MYmmjHEtv5NA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1111022131460.19054@axis700.grange>
+References: <201110200012.43840.rjw@sisk.pl> <201110200015.06277.rjw@sisk.pl>
+ <Pine.LNX.4.64.1111021132240.19054@axis700.grange>
+ <CANqRtoS5KTws7rDoHkxrq8DP+js5xq=YF3zQG4MYmmjHEtv5NA@mail.gmail.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <75efb251-7a5e-4aca-91e2-f85627090363@default> <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy> <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com> <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com> <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default 20111031223717.GI3466@redhat.com> <1b2e4f74-7058-4712-85a7-84198723e3ee@default>
-In-Reply-To: <1b2e4f74-7058-4712-85a7-84198723e3ee@default>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:t3s14MZvCfT9asv81St8GJiqvQlV0Dk6kD46AanUsnS
+ lkd1Q5qDetjIzuK0da0Hrb+tvVuuWvj9vNXIqjbQZzIIzMAyK+
+ /xJJPRsfAtZ1jHd+c/s73SAlJha9VYeu11haQ4/d9kHFy37GsN
+ 8lINmET2z1TZFj6y2ONvHfBq7yw7u2qLalZ6xv+foyWL2jbwu7
+ bd0rhI8WwSrX67R0ZGv5q5ErmsLpSnhD/+iDjtdSPJyB2oOwv5
+ fKEDkXU6JBZRYXxuplwGDG5piML936foEawtxnaaOqbF5z+gIJ
+ tZ6dHlDVO/HT+sOJTEzEfTgzcrAunLr6D2I1CtXR5Z/zoudpcw
+ imVZWqVnWM7ekjMnGB1pdJ8bnDBUzDcyiYtVkt9UGSn6vS9nMt
+ 8el0CQFev4R0w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/31/2011 07:36 PM, Dan Magenheimer wrote:
->> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+Hi Magnus
 
->>> real work to do instead and (2) that vmexit/vmenter is horribly
->>
->> Sure the CPU has another 1000 VM to schedule. This is like saying
->> virtio-blk isn't needed on desktop virt becauase the desktop isn't
->> doing much I/O. Absurd argument, there are another 1000 desktops doing
->> I/O at the same time of course.
->
-> But this is truly different, I think at least for the most common
-> cases, because the guest is essentially out of physical memory if it
-> is swapping.  And the vmexit/vmenter (I assume, I don't really
-> know KVM) gives the KVM scheduler the opportunity to schedule
-> another of those 1000 VMs if it wishes.
+On Wed, 2 Nov 2011, Magnus Damm wrote:
 
-I believe the problem Andrea is trying to point out here is
-that the proposed API cannot handle a batch of pages to be
-pushed into frontswap/cleancache at one time.
+> On Wed, Nov 2, 2011 at 11:38 AM, Guennadi Liakhovetski
+> <g.liakhovetski@gmx.de> wrote:
+> > On Thu, 20 Oct 2011, Rafael J. Wysocki wrote:
+> >
+> >> From: Magnus Damm <damm@opensource.se>
+> >>
+> >> This change adds support for the sh7372 A4R power domain.
+> >
+> > This version still breaks I2C (#0) on mackerel. Tested with your
+> > sh7372-test branch of Oct 18th plus these four patches:
+> >
+> > 6b29305a PM / Domains: Add default power off governor function (v2)
+> > 3d578ae PM / Domains: Add device stop governor function (v2)
+> > 6c2cd02 ARM: mach-shmobile: sh7372 A4R support (v4)
+> > 9da11f4 ARM: mach-shmobile: sh7372 A3SP support (v4)
+> 
+> Exactly how does it break IIC0?
 
-Even if the current back-end implementations are synchronous
-and can only do one page at a time, I believe it would still
-be a good idea to have the API able to handle a vector with
-a bunch of pages all at once.
+We discussed it a couple of weeks ago, remember? Here's a quote:
 
-That way we can optimize the back-ends as required, at some
-later point in time.
+> > > 3. I2C #0 doesn't work (last worked with some 3.1-rc7 based kernel). It is
+> > > needed for the keypad, without which I don't know how the board can be
+> > > woken up
+> > 
+> > That's odd. It worked fine when I tested with Morimoto-san earlier
+> > today. Are we using the same code?
+> 
+> I hope so. I'm using what Rafael suggested in his mail:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git sh7372-test
+> 
+> HEAD currently at commit
+> 
+> commit 2b7a2158042fbed2dc0c677d24efc2d3c8680186
+> Author: Magnus Damm <damm@opensource.se>
+> Date:   Sun Oct 16 23:35:59 2011 +0200
+> 
+>     ARM: mach-shmobile: sh7372 A4R support (v3)
+> 
+> I2C works with HEAD^
 
-If enough people start using tmem, such bottlenecks will show
-up at some point :)
+Of course, now testing with v4 of A3SP and A4R patches. As for "exactly 
+how":
 
+i2c-sh_mobile i2c-sh_mobile.0: I2C adapter 0 with bus speed 100000 Hz
+i2c-sh_mobile i2c-sh_mobile.1: I2C adapter 1 with bus speed 100000 Hz
+Linux video capture interface: v2.00
+soc-camera-pdrv soc-camera-pdrv.0: Probing soc-camera-pdrv.0
+sh_mobile_ceu sh_mobile_ceu.0: SuperH Mobile CEU driver attached to camera 0
+sh_mobile_ceu sh_mobile_ceu.0: SuperH Mobile CEU driver detached from camera 0
+sh_mobile_ceu sh_mobile_ceu.0: SuperH Mobile CEU driver attached to camera 0
+sh_mobile_ceu sh_mobile_ceu.0: SuperH Mobile CEU driver detached from camera 0
+i2c-sh_mobile i2c-sh_mobile.0: Transfer request timed out
+i2c-sh_mobile i2c-sh_mobile.0: Polling timed out
+tca6416-keypad 0-0020: tca6416_read_reg failed, reg: 1, error: -5
+tca6416-keypad: probe of 0-0020 failed with error -5
+
+So, seems just not to be enabled.
+
+> Does the same happen with the code base for upcoming 3.2-rc1 from
+> latest linux git?
+
+Good question:
+
+linux-2.6/arch/arm/kernel/entry-armv.S: Assembler messages:
+linux-2.6/arch/arm/kernel/entry-armv.S:501: Error: backward ref to unknown label "2:"
+linux-2.6/arch/arm/kernel/entry-armv.S:502: Error: backward ref to unknown label "3:"
+make[2]: *** [arch/arm/kernel/entry-armv.o] Error 1
+
+So, no, it doesn't;-)
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
