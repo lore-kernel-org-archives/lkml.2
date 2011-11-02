@@ -1,98 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab1KBJWd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 05:22:33 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36899 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab1KBJWb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 05:22:31 -0400
-Date: Wed, 2 Nov 2011 10:17:47 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Matthias Schniedermeyer <ms@citd.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] config: Add 'make kvmconfig'
-Message-ID: <20111102091747.GH18903@elte.hu>
-References: <1319717234-20918-1-git-send-email-levinsasha928@gmail.com>
- <20111027193448.GA3514@merkur.ravnborg.org>
- <20111028070336.GF12995@elte.hu>
- <CAMuHMdUSyNcbmmXjFqSVQmsSqGS5xKFt4DSnskkg80UyWoJjLQ@mail.gmail.com>
- <20111028075432.GB8626@elte.hu>
- <20111028120856.GA29174@citd.de>
- <20111028122902.GA25323@elte.hu>
- <20111028130535.GA2752@citd.de>
- <20111102084124.GB18771@elte.hu>
- <4EB1084F.4020206@suse.cz>
+	id S1754534Ab1KBJYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 05:24:10 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:42959 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab1KBJYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 05:24:06 -0400
+Date: Wed, 2 Nov 2011 12:24:14 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [SCSI] compat_ioct: fix bsg SG_IO
+Message-ID: <20111102092414.GE4751@mwanda>
+References: <20111102081642.GD4751@mwanda>
+ <1320224338.15504.6.camel@dabdike>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FEz7ebHBGB6b2e8X"
 Content-Disposition: inline
-In-Reply-To: <4EB1084F.4020206@suse.cz>
+In-Reply-To: <1320224338.15504.6.camel@dabdike>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A02020B.4EB10C30.0050,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Michal Marek <mmarek@suse.cz> wrote:
+--FEz7ebHBGB6b2e8X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 2.11.2011 09:41, Ingo Molnar wrote:
-> > 
-> > * Matthias Schniedermeyer <ms@citd.de> wrote:
-> > 
-> >> And AFAICS there currently is no "modconfig", only an 
-> >> "allmodconfig" (and "localmodconfig")
-> >>
-> >> With no letters dropped it would be less ambiguous. make 
-> >> modifyconfig=kvm
-> > 
-> > Yeah. Note that it's more like an 'add' operation, not a modify 
-> > operation, thus:
-> > 
-> > 	make addconfig=kvm
-> > 
-> > or:
-> > 
-> > 	make addconfig kvm
-> > 
-> > would be intuitive and would work well too.
-> > 
-> > Sam, Michal, which one would you prefer? The latter might have the 
-> > advantage that it's additive, enabling future usages like:
-> > 
-> > 	make addconfig kvm debug
-> 
-> The problem is that neither of these fit into the make command syntax:
-> 
->     make addconfig kvm debug
-> 
-> tells make to build three different targets, and
-> 
->     make addconfig=kvm
-> 
-> tells make to create a variable named addconfig with the value kvm 
-> and build the default target. And BTW, you or someone else 
-> reassured me earlier in the thread that this is going to be needed 
-> for the kvm case solely, so why are you inventing something generic 
-> now? :)
+On Wed, Nov 02, 2011 at 12:58:58PM +0400, James Bottomley wrote:
+> On Wed, 2011-11-02 at 11:16 +0300, Dan Carpenter wrote:
+> > 84eb8fb42c120 "[SCSI] compat_ioct: fix bsg SG_IO" introduces an
+> > uninitialized variable use.
+> >=20
+> >    278  static int sg_ioctl_trans(unsigned int fd, unsigned int cmd,
+> >    279                          sg_io_hdr32_t __user *sgio32)
+> >    280  {
+> >    281          sg_io_hdr_t __user *sgio;
+> >    282          u16 iovec_count;
+> >    283          u32 data;
+> >    284          void __user *dxferp;
+> >    285          int err;
+> >    286          int interface_id;
+> >    287 =20
+> >    288          if (get_user(interface_id, &sgio32->interface_id))
+> >                                             ^^^^^^
+> > sgio32 is unitialized here.  Unfortunately Gcc doesn't warn about it.
+>=20
+> I don't quite understand what makes you think that: it's passed in as an
+> argument to the function.  It's a pointer to the userspace 32 bit
+> representation of the structure.  The use logic is a slightly convoluted
+> way of saying we only understand the 'S' header but we're going to let
+> the real ioctl routine say what the error is if it's not type 'S'.
 
-Because we are trying to find *something* that is both usable and 
-which you guys are willing to ack.
+Uh...  This is embarrassing.  I got confused between sgio and sgio32.
 
-So what's your suggestion? Is 'make kvmconfig' OK? It certainly is 
-intuitive and useful to us and we could move on to more important 
-things to discuss.
+Sorry for this.
 
-Thanks,
+regards,
+dan carpenter
 
-	Ingo
+--FEz7ebHBGB6b2e8X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOsQw9AAoJEOnZkXI/YHqR/7sP/11/bnQyPqmcMjiY9cyDzRW8
+EpjCsgPuc7sJTxJeq8Z9AA/XNuFsrfxGMWjmMLQRIYg7ixIBqY1z8S2mNzyVPA5h
+8MdxFOFTfAOsZ8i4wSrorEXUrioJ3cd7ioi53kldH3oIS3szNPbfR1CoQVi2+3S1
+d/sJ9cPVCFYZcTZsbaaNcqPDqiPBvL/087rM6DH7yDpXyToTZiOwpj3MHRxWOiGL
+RBAS2Wi2uiiyGmFU2DW5USu5Of/N6pSEBrwmCMw8jcGYHegIFzhS1bK/R778JxDe
+IlqQV9hzpsnaWE+pKjQCWHF7MaMjx80f5vwXUR5MD15WXbfsANc3Kzat+hXTN1s/
+15PeS9zV3/RFsVgDtDCAlDHRfTVpZapTsf/VTQW4xTlzykJvX0/JyxTv0dQSsRio
+gAQx6RltfVKzEiJaPCLEqky8vS82X+Sj9S5LsPPsjTZ7B02BR9C4/H6fDLQzygU0
+CSeGgcTSoP8Oj810Yl8WQojUOR6G8zI//ZLVaZNDtGh8Cs8e4wL9T5DVhMw0ulmi
+0mK7NxE/UdKv7ql3Q2JQIAw1Ng2utkB3rBxovF4npjWYVywn+dgKoRqgP17Oqne1
+lcjjtpreymE/+fCEfSBsy8i1qtQfnEtusaS3FaqgJ9wZWjGgEz5aHIc6F+WabxF1
+k5zuzjT8FDiLO42CLuvF
+=dAwp
+-----END PGP SIGNATURE-----
+
+--FEz7ebHBGB6b2e8X--
