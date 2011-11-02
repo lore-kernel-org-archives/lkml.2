@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215Ab1KBPpJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 11:45:09 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:38194 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753636Ab1KBPpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 11:45:06 -0400
-From: Geoff Thorpe <geoff@geoffthorpe.net>
-To: linux-kernel@vger.kernel.org
-Cc: hjk@hansjkoch.de, gregkh@suse.de, Geoff Thorpe <geoff@geoffthorpe.net>
-Subject: [PATCH] uio: documentation fixups
-Date: Wed,  2 Nov 2011 11:44:44 -0400
-Message-Id: <1320248684-25191-1-git-send-email-geoff@geoffthorpe.net>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1644:host132.hostmonster.com:geofftho:geoffthorpe.com} {sentby:smtp auth 208.111.79.148 authed with geoff@geoffthorpe.com}
+	id S933284Ab1KBPpT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 11:45:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17031 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933223Ab1KBPpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 11:45:15 -0400
+Message-ID: <4EB16572.70209@redhat.com>
+Date: Wed, 02 Nov 2011 17:44:50 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>  <75efb251-7a5e-4aca-91e2-f85627090363@default>  <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>  <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>  <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default>  <20111031181651.GF3466@redhat.com> <1320142590.7701.64.camel@dabdike>
+In-Reply-To: <1320142590.7701.64.camel@dabdike>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'name' attribute of struct uio_mem wasn't documented, and the note
-about 'kobj' is stale and needs to be changed to 'map'.
+On 11/01/2011 12:16 PM, James Bottomley wrote:
+> Actually, I think there's an unexpressed fifth requirement:
+>
+> 5. The optimised use case should be for non-paging situations.
+>
+> The problem here is that almost every data centre person tries very hard
+> to make sure their systems never tip into the swap zone.  A lot of
+> hosting datacentres use tons of cgroup controllers for this and
+> deliberately never configure swap which makes transcendent memory
+> useless to them under the current API.  I'm not sure this is fixable,
+> but it's the reason why a large swathe of users would never be
+> interested in the patches, because they by design never operate in the
+> region transcended memory is currently looking to address.
+>
+> This isn't an inherent design flaw, but it does ask the question "is
+> your design scope too narrow?"
 
-Signed-off-by: Geoff Thorpe <geoff@geoffthorpe.net>
----
+If you look at cleancache, then it addresses this concern - it extends
+pagecache through host memory.  When dropping a page from the tail of
+the LRU it first goes into tmem, and when reading in a page from disk
+you first try to read it from tmem.  However in many workloads,
+cleancache is actually detrimental.  If you have a lot of cache misses,
+then every one of them causes a pointless vmexit; considering that
+servers today can chew hundreds of megabytes per second, this adds up. 
+On the other side, if you have a use-once workload, then every page that
+falls of the tail of the LRU causes a vmexit and a pointless page copy.
 
- I was hacking on some UIO-related code and noticed some minor
- glitches in the howto. Just sending it along to get it "off my desk",
- but please feel free to squash this into any other fixes/updates that
- may be pending.
-
- Regards,
- Geoff
-
- Documentation/DocBook/uio-howto.tmpl |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/DocBook/uio-howto.tmpl b/Documentation/DocBook/uio-howto.tmpl
-index bc4a709..8e98e2f 100644
---- a/Documentation/DocBook/uio-howto.tmpl
-+++ b/Documentation/DocBook/uio-howto.tmpl
-@@ -533,6 +533,11 @@ Here's a description of the fields of <varname>struct uio_mem</varname>:
- 
- <itemizedlist>
- <listitem><para>
-+<varname>const char *name</varname>: Optional. Set this to help identify
-+the memory region, it will show up in the corresponding sysfs node.
-+</para></listitem>
-+
-+<listitem><para>
- <varname>int memtype</varname>: Required if the mapping is used. Set this to
- <varname>UIO_MEM_PHYS</varname> if you you have physical memory on your
- card to be mapped. Use <varname>UIO_MEM_LOGICAL</varname> for logical
-@@ -565,7 +570,7 @@ instead to remember such an address.
- </itemizedlist>
- 
- <para>
--Please do not touch the <varname>kobj</varname> element of
-+Please do not touch the <varname>map</varname> element of
- <varname>struct uio_mem</varname>! It is used by the UIO framework
- to set up sysfs files for this mapping. Simply leave it alone.
- </para>
 -- 
-1.7.3.4
+error compiling committee.c: too many arguments to function
 
