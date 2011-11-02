@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab1KBOwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 10:52:25 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33607 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab1KBOwX convert rfc822-to-8bit (ORCPT
+	id S1755796Ab1KBOxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 10:53:21 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34382 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755759Ab1KBOxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 10:52:23 -0400
+	Wed, 2 Nov 2011 10:53:19 -0400
+Date: Wed, 2 Nov 2011 10:53:18 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
+In-Reply-To: <1320214900-2112-3-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1111021044580.2217-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <CAPybu_0eY2HGQNgXOeH13v5Ba47JiO-oY2mSxnfyLQTegQDzNQ@mail.gmail.com>
-References: <1319487676-27181-1-git-send-email-ricardo.ribalda@gmail.com>
- <1319487676-27181-2-git-send-email-ricardo.ribalda@gmail.com>
- <20111024213104.GA4394@ponder.secretlab.ca> <CAPybu_3EPJYd1EdzgF1oF6_k8u5nr4Kx1zmdPRXNZ_zcACrUEw@mail.gmail.com>
- <CACxGe6uAMugBRAqeN5D-HfX4G+DysLFjfp7=ZeC378cAdwOAwA@mail.gmail.com> <CAPybu_0eY2HGQNgXOeH13v5Ba47JiO-oY2mSxnfyLQTegQDzNQ@mail.gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 2 Nov 2011 15:51:42 +0100
-Message-ID: <CAPybu_30aorqCzvXhUWHZeBc7D1mfqzAR0c13R5rKL3GL1-WVA@mail.gmail.com>
-Subject: Re: [PATCHv4 1/6] input/cma3000_d0x: Support devices without pdata
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com, peter.ujfalusi@ti.com,
-        jic23@cam.ac.uk, aghayal@codeaurora.org, david@hardeman.nu,
-        Shubhrajyoti@ti.com, saaguirre@ti.com, hemanthv@ti.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, found it, and implement it.... Please check the new patchset :)
+On Wed, 2 Nov 2011, Lin Ming wrote:
 
-Thanks
+> Adds ->suspend and ->resume callbacks in struct scsi_host_template
+> to do host runtime power management.
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  drivers/scsi/scsi_pm.c   |   34 +++++++++++++++++++++++++++++++---
+>  include/scsi/scsi_host.h |    8 ++++++++
+>  2 files changed, 39 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> index 1be6c5a..5742bed2 100644
+> --- a/drivers/scsi/scsi_pm.c
+> +++ b/drivers/scsi/scsi_pm.c
+> @@ -42,6 +42,28 @@ static int scsi_dev_type_resume(struct device *dev)
+>  	return err;
+>  }
+>  
+> +static int scsi_host_suspend(struct device *dev)
+> +{
+> +	struct Scsi_Host *shost = dev_to_shost(dev);
+> +	int err = 0;
+> +
+> +	if (shost->hostt->suspend)
+> +		err = shost->hostt->suspend(shost);
+> +
+> +	return err;
+> +}
+> +
+> +static int scsi_host_resume(struct device *dev)
+> +{
+> +	struct Scsi_Host *shost = dev_to_shost(dev);
+> +	int err = 0;
+> +
+> +	if (shost->hostt->resume)
+> +		err = shost->hostt->resume(shost);
+> +
+> +	return err;
+> +}
 
-On Wed, Nov 2, 2011 at 13:41, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
-> Hello Grant
->  Thanks for your feedback
->
->>>> No of_device_id match table to match against compatible values?
->>>
->>> I think it is not needed, the device will be matched against the
->>> driver cma3000_d0x_spi.c and AFAIK on the spi/i2c devices you dont
->>> need the device_id match. But you know much more about this :).  Can
->>> you point me to a example where a spi driver uses of_device-id match.
->>
->> Use an of_device_id table.  It's the right thing to do.
->>
-> Can you point me to a file where of_device_id is used in a spi/i2c
-> driver? I thought that was only for mmaped drivers....
->
->
-> Thanks!
->
->
-> --
-> Ricardo Ribalda
->
+These don't need to be independent routines.  You can put them inline 
+in scsi_runtime_suspend() and scsi_runtime_resume() below; that's how 
+the device code is written.
 
+> @@ -132,7 +160,7 @@ static int scsi_runtime_idle(struct device *dev)
+>  
+>  	/* Insert hooks here for targets, hosts, and transport classes */
+>  
+> -	if (scsi_is_sdev_device(dev))
+> +	if (scsi_is_sdev_device(dev) || scsi_is_host_device(dev))
+>  		err = pm_schedule_suspend(dev, 100);
 
+This is wrong.  The 100-ms delay is meant for devices only.  There's 
+no reason to delay suspending a host once everything beneath it is 
+suspended.  Just leave the code the way it is now.
 
--- 
-Ricardo Ribalda
+>  	else
+>  		err = pm_runtime_suspend(dev);
+> diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+> index f1f2644..512e2a0 100644
+> --- a/include/scsi/scsi_host.h
+> +++ b/include/scsi/scsi_host.h
+> @@ -356,6 +356,14 @@ struct scsi_host_template {
+>  	enum blk_eh_timer_return (*eh_timed_out)(struct scsi_cmnd *);
+>  
+>  	/*
+> +	 * Optional routine for scsi host runtime pm.
+> +	 *
+> +	 * Status: OPTIONAL
+> +	 */
+> +	int (*suspend)(struct Scsi_Host *);
+> +	int (*resume)(struct Scsi_Host *);
+
+The comment should explain what drivers are supposed to do when these 
+hooks are called.  In particular, the suspend callback should _not_ 
+power-down the entire host adapter; it should power-down only the 
+circuitry that controls the interface to the SCSI bus.  The upstream 
+interface to the CPU should remain at full power.
+
+If there's no way to power-down just that part of the host adapter then 
+there's no need to have these callbacks at all.  The low-level driver 
+can simply use the runtime PM API on its own struct device.
+
+Alan Stern
+
