@@ -1,66 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933461Ab1KBTT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 15:19:59 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:45381 "EHLO
+	id S1756402Ab1KBTUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 15:20:09 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36427 "EHLO
 	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756374Ab1KBTTz (ORCPT
+	by vger.kernel.org with ESMTP id S932921Ab1KBTT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 15:19:55 -0400
-X-Sasl-enc: UUH7mJOHo6lxuhqsHeRHMoebdHKRAWNEuLp7hPGFPRfB 1320261594
-Date: Wed, 2 Nov 2011 12:14:32 -0700
+	Wed, 2 Nov 2011 15:19:57 -0400
+X-Sasl-enc: p+Wz5ZFgjqb32l1juzAYcB/+NNf5Z8uBVr8fnHWUSFfT 1320261596
+Date: Wed, 2 Nov 2011 12:19:29 -0700
 From: Greg KH <greg@kroah.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stable@kernel.org
-Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and
- system sleep (v2)
-Message-ID: <20111102191432.GC29355@kroah.com>
-References: <201106260054.20578.rjw@sisk.pl>
- <201106292329.04163.rjw@sisk.pl>
- <201106292334.24518.rjw@sisk.pl>
- <CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: mm: avoid null pointer access in vm_struct via /proc/vmallocinfo
+Message-ID: <20111102191929.GA13061@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKnu2Mru4c-2LBCZ_k3ZA+v47u0+um8igYU7EWt8=qOTVgcUjA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 03:54:20PM +0200, Linus Walleij wrote:
-> 2011/6/29 Rafael J. Wysocki <rjw@sisk.pl>:
-> 
-> > One of the roles of the PM core is to prevent different PM callbacks
-> > executed for the same device object from racing with each other.
-> > Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
-> > (PM: Allow pm_runtime_suspend() to succeed during system suspend)
-> > runtime PM callbacks may be executed concurrently with system
-> > suspend/resume callbacks for the same device.
-> (...)
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> A quick question: is there some specific reason why this patch should
-> not go into the 3.0.y stable releases? We are trying to produce
-> a runtime PM system of product quality based on 3.0.y and we've
-> already had to backport this patch ourselves to get things stable.
-> 
-> We have also backported:
-> PM: Introduce generic "noirq" callback routines for subsystems (v2)
-> PM / Runtime: Update documentation of interactions with system sleep
-> PM / Runtime: Add new helper function: pm_runtime_status_suspended()
-> 
-> And now it seems to be sufficient to get this thing going.
+Is this patch also relevant for the .32-stable tree?  I tried to
+backport it, and only got one conflict, but I'm still not sure I got it
+correct.
 
-So, what specific git commits do you want to see in the 3.0-stable
-tree, and in what order should they be applied in?
+So, if someone wants this patch there, could they please provide me with
+a backported version?
 
 thanks,
 
 greg k-h
+
+On Mon, Oct 31, 2011 at 05:08:13PM -0700, Mitsuo Hayasaka wrote:
+> From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+> 
+> commit f5252e009d5b87071a919221e4f6624184005368 upstream.
+> 
+> The /proc/vmallocinfo shows information about vmalloc allocations in
+> vmlist that is a linklist of vm_struct.  It, however, may access pages
+> field of vm_struct where a page was not allocated.  This results in a null
+> pointer access and leads to a kernel panic.
+> 
+> Why this happens: In __vmalloc_node_range() called from vmalloc(), newly
+> allocated vm_struct is added to vmlist at __get_vm_area_node() and then,
+> some fields of vm_struct such as nr_pages and pages are set at
+> __vmalloc_area_node().  In other words, it is added to vmlist before it is
+> fully initialized.  At the same time, when the /proc/vmallocinfo is read,
+> it accesses the pages field of vm_struct according to the nr_pages field
+> at show_numa_info().  Thus, a null pointer access happens.
+> 
+> The patch adds the newly allocated vm_struct to the vmlist *after* it is
+> fully initialized.  So, it can avoid accessing the pages field with
+> unallocated page when show_numa_info() is called.
+> 
+> Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> --- a/include/linux/vmalloc.h
+> +++ b/include/linux/vmalloc.h
+> @@ -13,6 +13,7 @@ struct vm_area_struct;		/* vma defining user mapping in mm_types.h */
+>  #define VM_MAP		0x00000004	/* vmap()ed pages */
+>  #define VM_USERMAP	0x00000008	/* suitable for remap_vmalloc_range */
+>  #define VM_VPAGES	0x00000010	/* buffer for pages was vmalloc'ed */
+> +#define VM_UNLIST	0x00000020	/* vm_struct is not listed in vmlist */
+>  /* bits [20..32] reserved for arch specific ioremap internals */
+>  
+>  /*
+> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+> index 5016f19..56faf31 100644
+> --- a/mm/vmalloc.c
+> +++ b/mm/vmalloc.c
+> @@ -1253,18 +1253,22 @@ EXPORT_SYMBOL_GPL(map_vm_area);
+>  DEFINE_RWLOCK(vmlist_lock);
+>  struct vm_struct *vmlist;
+>  
+> -static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+> +static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+>  			      unsigned long flags, void *caller)
+>  {
+> -	struct vm_struct *tmp, **p;
+> -
+>  	vm->flags = flags;
+>  	vm->addr = (void *)va->va_start;
+>  	vm->size = va->va_end - va->va_start;
+>  	vm->caller = caller;
+>  	va->private = vm;
+>  	va->flags |= VM_VM_AREA;
+> +}
+> +
+> +static void insert_vmalloc_vmlist(struct vm_struct *vm)
+> +{
+> +	struct vm_struct *tmp, **p;
+>  
+> +	vm->flags &= ~VM_UNLIST;
+>  	write_lock(&vmlist_lock);
+>  	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
+>  		if (tmp->addr >= vm->addr)
+> @@ -1275,6 +1279,13 @@ static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+>  	write_unlock(&vmlist_lock);
+>  }
+>  
+> +static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
+> +			      unsigned long flags, void *caller)
+> +{
+> +	setup_vmalloc_vm(vm, va, flags, caller);
+> +	insert_vmalloc_vmlist(vm);
+> +}
+> +
+>  static struct vm_struct *__get_vm_area_node(unsigned long size,
+>  		unsigned long align, unsigned long flags, unsigned long start,
+>  		unsigned long end, int node, gfp_t gfp_mask, void *caller)
+> @@ -1313,7 +1324,18 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
+>  		return NULL;
+>  	}
+>  
+> -	insert_vmalloc_vm(area, va, flags, caller);
+> +	/*
+> +	 * When this function is called from __vmalloc_node_range,
+> +	 * we do not add vm_struct to vmlist here to avoid
+> +	 * accessing uninitialized members of vm_struct such as
+> +	 * pages and nr_pages fields. They will be set later.
+> +	 * To distinguish it from others, we use a VM_UNLIST flag.
+> +	 */
+> +	if (flags & VM_UNLIST)
+> +		setup_vmalloc_vm(area, va, flags, caller);
+> +	else
+> +		insert_vmalloc_vm(area, va, flags, caller);
+> +
+>  	return area;
+>  }
+>  
+> @@ -1381,17 +1403,20 @@ struct vm_struct *remove_vm_area(const void *addr)
+>  	va = find_vmap_area((unsigned long)addr);
+>  	if (va && va->flags & VM_VM_AREA) {
+>  		struct vm_struct *vm = va->private;
+> -		struct vm_struct *tmp, **p;
+> -		/*
+> -		 * remove from list and disallow access to this vm_struct
+> -		 * before unmap. (address range confliction is maintained by
+> -		 * vmap.)
+> -		 */
+> -		write_lock(&vmlist_lock);
+> -		for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
+> -			;
+> -		*p = tmp->next;
+> -		write_unlock(&vmlist_lock);
+> +
+> +		if (!(vm->flags & VM_UNLIST)) {
+> +			struct vm_struct *tmp, **p;
+> +			/*
+> +			 * remove from list and disallow access to
+> +			 * this vm_struct before unmap. (address range
+> +			 * confliction is maintained by vmap.)
+> +			 */
+> +			write_lock(&vmlist_lock);
+> +			for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
+> +				;
+> +			*p = tmp->next;
+> +			write_unlock(&vmlist_lock);
+> +		}
+>  
+>  		vmap_debug_free_range(va->va_start, va->va_end);
+>  		free_unmap_vmap_area(va);
+> @@ -1602,8 +1627,8 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+>  	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
+>  		return NULL;
+>  
+> -	area = __get_vm_area_node(size, align, VM_ALLOC, start, end, node,
+> -				  gfp_mask, caller);
+> +	area = __get_vm_area_node(size, align, VM_ALLOC | VM_UNLIST,
+> +				  start, end, node, gfp_mask, caller);
+>  
+>  	if (!area)
+>  		return NULL;
+> @@ -1611,6 +1636,12 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+>  	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
+>  
+>  	/*
+> +	 * In this function, newly allocated vm_struct is not added
+> +	 * to vmlist at __get_vm_area_node(). so, it is added here.
+> +	 */
+> +	insert_vmalloc_vmlist(area);
+> +
+> +	/*
+>  	 * A ref_count = 3 is needed because the vm_struct and vmap_area
+>  	 * structures allocated in the __get_vm_area_node() function contain
+>  	 * references to the virtual address of the vmalloc'ed block.
