@@ -1,165 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab1KCCOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:14:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60028 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933049Ab1KCCOu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:14:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
- <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
- <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com> <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
-From: Shawn Pearce <spearce@spearce.org>
-Date: Wed, 2 Nov 2011 19:14:26 -0700
-Message-ID: <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932982Ab1KCBeg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:34:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50466 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932739Ab1KCBeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:34:18 -0400
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:50 2011
+Message-Id: <20111102221450.161845440@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 02 Nov 2011 15:13:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Gregory Hermant <gregory.hermant@calao-systems.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [001/107] USB: ftdi_sio: add Calao reference board support
+In-Reply-To: <20111102221600.GA26650@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 18:45, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Wed, Nov 2, 2011 at 6:19 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> I'm not saying that you shouldn't use them - go ahead and use the
->> feature if you like it. But please spare me your excuses for stupid
->> workarounds that come from the fact that they aren't a good match for
->> sane workflows.
+2.6.32-longterm review patch.  If anyone has any objections, please let us know.
 
-We often disagree. :-)
+------------------
 
-> Btw, having now done odd things with signed tags (because we've used
-> them as a side-band verification mechanism), I can certainly also say
-> that the signed tags have their set of problems too.
-...
-> But practically, all of these issues should be pretty easily solvable.
-> So it should be quite easy to make
->
->    git pull <repo> <tag-name>
->
-> just do the right thing - including verifying the tag, and adding the
-> information in the tag into the merge commit message.
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Uhm, sure.
+commit c96fbdd0ab97235f930ebf24b38fa42a2e3458cf upstream.
 
-Quoting you 2 days ago:
+Calao use on there dev kits a FT2232 where the port 0 is used for the JTAG and
+port 1 for the UART
 
-On Mon, Oct 31, 2011 at 15:52, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Oct 31, 2011 at 3:44 PM, Junio C Hamano <gitster@pobox.com> wrote:
->>
->> So nobody is worried about this (quoting from my earlier message)?
->
-> No, because you haven't been reading what we write.
->
-> The tag is useless.
->
-> The information *in* the tag is not. But it shouldn't be saved in the
-> tag (or note, or whatever). Because that's just an annoying place for
-> it to be, with no upside.
->
-> Save it in the commit we generate. BAM! Useful, readable, permanent,
-> and independently verifiable.
+They use the same VID and PID as FTDI Chip but they program the manufacturer
+name in the eeprom
 
-So you propose we put the tag contents into the merge commit message
-so it can be verified after the fact? So merges are now going to be
-something much more horrific to read, because it will end with Git
-object tag cruft, the tag message, and the PGP signature spew that no
-human can decode in the head?
+So use this information to detect it
 
-Oh, right, tags are almost good enough. Elsewhere in this thread you
-also stated we have to redo the way tags are signed so that the tag
-message body itself is not part of the signature, allowing you to fix
-spelin errors so you are not stuck with them in your commit history.
-But I assume we will have to keep the more typical headers of object /
-type / tag / tagger fields, as that is the key information the
-signature needs to be over to be of any value. So now there will be
-two different ways in which a Git annotated tag object will have its
-signature created, as certainly you don't mean to remove the tag
-message body from the PGP signature content for release tags.
+Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Gregory Hermant <gregory.hermant@calao-systems.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I fail to see how shoving Git object data fields and a complete PGP
-signature block into a merge commit message body, which will show by
-default in all git log type tools, and exist in cherry-picks or
-rebases that might make that data less valuable, is somehow better
-than the gpgsig header that neatly tucks it away until requested. I
-also fail to see how scraping the message body for the proper fields
-in order to implement automated verification of the signature (because
-no human can do it themselves and copy-paste sucks) is a good idea.
-Everywhere else in Git that we have machine readable formats its very
-well structured so that no guessing is required.
+---
+ drivers/usb/serial/ftdi_sio.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-> So signed tags are not mis-designed from a conceptual standpoint -
-> they just work really really awkwardly right now for what the kernel
-> would like to do with them.
->
-> With a few UI fixes, I think the signed tag thing would "just work".
-
-Well, UI fixes, protocol changes, improvements to manage a large
-reference space which we have previously said is an insane and stupid
-workflow, etc. One reason you picked up all of those extra tags was
-the include-tag capability kicking on and picking up older tag
-history. We now have to disable it in certain cases.
-
-Its not just a few UI fixes. And there is a lot more work to write a
-verify for the tag contents+signature that appears in the body of a
-merge commit message. Not to mention we now have to do that verify
-logic twice, once in the signed pull request tag like but not quite a
-tag but uses a tag thing you are advocating, and again for the merge
-commit message body that contains the tag object data that we don't
-normally show to an end user, but will now be in every merge commit
-you make.
-
-Go ahead and call me stupid, but this already is a bigger amount of
-surgery to the git-core code, not to mention worse user experience for
-the average `git log` reading human, than having a hidden by default
-gpgsig header that might ask a contributor to take 2 extra seconds
-before making a commit to consider the useful lifespan of that commit.
-Or $DEITY forbid, write a new empty commit to record the equivalent of
-their Signed-off-by.
-
-Oh, and while I am on that subject...
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -105,6 +105,7 @@ static int   ftdi_jtag_probe(struct usb_
+ static int   ftdi_mtxorb_hack_setup(struct usb_serial *serial);
+ static int   ftdi_NDI_device_setup(struct usb_serial *serial);
+ static int   ftdi_stmclite_probe(struct usb_serial *serial);
++static int   ftdi_8u2232c_probe(struct usb_serial *serial);
+ static void  ftdi_USB_UIRT_setup(struct ftdi_private *priv);
+ static void  ftdi_HE_TIRA1_setup(struct ftdi_private *priv);
+ 
+@@ -132,6 +133,10 @@ static struct ftdi_sio_quirk ftdi_stmcli
+ 	.probe	= ftdi_stmclite_probe,
+ };
+ 
++static struct ftdi_sio_quirk ftdi_8u2232c_quirk = {
++	.probe	= ftdi_8u2232c_probe,
++};
++
+ /*
+  * The 8U232AM has the same API as the sio except for:
+  * - it can support MUCH higher baudrates; up to:
+@@ -181,7 +186,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_8U232AM_ALT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_232RL_PID) },
+-	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_8U2232C_PID) ,
++		.driver_info = (kernel_ulong_t)&ftdi_8u2232c_quirk },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_4232H_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MICRO_CHAMELEON_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RELAIS_PID) },
+@@ -1761,6 +1767,18 @@ static int ftdi_jtag_probe(struct usb_se
+ 
+ 	return 0;
+ }
++
++static int ftdi_8u2232c_probe(struct usb_serial *serial)
++{
++	struct usb_device *udev = serial->dev;
++
++	dbg("%s", __func__);
++
++	if (strcmp(udev->manufacturer, "CALAO Systems") == 0)
++		return ftdi_jtag_probe(serial);
++
++	return 0;
++}
+ 
+ /*
+  * First and second port on STMCLiteadaptors is reserved for JTAG interface
 
 
-<rant>
-I have never grasped why sometimes a Signed-off-by is added to a
-patch, and why sometimes its not. It seems to be this weird function
-of "If the commit SHA-1 is already stable DON'T FUCKING TOUCH IT BY
-ADDING SIGNED-OFF-BY IT RUINS THE HISTORY", but if you are too far
-down the food chain to be fortunate enough for your commit SHA-1 to
-remain frozen, the Signed-off-by has to be added to assert that the
-code can be contributed. It sounds like the workflow developed around
-where it wasn't acceptable to force history rewriting, you suffer by
-not having the SOB, but whenever possible you force a history rewrite
-on the contributor just so you can add a SOB and feel good about the
-fact that the SOB is added to the commit message.
-
-Get over it. Add the fucking empty commit to show the flow of a
-change. Stop forcing every fucking contributor to rebase/rewrite his
-commits just so someone higher up in the food chain can wank with
-their SOB line.
-
-Everyone I talk to that contributes code to the kernel who isn't Linus
-or Ted Tso complains about this, and then asks me to fucking fix it.
-They want stable SHA-1s so they know their change arrived into Linus'
-tree unmolested. Unfortunately, despite their volume of changes, they
-aren't high enough in the food chain to be this lucky. Nope, someone
-has to wank their SOB in first. And maybe fix a spelin error.
-</rant>
