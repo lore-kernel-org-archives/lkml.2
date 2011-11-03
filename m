@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933946Ab1KCQMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:12:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38535 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933739Ab1KCQMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:12:01 -0400
-Date: Thu, 3 Nov 2011 17:12:00 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: pebolle@tiscali.nl, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] tree-wide kconfig cleanup
-Message-ID: <20111103161200.GA8303@sepie.suse.cz>
+	id S933987Ab1KCQOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:14:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35442 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933739Ab1KCQOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 12:14:42 -0400
+Date: Thu, 3 Nov 2011 09:14:36 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: NULL ptr deref at elv_drain_elevator
+Message-ID: <20111103161436.GJ4417@google.com>
+References: <4EB2BC88.3070105@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EB2BC88.3070105@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Nov 03, 2011 at 05:08:40PM +0100, Jiri Slaby wrote:
+> Hi,
+> 
+> I'm seeing the NULL ptr dereference below on each boot of KVM virtual
+> machine. q->elevator is NULL. This is next-20111025.
+> 
+> I tried to apply Tejun's patch from:
+>  https://lkml.org/lkml/2011/4/30/87
+> but it doesn't help. Maybe I should revert something?
+> 
+> Scanning for LVM volume groups...
+> Reading all physical volumes.  This may take a while...
+> No volume groups found
+> BUG: unable to handle kernel NULL pointer dereference at           (null)
+> IP: [<ffffffff8125a69c>] elv_drain_elevator+0x1c/0x70
+> PGD 46176067 PUD 452b5067 PMD 0
+> Oops: 0000 [#1] SMP
+> CPU 0
+> Modules linked in:
+> 
+> Pid: 830, comm: kworker/0:2 Not tainted 3.1.0-next-20111025_64+ #1590
+> Bochs Bochs
+> RIP: 0010:[<ffffffff8125a69c>]  [<ffffffff8125a69c>]
+> elv_drain_elevator+0x1c/0x70
 
-Paul Bolle went through our Kconfig files and deleted a lot of bitrot.
-You will get a conflict in the stmmac Kconfig, but the symbol is still
-unused and should be deleted. Also, the sh fix got merged twice, I
-didn't notice when I applied it to my tree.
+Heh, probably md is tearing down a queue which isn't fully setup.
+Does the following fix the problem?
 
-Michal
+Thanks.
 
-The following changes since commit 322a8b034003c0d46d39af85bf24fee27b902f48:
+diff --git a/block/blk-core.c b/block/blk-core.c
+index f658711..5292e31 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -408,7 +408,8 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	mutex_unlock(&q->sysfs_lock);
+ 
+ 	/* drain all requests queued before DEAD marking */
+-	blk_drain_queue(q, true);
++	if (q->elevator)
++		blk_drain_queue(q, true);
+ 
+ 	/* @q won't process any more request, flush async actions */
+ 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
 
-  Linux 3.1-rc1 (2011-08-07 18:23:30 -0700)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git trivial
-
-Paul Bolle (16):
-      alpha: drop unused Kconfig symbol
-      sparc: drop unused Kconfig symbol
-      um: drop unused Kconfig symbol
-      sh: drop unused Kconfig symbol
-      score: drop unused Kconfig symbols
-      m32r: drop unused Kconfig symbol
-      samples: drop unused Kconfig symbol
-      arm: at91: drop unused Kconfig symbol
-      openrisc: drop unused Kconfig symbols
-      mips: drop unused Kconfig symbols
-      powerpc: 40x: drop unused Kconfig symbol
-      powerpc: drop unused Kconfig symbols
-      x86: drop unused Kconfig symbol
-      stmmac: drop unused Kconfig symbol
-      pci: drop unused Kconfig symbol
-      scsi: drop unused Kconfig symbol
-
- arch/alpha/Kconfig                         |    5 -----
- arch/arm/mach-at91/Kconfig                 |    6 ------
- arch/m32r/Kconfig                          |    7 -------
- arch/mips/Kconfig                          |   14 --------------
- arch/mips/powertv/Kconfig                  |    2 --
- arch/mips/powertv/asic/Kconfig             |   28 ----------------------------
- arch/openrisc/Kconfig                      |   12 ------------
- arch/powerpc/Kconfig                       |   22 ----------------------
- arch/powerpc/platforms/40x/Kconfig         |    5 -----
- arch/powerpc/platforms/Kconfig.cputype     |    8 --------
- arch/powerpc/platforms/embedded6xx/Kconfig |    4 ----
- arch/powerpc/platforms/prep/Kconfig        |    9 ---------
- arch/powerpc/platforms/wsp/Kconfig         |    5 -----
- arch/score/Kconfig                         |   19 -------------------
- arch/sh/Kconfig                            |    4 ----
- arch/sparc/Kconfig                         |    7 +------
- arch/um/Kconfig.x86                        |    3 ---
- arch/x86/Kconfig                           |    3 ---
- drivers/net/stmmac/Kconfig                 |    9 ---------
- drivers/pci/Kconfig                        |   11 -----------
- drivers/scsi/Kconfig                       |   14 --------------
- samples/Kconfig                            |    6 ------
- 22 files changed, 1 insertions(+), 202 deletions(-)
- delete mode 100644 arch/mips/powertv/asic/Kconfig
+-- 
+tejun
