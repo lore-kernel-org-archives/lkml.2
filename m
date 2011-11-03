@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1KCN2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:28:44 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41058 "EHLO e6.ny.us.ibm.com"
+	id S1752121Ab1KCN3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:29:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19063 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161Ab1KCN2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:28:43 -0400
-Date: Thu, 3 Nov 2011 06:25:50 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 09/28] rcu: Document failing tick as
- cause of RCU CPU stall warning
-Message-ID: <20111103132550.GX2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-9-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103030750.GB2042@leaf>
+	id S1750807Ab1KCN3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 09:29:19 -0400
+Date: Thu, 3 Nov 2011 15:30:16 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio-pci: flexible configuration layout
+Message-ID: <20111103133015.GL18296@redhat.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+ <20111101114542.GA13434@redhat.com>
+ <1320150813.3847.24.camel@lappy>
+ <20111101124223.GA14060@redhat.com>
+ <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <1320279543.31237.14.camel@lappy>
+ <20111103103314.GA18296@redhat.com>
+ <1320318591.29407.17.camel@lappy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111103030750.GB2042@leaf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11110313-1976-0000-0000-000000B20E36
+In-Reply-To: <1320318591.29407.17.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 08:07:50PM -0700, Josh Triplett wrote:
-> On Wed, Nov 02, 2011 at 01:30:30PM -0700, Paul E. McKenney wrote:
-> > One of lclaudio's systems was seeing RCU CPU stall warnings from idle.
-> > These turned out to be caused by a bug that stopped scheduling-clock
-> > tick interrupts from being sent to a given CPU for several hundred seconds.
+> 2. Move device specific features into the device specific region.
+> Currently the features field is a mix between virtio-pci and device
+> specific features.
+
+A single feature field with bits partitioned to transport
+specific and device specific fields is a generic virtio
+thing. So there's relatively little to be gained from
+moving the device bits out.
+
+> I did more similar things in the spec suggestion I've sent,
+
+What lacked there is the motivation.
+
+I am aware of several issues that need to be addressed,
+as they block extending virtio going forward:
+- There's no place to put more transport registers.
+  For MSIX I hacked around that with moving device config when a feature
+  bit is set, but in hindsight this setup is fragile
+  and is panful to extend any further.
+  Splitting out device and transport helps.
+- PIO space is limited. We are wasting it on non data path
+  configuration. There might also be a wish to have largish data
+  in configuration space, like a 1024 byte ID field.
+- PIO is faster than MMIO on x86 KVM so we need to keep
+  using it for data path on that architecture
+- Support architectures which have host/guest at different
+  endian-ness.
+
+I addressed the first 3 and added capability infrastructure
+which we can use in the future to support the last one
+(by nature of using little endian format for capabilities).
+
+> could you
+> look at the second part for more ideas please?
+
+I saw the per-queue features - but I don't see how it will work really
+or what is the issue they solve.
+Any more ideas I missed?
+
+> -- 
 > 
-> Out of curiosity, what caused this bug?
-
-If I remember correctly, software/configuration bugs in the clock code.
-
-							Thanx, Paul
-
+> Sasha.
