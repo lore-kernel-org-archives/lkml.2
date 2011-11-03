@@ -1,109 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab1KCNfm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:35:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62781 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab1KCNfl (ORCPT
+	id S1752888Ab1KCNhI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:37:08 -0400
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:60530 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab1KCNhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:35:41 -0400
-Date: Thu, 3 Nov 2011 14:35:37 +0100
-From: Uros Vampl <mobile.leecher@gmail.com>
-To: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Vasily Khoruzhick <anarsoul@gmail.com>
-Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
-Message-ID: <20111103133537.GA794@zverina>
-References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com>
- <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Nov 2011 09:37:07 -0400
+Subject: Re: [PATCH] kconfig: accept negative hexadecimals
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1320326160.14409.223.camel@x61.thuisdomein>
+References: <1320326160.14409.223.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Nov 2011 14:36:50 +0100
+Message-ID: <1320327410.14409.231.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.11.11 12:34, Peter Chubb wrote:
-> >>>>> "Vasily" == Vasily Khoruzhick <anarsoul@gmail.com> writes:
-> 
-> Vasily> From: Uroš Vampl <mobile.leecher@gmail.com> Starting with
-> Vasily> kernel 3.0, my Acer Aspire One AOA110 hangs on reboot. Doing
-> Vasily> an internet search, I found that in git commit
-> Vasily> b49c78d4827be8d7e67e5b94adac6b30a4a9ad14 the machine was made
-> Vasily> to reboot with the bios method, but it does not work on most
-> Vasily> (all?) AOA110s.
-> 
-> That change was made in July to fix the broken ACPI reboot method.  It
-> certainly works on my AOA110.  What BIOS do you have installed?
-> (although looking at what's been published, I can't see any booting
-> problems mentioned in the BIOS changelogs).
+On Thu, 2011-11-03 at 14:16 +0100, Paul Bolle wrote:
+> But these will then show up as
+> (eg) "0x-ff" in the GUI. Should that be fixed in a separate commit or
+> should I update this patch?
 
-My bios is v0.3309. An unpatched kernel will hang on a black screen at 
-reboot, the only way out is holding the power button for 5 seconds to 
-turn the machine off.
+Just a quick look into this showed that allowing negative hexadecimals
+triggers quite a bit of trouble. So this needs a rethink. I guess this
+all is only worthwhile if I can demonstrate a need for negative hex
+digits (ie, if I submit something that requires the config tools to
+actually allow those).
 
-> 
-> Vasily> This patch introduces new quirks section for machines that
-> Vasily> only reboot with the kbd method and put the Aspire One into
-> Vasily> it.
-> 
-> You don't need yet another table, just change the callback.
-> 
-> 
-> Try this:
-
-Yes, this works too.
-
-Regards,
-Uroš
+Anyhow, please forget this patch.
 
 
-> 
-> Index: linux-2.6/arch/x86/kernel/reboot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/reboot.c	2011-10-31 14:35:50.105623537 +1100
-> +++ linux-2.6/arch/x86/kernel/reboot.c	2011-11-03 11:54:12.487901547 +1100
-> @@ -124,7 +124,7 @@
->   */
->  
->  /*
-> - * Some machines require the "reboot=b"  commandline option,
-> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
->   * this quirk makes that automatic.
->   */
->  static int __init set_bios_reboot(const struct dmi_system_id *d)
-> @@ -136,6 +136,15 @@
->  	return 0;
->  }
->  
-> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
-> +{
-> +	if (reboot_type != BOOT_KBD) {
-> +		reboot_type = BOOT_KBD;
-> +		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
-> +	}
-> +	return 0;
-> +}
-> +
->  static struct dmi_system_id __initdata reboot_dmi_table[] = {
->  	{	/* Handle problems with rebooting on Dell E520's */
->  		.callback = set_bios_reboot,
-> @@ -295,7 +304,7 @@
->  		},
->  	},
->  	{ /* Handle reboot issue on Acer Aspire one */
-> -		.callback = set_bios_reboot,
-> +		.callback = set_kbd_reboot,
->  		.ident = "Acer Aspire One A110",
->  		.matches = {
->  			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> --
-> Dr Peter Chubb                                  peter DOT chubb AT nicta.com.au
-> http://www.ertos.nicta.com.au               ERTOS within National ICT Australia
-> All things shall perish from under the sky/Music alone shall live, never to die
+Paul Bolle
+
