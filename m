@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab1KCAGU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:06:20 -0400
-Received: from ozlabs.org ([203.10.76.45]:55229 "EHLO ozlabs.org"
+	id S1753701Ab1KCAIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:08:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab1KCAGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:06:15 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [PULL] virtio
-In-Reply-To: <1320209564.9173.6.camel@lappy>
-References: <87wrbkvh3v.fsf@rustcorp.com.au> <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy> <20111101124223.GA14060@redhat.com>  <8739e7uy87.fsf@rustcorp.com.au> <1320209564.9173.6.camel@lappy>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 03 Nov 2011 08:37:01 +1030
-Message-ID: <87hb2mtbzu.fsf@rustcorp.com.au>
+	id S1753157Ab1KCAIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:08:04 -0400
+Date: Thu, 3 Nov 2011 01:07:25 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Robin Holt <holt@sgi.com>, Rik van Riel <riel@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+        Nick Piggin <npiggin@kernel.dk>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joro@8bytes.org" <joro@8bytes.org>
+Subject: Re: [RFC][PATCH 0/3] Add support for non-CPU TLBs in MMU-Notifiers
+Message-ID: <20111103000725.GD18879@redhat.com>
+References: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
+ <20111102094601.GN28536@sgi.com>
+ <20111102095740.GM13244@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102095740.GM13244@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Nov 2011 06:52:44 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> Since the PCI spec allows you to have the MSI-X table and the PBA in
-> completely different regions pointed by two different BARs, we did so in
-> kvm tools and have BAR 1 pointing to the MSI-X table, and BAR 2 pointing
-> to the PBA ( - we *already* provided the second BAR and used it for
-> something else).
+On Wed, Nov 02, 2011 at 10:57:40AM +0100, Roedel, Joerg wrote:
+> I have included this mailing list in my post afaics. I talked with
+> Andrea Arcangeli about these patches at LinuxCon in Prague and will post
+> a new version based on his comments.
 
-Got it!  Thanks for the explanation.
+Thanks!
+Andrea
 
-Cheers,
-Rusty.
+PS. Luckily I already read your patches before we met :).
