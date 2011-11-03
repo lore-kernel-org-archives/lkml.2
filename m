@@ -1,270 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1KCWZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:25:51 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52299 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab1KCWZu (ORCPT
+	id S1753325Ab1KCWaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 18:30:08 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:56610 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab1KCWaH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:25:50 -0400
-Date: Thu, 3 Nov 2011 15:25:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: arnd@arndb.de, oleg@redhat.com, matthltc@us.ibm.com,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH UPDATED 12/17] freezer: clean up freeze_processes() failure
- path
-Message-ID: <20111103222538.GQ4417@google.com>
-References: <1320087928-32307-1-git-send-email-tj@kernel.org>
- <1320087928-32307-13-git-send-email-tj@kernel.org>
+	Thu, 3 Nov 2011 18:30:07 -0400
 MIME-Version: 1.0
+Message-ID: <69ed0521-cda2-4fc2-b51b-7bcc39d65afd@default>
+Date: Thu, 3 Nov 2011 15:29:34 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
+ <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default20111031223717.GI3466@redhat.com>
+ <1b2e4f74-7058-4712-85a7-84198723e3ee@default20111101012017.GJ3466@redhat.com>
+ <6a9db6d9-6f13-4855-b026-ba668c29ddfa@default20111101180702.GL3466@redhat.com>
+ <b8a0ca71-a31b-488a-9a92-2502d4a6e9bf@default20111102013122.GA18879@redhat.com>
+ <2bc86220-1e48-40e5-b502-dcd093956fd5@default
+ 20111103003254.GE18879@redhat.com>
+In-Reply-To: <20111103003254.GE18879@redhat.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6562.5003]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320087928-32307-13-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4EB315D8.00E9,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 2981f8990826d8ab411c7d7bba59bfb7540a015c Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Thu, 3 Nov 2011 15:19:27 -0700
+> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
+> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
 
-freeze_processes() failure path is rather messy.  Freezing is canceled
-for workqueues and tasks which aren't frozen yet but frozen tasks are
-left alone and should be thawed by the caller and of course some
-callers (xen and kexec) didn't do it.
+Hi Andrea --
 
-This patch updates __thaw_task() to handle cancelation correctly and
-makes freeze_processes() and freeze_kernel_threads() call
-thaw_processes() on failure instead so that the system is fully thawed
-on failure.  Unnecessary [suspend_]thaw_processes() calls are removed
-from kernel/power/hibernate.c, suspend.c and user.c.
+Sorry for the delayed response... and for continuing this
+thread further, but I want to ensure I answer your
+points.
 
-While at it, restructure error checking if clause in suspend_prepare()
-to be less weird.
+First, did you see my reply to Rik that suggested a design
+as to how KVM could do batching with no change to the
+hooks or frontswap_ops API?  (Basically a guest-side
+cache and add a batching op to the KVM-tmem ABI.)  I think
+it resolves your last remaining concern (too many vmexits),
+so am eager to see if you agree.
 
--v2: Srivatsa spotted missing removal of suspend_thaw_processes() in
-     suspend_prepare() and error in commit message.  Updated.
+> Like somebody already pointed out (and I agree) it'd be nice to get
+> the patches posted to the mailing list (with git send-emails/hg
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-Alright, updated suspend.c and the commit message and added Srivatsa's
-Acked-by.  This update doesn't cause conflicts with other patches and
-git branch is updated accordingly.
+Frontswap v10 https://lkml.org/lkml/2011/9/15/367 as last posted
+to linux-mm has identical code to the git commits... in response
+to Konrad and Kame, the commit-set was slightly reorganized and
+extended from 6 commits to 8, but absolutely no code differences.
+Since no code was changed between v10 and v11, I didn't repost v11
+to linux-mm.
 
-Thanks.
+Note, every version of frontswap was posted to linux-mm and
+cc'ed to Andrew, Hugh, Nick and Rik and I was very diligent
+in responding to all comments...  Wish I would have
+cc'ed you all along as this has been a great discussion.
 
- include/linux/freezer.h  |    1 -
- kernel/freezer.c         |   25 +++++++++----------------
- kernel/power/hibernate.c |   15 ++-------------
- kernel/power/process.c   |   16 ++++++++--------
- kernel/power/suspend.c   |    8 +++-----
- kernel/power/user.c      |    4 +---
- 6 files changed, 23 insertions(+), 46 deletions(-)
+> email/quilt) and get them merged into -mm first.
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 253bcfe..e6657778 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -61,7 +61,6 @@ static inline bool try_to_freeze(void)
- }
- 
- extern bool freeze_task(struct task_struct *p, bool sig_only);
--extern void cancel_freezing(struct task_struct *p);
- 
- #ifdef CONFIG_CGROUP_FREEZER
- extern int cgroup_freezing_or_frozen(struct task_struct *task);
-diff --git a/kernel/freezer.c b/kernel/freezer.c
-index 3be1e36..7a9f706 100644
---- a/kernel/freezer.c
-+++ b/kernel/freezer.c
-@@ -129,21 +129,6 @@ out_unlock:
- 	return ret;
- }
- 
--void cancel_freezing(struct task_struct *p)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&freezer_lock, flags);
--	if (freezing(p)) {
--		pr_debug("  clean up: %s\n", p->comm);
--		clear_freeze_flag(p);
--		spin_lock(&p->sighand->siglock);
--		recalc_sigpending_and_wake(p);
--		spin_unlock(&p->sighand->siglock);
--	}
--	spin_unlock_irqrestore(&freezer_lock, flags);
--}
--
- void __thaw_task(struct task_struct *p)
- {
- 	unsigned long flags;
-@@ -153,10 +138,18 @@ void __thaw_task(struct task_struct *p)
- 	 * be visible to @p as waking up implies wmb.  Waking up inside
- 	 * freezer_lock also prevents wakeups from leaking outside
- 	 * refrigerator.
-+	 *
-+	 * If !FROZEN, @p hasn't reached refrigerator, recalc sigpending to
-+	 * avoid leaving dangling TIF_SIGPENDING behind.
- 	 */
- 	spin_lock_irqsave(&freezer_lock, flags);
- 	clear_freeze_flag(p);
--	if (frozen(p))
-+	if (frozen(p)) {
- 		wake_up_process(p);
-+	} else {
-+		spin_lock(&p->sighand->siglock);
-+		recalc_sigpending_and_wake(p);
-+		spin_unlock(&p->sighand->siglock);
-+	}
- 	spin_unlock_irqrestore(&freezer_lock, flags);
- }
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 1c53f7f..def6406 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -593,17 +593,6 @@ static void power_down(void)
- 	while(1);
- }
- 
--static int prepare_processes(void)
--{
--	int error = 0;
--
--	if (freeze_processes()) {
--		error = -EBUSY;
--		thaw_processes();
--	}
--	return error;
--}
--
- /**
-  * hibernate - Carry out system hibernation, including saving the image.
-  */
-@@ -636,7 +625,7 @@ int hibernate(void)
- 	sys_sync();
- 	printk("done.\n");
- 
--	error = prepare_processes();
-+	error = freeze_processes();
- 	if (error)
- 		goto Finish;
- 
-@@ -799,7 +788,7 @@ static int software_resume(void)
- 		goto close_finish;
- 
- 	pr_debug("PM: Preparing processes for restore.\n");
--	error = prepare_processes();
-+	error = freeze_processes();
- 	if (error) {
- 		swsusp_close(FMODE_READ);
- 		goto Done;
-diff --git a/kernel/power/process.c b/kernel/power/process.c
-index e59676f..ce64383 100644
---- a/kernel/power/process.c
-+++ b/kernel/power/process.c
-@@ -91,11 +91,6 @@ static int try_to_freeze_tasks(bool sig_only)
- 	elapsed_csecs = elapsed_csecs64;
- 
- 	if (todo) {
--		/* This does not unfreeze processes that are already frozen
--		 * (we have slightly ugly calling convention in that respect,
--		 * and caller must call thaw_processes() if something fails),
--		 * but it cleans up leftover PF_FREEZE requests.
--		 */
- 		printk("\n");
- 		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
- 		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
-@@ -103,14 +98,11 @@ static int try_to_freeze_tasks(bool sig_only)
- 		       elapsed_csecs / 100, elapsed_csecs % 100,
- 		       todo - wq_busy, wq_busy);
- 
--		thaw_workqueues();
--
- 		read_lock(&tasklist_lock);
- 		do_each_thread(g, p) {
- 			if (!wakeup && !freezer_should_skip(p) &&
- 			    freezing(p) && !frozen(p))
- 				sched_show_task(p);
--			cancel_freezing(p);
- 		} while_each_thread(g, p);
- 		read_unlock(&tasklist_lock);
- 	} else {
-@@ -123,6 +115,8 @@ static int try_to_freeze_tasks(bool sig_only)
- 
- /**
-  * freeze_processes - Signal user space processes to enter the refrigerator.
-+ *
-+ * On success, returns 0.  On failure, -errno and system is fully thawed.
-  */
- int freeze_processes(void)
- {
-@@ -137,11 +131,15 @@ int freeze_processes(void)
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
-+	if (error)
-+		thaw_processes();
- 	return error;
- }
- 
- /**
-  * freeze_kernel_threads - Make freezable kernel threads go to the refrigerator.
-+ *
-+ * On success, returns 0.  On failure, -errno and system is fully thawed.
-  */
- int freeze_kernel_threads(void)
- {
-@@ -155,6 +153,8 @@ int freeze_kernel_threads(void)
- 	printk("\n");
- 	BUG_ON(in_atomic());
- 
-+	if (error)
-+		thaw_processes();
- 	return error;
- }
- 
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index fdd4263..633e9f9 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -104,13 +104,11 @@ static int suspend_prepare(void)
- 		goto Finish;
- 
- 	error = suspend_freeze_processes();
--	if (error) {
--		suspend_stats.failed_freeze++;
--		dpm_save_failed_step(SUSPEND_FREEZE);
--	} else
-+	if (!error)
- 		return 0;
- 
--	suspend_thaw_processes();
-+	suspend_stats.failed_freeze++;
-+	dpm_save_failed_step(SUSPEND_FREEZE);
- 	usermodehelper_enable();
-  Finish:
- 	pm_notifier_call_chain(PM_POST_SUSPEND);
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index 42ddbc6..afe7737 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -256,10 +256,8 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 			break;
- 
- 		error = freeze_processes();
--		if (error) {
--			thaw_processes();
-+		if (error)
- 			usermodehelper_enable();
--		}
- 		if (!error)
- 			data->frozen = 1;
- 		break;
--- 
-1.7.3.1
+Sorry, I'm still a newbie on this process, but just to clarify,
+"into -mm" means Andrew merges the patches, right?  Andrew
+said in the first snippet of https://lkml.org/lkml/2011/11/1/317 
+that linux-next is fine, so I'm not sure whether to follow your
+advice or not.
 
+> Thanks. So this overall sounds fairly positive (or at least better
+> than neutral) to me.
+
+Excellent!
+
+> On my side I hope it get improved over time to get the best out of
+> it. I've not been hugely impressed so far because at this point in
+> time it doesn't seem a vast improvement in runtime behavior compared
+> to what zram could provide, like Rik said there's no iov/SG/vectored
+> input to tmem_put (which I'd find more intuitive renamed to
+> tmem_store), like Avi said ramster is synchronous and not good having
+> to wait a long time. But if we can make these plugins stackable and we
+> can put a storage backend at the end we could do
+> storage+zcache+frontswap.
+
+This thread has been so long, I don't even remember what I've
+replied to who, so just to clarify on these several points,
+in case you didn't see these elsewhere in the thread:
+
+- Nitin Gupta, author of zram, thinks zcache is an improvement
+  over zram because it is more flexible/dynamic
+- KVM can do batching fairly easily with no changes to the
+  hooks or frontswap_ops with the design I recently proposed
+- RAMster is synchronous, but the requirement is _only_ on the
+  "local" put... once the data is "in tmem", asynchronous threads
+  can do other things with it (like RAMster moving the pages
+  to a tmem pool on a remote system)
+- the plugins as they exist today (Xen, zcache) aren't stackable,
+  but the frontswap_ops registration already handles stacking,
+  so it is certainly a good future enhancement... RAMster
+  already does "stacking", but by incorporating a copy of
+  the zcache code.  (I think that's just a code organization
+  issue that can be resolved if/when RAMster goes into staging.)
+
+With these in mind, I hope you will now be even a "lot more
+happy now" with frontswap and MUCH better than neutral. :-) :-)
+
+Dan
