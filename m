@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab1KCOCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:02:48 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:37273 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab1KCOCC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:02:02 -0400
-Message-ID: <1320328869.3681.17.camel@js-netbook>
-Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
- overflow when adjusted
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>
-Date: Thu, 03 Nov 2011 10:01:09 -0400
-In-Reply-To: <alpine.LFD.2.02.1111031425200.2829@ionos>
-References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
-	 <alpine.LFD.2.02.1111031304210.2829@ionos>
-	 <1320325819.2892.1.camel@js-netbook>
-	 <alpine.LFD.2.02.1111031425200.2829@ionos>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11110314-3352-0000-0000-0000008BD119
+	id S1754617Ab1KCOHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:07:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16190 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753873Ab1KCOHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:07:19 -0400
+Date: Thu, 3 Nov 2011 10:07:16 -0400
+From: Josh Boyer <jwboyer@redhat.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: sb_edac 32-bit compile fail due to 64-bit divide
+Message-ID: <20111103140716.GF19809@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 14:26 +0100, Thomas Gleixner wrote:
-> On Thu, 3 Nov 2011, John Stultz wrote:
-> > On Thu, 2011-11-03 at 13:05 +0100, Thomas Gleixner wrote:
-> > > On Wed, 2 Nov 2011, John Stultz wrote:
-> > > >  
-> > > > +	WARN_ONCE(timekeeper.mult+adj >
-> > > > +			timekeeper.clock->mult + timekeeper.clock->maxadj,
-> > > > +			"Adjusting more then 11%%");
-> > > 
-> > > Shouldn't we rather limit the update instead of just warn and overflow ?
-> > 
-> > Well, I'm hesitant to commit to that, just yet. So I figured I'd start
-> > with the warning.
-> 
-> OTOH, we know right there that we might warp 32bit and confuse the
-> hell out of timekeeping, which is not a real good thing either.
+Hi,
 
-Oh certainly, but two things:
-1) The 11% max is not the actual overflow edge. Its just calculated as
-safe. The overflow could as far out as ~22%.
+It seems the newly added EDAC driver for SandyBridge won't build on
+32-bit x86 because of a 64-bit divide somewhere:
 
-2) This is the first case in however many years I've heard of of mult
-overflowing. So before we go changing the NTP code (which is really
-terribly complex, but has been working fairly well for awhile) I want to
-have some sense that the 11% max adjustment assumption is really
-correct.
+	drivers/edac/sb_edac.c: In function 'get_memory_error_data':
+	drivers/edac/sb_edac.c:861:2: warning: left shift count >= width of type
+	[enabled by default]
+	<snip>
+	ERROR: "__udivdi3" [drivers/edac/sb_edac.ko] undefined!
+	make[1]: *** [__modpost] Error 1
+	make: *** [modules] Error 2
 
-But maybe I'm being too conservative? If we do limit the adjustment
-keeping the warning, I guess we'd know why things blew up on previously
-working machines. 
+You can find the full build log here:
 
-thanks
--john
+http://koji.fedoraproject.org/koji/getfile?taskID=3482579&name=build.log
 
+Before I go digging into where this is done and what to do about it, I
+do want to confirm that it is supposed to work on a 32-bit kernel,
+correct?
+
+josh
