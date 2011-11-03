@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751059Ab1KCTnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 15:43:52 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51204 "EHLO e1.ny.us.ibm.com"
+	id S1750963Ab1KCTrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 15:47:47 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46249 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab1KCTnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 15:43:49 -0400
-Date: Thu, 3 Nov 2011 12:43:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 11/28] rcu: Omit self-awaken when
- setting up expedited grace period
-Message-ID: <20111103194338.GH2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-11-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103031612.GC2042@leaf>
+	id S1750774Ab1KCTrq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 15:47:46 -0400
+Date: Thu, 3 Nov 2011 20:46:01 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: Re: REGRESSION: "perf: Add PM notifiers ..." breaks resume
+Message-ID: <20111103194601.GA31484@elte.hu>
+References: <20111102134900.GB4377@one.firstfloor.org>
+ <CA+55aFwCf41GFOVA656-ZgZB5mBNkpH3KqRfJ_Ornkn3RWF5gQ@mail.gmail.com>
+ <20111103073725.GA7319@elte.hu>
+ <CA+55aFx4sCCyN77v90-a2UW9SQ9FzE-17J-nK9kDBTm0MFsQ3Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111103031612.GC2042@leaf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11110319-6078-0000-0000-000003F525B4
+In-Reply-To: <CA+55aFx4sCCyN77v90-a2UW9SQ9FzE-17J-nK9kDBTm0MFsQ3Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 08:16:13PM -0700, Josh Triplett wrote:
-> On Wed, Nov 02, 2011 at 01:30:32PM -0700, Paul E. McKenney wrote:
-> > -static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp)
-> > +static void rcu_report_exp_rnp(struct rcu_state *rsp, struct rcu_node *rnp,
-> > +			       bool wake)
-> >  {
-> > -	return;
-> >  }
+
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Thu, Nov 3, 2011 at 12:37 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > Yep, please revert it until we do the right fix. (I can queue up the
+> > revert too)
 > 
-> Removing this return represents a separate cleanup, which ought to go in
-> a separate commit.
+> Reverted,
 
-I split this out.
+Thanks!
 
-							Thanx, Paul
-
+	Ingo
