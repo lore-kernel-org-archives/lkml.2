@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934414Ab1KCS5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 14:57:16 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:45168 "EHLO mx2.parallels.com"
+	id S934465Ab1KCTAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 15:00:04 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39386 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933865Ab1KCS5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 14:57:14 -0400
-Message-ID: <4EB2E3E6.6070401@parallels.com>
-Date: Thu, 3 Nov 2011 16:56:38 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S934425Ab1KCTAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 15:00:00 -0400
+Date: Thu, 3 Nov 2011 09:09:52 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Carsten Emde <cbe@osadl.org>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+Message-ID: <20111103160952.GD2287@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111031121951.GM6160@linux.vnet.ibm.com>
+ <1320075882.4793.4.camel@gandalf.stny.rr.com>
+ <20111101003434.GR6160@linux.vnet.ibm.com>
+ <20111101070720.GA22936@localhost>
+ <20111101160014.GH2287@linux.vnet.ibm.com>
+ <20111101163212.GA19501@localhost>
+ <20111102144403.GA22445@linux.vnet.ibm.com>
+ <1320245512.4793.29.camel@gandalf.stny.rr.com>
+ <20111102151402.GM2287@linux.vnet.ibm.com>
+ <1320248610.4793.35.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, <linux-kernel@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] new cgroup controller "fork"
-References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag> <4EB2C4A5.6000406@parallels.com> <20111103165903.GA4755@Debian-60-squeeze-64-minimal> <20111103182101.5037c1e5@lxorguk.ukuu.org.uk> <20111103185108.GA5153@Debian-60-squeeze-64-minimal>
-In-Reply-To: <20111103185108.GA5153@Debian-60-squeeze-64-minimal>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320248610.4793.35.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11110318-5806-0000-0000-000001BE01AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 04:51 PM, Max Kellermann wrote:
-> On 2011/11/03 19:21, Alan Cox<alan@lxorguk.ukuu.org.uk>  wrote:
->>> After little discussion, nobody seemed to be interested in it, and
->>> nobody merged it.  I reposted it today, not knowing somebody else had
->>> come up with a similar idea meanwhile.
->>
->> I don't really see a meaningful use case for this. Why should millions of
->> users have this stuff in their kernel. What's the general purpose use
->> case we should all be excited about ?
->
-> Putting a reasonable limit on jobs that are expected to run only for a
-> limited amount of time, with a limited amount of total resources.  For
-> example: CGI, cron jobs, backup, munin plugins, virus scanners and
-> other email filters, procmail, ... - when the job is done, the group
-> can be deleted, and new instances will run in a new group.
->
-> With just RLIMIT_NPROC or task_counter, you can limit the total number
-> of processes, but it will not stop a fork bomb - it will only slow it
-> down.  The fork bomb will still bounce between 1 and the limit, and
-> consume lots of resources for forking and exiting.
->
-> (Glauber: the above should answer your last email, too)
+On Wed, Nov 02, 2011 at 11:43:30AM -0400, Steven Rostedt wrote:
+> On Wed, 2011-11-02 at 08:14 -0700, Paul E. McKenney wrote:
+> 
+> > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > 
+> > > I always knew you had a split personality Paul ;)
+> > 
+> > Ah, but which is the Good Paul and which is the Evil Paul?  ;-)
+> 
+> Hmm, there's a Paul from Linaro and a Paul from IBM. That shouldn't be
+> too hard to figure out ;)
 
-Yet, the damage a fork bomb can pose into the system this way is 
-severely limited. Combined with the cpu controller to guarantee that 
-this group of process will never take the whole cpu for themselves,
-you have almost everything you need, if not everything.
+If you can't trust your RCU maintainer, who -can- you trust???
 
-> Similar existing feature: RLIMIT_CPU.  Millions of users have it in
-> their kernels, but nobody uses it nowadays.  And it's not even
-> optional.
->
-> Btw. I have no problem with maintaining this patch (and a whole bunch
-> of others) in my proprietary git repository at work forever.  They're
-> very useful for my employer.  I'm just trying to be a good citizen by
-> sharing them.
+BWAHAHAHAHAHAHAHAHAHA!!!!
 
-Well, one alternative is to try to rebase your work on top of -mm, 
-taking Frederic's work into account. What we really don't need, is 
-another cgroup for that. So if you manage to convince people that this 
-is really a win - haven't convinced me so far - the way to go is 
-enhancing the existing fork cgroup.
-
-> Max
+							;-), Paul
 
