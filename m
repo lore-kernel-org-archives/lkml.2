@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1KCOOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:14:04 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64097 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab1KCOOB (ORCPT
+	id S1754843Ab1KCOPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:15:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:53152 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751881Ab1KCOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:14:01 -0400
-Date: Thu, 3 Nov 2011 07:13:54 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] wait_event_freezekillable: use
- freezer_do_not_count/freezer_count
-Message-ID: <20111103141354.GB4417@google.com>
-References: <20111101163059.GR18855@google.com>
- <20111101175953.GB5358@redhat.com>
- <20111101180601.GV18855@google.com>
- <20111101181329.GA6739@redhat.com>
- <20111101182753.GW18855@google.com>
- <20111101193923.GA9444@redhat.com>
- <20111101194601.GB9444@redhat.com>
- <20111101215710.GA13803@google.com>
- <20111102175327.GA4446@redhat.com>
- <20111103064215.48939e1a@tlielax.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103064215.48939e1a@tlielax.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Nov 2011 10:15:37 -0400
+X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=CMzmyBkqurIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=VwQbUJbxAAAA:8 a=kueILb_opnXsh2KIgtEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320329736.27370.15.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] event: fix TP_printk() argument in sched_switch
+From: Steven Rostedt <rostedt@goodmis.org>
+To: avagin@gmail.com
+Cc: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Thu, 03 Nov 2011 10:15:36 -0400
+In-Reply-To: <4EB28FA6.3040204@gmail.com>
+References: <1320273611-2463347-1-git-send-email-avagin@openvz.org>
+	 <1320275277.4793.54.camel@gandalf.stny.rr.com> <4EB28FA6.3040204@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thu, Nov 03, 2011 at 06:42:15AM -0400, Jeff Layton wrote:
-> I'm not sure we really need this macro anymore since this is much
-> simpler. I could just move cifs back to using wait_event_killable and
-> simply wrap it in freezer_do_not_count/freezer_count (with some
-> comments to explain why we're doing that).
+On Thu, 2011-11-03 at 16:57 +0400, Andrew Vagin wrote:
+> > NACK!
+> >
+> > This is a perf userspace bug, not a kernel one. Please fix the userspace
+> > tool instead.
+> >
+> > Note, the new version of libparsevent handles this case without issue.
+> > Perf just needs to be updated.
+> I don't understand. I've got 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
+> and it reports the same error. Where am I wrong?
 > 
-> In any event, I plan to test this scheme out today and will let you
-> know whether it works...
+> # ./trace-cmd report 2> log
+> 
+> <idle>-0     [001] 1516333.292126: sched_switch:         [FAILED TO 
+> PARSE] prev_comm=kworker/0:0 prev_pid=0 prev_prio=120 prev_state=0x0 
+> next_comm=trace-cmd next_pid=2900 next_prio=120
+> 
+> # cat log
+> trace-cmd: No such file or directory
+>    Error: expected type 5 but read 4
+>    Error: expected type 4 but read 0
+>    failed to read event print fmt for sched_switch
+> trace-cmd: Received SIGINT
 
-I think it would be better to put this in a macro as the
-implementation is likely to change in future and I really don't want
-to see FREEZER_SKIP scattered around the tree.
+Add the below patch to trace-cmd and see if it fixes the issue. I'll
+start working on something that fixes perf too.
 
-Thank you.
+Thanks,
 
--- 
-tejun
+-- Steve
+
+
+diff --git a/parse-events.c b/parse-events.c
+index 2dbd47b..8ed018d 100644
+--- a/parse-events.c
++++ b/parse-events.c
+@@ -2167,6 +2167,10 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
+ 	field = alloc_arg();
+ 
+ 	type = process_arg(event, field, &token);
++	/* Handle operations in the first argument */
++	while (type == EVENT_OP) {
++		type = process_op(event, field, &token);
++	}
+ 	if (test_type_token(type, token, EVENT_DELIM, ","))
+ 		goto out_free;
+ 	free_token(token);
+
+
