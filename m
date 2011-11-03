@@ -1,103 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932792Ab1KCLlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 07:41:52 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:49516 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab1KCLlv (ORCPT
+	id S932954Ab1KCLmd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 07:42:33 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:59060 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab1KCLmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 07:41:51 -0400
-Date: Thu, 3 Nov 2011 22:41:33 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>, Christoph Hellwig <hch@lst.de>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: linux-next: Tree for Nov 3
-Message-Id: <20111103224133.1f327c9c4804212af408d576@canb.auug.org.au>
-In-Reply-To: <CA+icZUX1juRU51gXFrX7ZeKgtV9=0bmFKLYZCcuyTfW5E1SL+A@mail.gmail.com>
-References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
-	<CA+icZUX1juRU51gXFrX7ZeKgtV9=0bmFKLYZCcuyTfW5E1SL+A@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__3_Nov_2011_22_41_33_+1100_nOPrrGncSQA+BfdH"
+	Thu, 3 Nov 2011 07:42:31 -0400
+Date: Thu, 3 Nov 2011 22:42:14 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Luis Henriques <henrix@camandro.org>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the crypto-current
+	tree
+Message-ID: <20111103114214.GA14681@gondor.apana.org.au>
+References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au> <20111102200900.GA3454@hades> <20111102233936.GA10058@gondor.apana.org.au> <20111103055824.GC22141@secunet.com> <20111103061628.GA12678@gondor.apana.org.au> <20111103101554.GA17569@onza.mythic-beasts.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103101554.GA17569@onza.mythic-beasts.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Nov_2011_22_41_33_+1100_nOPrrGncSQA+BfdH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Sedat,
-
-On Thu, 3 Nov 2011 08:29:06 +0100 Sedat Dilek <sedat.dilek@googlemail.com> =
-wrote:
+On Thu, Nov 03, 2011 at 10:15:54AM +0000, Luis Henriques wrote:
 >
-> Whuzzz up with VFS tree(s)?
->=20
-> [1] and [2] lists:
-> vfs             git
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
+> No, this did not solved the problem; build still fails.  The problem is
+> that, in lib/nlattr.c, we have:
 
-I undrestanm that Al is unwell.  This tree has not been restored since
-the troubles on kernel.org.
+Ugh, for the time being I guess we'll have to wrap these within
+CONFIG_NET, as I'd rather not have CONFIG_CRYPTO depend on CONFIG_NET.
 
-> vfs-scale       git
-> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git#v=
-fs-scale-working
+Please let me know whether this patch fixes the problem.
 
-Again, this is one of the trees that has not been restored.
+diff --git a/crypto/ablkcipher.c b/crypto/ablkcipher.c
+index a816f24..aa19970 100644
+--- a/crypto/ablkcipher.c
++++ b/crypto/ablkcipher.c
+@@ -383,6 +383,7 @@ static int crypto_init_ablkcipher_ops(struct crypto_tfm *tfm, u32 type,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_ablkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+@@ -404,6 +405,12 @@ static int crypto_ablkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_ablkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_ablkcipher_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+@@ -457,6 +464,7 @@ static int crypto_init_givcipher_ops(struct crypto_tfm *tfm, u32 type,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_givcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+@@ -478,6 +486,12 @@ static int crypto_givcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_givcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_givcipher_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+diff --git a/crypto/aead.c b/crypto/aead.c
+index 701556f..fb8772f 100644
+--- a/crypto/aead.c
++++ b/crypto/aead.c
+@@ -111,6 +111,7 @@ static int crypto_init_aead_ops(struct crypto_tfm *tfm, u32 type, u32 mask)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_aead_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_aead raead;
+@@ -132,6 +133,12 @@ static int crypto_aead_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_aead_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_aead_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+@@ -190,6 +197,7 @@ static int crypto_init_nivaead_ops(struct crypto_tfm *tfm, u32 type, u32 mask)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_nivaead_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_aead raead;
+@@ -210,6 +218,12 @@ static int crypto_nivaead_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_nivaead_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ 
+ static void crypto_nivaead_show(struct seq_file *m, struct crypto_alg *alg)
+diff --git a/crypto/ahash.c b/crypto/ahash.c
+index a3e6ef9..1b9b7d1 100644
+--- a/crypto/ahash.c
++++ b/crypto/ahash.c
+@@ -399,6 +399,7 @@ static unsigned int crypto_ahash_extsize(struct crypto_alg *alg)
+ 	return sizeof(struct crypto_shash *);
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_ahash_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_hash rhash;
+@@ -416,6 +417,12 @@ static int crypto_ahash_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_ahash_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_ahash_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+diff --git a/crypto/blkcipher.c b/crypto/blkcipher.c
+index 2572d26..ad0226f 100644
+--- a/crypto/blkcipher.c
++++ b/crypto/blkcipher.c
+@@ -494,6 +494,7 @@ static int crypto_init_blkcipher_ops(struct crypto_tfm *tfm, u32 type, u32 mask)
+ 		return crypto_init_blkcipher_ops_async(tfm);
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_blkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_blkcipher rblkcipher;
+@@ -515,6 +516,12 @@ static int crypto_blkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_blkcipher_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_blkcipher_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+diff --git a/crypto/pcompress.c b/crypto/pcompress.c
+index fefda78..ad8b659 100644
+--- a/crypto/pcompress.c
++++ b/crypto/pcompress.c
+@@ -48,6 +48,7 @@ static int crypto_pcomp_init_tfm(struct crypto_tfm *tfm)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_pcomp_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_comp rpcomp;
+@@ -62,6 +63,12 @@ static int crypto_pcomp_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_pcomp_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_pcomp_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+diff --git a/crypto/rng.c b/crypto/rng.c
+index feb7de0..e7c23e8 100644
+--- a/crypto/rng.c
++++ b/crypto/rng.c
+@@ -60,6 +60,7 @@ static int crypto_init_rng_ops(struct crypto_tfm *tfm, u32 type, u32 mask)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_rng rrng;
+@@ -76,6 +77,12 @@ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_rng_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
+diff --git a/crypto/shash.c b/crypto/shash.c
+index ea8a9c6..dabbbb6 100644
+--- a/crypto/shash.c
++++ b/crypto/shash.c
+@@ -524,6 +524,7 @@ static unsigned int crypto_shash_extsize(struct crypto_alg *alg)
+ 	return alg->cra_ctxsize;
+ }
+ 
++#ifdef CONFIG_NET
+ static int crypto_shash_report(struct sk_buff *skb, struct crypto_alg *alg)
+ {
+ 	struct crypto_report_hash rhash;
+@@ -541,6 +542,12 @@ static int crypto_shash_report(struct sk_buff *skb, struct crypto_alg *alg)
+ nla_put_failure:
+ 	return -EMSGSIZE;
+ }
++#else
++static int crypto_shash_report(struct sk_buff *skb, struct crypto_alg *alg)
++{
++	return -ENOSYS;
++}
++#endif
+ 
+ static void crypto_shash_show(struct seq_file *m, struct crypto_alg *alg)
+ 	__attribute__ ((unused));
 
-> Isn't vfs-scale [2] done?
-
-Maybe.
-
-> I have so long not heard or read from Nick Piggin (vfs-scale), I hope
-> he is well.
-
-People don't seem to let me know when trees are no longer needed.
-
-> Christoph take over as interim VFS stuff from Al (hope he is well,
-> too) and I have seen his and pending stuff from FS folk was merged
-> into Linus-tree.
-
-Yeah, Linus has pulled it so quickly I did not see the point in adding it
-to linus-next.
-
-> Christoph, your for-next GIT branch [3] is dedicated for linux-next (v3.3=
-)?
-
-Hi Chrisoph, is this tree going to be ongoing (but I don't want v3.3
-stuff until after the merge window closes)?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__3_Nov_2011_22_41_33_+1100_nOPrrGncSQA+BfdH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOsn3tAAoJEECxmPOUX5FEGRYP/Rpxj1EOn4Tk3L+sZ5RTcbKZ
-OClb4US2irM5se6bh74M/ubsIaDZHxLoja+kIY670ivkxHu0i7ADpzh21efQ96lV
-QqqQUnjupP6rW5jX7A350hUldmbmnrOpvdAWIbNIApW4ZLf4Y6OrxkaJ/+MWdSiC
-LAsVWTaGV9xMIW211DHZytQNJtI+h3cwDnDwRwP8GdLFPl+sFNHWTDXp+mThU6zd
-PLamuWxJhJcgg3jW9HNXSXrGEYTod7dc1JyKHRJdbOS+KCA6GV4//aMr/VKUiZ/U
-fccZX40gQUrFjh/WoEQR8FtRyrvuku5NDQwQkQYWzPlLuTxBuG1Yz8Q0ag4IhMm/
-99vunP4dwyU1mL+Y4O7BgVulr41VtgqgoP30mF7Fl29eOzft5kZyL/UDM9mczC/l
-KaQbb+Cqii8t8tpll7cEbo7LgCl3MdlnK3ASBHdb4zSSUk4NN1Fl2SY0Db+4cpfe
-jISgtDZ/O/X7ufCtn3nQc4OGg2ZhwKQ+2LfzZE/tEVsoNiF8Yq9LN0LBhZ0jFj5C
-rp6wawgvnrb0onE0JgPfr4bLwGAweX1azYEN+nH2hax1uSmFvM1pNcvJVTG4QJ+e
-PSun6AclhCL3jM04pxTp+pvDD+GIqs6tPsUr1K2iYVGOLtTMPO1dfmfG0I75kB5h
-2VpbbKfoKMFaoRq6Nvwc
-=heWx
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Nov_2011_22_41_33_+1100_nOPrrGncSQA+BfdH--
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
