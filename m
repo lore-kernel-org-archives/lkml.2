@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1KCCp6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:45:58 -0400
-Received: from alp9ct.ct.infn.it ([192.84.150.109]:39589 "EHLO
-	alp9ct.ct.infn.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab1KCCp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:45:56 -0400
-X-Greylist: delayed 11176 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 22:45:56 EDT
-Message-ID: <7e925a6aa1e6b8e8cf8222c442b48b2b.squirrel@imapfis.ct.infn.it>
-Date: Thu, 3 Nov 2011 00:06:29 +0100
-Subject: BUSINESS PROPOSER
-From: "Mr.Vincent Chen" <info@yahoo.com>
-Reply-To: vincentcheng100@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.19-1.fc9
+	id S1754792Ab1KCCzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:55:38 -0400
+Received: from 99-108-226-0.lightspeed.iplsin.sbcglobal.net ([99.108.226.0]:60631
+	"EHLO peff.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754496Ab1KCCzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 22:55:36 -0400
+Date: Wed, 2 Nov 2011 22:55:32 -0400
+From: Jeff King <peff@peff.net>
+To: Shawn Pearce <spearce@spearce.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+Message-ID: <20111103025532.GB9492@sigill.intra.peff.net>
+References: <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike>
+ <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+ <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
+ <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org>
+ <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2011.11.2.230015
-X-PMX-Spam: Gauge=XXIIIIIIII, Probability=28%, Report='
- FRAUD_X3 1.667, PRIORITY_NO_NAME 0.716, HK_TLD 0.5, FORGED_FROM_YAHOO 0.1, MULTIPLE_RCPTS 0.1, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_300_399 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, ECARD_KNOWN_DOMAINS 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, __ANY_URI 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_CONTACT_ADDY_B 0, __FRAUD_INTRO 0, __FRAUD_MONEY 0, __FRAUD_MONEY_VALUE 0, __FRAUD_SUBJ_ALLCAPS 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __FRAUD_WEBMAIL_REPLYTO 0, __FROM_YAHOO 0, __HAS_MSGID 0, __HAS_X_PRIORITY 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __OEM_PRICE 0, __PHISH_PHRASE2 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __RUS_SUBJ_ALL_UCASE_1251 0, __RUS_SUBJ_ALL_UCASE_KOI8R 0, __SANE_MSGID 0, __STOCK_PHRASE_7 0,
- __TO_MALFORMED_3 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 02, 2011 at 06:02:37PM -0700, Shawn O. Pearce wrote:
 
+> > So I really think that signing the top commit itself is fundamentally wrong.
+> 
+> I really disagree. I like the signed commit approach. It allows for a
+> lot more workflows than just providing a way for you to validate a
+> pull from a trusted lieutenant. Debian/Gentoo folks want a way to sign
+> every commit in their workflow. Just because you don't want that and
+> think its crazy doesn't mean its not a valid workflow for that
+> community and is something Git shouldn't support. I never use `git
+> stash`. I hate the damn command. Yet its still there. I just choose
+> not to use it. Junio's gpgsig header on each commit is also optional,
+> and communities/contributors can choose to use (or ignore) the feature
+> as they need to.
 
+Stop for a minute and think about what it _means_ to sign a commit. Is
+it saying "I wrote this commit?" Or "I think this commit is good?" Or "I
+think all of the history leading to this is good?" It's obviously going
+to be a per-project thing, but it's very constricting.  Leaving aside
+all of the workflow issues Linus brought up (but which I do agree with),
+think about what it would mean for Linus to fetch a commit from a
+lieutenant and then sign it. Whatever it means, it can really only be
+_one_ thing.
 
-I am Mr. Vincent Cheng, GBS, JP Chairman of the Hong Kong and Shanghai
-Banking Corporation Limited.
-I have a business proposal of USD $22,500,000.00 only for you to transact
-with me from my bank to your country.Reply to
-address: vincentcheng100@yahoo.com.hk
-and I will let you know what is required of you.
-Best Regards,
-Mr.Vincent Cheng
-Your Brother
+But big projects that are interested in signatures probably want to say
+more. They want to say "this developer really wrote this commit". They
+want to say "QA passed this commit". They want to say "the history up to
+here looks good". And so on.
 
+But they can't say those things without binding some data to the commit
+(i.e., making a certificate saying "this commit passed QA").  Data which
+might only make sense to assert much later than the commit is written.
+
+So you're going to need to support detached commit signatures in some
+form anyway to make everybody happy. Which isn't to say in-commit
+signatures are wrong, but they are just one tool in a toolbox.
+
+Personally, I think the only thing that makes sense to assert inside a
+commit itself is that you are the author, and the author line of the key
+should match the email UID of the signing key. And then anything you
+want to say about _other_ people's commits (or even your own commits,
+but later) should come in the form of detached signatures with some
+content.
+
+That's how signed tags work. It's not just Linus signing a commit. It's
+Linus signing a binding between a commit and the statement "this is
+v2.6.28". The only thing wrong with the signed tag model for more
+general use is that you need some way of naming and organizing large
+numbers of tags (e.g., several per commit if you have things like QA
+signatures).
+
+-Peff
