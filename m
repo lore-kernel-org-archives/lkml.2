@@ -1,53 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab1KCM5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:57:17 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:39222 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755841Ab1KCM5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:57:16 -0400
-Message-ID: <4EB28FA6.3040204@gmail.com>
-Date: Thu, 03 Nov 2011 16:57:10 +0400
-From: Andrew Vagin <avagin@gmail.com>
-Reply-To: avagin@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b2 Thunderbird/3.1.10
+	id S933339Ab1KCM5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:57:55 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48545 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab1KCM5x convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:57:53 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH] event: fix TP_printk() argument in sched_switch
-References: <1320273611-2463347-1-git-send-email-avagin@openvz.org> <1320275277.4793.54.camel@gandalf.stny.rr.com>
-In-Reply-To: <1320275277.4793.54.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4EAF5B68.8090005@cn.fujitsu.com>
+References: <20111003161335.GA2403@linux.vnet.ibm.com>
+	<20111004074637.GA14061@elte.hu>
+	<20111024100501.GA24913@linux.vnet.ibm.com>
+	<20111024114806.GA3340@linux.vnet.ibm.com>
+	<20111026203020.GA10285@elte.hu>
+	<20111027075901.GB2313@linux.vnet.ibm.com>
+	<20111027080016.GA16885@elte.hu>
+	<4EAA14A1.5060204@cn.fujitsu.com>
+	<20111029182710.GG6160@linux.vnet.ibm.com>
+	<4EAE57AF.1060706@cn.fujitsu.com>
+	<20111031093256.GI6160@linux.vnet.ibm.com>
+	<4EAF5B68.8090005@cn.fujitsu.com>
+Date: Thu, 3 Nov 2011 12:50:21 +0000
+Message-ID: <CABPqkBS-fio57xePQ76LLxPxVMJRM1cKzU1DgXH7q9oNG54N8Q@mail.gmail.com>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
+From: Stephane Eranian <eranian@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        eric.dumazet@gmail.com, shaohua.li@intel.com, ak@linux.intel.com,
+        mhocko@suse.cz, alex.shi@intel.com, efault@gmx.de,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paul,
 
-> NACK!
+On Tue, Nov 1, 2011 at 2:37 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> (I shoud have cced Stephane Eranian instead of Turner..)
 >
-> This is a perf userspace bug, not a kernel one. Please fix the userspace
-> tool instead.
+> Paul E. McKenney wrote:
+>> On Mon, Oct 31, 2011 at 04:09:19PM +0800, Li Zefan wrote:
+>>> (Let's cc Peter and Paul Turner for this perf cgroup issue.)
+>>>
+>>>> Thank you for the analysis.  Does the following patch fix this problem?
+>>>>
+>>>>                                                     Thanx, Paul
+>>>>
+>>>> ------------------------------------------------------------------------
+>>>>
+>>>> fs: Add RCU protection in set_task_comm()
+>>>>
+>>>> Running "perf stat true" results in the following RCU-lockdep splat:
+>>>>
+>>>> ===============================
+>>>> [ INFO: suspicious RCU usage. ]
+>>>> -------------------------------
+>>>> include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
+>>>>
+>>>> other info that might help us debug this:
+>>>>
+>>>> rcu_scheduler_active = 1, debug_locks = 0
+>>>> 1 lock held by true/655:
+>>>> #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<810d1bd7>] prepare_bprm_creds+0x27/0x70
+>>>>
+>>>> stack backtrace:
+>>>> Pid: 655, comm: true Not tainted 3.1.0-tip-01868-g1271bd2-dirty #161079
+>>>> Call Trace:
+>>>> [<81abe239>] ? printk+0x18/0x1a
+>>>> [<81064920>] lockdep_rcu_suspicious+0xc0/0xd0
+>>>> [<8108aa02>] perf_event_enable_on_exec+0x1d2/0x1e0
+>>>> [<81063764>] ? __lock_release+0x54/0xb0
+>>>> [<8108cca8>] perf_event_comm+0x18/0x60
+>>>> [<810d1abd>] ? set_task_comm+0x5d/0x80
+>>>> [<81af622d>] ? _raw_spin_unlock+0x1d/0x40
+>>>> [<810d1ac4>] set_task_comm+0x64/0x80
+>>>> [<810d25fd>] setup_new_exec+0xbd/0x1d0
+>>>> [<810d1b61>] ? flush_old_exec+0x81/0xa0
+>>>> [<8110753e>] load_elf_binary+0x28e/0xa00
+>>>> [<810d2101>] ? search_binary_handler+0xd1/0x1d0
+>>>> [<81063764>] ? __lock_release+0x54/0xb0
+>>>> [<811072b0>] ? load_elf_library+0x260/0x260
+>>>> [<810d2108>] search_binary_handler+0xd8/0x1d0
+>>>> [<810d2060>] ? search_binary_handler+0x30/0x1d0
+>>>> [<810d242f>] do_execve_common+0x22f/0x2a0
+>>>> [<810d24b2>] do_execve+0x12/0x20
+>>>> [<81009592>] sys_execve+0x32/0x70
+>>>> [<81af7752>] ptregs_execve+0x12/0x20
+>>>> [<81af76d4>] ? sysenter_do_call+0x12/0x36
+>>>>
+>>>> Li Zefan noted that this is due to set_task_comm() dropping the task
+>>>> lock before invoking perf_event_comm(), which could in fact result in
+>>>> the task being freed up before perf_event_comm() completed tracing in
+>>>> the case where one task invokes set_task_comm() on another task -- which
+>>>> actually does occur via comm_write(), which can be invoked via /proc.
+>>>>
+>>>
+>>> This is not true. The caller should ensure @tsk is valid during
+>>> set_task_comm().
+>>>
+>>> The warning comes from perf_cgroup_from_task(). We can trigger this warning
+>>> in some other cases where perf cgroup is used, for example:
+>>
+>> I must defer to your greater knowledge of this situation.  What patch
+>> would you propose?
+>>
 >
-> Note, the new version of libparsevent handles this case without issue.
-> Perf just needs to be updated.
-I don't understand. I've got 
-git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
-and it reports the same error. Where am I wrong?
+> With the following patch, we should see no rcu warning from perf, but as I
+> don't know the internel of perf, I guess we have to defer to Peter and
+> Stephane. ;)
+>
+> I have two doubts:
+>
+> - in perf_cgroup_sched_out/in(), we retrieve the task's cgroup twice in the function
+> and it's callee perf_cgroup_switch(), but the task can move to another cgroup between
+> two calls, so they might return two different cgroup pointers. Does it matter?
+>
+We don't retrieve the task cgroup twice. We retrieve the cgroup for
+each of the two
+tasks: current and prev or next.
 
-# ./trace-cmd report 2> log
+I don't understand what you mean by 'between two calls'. Two calls of
+which function?
 
-<idle>-0     [001] 1516333.292126: sched_switch:         [FAILED TO 
-PARSE] prev_comm=kworker/0:0 prev_pid=0 prev_prio=120 prev_state=0x0 
-next_comm=trace-cmd next_pid=2900 next_prio=120
+> - in perf_cgroup_switch():
+>
+>         cpuctx->cgrp = perf_cgroup_from_task(task);
+>
+> but seems the cgroup is not pinned, so cpuctx->cgrp can be invalid in later use.
+>
+What do you mean by cgroup pinning?
 
-# cat log
-trace-cmd: No such file or directory
-   Error: expected type 5 but read 4
-   Error: expected type 4 but read 0
-   failed to read event print fmt for sched_switch
-trace-cmd: Received SIGINT
+If a task migrates from one cgroup to another, the cgroup code calls
+ss->attach_task
+which ends up in perf_cgroup_attach_task() if the task is currently
+running on a CPU.
+If so perf_cgroup_switch() is eventually called and it will update
+cpuctx->cgrp. If the
+tasks is not running anywhere, then there is nothing to do, state will
+be updated when
+the task is scheduled back in.
+
+> ---
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index d1a1bee..f5e05ce 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -302,7 +302,10 @@ static inline void update_cgrp_time_from_event(struct perf_event *event)
+>        if (!is_cgroup_event(event))
+>                return;
+>
+> +       rcu_read_lock();
+>        cgrp = perf_cgroup_from_task(current);
+> +       rcu_read_unlock();
+> +
+>        /*
+>         * Do not update time when cgroup is not active
+>         */
+> @@ -325,9 +328,11 @@ perf_cgroup_set_timestamp(struct task_struct *task,
+>        if (!task || !ctx->nr_cgroups)
+>                return;
+>
+> +       rcu_read_lock();
+>        cgrp = perf_cgroup_from_task(task);
+>        info = this_cpu_ptr(cgrp->info);
+>        info->timestamp = ctx->timestamp;
+> +       rcu_read_unlock();
+>  }
+>
+>  #define PERF_CGROUP_SWOUT      0x1 /* cgroup switch out every event */
+> @@ -406,6 +411,8 @@ static inline void perf_cgroup_sched_out(struct task_struct *task,
+>        struct perf_cgroup *cgrp1;
+>        struct perf_cgroup *cgrp2 = NULL;
+>
+> +       rcu_read_lock();
+> +
+>        /*
+>         * we come here when we know perf_cgroup_events > 0
+>         */
+> @@ -418,6 +425,8 @@ static inline void perf_cgroup_sched_out(struct task_struct *task,
+>        if (next)
+>                cgrp2 = perf_cgroup_from_task(next);
+>
+> +       rcu_read_unlock();
+> +
+>        /*
+>         * only schedule out current cgroup events if we know
+>         * that we are switching to a different cgroup. Otherwise,
+> @@ -433,6 +442,8 @@ static inline void perf_cgroup_sched_in(struct task_struct *prev,
+>        struct perf_cgroup *cgrp1;
+>        struct perf_cgroup *cgrp2 = NULL;
+>
+> +       rcu_read_lock();
+> +
+>        /*
+>         * we come here when we know perf_cgroup_events > 0
+>         */
+> @@ -441,6 +452,8 @@ static inline void perf_cgroup_sched_in(struct task_struct *prev,
+>        /* prev can never be NULL */
+>        cgrp2 = perf_cgroup_from_task(prev);
+>
+> +       rcu_read_unlock();
+> +
+>        /*
+>         * only need to schedule in cgroup events if we are changing
+>         * cgroup during ctxsw. Cgroup events were not scheduled
+>
