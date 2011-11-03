@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab1KCPZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:25:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755749Ab1KCPZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:25:05 -0400
-Date: Thu, 3 Nov 2011 11:27:04 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Tejun Heo <tj@kernel.org>
+	id S1756161Ab1KCPag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:30:36 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53303 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755293Ab1KCPae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 11:30:34 -0400
+Date: Thu, 3 Nov 2011 08:30:27 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jlayton@redhat.com>
 Cc: Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
@@ -16,58 +17,41 @@ Cc: Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
 Subject: Re: [PATCH] wait_event_freezekillable: use
  freezer_do_not_count/freezer_count
-Message-ID: <20111103112704.4b905bfc@barsoom.rdu.redhat.com>
-In-Reply-To: <20111103141354.GB4417@google.com>
-References: <20111101163059.GR18855@google.com>
-	<20111101175953.GB5358@redhat.com>
-	<20111101180601.GV18855@google.com>
-	<20111101181329.GA6739@redhat.com>
-	<20111101182753.GW18855@google.com>
-	<20111101193923.GA9444@redhat.com>
-	<20111101194601.GB9444@redhat.com>
-	<20111101215710.GA13803@google.com>
-	<20111102175327.GA4446@redhat.com>
-	<20111103064215.48939e1a@tlielax.poochiereds.net>
-	<20111103141354.GB4417@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-ID: <20111103153027.GE4417@google.com>
+References: <20111101180601.GV18855@google.com>
+ <20111101181329.GA6739@redhat.com>
+ <20111101182753.GW18855@google.com>
+ <20111101193923.GA9444@redhat.com>
+ <20111101194601.GB9444@redhat.com>
+ <20111101215710.GA13803@google.com>
+ <20111102175327.GA4446@redhat.com>
+ <20111103064215.48939e1a@tlielax.poochiereds.net>
+ <20111103141354.GB4417@google.com>
+ <20111103112704.4b905bfc@barsoom.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103112704.4b905bfc@barsoom.rdu.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011 07:13:54 -0700
-Tejun Heo <tj@kernel.org> wrote:
+Hello,
 
-> Hello,
+On Thu, Nov 03, 2011 at 11:27:04AM -0400, Jeff Layton wrote:
+> Ok, note though that I also need to do a similar set of changes to the
+> nfs and sunrpc code [1].
 > 
-> On Thu, Nov 03, 2011 at 06:42:15AM -0400, Jeff Layton wrote:
-> > I'm not sure we really need this macro anymore since this is much
-> > simpler. I could just move cifs back to using wait_event_killable and
-> > simply wrap it in freezer_do_not_count/freezer_count (with some
-> > comments to explain why we're doing that).
-> > 
-> > In any event, I plan to test this scheme out today and will let you
-> > know whether it works...
-> 
-> I think it would be better to put this in a macro as the
-> implementation is likely to change in future and I really don't want
-> to see FREEZER_SKIP scattered around the tree.
-> 
+> Those call sites do not use wait_event_* macros though. So I'll either
+> need to add a separate set of functions/macros to handle those, or
+> sprinkle freezer_do_not_count/freezer_count around the code there...
 
-Ok, note though that I also need to do a similar set of changes to the
-nfs and sunrpc code [1].
+Yes, I still think it would be better to isolate implementation
+details from users.  I really hate to see the 'count' functions
+scattered around the kernel.
 
-Those call sites do not use wait_event_* macros though. So I'll either
-need to add a separate set of functions/macros to handle those, or
-sprinkle freezer_do_not_count/freezer_count around the code there...
-
-[1] Here are the older patches that depended on the change to
-fake_signal_wake_up. I'll need to convert these to use the new scheme
-once you guys settle on what it should be:
-
-https://git.samba.org/jlayton/?p=jlayton/linux.git;a=commitdiff;h=0f85cbb747a0f9f8a582ae9bf642e094168001be
-https://git.samba.org/jlayton/?p=jlayton/linux.git;a=commitdiff;h=084535708bcb33dd2448e73be5a0f4cac69bea92
+Thank you.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+tejun
