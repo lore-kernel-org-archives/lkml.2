@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450Ab1KCUPU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 16:15:20 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:36772 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab1KCUPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 16:15:19 -0400
-Date: Thu, 3 Nov 2011 13:14:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 17/28] rcu: Make srcu_read_lock_held()
- call common lockdep-enabled function
-Message-ID: <20111103201435.GJ2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-17-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103034854.GD2042@leaf>
- <20111103111413.GC8198@somewhere.redhat.com>
- <20111103132942.GY2287@linux.vnet.ibm.com>
- <1320328742.27370.9.camel@gandalf.stny.rr.com>
+	id S1751495Ab1KCUVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 16:21:30 -0400
+Received: from smtp111.iad.emailsrvr.com ([207.97.245.111]:46721 "EHLO
+	smtp111.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab1KCUV3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 16:21:29 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Nov 2011 16:21:29 EDT
+Message-ID: <4EB2F5CF.5010604@aljex.com>
+Date: Thu, 03 Nov 2011 16:13:03 -0400
+From: "Brian K. White" <brian@aljex.com>
+Organization: Aljex Software Inc.
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320328742.27370.9.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11110320-5806-0000-0000-000001C70169
+To: containers@lists.linux-foundation.org
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH] new cgroup controller "fork"
+References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag> <4EB2C4A5.6000406@parallels.com> <20111103165903.GA4755@Debian-60-squeeze-64-minimal> <20111103182101.5037c1e5@lxorguk.ukuu.org.uk> <20111103185108.GA5153@Debian-60-squeeze-64-minimal> <20111103190330.02590426@lxorguk.ukuu.org.uk> <20111103192039.GA5300@Debian-60-squeeze-64-minimal> <4EB2EA93.2050206@parallels.com>
+In-Reply-To: <4EB2EA93.2050206@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 09:59:02AM -0400, Steven Rostedt wrote:
-> On Thu, 2011-11-03 at 06:29 -0700, Paul E. McKenney wrote:
-> > On Thu, Nov 03, 2011 at 12:14:20PM +0100, Frederic Weisbecker wrote:
-> > > On Wed, Nov 02, 2011 at 08:48:54PM -0700, Josh Triplett wrote:
-> > > > On Wed, Nov 02, 2011 at 01:30:38PM -0700, Paul E. McKenney wrote:
-> > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > 
-> > > > > A common debug_lockdep_rcu_enabled() function is used to check whether
-> > > > > RCU lockdep splats should be reported, but srcu_read_lock() does not
-> > > > > use it.  This commit therefore brings srcu_read_lock_held() up to date.
-> > > > > 
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Just how signed off does this patch need to be? ;)
-> > 
-> > If you have sufficient patience to scroll past the Signed-off-by's
-> > to see the patch, then there clearly are not enough.  ;-)
-> > 
-> > > Dunno but I feel uncomfortable now with that strange feeling I'm walking
-> > > on the street with two Paul holding my hand on each side.
-> > 
-> > I did catch one of these, but missed the other.  Here is the history:
-> > 
-> > o	Paul wrote the patch.
-> > 
-> > o	Frederic reworked the patches that this one depended on,
-> > 	and then resent the patch.
-> > 
-> > o	Paul did "git am -s" on the series that Frederic sent,
-> > 	which added the extra Signed-off-by.
-> > 	
-> > It is not clear to me what the Signed-off-by chain should look like in
-> > this case.  My default action would be to remove my second Signed-off-by.
-> 
-> The author should be you (change the From: to you not Frederic), and
-> then the first SoB would be Frederic, and yours at the end as you
-> committed it.
-> 
-> I would also state in the change log what Frederic did to the original
-> patch.
+On 11/3/2011 3:25 PM, Glauber Costa wrote:
+> On 11/03/2011 05:20 PM, Max Kellermann wrote:
+>> On 2011/11/03 20:03, Alan Cox<alan@lxorguk.ukuu.org.uk> wrote:
+>>> Sure - I'm just not seeing that a whole separate cgroup for it is
+>>> appropriate or a good plan. Anyone doing real resource management needs
+>>> the rest of the stuff anyway.
+>>
+>> Right. When I saw Frederic's controller today, my first thought was
+>> that one could move the fork limit code over into that controller. If
+>> we reach a consensus that this would be a good idea, and would have
+>> chances to get merged, I could probably take some time to refactor my
+>> code.
+>>
+>> Max
+> I'd advise you to take a step back and think if this is really needed.
+> As Alan pointed out, the really expensive resource here is already being
+> constrained by Frederic's controller.
 
-Fair enough!
+I think this really is a different knob that is nice to have as long as 
+it doesn't cost much. It's a way to set a max lifespan in a way that 
+isn't really addressed by the other controls. (I could absolutely be 
+missing something.)
 
-							Thanx, Paul
+I think Max explained the issue clearly enough.
 
+It doesn't matter that the fork itself is supposedly so cheap.
+
+It's still nice to have a way to say, you may not fork/die/fork/die/fork 
+in a race.
+
+What's so unimaginable about having a process that you know needs a lot 
+of cpu and ram or other resources to do it's job, and you expressly want 
+to allow it to take as much of those resources as it can, but you know 
+it has no need to fork, so if it forks, _that_ is the only indication of 
+a problem, so you may only want to block it based on that.
+
+Sure many other processes would legitimately fork/die/fork/die a lot 
+while never exceeding a few total concurrent tasks, and for them you 
+would not want to set any such fork limit. So what?
+
+-- 
+bkw
