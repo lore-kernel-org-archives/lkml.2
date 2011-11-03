@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab1KCBUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:20:01 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63391 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab1KCBT6 (ORCPT
+	id S1754349Ab1KCBVt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:21:49 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:52112 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab1KCBVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:19:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
- <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Nov 2011 18:19:36 -0700
-X-Google-Sender-Auth: Z_t8qFLIkrjEbB712d_EYmv_2w0
-Message-ID: <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-To: Shawn Pearce <spearce@spearce.org>
-Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Nov 2011 21:21:46 -0400
+Date: Thu, 3 Nov 2011 12:21:43 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: ASoC and regmap trees have moved back to kernel.org
+Message-Id: <20111103122143.01cf277cd4accc69e1bc571a@canb.auug.org.au>
+In-Reply-To: <20111102214402.GA31393@sirena.org.uk>
+References: <20111102214402.GA31393@sirena.org.uk>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Nov_2011_12_21_43_+1100_gefT+j1F7sdeLJlO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 6:02 PM, Shawn Pearce <spearce@spearce.org> wrote:
->>
->> So I really think that signing the top commit itself is fundamentally wrong.
+--Signature=_Thu__3_Nov_2011_12_21_43_+1100_gefT+j1F7sdeLJlO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Mark,
+
+On Wed, 2 Nov 2011 21:44:02 +0000 Mark Brown <broonie@opensource.wolfsonmic=
+ro.com> wrote:
 >
-> I really disagree. I like the signed commit approach.
+> Please update my git trees in -next to use kernel.org again:
+>=20
+> ASoC:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/sound.git for-ne=
+xt
+>=20
+> regmap:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-n=
+ext
 
-If you like it so much, go ahead and use them.
+I have switched to those now.
 
-But stop with the crazy excuses for the downsides. I explained exactly
-why amending is stupid and wrong, and why empty commits are f*cking
-moronic. But even apart from the *technical* problems with the stupid
-mis-designed feature, I explained why it was fundamentally broken from
-a workflow standpoint too.
+> Please leave the regulator tree where it is for now, Liam's kernel.org
+> account will hopefully be being restored shortly so he can take that
+> over again.
 
-I'm not saying that you shouldn't use them - go ahead and use the
-feature if you like it. But please spare me your excuses for stupid
-workarounds that come from the fact that they aren't a good match for
-sane workflows.
+No worries.
 
-                       Linus
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__3_Nov_2011_12_21_43_+1100_gefT+j1F7sdeLJlO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOseynAAoJEECxmPOUX5FE1V4P/juDr/cftv7qN5P8uQe16CSM
+U0/YTu1iWJ2O3XOSSVMtjW1+eu0Rejfwz8jD+iBn1yTFZpmjXGtf4J0jKdeobecL
+1Gy5isINqW2M757+rTxryxdpwE5EJdLog642u67aSS7TtnzL9GLFnWm9iExctvsf
+wKFUmxjc2yYiaEQtwrRVBDliMjpfS5Q/1MRAETyjwsnTZ/LinwfWz2/ysIaYF0Im
+Wybqww0krdpDaDsV9rCtHqyfT1aUfw01xHxN/B7ERMZV4RAu93NMtnzbBT1gxtxZ
+rPZxMTmFigwfTrEjuACUQjbCaRppYfWNHwJRemLA0wTKUN6PVA5oLePEsj6kHV3v
+67yVqipF4A5XOWN3GQybIfWRkVuvkKo8unmCd+7ah08ub81aRAkiTsDzuPI95YLZ
+/oYTHGoVACKCg+OVTacHcRcXH7d8FMkVvB2oR7mzi956t4i/k8jv+oZExGXu/wph
+uFntglD81jCmqxA0DJOwMBbL4no6BG/JnUximcHa1S0EGbunww9nejEi9GwUJAni
+R1zyR3PeXkVtadkxD4aHUpDRt8IzWW4dSQiF+MNlYND4AyZdJFIbfT5SQqfT2SDg
++UiF0XrW326maOk28nhgpvcmXWIchH8AJDiDbfi/00tZ4blAOZL3w8kRjFLLXFWW
++P8Zx8r5fAuR3qBMFhU0
+=1xXu
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Nov_2011_12_21_43_+1100_gefT+j1F7sdeLJlO--
