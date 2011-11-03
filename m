@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab1KCOMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:12:01 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:38188 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765Ab1KCOL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:11:57 -0400
-Message-ID: <1320329371.3681.20.camel@js-netbook>
-Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
- overflow when adjusted
-From: John Stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>
-Date: Thu, 03 Nov 2011 10:09:31 -0400
-In-Reply-To: <1320328869.3681.17.camel@js-netbook>
-References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
-	 <alpine.LFD.2.02.1111031304210.2829@ionos>
-	 <1320325819.2892.1.camel@js-netbook>
-	 <alpine.LFD.2.02.1111031425200.2829@ionos>
-	 <1320328869.3681.17.camel@js-netbook>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 11110314-8974-0000-0000-000001635D68
+	id S1753036Ab1KCOOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:14:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:64097 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab1KCOOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:14:01 -0400
+Date: Thu, 3 Nov 2011 07:13:54 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] wait_event_freezekillable: use
+ freezer_do_not_count/freezer_count
+Message-ID: <20111103141354.GB4417@google.com>
+References: <20111101163059.GR18855@google.com>
+ <20111101175953.GB5358@redhat.com>
+ <20111101180601.GV18855@google.com>
+ <20111101181329.GA6739@redhat.com>
+ <20111101182753.GW18855@google.com>
+ <20111101193923.GA9444@redhat.com>
+ <20111101194601.GB9444@redhat.com>
+ <20111101215710.GA13803@google.com>
+ <20111102175327.GA4446@redhat.com>
+ <20111103064215.48939e1a@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103064215.48939e1a@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 10:01 -0400, John Stultz wrote:
-> On Thu, 2011-11-03 at 14:26 +0100, Thomas Gleixner wrote:
-> > On Thu, 3 Nov 2011, John Stultz wrote:
-> > > On Thu, 2011-11-03 at 13:05 +0100, Thomas Gleixner wrote:
-> > > > On Wed, 2 Nov 2011, John Stultz wrote:
-> > > > >  
-> > > > > +	WARN_ONCE(timekeeper.mult+adj >
-> > > > > +			timekeeper.clock->mult + timekeeper.clock->maxadj,
-> > > > > +			"Adjusting more then 11%%");
-> > > > 
-> > > > Shouldn't we rather limit the update instead of just warn and overflow ?
-> > > 
-> > > Well, I'm hesitant to commit to that, just yet. So I figured I'd start
-> > > with the warning.
-> > 
-> > OTOH, we know right there that we might warp 32bit and confuse the
-> > hell out of timekeeping, which is not a real good thing either.
-> 
-> Oh certainly, but two things:
-> 1) The 11% max is not the actual overflow edge. Its just calculated as
-> safe. The overflow could as far out as ~22%.
-> 
-> 2) This is the first case in however many years I've heard of of mult
-> overflowing. So before we go changing the NTP code (which is really
-> terribly complex, but has been working fairly well for awhile) I want to
-> have some sense that the 11% max adjustment assumption is really
-> correct.
-> 
-> But maybe I'm being too conservative? If we do limit the adjustment
-> keeping the warning, I guess we'd know why things blew up on previously
-> working machines. 
+Hello,
 
-Oh, and the other bit is that not all clocksources have been converted
-over to using clocksource_register_hz/khz, so some may be using very
-small shift values, which could more easily hit large % mult adjustment
-(due to the resulting coarseness of each integer change) that wouldn't
-cause overflows.
+On Thu, Nov 03, 2011 at 06:42:15AM -0400, Jeff Layton wrote:
+> I'm not sure we really need this macro anymore since this is much
+> simpler. I could just move cifs back to using wait_event_killable and
+> simply wrap it in freezer_do_not_count/freezer_count (with some
+> comments to explain why we're doing that).
+> 
+> In any event, I plan to test this scheme out today and will let you
+> know whether it works...
 
-thanks
--john
+I think it would be better to put this in a macro as the
+implementation is likely to change in future and I really don't want
+to see FREEZER_SKIP scattered around the tree.
 
+Thank you.
+
+-- 
+tejun
