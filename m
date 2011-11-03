@@ -1,54 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab1KCHyI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 03:54:08 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54903 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049Ab1KCHyF (ORCPT
+	id S1755303Ab1KCIFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 04:05:49 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:10505 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab1KCIFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 03:54:05 -0400
-Date: Thu, 3 Nov 2011 15:53:54 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111103075354.GA16666@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
- <20111020212353.GZ25124@google.com>
- <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
- <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
- <20111021094520.GA9884@zhy>
- <20111103071735.GA3228@swordfish.minsk.epam.com>
- <20111103072705.GA15871@zhy>
- <20111103074506.GB3228@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111103074506.GB3228@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 3 Nov 2011 04:05:43 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=US-ASCII
+Date: Thu, 03 Nov 2011 09:04:58 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [RFC 1/2] dma-buf: Introduce dma buffer sharing mechanism
+In-reply-to: <20111014152139.GA2908@phenom.ffwll.local>
+To: "'Daniel Vetter'" <daniel@ffwll.ch>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>
+Cc: "'Sumit Semwal'" <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, rob@ti.com,
+        "'Sumit Semwal'" <sumit.semwal@linaro.org>
+Message-id: <000001cc99ff$47cfe960$d76fbc20$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AcyKhsydVX25RM73RBWoi5duYzyz6ANUX7XQ
+References: <1318325033-32688-1-git-send-email-sumit.semwal@ti.com>
+ <1318325033-32688-2-git-send-email-sumit.semwal@ti.com>
+ <4E98085A.8080803@samsung.com> <20111014152139.GA2908@phenom.ffwll.local>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 10:45:06AM +0300, Sergey Senozhatsky wrote:
-> On (11/03/11 15:27), Yong Zhang wrote:
-> > Did you have tried it? Though I don't find time to polish it yet but
-> > I think will smooth your concern.
-> > 
+Hello,
+
+I'm sorry for a late reply, but after Kernel Summit/ELC I have some comments.
+
+On Friday, October 14, 2011 5:35 PM Daniel Vetter wrote:
+
+> On Fri, Oct 14, 2011 at 12:00:58PM +0200, Tomasz Stanislawski wrote:
+> > >+/**
+> > >+ * struct dma_buf_ops - operations possible on struct dma_buf
+> > >+ * @create: creates a struct dma_buf of a fixed size. Actual allocation
+> > >+ *	    does not happen here.
+> >
+> > The 'create' ops is not present in dma_buf_ops.
+> >
+> > >+ * @attach: allows different devices to 'attach' themselves to the given
+> > >+ *	    buffer. It might return -EBUSY to signal that backing storage
+> > >+ *	    is already allocated and incompatible with the requirements
+> > >+ *	    of requesting device. [optional]
+> > >+ * @detach: detach a given device from this buffer. [optional]
+> > >+ * @get_scatterlist: returns list of scatter pages allocated, increases
+> > >+ *		     usecount of the buffer. Requires atleast one attach to be
+> > >+ *		     called before. Returned sg list should already be mapped
+> > >+ *		     into _device_ address space.
+> >
+> > You must add a comment that this call 'may sleep'.
+> >
+> > I like the get_scatterlist idea. It allows the exported to create a
+> > valid scatterlist for a client in a elegant way.
+> >
+> > I do not like this whole attachment idea. The problem is that
+> > currently there is no support in DMA framework for allocation for
+> > multiple devices. As long as no such a support exists, there is no
+> > generic way to handle attribute negotiations and buffer allocations
+> > that involve multiple devices. So the exporter drivers would have to
+> > implement more or less hacky solutions to handle memory requirements
+> > and choosing the device that allocated memory.
+> >
+> > Currently, AFAIK there is even no generic way for a driver to
+> > acquire its own DMA memory requirements.
+> >
+> > Therefore all logic hidden beneath 'attachment' is pointless. I
+> > think that support for attach/detach (and related stuff) should be
+> > postponed until support for multi-device allocation is added to DMA
+> > framework.
 > 
-> I'm compiling the kernel with you patch right now.
-> The whole point was just for
-> case if someone has different approach or whatsoever.
+> Imo we clearly need this to make the multi-device-driver with insane dma
+> requirements work on arm. And rewriting the buffer handling in
+> participating subsystem twice isn't really a great plan. I envision that
+> on platforms where we need this madness, the driver must call back to the
+> dma subsytem to create a dma_buf. The dma subsytem should be already aware
+> of all the requirements and hence should be able to handle them..
+> 
+> > I don't say the attachment list idea is wrong but adding attachment
+> > stuff creates an illusion that problem of multi-device allocations
+> > is somehow magically solved. We should not force the developers of
+> > exporter drivers to solve the problem that is not solvable yet.
+> 
+> Well, this is why we need to create a decent support infrastructure for
+> platforms (= arm madness) that needs this, so that device drivers and
+> subsystem don't need to invent that wheel on their own. Which as you point
+> out, they actually can't.
 
-Understood. If someone can come up with a simple patch which could
-cover the case I mentioned before, that would be great.
-/me goes to poke at it.
+The real question is whether it is possible to create any generic support
+infrastructure. I really doubt. IMHO this is something that will be hacked for
+each 'product release' and will never read the mainline...
+ 
+> > The other problem are the APIs. For example, the V4L2 subsystem
+> > assumes that memory is allocated after successful VIDIOC_REQBUFS
+> > with V4L2_MEMORY_MMAP memory type. Therefore attach would be
+> > automatically followed by get_scatterlist, blocking possibility of
+> > any buffer migrations in future.
+> 
+> Well, pardon to break the news, but v4l needs to rework the buffer
+> handling. If you want to share buffers with a gpu driver, you _have_ to
+> life with the fact that gpus do fully dynamic buffer management, meaning:
+> - buffers get allocated and destroyed on the fly, meaning static reqbuf
+>   just went out the window (we obviously cache buffer objects and reuse
+>   them for performance, as long as the processing pipeline doesn't really
+>   change).
+> - buffers get moved around in memory, meaning you either need full-blown
+>   sync-objects with a callback to drivers to tear-down mappings on-demand,
+>   or every driver needs to guarnatee to call put_scatterlist in a
+>   reasonable short time. The latter is probably the more natural thing for
+>   v4l devices.
 
-Thanks,
-Yong
+I'm really not convinced if it is possible to go for the completely dynamic
+buffer management, especially if we are implementing a proof-of-concept 
+solution. Please notice the following facts:
+
+1. all v4l2 drivers do the 'static' buffer management - memory is being 
+allocated on REQBUF() call and then mapped permanently into both userspace 
+and dma (io) address space.
+
+2. dma-mapping api is very limited in the area of the dynamic buffer management,
+this API has been designed definitely for static buffer allocation and mapping.
+
+It looks that fully dynamic buffer management requires a complete change of 
+v4l2 api principles (V4L3?) and a completely new DMA API interface. That's 
+probably the reason by none of the GPU driver relies on the DMA-mapping API
+and implements custom solution for managing the mappings. 
+
+This reminds me one more issue I've noticed in the current dma buf proof-of-
+concept. You assumed that the exporter will be responsible for mapping the 
+buffer into io address space of all the client devices. What if the device 
+needs additional custom hooks/hacks during the mappings? This will be a serious
+problem for the current GPU drivers for example. IMHO the API will be much
+clearer if each client driver will map the scatter list gathered from the
+dma buf by itself. Only the client driver has the complete knowledge how 
+to do this correctly for this particular device. This way it will also work
+with devices that don't do the real DMA (like for example USB devices that
+copy all data from usb packets to the target buffer with the cpu).
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+
