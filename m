@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1KCCKO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:10:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50642 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933365Ab1KCBf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:35:58 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:56 2011
-Message-Id: <20111102221456.694063398@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:14:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [072/107] nfsd4: Remove check for a 32-bit cookie in nfsd4_readdir()
-In-Reply-To: <20111102221600.GA26650@kroah.com>
+	id S933325Ab1KCBft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:35:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:64981 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933273Ab1KCBfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:35:45 -0400
+X-Authority-Analysis: v=1.1 cv=dCTC1p3vNTdx1H6U0HtbMKjJ9bTEtPwCLJ4qOUv6lx4= c=1 sm=0 a=DJOu6W8zkUMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5FU6YOvGAudmEMIC_skA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320284142.12443.0.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing: Restore system filter behavior
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 02 Nov 2011 21:35:42 -0400
+In-Reply-To: <4EB1ED9F.3060708@cn.fujitsu.com>
+References: <4EAF46CF.8040408@cn.fujitsu.com>
+		 <1320258167.4793.45.camel@gandalf.stny.rr.com>
+		 <1320259868.4793.46.camel@gandalf.stny.rr.com>
+	 <1320266741.4793.50.camel@gandalf.stny.rr.com>
+	 <4EB1ED9F.3060708@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Thu, 2011-11-03 at 09:25 +0800, Li Zefan wrote:
+>  
+> > -	replace_filter_string(filter, filter_string);
+> > +	/* System filters just show a default message */
+> > +	replace_filter_string(filter, DEFAULT_SYS_FILTER_MESSAGE);
+> 
+> Seems we can call remove_filter_string() instead to save memory.
 
-------------------
+I originally had it that way, but for some reason I had to change it.
+Not sure why. I'll put it back and see if that reason pops up again ;)
 
-From: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Thanks,
 
-commit 832023bffb4b493f230be901f681020caf3ed1f8 upstream.
-
-Fan Yong <yong.fan@whamcloud.com> noticed setting
-FMODE_32bithash wouldn't work with nfsd v4, as
-nfsd4_readdir() checks for 32 bit cookies. However, according to RFC 3530
-cookies have a 64 bit type and cookies are also defined as u64 in
-'struct nfsd4_readdir'. So remove the test for >32-bit values.
-
-Signed-off-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/nfsd/nfs4proc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -688,7 +688,7 @@ nfsd4_readdir(struct svc_rqst *rqstp, st
- 	readdir->rd_bmval[1] &= nfsd_suppattrs1(cstate->minorversion);
- 	readdir->rd_bmval[2] &= nfsd_suppattrs2(cstate->minorversion);
- 
--	if ((cookie > ~(u32)0) || (cookie == 1) || (cookie == 2) ||
-+	if ((cookie == 1) || (cookie == 2) ||
- 	    (cookie == 0 && memcmp(readdir->rd_verf.data, zeroverf.data, NFS4_VERIFIER_SIZE)))
- 		return nfserr_bad_cookie;
- 
+-- Steve
 
 
