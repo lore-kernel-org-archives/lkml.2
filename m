@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab1KCOnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24790 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215Ab1KCOnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:43:50 -0400
-Date: Thu, 3 Nov 2011 10:43:47 -0400
-From: Josh Boyer <jwboyer@redhat.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: sb_edac 32-bit compile fail due to 64-bit divide
-Message-ID: <20111103144347.GG19809@zod.bos.redhat.com>
-References: <20111103140716.GF19809@zod.bos.redhat.com>
- <4EB2A5FF.1040808@redhat.com>
+	id S1755890Ab1KCOoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:44:18 -0400
+Received: from cust-95-128-94-82.breedbanddelft.nl ([95.128.94.82]:51195 "HELO
+	abra2.bitwizard.nl" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1755632Ab1KCOoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:44:17 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Nov 2011 10:44:16 EDT
+Date: Thu, 3 Nov 2011 15:37:34 +0100
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Route cache problem. 
+Message-ID: <20111103143734.GA17218@bitwizard.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EB2A5FF.1040808@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 12:32:31PM -0200, Mauro Carvalho Chehab wrote:
-> Em 03-11-2011 12:07, Josh Boyer escreveu:
-> > Hi,
-> > 
-> > It seems the newly added EDAC driver for SandyBridge won't build on
-> > 32-bit x86 because of a 64-bit divide somewhere:
-> > 
-> > 	drivers/edac/sb_edac.c: In function 'get_memory_error_data':
-> > 	drivers/edac/sb_edac.c:861:2: warning: left shift count >= width of type
-> > 	[enabled by default]
-> > 	<snip>
-> > 	ERROR: "__udivdi3" [drivers/edac/sb_edac.ko] undefined!
-> > 	make[1]: *** [__modpost] Error 1
-> > 	make: *** [modules] Error 2
-> > 
-> > You can find the full build log here:
-> > 
-> > http://koji.fedoraproject.org/koji/getfile?taskID=3482579&name=build.log
-> > 
-> > Before I go digging into where this is done and what to do about it, I
-> > do want to confirm that it is supposed to work on a 32-bit kernel,
-> > correct?
-> 
-> Thanks for pointing it!
-> 
-> Well, I didn't test it on a 32-bit kernel. It should work through.
-> 
-> It is probably due to those debug lines:
-> 	debugf0("CH#%d RIR#%d INTL#%d, offset %Lu.%03Lu GB (0x%016Lx), tgt: %d, reg=0x%08x\n",
->         	i, j, k,
->                 tmp_mb / 1000, tmp_mb % 1000,
->                 ((u64)tmp_mb) << 20L,
->                 (u32)RIR_RNK_TGT(reg),
->                 reg);
-> (same kind of calculus is recurrent at the driver)
 
-All of that should basically not exist in this build because the debugf*
-macros depend on CONFIG_EDAC_DEBUG, which isn't set in this build.  The
-problem seems to be somewhere else.
+Hi, 
 
-I would guess line 1056:
+My workstation has an incorrect route cache entry: 
 
-	addr /= sck_xch;
+assurancetourix:~> route -nC | head -2 ; route -nC | grep 234.34
+Kernel IP routing cache
+Source          Destination     Gateway         Flags Metric Ref    Use Iface
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        3 eth0
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        4 eth0
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        2 eth0
 
-addr is a u64.
+(I don't know why there are three). 
 
-> Maybe the easiest way would be to write a function that would call do_div() internally,
-> and output a string with something similar to:
-> 
-> 	sprintf(msg, "%Lu.%03Lu GB", tmp_mb / 1000, tmp_mb % 1000);
-> 
-> Of course, an interim fix would be to make it depend on CONFIG_64BIT or CONFIG_X86_64.
+the correct routing cache entries would look something like this: 
+(this one works):
+assurancetourix:~> route -nC | head -2 ; route -nC | grep 234.20
+Kernel IP routing cache
+Source          Destination     Gateway         Flags Metric Ref    Use Iface
+192.168.235.8   192.168.234.20  192.168.235.4         0      0        1 eth0
+192.168.234.20  192.168.235.8   192.168.235.8   l     0      0        0 lo
+192.168.235.8   192.168.234.20  192.168.235.4         0      0        0 eth0
 
-That would work I guess.  It's up to you.
-> 
-> Regards,
-> Mauro
+The routing table is: 
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         192.168.235.251 0.0.0.0         UG    0      0        0 eth0
+169.254.0.0     0.0.0.0         255.255.0.0     U     1000   0        0 eth0
+192.168.234.0   192.168.235.4   255.255.255.0   UG    0      0        0 eth0
+192.168.235.0   0.0.0.0         255.255.255.0   U     1      0        0 eth0
+192.168.235.2   192.168.235.4   255.255.255.255 UGH   0      0        0 eth0
+
+It's the third line that is supposed to steer packets for '234.34 to 
+the proper router that knows how to reach the 234.0 network. 
+
+As a temporary workaround I've added the route to 192.168.235.2 which
+is that same host, but not in the nameserver, so it's annoying. 
+(the other host that I can't  reach due to this problem doesn't have
+a second IP address (yet)). 
+
+Oh... routing to 192.168.234.34 works on the router 192.168.235.4: 
+PING 192.168.234.34 (192.168.234.34) 56(84) bytes of data.
+64 bytes from 192.168.234.34: icmp_req=1 ttl=64 time=41.5 ms
+
+Anyway, what would you suggest for me to try to get that invalid
+route cache entry dropped?
+
+Drop the default route? Ok. Done: 
+# route del default
+# ping 192.168.234.34
+2 packets transmitted, 0 received, 100% packet loss, time 1007ms
+
+I'm used to the default route being at the bottom, but deleting it should
+be enough to prevent it from being found first, right? :-)
+
+Add a host route to this host explicitly naming the router?
+
+assurancetourix:~# route add 192.168.234.34 gw driepoot
+assurancetourix:~# route -n 
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+169.254.0.0     0.0.0.0         255.255.0.0     U     1000   0        0 eth0
+192.168.234.0   192.168.235.4   255.255.255.0   UG    0      0        0 eth0
+192.168.234.34  192.168.235.4   255.255.255.255 UGH   0      0        0 eth0
+192.168.235.0   0.0.0.0         255.255.255.0   U     1      0        0 eth0
+192.168.235.2   192.168.235.4   255.255.255.255 UGH   0      0        0 eth0
+assurancetourix:~# ping 192.168.234.34 -c 2
+....
+2 packets transmitted, 0 received, 100% packet loss, time 1008ms
+
+Still the packets end up on the ethernet with the 192.168.235.251 router's 
+Ethernet address..... 
+
+assurancetourix:~# route -nC | head -2 ; route -nC | grep 234.34
+Kernel IP routing cache
+Source          Destination     Gateway         Flags Metric Ref    Use Iface
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        0 eth0
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        0 eth0
+192.168.235.8   192.168.234.34  192.168.235.251       0      0        5 eth0
+
+
+# ifconfig eth0 down
+# route -n 
+<empty table> 
+# ifconfig eth0 up
+<old routing table is restored automatically??? apparently with the routing
+cache entries as well....> 
+
+
+I initially thought that this was a problem with the routing
+cache entry being too persistent in the kernel. While documenting
+this while writing this email, I've found that I can flush the whole routing
+cache with "ip route flush cache"  . 
+
+However the routing cache entry springs back to life when I first
+ping the 234.34 host. Even when the problem machine doesn't have a
+default route, so it shouldn't know about the 235.251 default router. 
+
+This is getting weirder and weirder. 
+
+During all this I have
+# tcpdump -nei eth0 net 192.168.234.0/24
+running. If my machine were to get an ICMP redirect from somewhere
+I'd see it, right? 
+
+It could be that the 192.168.235.251 router is proxy-arping (incorreclty)
+for the problem hosts. But then my workstation would have to be
+ARPing in the first place. 
+
+# route add 192.168.234.200 eth0
+# ping 192.168.234.200
+gives: 
+15:31:33.857343 00:23:54:15:1f:a9 > ff:ff:ff:ff:ff:ff, ethertype ARP (0x0806), length 42: Request who-has 192.168.234.200 tell 192.168.235.8, length 28
+in the TCPDUMP, so my machine is not arping for 192.168.234.34. 
+
+Any suggestions? Any at all?
+
+	Roger. 
+
+-- 
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+The plan was simple, like my brother-in-law Phil. But unlike
+Phil, this plan just might work.
