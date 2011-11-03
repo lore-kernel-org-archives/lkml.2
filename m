@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754282Ab1KCBTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:19:37 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:49394 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753474Ab1KCBTf (ORCPT
+	id S1754376Ab1KCBUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:20:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63391 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab1KCBT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:19:35 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Nov 2011 21:19:35 EDT
-Message-ID: <4EB1E964.7030906@fb.com>
-Date: Wed, 2 Nov 2011 18:07:48 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 2 Nov 2011 21:19:58 -0400
 MIME-Version: 1.0
-To: Andrew Vagin <avagin@openvz.org>
-CC: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, <devel@openvz.org>
-Subject: Re: [PATCH 4/4] perf: add scripts for profiling sleep times
-References: <1320274784-2463901-1-git-send-email-avagin@openvz.org> <1320274784-2463901-5-git-send-email-avagin@openvz.org>
-In-Reply-To: <1320274784-2463901-5-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.211,0.0.0000
- definitions=2011-11-02_06:2011-11-03,2011-11-02,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+In-Reply-To: <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Nov 2011 18:19:36 -0700
+X-Google-Sender-Auth: Z_t8qFLIkrjEbB712d_EYmv_2w0
+Message-ID: <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: Shawn Pearce <spearce@spearce.org>
+Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/2/11 3:59 PM, Andrew Vagin wrote:
-> +perf record -ag -e sched:sched_switch --filter "prev_state == 1 || prev_state == 2" -e sched:sched_process_exit ${@/--/}
+On Wed, Nov 2, 2011 at 6:02 PM, Shawn Pearce <spearce@spearce.org> wrote:
+>>
+>> So I really think that signing the top commit itself is fundamentally wrong.
+>
+> I really disagree. I like the signed commit approach.
 
-Like I said on the other thread: it'd be good to have this feature 
-available to normal users without requiring root or
-perf_event_paranoid <= 0.
+If you like it so much, go ahead and use them.
 
-But having it available to root users would be a good first step. Thanks 
-for doing this work.
+But stop with the crazy excuses for the downsides. I explained exactly
+why amending is stupid and wrong, and why empty commits are f*cking
+moronic. But even apart from the *technical* problems with the stupid
+mis-designed feature, I explained why it was fundamentally broken from
+a workflow standpoint too.
 
-  -Arun
+I'm not saying that you shouldn't use them - go ahead and use the
+feature if you like it. But please spare me your excuses for stupid
+workarounds that come from the fact that they aren't a good match for
+sane workflows.
+
+                       Linus
