@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588Ab1KCVBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:01:15 -0400
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:60589 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab1KCVBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:01:14 -0400
-Subject: Re: [GIT PULL] UML changes for 3.2
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Foley <pefoley2@verizon.net>, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1320352899.14409.260.camel@x61.thuisdomein>
-References: <4EB14F51.1050004@nod.at>
-	 <1320348750.14409.249.camel@x61.thuisdomein>
-	 <1320352899.14409.260.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Nov 2011 22:01:12 +0100
-Message-ID: <1320354072.14409.265.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1751660Ab1KCVHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:07:07 -0400
+Received: from home.keithp.com ([63.227.221.253]:41910 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751027Ab1KCVHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 17:07:06 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>, stable@kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Morton\, Andrew" <akpm@linux-foundation.org>
+Subject: Re: [Intel-gfx] [PATCH 2/2] drm/i915: properly prefault for pread/pwrite
+In-Reply-To: <20111023221157.GH2953@phenom.ffwll.local>
+References: <1317203844-2930-1-git-send-email-daniel.vetter@ffwll.ch> <1317203844-2930-2-git-send-email-daniel.vetter@ffwll.ch> <f80fcd$212d29@fmsmga001.fm.intel.com> <20111023101830.GE2953@phenom.ffwll.local> <yun7h3vbjgc.fsf@aiko.keithp.com> <20111023221157.GH2953@phenom.ffwll.local>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 14:06:55 -0700
+Message-ID: <yunzkgcrk40.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 21:41 +0100, Paul Bolle wrote:
-> 1) Note that running make update-po-config seems to do what it's
-> supposed to do. But it also prints this warning
->     arch/um/Kconfig.common:66:warning: environment variable SUBARCH undefined
-> 
-> (I haven't checked if it's new.) It seems harmless. I don't know what
-> should be done to make it go away.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-And this (combined) patch kills that warning too.
+On Mon, 24 Oct 2011 00:11:57 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
 
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 82d2eb2..9dc2737 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -84,16 +84,15 @@ update-po-config: $(obj)/kxgettext
-$(obj)/gconf.glade.h
-            --directory=$(srctree) --directory=$(objtree)           \
-            --output $(obj)/config.pot
-        $(Q)sed -i s/CHARSET/UTF-8/ $(obj)/config.pot
--       $(Q)ln -fs Kconfig.x86 arch/um/Kconfig
--       $(Q)(for i in `ls $(srctree)/arch/*/Kconfig`;    \
-+       $(Q)(for i in `ls $(srctree)/arch/*/Kconfig      \
-+                                       $(srctree)/arch/*/um/Kconfig`; \
-            do                                           \
-                echo "  GEN $$i";                        \
--               $(obj)/kxgettext $$i                     \
-+               env SUBARCH= $(obj)/kxgettext $$i                     \
-                     >> $(obj)/config.pot;               \
-            done )
-        $(Q)msguniq --sort-by-file --to-code=UTF-8 $(obj)/config.pot \
-            --output $(obj)/linux.pot
--       $(Q)rm -f $(srctree)/arch/um/Kconfig
-        $(Q)rm -f $(obj)/config.pot
- 
- PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+> This patch only fixes things up so that we prefault the entire page range
+> and not just the first PAGE_SIZE bytes (i.e. at most 2 pages). So I don't
+> see the risk of extending the current behaviour to all pages. Userspace
+> can already see these zero writes, but only when doing something stupid.
 
-2) Should I submit one (or two?) patch(es) to fix these minor issues?
+When we posted a patch to instead fix fault_in_pages_writeable, Andrew
+complained that we'd have modified memory even on a short read, which
+wasn't considered polite. Could we read/write the same value and avoid
+that problem?
 
+Also, we should be fixing fault_in_pages_* going forward, rather than
+kludging in more code. And, we'd get to remove the version in ntfs,
+which should end in a patch that removes more code than it adds...
 
-Paul Bolle
+=2D-=20
+keith.packard@intel.com
 
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrMCbzYtFsjWk68qAQgrfRAAsCZyxc9aaWTYWh6nm0TFXUiSbe3mhIRn
+p1l3BgsiJ+ATp53HaCFSHgG54HGNk3bxnMiUGeWg9K79UHnf8CAE3ZGWJyJmzS+t
+1UOhy0lWtLl3UHmujk6jFPNgoqsAkP0KCZHXkfDr8s17JWWf5Az5kFFUg7gIzSEQ
+FKdQ5EMlVX+Y/yWdMIzwqCjI4UV/tKmShRDWHT64olYERFzCppOfM6SoXLijmyhV
+jTXTG92K2r1dw44YBDTonEVjqThaHE+rsKkVyHeZavTt3xQ1b2ug80Cv4nnbThdV
+swjwCpaCs7KElVRnurqJplQQWWDNVRwTRvKNzCau2D1Ji3klOTPZUZ8Xm4w2n5eP
+qYzerWSlEuCm/yD5eGLAD+pVBxcxltrXGTfFLtzjD4AfPCR9Bvdb4bntUgBrN4OC
+HmavzwPeHU6e965mHgxqWr+ZQcaFr0FG1ukEueiqbmZJi8pJYZwlkcjswMrvW/Xs
+y+IHyFuDYcXq9spUXEcSaz7FkL57KIwtLov98nHYvKIHTiM0ssz02ajZpcr1JLXX
+PPLIAAm6X8+3HrhS7Nffl4RMKQQq6xk3RqNGH86aXIwqSL1azjZMO+QsMmAaH+zI
+MPz+IVjRoNJF57FwwlyrmpGReIYEq+88wU1JDjr2pd8/p66Tr+U61m328P1P/07u
+6w636prxbKA=
+=gH6w
+-----END PGP SIGNATURE-----
+--=-=-=--
