@@ -1,48 +1,400 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934077Ab1KCQi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:38:56 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34976 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933891Ab1KCQiy (ORCPT
+	id S934095Ab1KCQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:43:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:65072 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934018Ab1KCQnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:38:54 -0400
-Date: Thu, 3 Nov 2011 17:38:41 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: guenter.roeck@ericsson.com
-Cc: Lars =?ISO-8859-1?B?Tm9vZOlu?= <lars.nooden@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
-        lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] Hardware running hot and without the fan
-Message-ID: <20111103173841.367d4081@endymion.delvare>
-In-Reply-To: <1320332801.2309.60.camel@groeck-laptop>
-References: <4EB1108F.6070009@gmail.com>
-	<20111103020301.GA22333@ericsson.com>
-	<4EB250FD.3070000@gmail.com>
-	<20111103134902.GA26121@ericsson.com>
-	<4EB2A46B.8080600@gmail.com>
-	<1320332801.2309.60.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Nov 2011 12:43:14 -0400
+Date: Thu, 3 Nov 2011 17:43:07 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Max Kellermann <mk@cm4all.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        max@duempel.org, menage@google.com, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tim Hockin <thockin@hockin.org>
+Subject: Re: [PATCH] new cgroup controller "fork"
+Message-ID: <20111103164302.GE8198@somewhere.redhat.com>
+References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011 08:06:41 -0700, Guenter Roeck wrote:
-> You should be able to set the fan speed by writing into the fanX_input
-> and/or fanX_output sysfs attributes. You find those
-> in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
-> device).
+On Thu, Nov 03, 2011 at 05:22:38PM +0100, Max Kellermann wrote:
+> Can limit the number of fork()/clone() calls in a cgroup.  It is
+> useful as a safeguard against fork bombs.
+> 
+> Signed-off-by: Max Kellermann <mk@cm4all.com>
 
-Note that fanX_input is always a read-only file, so writing to it isn't
-going to do anything.
+Please have a look at the task counter subsystem: https://lwn.net/Articles/461462/
 
-fanX_output is not a standard attribute for hwmon devices, it shouldn't
-be there in the first place... The applesmc driver doesn't see to
-follow the standard interface, so it's probably best to not assume too
-much.
+It's in the -mm tree. I'm glad to hear about another user who wants
+this feature in cgroups. We need to hear about you and whether this
+meets your requirements in order to get it merged upstream.
 
--- 
-Jean Delvare
+Thanks.
+
+	Frédéric.
+
+> ---
+>  Documentation/cgroups/fork.txt |   30 ++++++
+>  include/linux/cgroup_fork.h    |   26 +++++
+>  include/linux/cgroup_subsys.h  |    6 +
+>  init/Kconfig                   |    6 +
+>  kernel/Makefile                |    1 
+>  kernel/cgroup_fork.c           |  197 ++++++++++++++++++++++++++++++++++++++++
+>  kernel/fork.c                  |    5 +
+>  7 files changed, 271 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/cgroups/fork.txt
+>  create mode 100644 include/linux/cgroup_fork.h
+>  create mode 100644 kernel/cgroup_fork.c
+> 
+> diff --git a/Documentation/cgroups/fork.txt b/Documentation/cgroups/fork.txt
+> new file mode 100644
+> index 0000000..dfbf291
+> --- /dev/null
+> +++ b/Documentation/cgroups/fork.txt
+> @@ -0,0 +1,30 @@
+> +The "fork" Controller
+> +---------------------
+> +
+> +The "fork" controller limits the number of times a new child process
+> +or thread can be created.  It maintains a per-group counter which gets
+> +decremented on each fork() / clone().  When the counter reaches zero,
+> +no process in the cgroup is allowed to create new child
+> +processes/threads, even if existing ones quit.
+> +
+> +This has been proven useful in a shared hosting environment.  A new
+> +temporary cgroup is created for each CGI process, and the maximum fork
+> +count is configured to a sensible value.  Since CGIs are expected to
+> +run for only a short time with predictable resource usage, this may be
+> +an appropriate tool to limit the damage that a freaked CGI can do.
+> +
+> +Initially, the counter is set to -1, which is a magic value for
+> +"disabled" - no limits are imposed on the processes in the group.  To
+> +set a new value, type (in the working directory of that control
+> +group):
+> +
+> + echo 16 > fork.remaining
+> +
+> +This examples allows 16 forks in the control group.  0 means no
+> +further forks are allowed.  The limit may be lowered or increased or
+> +even disabled at any time by a process with write permissions to the
+> +attribute.
+> +
+> +To check if a fork is allowed, the controller walks the cgroup
+> +hierarchy up, and verifies all ancestors.  The counter of all
+> +ancestors is decreased.
+> diff --git a/include/linux/cgroup_fork.h b/include/linux/cgroup_fork.h
+> new file mode 100644
+> index 0000000..4ac66b3
+> --- /dev/null
+> +++ b/include/linux/cgroup_fork.h
+> @@ -0,0 +1,26 @@
+> +#ifndef _LINUX_CGROUP_FORK_H
+> +#define _LINUX_CGROUP_FORK_H
+> +
+> +#ifdef CONFIG_CGROUP_FORK
+> +
+> +/**
+> + * Checks if another fork is allowed.  Call this before creating a new
+> + * child process.
+> + *
+> + * @return 0 on success, a negative errno value if forking should be
+> + * denied
+> + */
+> +int
+> +cgroup_fork_pre_fork(void);
+> +
+> +#else /* !CONFIG_CGROUP_FORK */
+> +
+> +static inline int
+> +cgroup_fork_pre_fork(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +#endif /* !CONFIG_CGROUP_FORK */
+> +
+> +#endif /* !_LINUX_CGROUP_FORK_H */
+> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+> index ac663c1..e2dbd65 100644
+> --- a/include/linux/cgroup_subsys.h
+> +++ b/include/linux/cgroup_subsys.h
+> @@ -64,3 +64,9 @@ SUBSYS(perf)
+>  #endif
+>  
+>  /* */
+> +
+> +#ifdef CONFIG_CGROUP_FORK
+> +SUBSYS(fork)
+> +#endif
+> +
+> +/* */
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 31ba0fd..7a2fe2e 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -603,6 +603,12 @@ config CGROUP_FREEZER
+>  	  Provides a way to freeze and unfreeze all tasks in a
+>  	  cgroup.
+>  
+> +config CGROUP_FORK
+> +	bool "fork controller for cgroups"
+> +	help
+> +	  Limits the number of fork() calls in a cgroup.  An application
+> +	  for this is to make a cgroup safe against fork bombs.
+> +
+>  config CGROUP_DEVICE
+>  	bool "Device controller for cgroups"
+>  	help
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index e898c5b..2aab192 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -60,6 +60,7 @@ obj-$(CONFIG_BACKTRACE_SELF_TEST) += backtracetest.o
+>  obj-$(CONFIG_COMPAT) += compat.o
+>  obj-$(CONFIG_CGROUPS) += cgroup.o
+>  obj-$(CONFIG_CGROUP_FREEZER) += cgroup_freezer.o
+> +obj-$(CONFIG_CGROUP_FORK) += cgroup_fork.o
+>  obj-$(CONFIG_CPUSETS) += cpuset.o
+>  obj-$(CONFIG_UTS_NS) += utsname.o
+>  obj-$(CONFIG_USER_NS) += user_namespace.o
+> diff --git a/kernel/cgroup_fork.c b/kernel/cgroup_fork.c
+> new file mode 100644
+> index 0000000..e9aa650
+> --- /dev/null
+> +++ b/kernel/cgroup_fork.c
+> @@ -0,0 +1,197 @@
+> +/*
+> + * A cgroup implementation which limits the number of fork() calls.
+> + * See Documentation/cgroups/fork.txt for more information.
+> + *
+> + * Copyright 2011 Content Management AG
+> + * Author: Max Kellermann <mk@cm4all.com>
+> + *
+> + * This file is subject to the terms and conditions of the GNU General
+> + * Public License.  See the file COPYING in the main directory of the
+> + * Linux distribution for more details.
+> + */
+> +
+> +#include <linux/cgroup.h>
+> +#include <linux/cgroup_fork.h>
+> +#include <linux/slab.h>
+> +
+> +struct cgroup_fork {
+> +	struct cgroup_subsys_state css;
+> +
+> +	/** protect the "remaining" attribute */
+> +	spinlock_t lock;
+> +
+> +	/**
+> +	 * The remaining number of forks allowed.  -1 is the magic
+> +	 * value for "unlimited".
+> +	 */
+> +	int remaining;
+> +};
+> +
+> +/**
+> + * Get the #cgroup_fork instance of the specified #cgroup.
+> + */
+> +static inline struct cgroup_fork *
+> +cgroup_fork_group(struct cgroup *cgroup)
+> +{
+> +	return container_of(cgroup_subsys_state(cgroup, fork_subsys_id),
+> +			    struct cgroup_fork, css);
+> +}
+> +
+> +/**
+> + * Get the #cgroup_fork instance of the specified task.
+> + */
+> +static inline struct cgroup_fork *
+> +cgroup_fork_task(struct task_struct *task)
+> +{
+> +	return container_of(task_subsys_state(task, fork_subsys_id),
+> +			    struct cgroup_fork, css);
+> +}
+> +
+> +/**
+> + * Get the #cgroup_fork instance of the current task.
+> + */
+> +static inline struct cgroup_fork *
+> +cgroup_fork_current(void)
+> +{
+> +	return cgroup_fork_task(current);
+> +}
+> +
+> +static __pure int
+> +cgroup_fork_lock_get_remaining(struct cgroup_fork *t)
+> +{
+> +	unsigned remaining;
+> +
+> +	spin_lock(&t->lock);
+> +	remaining = t->remaining;
+> +	spin_unlock(&t->lock);
+> +
+> +	return remaining;
+> +}
+> +
+> +static struct cgroup_subsys_state *
+> +cgroup_fork_create(struct cgroup_subsys *ss, struct cgroup *cgroup)
+> +{
+> +	struct cgroup_fork *t = kzalloc(sizeof(*t), GFP_KERNEL);
+> +	if (!t)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	spin_lock_init(&t->lock);
+> +
+> +	t->remaining = -1;
+> +
+> +	return &t->css;
+> +}
+> +
+> +static void
+> +cgroup_fork_destroy(struct cgroup_subsys *ss, struct cgroup *cgroup)
+> +{
+> +	struct cgroup_fork *t = cgroup_fork_group(cgroup);
+> +
+> +	kfree(t);
+> +}
+> +
+> +static void
+> +cgroup_fork_fork(struct cgroup_subsys *ss, struct task_struct *task)
+> +{
+> +	struct cgroup_fork *t;
+> +
+> +	rcu_read_lock();
+> +
+> +	/* decrement the counters in the cgroup and all of its
+> +	   ancestors (except for the root cgroup) */
+> +
+> +	t = cgroup_fork_current();
+> +	while (t->css.cgroup->parent != NULL) {
+> +		spin_lock(&t->lock);
+> +		if (t->remaining > 0)
+> +			--t->remaining;
+> +		spin_unlock(&t->lock);
+> +
+> +		t = cgroup_fork_group(t->css.cgroup->parent);
+> +	}
+> +
+> +	rcu_read_unlock();
+> +}
+> +
+> +static s64
+> +cgroup_fork_remaining_read(struct cgroup *cgroup, struct cftype *cft)
+> +{
+> +	struct cgroup_fork *t = cgroup_fork_group(cgroup);
+> +
+> +	return cgroup_fork_lock_get_remaining(t);
+> +}
+> +
+> +static int
+> +cgroup_fork_remaining_write(struct cgroup *cgroup, struct cftype *cft,
+> +			    s64 value)
+> +{
+> +	struct cgroup_fork *t = cgroup_fork_group(cgroup);
+> +
+> +	if (value < -1 || value > (1L << 30))
+> +		return -EINVAL;
+> +
+> +	spin_lock(&t->lock);
+> +	t->remaining = (int)value;
+> +	spin_unlock(&t->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct cftype cgroup_fork_files[] =  {
+> +	{
+> +		.name = "remaining",
+> +		.read_s64 = cgroup_fork_remaining_read,
+> +		.write_s64 = cgroup_fork_remaining_write,
+> +	},
+> +};
+> +
+> +static int
+> +cgroup_fork_populate(struct cgroup_subsys *ss, struct cgroup *cgroup)
+> +{
+> +	if (cgroup->parent == NULL)
+> +		/* cannot limit the root cgroup */
+> +		return 0;
+> +
+> +	return cgroup_add_files(cgroup, ss, cgroup_fork_files,
+> +				ARRAY_SIZE(cgroup_fork_files));
+> +}
+> +
+> +struct cgroup_subsys fork_subsys = {
+> +	.name = "fork",
+> +	.create = cgroup_fork_create,
+> +	.destroy = cgroup_fork_destroy,
+> +	.fork = cgroup_fork_fork,
+> +	.populate = cgroup_fork_populate,
+> +	.subsys_id = fork_subsys_id,
+> +};
+> +
+> +int
+> +cgroup_fork_pre_fork(void)
+> +{
+> +	struct cgroup_fork *t;
+> +	int err = 0;
+> +
+> +	if (unlikely(current == &init_task))
+> +		/* ignore the kernel's fork request while booting; the
+> +		   cgroup subsystem doesn't get initialized by
+> +		   INIT_TASK(), so we need this check */
+> +		return err;
+> +
+> +	BUG_ON(current->cgroups == NULL);
+> +
+> +	rcu_read_lock();
+> +
+> +	t = cgroup_fork_current();
+> +	while (t->css.cgroup->parent != NULL && err == 0) {
+> +		if (unlikely(cgroup_fork_lock_get_remaining(t) == 0)) {
+> +			err = -EPERM;
+> +			break;
+> +		}
+> +
+> +		t = cgroup_fork_group(t->css.cgroup->parent);
+> +	}
+> +
+> +	rcu_read_unlock();
+> +
+> +	return err;
+> +}
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 70d7619..c8cba7d 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/capability.h>
+>  #include <linux/cpu.h>
+>  #include <linux/cgroup.h>
+> +#include <linux/cgroup_fork.h>
+>  #include <linux/security.h>
+>  #include <linux/hugetlb.h>
+>  #include <linux/swap.h>
+> @@ -1084,6 +1085,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  				current->signal->flags & SIGNAL_UNKILLABLE)
+>  		return ERR_PTR(-EINVAL);
+>  
+> +	retval = cgroup_fork_pre_fork();
+> +	if (retval)
+> +		goto fork_out;
+> +
+>  	retval = security_task_create(clone_flags);
+>  	if (retval)
+>  		goto fork_out;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
