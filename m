@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933681Ab1KCNKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:10:46 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59482 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933143Ab1KCNKp (ORCPT
+	id S933659Ab1KCNQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:16:18 -0400
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:43004 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933183Ab1KCNQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:10:45 -0400
-Message-ID: <1320325819.2892.1.camel@js-netbook>
-Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
- overflow when adjusted
-From: John Stultz <john.stultz@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>
-Date: Thu, 03 Nov 2011 09:10:19 -0400
-In-Reply-To: <alpine.LFD.2.02.1111031304210.2829@ionos>
-References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
-	 <alpine.LFD.2.02.1111031304210.2829@ionos>
+	Thu, 3 Nov 2011 09:16:17 -0400
+Subject: [PATCH] kconfig: accept negative hexadecimals
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 03 Nov 2011 14:16:00 +0100
+Message-ID: <1320326160.14409.223.camel@x61.thuisdomein>
 Mime-Version: 1.0
-x-cbid: 11110313-3352-0000-0000-0000008B95D8
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 13:05 +0100, Thomas Gleixner wrote:
-> On Wed, 2 Nov 2011, John Stultz wrote:
-> >  
-> > +	WARN_ONCE(timekeeper.mult+adj >
-> > +			timekeeper.clock->mult + timekeeper.clock->maxadj,
-> > +			"Adjusting more then 11%%");
-> 
-> Shouldn't we rather limit the update instead of just warn and overflow ?
+Kconfig will print a warning when confronted with a negative "hex"
+value:
+	'number is invalid'
 
-Well, I'm hesitant to commit to that, just yet. So I figured I'd start
-with the warning.
+Make this warning disappear for valid negative hexadecimals (ie, valid
+hexadecimal numbers that start with a minus sign, optionally followed by
+"0x").
 
-thanks
--john
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+I ran into this while trying some possible cleanups to various "hex"
+config entries, for which I needed to add a negative default. Currently
+there are no "hex" config entries with a negative default. (I don't know
+whether this warning can be triggered any other way.)
 
+This also allows to enter negative values for "hex" config entries.
+Apparently that's currently not needed. But these will then show up as
+(eg) "0x-ff" in the GUI. Should that be fixed in a separate commit or
+should I update this patch?
+
+ scripts/kconfig/symbol.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 071f00c..2b33478 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -551,6 +551,8 @@ bool sym_string_valid(struct symbol *sym, const char *str)
+ 		}
+ 		return true;
+ 	case S_HEX:
++		if (str[0] == '-')
++			str++;
+ 		if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
+ 			str += 2;
+ 		ch = *str++;
+-- 
+1.7.4.4
 
