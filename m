@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab1KCKmd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 06:42:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755748Ab1KCKm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 06:42:28 -0400
-Date: Thu, 3 Nov 2011 06:42:15 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] wait_event_freezekillable: use
- freezer_do_not_count/freezer_count
-Message-ID: <20111103064215.48939e1a@tlielax.poochiereds.net>
-In-Reply-To: <20111102175327.GA4446@redhat.com>
-References: <20111101041337.39077229@tlielax.poochiereds.net>
-	<20111101065958.50addab5@tlielax.poochiereds.net>
-	<20111101163059.GR18855@google.com>
-	<20111101175953.GB5358@redhat.com>
-	<20111101180601.GV18855@google.com>
-	<20111101181329.GA6739@redhat.com>
-	<20111101182753.GW18855@google.com>
-	<20111101193923.GA9444@redhat.com>
-	<20111101194601.GB9444@redhat.com>
-	<20111101215710.GA13803@google.com>
-	<20111102175327.GA4446@redhat.com>
+	id S1755667Ab1KCKqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 06:46:06 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:55238 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab1KCKqB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 06:46:01 -0400
+Date: Thu, 3 Nov 2011 21:45:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: Changed location for arm-lpae/for-next
+Message-Id: <20111103214537.87f44ff9a80db78fe163b368@canb.auug.org.au>
+In-Reply-To: <CAHkRjk4ow5EZyqj3j6yDocsX5BPjDQvrqX1enPfyDt5kp=qxaQ@mail.gmail.com>
+References: <20111004132614.GA13865@e102109-lin.cambridge.arm.com>
+	<20111005120621.46c24fe4b8f83ac78944b777@canb.auug.org.au>
+	<CAHkRjk7YBJJO9HW3JC0AUT2-JTyMwj=4=zd==dSG=pfBvCiFNg@mail.gmail.com>
+	<20111006095625.c4814b818efdc61842451625@canb.auug.org.au>
+	<CAHkRjk4ow5EZyqj3j6yDocsX5BPjDQvrqX1enPfyDt5kp=qxaQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Nov_2011_21_45_37_+1100_jZJNbCUFD2juxQnx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Nov 2011 18:53:27 +0100
-Oleg Nesterov <oleg@redhat.com> wrote:
+--Signature=_Thu__3_Nov_2011_21_45_37_+1100_jZJNbCUFD2juxQnx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> fake_signal_wake_up() should not wake up the TASK_KILLABLE tasks,
-> we are going to fix this. This means that wait_event_freezekillable()
-> can't rely on wakeup from freezer. Reimplement it using
-> freezer_do_not_count/freezer_count. This is not really nice, just
-> a simple fix for now.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
-> 
->  include/linux/freezer.h |   10 +++-------
->  1 file changed, 3 insertions(+), 7 deletions(-)
-> 
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -143,13 +143,9 @@ static inline void set_freezable_with_si
->  #define wait_event_freezekillable(wq, condition)			\
->  ({									\
->  	int __retval;							\
-> -	for (;;) {							\
-> -		__retval = wait_event_killable(wq,			\
-> -				(condition) || freezing(current));	\
-> -		if (__retval || (condition))				\
-> -			break;						\
-> -		try_to_freeze();					\
-> -	}								\
-> +	freezer_do_not_count();						\
-> +	__retval = wait_event_killable(wq, (condition));		\
-> +	freezer_count();						\
->  	__retval;							\
->  })
->  
-> 
+Hi Catalin,
 
-I'm not sure we really need this macro anymore since this is much
-simpler. I could just move cifs back to using wait_event_killable and
-simply wrap it in freezer_do_not_count/freezer_count (with some
-comments to explain why we're doing that).
+On Thu, 3 Nov 2011 10:29:24 +0000 Catalin Marinas <catalin.marinas@arm.com>=
+ wrote:
+>
+> I now got my kernel.org account back and I plan to remove the github
+> tree. You can get the above branches from:
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux.git for-next
+> git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux.git kmemleak
 
-In any event, I plan to test this scheme out today and will let you
-know whether it works...
+OK, I have switched back to these.
 
-Thanks,
--- 
-Jeff Layton <jlayton@redhat.com>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__3_Nov_2011_21_45_37_+1100_jZJNbCUFD2juxQnx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOsnDRAAoJEECxmPOUX5FEhLwP/RKheyOegWiSS4cDxGpb8VKD
+fOw8MYNp4xaIlthqGLIJGsuJEy22S83s4vkJW15XiKTHphio8iMd5+58MbGvGLxS
+t8wrTs+mdnAIhwRa7WNttIs9CSrDLIxX/OxYsGoaPjORgDcDbHtVlslh6l2a+kH4
+tvG7Sc6iEZCU35rDy5bJoMqO9yeWWVK4SfM1a7q9MFAV6l1pUicyzptQc0+BrtSo
+ebhcXOj0LYrSuSn1difiVxIy3CLQhcfxOpZURQkInMw9bG9N4PkC5tIYPf/HFLlF
+X5leqpjYJv1tePM3QwQ4WseLA9VyQHdO5TeNnfSyMHTPY/Pnbee9rnK/8ipnw6Nj
+Q8g4KEbHoX/1Vtx8knmo2oXe17edqafE8QjVS2t0aFU5ff8H1C9D2nKFkDiacegN
+JvsswYWPogX0S3pddK6/VNaD5/1fmniJoYcEEc+REXbrEgOkgvmGXolW8hKUDHEE
+FVaCO5Jdzp/xjTQTHx+riFqDC7KaWlainS7Mx+VwvVZA2nRC+SgSQ128uTPDkCxw
+h13Wxuo1J1+fCala9KWp3cNYXJl+wdji7oPM93urbZQrTeN78KT3izWuB0UT6DoF
+vretyc87+EgAAT/R4RpXfvCUr0IZAQyxGTlrGq6gp5AZ3D1sC+stz59WvgECoBTA
+v81hm6bQQSkNf4aPs3NE
+=j/hL
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Nov_2011_21_45_37_+1100_jZJNbCUFD2juxQnx--
