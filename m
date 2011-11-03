@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab1KCMcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:32:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49583 "EHLO mx1.redhat.com"
+	id S933402Ab1KCMdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:33:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9807 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933269Ab1KCMcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:32:33 -0400
+	id S933260Ab1KCMcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:32:32 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCH 8/9] KVM: x86 emulator: fix RDPMC privilege check
-Date: Thu,  3 Nov 2011 14:31:37 +0200
-Message-Id: <1320323498-10233-9-git-send-email-gleb@redhat.com>
+Subject: [PATCH 3/9] KVM: Add generic RDPMC support
+Date: Thu,  3 Nov 2011 14:31:32 +0200
+Message-Id: <1320323498-10233-4-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 References: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,28 +21,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Avi Kivity <avi@redhat.com>
 
-RDPMC is only privileged if CR4.PCE=0.  check_rdpmc() already implements this,
-so all we need to do is drop the Priv flag.
+Add a helper function that emulates the RDPMC instruction operation.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kvm/emulate.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/x86.c              |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 8547958..c0ee85b 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -3254,7 +3254,7 @@ static struct opcode twobyte_table[256] = {
- 	DI(ImplicitOps | Priv, wrmsr),
- 	IIP(ImplicitOps, em_rdtsc, rdtsc, check_rdtsc),
- 	DI(ImplicitOps | Priv, rdmsr),
--	DIP(ImplicitOps | Priv, rdpmc, check_rdpmc),
-+	DIP(ImplicitOps, rdpmc, check_rdpmc),
- 	I(ImplicitOps | VendorSpecific, em_sysenter),
- 	I(ImplicitOps | Priv | VendorSpecific, em_sysexit),
- 	N, N,
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 53caa94..729b3b7 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -767,6 +767,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data);
+ 
+ unsigned long kvm_get_rflags(struct kvm_vcpu *vcpu);
+ void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags);
++bool kvm_rdpmc(struct kvm_vcpu *vcpu);
+ 
+ void kvm_queue_exception(struct kvm_vcpu *vcpu, unsigned nr);
+ void kvm_queue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index eb60363..5ea4cb8 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -814,6 +814,21 @@ int kvm_get_dr(struct kvm_vcpu *vcpu, int dr, unsigned long *val)
+ }
+ EXPORT_SYMBOL_GPL(kvm_get_dr);
+ 
++bool kvm_rdpmc(struct kvm_vcpu *vcpu)
++{
++	u32 ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
++	u64 data;
++	int err;
++
++	err = kvm_pmu_read_pmc(vcpu, ecx, &data);
++	if (err)
++		return err;
++	kvm_register_write(vcpu, VCPU_REGS_RAX, (u32)data);
++	kvm_register_write(vcpu, VCPU_REGS_RDX, data >> 32);
++	return err;
++}
++EXPORT_SYMBOL_GPL(kvm_rdpmc);
++
+ /*
+  * List of msr numbers which we expose to userspace through KVM_GET_MSRS
+  * and KVM_SET_MSRS, and KVM_GET_MSR_INDEX_LIST.
 -- 
 1.7.5.3
 
