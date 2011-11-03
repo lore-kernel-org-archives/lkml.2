@@ -1,76 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1KCA0T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:26:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47227 "EHLO ogre.sisk.pl"
+	id S1753972Ab1KCAdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4971 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab1KCA0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:26:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and system sleep (v2)
-Date: Thu, 3 Nov 2011 01:28:52 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+	id S1752013Ab1KCAdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:33:15 -0400
+Date: Thu, 3 Nov 2011 01:32:54 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        David Rientjes <rientjes@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
         LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
-References: <201106260054.20578.rjw@sisk.pl> <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com> <20111102211708.GA19025@kroah.com>
-In-Reply-To: <20111102211708.GA19025@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
+        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+Message-ID: <20111103003254.GE18879@redhat.com>
+References: <75efb251-7a5e-4aca-91e2-f85627090363@default>
+ <20111027215243.GA31644@infradead.org>
+ <1319785956.3235.7.camel@lappy>
+ <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
+ <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
+ <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default20111031223717.GI3466@redhat.com>
+ <1b2e4f74-7058-4712-85a7-84198723e3ee@default20111101012017.GJ3466@redhat.com>
+ <6a9db6d9-6f13-4855-b026-ba668c29ddfa@default20111101180702.GL3466@redhat.com>
+ <b8a0ca71-a31b-488a-9a92-2502d4a6e9bf@default20111102013122.GA18879@redhat.com>
+ <2bc86220-1e48-40e5-b502-dcd093956fd5@default>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111030128.52823.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2bc86220-1e48-40e5-b502-dcd093956fd5@default>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 02, 2011, Greg KH wrote:
-> On Wed, Nov 02, 2011 at 10:00:39PM +0100, Linus Walleij wrote:
-> > On Wed, Nov 2, 2011 at 9:11 PM, Greg KH <greg@kroah.com> wrote:
-> > > On Wed, Nov 02, 2011 at 09:06:02PM +0100, Linus Walleij wrote:
-> > >> On Wed, Nov 2, 2011 at 8:14 PM, Greg KH <greg@kroah.com> wrote:
-> > >> > So, what specific git commits do you want to see in the 3.0-stable
-> > >> > tree, and in what order should they be applied in?
-> > >>
-> > >> So to my untrained eye it looks like it should be applied like this (top to
-> > >> bottom) using the reverse commit order from the mainline kernel:
-> > >>
-> > >> e529192 PM: Introduce generic "noirq" callback routines for subsystems (v2)
-> > >> 455716e PM / Runtime: Update documentation of interactions with system sleep
-> > >> 1e2ef05 PM: Limit race conditions between runtime PM and system sleep (v2)
-> > >> f3393b6 PM / Runtime: Add new helper function: pm_runtime_status_suspended()
-> > >>
-> > >> So (2) documents the problem, (3) fixes it, whereas (1) and (4) makes
-> > >> it possible
-> > >> to write proper _noirq() code that does not race, IIRC.
-> > >
-> > > But, after this, it's just adding new infrastructure that drivers will
-> > > then be able to use.  As I'm not adding new drivers to 3.0, there will
-> > > not be any users of this code, so why add it in the first place?  It
-> > > doesn't look like this follows the rules of the stable kernel tree at
-> > > all, does it?
-> > 
-> > We'll have to get some feedback from Rafael, but the way I percieved
-> > it, the patch (2) fixes a very real race, then fixing that makes it
-> > necessary for drivers using runtime_pm to do things differently to
-> > be on the safe side. But none were really fixed when first merging
-> > it.
-> > 
-> > So on second thought you probably only want patch (2)
-> > "PM: Limit race conditions between runtime PM and system sleep (v2)"
-> > for stable.
-> 
-> Ok, Rafael, any objection to me applying just this one?
+On Wed, Nov 02, 2011 at 12:06:02PM -0700, Dan Magenheimer wrote:
+> First, let me apologize for yesterday.  I was unnecessarily
+> sarcastic and disrespectful, and I am sorry.  I very much appreciate
+> your time and discussion, and good hard technical questions
+> that have allowed me to clarify some of the design and
+> implementation under discussion.
 
-Well, I'd prefer not to unless there are reports confirming user problems
-being fixed specifically by this patch.  It changes the PM core's behavior
-quite significantly and I'm a little afraid of possible regressions that may
-result from it.
+No problem, I know it must be frustrating to wait so long to get
+something merged.
 
-Thanks,
-Rafael
+Like somebody already pointed out (and I agree) it'd be nice to get
+the patches posted to the mailing list (with git send-emails/hg
+email/quilt) and get them merged into -mm first.
+
+About the subject, git is a super powerful tool, its design saved our
+day with kernel.org too. Awesome backed design (I have to admit way
+better then mercurial backend in the end, well after the packs have
+been introduced) [despite the user interface is still horrible in my
+view but it's very well worth the pain to learn to take advantage of
+the backend]. The pulls are extremely scalable way to merge stuff, but
+they tends to hide stuff and the VM/MM is such a critical piece of the
+kernel that in my view it's probably better to go through the pain of
+patchbombing linux-mm (maybe not lkml) and pass through -mm for
+merging. It's a less scalable approach but it will get more eyes on
+the code and if just a single bug is noticed that way, we all win. So
+I think you could try to submit the origin/master..origin/tmem with
+Andrew and Hugh in CC and see if more comments showup.
+
+> I agree this email is too long, though it has been very useful.
+
+Sure useful to me. I think it's normal and healthy if it gets down to
+more lowlevel issues and long emails... There are still a couple of
+unanswered issues left in that mail but they're not major if it can be
+fixed.
+
+> Confirmed.  Anything below the "struct frontswap_ops" (and
+> "struct cleancache_ops), that is anything in the staging/zcache
+> directory, is wide open for your ideas and improvement.
+> In fact, I would very much welcome your contribution and
+> I think IBM and Nitin would also.
+
+Thanks. So this overall sounds fairly positive (or at least better
+than neutral) to me.
+
+The VM camp is large so I'd be nice to get comments from others too,
+especially if they had time to read our exchange to see if their
+concerns were similar to mine. Hugh's knowledge of the swap path would
+really help (last time he added swapping to KSM).
+
+On my side I hope it get improved over time to get the best out of
+it. I've not been hugely impressed so far because at this point in
+time it doesn't seem a vast improvement in runtime behavior compared
+to what zram could provide, like Rik said there's no iov/SG/vectored
+input to tmem_put (which I'd find more intuitive renamed to
+tmem_store), like Avi said ramster is synchronous and not good having
+to wait a long time. But if we can make these plugins stackable and we
+can put a storage backend at the end we could do
+storage+zcache+frontswap.
+
+It needs to have future potential to be worthwhile considering it's
+not self contained and modifies the core VM actively in a way that
+must be maintained over time. I think I already clarified myself well
+enough in prev long email to explain what are the reasons that would
+made like it or not. And well if I don't like it, it wouldn't mean it
+won't get merged, like wrote in prev mail it's not my decision and I
+understand the distro issues you pointed out.
+
+Now that you cleared the fact there is no API/ABI in the
+staging/zcache directory to worry about, frankly I'm a lot more happy,
+I thought at some point Xen would get into the equation in the tmem
+code. So I certainly don't want to take the slightest risk of stifling
+innovation saying no to something that makes sense and is free to
+evolve :).
