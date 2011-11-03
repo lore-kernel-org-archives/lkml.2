@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1KCG0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 02:26:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44188 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab1KCG0n (ORCPT
+	id S1751381Ab1KCGiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 02:38:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45309 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab1KCGiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 02:26:43 -0400
-Message-ID: <4EB2341D.9090606@gmail.com>
-Date: Thu, 03 Nov 2011 07:26:37 +0100
-From: Eric Dumazet <eric.dumazet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+	Thu, 3 Nov 2011 02:38:09 -0400
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
-CC: Simon Kirby <sim@hostway.ca>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.1-rc9
-References: <1318928713.21167.4.camel@twins> <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos> <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca> <20111031173246.GA10614@hostway.ca> <alpine.LFD.2.02.1111021725550.2829@ionos> <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111102191621.GF5971@hostway.ca> <4EB1C770.7070605@gmail.com> <4EB22F68.9020900@web.de>
-In-Reply-To: <4EB22F68.9020900@web.de>
+In-Reply-To: <201111030201.27551.rjw@sisk.pl>
+References: <20111101021511.GP18855@google.com>
+	<201111030120.42102.rjw@sisk.pl>
+	<20111103004350.GA4417@google.com>
+	<201111030201.27551.rjw@sisk.pl>
+Date: Wed, 2 Nov 2011 23:38:08 -0700
+X-Google-Sender-Auth: xDEdkAfQrO8OVkXD-NK8jq21kAg
+Message-ID: <CAOS58YN4eQ5qfGXCjciGKvv13boSKQJso2U=x5rLw8c7vNeGWQ@mail.gmail.com>
+Subject: Re: [PATCH pm] freezer: fix wait_event_freezable/__thaw_task races
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        linux-pm@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/2011 07:06, Jörg-Volker Peetz wrote:
+Hello,
 
-> Eric Dumazet wrote, on 11/02/11 23:42:
-> <snip>
->> Reported-by: Dimon Kirby <sim@hostway.ca>
-> ??             Simon                     ??
-> <snip>
+On Wed, Nov 2, 2011 at 6:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> OK, so I guess I should drop it from my linux-next branch?
 
+Hmmm... yes, the preceding patches should be applied first and then
+this one. Any problems with earlier ones?
 
-Oops sorry, please David could you fix Simon name ?
+Thank you.
 
-Reported-by: Simon Kirby <sim@hostway.ca>
-
-Thanks
-
+-- 
+tejun
