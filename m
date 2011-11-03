@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1KCCbZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:31:25 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45108 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753303Ab1KCCbW (ORCPT
+	id S1754735Ab1KCCh5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:37:57 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:34321 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab1KCCh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:31:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
-References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
- <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
- <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
- <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com> <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 2 Nov 2011 19:31:00 -0700
-X-Google-Sender-Auth: nJ2xv1q5e0fpspPFY1GcRUaviRQ
-Message-ID: <CA+55aFzbNxTn83DdQd9cVpDujNYEdEP0Aimv5k1hCD0ebTDzcQ@mail.gmail.com>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-To: Shawn Pearce <spearce@spearce.org>
-Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Nov 2011 22:37:56 -0400
+Date: Thu, 3 Nov 2011 13:37:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-Id: <20111103133739.2d81eb3bf43ab1b1272e3814@canb.auug.org.au>
+In-Reply-To: <20111102190436.5b4c805a@jbarnes-desktop>
+References: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
+	<20111102190436.5b4c805a@jbarnes-desktop>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Nov_2011_13_37_39_+1100_HOJpbm7lwCMUTMwo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 7:14 PM, Shawn Pearce <spearce@spearce.org> wrote:
+--Signature=_Thu__3_Nov_2011_13_37_39_+1100_HOJpbm7lwCMUTMwo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Jesse,
+
+On Wed, 2 Nov 2011 19:04:36 -0700 Jesse Barnes <jbarnes@virtuousgeek.org> w=
+rote:
 >
-> <rant>
+> Oh I thought Randy said this stuff was in -next already...  Sorry for
+> the trouble.
 
-I'm answering this separately, because it's a separate rant.
+It is in -next, but merged way after your tree is merged.  You can't
+depend on stuff in -next in your trees ...  This sort of fix needs to be
+carried in -next itself until the bits get merged by Linus.
 
-It's also totally bogus, but whatever.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Get over it. Add the fucking empty commit to show the flow of a
-> change. Stop forcing every fucking contributor to rebase/rewrite his
-> commits just so someone higher up in the food chain can wank with
-> their SOB line.
+--Signature=_Thu__3_Nov_2011_13_37_39_+1100_HOJpbm7lwCMUTMwo
+Content-Type: application/pgp-signature
 
-Shawn, stop using whatever drugs you are using.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-NOBODY EVER REBASES ANYTHING FOR SIGNED-OFF-BY.
+iQIcBAEBCAAGBQJOsf5zAAoJEECxmPOUX5FE1BwP/3L17Vco7S0jUBvNMsblHs5q
+HQb0kQry40wiUkn8Ezz6A8GjPgs4QNACB/vh3BkZc+PP7pDgMWcDXRX6Zb5YVTgX
+koj0OkXgO5a3oaDXZla/topIXdFz2LvEXLUt7UDwiUykCMSdbuki722eXZolgeYW
+LQfu1QtH7/RYOdgaVWODuxdt5J7a/SCFulp680mUg+B4pjLBbG7fkWRuf29xp2bw
+HHz8R2G7QPtHCKOg5PaXopfyQmRmleZ9IW3Bw7M0okAcu2r4qx6ewtTDseA+8Rxk
+fihdcD0TE4tx7bgcS7ZJ1Z/xeg47NSmgF6opOBssBS6eQD/BHLIEtSCNNmS1ZFaZ
+nIaeBgcregsNfpdfPw24SkDFM4A898cJsPGQxq/vzmIsnY6bWx0ld0nywolEYZ5R
+MTpkDKJg8P6ghhEaSp/1J81/g9KcYk3aK+9zlOImmzdhq87U1ALfibQtehDqZgFG
+pR7DAZGspj+J5Db/j+OifsECN852QZ4briuhG0hn1BMtGa1m8TJaf6hctKMPUUFa
+nt/E9c15sl3LKX2ygMJ1cSwGmXiWQrmIiFHNyH5/Bw0vG5BSPZCIxWJiDH424hma
+5TQbAP09zZeT0g76EWiMYeI4BHpprTjGK60hT2adxvpT+osJ/DhHw62P6frpSS2X
+/HZEBTXpC2QAeIMv4Rui
+=8Q8D
+-----END PGP SIGNATURE-----
 
-If they do, they are doing things very very wrong.
-
-Signed-off-by: is *purely* for sending patches by email. No git
-operations involved. None. Nada. Zilch. No rebasing involved, because
-there's not even a git repository involved, for chissake!
-
-Once something is in git, it's not signed off on - there should be a
-sign-off-chain from the author to the committer, and that's it.
-Anything else would be crazy.
-
-So stop the crazy rants. Stop with the bad drugs. Seriously. You're
-acting crazy.
-
-                          Linus
+--Signature=_Thu__3_Nov_2011_13_37_39_+1100_HOJpbm7lwCMUTMwo--
