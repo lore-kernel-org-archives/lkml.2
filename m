@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1KCW7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:59:22 -0400
-Received: from home.keithp.com ([63.227.221.253]:54476 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559Ab1KCW7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:59:21 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 5/7] drm/i915: Make DP prepare/commit consistent with DP dpms
-In-Reply-To: <20111103154125.1fdaff5c@jbarnes-desktop>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-6-git-send-email-keithp@keithp.com> <20111103130011.7946090a@jbarnes-desktop> <yunipn0rg7y.fsf@aiko.keithp.com> <20111103154125.1fdaff5c@jbarnes-desktop>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 03 Nov 2011 15:59:09 -0700
-Message-ID: <yun62j0rewy.fsf@aiko.keithp.com>
+	id S1753719Ab1KCXGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 19:06:17 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:41049 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab1KCXGQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 19:06:16 -0400
+X-Originating-IP: 217.70.178.145
+X-Originating-IP: 168.103.236.33
+Date: Thu, 3 Nov 2011 16:05:53 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH RFC tip/core/rcu 28/28] rcu: Fix idle-task checks
+Message-ID: <20111103230552.GB2838@leaf>
+References: <20111102203017.GA3830@linux.vnet.ibm.com>
+ <1320265849-5744-28-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111103045509.GH2042@leaf>
+ <20111103210005.GK2287@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103210005.GK2287@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 03, 2011 at 02:00:05PM -0700, Paul E. McKenney wrote:
+> On Wed, Nov 02, 2011 at 09:55:09PM -0700, Josh Triplett wrote:
+> > On Wed, Nov 02, 2011 at 01:30:49PM -0700, Paul E. McKenney wrote:
+> > > From: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > 
+> > > RCU has traditionally relied on idle_cpu() to determine whether a given
+> > > CPU is running in the context of an idle task, but recent changes have
+> > > invalidated this approach.  This commit therefore switches from idle_cpu
+> > > to "current->pid != 0".
+> > 
+> > Could you elaborate a bit on "recent changes"?  It looks like you mean
+> > commit 908a3283728d92df36e0c7cd63304fd35e93a8a9; if so, could you add
+> > that reference to the commit message?
+> 
+> Will do!
+> 
+> > Also, the hard-coded use of "current->pid != 0" concerns me.  Could this
+> > use some existing function?  Does idle_task() help?  If no appropriate
+> > predicate exists, perhaps it should.  is_idle_task(current)?
+> 
+> I could use idle_task(), but that does quite a bit more work.
 
-On Thu, 3 Nov 2011 15:41:25 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
-wrote:
+Doesn't seem that high-overhead, but *shrug*.
 
-> Except for VDD??  That does come on... and shouldn't be any different
-> than a full power sequence as far as link training etc go...
+> The hard-coded "current->pid != 0" is used in a number of other places
+> in the kernel, so there is precedent. 
 
-Oh, that's a good point. Doing things in this order essentially forces
-yet another full panel power sequence delay at this point. Hrm. I'll
-have to test again when I get a chance, but perhaps we can turn the sink
-DPMS on before we turn the panel power off.
+Well, 2 is a number, yes:
 
-> Oh missed the vdd on, which is in this path too...  So I'm still
-> confused by the panel off, vdd on sequence, but at least they're
-> consistent.
+arch/sparc/kernel/setup_32.c:   if(current->pid != 0) {
+kernel/events/core.c:           if (!(event->attr.exclude_idle && current->pid == 0))
 
-Right, I'll try doing the sink_dpms before turning the panel off; that
-should work just fine, and should make the sequence a bit faster.
+> Might be worth fixing globally
+> as a separate fix, though.
 
-=2D-=20
-keith.packard@intel.com
+Fair enough.
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrMcvTYtFsjWk68qAQgeTg//XV2CYNnT8QLFi/uuHTCiAPcHuLb2alXx
-AAwoObA+frVRgdQvX6HPCMxRiVhfMnL+prhiwo9aQiEdjR65yt0aZg9qfSGbtOaj
-7B/e4TGlVXbiyosQlxxZ8UiWlDuFUv5uKvnqiRZTA0ZSanK8XalHiaLz7ydO/e9T
-5CdxsEakaS9jvp19+rjB+Uc2hadITkGV5WWPx5M8BoauDyL7zgxx9MrjB6+Y+j/o
-M5uwNaI2w6FAmvRs8GHXrEhNHNADqN+Hq4JCbXwdvMABgdTO/JhDY+poJUUYV4ai
-oWI8X/GHzyqOO//B2tGbj2j1QXDMkWr0mlP3wTf+DVFnlNfR4SceaYPQSHtnyNfu
-QZQY5T3FCUudqQjIAvFMqlQIxCvYa6PrZ4hCLma244IL6yiM7XiCqtQaG6hQQsT8
-c3YUOMIzCg5krU0B29QwoUzAkFfcbEjeOjirFN8cMu9NgEMC/rYR7vF8oDzkHZyj
-7/m1Ev03YL7Kfvfu4U/u6gsd8Ch9qq8UhshLI1jA4lEeBeYV0sNb5AxHEge2H/nf
-xwa3UjZEVFBWTnAp96LUxz7PJ5SozRgCtKTJlFDXRICz0PdvQJJVypU2/Lp5KhHV
-1tU5tqzjYEeMbVTAnZ+d6ViUYTtH65SGlA3WuVvm9CEhXnN2xMYIMHU2j9tRG7Pd
-/c1Z+ldfixg=
-=sXZQ
------END PGP SIGNATURE-----
---=-=-=--
+- Josh Triplett
