@@ -1,76 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab1KCATI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:19:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47205 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab1KCATH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:19:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: PM / OPP: Fix build when CONFIG_PM_OPP is not set
-Date: Thu, 3 Nov 2011 01:21:42 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mike Turquette <mturquette@ti.com>, Kevin Hilman <khilman@ti.com>
-References: <20111102170055.GI31337@atomide.com>
-In-Reply-To: <20111102170055.GI31337@atomide.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754629Ab1KCAUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:20:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55112 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754513Ab1KCAUr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:20:47 -0400
+Subject: Re: [PATCH RFC] virtio-pci: flexible configuration layout
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+In-Reply-To: <20111102233110.GA20289@redhat.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
+	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
+	 <20111102233110.GA20289@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 03 Nov 2011 02:19:03 +0200
+Message-ID: <1320279543.31237.14.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111030121.42432.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 02, 2011, Tony Lindgren wrote:
-> Commit 03ca370fbf7b76d6d002380dbdc2cdc2319f9c80 (PM / OPP: Add
-> OPP availability change notifier) does not compile if CONFIG_PM_OPP
-> is not set:
+Hi Michael,
+
+On Thu, 2011-11-03 at 01:31 +0200, Michael S. Tsirkin wrote:
+> Add a flexible mechanism to specify virtio configuration layout, using
+> pci vendor-specific capability.  A separate capability is used for each
+> of common, device specific and data-path accesses.
 > 
-> arch/arm/plat-omap/omap-pm-noop.o: In function `opp_get_notifier':
-> include/linux/opp.h:103: multiple definition of `opp_get_notifier'
-> include/linux/opp.h:103: first defined here
+> Warning: compiled only.
+> This patch also needs to be split up, pci_iomap changes
+> also need arch updates for non-x86.
 > 
-> Also fix incorrect comment.
+> We also will need to update the spec.
 > 
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Mike Turquette <mturquette@ti.com>
-> Cc: Kevin Hilman <khilman@ti.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-
-Applied to linux-pm/linux-next.
-
-Thanks,
-Rafael
-
-
+> See the first chunk for layout documentation.
+> 
+> Posting here for early feedback.
+> 
+> In particular:
+> 
+> Do we need to require offset to be aligned?
+> Does iowrite16 work with unaligned accesses on all architectures?
+> Does using ioread/write as we do add overhead as compared to
+> plain PIO accesses?
+> 
+> Jesse - are you OK with the pci_iomap_range API proposed here
+> (see last chunks)?
+> I noticed lots of architectures duplicate the implementation
+> of pci_iomap - makes sense to clean that up?
+> 
+> Thanks,
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
 > ---
 > 
-> I'm seeing this with omap1_defconfig at least.
-> 
-> --- a/include/linux/opp.h
-> +++ b/include/linux/opp.h
-> @@ -97,11 +97,11 @@ static inline int opp_disable(struct device *dev, unsigned long freq)
->  	return 0;
->  }
+> diff --git a/include/linux/virtio_pci.h b/include/linux/virtio_pci.h
+> index ea66f3f..b8a9de2 100644
+> --- a/include/linux/virtio_pci.h
+> +++ b/include/linux/virtio_pci.h
+> @@ -92,4 +92,38 @@
+>  /* The alignment to use between consumer and producer parts of vring.
+>   * x86 pagesize again. */
+>  #define VIRTIO_PCI_VRING_ALIGN		4096
+> +
+> +/*
+> + * Layout for Virtio PCI vendor specific capability (little-endian):
+> + * 5 bit virtio capability id.
+> + * 3 bit BAR index register, specifying which BAR to use.
+> + * 4 byte cfg offset within the BAR.
+
+Why not make the 3 bits of the BIR as the lower 3 bits of the offset
+like its done in the PCI spec?
+
+This way you also get 'free' 32bit alignment and simpler masking.
+
+> + * 4 byte cfg size.
+> + */
+> +
+> +/* A single virtio device has multiple vendor specific capabilities, we use the
+> + * 5 bit ID field to distinguish between these. */
+> +#define VIRTIO_PCI_CAP_ID		3
+> +#define VIRTIO_PCI_CAP_ID_MASK		0x1f
+> +#define VIRTIO_PCI_CAP_ID_SHIFT		0
+> +
+> +/* IDs for different capabilities. If a specific configuration
+> + * is missing, legacy PIO path is used. */
+> +/* Common configuration */
+> +#define VIRTIO_PCI_CAP_COMMON_CFG	0
+> +/* Device specific confiuration */
+> +#define VIRTIO_PCI_CAP_DEVICE_CFG	1
+> +/* Notifications and ISR access */
+> +#define VIRTIO_PCI_CAP_NOTIFY_CFG	2
+
+I think that separating notification here is very kvm specific. Maybe it
+could be replaced by allowing virtio to signal eventfds or something
+similar?
+
+> +
+> +/* Index of the BAR including this configuration */
+> +#define VIRTIO_PCI_CAP_CFG_BIR		3
+> +#define VIRTIO_PCI_CAP_CFG_BIR_MASK	(0x7)
+> +#define VIRTIO_PCI_CAP_CFG_BIR_SHIFT	5
+> +
+> +/* Offset within the BAR */
+> +#define VIRTIO_PCI_CAP_CFG_OFF		4
+> +/* Size of the configuration space */
+> +#define VIRTIO_PCI_CAP_CFG_SIZE		8
+> +
+>  #endif
+> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+> index 4bcc8b8..d4ed130 100644
+> --- a/drivers/virtio/virtio_pci.c
+> +++ b/drivers/virtio/virtio_pci.c
+> @@ -37,8 +37,12 @@ struct virtio_pci_device
+>  	struct virtio_device vdev;
+>  	struct pci_dev *pci_dev;
 >  
-> -struct srcu_notifier_head *opp_get_notifier(struct device *dev)
-> +static inline struct srcu_notifier_head *opp_get_notifier(struct device *dev)
->  {
->  	return ERR_PTR(-EINVAL);
->  }
-> -#endif		/* CONFIG_PM */
-> +#endif		/* CONFIG_PM_OPP */
+> -	/* the IO mapping for the PCI config space */
+> +	/* the IO address for the common PCI config space */
+>  	void __iomem *ioaddr;
+> +	/* the IO address for device specific config */
+> +	void __iomem *ioaddr_device;
+> +	/* the IO address to use for notifications operations */
+> +	void __iomem *ioaddr_notify;
 >  
->  #if defined(CONFIG_CPU_FREQ) && defined(CONFIG_PM_OPP)
->  int opp_init_cpufreq_table(struct device *dev,
-> 
-> 
+>  	/* a list of queues so we can dispatch IRQs */
+>  	spinlock_t lock;
+> @@ -57,8 +61,142 @@ struct virtio_pci_device
+>  	unsigned msix_used_vectors;
+>  	/* Whether we have vector per vq */
+>  	bool per_vq_vectors;
+> +
+> +	/* Various IO mappings: used for resource tracking only. */
+> +
+> +	/* Legacy BAR0: typically PIO. */
+> +	void __iomem *legacy_map;
+> +
+> +	/* Mappings specified by device capabilities: typically in MMIO */
+> +	void __iomem *notify_map;
+> +	void __iomem *common_map;
+> +	void __iomem *device_map;
+>  };
+>  
+> +/*
+> + * With PIO, device-specific config moves as MSI-X is enabled/disabled.
+> + * Use this accessor to keep pointer to that config in sync.
+> + */
+> +static void virtio_pci_set_msix_enabled(struct virtio_pci_device *vp_dev, int enabled)
+> +{
+> +	vp_dev->msix_enabled = enabled;
+> +	if (vp_dev->device_map)
+> +		vp_dev->ioaddr_device = vp_dev->device_map;
+> +	else
+> +		vp_dev->ioaddr_device = vp_dev->legacy_map +
+> +			VIRTIO_PCI_CONFIG(vp_dev);
+> +}
+> +
+> +static void __iomem *virtio_pci_map_cfg(struct virtio_pci_device *vp_dev, u8 cap_id)
+> +{
+> +        u32 size;
+> +        u32 offset;
+> +        u8 bir;
+> +        u8 cap_len;
+> +	int pos;
+> +	struct pci_dev *dev = vp_dev->pci_dev;
+> +	void __iomem *p;
+> +
+> +	for (pos = pci_find_capability(dev, PCI_CAP_ID_VNDR);
+> +	     pos > 0;
+> +	     pos = pci_find_next_capability(dev, pos, PCI_CAP_ID_VNDR)) {
+> +		u8 id;
+> +		pci_read_config_byte(dev, pos + PCI_VNDR_CAP_LEN, &cap_len);
+> +		if (cap_len < VIRTIO_PCI_CAP_ID + 1)
+> +			continue;
+> +		pci_read_config_byte(dev, pos + VIRTIO_PCI_CAP_ID, &id);
+> +		id >>= VIRTIO_PCI_CAP_ID_SHIFT;
+> +		id &= VIRTIO_PCI_CAP_ID_MASK;
+> +		if (id == cap_id)
+> +			break;
+> +	}
+> +
+> +	if (pos <= 0)
+> +		return NULL;
+> +
+> +	if (cap_len < VIRTIO_PCI_CAP_CFG_BIR + 1)
+> +		goto err;
+> +        pci_read_config_byte(dev, pos + VIRTIO_PCI_CAP_CFG_BIR, &bir);
+> +	if (cap_len < VIRTIO_PCI_CAP_CFG_OFF + 4)
+> +		goto err;
+> +        pci_read_config_dword(dev, pos + VIRTIO_PCI_CAP_CFG_OFF, &offset);
+> +	if (cap_len < VIRTIO_PCI_CAP_CFG_SIZE + 4)
+> +		goto err;
+> +        pci_read_config_dword(dev, pos + VIRTIO_PCI_CAP_CFG_SIZE, &size);
+> +        bir >>= VIRTIO_PCI_CAP_CFG_BIR_SHIFT;
+> +        bir &= VIRTIO_PCI_CAP_CFG_BIR_MASK;
+> +
+> +	/* It's possible for a device to supply a huge config space,
+> +	 * but we'll never need to map more than a page ATM. */
+> +	p = pci_iomap_range(dev, bir, offset, size, PAGE_SIZE);
+> +	if (!p)
+> +		dev_err(&vp_dev->vdev.dev, "Unable to map virtio pci memory");
+> +	return p;
+> +err:
+> +	dev_err(&vp_dev->vdev.dev, "Unable to parse virtio pci capability");
+> +	return NULL;
+> +}
+> +
+> +static void virtio_pci_iounmap(struct virtio_pci_device *vp_dev)
+> +{
+> +	if (vp_dev->legacy_map)
+> +		pci_iounmap(vp_dev->pci_dev, vp_dev->legacy_map);
+> +	if (vp_dev->notify_map)
+> +		pci_iounmap(vp_dev->pci_dev, vp_dev->notify_map);
+> +	if (vp_dev->common_map)
+> +		pci_iounmap(vp_dev->pci_dev, vp_dev->common_map);
+> +	if (vp_dev->device_map)
+> +		pci_iounmap(vp_dev->pci_dev, vp_dev->device_map);
+> +}
+> +
+> +static int virtio_pci_iomap(struct virtio_pci_device *vp_dev)
+> +{
+> +	vp_dev->notify_map = virtio_pci_map_cfg(vp_dev,
+> +						     VIRTIO_PCI_CAP_NOTIFY_CFG);
+> +	vp_dev->common_map = virtio_pci_map_cfg(vp_dev,
+> +						     VIRTIO_PCI_CAP_COMMON_CFG);
+> +	vp_dev->device_map = virtio_pci_map_cfg(vp_dev,
+> +						     VIRTIO_PCI_CAP_DEVICE_CFG);
+> +
+> +	if (!vp_dev->notify_map || !vp_dev->common_map ||
+> +	    !vp_dev->device_map) {
+> +		/*
+> +		 * If not all capabilities present, map legacy PIO.
+> +		 * Legacy access is at BAR 0. We never need to map
+> +		 * more than 256 bytes there, since legacy config space
+> +		 * used PIO which has this size limit.
+> +		 * */
+
+Whats the point of putting each of those new configs into a separate cap
+structure if you must have all 3 of them for the new config layout to
+work anyway?
+
+Also, why not use this change to simplify the config space? The attempts
+to squeeze it into the limited PIO space made it quite messy, and this
+can be a good chance to fix some things like the MSI-X and offsets
+issue.
+
+-- 
+
+Sasha.
 
