@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab1KCMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:32:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8403 "EHLO mx1.redhat.com"
+	id S933267Ab1KCMcd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:32:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61199 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933120Ab1KCMcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:32:25 -0400
+	id S1755871Ab1KCMca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:32:30 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCH 5/9] KVM: VMX: Intercept RDPMC
-Date: Thu,  3 Nov 2011 14:31:34 +0200
-Message-Id: <1320323498-10233-6-git-send-email-gleb@redhat.com>
+Subject: [PATCH 4/9] KVM: SVM: Intercept RDPMC
+Date: Thu,  3 Nov 2011 14:31:33 +0200
+Message-Id: <1320323498-10233-5-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 References: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,56 +26,49 @@ Intercept RDPMC and forward it to the PMU emulation code.
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kvm/vmx.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ arch/x86/kvm/svm.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 6e28d58..a6535ba 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1956,6 +1956,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
- #endif
- 		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
- 		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
-+		CPU_BASED_RDPMC_EXITING |
- 		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
- 	/*
- 	 * We can allow some features even when not supported by the
-@@ -2414,7 +2415,8 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
- 	      CPU_BASED_USE_TSC_OFFSETING |
- 	      CPU_BASED_MWAIT_EXITING |
- 	      CPU_BASED_MONITOR_EXITING |
--	      CPU_BASED_INVLPG_EXITING;
-+	      CPU_BASED_INVLPG_EXITING |
-+	      CPU_BASED_RDPMC_EXITING;
- 
- 	if (yield_on_hlt)
- 		min |= CPU_BASED_HLT_EXITING;
-@@ -4615,6 +4617,16 @@ static int handle_invlpg(struct kvm_vcpu *vcpu)
- 	return 1;
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index e32243e..5fa553b 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1014,6 +1014,7 @@ static void init_vmcb(struct vcpu_svm *svm)
+ 	set_intercept(svm, INTERCEPT_NMI);
+ 	set_intercept(svm, INTERCEPT_SMI);
+ 	set_intercept(svm, INTERCEPT_SELECTIVE_CR0);
++	set_intercept(svm, INTERCEPT_RDPMC);
+ 	set_intercept(svm, INTERCEPT_CPUID);
+ 	set_intercept(svm, INTERCEPT_INVD);
+ 	set_intercept(svm, INTERCEPT_HLT);
+@@ -2770,6 +2771,19 @@ static int emulate_on_interception(struct vcpu_svm *svm)
+ 	return emulate_instruction(&svm->vcpu, 0) == EMULATE_DONE;
  }
  
-+static int handle_rdpmc(struct kvm_vcpu *vcpu)
++static int rdpmc_interception(struct vcpu_svm *svm)
 +{
 +	int err;
 +
-+	err = kvm_rdpmc(vcpu);
-+	kvm_complete_insn_gp(vcpu, err);
++	if (!static_cpu_has(X86_FEATURE_NRIPS))
++		return emulate_on_interception(svm);
++
++	err = kvm_rdpmc(&svm->vcpu);
++	kvm_complete_insn_gp(&svm->vcpu, err);
 +
 +	return 1;
 +}
 +
- static int handle_wbinvd(struct kvm_vcpu *vcpu)
+ bool check_selective_cr0_intercepted(struct vcpu_svm *svm, unsigned long val)
  {
- 	skip_emulated_instruction(vcpu);
-@@ -5565,6 +5577,7 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
- 	[EXIT_REASON_HLT]                     = handle_halt,
- 	[EXIT_REASON_INVD]		      = handle_invd,
- 	[EXIT_REASON_INVLPG]		      = handle_invlpg,
-+	[EXIT_REASON_RDPMC]                   = handle_rdpmc,
- 	[EXIT_REASON_VMCALL]                  = handle_vmcall,
- 	[EXIT_REASON_VMCLEAR]	              = handle_vmclear,
- 	[EXIT_REASON_VMLAUNCH]                = handle_vmlaunch,
+ 	unsigned long cr0 = svm->vcpu.arch.cr0;
+@@ -3190,6 +3204,7 @@ static int (*svm_exit_handlers[])(struct vcpu_svm *svm) = {
+ 	[SVM_EXIT_SMI]				= nop_on_interception,
+ 	[SVM_EXIT_INIT]				= nop_on_interception,
+ 	[SVM_EXIT_VINTR]			= interrupt_window_interception,
++	[SVM_EXIT_RDPMC]			= rdpmc_interception,
+ 	[SVM_EXIT_CPUID]			= cpuid_interception,
+ 	[SVM_EXIT_IRET]                         = iret_interception,
+ 	[SVM_EXIT_INVD]                         = emulate_on_interception,
 -- 
 1.7.5.3
 
