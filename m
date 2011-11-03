@@ -1,61 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab1KCNTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:19:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:48589 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab1KCNTa (ORCPT
+	id S1751571Ab1KCNUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:20:45 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34814 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916Ab1KCNUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:19:30 -0400
-X-Authority-Analysis: v=1.1 cv=rFxaVhpzdNKRsWyFDFmDbYx/QEtlW7L1Gw9MiLxO4aw= c=1 sm=0 a=FTm68WEYJR0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=EynvLNx38X06vFxnQVQA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1320326366.27370.1.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH RFC tip/core/rcu 17/28] rcu: Make srcu_read_lock_held()
- call common lockdep-enabled function
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org
-Date: Thu, 03 Nov 2011 09:19:26 -0400
-In-Reply-To: <20111103111413.GC8198@somewhere.redhat.com>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
-	 <1320265849-5744-17-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20111103034854.GD2042@leaf> <20111103111413.GC8198@somewhere.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Nov 2011 09:20:44 -0400
+Subject: Re: virtio-pci new configuration proposal
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        Anthony Liguori <anthony@codemonkey.ws>
+In-Reply-To: <20111103124651.GK18296@redhat.com>
+References: <1320259767.22582.2.camel@lappy>
+	 <8762j2t19l.fsf@rustcorp.com.au> <1320309203.29407.1.camel@lappy>
+	 <20111103124651.GK18296@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 03 Nov 2011 15:19:01 +0200
+Message-ID: <1320326341.29407.25.camel@lappy>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 12:14 +0100, Frederic Weisbecker wrote:
-> On Wed, Nov 02, 2011 at 08:48:54PM -0700, Josh Triplett wrote:
-> > On Wed, Nov 02, 2011 at 01:30:38PM -0700, Paul E. McKenney wrote:
-> > > From: Frederic Weisbecker <fweisbec@gmail.com>
+On Thu, 2011-11-03 at 14:46 +0200, Michael S. Tsirkin wrote:
+> On Thu, Nov 03, 2011 at 10:33:23AM +0200, Sasha Levin wrote:
+> > On Thu, 2011-11-03 at 12:28 +1030, Rusty Russell wrote: 
+> > > On Wed, 02 Nov 2011 20:49:27 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > > > This is a proposal for a new layout of the virtio-pci config space.
+> > > > 
+> > > > We will separate the current configuration into two: A virtio-pci common
+> > > > configuration and a device specific configuration. This allows more flexibility
+> > > > with adding features and makes usage easier, specifically in cases like the
+> > > > ones in virtio-net where device specific configurations depend on device
+> > > > specific features.
 > > > 
-> > > A common debug_lockdep_rcu_enabled() function is used to check whether
-> > > RCU lockdep splats should be reported, but srcu_read_lock() does not
-> > > use it.  This commit therefore brings srcu_read_lock_held() up to date.
+> > > Thanks for this Sasha.  Several general comments:
 > > > 
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 1) How to we distinguish the two layouts?  In theory, we need to do this
+> > >    forever.  In practice we can deprecate the old layout in several
+> > >    years' time.
 > > 
-> > Just how signed off does this patch need to be? ;)
+> > Old layouts won't have the new virtio-pci cap structure in their PCI
+> > config space.
 > 
-> Dunno but I feel uncomfortable now with that strange feeling I'm walking
-> on the street with two Paul holding my hand on each side.
+> What happens next time we want to change something?
 
-We already established the split Paul, but what is really scarey, is
-that the Pauls on both sides of you, are the evil Pauls. ;)
+Thats why there are virtio-pci cap values. This layout cap was defined
+as VIRTIO_PCI_C_LAYOUT. If for example we want to provide a whole
+different layout, we can define something similar to
+VIRTIO_PCI_C_LAYOUT_V2 and use it in newer drivers (we can also add a
+version field to the original layout ofcourse).
 
--- Steve
+This also allows an easy way to provide backwards compatibility by
+specifying many layout definitions and letting the driver choose the
+latest layout he can. This would also allow to make larger changes
+easier as it allows you to have several different layout configs in the
+same code.
 
+> 
+> > > 2) I don't think we want to turn the device-specific config into a
+> > >    linked list.  We haven't needed variable-length config (yet!), and
+> > >    it's (slightly) more complex.  That's also the part of the spec which
+> > >    is shared with non-PCI virtio implementations.
+> > 
+> > Variable length config wasn't used yet because space in the device
+> > specific space was reserved for a feature even if that feature wasn't
+> > used.
+> 
+> Not only that, also because it is messy to debug.  With fixed offsets
+> you just print the address/data and you know what it's doing.
+> 
+> > For example, the MAC feature reserved 6 bytes in the config space for
+> > the MAC even if VIRTIO_NET_F_MAC wasn't enabled. Here we can just avoid
+> > having it pollute the config space until it's enabled.
+> > 
+> 
+> This looks like overdesign to me. The only reason PCI spec
+> used capability list is
+> 1. to save space
+> 2. standard mechanism to discover features
+> You say explicitly space is not an issue, and you keep
+> feature bits around.
+
+Okay, I agree with not doing linked lists for device specific features.
+
+I do think we need them for virtio-pci itself to handle features such as
+MSI-X.
+
+> > I don't think it'll have any impact on non-PCI implementations since the
+> > "pointers" are simply offsets from the beginning of the config space,
+> > and are not PCI specific in any way.
+> 
+> The APIs use a single offset cookie to pass configuration.
+> If you want capabilities, that will have to be changed.
+> 
+> > > 3) If we're changing the queue layout, it's a chance to fix a
+> > >    longstanding bug: let the guest notify the host of preferred
+> > >    queue size and alignment.
+> > 
+> > Yup, we can do that.
+> > 
+> > -- 
+> > 
+> > Sasha.
+> > 
+
+-- 
+
+Sasha.
 
