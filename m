@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab1KCOaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:30:20 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55770 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab1KCOaR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:30:17 -0400
+	id S1755427Ab1KCOcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:32:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49430 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752833Ab1KCOcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:32:33 -0400
+Message-ID: <4EB2A5FF.1040808@redhat.com>
+Date: Thu, 03 Nov 2011 12:32:31 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1320330107.2813.73.camel@hp6530s>
-References: <1320214900-2112-1-git-send-email-ming.m.lin@intel.com>
-	<20111102151711.GB12543@dhcp-172-17-108-109.mtv.corp.google.com>
-	<1320330107.2813.73.camel@hp6530s>
-Date: Thu, 3 Nov 2011 07:30:15 -0700
-X-Google-Sender-Auth: wUM-wueVidBTaxIOCQ8h2SDsf84
-Message-ID: <CAOS58YMSwnp=Vm81+0_ZO9OYB4=NMnfETBen0QNCQwuDW0TjUA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ata port runtime power management support
-From: Tejun Heo <tj@kernel.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Josh Boyer <jwboyer@redhat.com>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: sb_edac 32-bit compile fail due to 64-bit divide
+References: <20111103140716.GF19809@zod.bos.redhat.com>
+In-Reply-To: <20111103140716.GF19809@zod.bos.redhat.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Em 03-11-2011 12:07, Josh Boyer escreveu:
+> Hi,
+> 
+> It seems the newly added EDAC driver for SandyBridge won't build on
+> 32-bit x86 because of a 64-bit divide somewhere:
+> 
+> 	drivers/edac/sb_edac.c: In function 'get_memory_error_data':
+> 	drivers/edac/sb_edac.c:861:2: warning: left shift count >= width of type
+> 	[enabled by default]
+> 	<snip>
+> 	ERROR: "__udivdi3" [drivers/edac/sb_edac.ko] undefined!
+> 	make[1]: *** [__modpost] Error 1
+> 	make: *** [modules] Error 2
+> 
+> You can find the full build log here:
+> 
+> http://koji.fedoraproject.org/koji/getfile?taskID=3482579&name=build.log
+> 
+> Before I go digging into where this is done and what to do about it, I
+> do want to confirm that it is supposed to work on a 32-bit kernel,
+> correct?
 
-On Thu, Nov 3, 2011 at 7:21 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> * How much does this add on top of hardware timed auto spindown and
->>   dynamic link power management?
->
-> Sorry, I don't understand this question.
-> What do you mean?
+Thanks for pointing it!
 
-I was curious about the amount of additional power saving on top of
-the existing PM features.
+Well, I didn't test it on a 32-bit kernel. It should work through.
 
->> * Do the added benefits justify yet another runtime powersaving
->>   mechanism?
->
-> There will be ACPI firmware which supports ata port runtime D3Cold.
-> To enable ata port runtime PM is the first step.
+It is probably due to those debug lines:
+	debugf0("CH#%d RIR#%d INTL#%d, offset %Lu.%03Lu GB (0x%016Lx), tgt: %d, reg=0x%08x\n",
+        	i, j, k,
+                tmp_mb / 1000, tmp_mb % 1000,
+                ((u64)tmp_mb) << 20L,
+                (u32)RIR_RNK_TGT(reg),
+                reg);
+(same kind of calculus is recurrent at the driver)
 
-libata can already turn off unused ports although it wouldn't go as
-far as putting the whole controller into D3.
+Maybe the easiest way would be to write a function that would call do_div() internally,
+and output a string with something similar to:
 
->> * Any way we can tie the other stuff with overall runtime PM?
->
-> What's the other stuff?
-> Do you mean tie disk/link/port/controller stuff with overall runtime PM?
+	sprintf(msg, "%Lu.%03Lu GB", tmp_mb / 1000, tmp_mb % 1000);
 
-Hardware initiated spin-down (hdparm -S) and link power saving (look
-for ata_lpm_*). It would be great if there's an overall design how
-they interact before adding yet another PM vector.
+Of course, an interim fix would be to make it depend on CONFIG_64BIT or CONFIG_X86_64.
 
-Thanks.
-
--- 
-tejun
+Regards,
+Mauro
