@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab1KCPdr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:33:47 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:53504 "EHLO imr3.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab1KCPdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:33:46 -0400
-Subject: Re: Hardware running hot and without the fan
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Lars =?ISO-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Henrik Rydberg <rydberg@euromail.se>
-In-Reply-To: <4EB2B0FD.309@gmail.com>
-References: <4EB1108F.6070009@gmail.com>
-	 <20111103020301.GA22333@ericsson.com> <4EB250FD.3070000@gmail.com>
-	 <20111103134902.GA26121@ericsson.com>  <4EB2A46B.8080600@gmail.com>
-	 <1320332801.2309.60.camel@groeck-laptop>  <4EB2B0FD.309@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Thu, 3 Nov 2011 08:32:02 -0700
-Message-ID: <1320334322.2309.68.camel@groeck-laptop>
+	id S933766Ab1KCPjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:39:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47188 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932244Ab1KCPjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 11:39:33 -0400
+Date: Thu, 3 Nov 2011 11:39:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tejun Heo <tj@kernel.org>
+cc: Lin Ming <ming.m.lin@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
+In-Reply-To: <CAOS58YNNx7XOGov19_hucAQYvw88F2YO+KoVpn8uD+COgJRbEw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1111031139150.2136-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 11:19 -0400, Lars NoodÃ©n wrote:
-> On 11/03/2011 05:06 PM, Guenter Roeck wrote:
-> > On Thu, 2011-11-03 at 10:25 -0400, Lars NoodÃ©n wrote:
-> [snip]
-> >> The one machine reports one fan and the other two fans.  I haven't found
-> >> a way to set the fan speed manually.  The output from sensors
-> >> is
-> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/44
-> >> and here
-> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/47
-> > 
-> > Do the fans actually turn, or is the output bogus ?
-> 
-> The output is bogus, the fans are not turning.  On #47 there above, I
-> think the temperatures might be inaccurate, too.  Since they'll go up
-> and down as much as 8 degrees in a few seconds.
-> 
-Maybe 2000 really reflects 0. Not sure about the temperatures - I think
-especially the CPU temperature can change pretty fast. Or maybe the
-sensors are just not very accurate.
+On Thu, 3 Nov 2011, Tejun Heo wrote:
 
-> > You should be able to set the fan speed by writing into the fanX_input
-> > and/or fanX_output sysfs attributes. You find those
-> > in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
-> > device).
+> Hello,
 > 
-> I can set the fan speed manually.  e.g.:
+> On Thu, Nov 3, 2011 at 7:37 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> >> Yes, it is a problem.  But it looks like the underlying issue is that
+> >> you're using the SCSI error handler to do something it was not intended
+> >> for.  Can't you suspend and resume the ATA port without using the error
+> >> handler?
+> >
+> > The system suspend and resume of the ATA port uses the error handler.
+> > I think the runtime suspend and resume should use the error handler too.
+> >
+> > Tejun,
+> >
+> > Could you comment more on this?
 > 
->  echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
-> 
-> That helps some.
-> 
-If you can do that, you should be able to set up fancontrol to
-automatically control fan speed based on system temperatures.
+> I don't know. I haven't really thought about it but as it's currently
+> designed, I don't think it'll be possible to avoid going through EH to
+> put ATA ports into suspend mode.
 
-There is another sysfs attribute - fanX_manual. I don't find driver
-documentation, so I have no idea what it is doing. The name indicates
-that it might set manual vs. automatic fan control. What is it set to in
-your system ? From the code, looks like it should be 0 or 1. Try to
-toggle it and see what happens - after all, it can not get worse ;).
+Why not?
 
-Guenter
-
+Alan Stern
 
