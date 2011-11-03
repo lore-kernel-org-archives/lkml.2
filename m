@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752499Ab1KCNds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:33:48 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37184 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab1KCNdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:33:47 -0400
-Date: Thu, 3 Nov 2011 06:32:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org,
-        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH RFC tip/core/rcu 19/28] nohz: Allow rcu extended
- quiescent state handling seperately from tick stop
-Message-ID: <20111103133231.GA2287@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-19-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103040003.GE2042@leaf>
- <20111103115426.GD8198@somewhere.redhat.com>
+	id S1752768Ab1KCNfm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:35:42 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62781 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab1KCNfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 09:35:41 -0400
+Date: Thu, 3 Nov 2011 14:35:37 +0100
+From: Uros Vampl <mobile.leecher@gmail.com>
+To: Peter Chubb <peter.chubb@nicta.com.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Don Zickus <dzickus@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        Vasily Khoruzhick <anarsoul@gmail.com>
+Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
+Message-ID: <20111103133537.GA794@zverina>
+References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com>
+ <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111103115426.GD8198@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11110313-8974-0000-0000-000001631663
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 12:54:33PM +0100, Frederic Weisbecker wrote:
-> On Wed, Nov 02, 2011 at 09:00:03PM -0700, Josh Triplett wrote:
-> > On Wed, Nov 02, 2011 at 01:30:40PM -0700, Paul E. McKenney wrote:
-> > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > 
-> > > It is assumed that rcu won't be used once we switch to tickless
-> > > mode and until we restart the tick. However this is not always
-> > > true, as in x86-64 where we dereference the idle notifiers after
-> > > the tick is stopped.
-> > > 
-> > > To prepare for fixing this, add two new APIs:
-> > > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
-> > > 
-> > > If no use of RCU is made in the idle loop between
-> > > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
-> > > must instead call the new *_norcu() version such that the arch doesn't
-> > > need to call rcu_idle_enter() and rcu_idle_exit().
-> > 
-> > The _norcu names confused me a bit.  At first, I thought they meant
-> > "idle but not RCU idle, so you can use RCU", but from re-reading the
-> > commit message, apparently they mean "idle and RCU idle, so don't use
-> > RCU".  What about something like _forbid_rcu instead?  Or,
-> > alternatively, why not just go ahead and separate the two types of idle
-> > entirely rather than introducing the _norcu variants first?
+On 03.11.11 12:34, Peter Chubb wrote:
+> >>>>> "Vasily" == Vasily Khoruzhick <anarsoul@gmail.com> writes:
 > 
-> Or tick_nohz_idle_enter_rcu_stop() and tick_nohz_idle_exit_rcu_restart()?
+> Vasily> From: Uroš Vampl <mobile.leecher@gmail.com> Starting with
+> Vasily> kernel 3.0, my Acer Aspire One AOA110 hangs on reboot. Doing
+> Vasily> an internet search, I found that in git commit
+> Vasily> b49c78d4827be8d7e67e5b94adac6b30a4a9ad14 the machine was made
+> Vasily> to reboot with the bios method, but it does not work on most
+> Vasily> (all?) AOA110s.
 > 
-> Sounds clear but too long. May be we can shorten the tick_nohz thing in the
-> beginning.
+> That change was made in July to fix the broken ACPI reboot method.  It
+> certainly works on my AOA110.  What BIOS do you have installed?
+> (although looking at what's been published, I can't see any booting
+> problems mentioned in the BIOS changelogs).
 
-How about tick_nohz_rcu_idle_enter() vs. tick_nohz_idle_enter() on
-entry to the idle loop and tick_nohz_rcu_idle_exit() vs
-tick_nohz_idle_exit() on exit?
+My bios is v0.3309. An unpatched kernel will hang on a black screen at 
+reboot, the only way out is holding the power button for 5 seconds to 
+turn the machine off.
 
-That said, I don't feel all that strongly on this naming topic.
+> 
+> Vasily> This patch introduces new quirks section for machines that
+> Vasily> only reboot with the kbd method and put the Aspire One into
+> Vasily> it.
+> 
+> You don't need yet another table, just change the callback.
+> 
+> 
+> Try this:
 
-								Thanx, Paul
+Yes, this works too.
 
+Regards,
+Uroš
+
+
+> 
+> Index: linux-2.6/arch/x86/kernel/reboot.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/reboot.c	2011-10-31 14:35:50.105623537 +1100
+> +++ linux-2.6/arch/x86/kernel/reboot.c	2011-11-03 11:54:12.487901547 +1100
+> @@ -124,7 +124,7 @@
+>   */
+>  
+>  /*
+> - * Some machines require the "reboot=b"  commandline option,
+> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
+>   * this quirk makes that automatic.
+>   */
+>  static int __init set_bios_reboot(const struct dmi_system_id *d)
+> @@ -136,6 +136,15 @@
+>  	return 0;
+>  }
+>  
+> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
+> +{
+> +	if (reboot_type != BOOT_KBD) {
+> +		reboot_type = BOOT_KBD;
+> +		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
+> +	}
+> +	return 0;
+> +}
+> +
+>  static struct dmi_system_id __initdata reboot_dmi_table[] = {
+>  	{	/* Handle problems with rebooting on Dell E520's */
+>  		.callback = set_bios_reboot,
+> @@ -295,7 +304,7 @@
+>  		},
+>  	},
+>  	{ /* Handle reboot issue on Acer Aspire one */
+> -		.callback = set_bios_reboot,
+> +		.callback = set_kbd_reboot,
+>  		.ident = "Acer Aspire One A110",
+>  		.matches = {
+>  			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> --
+> Dr Peter Chubb                                  peter DOT chubb AT nicta.com.au
+> http://www.ertos.nicta.com.au               ERTOS within National ICT Australia
+> All things shall perish from under the sky/Music alone shall live, never to die
