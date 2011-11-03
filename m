@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab1KCKkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 06:40:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48535 "EHLO ogre.sisk.pl"
+	id S1755727Ab1KCKm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 06:42:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:44794 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab1KCKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 06:40:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH pm] freezer: fix wait_event_freezable/__thaw_task races
-Date: Thu, 3 Nov 2011 11:43:13 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        linux-pm@vger.kernel.org
-References: <20111101021511.GP18855@google.com> <201111030201.27551.rjw@sisk.pl> <CAOS58YN4eQ5qfGXCjciGKvv13boSKQJso2U=x5rLw8c7vNeGWQ@mail.gmail.com>
-In-Reply-To: <CAOS58YN4eQ5qfGXCjciGKvv13boSKQJso2U=x5rLw8c7vNeGWQ@mail.gmail.com>
+	id S1752145Ab1KCKm0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 06:42:26 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: mst@redhat.com, Christoph Hellwig <hch@infradead.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4 of 5] virtio: avoid modulus operation
+In-Reply-To: <CAOJsxLEt6_y7jw0bRsaita4gfb2k+BAQMeRLs9PcHntGVSFvaQ@mail.gmail.com>
+References: <patchbomb.1320306168@localhost6.localdomain6> <05de9ee25e222c5206f3.1320306172@localhost6.localdomain6> <CAOJsxLEt6_y7jw0bRsaita4gfb2k+BAQMeRLs9PcHntGVSFvaQ@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 20:48:17 +1030
+Message-ID: <87r51pse52.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111031143.13836.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 03, 2011, Tejun Heo wrote:
-> Hello,
+On Thu, 3 Nov 2011 09:51:15 +0200, Pekka Enberg <penberg@kernel.org> wrote:
+> On Thu, Nov 3, 2011 at 9:42 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > Since we know vq->vring.num is a power of 2, modulus is lazy (it's asserted
+> > in vring_new_virtqueue()).
+> >
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> > ---
+> >  drivers/virtio/virtio_ring.c |   10 ++++++----
+> >  1 file changed, 6 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+> > --- a/arch/x86/lguest/boot.c
+> > +++ b/arch/x86/lguest/boot.c
+> > @@ -1420,7 +1420,7 @@ __init void lguest_init(void)
+> >        add_preferred_console("hvc", 0, NULL);
+> >
+> >        /* Register our very early console. */
+> > -       virtio_cons_early_init(early_put_chars);
+> > +//     virtio_cons_early_init(early_put_chars);
 > 
-> On Wed, Nov 2, 2011 at 6:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > OK, so I guess I should drop it from my linux-next branch?
-> 
-> Hmmm... yes, the preceding patches should be applied first and then
-> this one. Any problems with earlier ones?
+> What's this hunk here?
 
-The only problem I currently have is to figure out what patches to apply
-and in which order.  Care to help? ;-)
+Ugly workaround for console until hvc_console breakage gets reverted.
 
-Rafael
+Left in by mistake :)
+
+Thanks,
+Rusty.
