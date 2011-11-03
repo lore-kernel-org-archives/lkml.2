@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160Ab1KCGlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 02:41:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:58372 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754574Ab1KCGko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 02:40:44 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Chris Wright <chrisw@sous-sol.org>, Jens Axboe <axboe@kernel.dk>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+	id S1752833Ab1KCGo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 02:44:27 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:39463 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1KCGo0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 02:44:26 -0400
+Date: Thu, 03 Nov 2011 02:43:15 -0400 (EDT)
+Message-Id: <20111103.024315.92713676317489508.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: jvpeetz@web.de, sim@hostway.ca, tglx@linutronix.de,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] virtio: support unlocked queue kick
-In-Reply-To: <874nylua4z.fsf@rustcorp.com.au>
-References: <20111005195403.407628164@bombadil.infradead.org> <20111005195529.964397366@bombadil.infradead.org> <87r52qgaf3.fsf@rustcorp.com.au> <20111006131828.GC19023@redhat.com> <20111101144045.GA15433@redhat.com> <87ty6ntdmf.fsf@rustcorp.com.au> <20111102072544.GA6967@infradead.org> <874nylua4z.fsf@rustcorp.com.au>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 03 Nov 2011 15:45:37 +1030
-Message-ID: <871utpu6py.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Subject: Re: Linux 3.1-rc9
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4EB2341D.9090606@gmail.com>
+References: <4EB1C770.7070605@gmail.com>
+	<4EB22F68.9020900@web.de>
+	<4EB2341D.9090606@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 02 Nov 2011 23:43:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Nov 2011 14:31:48 +1030, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> So let's change the API for everyone, into:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Thu, 03 Nov 2011 07:26:37 +0100
+
+> On 03/11/2011 07:06, Jörg-Volker Peetz wrote:
 > 
->         bool virtqueue_should_kick(struct virtqueue *vq);
->         void virtqueue_kick(struct virtqueue *vq);
+>> Eric Dumazet wrote, on 11/02/11 23:42:
+>> <snip>
+>>> Reported-by: Dimon Kirby <sim@hostway.ca>
+>> ??             Simon                     ??
+>> <snip>
 > 
-> Patch series coming...
+> 
+> Oops sorry, please David could you fix Simon name ?
 
-Nope, that sucked.  virtqueue_should_kick() has side effects (it has to,
-if you want the actual kick to be outside the lock).
-
-I stole the names from your patch instead, just added some documentation
-and restored the "EXPORT_SYMBOL_GPL(virtqueue_kick);".  No Signed-off-by
-on yours.
-
-Also, one trivial nit.  You did:
-
-	bool need_kick = false;
-...
-	if (vq->event) {
-		if (vring_need_event(vring_avail_event(&vq->vring), new, old))
-			need_kick = true;
-	} else {
-		if (!(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY))
-			need_kick = true;
-	}
-...
-        return need_kick;
-
-I prefer to use uninitialized vars where possible:
-
-        bool kick;
-
-	if (vq->event) {
-		kick = vring_need_event(vring_avail_event(&vq->vring), new, old);
-	} else {
-		kick = (!(vq->vring.used->flags & VRING_USED_F_NO_NOTIFY));
-	}
-...
-        return kick;
-
-This way, GCC will give an uninitialized var warning if someone changes
-the code and forgets to set kick.  This is especially noticeable with
-err values and complex functions using goto.
-
-Thanks,
-Rusty.
+Will do.
