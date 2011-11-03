@@ -1,66 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465Ab1KCNGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:06:35 -0400
-Received: from smtprelay0196.b.hostedemail.com ([64.98.42.196]:41888 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933143Ab1KCNGe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:06:34 -0400
-X-Panda: scanned!
-X-Session-Marker: 742E617274656D406C79636F732E636F6D
-X-Filterd-Recvd-Size: 2373
-Date: Thu, 3 Nov 2011 13:06:33 +0000 (GMT)
-From: "Artem S. Tashkinov" <t.artem@lycos.com>
-To: hmh@hmh.eng.br
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <379401738.337658.1320325593346.JavaMail.mail@webmail11>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111103081835.GA9330@elte.hu>
- <1758553229.334475.1320313445172.JavaMail.mail@webmail11>
- <20111103124243.GA17252@khazad-dum.debian.net>
-Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
- as it should
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S933578Ab1KCNJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:09:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:18672 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933143Ab1KCNJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 09:09:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,449,1315206000"; 
+   d="scan'208";a="80848717"
+Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
+From: Lin Ming <ming.m.lin@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <Pine.LNX.4.44L0.1111021044580.2217-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1111021044580.2217-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 03 Nov 2011 21:08:20 +0800
+Message-ID: <1320325700.2813.61.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Webmail
-X-Originating-IP: [46.146.163.207]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 3, 2011, Henrique de Moraes Holschuh wrote: 
- 
-> > On Thu, 03 Nov 2011, Artem S. Tashkinov wrote:
-> > So, now the question is whether VCPUs quite an illogical enumeration is good for
-> > power users as I highly doubt that 0-4, 1-5, 2-6 and 3-7 order can be easily
-> > remembered and grasped. Besides neither top, not htop are HT aware so just by
+On Wed, 2011-11-02 at 22:53 +0800, Alan Stern wrote:
+> On Wed, 2 Nov 2011, Lin Ming wrote:
 > 
-> Power users are directed to hwloc.  There's a reason I pointed you to it.
-> hwloc would have told you upfront your real memory/cache/core/thread
-> topology, either in text mode, through graphics, or as XML:
+> > Adds ->suspend and ->resume callbacks in struct scsi_host_template
+> > to do host runtime power management.
+> > 
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  drivers/scsi/scsi_pm.c   |   34 +++++++++++++++++++++++++++++++---
+> >  include/scsi/scsi_host.h |    8 ++++++++
+> >  2 files changed, 39 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/scsi/scsi_pm.c b/drivers/scsi/scsi_pm.c
+> > index 1be6c5a..5742bed2 100644
+> > --- a/drivers/scsi/scsi_pm.c
+> > +++ b/drivers/scsi/scsi_pm.c
+> > @@ -42,6 +42,28 @@ static int scsi_dev_type_resume(struct device *dev)
+> >  	return err;
+> >  }
+> >  
+> > +static int scsi_host_suspend(struct device *dev)
+> > +{
+> > +	struct Scsi_Host *shost = dev_to_shost(dev);
+> > +	int err = 0;
+> > +
+> > +	if (shost->hostt->suspend)
+> > +		err = shost->hostt->suspend(shost);
+> > +
+> > +	return err;
+> > +}
+> > +
+> > +static int scsi_host_resume(struct device *dev)
+> > +{
+> > +	struct Scsi_Host *shost = dev_to_shost(dev);
+> > +	int err = 0;
+> > +
+> > +	if (shost->hostt->resume)
+> > +		err = shost->hostt->resume(shost);
+> > +
+> > +	return err;
+> > +}
 > 
-> Here's hwloc's "lstopo" text output for my single-processor X5550:
+> These don't need to be independent routines.  You can put them inline 
+> in scsi_runtime_suspend() and scsi_runtime_resume() below; that's how 
+> the device code is written.
+
+OK.
+
 > 
-> Machine (6029MB) + Socket #0 + L3 #0 (8192KB)
->   L2 #0 (256KB) + L1 #0 (32KB) + Core #0
->     PU #0 (phys=0)
->     PU #1 (phys=4)
->   L2 #1 (256KB) + L1 #1 (32KB) + Core #1
->     PU #2 (phys=1)
->     PU #3 (phys=5)
->   L2 #2 (256KB) + L1 #2 (32KB) + Core #2
->     PU #4 (phys=2)
->     PU #5 (phys=6)
->   L2 #3 (256KB) + L1 #3 (32KB) + Core #3
->     PU #6 (phys=3)
->     PU #7 (phys=7)
+> > @@ -132,7 +160,7 @@ static int scsi_runtime_idle(struct device *dev)
+> >  
+> >  	/* Insert hooks here for targets, hosts, and transport classes */
+> >  
+> > -	if (scsi_is_sdev_device(dev))
+> > +	if (scsi_is_sdev_device(dev) || scsi_is_host_device(dev))
+> >  		err = pm_schedule_suspend(dev, 100);
+> 
+> This is wrong.  The 100-ms delay is meant for devices only.  There's 
+> no reason to delay suspending a host once everything beneath it is 
+> suspended.  Just leave the code the way it is now.
 
-A very useful utility indeed, thank you! Still I wonder if for the sake of simplicity 
-it is possible to show and present virtual CPU pairs to the user in natural order,
-(0,1 2,3 4,5 6,7) not how it's currently done (0,4 1,5 2,6 3,7). I cannot believe
-it's difficult to change the userspace representation of virtual CPU pairs.
+OK.
 
+> 
+> >  	else
+> >  		err = pm_runtime_suspend(dev);
+> > diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+> > index f1f2644..512e2a0 100644
+> > --- a/include/scsi/scsi_host.h
+> > +++ b/include/scsi/scsi_host.h
+> > @@ -356,6 +356,14 @@ struct scsi_host_template {
+> >  	enum blk_eh_timer_return (*eh_timed_out)(struct scsi_cmnd *);
+> >  
+> >  	/*
+> > +	 * Optional routine for scsi host runtime pm.
+> > +	 *
+> > +	 * Status: OPTIONAL
+> > +	 */
+> > +	int (*suspend)(struct Scsi_Host *);
+> > +	int (*resume)(struct Scsi_Host *);
+> 
+> The comment should explain what drivers are supposed to do when these 
+> hooks are called.  In particular, the suspend callback should _not_ 
+> power-down the entire host adapter; it should power-down only the 
+> circuitry that controls the interface to the SCSI bus.  The upstream 
+> interface to the CPU should remain at full power.
+> 
+> If there's no way to power-down just that part of the host adapter then 
+> there's no need to have these callbacks at all.  The low-level driver 
+> can simply use the runtime PM API on its own struct device.
+
+Good point.
+
+I realize that this is not the natural way to do ata port runtime pm.
+Hooking it to scsi host runtime pm is not good. It does not deal with
+the races with system suspend/resume of host controller.
+
+How about making ata port as the parent device of scsi host?
+Then, for example, the runtime suspend happens as below,
+
+disk suspend --> scsi target suspend --> scsi host suspend --> ata port
+suspend.
+
+Current device tree is:
+/sys/devices/pci0000:00/0000:00:1f.2/
+|-- ata1
+|-- host0
+
+After the change, the tree will become as:
+/sys/devices/pci0000:00/0000:00:1f.2/ata1/
+|-- host0
+
+The tricky part is ata port(parent device) suspend need to schedule scsi
+EH which will resume scsi host(child device). Then the child device
+resume will in turn make parent device resume first. This is kind of
+recursive.
+
+We can fix this by adding a flag somewhere to tell scsi EH don't resume
+the host in ata port pm request handling case.
+
+What do you think?
+
+Thanks,
+Lin Ming
 
