@@ -1,98 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab1KCG0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 02:26:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45431 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab1KCG0N (ORCPT
+	id S1754636Ab1KCG0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 02:26:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44188 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753515Ab1KCG0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 02:26:13 -0400
-Message-ID: <1320301535.1346.6.camel@anarsoul-laptop.lan>
-Subject: Re: [PATCH RESEND] Fix reboot regression on Acer Aspire One AOA110
-From: Vasily Khoruzhick <anarsoul@gmail.com>
-To: Peter Chubb <peter.chubb@nicta.com.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        stable@kernel.org,
-        =?UTF-8?Q?Uro=C5=A1?= Vampl <mobile.leecher@gmail.com>
-Date: Thu, 03 Nov 2011 09:25:35 +0300
-In-Reply-To: <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
-References: <1320240899-16889-1-git-send-email-anarsoul@gmail.com>
-	 <w4ehxqf0q1.wl%peter@chubb.wattle.id.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 3 Nov 2011 02:26:43 -0400
+Message-ID: <4EB2341D.9090606@gmail.com>
+Date: Thu, 03 Nov 2011 07:26:37 +0100
+From: Eric Dumazet <eric.dumazet@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?J=F6rg-Volker_Peetz?= <jvpeetz@web.de>
+CC: Simon Kirby <sim@hostway.ca>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.1-rc9
+References: <1318928713.21167.4.camel@twins> <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos> <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca> <20111031173246.GA10614@hostway.ca> <alpine.LFD.2.02.1111021725550.2829@ionos> <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111102191621.GF5971@hostway.ca> <4EB1C770.7070605@gmail.com> <4EB22F68.9020900@web.de>
+In-Reply-To: <4EB22F68.9020900@web.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 12:34 +1100, Peter Chubb wrote:
+On 03/11/2011 07:06, Jörg-Volker Peetz wrote:
 
-> That change was made in July to fix the broken ACPI reboot method.  It
-> certainly works on my AOA110.  What BIOS do you have installed?
-> (although looking at what's been published, I can't see any booting
-> problems mentioned in the BIOS changelogs).
+> Eric Dumazet wrote, on 11/02/11 23:42:
+> <snip>
+>> Reported-by: Dimon Kirby <sim@hostway.ca>
+> ??             Simon                     ??
+> <snip>
 
-v0.3310 from Acer site. With BIOS reboot method AOA110 just hangs with
-black screeen on reboot.
 
-I'm not the only one who has this problem, take a look at this link:
-https://bbs.archlinux.org/viewtopic.php?id=124136
+Oops sorry, please David could you fix Simon name ?
 
-> You don't need yet another table, just change the callback.
-> 
-> 
-> Try this:
+Reported-by: Simon Kirby <sim@hostway.ca>
 
-Sure, this patch should work. Will test tonight.
-
-Regards
-Vasily
-
-> Index: linux-2.6/arch/x86/kernel/reboot.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/reboot.c	2011-10-31 14:35:50.105623537 +1100
-> +++ linux-2.6/arch/x86/kernel/reboot.c	2011-11-03 11:54:12.487901547 +1100
-> @@ -124,7 +124,7 @@
->   */
->  
->  /*
-> - * Some machines require the "reboot=b"  commandline option,
-> + * Some machines require the "reboot=b" or "reboot=k"  commandline options,
->   * this quirk makes that automatic.
->   */
->  static int __init set_bios_reboot(const struct dmi_system_id *d)
-> @@ -136,6 +136,15 @@
->  	return 0;
->  }
->  
-> +static int __init set_kbd_reboot(const struct dmi_system_id *d)
-> +{
-> +	if (reboot_type != BOOT_KBD) {
-> +		reboot_type = BOOT_KBD;
-> +		printk(KERN_INFO "%s series board detected. Selecting KBD-method for reboots.\n", d->ident);
-> +	}
-> +	return 0;
-> +}
-> +
->  static struct dmi_system_id __initdata reboot_dmi_table[] = {
->  	{	/* Handle problems with rebooting on Dell E520's */
->  		.callback = set_bios_reboot,
-> @@ -295,7 +304,7 @@
->  		},
->  	},
->  	{ /* Handle reboot issue on Acer Aspire one */
-> -		.callback = set_bios_reboot,
-> +		.callback = set_kbd_reboot,
->  		.ident = "Acer Aspire One A110",
->  		.matches = {
->  			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> --
-> Dr Peter Chubb                                  peter DOT chubb AT nicta.com.au
-> http://www.ertos.nicta.com.au               ERTOS within National ICT Australia
-> All things shall perish from under the sky/Music alone shall live, never to die
-
+Thanks
 
