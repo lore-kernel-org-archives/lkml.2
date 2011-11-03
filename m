@@ -1,109 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab1KCE4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 00:56:07 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36641 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab1KCE4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 00:56:03 -0400
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.15.19
-Date: Wed, 2 Nov 2011 21:55:35 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 0/28] Preview of RCU changes for 3.3
-Message-ID: <20111103045535.GA1957@leaf>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
+	id S1752447Ab1KCE6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 00:58:38 -0400
+Received: from ozlabs.org ([203.10.76.45]:57347 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751324Ab1KCE6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 00:58:37 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Chris Wright <chrisw@sous-sol.org>, Jens Axboe <axboe@kernel.dk>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] virtio: support unlocked queue kick
+In-Reply-To: <20111102072544.GA6967@infradead.org>
+References: <20111005195403.407628164@bombadil.infradead.org> <20111005195529.964397366@bombadil.infradead.org> <87r52qgaf3.fsf@rustcorp.com.au> <20111006131828.GC19023@redhat.com> <20111101144045.GA15433@redhat.com> <87ty6ntdmf.fsf@rustcorp.com.au> <20111102072544.GA6967@infradead.org>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 14:31:48 +1030
+Message-ID: <874nylua4z.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111102203017.GA3830@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 01:30:17PM -0700, Paul E. McKenney wrote:
-> This patchset permits idle tasks to use RCU read-side critical sections,
-> although they are still prohibited between tick_nohz_idle_exit_norcu()
-> and tick_nohz_idle_exit_norcu(); makes synchronize_sched_expedited()
-> better able to share work among concurrent callers, allows ftrace_dump()
-> to be invoked from modules, dumps tracing upon detection of an rcutorture
-> failure, detects illegal use of RCU read-side critical sections from
-> extended quiescent states, legitimizes the pre-existin use of RCU in the
-> idle notifiers, fixes a memory-barrier botch, introduces an SRCU-like bulk
-> reference count, improve dynticks entry/exit tracing, further improves
-> RCU's ability to allow a given CPU to enter dyntick-idle mode quickly,
-> fixes idle-task checks, updates documentation, and additional fixes
-> from a still-ongoing top-to-bottom inspection of RCU.  The patches are
-> as follows:
+On Wed, 2 Nov 2011 03:25:44 -0400, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Nov 02, 2011 at 01:49:36PM +1030, Rusty Russell wrote:
+> > I thought it was still a WIP?
+> 
+> The whole series - yes.  This patch (and the serial number rewrite): no
+> - these are pretty much rock solid.
 
-I've reviewed all of these patches.  For all of them except those
-indicated below:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+OK, thanks.
 
-> 1.	Strengthen memory barriers used in PowerPC value-returning
-> 	atomics and locking primitives.  It is likely that this
-> 	commit will be superseded by something from the powerpc
-> 	maintainers.  The need for this strengthening was validated
-> 	by tooling from Peter Sewell's group at the University of
-> 	Cambridge.
+> > Since the problem is contention on the lock inside the block layer, the
+> > simplest solution is to have a separate lock to protect the virtqueue.
+> 
+> As long as we still use a ->request_fn based driver that is not going
+> to buy us anything, in fact it's going to make things worse.
 
-As before, I don't have the background on powerpc to provide review on
-this one.  However, I trust Peter Sewell's group to have gotten the
-details right. :)
+Of course...
 
-> 5.	Document the troubleshooting of lockdep lock-class leaks.
+> With the ->make_request_fn based driver vlkb->lock does't protect
+> anything but the virtuequeue anyway, but not having to take it
+> over the wakeup there is a) done easily and b) neatly fits the model.
 
-I replied with a few comments and a typo fix.
+It adds YA API though.  But I can't better it.  Doing the "should we
+kick" check outside the lock is problematic, and doing it inside every
+add() is inefficient.
 
-> 11.	Remove a useless self-awaken when setting up expedited grace
-> 	periods, courtesy of Thomas Gleixner and the -rt effort.
+So let's change the API for everyone, into:
 
-Replied with a fix: commit needs splitting.
+        bool virtqueue_should_kick(struct virtqueue *vq);
+        void virtqueue_kick(struct virtqueue *vq);
 
-> 12-17.	Make lockdep-RCU warn when RCU read-side primitives are
-> 	invoked from an idle RCU extended quiescent state, mostly
-> 	courtesy of Frederic Weisbecker.
+Patch series coming...
 
-Replied to 17 with a minor nit, but Reviewed-by still applies to all
-five with or without that nit fixed.
-
-> 18-23.	Separate out the scheduler-clock tick's idea of dyntick
-> 	idle from RCU's notion of an idle extended quiescent state, mostly
-> 	courtesy of Frederic Weisbecker.  These commits are needed for
-> 	Frederic's work to suppress the scheduler-clock tick when there
-> 	is but one runnable task on a given CPU.
-
-Very much looking forward to that work.  Any pointer to more information
-on tickless-when-one-task?
-
-Replied to patch 19 with some naming comments; the rest seem fine.
-
-> 24.	Introduce a bulk reference count, which is related to SRCU,
-> 	but which allows a reference to be acquired in an irq handler
-> 	and released by the task that was interrupted.
-
-Replied with comments.
-
-> 27.	Allow CPUs with pending RCU callbacks to enter dyntick-idle
-> 	mode.  Beware this commit, as it compiled and passed rcutorture
-> 	on the first try, which historically has indicated the presence
-> 	of subtle and highly destructive bugs.
-
-Heh.  I reviewed this one particularly carefully, then, but I didn't
-find any logic errors.  I did reply with a couple of comments, though.
-
-> 28.	Fix RCU's determination of whether or not it is running in the
-> 	context of an idle task.
-
-Replied with concerns.
-
-- Josh Triplett
+Thanks,
+Rusty.
