@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab1KCLOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 07:14:30 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57659 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753267Ab1KCLO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 07:14:28 -0400
-Date: Thu, 3 Nov 2011 12:14:20 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH RFC tip/core/rcu 17/28] rcu: Make srcu_read_lock_held()
- call common lockdep-enabled function
-Message-ID: <20111103111413.GC8198@somewhere.redhat.com>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-17-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103034854.GD2042@leaf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103034854.GD2042@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932393Ab1KCLPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 07:15:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12304 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753267Ab1KCLPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 07:15:39 -0400
+Date: Thu, 3 Nov 2011 07:15:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
+ fake_signal_wake_up() wake TASK_KILLABLE tasks too"
+Message-ID: <20111103071516.79fb42fa@tlielax.poochiereds.net>
+In-Reply-To: <201111030011.24062.rjw@sisk.pl>
+References: <20111101041337.39077229@tlielax.poochiereds.net>
+	<20111101215710.GA13803@google.com>
+	<20111102162331.GA31947@redhat.com>
+	<201111030011.24062.rjw@sisk.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 08:48:54PM -0700, Josh Triplett wrote:
-> On Wed, Nov 02, 2011 at 01:30:38PM -0700, Paul E. McKenney wrote:
-> > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > 
-> > A common debug_lockdep_rcu_enabled() function is used to check whether
-> > RCU lockdep splats should be reported, but srcu_read_lock() does not
-> > use it.  This commit therefore brings srcu_read_lock_held() up to date.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> Just how signed off does this patch need to be? ;)
+On Thu, 3 Nov 2011 00:11:23 +0100
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Dunno but I feel uncomfortable now with that strange feeling I'm walking
-on the street with two Paul holding my hand on each side.
+> On Wednesday, November 02, 2011, Oleg Nesterov wrote:
+> > Hi,
+> > 
+> > On 11/01, Tejun Heo wrote:
+> > >
+> > > For now, let's go with the count/dont_count.  Can you please write up
+> > > a patch for that?  Jeff, does this seem okay to you?
+> > 
+> > OK, will do in a minute. On top of
+> > "[PATCH pm] freezer: fix wait_event_freezable/__thaw_task races"
+> > you sent. (btw, thanks, I forgout about it ;)
+> > 
+> > Rafael, could you remind why freezer_do_not_count/freezer_count check
+> > ->mm != NULL ?
+> 
+> You're asking difficult questions. ;-)
+> 
+> The intention was to prevent PF_FREEZER_SKIP from having any effect on
+> kernel threads, IIRC.  Anyway, there are only two legitimate users of it
+> (vfork and apm_ioctl) and in both cases the task in question is user space.
+> 
+> > The comment says "However, we don't want kernel threads to be frozen",
+> > but it is not clear anyway. A kernel thread simply shouldn't use this
+> > interface if it doesn't want to freeze.
+> > 
+> > And in any case, PF_KTHREAD looks better if we really need to filter
+> > out the kernel threads.
+> 
+> PF_FREEZER_SKIP was introduced specifically with vfork in mind and I'm not
+> sure if it's a good idea to re-use it for something else (at least not for
+> something entirely obvious).
+> 
+
+FWIW, wrapping wait_event_killable in freezer_do_not_count/freezer_count
+seems to work. The machine suspends consistently with it. It sounds
+like Rafael has concerns about this scheme however, so I'll let you
+guys argue this out :)
+
+Once you tell me the right scheme to use, I'll be happy to fix up cifs
+and nfs to use it.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
