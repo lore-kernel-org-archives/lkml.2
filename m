@@ -1,118 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934429Ab1KCSq7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 14:46:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24010 "EHLO mga11.intel.com"
+	id S1756476Ab1KCSvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 14:51:11 -0400
+Received: from swift.blarg.de ([78.47.110.205]:54828 "EHLO swift.blarg.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933609Ab1KCSq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 14:46:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,451,1315206000"; 
-   d="scan'208";a="85821321"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCHv3] Make mce_chrdev_ops "static const"
-In-Reply-To: <4eaf0cf1139477a87b@agluck-desktop.sc.intel.com>
-Date: Thu, 03 Nov 2011 11:46:47 -0700
-Message-Id: <4eb2e1971326651a3b@agluck-desktop.sc.intel.com>
+	id S1756427Ab1KCSvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 14:51:09 -0400
+Date: Thu, 3 Nov 2011 19:51:08 +0100
+From: Max Kellermann <max@duempel.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] new cgroup controller "fork"
+Message-ID: <20111103185108.GA5153@Debian-60-squeeze-64-minimal>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
+	containers@lists.linux-foundation.org,
+	Frederic Weisbecker <fweisbec@gmail.com>
+References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag>
+ <4EB2C4A5.6000406@parallels.com>
+ <20111103165903.GA4755@Debian-60-squeeze-64-minimal>
+ <20111103182101.5037c1e5@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103182101.5037c1e5@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arjan would like to make struct file_operations const, but mce-inject
-directly writes to the mce_chrdev_ops to install its write handler.
-In an ideal world mce-inject would have its own character device, but
-we have a sizable legacy of test scripts that hardwire "/dev/mcelog",
-so it would be painful to switch to a separate device now. Instead,
-this patch switches to a stub function in the mce code, with a
-registration helper that mce-inject can call when it is loaded.
+On 2011/11/03 19:21, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > After little discussion, nobody seemed to be interested in it, and
+> > nobody merged it.  I reposted it today, not knowing somebody else had
+> > come up with a similar idea meanwhile.
+> 
+> I don't really see a meaningful use case for this. Why should millions of
+> users have this stuff in their kernel. What's the general purpose use
+> case we should all be excited about ?
 
-Note that this would also allow for a sane process to allow mce-inject
-to be unloaded again (with an unregister function, and appropriate
-module_{get,put}() calls), but that is left for potential future patches.
+Putting a reasonable limit on jobs that are expected to run only for a
+limited amount of time, with a limited amount of total resources.  For
+example: CGI, cron jobs, backup, munin plugins, virus scanners and
+other email filters, procmail, ... - when the job is done, the group
+can be deleted, and new instances will run in a new group.
 
-Reported-by: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+With just RLIMIT_NPROC or task_counter, you can limit the total number
+of processes, but it will not stop a fork bomb - it will only slow it
+down.  The fork bomb will still bounce between 1 and the limit, and
+consume lots of resources for forking and exiting.
 
----
+(Glauber: the above should answer your last email, too)
 
-v2 - fixes some checkpatch complaints about tabs/spaces/long-lines, and
-     more importantly fixes the problems that Arjan wants fixed (rather
-     than enabling him to apply the 2-liner to fix it).
+Similar existing feature: RLIMIT_CPU.  Millions of users have it in
+their kernels, but nobody uses it nowadays.  And it's not even
+optional.
 
-v3 - Error code when hook is not present should be EINVAL, not ENODEV
-     for backwards compatability.
+Btw. I have no problem with maintaining this patch (and a whole bunch
+of others) in my proprietary git repository at work forever.  They're
+very useful for my employer.  I'm just trying to be a good citizen by
+sharing them.
 
-diff --git a/arch/x86/include/asm/mce.h b/arch/x86/include/asm/mce.h
-index c9321f3..22cc0eb 100644
---- a/arch/x86/include/asm/mce.h
-+++ b/arch/x86/include/asm/mce.h
-@@ -201,7 +201,10 @@ int mce_notify_irq(void);
- void mce_notify_process(void);
- 
- DECLARE_PER_CPU(struct mce, injectm);
--extern struct file_operations mce_chrdev_ops;
-+
-+extern void register_mce_write_hook(ssize_t (*)(struct file *filp,
-+				    const char __user *ubuf,
-+				    size_t usize, loff_t *off));
- 
- /*
-  * Exception handler
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-inject.c b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-index 0ed633c..a18c2c8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-inject.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-inject.c
-@@ -215,7 +215,7 @@ static int inject_init(void)
- 	if (!alloc_cpumask_var(&mce_inject_cpumask, GFP_KERNEL))
- 		return -ENOMEM;
- 	printk(KERN_INFO "Machine check injector initialized\n");
--	mce_chrdev_ops.write = mce_write;
-+	register_mce_write_hook(mce_write);
- 	register_die_notifier(&mce_raise_nb);
- 	return 0;
- }
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 08363b0..7010901 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1628,16 +1628,35 @@ static long mce_chrdev_ioctl(struct file *f, unsigned int cmd,
- 	}
- }
- 
--/* Modified in mce-inject.c, so not static or const */
--struct file_operations mce_chrdev_ops = {
-+static ssize_t (*mce_write)(struct file *filp, const char __user *ubuf,
-+			    size_t usize, loff_t *off);
-+
-+void register_mce_write_hook(ssize_t (*fn)(struct file *filp,
-+			     const char __user *ubuf,
-+			     size_t usize, loff_t *off))
-+{
-+	mce_write = fn;
-+}
-+EXPORT_SYMBOL_GPL(register_mce_write_hook);
-+
-+ssize_t mce_chrdev_write(struct file *filp, const char __user *ubuf,
-+			 size_t usize, loff_t *off)
-+{
-+	if (mce_write)
-+		return mce_write(filp, ubuf, usize, off);
-+	else
-+		return -EINVAL;
-+}
-+
-+static const struct file_operations mce_chrdev_ops = {
- 	.open			= mce_chrdev_open,
- 	.release		= mce_chrdev_release,
- 	.read			= mce_chrdev_read,
-+	.write			= mce_chrdev_write,
- 	.poll			= mce_chrdev_poll,
- 	.unlocked_ioctl		= mce_chrdev_ioctl,
- 	.llseek			= no_llseek,
- };
--EXPORT_SYMBOL_GPL(mce_chrdev_ops);
- 
- static struct miscdevice mce_chrdev_device = {
- 	MISC_MCELOG_MINOR,
+Max
