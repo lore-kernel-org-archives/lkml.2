@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1KCCW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:22:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:35435 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031Ab1KCCWy (ORCPT
+	id S1754629Ab1KCCZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:25:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34136 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab1KCCZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:22:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133917970"
-Date: Wed, 2 Nov 2011 19:22:52 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20111103022252.GA23489@huya.qualcomm.com>
-References: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
- <4E6D6C0D.60100@codeaurora.org>
- <20110913115533.403d4fe6d961ccc8ba9b58b7@canb.auug.org.au>
- <20111103130924.5811caec6db378f467006fc3@canb.auug.org.au>
+	Wed, 2 Nov 2011 22:25:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103130924.5811caec6db378f467006fc3@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
+References: <20111026202235.GA20928@havoc.gtf.org> <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike> <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org> <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+ <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+ <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com> <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 2 Nov 2011 19:25:17 -0700
+X-Google-Sender-Auth: 7lEjX3zEHVLR9PNLKdu6kPGjbRw
+Message-ID: <CA+55aFyXg32mko8TOGCfGHpr3jHBEgcKiK7HdVwq0Wez0fAs9A@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: Shawn Pearce <spearce@spearce.org>
+Cc: Junio C Hamano <gitster@pobox.com>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 01:09:24PM +1100, Stephen Rothwell wrote:
-> Hi Arnd,
-> 
-> On Tue, 13 Sep 2011 11:55:33 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > On Sun, 11 Sep 2011 19:18:53 -0700 Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > >
-> > > The device tree machine description also needs to have the .fixup and
-> > > .reserve callbacks added to it so that the device tree machines boot
-> > > properly. Perhaps the soc tree needs to pull in Russell's tree at some
-> > > point to resolve this subtle logical conflict or when the trees are
-> > > merged together someone will need to do an evil merge and add the
-> > > callbacks in the merge commit.
-> > 
-> > Ah, right.  I have added this merge fixup for today and can carry it as
-> > necessary.
-> 
-> I am still applying this patch to the arm-soc merge.  I assume that it is
-> needed in Linus' tree now.
+On Wed, Nov 2, 2011 at 7:14 PM, Shawn Pearce <spearce@spearce.org> wrote:
+>
+> So you propose we put the tag contents into the merge commit message
+> so it can be verified after the fact? So merges are now going to be
+> something much more horrific to read, because it will end with Git
+> object tag cruft, the tag message, and the PGP signature spew that no
+> human can decode in the head?
 
-I can look more into this tomorrow.  When I was testing linux-next
-last week, the fixups weren't working with device tree anyway, so I
-might need to come up with another solution.
+Actually, I wanted to just drop the damn thing.
 
-The fixups are called with the ATAGS, which aren't available with DT.
-The meminfo is passed to the fixup, but it hasn't been initialized
-from the old ATAG information, so there isn't anything to fix up.
+To me, the point of the tag is so that the person doing the merge can
+verify that he merges something trusted.
 
-I think I'm just going to have to convince our bootloader people to
-actually pass in the right memory information in the first place.
+However, everybody else seems to disagree, and wants that stupid
+signature to live along in the repository. And I can live with that,
+although I do agree with you that it's not exactly pretty. I can live
+with "ugly signature that I don't care for" way more than "stupid
+design".
 
-David
+Because unlike your crazy empty commit, it at least fits the workflow,
+and it certainly isn't any uglier that extraneous pointless commit.
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 13 Sep 2011 11:51:48 +1000
-> Subject: [PATCH] arm-soc: merge fixup for fixup/reserve being added to MACHINE descriptions
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/arm/mach-msm/board-msm8x60.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
-> index 328df27..4ad2afb 100644
-> --- a/arch/arm/mach-msm/board-msm8x60.c
-> +++ b/arch/arm/mach-msm/board-msm8x60.c
-> @@ -153,6 +153,8 @@ MACHINE_END
->  #ifdef CONFIG_OF
->  /* TODO: General device tree support for all MSM. */
->  DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
-> +	.fixup = msm8x60_fixup,
-> +	.reserve = msm8x60_reserve,
->  	.map_io = msm8x60_map_io,
->  	.init_irq = msm8x60_init_irq,
->  	.init_machine = msm8x60_dt_init,
-> -- 
-> 1.7.5.4
-> 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
+You can disagree. You obviously do. I simply don't care. Because I'm right.
 
+(And your claim that it's big UI fixes and protocol changes is pure
+and utter garbage. I just sent a patch that cleans the code up,
+removes a line that improperly drops information and gets rid of the
+biggest problem with our current handling of tags. No protocol changes
+involved, no big UI fixup).
 
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+                        Linus
