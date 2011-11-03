@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab1KCI0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 04:26:55 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:35697 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755086Ab1KCI0u convert rfc822-to-8bit (ORCPT
+	id S1755536Ab1KCI36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 04:29:58 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52493 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1KCI3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 04:26:50 -0400
+	Thu, 3 Nov 2011 04:29:54 -0400
+Message-ID: <4EB250FD.3070000@gmail.com>
+Date: Thu, 03 Nov 2011 10:29:49 +0200
+From: =?ISO-8859-1?Q?Lars_Nood=E9n?= <lars.nooden@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1320150365.14409.160.camel@x61.thuisdomein>
-References: <1320147705-15117-1-git-send-email-heguanbo@gmail.com>
-	<1320150365.14409.160.camel@x61.thuisdomein>
-Date: Thu, 3 Nov 2011 16:26:50 +0800
-Message-ID: <CAGW+__+-Gj3WQJf+PQYfn8sArxwYkWR_kcUgA8s5L_Z+-yJCtg@mail.gmail.com>
-Subject: Re: [PATCH][mm:] adjust the logic of checking THP
-From: GuanJun He <heguanbo@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: Hardware running hot and without the fan
+References: <4EB1108F.6070009@gmail.com> <20111103020301.GA22333@ericsson.com>
+In-Reply-To: <20111103020301.GA22333@ericsson.com>
+X-Enigmail-Version: 1.3.2
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!I have updated and resent it.
+On 11/03/2011 04:03 AM, Guenter Roeck wrote:
+> From LKML:
+> 
+> On Wed, Nov 02, 2011 at 05:42:39AM -0400, Lars Noodén wrote:
+>> There seem to be two problems here, one is that the hardware is 
+>> getting WAY too hot, another is that the fan is not turning on when
+>> the hardware gets too hot.
+>> 
+>> $ uname -a Linux xubuntu 3.1.0-999-generic #201110270406 SMP Thu 
+>> Oct 27 08:07:41 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
+>> 
+>> I've reported the problem to Ubuntu 
+>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593 and the
+>> suggestion there was to report it upstream.
+>> 
+>> On the notebook computer, parts become very hot to the touch while 
+>> running Ubuntu, but the fan does not run even after it gets hot. 
+>> When I boot back to OS X, the fan kicks in and runs until the 
+>> computer returns to being cool to the touch.  Similar for the 
+>> desktop, though I must follow the temperature with 
+>> /usr/bin/sensors.
+>> 
+>> The notebook is a MacBookPro8,2 and the desktop is a Macmini3,1
+>> 
+>> What metrics do I need to collect to help fix the problem?  I've 
+>> already reported the problem to Ubuntu[2] and the recommendation 
+>> was to try reporting upstream.
+>> 
+>> Please CC me in the replies. /Lars
+>> 
+>> [1] http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
+>> 
+>> [2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
+> 
+> I see applesmc: : read arg fail in the dmesg log. No idea what that 
+> means. Maybe the driver maintainer or someone else on the lm-sensors
+>  mailing list can help.
+> 
+> Not sure I understand your comment about having to follow the output
+>  of the sensors command. Can you clarify ?
 
-best,
-Guanjun
+That's to track the temperature manually.
 
-On Tue, Nov 1, 2011 at 8:26 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> Perhaps a summary would help the people actually knowledgeable about mm
-> understand why this adjustment is needed.
->
-> I'll just mention a few obvious things.
->
-> On Tue, 2011-11-01 at 19:41 +0800, Guanjun He wrote:
->> Signed-off-by: Guanjun He <heguanbo@gmail.com>
->> ---
->>  mm/memory.c |   32 ++++++++++++++++++--------------
->>  1 files changed, 18 insertions(+), 14 deletions(-)
->>
->> diff --git a/mm/memory.c b/mm/memory.c
->> index a56e3ba..d6dd6b3 100644
->> --- a/mm/memory.c
->> +++ b/mm/memory.c
->> @@ -3465,20 +3465,24 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->>       pmd = pmd_alloc(mm, pud, address);
->>       if (!pmd)
->>               return VM_FAULT_OOM;
->> -     if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
->> -             if (!vma->vm_ops)
->> -                     return do_huge_pmd_anonymous_page(mm, vma, address,
->> -                                                       pmd, flags);
->> -     } else {
->> -             pmd_t orig_pmd = *pmd;
->> -             barrier();
->> -             if (pmd_trans_huge(orig_pmd)) {
->> -                     if (flags & FAULT_FLAG_WRITE &&
->> -                         !pmd_write(orig_pmd) &&
->> -                         !pmd_trans_splitting(orig_pmd))
->> -                             return do_huge_pmd_wp_page(mm, vma, address,
->> -                                                        pmd, orig_pmd);
->> -                     return 0;
->> +     if (transparent_hugepage_enabled(vma)) {
->> +             if(pmd_none(*pmd)){
->
-> codingstyle (scripts/checkpatch.pl would have caught that one).
->
->> +                     if (!vma->vm_ops)
->> +                             return do_huge_pmd_anonymous_page(mm, vma, address,
->> +                                             pmd, flags);
->> +             }
->> +             else
->> +             {
->
-> codingstyle (ditto). There's probably more.
->
->> +                     pmd_t orig_pmd = *pmd;
->> +                     barrier();
->> +                     if (pmd_trans_huge(orig_pmd)) {
->> +                             if (flags & FAULT_FLAG_WRITE &&
->> +                                             !pmd_write(orig_pmd) &&
->> +                                             !pmd_trans_splitting(orig_pmd))
->> +                                     return do_huge_pmd_wp_page(mm, vma, address,
->> +                                                     pmd, orig_pmd);
->> +                             return 0;
->> +                     }
->>               }
->>       }
->>
->
->
-> Paul Bolle
->
->
+> Also, do you get any output from the sensors command on the notebook?
+> Thanks, Guenter
+
+Yes.  It claims to have 24 temperature sensors.
+
+/Lars
+
+
