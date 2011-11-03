@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934055Ab1KCQeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:34:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49602 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933803Ab1KCQeO convert rfc822-to-8bit (ORCPT
+	id S934077Ab1KCQi4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:38:56 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34976 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933891Ab1KCQiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:34:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CABE8wwugFuNUstAFxKGLyZthAk+Cb9MN3kQFDr-vN08pdsMoRA@mail.gmail.com>
-References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
-	<20111025022852.GB32457@kroah.com>
-	<1319573794.9320.15.camel@dwillia2-mobl>
-	<20111025205106.GD7234@suse.de>
-	<CABE8wwugFuNUstAFxKGLyZthAk+Cb9MN3kQFDr-vN08pdsMoRA@mail.gmail.com>
-Date: Thu, 3 Nov 2011 09:34:12 -0700
-Message-ID: <CABE8wwv4sQBRrG77sgVjUCBb1qXP1LUw=nkVwtU5TynWoQegUA@mail.gmail.com>
-Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial controller
-From: "Williams, Dan J" <dan.j.williams@intel.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, Nhan H Mai <nhan.h.mai@intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        alan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Nov 2011 12:38:54 -0400
+Date: Thu, 3 Nov 2011 17:38:41 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: Lars =?ISO-8859-1?B?Tm9vZOlu?= <lars.nooden@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
+        lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] Hardware running hot and without the fan
+Message-ID: <20111103173841.367d4081@endymion.delvare>
+In-Reply-To: <1320332801.2309.60.camel@groeck-laptop>
+References: <4EB1108F.6070009@gmail.com>
+	<20111103020301.GA22333@ericsson.com>
+	<4EB250FD.3070000@gmail.com>
+	<20111103134902.GA26121@ericsson.com>
+	<4EB2A46B.8080600@gmail.com>
+	<1320332801.2309.60.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 3:52 PM, Williams, Dan J
-<dan.j.williams@intel.com> wrote:
-> On Tue, Oct 25, 2011 at 1:51 PM, Greg KH <gregkh@suse.de> wrote:
->> On Tue, Oct 25, 2011 at 01:16:34PM -0700, Dan Williams wrote:
->>> From: Dan Williams <dan.j.williams@intel.com>
->>> Date: Sun, 23 Oct 2011 15:06:24 -0700
->>> Subject: [PATCH v2] serial/8250_pci: add a quirk for the kt serial controller
->>>
->>> Workaround dropped notifications in the iir register.  Prevent reads
->>> coincident with new interrupt notifications by reading the iir at most
->>> once per interrupt.
->>>
->>> Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
->>> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
->>
->> Much better.
->>
->> But.
->>
->> Do you really think I can apply a patch that looks like this above?  I
->> have to edit the text of the email before I apply it.
->
-> I don't doubt you get busted patches all the time, this isn't one.
+On Thu, 3 Nov 2011 08:06:41 -0700, Guenter Roeck wrote:
+> You should be able to set the fan speed by writing into the fanX_input
+> and/or fanX_output sysfs attributes. You find those
+> in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
+> device).
 
-...except for the fact that it would have collided spectacularly with
-the contents of tty.git staged for 3.2.  Sorry for the noise, will
-resend.
+Note that fanX_input is always a read-only file, so writing to it isn't
+going to do anything.
 
---
-Dan
+fanX_output is not a standard attribute for hwmon devices, it shouldn't
+be there in the first place... The applesmc driver doesn't see to
+follow the standard interface, so it's probably best to not assume too
+much.
+
+-- 
+Jean Delvare
