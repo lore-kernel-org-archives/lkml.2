@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933497Ab1KCNBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:01:06 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:58653 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933143Ab1KCNBE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:01:04 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19EIgVCkOdEglDA5MmDoo5QIxpCMPjy+90nvHqzoO
-	5JbrmHpooIhFFm
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Artem S. Tashkinov" <t.artem@lycos.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>
-In-Reply-To: <20111103081835.GA9330@elte.hu>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
-	 <20111103081835.GA9330@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Nov 2011 14:00:59 +0100
-Message-ID: <1320325259.11622.94.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S933560Ab1KCNBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:01:45 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:24305
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933143Ab1KCNBn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 09:01:43 -0400
+X-SpamScore: -13
+X-BigFish: VPS-13(zz9371Kc89bh542M1432Nzz1202hzz8275bh8275dhz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LU35IM-01-S19-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Dave Airlie <airlied@redhat.com>
+Subject: RE: [028/107] drm/radeon/kms: fix typo in r100_blit_copy
+Thread-Topic: [028/107] drm/radeon/kms: fix typo in r100_blit_copy
+Thread-Index: AQHMmciZ2I0BZvR9I0W2N//CcSQXv5WbHbLA
+Date: Thu, 3 Nov 2011 13:01:35 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D00AFCA478@sausexdag02.amd.com>
+References: <20111102221600.GA26650@kroah.com>
+ <20111102221452.655563086@clark.kroah.org>
+In-Reply-To: <20111102221452.655563086@clark.kroah.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.181.250.19]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 09:18 +0100, Ingo Molnar wrote:
-> 
-> ( Sorry about the delay in the reply - folks are returning from and 
->   recovering from the Kernel Summit ;-) I've extended the Cc: list.
->   Please Cc: scheduler folks when reporting bugs, next time around. )
-> 
-> * Artem S. Tashkinov <t.artem@lycos.com> wrote:
-> 
-> > Hello,
-> > 
-> > It's known that if you want to reach maximum performance on HT 
-> > enabled Intel CPUs you should distribute the load evenly between 
-> > physical cores, and when you have loaded all of them you should 
-> > then load the remaining virtual cores.
-> > 
-> > For example, if you have 4 physical cores and 8 virtual CPUs then 
-> > if you have just four tasks consuming 100% of CPU time you should 
-> > load four CPU pairs:
-> > 
-> > VCPUs: {1,2} - one task running
-> > 
-> > VCPUs: {3,4} - one task running
-> > 
-> > VCPUs: {5,6} - one task running
-> > 
-> > VCPUs: {7,8} - one task running
-> > 
-> > It's absolutely detrimental to performance to bind two tasks to 
-> > e.g. two physical cores {1,2} {3,4} and then the remaining two 
-> > tasks to e.g. the third core 5,6:
-> > 
-> > VCPUs: {1,2} - one task running
-> > 
-> > VCPUs: {3,4} - one task running
-> > 
-> > VCPUs: {5,6} - *two* task runnings
-> > 
-> > VCPUs: {7,8} - no tasks running
-> > 
-> > I've found out that even on Linux 3.0.8 the process scheduler 
-> > doesn't correctly distributes the load amongst virtual CPUs. E.g. 
-> > on a 4-core system (8 total virtual CPUs) the process scheduler 
-> > often run some instances of four different tasks on the same 
-> > physical CPU.
-> > 
-> > Maybe I shouldn't trust top/htop output on this matter but the same 
-> > test carried out on Microsoft XP OS shows that it indeed 
-> > distributes the load correctly, running tasks on different physical 
-> > cores whenever possible.
-> > 
-> > Any thoughts? comments? I think this is quite a serious problem.
-> 
-> If sched_mc is set to zero then this looks like a serious load 
-> balancing bug - you are perfectly right that we should balance 
-> between physical packages first and ending up with the kind of 
-> asymmetry you describe for any observable length is a bug.
-> 
-> You have not outlined your exact workload - do you run a simple CPU 
-> consuming loop with no sleeping done whatsoever, or something more 
-> complex?
-> 
-> Peter, Paul, Mike, any ideas?
+Please don't apply.  This ended up getting reverted upstream.
 
-SD_SHARE_PKG_RESOURCES is on in the SIBLING domain, so in the sync hint
-wakeup case (given no other tasks running to muddy the water), the hint
-allows us to do an affine wakeup, which allows select_idle_sibling() to
-convert the CPU affine wakeup into a cache affine wakeup, waker will be
-on one CPU, wakee on it's sibling.  Turning SD_SHARE_PKG_RESOURCES off
-results in sync wakeup pairs landing CPU affine instead.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Wednesday, November 02, 2011 6:14 PM
+> To: linux-kernel@vger.kernel.org; stable@vger.kernel.org
+> Cc: torvalds@linux-foundation.org; akpm@linux-foundation.org;
+> alan@lxorguk.ukuu.org.uk; Deucher, Alexander; Dave Airlie
+> Subject: [028/107] drm/radeon/kms: fix typo in r100_blit_copy
+> 
+> 2.6.32-longterm review patch.  If anyone has any objections, please let us
+> know.
+> 
+> ------------------
+> 
+> From: Alex Deucher <alexander.deucher@amd.com>
+> 
+> commit 18b4fada275dd2b6dd9db904ddf70fe39e272222 upstream.
+> 
+> cur_pages is the number of pages per loop iteration.
+> 
+> Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+> Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
+> Signed-off-by: Dave Airlie <airlied@redhat.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/gpu/drm/radeon/r100.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- a/drivers/gpu/drm/radeon/r100.c
+> +++ b/drivers/gpu/drm/radeon/r100.c
+> @@ -355,8 +355,8 @@ int r100_copy_blit(struct radeon_device
+>  		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
+>  		radeon_ring_write(rdev, 0);
+>  		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
+> -		radeon_ring_write(rdev, num_pages);
+> -		radeon_ring_write(rdev, num_pages);
+> +		radeon_ring_write(rdev, cur_pages);
+> +		radeon_ring_write(rdev, cur_pages);
+>  		radeon_ring_write(rdev, cur_pages | (stride_pixels << 16));
+>  	}
+>  	radeon_ring_write(rdev, PACKET0(RADEON_DSTCACHE_CTLSTAT,
+> 0));
+> 
+> 
 
-!sync wakeups spread to separate cores unless threads exceeds cores.
-
-I just tested massive_intr (!sync) and tbench pairs (sync) on E5620 box,
-and that's what I see happening.
-
-sync wakee landing on a idle sibling is neither black nor white... more
-of a London fog + L.A. smog.
-
-	-Mike
 
