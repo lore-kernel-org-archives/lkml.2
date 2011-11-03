@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933811Ab1KCPvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:51:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33374 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932263Ab1KCPvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:51:47 -0400
+	id S933835Ab1KCPwi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:52:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755293Ab1KCPwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 11:52:37 -0400
+Date: Thu, 3 Nov 2011 16:51:27 +0100
+From: Johannes Weiner <jweiner@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: khlebnikov@parallels.com, penberg@kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hannes@cmpxchg.org, riel@redhat.com, mel@csn.ul.ie,
+        minchan.kim@gmail.com, gene.heskett@gmail.com
+Subject: Re: [rfc 1/3] mm: vmscan: never swap under low memory pressure
+Message-ID: <20111103155127.GM19965@redhat.com>
+References: <20110808110658.31053.55013.stgit@localhost6>
+ <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
+ <4E3FD403.6000400@parallels.com>
+ <20111102163056.GG19965@redhat.com>
+ <20111102163141.GH19965@redhat.com>
+ <4EB183CF.6050300@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1111031139150.2136-100000@iolanthe.rowland.org>
-References: <CAOS58YNNx7XOGov19_hucAQYvw88F2YO+KoVpn8uD+COgJRbEw@mail.gmail.com>
-	<Pine.LNX.4.44L0.1111031139150.2136-100000@iolanthe.rowland.org>
-Date: Thu, 3 Nov 2011 08:51:46 -0700
-X-Google-Sender-Auth: _BY9lz73Z5EMDyZpShBM-mWpZw8
-Message-ID: <CAOS58YN1WByGtr1MNH12vbPVa-vyWa-LiHYgMWSJt1WbfK-vtw@mail.gmail.com>
-Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB183CF.6050300@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Nov 02, 2011 at 10:54:23AM -0700, KOSAKI Motohiro wrote:
+> > ---
+> >  mm/vmscan.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a90c603..39d3da3 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -831,6 +831,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+> >  		 * Try to allocate it some swap space here.l
+> >  		 */
+> >  		if (PageAnon(page) && !PageSwapCache(page)) {
+> > +			if (priority >= DEF_PRIORITY - 2)
+> > +				goto keep_locked;
+> >  			if (!(sc->gfp_mask & __GFP_IO))
+> >  				goto keep_locked;
+> >  			if (!add_to_swap(page))
+> 
+> Hehe, i tried very similar way very long time ago. Unfortunately, it doesn't work.
+> "DEF_PRIORITY - 2" is really poor indicator for reclaim pressure. example, if the
+> machine have 1TB memory, DEF_PRIORITY-2 mean 1TB>>10 = 1GB. It't too big.
 
-On Thu, Nov 3, 2011 at 8:39 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> I don't know. I haven't really thought about it but as it's currently
->> designed, I don't think it'll be possible to avoid going through EH to
->> put ATA ports into suspend mode.
->
-> Why not?
+Do you remember what kind of tests you ran that demonstrated
+misbehaviour?
 
-It's just how things are designed now.  There's no reason why it's
-fundamentally impossible but going around that would require some
-amount of hackery or preferably re-design.  Synchronization against
-command processing, interrupts and all are built around EH.
+We can not reclaim anonymous pages without swapping, so the priority
+cutoff applies only to inactive file pages.  If you had 1TB of
+inactive file pages, the scanner would have to go through
 
-Thanks.
+	((1 << (40 - 12)) >> 12) +
+	((1 << (40 - 12)) >> 11) +
+	((1 << (40 - 12)) >> 10) = 1792MB
 
--- 
-tejun
+without reclaiming SWAP_CLUSTER_MAX before it considers swapping.
+That's a lot of scanning but how likely is it that you have a TB of
+unreclaimable inactive cache pages?
+
+Put into proportion, with a priority threshold of 10 a reclaimer will
+look at 0.17% ((n >> 12) + (n >> 11) + (n >> 10) (excluding the list
+balance bias) of inactive file pages without reclaiming
+SWAP_CLUSTER_MAX before it considers swapping.
+
+Currently, the list balance biasing with each newly-added file page
+has much higher resistance to scan anonymous pages initially.  But
+once it shifted toward anon pages, all reclaimers will start swapping,
+unlike the priority threshold that each reclaimer has to reach
+individually.  Could this have been what was causing problems for you?
