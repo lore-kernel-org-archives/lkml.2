@@ -1,82 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123Ab1KCQt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:49:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45288 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933891Ab1KCQt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:49:27 -0400
-Date: Thu, 3 Nov 2011 17:49:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Glauber Costa <glommer@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tim Hockin <thockin@hockin.org>,
-        LKML <linux-kernel@vger.kernel.org>, Paul Menage <paul@paulmenage.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
-Message-ID: <20111103164917.GF8198@somewhere.redhat.com>
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com>
- <20111004150111.e9337268.akpm00@gmail.com>
- <CAAAKZwu67VMiZgdpp=i5p7zyGbOHGHXwF_iprufGPzTLkkUF2A@mail.gmail.com>
- <20111028163021.1ce61f8a.akpm@linux-foundation.org>
- <CAA6-i6o0SPfZJDx4SRR1hY-He0L6zHuv0saH6EaE7Mrc2HF6PA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S934162Ab1KCQtg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:49:36 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:65383 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933891Ab1KCQte convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@suse.com:9:1>);
+	Thu, 3 Nov 2011 12:49:34 -0400
+Message-Id: <4EB2D427020000780005ED64@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 03 Nov 2011 16:49:27 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Dan Magenheimer" <dan.magenheimer@oracle.com>
+Cc: "Neo Jia" <cyclonusj@gmail.com>, <levinsasha928@gmail.com>,
+        "JeremyFitzhardinge" <jeremy@goop.org>, <linux-mm@kvack.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Dave Hansen" <dave@linux.vnet.ibm.com>,
+        "Seth Jennings" <sjenning@linux.vnet.ibm.com>,
+        "Jonathan Corbet" <corbet@lwn.net>,
+        "Chris Mason" <chris.mason@oracle.com>,
+        "Konrad Wilk" <konrad.wilk@oracle.com>, <ngupta@vflare.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+In-Reply-To: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAA6-i6o0SPfZJDx4SRR1hY-He0L6zHuv0saH6EaE7Mrc2HF6PA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 29, 2011 at 11:38:25AM +0200, Glauber Costa wrote:
-> On Sat, Oct 29, 2011 at 1:30 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Tue, 25 Oct 2011 13:06:35 -0700
-> > Tim Hockin <thockin@hockin.org> wrote:
-> >
-> >> On Tue, Oct 4, 2011 at 3:01 PM, Andrew Morton <akpm00@gmail.com> wrote:
-> >> > On Mon, __3 Oct 2011 21:07:02 +0200
-> >> > Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> >> >
-> >> >> Hi Andrew,
-> >> >>
-> >> >> This contains minor changes, mostly documentation and changelog
-> >> >> updates, off-case build fix, and a code optimization in
-> >> >> res_counter_common_ancestor().
-> >> >
-> >> > I'd normally duck a patch series like this when we're at -rc8 and ask
-> >> > for it to be resent late in -rc1. __But I was feeling frisky so I
-> >> > grabbed this lot for a bit of testing and will sit on it until -rc1.
-> >> >
-> >> > I'm still not convinced that the kernel has a burning need for a "task
-> >> > counter subsystem". __Someone convince me that we should merge this!
-> >>
-> >> We have real (accidental) DoS situations which happen because we don't
-> >> have this.  It usually takes the form of some library no re-joining
-> >> threads.  We end up deploying a few apps linked against this library,
-> >> and suddenly we're in trouble on a machine.  Except, this being
-> >> Google, we're in trouble on a lot of machines.
-> >
-> > This is a bit foggy.  I think you mean that machines are experiencing
-> > accidental forkbombs?
-> >
-> >> There may be other ways to cobble this sort of safety together, but
-> >> they are less appealing for various reasons.  cgroups are how we
-> >> control groups of related pids.
-> >>
+>>> On 27.10.11 at 20:52, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+> Hi Linus --
 > 
-> In the end of the day, all cgroups are just a group of tasks. So I don't really
-> get the need to have a cgroup to control the number of tasks in the system.
+> Frontswap now has FOUR users: Two already merged in-tree (zcache
+> and Xen) and two still in development but in public git trees
+> (RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
+> changes required to support transcendent memory; part 1 was cleancache
+> which you merged at 3.0 (and which now has FIVE users).
 > 
-> Why don't we just allow all cgroups to have a limit on the number of
-> tasks it can hold?
+> Frontswap patches have been in linux-next since June 3 (with zero
+> changes since Sep 22).  First posted to lkml in June 2009, frontswap 
+> is now at version 11 and has incorporated feedback from a wide range
+> of kernel developers.  For a good overview, see
+>    http://lwn.net/Articles/454795.
+> If further rationale is needed, please see the end of this email
+> for more info.
+> 
+> SO... Please pull:
+> 
+> git://oss.oracle.com/git/djm/tmem.git #tmem
+> 
+>...
+> Linux kernel distros incorporating frontswap:
+> - Oracle UEK 2.6.39 Beta:
+>    http://oss.oracle.com/git/?p=linux-2.6-unbreakable-beta.git;a=summary 
+> - OpenSuSE since 11.2 (2009) [see mm/tmem-xen.c]
+>    http://kernel.opensuse.org/cgit/kernel/ 
 
-Not sure what you mean. You would prefer to have this as a core feature in
-cgroups rather than a subsystem?
+I've been away so I am too far behind to read this entire
+very long thread, but wanted to confirm that we've been
+carrying an earlier version of this code as indicated above
+and it would simplify our kernel maintenance if frontswap
+got merged.  So please count me as supporting frontswap.
+
+Thanks, Jan
+
+> - a popular Gentoo distro
+>    http://forums.gentoo.org/viewtopic-t-862105.html 
+> 
+> Xen distros supporting Linux guests with frontswap:
+> - Xen hypervisor backend since Xen 4.0 (2009)
+>    http://www.xen.org/files/Xen_4_0_Datasheet.pdf 
+> - OracleVM since 2.2 (2009)
+>    http://twitter.com/#!/Djelibeybi/status/113876514688352256 
+> 
+> Public visibility for frontswap (as part of transcendent memory):
+> - presented at OSDI'08, OLS'09, LCA'10, LPC'10, LinuxCon NA 11, Oracle
+>   Open World 2011, two LSF/MM Summits (2010,2011), and three
+>   Xen Summits (2009,2010,2011)
+> - http://lwn.net/Articles/454795 (current overview)
+> - http://lwn.net/Articles/386090 (2010)
+> - http://lwn.net/Articles/340080 (2009)
+
+
+
