@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab1KCL7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 07:59:41 -0400
-Received: from onza.mythic-beasts.com ([93.93.131.30]:43170 "EHLO
-	onza.mythic-beasts.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab1KCL7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 07:59:39 -0400
-Date: Thu, 3 Nov 2011 11:59:33 +0000
-From: Luis Henriques <henrix@camandro.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the crypto-current
-	tree
-Message-ID: <20111103115933.GA12708@onza.mythic-beasts.com>
-References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au> <20111102200900.GA3454@hades> <20111102233936.GA10058@gondor.apana.org.au> <20111103055824.GC22141@secunet.com> <20111103061628.GA12678@gondor.apana.org.au> <20111103101554.GA17569@onza.mythic-beasts.com> <20111103114214.GA14681@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103114214.GA14681@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933095Ab1KCMDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:03:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:5062 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932753Ab1KCMDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:03:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,449,1315206000"; 
+   d="scan'208";a="70119681"
+Subject: Re: [PATCH -v1] acpi: Fix possible recursive locking in hwregs.c
+From: Lin Ming <ming.m.lin@intel.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+In-Reply-To: <1320317323.5711.5.camel@localhost.localdomain>
+References: <1320317323.5711.5.camel@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 03 Nov 2011 20:02:50 +0800
+Message-ID: <1320321770.2813.10.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 10:42:14PM +1100, Herbert Xu wrote:
-> On Thu, Nov 03, 2011 at 10:15:54AM +0000, Luis Henriques wrote:
-> >
-> > No, this did not solved the problem; build still fails.  The problem is
-> > that, in lib/nlattr.c, we have:
-> 
-> Ugh, for the time being I guess we'll have to wrap these within
-> CONFIG_NET, as I'd rather not have CONFIG_CRYPTO depend on CONFIG_NET.
-> 
-> Please let me know whether this patch fixes the problem.
+On Thu, 2011-11-03 at 18:48 +0800, Rakib Mullick wrote:
+> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status, 
 
-Yep, it compiles and boots.  Thanks for the patch.
+As I replied at https://lkml.org/lkml/2011/9/22/6, I still don't think
+there is a recursive lock.
 
-Cheers,
---
-Luis Henriques
+Or do you have a real test case to trigger the recursive lock you
+mentioned?
+
+Lin Ming
+
+> acpi_os_acquire_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then 
+> without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which tries to hold 
+> acpi_gbl_gpe_lock and thus might causes possible recursive lock.
+> 
+> Following patch fixes this scenario by just releasing acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list.
+> 
+>  Changes since v0(https://lkml.org/lkml/2011/9/21/355):
+> 	- Fix changelog, thanks to Lin Ming.
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> Cc: Lin Ming <ming.m.lin@intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Len Brown <len.brown@intel.com>
+> ---
+> 
+> diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+> index 55accb7..e3110ac 100644
+> --- a/drivers/acpi/acpica/hwregs.c
+> +++ b/drivers/acpi/acpica/hwregs.c
+> @@ -269,6 +269,9 @@ acpi_status acpi_hw_clear_acpi_status(void)
+>  
+>  	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
+>  					ACPI_BITMASK_ALL_FIXED_STATUS);
+> +
+> +	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
+> +
+>  	if (ACPI_FAILURE(status)) {
+>  		goto unlock_and_exit;
+>  	}
+> @@ -278,7 +281,6 @@ acpi_status acpi_hw_clear_acpi_status(void)
+>  	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
+>  
+>        unlock_and_exit:
+> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
+>  	return_ACPI_STATUS(status);
+>  }
+>  
+> 
+> 
+
 
