@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab1KCPTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:19:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62419 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab1KCPT3 (ORCPT
+	id S1756179Ab1KCPUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:20:22 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:32892 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755670Ab1KCPUU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:19:29 -0400
-Message-ID: <4EB2B0FD.309@gmail.com>
-Date: Thu, 03 Nov 2011 17:19:25 +0200
-From: =?UTF-8?B?TGFycyBOb29kw6lu?= <lars.nooden@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: guenter.roeck@ericsson.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: Hardware running hot and without the fan
-References: <4EB1108F.6070009@gmail.com>  <20111103020301.GA22333@ericsson.com> <4EB250FD.3070000@gmail.com>  <20111103134902.GA26121@ericsson.com>  <4EB2A46B.8080600@gmail.com> <1320332801.2309.60.camel@groeck-laptop>
-In-Reply-To: <1320332801.2309.60.camel@groeck-laptop>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 3 Nov 2011 11:20:20 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Content-Type: text/plain; charset=windows-1252
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Subject: CIFS: Rename bug on servers not supporting inode numbers
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+Date: Thu, 3 Nov 2011 15:20:17 +0000
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Unix Support <unix-support@ucs.cam.ac.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
+To: Steve French <sfrench@samba.org>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 05:06 PM, Guenter Roeck wrote:
-> On Thu, 2011-11-03 at 10:25 -0400, Lars NoodÃ©n wrote:
-[snip]
->> The one machine reports one fan and the other two fans.  I haven't found
->> a way to set the fan speed manually.  The output from sensors
->> is
->>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/44
->> and here
->>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/47
-> 
-> Do the fans actually turn, or is the output bogus ?
+Hi,
 
-The output is bogus, the fans are not turning.  On #47 there above, I
-think the temperatures might be inaccurate, too.  Since they'll go up
-and down as much as 8 degrees in a few seconds.
+Our CIFS server problems seem to have no end…  The Novell CIFS server does not support server inode numbers (when I try the mount option I get the message it is being turned off as server does not support it) and thus each inode gets a different number each time it is accessed and it gets a different number again for each readdir call.
 
-> You should be able to set the fan speed by writing into the fanX_input
-> and/or fanX_output sysfs attributes. You find those
-> in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
-> device).
+The fun happens with rename() when the rename source and target only differ in case, e.g.
 
-I can set the fan speed manually.  e.g.:
+	touch foo
+	mv foo Foo
 
- echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
+The result?  Because of the difference in inode numbers, the request gets through to the CIFS module which promptly does:
 
-That helps some.
+	cifs_unlink(target_dir, target_dentry)
+	rc = cifs_do_rename(…)
 
-/Lars
+And because the cifs_unlink() just removed the source of the rename (as it is the same as the target), "rc" comes back as -ENOENT.
+
+And indeed the file is gone so we just lost the user's file for ever.  )-:
+
+We are tossing around ideas how to fix this but we would be interested in your input as to what you think the fix should be.
+
+In any case this probably should be fixed in the standard kernel CIFS module, too, and not just for us locally as this presumably affects anyone who is using the CIFS module against case-insensitive, non-server-inode-number-supporting CIFS servers...
+
+Best regards,
+
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
+
