@@ -1,43 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309Ab1KCVZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:25:29 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:60075 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab1KCVZ1 (ORCPT
+	id S1752381Ab1KCVZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:25:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42419 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1KCVZz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:25:27 -0400
-Subject: Re: [GIT PULL] UML changes for 3.2
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Foley <pefoley2@verizon.net>, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <4EB3045A.6050501@nod.at>
-References: <4EB14F51.1050004@nod.at>
-	 <1320348750.14409.249.camel@x61.thuisdomein>
-	 <1320352899.14409.260.camel@x61.thuisdomein>
-	 <1320354072.14409.265.camel@x61.thuisdomein>  <4EB3045A.6050501@nod.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Nov 2011 22:25:03 +0100
-Message-ID: <1320355503.14409.269.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Nov 2011 17:25:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <1320354450.3000.60.camel@pc786-ubu.gnet.global.vpn>
+References: <1320354450.3000.60.camel@pc786-ubu.gnet.global.vpn>
+Date: Thu, 3 Nov 2011 16:25:53 -0500
+Message-ID: <CAAOQ2gvtwfwwh+YVjJNEX8GFVK3QatKB5miStiDTg4p_8myuxw@mail.gmail.com>
+Subject: Re: [PATCH v3] rtc: ds1307: generalise ram size and offset
+From: David Anders <danders.dev@gmail.com>
+To: Austin Boyle <Austin.Boyle@aviatnet.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        linux-kernel@vger.kernel.org, x0132446@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 22:15 +0100, Richard Weinberger wrote:
-> I'm confused. What is "make update-po-config" supposed to do?
-> It seems to iterate over all archs and reads their Kconfig, right?
+Austin,
 
-It generates an enormous file (linux.pot) with all (help?) strings in
-all Kconfig files that people could translate from English to other
-languages. Seems like quite an effort to do that. I wonder if it has
-ever been done.
+On Thu, Nov 3, 2011 at 4:07 PM, Austin Boyle <Austin.Boyle@aviatnet.com> wrote:
+> From: Austin Boyle <Austin.Boyle@aviatnet.com>
+>
+> This patch generalises NVRAM to support RAM with other size and offset, such
+> as the 64 bytes of SRAM on the mcp7941x. Register offsets are added to chip
+> description instead of being hard-coded into probe function.
+>
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: David Anderson <danders.dev@gmail.com>
 
+please correct my name: David Anders
 
-Paul Bolle
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+> Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
 
+i'll apply and test for MCP7941x parts
+
+> ---
+> this patch is based on Wolfram Sang's tree:
+> git://git.pengutronix.de/git/wsa/linux-2.6.git ds1307
+>
+> patch depends on:
+> rtc: ds1307: comment and format cleanup 21af5f7bd6
+> rtc: ds1307: simplify irq setup code  8c63e03627
+> rtc: ds1307: refactor chip_desc table e246db081d
+> rtc: add initial support for mcp7941x parts e69bba2d3a
+>
+> --- a/drivers/rtc/rtc-ds1307.c  2011-10-10 11:22:22.674690998 +1300
+> +++ b/drivers/rtc/rtc-ds1307.c  2011-11-04 10:02:27.859155009 +1300
+> @@ -104,6 +104,8 @@ enum ds_type {
+>
+>  struct ds1307 {
+>        u8                      offset; /* register's offset */
+> +       u16                     nvram_offset;
+> +       u16                     nvram_size;
+>        u8                      regs[11];
+>        enum ds_type            type;
+>        unsigned long           flags;
+> @@ -119,26 +121,37 @@ struct ds1307 {
+>  };
+>
+>  struct chip_desc {
+> -       unsigned                nvram56:1;
+>        unsigned                alarm:1;
+> +       u8                      offset;
+> +       u16                     nvram_offset;
+> +       u16                     nvram_size;
+>  };
+>
+>  static const struct chip_desc chips[last_ds_type] = {
+>        [ds_1307] = {
+> -               .nvram56        = 1,
+> +               .nvram_offset   = 8,
+> +               .nvram_size     = 56, /* 56 bytes NVRAM */
+>        },
+>        [ds_1337] = {
+>                .alarm          = 1,
+>        },
+>        [ds_1338] = {
+> -               .nvram56        = 1,
+> +               .nvram_offset   = 8,
+> +               .nvram_size     = 56, /* 56 bytes NVRAM */
+>        },
+>        [ds_1339] = {
+>                .alarm          = 1,
+>        },
+> +       [ds_1388] = {
+> +               .offset         = 1, /* seconds starts at 1 */
+> +       },
+>        [ds_3231] = {
+>                .alarm          = 1,
+>        },
+> +       [mcp7941x] = {
+> +               .nvram_offset   = 0x20,
+> +               .nvram_size     = 64, /* 64 bytes SRAM */
+> +       },
+>  };
+>
+>  static const struct i2c_device_id ds1307_id[] = {
+> @@ -543,8 +556,6 @@ static const struct rtc_class_ops ds13xx
+>
+>  /*----------------------------------------------------------------------*/
+>
+> -#define NVRAM_SIZE     56
+> -
+>  static ssize_t
+>  ds1307_nvram_read(struct file *filp, struct kobject *kobj,
+>                struct bin_attribute *attr,
+> @@ -557,14 +568,15 @@ ds1307_nvram_read(struct file *filp, str
+>        client = kobj_to_i2c_client(kobj);
+>        ds1307 = i2c_get_clientdata(client);
+>
+> -       if (unlikely(off >= NVRAM_SIZE))
+> +       if (unlikely(off >= ds1307->nvram_size))
+>                return 0;
+> -       if ((off + count) > NVRAM_SIZE)
+> -               count = NVRAM_SIZE - off;
+> +       if ((off + count) > ds1307->nvram_size)
+> +               count = ds1307->nvram_size - off;
+>        if (unlikely(!count))
+>                return count;
+>
+> -       result = ds1307->read_block_data(client, 8 + off, count, buf);
+> +       result = ds1307->read_block_data(client, ds1307->nvram_offset + off,
+> +                                                               count, buf);
+>        if (result < 0)
+>                dev_err(&client->dev, "%s error %d\n", "nvram read", result);
+>        return result;
+> @@ -582,14 +594,15 @@ ds1307_nvram_write(struct file *filp, st
+>        client = kobj_to_i2c_client(kobj);
+>        ds1307 = i2c_get_clientdata(client);
+>
+> -       if (unlikely(off >= NVRAM_SIZE))
+> +       if (unlikely(off >= ds1307->nvram_size))
+>                return -EFBIG;
+> -       if ((off + count) > NVRAM_SIZE)
+> -               count = NVRAM_SIZE - off;
+> +       if ((off + count) > ds1307->nvram_size)
+> +               count = ds1307->nvram_size - off;
+>        if (unlikely(!count))
+>                return count;
+>
+> -       result = ds1307->write_block_data(client, 8 + off, count, buf);
+> +       result = ds1307->write_block_data(client, ds1307->nvram_offset + off,
+> +                                                               count, buf);
+>        if (result < 0) {
+>                dev_err(&client->dev, "%s error %d\n", "nvram write", result);
+>                return result;
+> @@ -605,7 +618,6 @@ static struct bin_attribute nvram = {
+>
+>        .read   = ds1307_nvram_read,
+>        .write  = ds1307_nvram_write,
+> -       .size   = NVRAM_SIZE,
+>  };
+>
+>  /*----------------------------------------------------------------------*/
+> @@ -638,7 +650,19 @@ static int __devinit ds1307_probe(struct
+>
+>        ds1307->client  = client;
+>        ds1307->type    = id->driver_data;
+> -       ds1307->offset  = 0;
+> +
+> +       if (chip && chip->offset)
+> +               ds1307->offset = chip->offset;
+> +       else
+> +               ds1307->offset = 0;
+> +       if (chip && chip->nvram_size)
+> +               ds1307->nvram_size = chip->nvram_size;
+> +       else
+> +               ds1307->nvram_size = 0;
+> +       if (chip && chip->nvram_offset)
+> +               ds1307->nvram_offset = chip->nvram_offset;
+> +       else
+> +               ds1307->nvram_offset = 0;
+>
+>        buf = ds1307->regs;
+>        if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
+> @@ -756,9 +780,6 @@ static int __devinit ds1307_probe(struct
+>                                                  hour);
+>                }
+>                break;
+> -       case ds_1388:
+> -               ds1307->offset = 1; /* Seconds starts at 1 */
+> -               break;
+>        default:
+>                break;
+>        }
+> @@ -893,11 +914,12 @@ read_rtc:
+>                dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
+>        }
+>
+> -       if (chip && chip->nvram56) {
+> +       if (chip && chip->nvram_size) {
+> +               nvram.size = ds1307->nvram_size;
+>                err = sysfs_create_bin_file(&client->dev.kobj, &nvram);
+>                if (err == 0) {
+>                        set_bit(HAS_NVRAM, &ds1307->flags);
+> -                       dev_info(&client->dev, "56 bytes nvram\n");
+> +                       dev_info(&client->dev, "%zd bytes nvram\n", nvram.size);
+>                }
+>        }
+>
+>
+>
+>
+
+Dave
