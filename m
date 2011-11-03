@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab1KCWlc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:41:32 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:35228 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752954Ab1KCWlb (ORCPT
+	id S1753546Ab1KCWps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 18:45:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:32845 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753354Ab1KCWpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:41:31 -0400
-Date: Thu, 3 Nov 2011 15:41:25 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH 5/7] drm/i915: Make DP prepare/commit
- consistent with DP dpms
-Message-ID: <20111103154125.1fdaff5c@jbarnes-desktop>
-In-Reply-To: <yunipn0rg7y.fsf@aiko.keithp.com>
-References: <1320214830-12696-1-git-send-email-keithp@keithp.com>
-	<1320214830-12696-6-git-send-email-keithp@keithp.com>
-	<20111103130011.7946090a@jbarnes-desktop>
-	<yunipn0rg7y.fsf@aiko.keithp.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/TTwxyYHj.52/ahrGaEtupnd"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 3 Nov 2011 18:45:47 -0400
+Date: Thu, 3 Nov 2011 22:44:52 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        David Brown <davidb@codeaurora.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/3] Change ARCH_NR_GPIO into a Kconfig variable
+Message-ID: <20111103224452.GS12913@n2100.arm.linux.org.uk>
+References: <1320339647-30255-1-git-send-email-pdeschrijver@nvidia.com> <201111031816.37427.vapier@gentoo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201111031816.37427.vapier@gentoo.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/TTwxyYHj.52/ahrGaEtupnd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Nov 03, 2011 at 06:16:33PM -0400, Mike Frysinger wrote:
+> On Thursday 03 November 2011 13:00:44 Peter De Schrijver wrote:
+> > This patchset converts ARCH_NR_GPIO to a Kconfig variable as suggested by
+> > Russel King. It also converts some platforms to the new model.
+> > 
+> > Peter De Schrijver (3):
+> >   ARM: ARCH_NR_GPIO: Make ARCH_NR_GPIO a Kconfig variable
+> >   ARM: mach-shmobile: Use CONFIG_ARCH_NR_GPIO
+> >   ARM: mach-ux500 Use CONFIG_ARCH_NR_GPIO
+> > 
+> >  arch/arm/Kconfig                           |   10 ++++++++++
+> >  arch/arm/include/asm/gpio.h                |    4 ++++
+> >  arch/arm/mach-shmobile/include/mach/gpio.h |    2 --
+> >  arch/arm/mach-ux500/include/mach/gpio.h    |    5 -----
+> >  4 files changed, 14 insertions(+), 7 deletions(-)
+> 
+> i'm not sure how this is an improvement.  we go from declaring the define in 
+> the right mach-specific subdir (arch/arm/mach-xxx/include/mach/gpio.h) to an 
+> arm-global file (arm/Kconfig).  i'd think the ideal would be to keep all the 
+> mach cruft in the mach-xxx/ subdir.
 
-On Thu, 03 Nov 2011 15:30:57 -0700
-Keith Packard <keithp@keithp.com> wrote:
+It most certainly is an improvement.
 
-> On Thu, 3 Nov 2011 13:00:11 -0700, Jesse Barnes <jbarnes@virtuousgeek.org=
-> wrote:
->=20
-> > A few comments on this one (also, is it strictly required to fix your
-> > bug)?
->=20
-> I think so; the panel definitely was not happy when I turned the link
-> off while the panel power was on. Having the mode setting and DPMS paths
-> doing things in different orders definitely doesn't seem reasonable
-> though. I nearly managed to share code between the two paths, but there
-> are subtle differences in requirements and so I didn't bother.
->=20
-> > Ok so you're making sure the panel has power to down the link, I think
-> > that's fine.
->=20
-> No, I'm turning the panel off *before* turning off the link.  The panel
-> goes nuts if you down the link before turning its power off; lots of
-> technicolor.
+One of the things that we (the ARM community as a whole) is focused on to
+is to reduce the amount of code in arch/arm through consolidation, removing
+as much duplication as practical between the various SoCs.
 
-Except for VDD??  That does come on... and shouldn't be any different
-than a full power sequence as far as link training etc go...
+One of the other factors that we're also focused on is:
+(a) reducing the number of configurations which have to be built to properly
+    build-test ARM
+(b) reducing the number of kernels which have to be built to support a
+    range of ARM platforms
 
-> Downing the link doesn't require any communication with the panel, so
-> there's no issue with losing connectivity at this point:
->=20
-> 	ironlake_edp_backlight_off(intel_dp);
-> 	ironlake_edp_panel_off(intel_dp);               <=3D panel off
->=20
-> 	/* Wake up the sink first */
-> 	ironlake_edp_panel_vdd_on(intel_dp);
-> 	intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_ON);
-> 	intel_dp_link_down(intel_dp);                   <=3D link down
-> 	ironlake_edp_panel_vdd_off(intel_dp, false);
->=20
-> > But here it looks like you're shutting it off, then downing the link?
-> > Should this be reordered?
->=20
-> Nope, it's in the same order:
->=20
-> 	ironlake_edp_backlight_off(intel_dp);
-> 	ironlake_edp_panel_off(intel_dp);               <=3D panel off
->=20
-> 	ironlake_edp_panel_vdd_on(intel_dp);
-> 	intel_dp_sink_dpms(intel_dp, mode);
-> 	intel_dp_link_down(intel_dp);                   <=3D link down
-> 	ironlake_edp_panel_vdd_off(intel_dp, false);
->=20
-> The only difference in these two code paths is that dp_prepare turns the
-> sink to DPMS_ON, while dp_dpms turns the sink to DPMS_OFF.
+Those two things together dictate that we remove the mach/ header files
+which are included outside of the individual mach-* directories, so that
+the entire kernel does not depend on anything in those mach/ header files.
+That includes mach/gpio.h.
 
-Oh missed the vdd on, which is in this path too...  So I'm still
-confused by the panel off, vdd on sequence, but at least they're
-consistent.
+It is the long term goal of Linaro to move the ARM kernel forward to such
+a point.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+Having ARCH_NR_GPIO definitions in mach/gpio.h is a blocker to both these
+efforts and, therefore, must be removed.  Therefore, before we have a
+better solution (such as sparse gpios in the same way as we have sparse
+irqs) we're going to stop the problem escalating still further by removing
+the need for new definitions of this constant in yet more new mach/gpio.h
+headers - which could otherwise be empty.
 
---Sig_/TTwxyYHj.52/ahrGaEtupnd
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOsxiVAAoJEIEoDkX4Qk9h3V0P/3RKsY6aNwPWCOyNmxlzB5pR
-N9tgdMSCPslq6Acnt3sAaRnVdZDuTQcN4yGnTFNL60xgyad2j5Cv5CB3KRvMfVEs
-KITgELtQaOjulp7EEWJWf0Z0VS1mH3X8qtYMERn54UHV49JOrgQNpot82RYjQBlw
-wWuOw263xGu+JY3OuVW+4NvUxWSQN5iUlDQqzBBJoLWc2CheKfuIjtm1uBL3oZdg
-VsVzkrvPAvt80CSQYs4ZIzkWlh+iZ4SYFL60aEfmMTfjsbwOjmjdmUDfkFRVwkE1
-TV+dT17A4T8H+lWKNS4JAETfM+FmMoSajM/HXrdpSbrW7A+Iy9DbvZNiap7BkA7C
-HcYNJs02PO0h2V2Fj8yYNpTrkswHEg0QL5Y+UyoUzAH02gB8Mb2icWU5yDzJ75wb
-GljYk3kSRcFYuGHNAzk06FdeFoqnHoy2mLLhNuzwsqfhJARp2Ci7eI5UeuDush1z
-emWMnSWZMxeYiPxuzvXrCOWnlaKhqyW/nUwbYns6PjTZNXZgqHEZ9zzdNSvTTON3
-yeL4w1iBRQWB/7Oa0tfKY1/+I01G3pt1EbwyIhfU9LvO843py58L9EI0rZ0w5gK5
-T847yyx7QqpTB74lpaWODlbqM+pbgFFOn+O/UjP7ds1IhbG1VfVBGS3ilbURrtcO
-nOhdaABqSg1HKMrJ82we
-=qdxc
------END PGP SIGNATURE-----
-
---Sig_/TTwxyYHj.52/ahrGaEtupnd--
+It's one reason why I won't be acking your patch which pushes new stuff
+into the mach/gpio.h headers at a time when we're trying to get rid of
+them.
