@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab1KCI36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 04:29:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52493 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1KCI3y (ORCPT
+	id S1755659Ab1KCIf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 04:35:26 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34945 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1KCIfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 04:29:54 -0400
-Message-ID: <4EB250FD.3070000@gmail.com>
-Date: Thu, 03 Nov 2011 10:29:49 +0200
-From: =?ISO-8859-1?Q?Lars_Nood=E9n?= <lars.nooden@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lm-sensors@lm-sensors.org, Henrik Rydberg <rydberg@euromail.se>
-Subject: Re: Hardware running hot and without the fan
-References: <4EB1108F.6070009@gmail.com> <20111103020301.GA22333@ericsson.com>
-In-Reply-To: <20111103020301.GA22333@ericsson.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Thu, 3 Nov 2011 04:35:22 -0400
+Subject: Re: virtio-pci new configuration proposal
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        Anthony Liguori <anthony@codemonkey.ws>
+In-Reply-To: <8762j2t19l.fsf@rustcorp.com.au>
+References: <1320259767.22582.2.camel@lappy>
+	 <8762j2t19l.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="us-ascii"
+Date: Thu, 03 Nov 2011 10:33:23 +0200
+Message-ID: <1320309203.29407.1.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 04:03 AM, Guenter Roeck wrote:
-> From LKML:
+On Thu, 2011-11-03 at 12:28 +1030, Rusty Russell wrote: 
+> On Wed, 02 Nov 2011 20:49:27 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > This is a proposal for a new layout of the virtio-pci config space.
+> > 
+> > We will separate the current configuration into two: A virtio-pci common
+> > configuration and a device specific configuration. This allows more flexibility
+> > with adding features and makes usage easier, specifically in cases like the
+> > ones in virtio-net where device specific configurations depend on device
+> > specific features.
 > 
-> On Wed, Nov 02, 2011 at 05:42:39AM -0400, Lars Noodén wrote:
->> There seem to be two problems here, one is that the hardware is 
->> getting WAY too hot, another is that the fan is not turning on when
->> the hardware gets too hot.
->> 
->> $ uname -a Linux xubuntu 3.1.0-999-generic #201110270406 SMP Thu 
->> Oct 27 08:07:41 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
->> 
->> I've reported the problem to Ubuntu 
->> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593 and the
->> suggestion there was to report it upstream.
->> 
->> On the notebook computer, parts become very hot to the touch while 
->> running Ubuntu, but the fan does not run even after it gets hot. 
->> When I boot back to OS X, the fan kicks in and runs until the 
->> computer returns to being cool to the touch.  Similar for the 
->> desktop, though I must follow the temperature with 
->> /usr/bin/sensors.
->> 
->> The notebook is a MacBookPro8,2 and the desktop is a Macmini3,1
->> 
->> What metrics do I need to collect to help fix the problem?  I've 
->> already reported the problem to Ubuntu[2] and the recommendation 
->> was to try reporting upstream.
->> 
->> Please CC me in the replies. /Lars
->> 
->> [1] http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
->> 
->> [2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
+> Thanks for this Sasha.  Several general comments:
 > 
-> I see applesmc: : read arg fail in the dmesg log. No idea what that 
-> means. Maybe the driver maintainer or someone else on the lm-sensors
->  mailing list can help.
-> 
-> Not sure I understand your comment about having to follow the output
->  of the sensors command. Can you clarify ?
+> 1) How to we distinguish the two layouts?  In theory, we need to do this
+>    forever.  In practice we can deprecate the old layout in several
+>    years' time.
 
-That's to track the temperature manually.
+Old layouts won't have the new virtio-pci cap structure in their PCI
+config space.
 
-> Also, do you get any output from the sensors command on the notebook?
-> Thanks, Guenter
+> 2) I don't think we want to turn the device-specific config into a
+>    linked list.  We haven't needed variable-length config (yet!), and
+>    it's (slightly) more complex.  That's also the part of the spec which
+>    is shared with non-PCI virtio implementations.
 
-Yes.  It claims to have 24 temperature sensors.
+Variable length config wasn't used yet because space in the device
+specific space was reserved for a feature even if that feature wasn't
+used.
 
-/Lars
+For example, the MAC feature reserved 6 bytes in the config space for
+the MAC even if VIRTIO_NET_F_MAC wasn't enabled. Here we can just avoid
+having it pollute the config space until it's enabled.
+
+I don't think it'll have any impact on non-PCI implementations since the
+"pointers" are simply offsets from the beginning of the config space,
+and are not PCI specific in any way.
+
+> 3) If we're changing the queue layout, it's a chance to fix a
+>    longstanding bug: let the guest notify the host of preferred
+>    queue size and alignment.
+
+Yup, we can do that.
+
+-- 
+
+Sasha.
 
 
