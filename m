@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934011Ab1KCQ0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:26:41 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53681 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933454Ab1KCQ0k (ORCPT
+	id S934041Ab1KCQ1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:27:17 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:52242 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933454Ab1KCQ1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:26:40 -0400
-Date: Thu, 3 Nov 2011 09:26:34 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: [PATCH block/for-next] block: don't call blk_drain_queue() if
- elevator is not up
-Message-ID: <20111103162634.GK4417@google.com>
-References: <4EB2BC88.3070105@suse.cz>
- <20111103161436.GJ4417@google.com>
+	Thu, 3 Nov 2011 12:27:15 -0400
+Message-ID: <4EB2C0DF.9050301@evidence.eu.com>
+Date: Thu, 03 Nov 2011 17:27:11 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103161436.GJ4417@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: viro@zeniv.linux.org.uk
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] /fs/proc/meminfo.c: fix compilation error
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_cleanup_queue() may be called before elevator is set up on a
-queue which triggers the following oops.
+Hi all,
 
- BUG: unable to handle kernel NULL pointer dereference at           (null)
- IP: [<ffffffff8125a69c>] elv_drain_elevator+0x1c/0x70
- ...
- Pid: 830, comm: kworker/0:2 Not tainted 3.1.0-next-20111025_64+ #1590
- Bochs Bochs
- RIP: 0010:[<ffffffff8125a69c>]  [<ffffffff8125a69c>] elv_drain_elevator+0x1c/0x70
- ...
- Call Trace:
-  [<ffffffff8125da92>] blk_drain_queue+0x42/0x70
-  [<ffffffff8125db90>] blk_cleanup_queue+0xd0/0x1c0
-  [<ffffffff81469640>] md_free+0x50/0x70
-  [<ffffffff8126f43b>] kobject_release+0x8b/0x1d0
-  [<ffffffff81270d56>] kref_put+0x36/0xa0
-  [<ffffffff8126f2b7>] kobject_put+0x27/0x60
-  [<ffffffff814693af>] mddev_delayed_delete+0x2f/0x40
-  [<ffffffff81083450>] process_one_work+0x100/0x3b0
-  [<ffffffff8108527f>] worker_thread+0x15f/0x3a0
-  [<ffffffff81089937>] kthread+0x87/0x90
-  [<ffffffff81621834>] kernel_thread_helper+0x4/0x10
+	the current mainline kernel gives a "directives may not be used inside a 
+macro argument" error message when compiled for the cris architecture.
 
-Fix it by making blk_cleanup_queue() check whether q->elevator is set
-up before invoking blk_drain_queue.
+The error is located in the /fs/proc/meminfo.c file.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-and-tested-by: Jiri Slaby <jslaby@suse.cz>
+The attached patch fixed this error.
+
+Best regards,
+
+	Claudio Scordino
+
+
+
+Subject: /fs/proc/meminfo.c: fix compilation error
+From: Claudio Scordino <claudio@evidence.eu.com>
+
+Patch to fix the error message "directives may not be used inside a macro
+argument" which appears when the kernel is compiled for the cris architecture.
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
 ---
- block/blk-core.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ fs/proc/meminfo.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index f658711..f43c8a5 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -407,8 +407,13 @@ void blk_cleanup_queue(struct request_queue *q)
- 	spin_unlock_irq(lock);
- 	mutex_unlock(&q->sysfs_lock);
- 
--	/* drain all requests queued before DEAD marking */
--	blk_drain_queue(q, true);
-+	/*
-+	 * Drain all requests queued before DEAD marking.  The caller might
-+	 * be trying to tear down @q before its elevator is initialized, in
-+	 * which case we don't want to call into draining.
-+	 */
-+	if (q->elevator)
-+		blk_drain_queue(q, true);
- 
- 	/* @q won't process any more request, flush async actions */
- 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+index 5861741..80e4645 100644
+--- a/fs/proc/meminfo.c
++++ b/fs/proc/meminfo.c
+@@ -131,12 +131,13 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+ 		K(i.freeswap),
+ 		K(global_page_state(NR_FILE_DIRTY)),
+ 		K(global_page_state(NR_WRITEBACK)),
+-		K(global_page_state(NR_ANON_PAGES)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
++		K(global_page_state(NR_ANON_PAGES)
+ 		  + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+-		  HPAGE_PMD_NR
++		  HPAGE_PMD_NR),
++#else
++		K(global_page_state(NR_ANON_PAGES)),
+ #endif
+-		  ),
+ 		K(global_page_state(NR_FILE_MAPPED)),
+ 		K(global_page_state(NR_SHMEM)),
+ 		K(global_page_state(NR_SLAB_RECLAIMABLE) +
+-- 
+1.7.1
+
