@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267Ab1KCMcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:32:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61199 "EHLO mx1.redhat.com"
+	id S933320Ab1KCMci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:32:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755871Ab1KCMca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:32:30 -0400
+	id S933272Ab1KCMcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:32:35 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCH 4/9] KVM: SVM: Intercept RDPMC
-Date: Thu,  3 Nov 2011 14:31:33 +0200
-Message-Id: <1320323498-10233-5-git-send-email-gleb@redhat.com>
+Subject: [PATCH 1/9] KVM: Expose kvm_lapic_local_deliver()
+Date: Thu,  3 Nov 2011 14:31:30 +0200
+Message-Id: <1320323498-10233-2-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 References: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,54 +21,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Avi Kivity <avi@redhat.com>
 
-Intercept RDPMC and forward it to the PMU emulation code.
+Needed to deliver performance monitoring interrupts.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kvm/svm.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/x86/kvm/lapic.c |    2 +-
+ arch/x86/kvm/lapic.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index e32243e..5fa553b 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -1014,6 +1014,7 @@ static void init_vmcb(struct vcpu_svm *svm)
- 	set_intercept(svm, INTERCEPT_NMI);
- 	set_intercept(svm, INTERCEPT_SMI);
- 	set_intercept(svm, INTERCEPT_SELECTIVE_CR0);
-+	set_intercept(svm, INTERCEPT_RDPMC);
- 	set_intercept(svm, INTERCEPT_CPUID);
- 	set_intercept(svm, INTERCEPT_INVD);
- 	set_intercept(svm, INTERCEPT_HLT);
-@@ -2770,6 +2771,19 @@ static int emulate_on_interception(struct vcpu_svm *svm)
- 	return emulate_instruction(&svm->vcpu, 0) == EMULATE_DONE;
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 54abb40..e87e43e 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1120,7 +1120,7 @@ int apic_has_pending_timer(struct kvm_vcpu *vcpu)
+ 	return 0;
  }
  
-+static int rdpmc_interception(struct vcpu_svm *svm)
-+{
-+	int err;
-+
-+	if (!static_cpu_has(X86_FEATURE_NRIPS))
-+		return emulate_on_interception(svm);
-+
-+	err = kvm_rdpmc(&svm->vcpu);
-+	kvm_complete_insn_gp(&svm->vcpu, err);
-+
-+	return 1;
-+}
-+
- bool check_selective_cr0_intercepted(struct vcpu_svm *svm, unsigned long val)
+-static int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
  {
- 	unsigned long cr0 = svm->vcpu.arch.cr0;
-@@ -3190,6 +3204,7 @@ static int (*svm_exit_handlers[])(struct vcpu_svm *svm) = {
- 	[SVM_EXIT_SMI]				= nop_on_interception,
- 	[SVM_EXIT_INIT]				= nop_on_interception,
- 	[SVM_EXIT_VINTR]			= interrupt_window_interception,
-+	[SVM_EXIT_RDPMC]			= rdpmc_interception,
- 	[SVM_EXIT_CPUID]			= cpuid_interception,
- 	[SVM_EXIT_IRET]                         = iret_interception,
- 	[SVM_EXIT_INVD]                         = emulate_on_interception,
+ 	u32 reg = apic_get_reg(apic, lvt_type);
+ 	int vector, mode, trig_mode;
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 138e8cc..6f4ce25 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,6 +34,7 @@ void kvm_apic_set_version(struct kvm_vcpu *vcpu);
+ int kvm_apic_match_physical_addr(struct kvm_lapic *apic, u16 dest);
+ int kvm_apic_match_logical_addr(struct kvm_lapic *apic, u8 mda);
+ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq);
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type);
+ 
+ u64 kvm_get_apic_base(struct kvm_vcpu *vcpu);
+ void kvm_set_apic_base(struct kvm_vcpu *vcpu, u64 data);
 -- 
 1.7.5.3
 
