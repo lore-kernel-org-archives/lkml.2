@@ -1,185 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934187Ab1KCQzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:55:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62346 "EHLO mx1.redhat.com"
+	id S934190Ab1KCQ52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:57:28 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:48325 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934073Ab1KCQze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:55:34 -0400
-Date: Thu, 3 Nov 2011 12:21:51 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: cpufreq pull for 3.1
-Message-ID: <20111103162151.GA31657@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
+	id S934046Ab1KCQ51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 12:57:27 -0400
+Subject: Re: [lm-sensors] Hardware running hot and without the fan
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Jean Delvare <khali@linux-fr.org>
+CC: Lars =?ISO-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+In-Reply-To: <20111103174321.37274532@endymion.delvare>
+References: <4EB1108F.6070009@gmail.com>
+	 <20111103020301.GA22333@ericsson.com>	<4EB250FD.3070000@gmail.com>
+	 <20111103134902.GA26121@ericsson.com>	<4EB2A46B.8080600@gmail.com>
+	 <1320332801.2309.60.camel@groeck-laptop>	<4EB2B0FD.309@gmail.com>
+	 <1320334322.2309.68.camel@groeck-laptop>
+	 <20111103174321.37274532@endymion.delvare>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Thu, 3 Nov 2011 09:55:28 -0700
+Message-ID: <1320339328.2309.78.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Temporarily at github until I get my kernel.org acct back.
-(blocked waiting on signed key uploads).
+On Thu, 2011-11-03 at 12:43 -0400, Jean Delvare wrote:
+> On Thu, 3 Nov 2011 08:32:02 -0700, Guenter Roeck wrote:
+> > On Thu, 2011-11-03 at 11:19 -0400, Lars Noodén wrote:
+> > > I can set the fan speed manually.  e.g.:
+> > > 
+> > >  echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
+> > > 
+> > > That helps some.
+> > > 
+> > If you can do that, you should be able to set up fancontrol to
+> > automatically control fan speed based on system temperatures.
+> 
+> This won't work, as fancontrol wants pwmX attributes which the applesmc
+> driver doesn't implement.
+> 
+Yes, you are right - it won't work without patching it to use
+fanX_output and to accept larger values for the limits.
 
-git@github.com:kernelslacker/cpufreq.git/ next
+Wonder how this works for other Apple systems. Maybe there is an
+Apple-specific script out there to control fan speed.
 
- drivers/cpufreq/db8500-cpufreq.c     |   36 +++++----
- drivers/cpufreq/e_powersaver.c       |  135 +++++++++++++++++++++++++++++++---
- drivers/cpufreq/exynos4210-cpufreq.c |  129 +++++++++++++++++++++++++++++++-
- 3 files changed, 268 insertions(+), 32 deletions(-)
+> > There is another sysfs attribute - fanX_manual. I don't find driver
+> > documentation, so I have no idea what it is doing. The name indicates
+> > that it might set manual vs. automatic fan control. What is it set to in
+> > your system ? From the code, looks like it should be 0 or 1. Try to
+> > toggle it and see what happens - after all, it can not get worse ;).
+> 
+> Might be worth looking at files fanX_min, _max and _safe too. Too bad
+> there doesn't seem to be any documentation available for all these
+> non-standard attributes :(
+> 
+Here is some info from the web about the problem. See
+http://ubuntuforums.org/archive/index.php/t-981280.html.
 
-commit 6283e328fb8148a8a5753e95c04c16aaef2287c0
-Author: Linus Walleij <linus.walleij@linaro.org>
-Date:   Fri Sep 2 08:52:10 2011 +0200
+So, for those that have reported high temperatures due to low fan
+speeds: check the value of
 
-    [CPUFREQ] db8500: support all frequencies
-    
-    This adds support for the 200 MHz frequency mode of the
-    DB8500 SoC, and prints the available frequencies at init
-    time.
-    
-    Cc: Vincent Guittot <vincent.guittot@linaro.org>
-    Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-    Signed-off-by: Dave Jones <davej@redhat.com>
+cat /sys/devices/platform/applesmc.768/fan1_manual
 
-commit ded84337ac820700f1b9dda724201e64b2ad3536
-Author: Axel Lin <axel.lin@gmail.com>
-Date:   Tue Sep 27 15:11:42 2011 +0800
+With no software control of the fans, which is the case with the
+macbooks (fancontrol and pwmconfig does not work), the fan speed seems
+to be controlled automatically by the SMC without issues - but only if
+fan1_manual is zero.
 
-    [CPUFREQ] db8500: remove unneeded for loop iteration over freq_table
-    
-    Don't know why to do the loop iteration here. It looks unneeded.
-    
-    Signed-off-by: Axel Lin <axel.lin@gmail.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
+Guenter
 
-commit 0073f538c1c35f996982b583f5de7a6a43408b9b
-Author: MyungJoo Ham <myungjoo.ham@samsung.com>
-Date:   Thu Aug 18 19:45:16 2011 +0900
 
-    [CPUFREQ] ARM Exynos4210 PM/Suspend compatibility with different bootloaders
-    
-    We have various bootloaders for Exynos4210 machines. Some of they
-    set the ARM core frequency at boot time even when the boot is a resume
-    from suspend-to-RAM. Such changes may create inconsistency in the
-    data of CPUFREQ driver and have incurred hang issues with suspend-to-RAM.
-    
-    This patch enables to save and restore CPU frequencies with pm-notifier and
-    sets the frequency at the initial (boot-time) value so that there wouldn't
-    be any inconsistency between bootloader and kernel. This patch does not
-    use CPUFREQ's suspend/resume callbacks because they are syscore-ops, which
-    do not allow to use mutex that is being used by regulators that are used by
-    the target function.
-    
-    This also prevents any CPUFREQ transitions during suspend-resume context,
-    which could be dangerous at noirq-context along with regulator framework.
-    
-    Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-    Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
-
-commit 8efd072b32d67436413e98e25e9a316216e88900
-Author: Vincent Guittot <vincent.guittot@linaro.org>
-Date:   Thu Aug 25 08:31:20 2011 +0200
-
-    [CPUFREQ] ARM: ux500: send cpufreq notification for all cpus
-    
-    The same clock is used for all cpus so we must notify the frequency change
-    for each one in order to update the configuration of all twd clockevents.
-    
-    change since V1:
-    * use policy->cpus instead of cpu_online_mask
-    
-    Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-    Signed-off-by: Dave Jones <davej@redhat.com>
-
-commit 826e570bb24de7671be66de7a6f036c304caad1e
-Author: Rafał Bilski <rafalbilski@interia.pl>
-Date:   Sat Jul 23 23:35:28 2011 +0100
-
-    [CPUFREQ] e_powersaver: Allow user to lower maximum voltage
-    
-    Add new module option "set_max_voltage".
-    One of the lessons learned from Adaptive Powersaver is that voltage values
-    returned by processor are for worst case scenario. But required voltage
-    is changing with CPU temperature. And even processors produced in the same
-    batch can have different minimum voltage necessary for stable work at
-    specified frequency.
-    On Elonex Webbook, once system starts, temperature never drops below
-    48 deg. C. Loading module after systems start allows user to lower CPU
-    voltage and still have stable system.
-    Sadly C7 doesn't allow code to set frequency or voltage from outside limits.
-    If you ask it to set voltage lower then minimum it will ignore you. Thats
-    why it isn't possible to change minimum voltage for minimum frequency too.
-    Changing maximum voltage on Elonex Webbook leads to very good results. Looks
-    like VIA C7 1.6GHz 1084mV can safetly run at 892mV. This means 83% of
-    orginal value. If same percentage applies to power generated it means 12.5W
-    in the place of 15W. Not much, but it is better then nothing.
-    Only C7-M makes it possible.
-    If voltage is too low by 16mV or more you will experience kernel panic.
-    If voltage is too low by 32mV or more you will experience system freeze.
-    
-    Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
-    Signed-off-by: Dave Jones <davej@redhat.com>
-
-commit 27e954c241673d2437448bd8bf0eaa7cd81a4b15
-Author: Rafał Bilski <rafalbilski@interia.pl>
-Date:   Thu Jul 21 22:11:29 2011 +0100
-
-    [CPUFREQ] e_powersaver: Check BIOS limit for CPU frequency
-    
-    Call ACPI function to get BIOS limit for CPU frequency.
-    Fail if processor would like to run at higher frequency.
-    Allow user to ignore BIOS limit.
-    
-    eps: Detected VIA Model D C7-M
-    eps: Current voltage = 1084mV
-    eps: Current multiplier = 16
-    eps: Highest voltage = 1084mV
-    eps: Highest multiplier = 16
-    eps: Lowest voltage = 844mV
-    eps: Lowest multiplier = 4
-    eps: ACPI limit 1.60GHz
-    
-    Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
-    Signed-off-by: Dave Jones <davej@redhat.com>
-
-commit ed361bf08033f165e0a004f254919e13f07df0ae
-Author: Rafał Bilski <rafalbilski@interia.pl>
-Date:   Wed Jul 20 21:20:56 2011 +0100
-
-    [CPUFREQ] e_powersaver: Additional checks
-    
-    Some systems are using 1,2Ghz@844mV processors running at 600MHz@796mV.
-    Try to detect such systems and don't touch anything on it. If CPU doesn't have
-    P-States in BIOS it should run at maximum frequency.
-    Allow user to bypass checks by means of two new options.
-    Don't set frequency to maximum on module unloading to avoid bada boom.
-    It is also possible that some processors may have incorrect values in min/max
-    registers caused by error in manufacturing process. Probably it would be BIOS
-    job to set them to right frequency and P-States tables would have correct
-    values inside.
-    Two additional sanity checks for voltage.
-    
-    Signed-off-by: Rafał Bilski <rafalbilski@interia.pl>
-    Signed-off-by: Dave Jones <davej@redhat.com>
-
-commit 5beae3b9b6f5479998310a849f73aa32a637dd3b
-Author: Donggeun Kim <dg77.kim@samsung.com>
-Date:   Tue Jul 19 14:41:57 2011 +0900
-
-    [CPUFREQ] exynos4210: Show list of available frequencies
-    
-    This patch enables 'scaling_available_frequencies' attribute
-    showing list of available frequencies.
-    
-    Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-    Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-    Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
-    Signed-off-by: Dave Jones <davej@redhat.com>
