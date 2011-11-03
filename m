@@ -1,71 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660Ab1KCVHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:07:07 -0400
-Received: from home.keithp.com ([63.227.221.253]:41910 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027Ab1KCVHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:07:06 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>, stable@kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Morton\, Andrew" <akpm@linux-foundation.org>
-Subject: Re: [Intel-gfx] [PATCH 2/2] drm/i915: properly prefault for pread/pwrite
-In-Reply-To: <20111023221157.GH2953@phenom.ffwll.local>
-References: <1317203844-2930-1-git-send-email-daniel.vetter@ffwll.ch> <1317203844-2930-2-git-send-email-daniel.vetter@ffwll.ch> <f80fcd$212d29@fmsmga001.fm.intel.com> <20111023101830.GE2953@phenom.ffwll.local> <yun7h3vbjgc.fsf@aiko.keithp.com> <20111023221157.GH2953@phenom.ffwll.local>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 03 Nov 2011 14:06:55 -0700
-Message-ID: <yunzkgcrk40.fsf@aiko.keithp.com>
+	id S1751819Ab1KCVHi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:07:38 -0400
+Received: from mail5.aviatnet.com ([192.147.115.32]:44612 "EHLO
+	mail5.aviatnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab1KCVHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 17:07:37 -0400
+Subject: [PATCH v3] rtc: ds1307: generalise ram size and offset
+From: Austin Boyle <Austin.Boyle@aviatnet.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: <rtc-linux@googlegroups.com>, David Anderson <danders.dev@gmail.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+        <linux-kernel@vger.kernel.org>,
+        Austin Boyle <Austin.Boyle@aviatnet.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 4 Nov 2011 10:07:30 +1300
+Message-ID: <1320354450.3000.60.camel@pc786-ubu.gnet.global.vpn>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.1.193]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+From: Austin Boyle <Austin.Boyle@aviatnet.com>
 
-On Mon, 24 Oct 2011 00:11:57 +0200, Daniel Vetter <daniel@ffwll.ch> wrote:
+This patch generalises NVRAM to support RAM with other size and offset, such
+as the 64 bytes of SRAM on the mcp7941x. Register offsets are added to chip
+description instead of being hard-coded into probe function.
 
-> This patch only fixes things up so that we prefault the entire page range
-> and not just the first PAGE_SIZE bytes (i.e. at most 2 pages). So I don't
-> see the risk of extending the current behaviour to all pages. Userspace
-> can already see these zero writes, but only when doing something stupid.
+Cc: Wolfram Sang <w.sang@pengutronix.de>
+Cc: David Anderson <danders.dev@gmail.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Signed-off-by: Austin Boyle <Austin.Boyle@aviatnet.com>
+---
+this patch is based on Wolfram Sang's tree:
+git://git.pengutronix.de/git/wsa/linux-2.6.git ds1307
 
-When we posted a patch to instead fix fault_in_pages_writeable, Andrew
-complained that we'd have modified memory even on a short read, which
-wasn't considered polite. Could we read/write the same value and avoid
-that problem?
+patch depends on:
+rtc: ds1307: comment and format cleanup 21af5f7bd6
+rtc: ds1307: simplify irq setup code  8c63e03627
+rtc: ds1307: refactor chip_desc table e246db081d
+rtc: add initial support for mcp7941x parts e69bba2d3a
 
-Also, we should be fixing fault_in_pages_* going forward, rather than
-kludging in more code. And, we'd get to remove the version in ntfs,
-which should end in a patch that removes more code than it adds...
+--- a/drivers/rtc/rtc-ds1307.c	2011-10-10 11:22:22.674690998 +1300
++++ b/drivers/rtc/rtc-ds1307.c	2011-11-04 10:02:27.859155009 +1300
+@@ -104,6 +104,8 @@ enum ds_type {
+ 
+ struct ds1307 {
+ 	u8			offset; /* register's offset */
++	u16			nvram_offset;
++	u16			nvram_size;
+ 	u8			regs[11];
+ 	enum ds_type		type;
+ 	unsigned long		flags;
+@@ -119,26 +121,37 @@ struct ds1307 {
+ };
+ 
+ struct chip_desc {
+-	unsigned		nvram56:1;
+ 	unsigned		alarm:1;
++	u8			offset;
++	u16			nvram_offset;
++	u16			nvram_size;
+ };
+ 
+ static const struct chip_desc chips[last_ds_type] = {
+ 	[ds_1307] = {
+-		.nvram56	= 1,
++		.nvram_offset	= 8,
++		.nvram_size	= 56, /* 56 bytes NVRAM */
+ 	},
+ 	[ds_1337] = {
+ 		.alarm		= 1,
+ 	},
+ 	[ds_1338] = {
+-		.nvram56	= 1,
++		.nvram_offset	= 8,
++		.nvram_size	= 56, /* 56 bytes NVRAM */
+ 	},
+ 	[ds_1339] = {
+ 		.alarm		= 1,
+ 	},
++	[ds_1388] = {
++		.offset		= 1, /* seconds starts at 1 */
++	},
+ 	[ds_3231] = {
+ 		.alarm		= 1,
+ 	},
++	[mcp7941x] = {
++		.nvram_offset	= 0x20,
++		.nvram_size	= 64, /* 64 bytes SRAM */
++	},
+ };
+ 
+ static const struct i2c_device_id ds1307_id[] = {
+@@ -543,8 +556,6 @@ static const struct rtc_class_ops ds13xx
+ 
+ /*----------------------------------------------------------------------*/
+ 
+-#define NVRAM_SIZE	56
+-
+ static ssize_t
+ ds1307_nvram_read(struct file *filp, struct kobject *kobj,
+ 		struct bin_attribute *attr,
+@@ -557,14 +568,15 @@ ds1307_nvram_read(struct file *filp, str
+ 	client = kobj_to_i2c_client(kobj);
+ 	ds1307 = i2c_get_clientdata(client);
+ 
+-	if (unlikely(off >= NVRAM_SIZE))
++	if (unlikely(off >= ds1307->nvram_size))
+ 		return 0;
+-	if ((off + count) > NVRAM_SIZE)
+-		count = NVRAM_SIZE - off;
++	if ((off + count) > ds1307->nvram_size)
++		count = ds1307->nvram_size - off;
+ 	if (unlikely(!count))
+ 		return count;
+ 
+-	result = ds1307->read_block_data(client, 8 + off, count, buf);
++	result = ds1307->read_block_data(client, ds1307->nvram_offset + off,
++								count, buf);
+ 	if (result < 0)
+ 		dev_err(&client->dev, "%s error %d\n", "nvram read", result);
+ 	return result;
+@@ -582,14 +594,15 @@ ds1307_nvram_write(struct file *filp, st
+ 	client = kobj_to_i2c_client(kobj);
+ 	ds1307 = i2c_get_clientdata(client);
+ 
+-	if (unlikely(off >= NVRAM_SIZE))
++	if (unlikely(off >= ds1307->nvram_size))
+ 		return -EFBIG;
+-	if ((off + count) > NVRAM_SIZE)
+-		count = NVRAM_SIZE - off;
++	if ((off + count) > ds1307->nvram_size)
++		count = ds1307->nvram_size - off;
+ 	if (unlikely(!count))
+ 		return count;
+ 
+-	result = ds1307->write_block_data(client, 8 + off, count, buf);
++	result = ds1307->write_block_data(client, ds1307->nvram_offset + off,
++								count, buf);
+ 	if (result < 0) {
+ 		dev_err(&client->dev, "%s error %d\n", "nvram write", result);
+ 		return result;
+@@ -605,7 +618,6 @@ static struct bin_attribute nvram = {
+ 
+ 	.read	= ds1307_nvram_read,
+ 	.write	= ds1307_nvram_write,
+-	.size	= NVRAM_SIZE,
+ };
+ 
+ /*----------------------------------------------------------------------*/
+@@ -638,7 +650,19 @@ static int __devinit ds1307_probe(struct
+ 
+ 	ds1307->client	= client;
+ 	ds1307->type	= id->driver_data;
+-	ds1307->offset	= 0;
++
++	if (chip && chip->offset)
++		ds1307->offset = chip->offset;
++	else
++		ds1307->offset = 0;
++	if (chip && chip->nvram_size)
++		ds1307->nvram_size = chip->nvram_size;
++	else
++		ds1307->nvram_size = 0;
++	if (chip && chip->nvram_offset)
++		ds1307->nvram_offset = chip->nvram_offset;
++	else
++		ds1307->nvram_offset = 0;
+ 
+ 	buf = ds1307->regs;
+ 	if (i2c_check_functionality(adapter, I2C_FUNC_SMBUS_I2C_BLOCK)) {
+@@ -756,9 +780,6 @@ static int __devinit ds1307_probe(struct
+ 						  hour);
+ 		}
+ 		break;
+-	case ds_1388:
+-		ds1307->offset = 1; /* Seconds starts at 1 */
+-		break;
+ 	default:
+ 		break;
+ 	}
+@@ -893,11 +914,12 @@ read_rtc:
+ 		dev_dbg(&client->dev, "got IRQ %d\n", client->irq);
+ 	}
+ 
+-	if (chip && chip->nvram56) {
++	if (chip && chip->nvram_size) {
++		nvram.size = ds1307->nvram_size;
+ 		err = sysfs_create_bin_file(&client->dev.kobj, &nvram);
+ 		if (err == 0) {
+ 			set_bit(HAS_NVRAM, &ds1307->flags);
+-			dev_info(&client->dev, "56 bytes nvram\n");
++			dev_info(&client->dev, "%zd bytes nvram\n", nvram.size);
+ 		}
+ 	}
+ 
 
-=2D-=20
-keith.packard@intel.com
 
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrMCbzYtFsjWk68qAQgrfRAAsCZyxc9aaWTYWh6nm0TFXUiSbe3mhIRn
-p1l3BgsiJ+ATp53HaCFSHgG54HGNk3bxnMiUGeWg9K79UHnf8CAE3ZGWJyJmzS+t
-1UOhy0lWtLl3UHmujk6jFPNgoqsAkP0KCZHXkfDr8s17JWWf5Az5kFFUg7gIzSEQ
-FKdQ5EMlVX+Y/yWdMIzwqCjI4UV/tKmShRDWHT64olYERFzCppOfM6SoXLijmyhV
-jTXTG92K2r1dw44YBDTonEVjqThaHE+rsKkVyHeZavTt3xQ1b2ug80Cv4nnbThdV
-swjwCpaCs7KElVRnurqJplQQWWDNVRwTRvKNzCau2D1Ji3klOTPZUZ8Xm4w2n5eP
-qYzerWSlEuCm/yD5eGLAD+pVBxcxltrXGTfFLtzjD4AfPCR9Bvdb4bntUgBrN4OC
-HmavzwPeHU6e965mHgxqWr+ZQcaFr0FG1ukEueiqbmZJi8pJYZwlkcjswMrvW/Xs
-y+IHyFuDYcXq9spUXEcSaz7FkL57KIwtLov98nHYvKIHTiM0ssz02ajZpcr1JLXX
-PPLIAAm6X8+3HrhS7Nffl4RMKQQq6xk3RqNGH86aXIwqSL1azjZMO+QsMmAaH+zI
-MPz+IVjRoNJF57FwwlyrmpGReIYEq+88wU1JDjr2pd8/p66Tr+U61m328P1P/07u
-6w636prxbKA=
-=gH6w
------END PGP SIGNATURE-----
---=-=-=--
