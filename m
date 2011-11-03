@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab1KCDVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 23:21:30 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:35517 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752031Ab1KCDV1 (ORCPT
+	id S932693Ab1KCDWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 23:22:53 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:43734 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab1KCDWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 23:21:27 -0400
-Message-ID: <4EB208AB.6030903@tao.ma>
-Date: Thu, 03 Nov 2011 11:21:15 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH V2 for 3.2] fs/direct-io.c: Calculate fs_count correctly
- in get_more_blocks.
-References: <x49wrblav46.fsf@segfault.boston.devel.redhat.com> <1320200794-2881-1-git-send-email-tm@tao.ma> <20111102073632.GA17580@infradead.org>
-In-Reply-To: <20111102073632.GA17580@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Wed, 2 Nov 2011 23:22:49 -0400
+Date: Thu, 3 Nov 2011 14:22:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-Id: <20111103142241.036d664f3bd36936824b241f@canb.auug.org.au>
+In-Reply-To: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
+References: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2011 03:36 PM, Christoph Hellwig wrote:
-> The patch looks good to me, but given that it neither fixes a bug
-> nor a regression I'd probably call it 3.3 material at this point.
-OK, so you will take it or I should ask Andrew to take it for now?
+--Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
-Tao
+Hi Jesse,
+
+On Thu, 3 Nov 2011 12:53:25 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> After merging the pci-current tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/pci/ats.c:13:26: fatal error: linux/export.h: No such file or dir=
+ectory
+
+So this affected the pci tree as well.  So I have used the pci tree from
+next-20111102.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOsgkBAAoJEECxmPOUX5FEFUIP/RNSksvsmDzIVds6BXDArcYw
+Ol5kbulIUiqWpg4fJ7igGptjc/4XnlBVEZ1V24HfYU8gGAbCUpXxmaiZvnW+g/BM
+v9WEEcsXq+YBMguCw4rBs2lSEj6GB5i1Hn6yVB6+EhEV0LtEWaiONqTJFuNJSqec
+rcskw0UCWeU7c6nlx/DHc6BwSmOM/3YWupJ15DEwtOphdywnLh4kmvqfjiO6+74D
+g9FGQdSQ1Hg52hf8P3IJca+CxBHmKYslHTKpLcJ9WgcmJCiMC9xNTcBJPQIObM5M
+AOelKUirjeLemEnuhay5bRBE4AAtfGZqK+5ia6ezvtWVl0Lz68TEJ+IhdTvnJVyo
+8QdFPfUWUKG1PsNpcruzGvO4oDBzeMkpa9qtnDwTd+KQFbeSYCz7ZL9Qfzsdtd/n
+p1mXw4YQVZF00Dde6E334cKElWzZiujpYYBNBf2jFiH/3EsRGWKzdYebmAfpGoMN
+5khaofoDY35/TSEn/wFJxnsZ58c6Sv85+mEDVtK99e24KHMScq0IfkibQnz0OFAI
+3vi07LKOblI/nB2GfzQWwo27D5MUgSW0XOTUOMcY2gzIViakB/MOaV1SQbxNOxTY
+7Oi7DSbmdviPi/kC2EWdoxcX2bMBmoNB5Zt3gLzwAY/EYYg5BCFmvohWwrAFndCf
+sKV2QZYibV/YEFu/heXf
+=Bu9E
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz--
