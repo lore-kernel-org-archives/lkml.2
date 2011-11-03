@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab1KCEze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 00:55:34 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:39488 "EHLO
+	id S1752074Ab1KCE4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 00:56:07 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:36641 "EHLO
 	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab1KCEzc (ORCPT
+	with ESMTP id S1751324Ab1KCE4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 00:55:32 -0400
-X-Originating-IP: 217.70.178.144
+	Thu, 3 Nov 2011 00:56:03 -0400
+X-Originating-IP: 217.70.178.136
 X-Originating-IP: 50.43.15.19
-Date: Wed, 2 Nov 2011 21:55:09 -0700
+Date: Wed, 2 Nov 2011 21:55:35 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,34 +17,93 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, "Paul E. McKenney" <paul.mckenney@linaro.org>
-Subject: Re: [PATCH RFC tip/core/rcu 28/28] rcu: Fix idle-task checks
-Message-ID: <20111103045509.GH2042@leaf>
+        patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 0/28] Preview of RCU changes for 3.3
+Message-ID: <20111103045535.GA1957@leaf>
 References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-28-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320265849-5744-28-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20111102203017.GA3830@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 01:30:49PM -0700, Paul E. McKenney wrote:
-> From: Paul E. McKenney <paul.mckenney@linaro.org>
-> 
-> RCU has traditionally relied on idle_cpu() to determine whether a given
-> CPU is running in the context of an idle task, but recent changes have
-> invalidated this approach.  This commit therefore switches from idle_cpu
-> to "current->pid != 0".
+On Wed, Nov 02, 2011 at 01:30:17PM -0700, Paul E. McKenney wrote:
+> This patchset permits idle tasks to use RCU read-side critical sections,
+> although they are still prohibited between tick_nohz_idle_exit_norcu()
+> and tick_nohz_idle_exit_norcu(); makes synchronize_sched_expedited()
+> better able to share work among concurrent callers, allows ftrace_dump()
+> to be invoked from modules, dumps tracing upon detection of an rcutorture
+> failure, detects illegal use of RCU read-side critical sections from
+> extended quiescent states, legitimizes the pre-existin use of RCU in the
+> idle notifiers, fixes a memory-barrier botch, introduces an SRCU-like bulk
+> reference count, improve dynticks entry/exit tracing, further improves
+> RCU's ability to allow a given CPU to enter dyntick-idle mode quickly,
+> fixes idle-task checks, updates documentation, and additional fixes
+> from a still-ongoing top-to-bottom inspection of RCU.  The patches are
+> as follows:
 
-Could you elaborate a bit on "recent changes"?  It looks like you mean
-commit 908a3283728d92df36e0c7cd63304fd35e93a8a9; if so, could you add
-that reference to the commit message?
+I've reviewed all of these patches.  For all of them except those
+indicated below:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Also, the hard-coded use of "current->pid != 0" concerns me.  Could this
-use some existing function?  Does idle_task() help?  If no appropriate
-predicate exists, perhaps it should.  is_idle_task(current)?
+> 1.	Strengthen memory barriers used in PowerPC value-returning
+> 	atomics and locking primitives.  It is likely that this
+> 	commit will be superseded by something from the powerpc
+> 	maintainers.  The need for this strengthening was validated
+> 	by tooling from Peter Sewell's group at the University of
+> 	Cambridge.
+
+As before, I don't have the background on powerpc to provide review on
+this one.  However, I trust Peter Sewell's group to have gotten the
+details right. :)
+
+> 5.	Document the troubleshooting of lockdep lock-class leaks.
+
+I replied with a few comments and a typo fix.
+
+> 11.	Remove a useless self-awaken when setting up expedited grace
+> 	periods, courtesy of Thomas Gleixner and the -rt effort.
+
+Replied with a fix: commit needs splitting.
+
+> 12-17.	Make lockdep-RCU warn when RCU read-side primitives are
+> 	invoked from an idle RCU extended quiescent state, mostly
+> 	courtesy of Frederic Weisbecker.
+
+Replied to 17 with a minor nit, but Reviewed-by still applies to all
+five with or without that nit fixed.
+
+> 18-23.	Separate out the scheduler-clock tick's idea of dyntick
+> 	idle from RCU's notion of an idle extended quiescent state, mostly
+> 	courtesy of Frederic Weisbecker.  These commits are needed for
+> 	Frederic's work to suppress the scheduler-clock tick when there
+> 	is but one runnable task on a given CPU.
+
+Very much looking forward to that work.  Any pointer to more information
+on tickless-when-one-task?
+
+Replied to patch 19 with some naming comments; the rest seem fine.
+
+> 24.	Introduce a bulk reference count, which is related to SRCU,
+> 	but which allows a reference to be acquired in an irq handler
+> 	and released by the task that was interrupted.
+
+Replied with comments.
+
+> 27.	Allow CPUs with pending RCU callbacks to enter dyntick-idle
+> 	mode.  Beware this commit, as it compiled and passed rcutorture
+> 	on the first try, which historically has indicated the presence
+> 	of subtle and highly destructive bugs.
+
+Heh.  I reviewed this one particularly carefully, then, but I didn't
+find any logic errors.  I did reply with a couple of comments, though.
+
+> 28.	Fix RCU's determination of whether or not it is running in the
+> 	context of an idle task.
+
+Replied with concerns.
 
 - Josh Triplett
