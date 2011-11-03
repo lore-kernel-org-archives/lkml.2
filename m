@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab1KCOsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:48:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:55086 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab1KCOsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:48:07 -0400
-Message-ID: <4EB2A987.2040805@windriver.com>
-Date: Thu, 3 Nov 2011 10:47:35 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Kevin Hilman <khilman@ti.com>
-CC: Axel Lin <axel.lin@gmail.com>, <linux-kernel@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH RESEND] ARM: OMAP: omap_device: Include linux/export.h
-References: <1320303638.17983.5.camel@phoenix> <87d3d9i8ni.fsf@ti.com>
-In-Reply-To: <87d3d9i8ni.fsf@ti.com>
+	id S932846Ab1KCOsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:48:20 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22913 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932108Ab1KCOsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:48:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,449,1315206000"; 
+   d="scan'208";a="32965141"
+Subject: Re: [PATCH 0/3] ata port runtime power management support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+In-Reply-To: <CAOS58YMSwnp=Vm81+0_ZO9OYB4=NMnfETBen0QNCQwuDW0TjUA@mail.gmail.com>
+References: <1320214900-2112-1-git-send-email-ming.m.lin@intel.com>
+	 <20111102151711.GB12543@dhcp-172-17-108-109.mtv.corp.google.com>
+	 <1320330107.2813.73.camel@hp6530s>
+	 <CAOS58YMSwnp=Vm81+0_ZO9OYB4=NMnfETBen0QNCQwuDW0TjUA@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 03 Nov 2011 22:47:17 +0800
+Message-ID: <1320331637.2813.84.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-03 10:26 AM, Kevin Hilman wrote:
-> Axel Lin <axel.lin@gmail.com> writes:
+On Thu, 2011-11-03 at 22:30 +0800, Tejun Heo wrote:
+> Hello,
 > 
->> Include linux/export.h to fix below build warning:
->>
->>   CC      arch/arm/plat-omap/omap_device.o
->> arch/arm/plat-omap/omap_device.c:1055: warning: data definition has no type or storage class
->> arch/arm/plat-omap/omap_device.c:1055: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
->> arch/arm/plat-omap/omap_device.c:1055: warning: parameter names (without types) in function declaration
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> On Thu, Nov 3, 2011 at 7:21 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> >> * How much does this add on top of hardware timed auto spindown and
+> >>   dynamic link power management?
+> >
+> > Sorry, I don't understand this question.
+> > What do you mean?
 > 
-> Thanks, will queue as a fix for v3.2-rc
+> I was curious about the amount of additional power saving on top of
+> the existing PM features.
 
-It is probably better if I track this, since export.h won't
-exist until Linus pulls the module.h-split tree, and I'm
-guessing that will be closer to the end of the merge window.
-
-Thanks,
-Paul.
+I'll measure the power saving.
 
 > 
-> Kevin
+> >> * Do the added benefits justify yet another runtime powersaving
+> >>   mechanism?
+> >
+> > There will be ACPI firmware which supports ata port runtime D3Cold.
+> > To enable ata port runtime PM is the first step.
+> 
+> libata can already turn off unused ports although it wouldn't go as
+> far as putting the whole controller into D3.
+
+At runtime?
+Could you point me which piece of code implement this?
+
+> 
+> >> * Any way we can tie the other stuff with overall runtime PM?
+> >
+> > What's the other stuff?
+> > Do you mean tie disk/link/port/controller stuff with overall runtime PM?
+> 
+> Hardware initiated spin-down (hdparm -S) and link power saving (look
+> for ata_lpm_*). It would be great if there's an overall design how
+> they interact before adding yet another PM vector.
+
+Yes. Need to think about it.
+
+Thanks.
+
