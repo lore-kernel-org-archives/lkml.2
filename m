@@ -1,158 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab1KCJ0i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 05:26:38 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:59201 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754561Ab1KCJ0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 05:26:37 -0400
-From: Viresh Kumar <viresh.kumar@st.com>
-To: <rabin.vincent@stericsson.com>, <linux-kernel@vger.kernel.org>,
-        <sameo@linux.intel.com>
-Cc: <armando.visconti@st.com>, <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
-        <rajeev-dlh.kumar@st.com>, <deepak.sikri@st.com>,
-        <vipulkumar.samar@st.com>, <amit.virdi@st.com>, <viresh.kumar@st.com>,
-        <pratyush.anand@st.com>, <bhupesh.sharma@st.com>,
-        <viresh.linux@gmail.com>, <bhavna.yadav@st.com>,
-        <vincenzo.frascino@st.com>, <mirko.gardi@st.com>,
-        <srinidhi.kasagar@stericsson.com>, <linus.walleij@stericsson.com>
-Subject: [PATCH] mfd/stmpe: Add support for irq over gpio pin
-Date: Thu, 3 Nov 2011 14:56:07 +0530
-Message-ID: <5366f62b74861af357a0aecdb4e27aa69ffd703b.1320312035.git.viresh.kumar@st.com>
-X-Mailer: git-send-email 1.7.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753490Ab1KCJ2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 05:28:41 -0400
+Received: from gw1.transmode.se ([195.58.98.146]:52883 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab1KCJ2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 05:28:39 -0400
+From: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+To: Andrew Morton <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Subject: [PATCH] crc32: Optimize inner loop.
+Date: Thu, 3 Nov 2011 10:28:25 +0100
+Message-Id: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se>
+X-Mailer: git-send-email 1.7.3.4
+X-MIMETrack: Itemize by SMTP Server on mail1/Transmode(Release 8.5.3|September 15, 2011) at
+ 11/03/2011 10:28:36,
+	Serialize by Router on mail1/Transmode(Release 8.5.3|September 15, 2011) at
+ 11/03/2011 10:28:36,
+	Serialize complete at 11/03/2011 10:28:36
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On many boards, stmpe is present as an separate device (not as part of SoC).
-Here gpio lines are mostly used for getting interrupts. This patch adds in
-support to handle irq over gpio pin.
+taking a pointer reference to each row in the crc table matrix,
+one can reduce the inner loop with a few insn's
 
-Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
 ---
- drivers/mfd/stmpe.c       |   35 ++++++++++++++++++++++++++++-------
- include/linux/mfd/stmpe.h |    3 +++
- 2 files changed, 31 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 2963689..239e46f 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -5,6 +5,7 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
-+#include <linux/gpio.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
-@@ -877,9 +878,10 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
- static int stmpe_suspend(struct device *dev)
+ As the slice by 8 CRC32 optimizations seems stalled, I figured
+ I send in this generic one.
+
+ lib/crc32.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
+
+diff --git a/lib/crc32.c b/lib/crc32.c
+index 4855995..b06d1e7 100644
+--- a/lib/crc32.c
++++ b/lib/crc32.c
+@@ -51,20 +51,21 @@ static inline u32
+ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
  {
- 	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct stmpe *stmpe = i2c_get_clientdata(i2c);
+ # ifdef __LITTLE_ENDIAN
+-#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
+-#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
+-		tab[2][(crc >> 8) & 255] ^ \
+-		tab[1][(crc >> 16) & 255] ^ \
+-		tab[0][(crc >> 24) & 255]
++#  define DO_CRC(x) crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8)
++#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
++		t2[(crc >> 8) & 255] ^ \
++		t1[(crc >> 16) & 255] ^ \
++		t0[(crc >> 24) & 255]
+ # else
+-#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+-#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
+-		tab[1][(crc >> 8) & 255] ^ \
+-		tab[2][(crc >> 16) & 255] ^ \
+-		tab[3][(crc >> 24) & 255]
++#  define DO_CRC(x) crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
++#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
++		t1[(crc >> 8) & 255] ^  \
++		t2[(crc >> 16) & 255] ^	\
++		t3[(crc >> 24) & 255]
+ # endif
+ 	const u32 *b;
+ 	size_t    rem_len;
++	const u32 *t0=tab[0], *t1=tab[1], *t2=tab[2], *t3=tab[3];
  
- 	if (device_may_wakeup(&i2c->dev))
--		enable_irq_wake(i2c->irq);
-+		enable_irq_wake(stmpe->irq);
- 
- 	return 0;
- }
-@@ -887,9 +889,10 @@ static int stmpe_suspend(struct device *dev)
- static int stmpe_resume(struct device *dev)
- {
- 	struct i2c_client *i2c = to_i2c_client(dev);
-+	struct stmpe *stmpe = i2c_get_clientdata(i2c);
- 
- 	if (device_may_wakeup(&i2c->dev))
--		disable_irq_wake(i2c->irq);
-+		disable_irq_wake(stmpe->irq);
- 
- 	return 0;
- }
-@@ -925,15 +928,28 @@ static int __devinit stmpe_probe(struct i2c_client *i2c,
- 
- 	i2c_set_clientdata(i2c, stmpe);
- 
-+	if (pdata->irq_over_gpio) {
-+		ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
-+		if (ret) {
-+			dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
-+					ret);
-+			goto out_free;
-+		}
-+
-+		stmpe->irq = gpio_to_irq(pdata->irq_gpio);
-+	} else {
-+		stmpe->irq = i2c->irq;
-+	}
-+
- 	ret = stmpe_chip_init(stmpe);
- 	if (ret)
--		goto out_free;
-+		goto free_gpio;
- 
- 	ret = stmpe_irq_init(stmpe);
- 	if (ret)
--		goto out_free;
-+		goto free_gpio;
- 
--	ret = request_threaded_irq(stmpe->i2c->irq, NULL, stmpe_irq,
-+	ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
- 				   pdata->irq_trigger | IRQF_ONESHOT,
- 				   "stmpe", stmpe);
- 	if (ret) {
-@@ -951,9 +967,11 @@ static int __devinit stmpe_probe(struct i2c_client *i2c,
- 
- out_removedevs:
- 	mfd_remove_devices(stmpe->dev);
--	free_irq(stmpe->i2c->irq, stmpe);
-+	free_irq(stmpe->irq, stmpe);
- out_removeirq:
- 	stmpe_irq_remove(stmpe);
-+free_gpio:
-+	gpio_free(pdata->irq_gpio);
- out_free:
- 	kfree(stmpe);
- 	return ret;
-@@ -965,9 +983,12 @@ static int __devexit stmpe_remove(struct i2c_client *client)
- 
- 	mfd_remove_devices(stmpe->dev);
- 
--	free_irq(stmpe->i2c->irq, stmpe);
-+	free_irq(stmpe->irq, stmpe);
- 	stmpe_irq_remove(stmpe);
- 
-+	if (stmpe->pdata->irq_over_gpio)
-+		gpio_free(stmpe->pdata->irq_gpio);
-+
- 	kfree(stmpe);
- 
- 	return 0;
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index be1af7c..7901351 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -76,6 +76,7 @@ struct stmpe {
- 	struct stmpe_variant_info *variant;
- 	const u8 *regs;
- 
-+	int irq;
- 	int irq_base;
- 	int num_gpios;
- 	u8 ier[2];
-@@ -194,6 +195,8 @@ struct stmpe_platform_data {
- 	unsigned int irq_trigger;
- 	bool irq_invert_polarity;
- 	bool autosleep;
-+	bool irq_over_gpio;
-+	int irq_gpio;
- 	int autosleep_timeout;
- 
- 	struct stmpe_gpio_platform_data *gpio;
+ 	/* Align it */
+ 	if (unlikely((long)buf & 3 && len)) {
 -- 
-1.7.2.2
+1.7.3.4
 
