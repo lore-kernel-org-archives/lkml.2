@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab1KCKiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 06:38:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45694 "EHLO mx1.redhat.com"
+	id S1755694Ab1KCKkj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 06:40:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48535 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab1KCKiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 06:38:15 -0400
-Message-ID: <4EB26ED0.3080409@redhat.com>
-Date: Thu, 03 Nov 2011 12:37:04 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1752670Ab1KCKkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 06:40:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH pm] freezer: fix wait_event_freezable/__thaw_task races
+Date: Thu, 3 Nov 2011 11:43:13 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        linux-pm@vger.kernel.org
+References: <20111101021511.GP18855@google.com> <201111030201.27551.rjw@sisk.pl> <CAOS58YN4eQ5qfGXCjciGKvv13boSKQJso2U=x5rLw8c7vNeGWQ@mail.gmail.com>
+In-Reply-To: <CAOS58YN4eQ5qfGXCjciGKvv13boSKQJso2U=x5rLw8c7vNeGWQ@mail.gmail.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: Re: [PATCH RFC] virtio-pci: flexible configuration layout
-References: <87wrbkvh3v.fsf@rustcorp.com.au> <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy> <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au> <20111102233110.GA20289@redhat.com>
-In-Reply-To: <20111102233110.GA20289@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111031143.13836.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 01:31 AM, Michael S. Tsirkin wrote:
-> Add a flexible mechanism to specify virtio configuration layout, using
-> pci vendor-specific capability.  A separate capability is used for each
-> of common, device specific and data-path accesses.
->
->
+On Thursday, November 03, 2011, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Nov 2, 2011 at 6:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > OK, so I guess I should drop it from my linux-next branch?
+> 
+> Hmmm... yes, the preceding patches should be applied first and then
+> this one. Any problems with earlier ones?
 
-How about posting the spec change instead of patches?
+The only problem I currently have is to figure out what patches to apply
+and in which order.  Care to help? ;-)
 
--- 
-error compiling committee.c: too many arguments to function
-
+Rafael
