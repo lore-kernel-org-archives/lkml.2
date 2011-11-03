@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab1KCXJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 19:09:18 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54012 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1KCXJQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 19:09:16 -0400
-Date: Thu, 3 Nov 2011 16:09:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Jeff Layton <jlayton@redhat.com>
-Subject: [PATCH pm-for-3.2 2/2] freezer: revert 27920651fe "PM / Freezer:
- Make fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111103230910.GT4417@google.com>
-References: <20111103230749.GS4417@google.com>
+	id S1753860Ab1KCXMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 19:12:33 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:45670 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862Ab1KCXMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 19:12:32 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 0/3] Change ARCH_NR_GPIO into a Kconfig variable
+Date: Thu, 3 Nov 2011 19:12:28 -0400
+User-Agent: KMail/1.13.7 (Linux/3.1.0-rc4; KDE/4.6.5; x86_64; ; )
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        David Brown <davidb@codeaurora.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org
+References: <1320339647-30255-1-git-send-email-pdeschrijver@nvidia.com> <20111103224452.GS12913@n2100.arm.linux.org.uk> <201111031907.46434.vapier@gentoo.org>
+In-Reply-To: <201111031907.46434.vapier@gentoo.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103230749.GS4417@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/signed;
+  boundary="nextPart1436663.HJnIWhvqZU";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111031912.33040.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake
-TASK_KILLABLE tasks too" updated fake_signal_wake_up() used by freezer
-to wake up KILLABLE tasks.  Sending unsolicited wakeups to tasks in
-killable sleep is dangerous as there are code paths which depend on
-tasks not waking up spuriously from KILLABLE sleep.
+--nextPart1436663.HJnIWhvqZU
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-For example. sys_read() or page can sleep in TASK_KILLABLE assuming
-that wait/down/whatever _killable can only fail if we can not return
-to the usermode.  TASK_TRACED is another obvious example.
+On Thursday 03 November 2011 19:07:42 Mike Frysinger wrote:
+> i'm aware of these efforts, but i don't see how this Kconfig solution gets
+> you there.  it's still a single define depending on arch-specific knobs.=
+=20
+> now, if this were treated as a max value that was based on all the arch
+> needs, it's now useful across SoCs.
 
-The previous patch updated wait_event_freezekillable() such that it
-doesn't depend on the spurious wakeup.  This patch reverts the
-offending commit.
+s/arch/mach/g
+=2Dmike
 
-Note that the spurious KILLABLE wakeup had other implicit effects in
-KILLABLE sleeps in nfs and cifs and those will need further updates to
-regain freezekillable behavior.
+--nextPart1436663.HJnIWhvqZU
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jeff Layton <jlayton@redhat.com>
-LKML-Reference: <20111031221743.GA18855@google.com>
----
-This will cause conflict with the pending linux-next patches but the
-resolution should be trivial.  Simply changing @resume from 0 to 1 is
-enough.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
 
-Thanks.
+iQIcBAABAgAGBQJOsx/gAAoJEEFjO5/oN/WBvwEP/2BOrHVDTP0ctjIWGNSMRRsE
+f3Wv0ukiY1DHs+1wMJSLzfGIqHsxtZ/FyJR7cwNfXRRlkgaqy4huO0HbtOf8aYl0
+nS+fWjq9KmBC2bdr1jKNxVAJ3dFzjXTdTS0F3+dXsdL00lIUA1xA4t7SoBDgOvHO
+2EbnuEYwjRspRGZyJQ6BLZj92NxjrQKQx1EaWOe7qQ+JlJuCNcLl0zTFFH7qAoRr
+pkf41Lg/9L5MmiYxKqbKmCz7zUr9rGogXu3nJ1GU0WfWGpJ4A6B3aQZHzzWHGKtI
+dLOhX8RMP+Hxb3gtF+xauZ8s7yJSx9AcGX7R3VPLLZtwyvH9MdmuVJXpbnGMOfA0
+Sb8n5W6/oU6mgP7V4+m0C+GMDAJ3Yb0TKnO54IRoOXRZLZGFfI5asVdvy4Aebppc
+SV1pyaZXEX4y4zVJuieIEhZFVccKQH374UFH4i0DZJaOQuztvk3D2tU2QxirJlHu
+J/BPDo+BAJnkXv3w4UgTF2hAB/CZ/9FTkzaBrbh37GPJebyl2gyt2wIkvkmF4gr1
+Fptm21lr2zb2Q9a636+W51RLG6KfDqASoq9vH4fr0kgYIymspgsXsqzksuwahO8/
+AoRGdJrAM0M9lqKgh5uZ5fJbToruuRexmGecKS/F6X8QSJZqk3iRd/9tW3arkAhj
+Nx+0JlV4iXBkIxSSCjyR
+=VaoW
+-----END PGP SIGNATURE-----
 
- kernel/freezer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: work/kernel/freezer.c
-===================================================================
---- work.orig/kernel/freezer.c
-+++ work/kernel/freezer.c
-@@ -67,7 +67,7 @@ static void fake_signal_wake_up(struct t
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&p->sighand->siglock, flags);
--	signal_wake_up(p, 1);
-+	signal_wake_up(p, 0);
- 	spin_unlock_irqrestore(&p->sighand->siglock, flags);
- }
- 
+--nextPart1436663.HJnIWhvqZU--
