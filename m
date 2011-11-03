@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab1KCH3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 03:29:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:49500 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab1KCH3I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 03:29:08 -0400
+	id S1754963Ab1KCHjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 03:39:08 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54183 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752129Ab1KCHjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 03:39:04 -0400
+Date: Thu, 3 Nov 2011 08:37:25 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: Re: REGRESSION: "perf: Add PM notifiers ..." breaks resume
+Message-ID: <20111103073725.GA7319@elte.hu>
+References: <20111102134900.GB4377@one.firstfloor.org>
+ <CA+55aFwCf41GFOVA656-ZgZB5mBNkpH3KqRfJ_Ornkn3RWF5gQ@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
-References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
-Date: Thu, 3 Nov 2011 08:29:06 +0100
-Message-ID: <CA+icZUX1juRU51gXFrX7ZeKgtV9=0bmFKLYZCcuyTfW5E1SL+A@mail.gmail.com>
-Subject: Re: linux-next: Tree for Nov 3
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Christoph Hellwig <hch@lst.de>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwCf41GFOVA656-ZgZB5mBNkpH3KqRfJ_Ornkn3RWF5gQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 3, 2011 at 7:20 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> The linux-next tree on github is no longer being updated and will be
-> removed soon.
->
-> The patch is still absent from kernel.org.
->
-> The summary at the end now has a "git -1 --oneline" appended to the lines
-> indicating which tree is being merged.   This was suggested by Mauro
-> Chehab as an aid to maintainers so that they can easily tell which version
-> of their tree was merged.  Comments welcome.
->
-> Changes since 20111102:
->
-> Renamed trees:
->        wireless -> wireless-next
->        wireless-current -> wireless
->
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Whuzzz up with VFS tree(s)?
+> Peter, Ingo, ping?
+> 
+> Quite frankly, I'm inclined to revert that patch just for being 
+> horribly ugly and apparently broken regardless of the fact that it 
+> also causes a regression.
+> 
+> *Notifiers* for doing something like this? smp_call_function? 
+> That's just utter sh*t, guys.
+> 
+> If it is CPU state, then it should damn well be suspended and 
+> resumed as part of CPU suspend and resume. No IPI cross-calls to 
+> ask other CPU's to do random work, no crap like that.
 
-[1] and [2] lists:
-vfs             git
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
-vfs-scale       git
-git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git#vfs-scale-working
+Agreed, that's quite crappy.
 
-Isn't vfs-scale [2] done?
-I have so long not heard or read from Nick Piggin (vfs-scale), I hope
-he is well.
+> Comments? Should I just revert the thing (silence is obviously 
+> "yes" in cases like this where we are talking about regressions 
+> anyway)?
 
-Christoph take over as interim VFS stuff from Al (hope he is well,
-too) and I have seen his and pending stuff from FS folk was merged
-into Linus-tree.
-Christoph, your for-next GIT branch [3] is dedicated for linux-next (v3.3)?
+Yep, please revert it until we do the right fix. (I can queue up the 
+revert too)
 
-- Sedat -
+Thanks,
 
-[1] http://git.us.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l89
-[2] http://git.us.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l90
-[3] http://git.kernel.org/?p=linux/kernel/git/hch/vfs-queue.git;a=shortlog;h=refs/heads/for-next
+	Ingo
