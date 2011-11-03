@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579Ab1KCNCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 09:02:31 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:14811
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755842Ab1KCNCa convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 09:02:30 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz9371Kc89bh542M1432Nzz1202hzz8275bh8275dhz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LU35J2-02-DX4-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: RE: [027/101] drm/radeon/kms: fix typo in r100_blit_copy
-Thread-Topic: [027/101] drm/radeon/kms: fix typo in r100_blit_copy
-Thread-Index: AQHMmcmQRQrl50bBfEqX9PDeA6wX+pWbHeDA
-Date: Thu, 3 Nov 2011 13:01:51 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D00AFCA47F@sausexdag02.amd.com>
-References: <20111102222755.GA10893@kroah.com>
- <20111102222742.153000450@clark.kroah.org>
-In-Reply-To: <20111102222742.153000450@clark.kroah.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.181.250.19]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S933465Ab1KCNGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 09:06:35 -0400
+Received: from smtprelay0196.b.hostedemail.com ([64.98.42.196]:41888 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933143Ab1KCNGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 09:06:34 -0400
+X-Panda: scanned!
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 2373
+Date: Thu, 3 Nov 2011 13:06:33 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: hmh@hmh.eng.br
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <379401738.337658.1320325593346.JavaMail.mail@webmail11>
+References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
+ <20111103081835.GA9330@elte.hu>
+ <1758553229.334475.1320313445172.JavaMail.mail@webmail11>
+ <20111103124243.GA17252@khazad-dum.debian.net>
+Subject: Re: Re: HT (Hyper Threading) aware process scheduling doesn't work
+ as it should
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [46.146.163.207]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please don't apply.  This ended up getting reverted upstream.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Wednesday, November 02, 2011 6:26 PM
-> To: linux-kernel@vger.kernel.org; stable@vger.kernel.org
-> Cc: torvalds@linux-foundation.org; akpm@linux-foundation.org;
-> alan@lxorguk.ukuu.org.uk; Deucher, Alexander; Dave Airlie
-> Subject: [027/101] drm/radeon/kms: fix typo in r100_blit_copy
+On Nov 3, 2011, Henrique de Moraes Holschuh wrote: 
+ 
+> > On Thu, 03 Nov 2011, Artem S. Tashkinov wrote:
+> > So, now the question is whether VCPUs quite an illogical enumeration is good for
+> > power users as I highly doubt that 0-4, 1-5, 2-6 and 3-7 order can be easily
+> > remembered and grasped. Besides neither top, not htop are HT aware so just by
 > 
-> 2.6.33-longterm review patch.  If anyone has any objections, please let us
-> know.
+> Power users are directed to hwloc.  There's a reason I pointed you to it.
+> hwloc would have told you upfront your real memory/cache/core/thread
+> topology, either in text mode, through graphics, or as XML:
 > 
-> ------------------
+> Here's hwloc's "lstopo" text output for my single-processor X5550:
 > 
-> From: Alex Deucher <alexander.deucher@amd.com>
-> 
-> commit 18b4fada275dd2b6dd9db904ddf70fe39e272222 upstream.
-> 
-> cur_pages is the number of pages per loop iteration.
-> 
-> Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-> Reviewed-by: Michel Dänzer <michel.daenzer@amd.com>
-> Signed-off-by: Dave Airlie <airlied@redhat.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  drivers/gpu/drm/radeon/r100.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- a/drivers/gpu/drm/radeon/r100.c
-> +++ b/drivers/gpu/drm/radeon/r100.c
-> @@ -496,8 +496,8 @@ int r100_copy_blit(struct radeon_device
->  		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
->  		radeon_ring_write(rdev, 0);
->  		radeon_ring_write(rdev, (0x1fff) | (0x1fff << 16));
-> -		radeon_ring_write(rdev, num_pages);
-> -		radeon_ring_write(rdev, num_pages);
-> +		radeon_ring_write(rdev, cur_pages);
-> +		radeon_ring_write(rdev, cur_pages);
->  		radeon_ring_write(rdev, cur_pages | (stride_pixels << 16));
->  	}
->  	radeon_ring_write(rdev, PACKET0(RADEON_DSTCACHE_CTLSTAT,
-> 0));
-> 
-> 
+> Machine (6029MB) + Socket #0 + L3 #0 (8192KB)
+>   L2 #0 (256KB) + L1 #0 (32KB) + Core #0
+>     PU #0 (phys=0)
+>     PU #1 (phys=4)
+>   L2 #1 (256KB) + L1 #1 (32KB) + Core #1
+>     PU #2 (phys=1)
+>     PU #3 (phys=5)
+>   L2 #2 (256KB) + L1 #2 (32KB) + Core #2
+>     PU #4 (phys=2)
+>     PU #5 (phys=6)
+>   L2 #3 (256KB) + L1 #3 (32KB) + Core #3
+>     PU #6 (phys=3)
+>     PU #7 (phys=7)
+
+A very useful utility indeed, thank you! Still I wonder if for the sake of simplicity 
+it is possible to show and present virtual CPU pairs to the user in natural order,
+(0,1 2,3 4,5 6,7) not how it's currently done (0,4 1,5 2,6 3,7). I cannot believe
+it's difficult to change the userspace representation of virtual CPU pairs.
 
 
