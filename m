@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1KCH1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 03:27:17 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:34967 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab1KCH1P (ORCPT
+	id S1754843Ab1KCH3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 03:29:12 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:49500 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab1KCH3I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 03:27:15 -0400
-Date: Thu, 3 Nov 2011 15:27:05 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111103072705.GA15871@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <20111020185329.GA3586@swordfish.minsk.epam.com>
- <20111020190701.GB3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110201412070.5552@chino.kir.corp.google.com>
- <20111020212353.GZ25124@google.com>
- <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
- <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
- <20111021094520.GA9884@zhy>
- <20111103071735.GA3228@swordfish.minsk.epam.com>
+	Thu, 3 Nov 2011 03:29:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111103071735.GA3228@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
+References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
+Date: Thu, 3 Nov 2011 08:29:06 +0100
+Message-ID: <CA+icZUX1juRU51gXFrX7ZeKgtV9=0bmFKLYZCcuyTfW5E1SL+A@mail.gmail.com>
+Subject: Re: linux-next: Tree for Nov 3
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Christoph Hellwig <hch@lst.de>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>, Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 10:17:36AM +0300, Sergey Senozhatsky wrote:
-> On (10/21/11 17:45), Yong Zhang wrote:
-> > On Fri, Oct 21, 2011 at 02:14:34AM -0700, David Rientjes wrote:
-> > > How does it mask the race condition?  Before the memset(), the ->name 
-> > > field was never _cleared_ in lockdep_init_map() like it is now, it was 
-> > > only stored.
-> > 
-> > A typcal race condition will like this:
-> > 
-> > 	CPU A					CPU B
-> > lock_set_subclass(lockA);
-> >   lock_set_class(lockA);
-> >     lockdep_init_map(lockA);
-> >       /* lockA->name is cleared */
-> >       memset(lockA);
-> > 					__lock_acquire(lockA);
-> > 					  /* lockA->class_cache[] is cleared */
-> > 					  register_lock_class(lockA);
-> > 					    look_up_lock_class(lockA);
-> > 					      WARN_ON_ONCE(class->name !=
-> > 							lock->name);
-> > 
-> >       lock->name = name;
-> > 
-> > And a untested patch is below:
-> > BTW, now the patch could cure (I guess) the very issue reported
-> > in this thread.
-> > But it don't cover the case which change the key and the relevant
-> > lock_class has existed, I don't think out a way how to fix it yet :)
-> > But the fact is we have no such caller yet, the only call site of
-> > lock_set_subclass() is double_unlock_balance().
-> > 
-> 
-> Hello,
-> Any news on this patch? Do you like it or hate it? With recent kernels
-> I'm able to hit this problem more often (several time a day) so if any
-> testing is required I'm willing to help.
+On Thu, Nov 3, 2011 at 7:20 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> The linux-next tree on github is no longer being updated and will be
+> removed soon.
+>
+> The patch is still absent from kernel.org.
+>
+> The summary at the end now has a "git -1 --oneline" appended to the lines
+> indicating which tree is being merged.   This was suggested by Mauro
+> Chehab as an aid to maintainers so that they can easily tell which version
+> of their tree was merged.  Comments welcome.
+>
+> Changes since 20111102:
+>
+> Renamed trees:
+>        wireless -> wireless-next
+>        wireless-current -> wireless
+>
 
-Did you have tried it? Though I don't find time to polish it yet but
-I think will smooth your concern.
+Whuzzz up with VFS tree(s)?
 
-Thanks,
-Yong
+[1] and [2] lists:
+vfs             git
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
+vfs-scale       git
+git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git#vfs-scale-working
+
+Isn't vfs-scale [2] done?
+I have so long not heard or read from Nick Piggin (vfs-scale), I hope
+he is well.
+
+Christoph take over as interim VFS stuff from Al (hope he is well,
+too) and I have seen his and pending stuff from FS folk was merged
+into Linus-tree.
+Christoph, your for-next GIT branch [3] is dedicated for linux-next (v3.3)?
+
+- Sedat -
+
+[1] http://git.us.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l89
+[2] http://git.us.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l90
+[3] http://git.kernel.org/?p=linux/kernel/git/hch/vfs-queue.git;a=shortlog;h=refs/heads/for-next
