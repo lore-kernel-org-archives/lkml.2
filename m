@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab1KCKSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 06:18:40 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:39785
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751346Ab1KCKSj (ORCPT
+	id S932070Ab1KCKSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 06:18:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40322 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab1KCKSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 06:18:39 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1803M103dK1432N98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LU2XYU-02-4TE-02
-X-M-MSG: 
-Date: Thu, 3 Nov 2011 11:18:29 +0100
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-CC: Robin Holt <holt@sgi.com>, Rik van Riel <riel@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Nick Piggin <npiggin@kernel.dk>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "joro@8bytes.org" <joro@8bytes.org>
-Subject: Re: [RFC][PATCH 0/3] Add support for non-CPU TLBs in MMU-Notifiers
-Message-ID: <20111103101829.GR13244@amd.com>
-References: <1319199708-17777-1-git-send-email-joerg.roedel@amd.com>
- <20111102094601.GN28536@sgi.com>
- <20111102095740.GM13244@amd.com>
- <20111103000725.GD18879@redhat.com>
+	Thu, 3 Nov 2011 06:18:50 -0400
+From: Juergen Beisert <jbe@pengutronix.de>
+Organization: Pengutronix - Linux Solutions for Science and Industry
+To: Con Kolivas <con@kolivas.org>
+Subject: Re: [ANNOUNCE] 3.1.0-ck1
+Date: Thu, 3 Nov 2011 11:18:21 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <1636461.EdGrGCQCuj@quad>
+In-Reply-To: <1636461.EdGrGCQCuj@quad>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20111103000725.GD18879@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Message-Id: <201111031118.21407.jbe@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: jbe@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 08:07:25PM -0400, Andrea Arcangeli wrote:
-> On Wed, Nov 02, 2011 at 10:57:40AM +0100, Roedel, Joerg wrote:
-> > I have included this mailing list in my post afaics. I talked with
-> > Andrea Arcangeli about these patches at LinuxCon in Prague and will post
-> > a new version based on his comments.
-> 
-> Thanks!
-> Andrea
-> 
-> PS. Luckily I already read your patches before we met :).
+Con Kolivas wrote:
+> These are patches designed to improve system responsiveness and
+> interactivity with specific emphasis on the desktop, but suitable to any
+> commodity hardware workload.
+>
+> As it may take some time to get a kernel.org account, I have started
+> hosting these patches exclusively on my site for now.
+>
+>
+> Apply to 3.1.x:
+> http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/patch-3.1.0-ck1.bz2
 
-Yeah, otherwise we would have done some kind of peer-review ;)
+Tried here with Mini2440 (=ARM arch) to compile:
 
+[...]
+In file included from kernel/sched.c:2:0:
+kernel/sched_bfs.c: In function 'schedule':
+kernel/sched_bfs.c:3224:4: error: implicit declaration of function 'prefetch'
+[...]
 
-	Joerg
+> Broken out tarball:
+> http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/3.1.0-ck1-broken-out.tar.bz2
+
+This ^ one I tried to apply, but it fails with:
+[...]
+patching file include/linux/sched.h
+Hunk #1 FAILED at 1600.
+Hunk #2 FAILED at 1647.
+2 out of 2 hunks FAILED -- rejects in file include/linux/sched.h
+can't find file to patch at input line 214
+Perhaps you used the wrong -p or --strip option?
+The text leading up to this was:
+--------------------------
+|Index: linux-3.1-ck/kernel/sched_bfs.c
+|===================================================================
+|--- linux-3.1-ck.orig/kernel/sched_bfs.c	2011-11-03 14:44:23.000000000 +1100
+|+++ linux-3.1-ck/kernel/sched_bfs.c	2011-11-03 14:46:02.157115770 +1100
+--------------------------
+No file to patch.  Skipping patch.
+1 out of 1 hunk ignored
+[...]
+
+Regards,
+Juergen
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Pengutronix e.K.                              | Juergen Beisert             |
+Linux Solutions for Science and Industry      | http://www.pengutronix.de/  |
