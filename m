@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825Ab1KCVyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:54:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:24200 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab1KCVyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:54:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=to:subject:message-id:date:from:x-system-of-record;
-	b=sw/s/vd0RtCFb67RuPmN5myNjUqDlduR137LKlJ43NdDZVOsxPsP/pCqJDdhhufh2
-	bFyTGM2nMJf4kFvou21hA==
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mel@csn.ul.ie
-Subject: [patch] hugetlb: add hugepage reservation upon mremap expansion.
-Message-Id: <20111103215421.AF532122186@elm.corp.google.com>
-Date: Thu,  3 Nov 2011 14:54:21 -0700 (PDT)
-From: kenchen@google.com (Ken Chen)
-X-System-Of-Record: true
+	id S1752881Ab1KCVzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:55:32 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:40915 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab1KCVza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 17:55:30 -0400
+Message-ID: <4EB30DAF.4090704@parallels.com>
+Date: Thu, 3 Nov 2011 19:54:55 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: "Brian K. White" <brian@aljex.com>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] new cgroup controller "fork"
+References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag> <4EB2C4A5.6000406@parallels.com> <20111103165903.GA4755@Debian-60-squeeze-64-minimal> <20111103182101.5037c1e5@lxorguk.ukuu.org.uk> <20111103185108.GA5153@Debian-60-squeeze-64-minimal> <20111103190330.02590426@lxorguk.ukuu.org.uk> <20111103192039.GA5300@Debian-60-squeeze-64-minimal> <4EB2EA93.2050206@parallels.com> <4EB2F5CF.5010604@aljex.com>
+In-Reply-To: <4EB2F5CF.5010604@aljex.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hugetlb: add hugepage reservation upon mremap expansion
+On 11/03/2011 06:13 PM, Brian K. White wrote:
+> On 11/3/2011 3:25 PM, Glauber Costa wrote:
+>> On 11/03/2011 05:20 PM, Max Kellermann wrote:
+>>> On 2011/11/03 20:03, Alan Cox<alan@lxorguk.ukuu.org.uk> wrote:
+>>>> Sure - I'm just not seeing that a whole separate cgroup for it is
+>>>> appropriate or a good plan. Anyone doing real resource management needs
+>>>> the rest of the stuff anyway.
+>>>
+>>> Right. When I saw Frederic's controller today, my first thought was
+>>> that one could move the fork limit code over into that controller. If
+>>> we reach a consensus that this would be a good idea, and would have
+>>> chances to get merged, I could probably take some time to refactor my
+>>> code.
+>>>
+>>> Max
+>> I'd advise you to take a step back and think if this is really needed.
+>> As Alan pointed out, the really expensive resource here is already being
+>> constrained by Frederic's controller.
+>
+> I think this really is a different knob that is nice to have as long as
+> it doesn't cost much. It's a way to set a max lifespan in a way that
+> isn't really addressed by the other controls. (I could absolutely be
+> missing something.)
+>
+> I think Max explained the issue clearly enough.
 
-hugetlb page has a semantics that it reserves pages up front at the time
-of mmap.  We need to extend the same reservation scheme for the mremap
-expansion case.
+He did, indeed.
 
-Signed-off-by: Ken Chen <kenchen@google.com>
+> It doesn't matter that the fork itself is supposedly so cheap.
+>
+> It's still nice to have a way to say, you may not fork/die/fork/die/fork
+> in a race.
+>
+> What's so unimaginable about having a process that you know needs a lot
+> of cpu and ram or other resources to do it's job, and you expressly want
+> to allow it to take as much of those resources as it can, but you know
+> it has no need to fork, so if it forks, _that_ is the only indication of
+> a problem, so you may only want to block it based on that.
+>
+> Sure many other processes would legitimately fork/die/fork/die a lot
+> while never exceeding a few total concurrent tasks, and for them you
+> would not want to set any such fork limit. So what?
+>
+As I said previously, he knows his use cases better than anyone else.
+If a use case can be found in which the summation of cpu+task 
+controllers is not enough, and if this is implemented as an option to 
+the task controller, and does not make it:
+1) confusing,
+2) more expensive,
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index c36d851..5d22933 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -28,6 +28,8 @@ int hugetlb_mempolicy_sysctl_handler(
- 
- int move_hugetlb_page_tables(struct vm_area_struct *vma, unsigned long old_addr,
- 			     unsigned long new_addr, unsigned long len);
-+int hugetlb_expand_resv(struct vm_area_struct *vma, unsigned long old_len,
-+			 unsigned long new_len);
- int copy_hugetlb_page_range(struct mm_struct *, struct mm_struct *, struct vm_area_struct *);
- int follow_hugetlb_page(struct mm_struct *, struct vm_area_struct *,
- 			struct page **, struct vm_area_struct **,
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 6f5b56f..1f8e333 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2250,6 +2250,34 @@ int move_hugetlb_page_tables(
- 	return len + old_addr - old_end;
- }
- 
-+int hugetlb_expand_resv(struct vm_area_struct *vma, unsigned long old_len,
-+			 unsigned long new_len)
-+{
-+	struct hstate *h = hstate_vma(vma);
-+	int ret = 0;
-+
-+	if (old_len >= new_len)
-+		goto out;
-+
-+	if (vma->vm_flags & VM_MAYSHARE) {
-+		struct inode *inode = vma->vm_file->f_mapping->host;
-+		unsigned long from, to, vm_flags;
-+
-+		from = (vma->vm_pgoff >> huge_page_order(h)) +
-+			(old_len >> huge_page_shift(h));
-+		to   = (vma->vm_pgoff >> huge_page_order(h)) +
-+			(new_len >> huge_page_shift(h));
-+		vm_flags = vma->vm_flags;
-+
-+		ret = hugetlb_reserve_pages(inode, from, to, vma, vm_flags);
-+	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-+		long expand = (new_len - old_len) >> huge_page_shift(h);
-+		ret = hugetlb_acct_memory(h, expand);
-+	}
-+out:
-+	return ret;
-+}
-+
- void __unmap_hugepage_range(struct vm_area_struct *vma, unsigned long start,
- 			    unsigned long end, struct page *ref_page)
- {
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 9f6c903..010f93a 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -410,7 +410,7 @@ unsigned long do_mremap(unsigned long addr,
- 	unsigned long flags, unsigned long new_addr)
- {
- 	struct mm_struct *mm = current->mm;
--	struct vm_area_struct *vma;
-+	struct vm_area_struct *vma = NULL;
- 	unsigned long ret = -EINVAL;
- 	unsigned long charged = 0;
- 
-@@ -525,6 +525,15 @@ unsigned long do_mremap(unsigned long addr,
- out:
- 	if (ret & ~PAGE_MASK)
- 		vm_unacct_memory(charged);
-+	else if (vma && is_vm_hugetlb_page(vma)) {
-+		unsigned long ret2;
-+
-+		ret2 = hugetlb_expand_resv(vma, old_len, new_len);
-+		if (ret2) {
-+			ret = ret2;
-+			vm_unacct_memory(charged);
-+		}
-+	}
- 	return ret;
- }
- 
+then I don't see why not we shouldn't take it.
