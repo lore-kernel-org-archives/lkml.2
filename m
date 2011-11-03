@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab1KCVsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:48:38 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:52638 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752395Ab1KCVsg (ORCPT
+	id S1752782Ab1KCVsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:48:52 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57651 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab1KCVsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:48:36 -0400
-Message-ID: <4EB30C0B.8080200@xenotime.net>
-Date: Thu, 03 Nov 2011 14:47:55 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, Greg KH <gregkh@suse.de>,
-        Mark Einon <mark.einon@gmail.com>
-Subject: Re: linux-next: Tree for Nov 3 (staging/et131x)
-References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
-In-Reply-To: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Thu, 3 Nov 2011 17:48:50 -0400
+From: Robert Lee <rob.lee@linaro.org>
+To: rjw@sisk.pl
+Cc: len.brown@intel.com, hpa@linux.intel.com, daniel.lezcano@linaro.org,
+        amit.kucheria@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: [PATCH] pm: remove useless array definition in cpuidle_structure
+Date: Thu,  3 Nov 2011 17:44:53 -0400
+Message-Id: <1320356693-18982-1-git-send-email-rob.lee@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/02/2011 11:20 PM, Stephen Rothwell wrote:
-> Hi all,
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
 
+All the modules name are ro-data, it is never copied to the array.
 
-When CONFIG_PM_SLEEP is not enabled:
+eg.
 
-drivers/staging/et131x/et131x.c:5489:12: error: 'et131x_pci_setup' undeclared here (not in a function)
+static struct cpuidle_driver intel_idle_driver = {
+        .name = "intel_idle",
+        .owner = THIS_MODULE,
+};
 
+It safe to assign the pointer of this ro-data to a const char *.
+By this way we save 12 bytes.
 
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Signed-off-by: Robert Lee <rob.lee@linaro.org>
+---
+ include/linux/cpuidle.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index b51629e..16f9dce 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -117,8 +117,8 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
+  ****************************/
+ 
+ struct cpuidle_driver {
+-	char			name[CPUIDLE_NAME_LEN];
+-	struct module 		*owner;
++	const char    *name;
++	struct module *owner;
+ };
+ 
+ #ifdef CONFIG_CPU_IDLE
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.4.1
+
