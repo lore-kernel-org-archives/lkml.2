@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab1KCHlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 03:41:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63503 "EHLO mx1.redhat.com"
+	id S1755209Ab1KCHnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 03:43:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:59469 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752121Ab1KCHlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 03:41:16 -0400
-Date: Thu, 3 Nov 2011 09:41:04 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf: do not set task_ctx pointer in cpuctx if there is
- no events in the context
-Message-ID: <20111103074104.GG14726@redhat.com>
-References: <20111023171033.GI17571@redhat.com>
+	id S1754574Ab1KCHnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 03:43:49 -0400
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111023171033.GI17571@redhat.com>
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH 4 of 5] virtio: avoid modulus operation
+X-Mercurial-Node: 05de9ee25e222c5206f32b8438298d52cc8c7d0e
+Message-Id: <05de9ee25e222c5206f3.1320306172@localhost6.localdomain6>
+In-Reply-To: <patchbomb.1320306168@localhost6.localdomain6>
+References: <patchbomb.1320306168@localhost6.localdomain6>
+User-Agent: Mercurial-patchbomb/1.9.1
+Date: Thu, 03 Nov 2011 18:12:52 +1030
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: MichaelS.Tsirkist@redhat.com, Christoph Hellwig <hch@infradead.org>
+Cc: virtualization <virtualization@lists.linux-foundation.org>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, Peter can you look into this please.
+Since we know vq->vring.num is a power of 2, modulus is lazy (it's asserted
+in vring_new_virtqueue()).
 
-On Sun, Oct 23, 2011 at 07:10:33PM +0200, Gleb Natapov wrote:
-> Do not set task_ctx pointer during sched_in if there is no
-> events associated with the context.  Otherwise if during task
-> execution total number of events in the system will become zero
-> perf_event_context_sched_out() will not be called and cpuctx->task_ctx
-> will be left with a stale value.
-> 
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index 0f85778..68b13ee 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -2172,7 +2172,8 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
->  
->  	perf_event_sched_in(cpuctx, ctx, task);
->  
-> -	cpuctx->task_ctx = ctx;
-> +	if (ctx->nr_events)
-> +		cpuctx->task_ctx = ctx;
->  
->  	perf_pmu_enable(ctx->pmu);
->  	perf_ctx_unlock(cpuctx, ctx);
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ drivers/virtio/virtio_ring.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---
-			Gleb.
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1420,7 +1420,7 @@ __init void lguest_init(void)
+ 	add_preferred_console("hvc", 0, NULL);
+ 
+ 	/* Register our very early console. */
+-	virtio_cons_early_init(early_put_chars);
++//	virtio_cons_early_init(early_put_chars);
+ 
+ 	/*
+ 	 * Last of all, we set the power management poweroff hook to point to
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -226,8 +226,8 @@ add_head:
+ 	vq->data[head] = data;
+ 
+ 	/* Put entry in available array (but don't update avail->idx until they
+-	 * do sync).  FIXME: avoid modulus here? */
+-	avail = (vq->vring.avail->idx + vq->num_added++) % vq->vring.num;
++	 * do sync). */
++	avail = ((vq->vring.avail->idx + vq->num_added++) & (vq->vring.num-1));
+ 	vq->vring.avail->ring[avail] = head;
+ 
+ 	pr_debug("Added buffer head %i to %p\n", head, vq);
+@@ -317,6 +317,7 @@ void *virtqueue_get_buf(struct virtqueue
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+ 	void *ret;
+ 	unsigned int i;
++	u16 last_used;
+ 
+ 	START_USE(vq);
+ 
+@@ -334,8 +335,9 @@ void *virtqueue_get_buf(struct virtqueue
+ 	/* Only get used array entries after they have been exposed by host. */
+ 	virtio_rmb();
+ 
+-	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id;
+-	*len = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].len;
++	last_used = (vq->last_used_idx & (vq->vring.num - 1));
++	i = vq->vring.used->ring[last_used].id;
++	*len = vq->vring.used->ring[last_used].len;
+ 
+ 	if (unlikely(i >= vq->vring.num)) {
+ 		BAD_RING(vq, "id %u out of range\n", i);
+
+
