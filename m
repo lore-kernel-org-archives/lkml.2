@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab1KCRZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 13:25:18 -0400
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:39818 "HELO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751991Ab1KCRZR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 13:25:17 -0400
-Date: Thu, 3 Nov 2011 19:25:12 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Kyle Manna <kyle.manna@fuel7.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v3 4/6] mfd: TPS65910: Move linux/gpio.h include to header
-Message-ID: <20111103172511.GC30472@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1320340086-15371-1-git-send-email-kyle.manna@fuel7.com>
- <1320340086-15371-5-git-send-email-kyle.manna@fuel7.com>
+	id S932995Ab1KCR0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 13:26:46 -0400
+Received: from mx2.parallels.com ([64.131.90.16]:60135 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752869Ab1KCR0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 13:26:45 -0400
+Message-ID: <4EB2CEB2.7050800@parallels.com>
+Date: Thu, 3 Nov 2011 15:26:10 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XMCwj5IQnwKtuyBG"
-Content-Disposition: inline
-In-Reply-To: <1320340086-15371-5-git-send-email-kyle.manna@fuel7.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Max Kellermann <mk@cm4all.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Tim Hockin <thockin@hockin.org>,
+        <containers@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] new cgroup controller "fork"
+References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag> <20111103164302.GE8198@somewhere.redhat.com> <20111103171645.GA27887@rabbit.intern.cm-ag>
+In-Reply-To: <20111103171645.GA27887@rabbit.intern.cm-ag>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---XMCwj5IQnwKtuyBG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Thu, Nov 03, 2011 at 12:08:04PM -0500, Kyle Manna wrote:
-> The tps65910.h file depends on linux/gpio.h.  Move the include from the
-> source file to the tps65910.h header file.
-
-you should never rely on indirect inclusion of header files. If both
-header and C source need the header, include on both. The header should
-be safe for multiple inclusions anyway.
-
---=20
-balbi
-
---XMCwj5IQnwKtuyBG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOss53AAoJEIaOsuA1yqREBCoP/166at3IMofgGa83H5vJiI2j
-sB9plUfjYCvHp8rrK8JlcQMdFLorbTdPjSbiBJEr4vxAtAvzpk1IPvsfQdy7DLWa
-cVbLL8QvKU1G0xsqguY1M2qWr5xQWgw0ec42jMUFojChyKDh8PiBHcxnKj7yfM8s
-WRVR8ByOjJNJa1bHM7xo8Nhz7vET8sftri96+BMXrWHnpOZzjvwLb32lECM82Kye
-snFohO1I6Ji0imaVojPJSObAAsmpNbt9xSk8m4rEHUYu1n71F6tP83z34icYNOoK
-Oml4j4h9GTQkLP4/gFZC3NmT98EtQcQfacIzDSqDnpYY9yHNFduiS0loDa6rXxrb
-4fOyD27PEO2A1ueAFF9tXE4tSAmj9ULmcsHNyYm7trpERye/I6pzIH8AFXm/YIhF
-2nSH0K9QPCxBKRqxwxxQQDhtQZ8eX9ZMMh6Yn83lW8Kn8QtvkRoWPbENovQU7RN1
-gfQeZikJfVxJuEZFGyKASH3+KSOLC2nGr4qzwGItYDgx74UsogJLFy+IR3gvwsW7
-P9Ub85/BMLAVYU+dh8y2sWofk2HnormWGa1oSt8SrL/7kj2FTZLh/az5nhlPuEYc
-MbhtXmV2qDSOEKczFrSlzAYW4AJEbRlRQ7xLeixN7ZoG9ZH0JI/Y5eSGVKg05PGg
-+ZcuvdyLq3bbk62G9A/a
-=DdO+
------END PGP SIGNATURE-----
-
---XMCwj5IQnwKtuyBG--
+On 11/03/2011 03:16 PM, Max Kellermann wrote:
+> On 2011/11/03 17:43, Frederic Weisbecker<fweisbec@gmail.com>  wrote:
+>> Please have a look at the task counter subsystem: https://lwn.net/Articles/461462/
+>>
+>> It's in the -mm tree. I'm glad to hear about another user who wants
+>> this feature in cgroups. We need to hear about you and whether this
+>> meets your requirements in order to get it merged upstream.
+>
+> Had a quick look at your patch set.  No, it does not seem to meet my
+> requirements.  It limits the number of processes in a cgroup - that is
+> also very useful, but is different from my controller.
+>
+How so?
+If you never move tasks to a cgroup except at setup time - which is the 
+common case for almost everybody, I imagine, you end up achieving the 
+same thing.
