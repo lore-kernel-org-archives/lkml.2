@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934091Ab1KCQbz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 12:31:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60408 "EHLO mga02.intel.com"
+	id S934055Ab1KCQeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 12:34:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49602 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933827Ab1KCQbx convert rfc822-to-8bit (ORCPT
+	id S933803Ab1KCQeO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 12:31:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="70861419"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Josh Boyer <jwboyer@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 3 Nov 2011 09:31:32 -0700
-Subject: RE: sb_edac 32-bit compile fail due to 64-bit divide
-Thread-Topic: sb_edac 32-bit compile fail due to 64-bit divide
-Thread-Index: AcyaNwIT9MrkD9P3RBeHqXuJ0aTgvgADnKmg
-Message-ID: <987664A83D2D224EAE907B061CE93D5301F566BB32@orsmsx505.amr.corp.intel.com>
-References: <20111103140716.GF19809@zod.bos.redhat.com>
- <4EB2A5FF.1040808@redhat.com> <20111103144347.GG19809@zod.bos.redhat.com>
-In-Reply-To: <20111103144347.GG19809@zod.bos.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Nov 2011 12:34:14 -0400
 MIME-Version: 1.0
+In-Reply-To: <CABE8wwugFuNUstAFxKGLyZthAk+Cb9MN3kQFDr-vN08pdsMoRA@mail.gmail.com>
+References: <20111023222711.22713.11434.stgit@localhost6.localdomain6>
+	<20111025022852.GB32457@kroah.com>
+	<1319573794.9320.15.camel@dwillia2-mobl>
+	<20111025205106.GD7234@suse.de>
+	<CABE8wwugFuNUstAFxKGLyZthAk+Cb9MN3kQFDr-vN08pdsMoRA@mail.gmail.com>
+Date: Thu, 3 Nov 2011 09:34:12 -0700
+Message-ID: <CABE8wwv4sQBRrG77sgVjUCBb1qXP1LUw=nkVwtU5TynWoQegUA@mail.gmail.com>
+Subject: Re: [PATCH] serial/8250_pci: add a quirk for the kt serial controller
+From: "Williams, Dan J" <dan.j.williams@intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Greg KH <greg@kroah.com>, Nhan H Mai <nhan.h.mai@intel.com>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        alan@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Of course, an interim fix would be to make it depend on CONFIG_64BIT or CONFIG_X86_64.
+On Tue, Oct 25, 2011 at 3:52 PM, Williams, Dan J
+<dan.j.williams@intel.com> wrote:
+> On Tue, Oct 25, 2011 at 1:51 PM, Greg KH <gregkh@suse.de> wrote:
+>> On Tue, Oct 25, 2011 at 01:16:34PM -0700, Dan Williams wrote:
+>>> From: Dan Williams <dan.j.williams@intel.com>
+>>> Date: Sun, 23 Oct 2011 15:06:24 -0700
+>>> Subject: [PATCH v2] serial/8250_pci: add a quirk for the kt serial controller
+>>>
+>>> Workaround dropped notifications in the iir register.  Prevent reads
+>>> coincident with new interrupt notifications by reading the iir at most
+>>> once per interrupt.
+>>>
+>>> Reported-by: Nhan H Mai <nhan.h.mai@intel.com>
+>>> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+>>
+>> Much better.
+>>
+>> But.
+>>
+>> Do you really think I can apply a patch that looks like this above?  I
+>> have to edit the text of the email before I apply it.
 >
-> That would work I guess.  It's up to you.
+> I don't doubt you get busted patches all the time, this isn't one.
 
-Typically the test platforms I get have pretty much the minimum sane memory
-configuration - my Sandy Bridge EP machine came with 32GB of memory (which
-is theoretically bootable with a 32-bit kernel, but really isn't going to
-be much fun to use).  So I would think that time could be spent on more
-productive things than making this edac driver work on 32-bit.  My vote
-is for the "depends on 64-bit" solution.
+...except for the fact that it would have collided spectacularly with
+the contents of tty.git staged for 3.2.  Sorry for the noise, will
+resend.
 
--Tony
+--
+Dan
