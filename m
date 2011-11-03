@@ -1,122 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1KCAYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:24:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57044 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753026Ab1KCAYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:24:46 -0400
-Date: Thu, 3 Nov 2011 01:24:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Simon Kirby <sim@hostway.ca>, David Miller <davem@davemloft.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Network Development <netdev@vger.kernel.org>,
-        Balazs Scheidler <bazsi@balabit.hu>,
-        KOVACS Krisztian <hidden@balabit.hu>
-Subject: Re: Linux 3.1-rc9
-In-Reply-To: <4EB1C770.7070605@gmail.com>
-Message-ID: <alpine.LFD.2.02.1111030121540.2829@ionos>
-References: <1318928713.21167.4.camel@twins> <20111018182046.GF1309@hostway.ca> <alpine.LFD.2.02.1110182146440.3240@ionos> <20111024190203.GA24410@hostway.ca> <20111025202049.GB25043@hostway.ca> <20111031173246.GA10614@hostway.ca> <alpine.LFD.2.02.1111021725550.2829@ionos>
- <1320254854.2292.14.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256157.2292.15.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <1320256701.2292.19.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC> <20111102191621.GF5971@hostway.ca> <4EB1C770.7070605@gmail.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1753722Ab1KCA0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:26:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47227 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013Ab1KCA0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:26:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 4/6 v2] PM: Limit race conditions between runtime PM and system sleep (v2)
+Date: Thu, 3 Nov 2011 01:28:52 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        stable@kernel.org, Ulf Hansson <Ulf.Hansson@stericsson.com>
+References: <201106260054.20578.rjw@sisk.pl> <CACRpkdafpsgUi-0K5krr2_Hp+8GzCG8ZPu-HVNOK0_7uwURxdg@mail.gmail.com> <20111102211708.GA19025@kroah.com>
+In-Reply-To: <20111102211708.GA19025@kroah.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111030128.52823.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Nov 2011, Eric Dumazet wrote:
-> On 02/11/2011 20:16, Simon Kirby wrote:
-> 
->  
-> > Actually, we have an anti-abuse daemon that injects blackhole routes, so
-> > this makes sense. (The daemon was written before ipsets were merged and
-> > normal netfilter rules make it fall over under attack.)
+On Wednesday, November 02, 2011, Greg KH wrote:
+> On Wed, Nov 02, 2011 at 10:00:39PM +0100, Linus Walleij wrote:
+> > On Wed, Nov 2, 2011 at 9:11 PM, Greg KH <greg@kroah.com> wrote:
+> > > On Wed, Nov 02, 2011 at 09:06:02PM +0100, Linus Walleij wrote:
+> > >> On Wed, Nov 2, 2011 at 8:14 PM, Greg KH <greg@kroah.com> wrote:
+> > >> > So, what specific git commits do you want to see in the 3.0-stable
+> > >> > tree, and in what order should they be applied in?
+> > >>
+> > >> So to my untrained eye it looks like it should be applied like this (top to
+> > >> bottom) using the reverse commit order from the mainline kernel:
+> > >>
+> > >> e529192 PM: Introduce generic "noirq" callback routines for subsystems (v2)
+> > >> 455716e PM / Runtime: Update documentation of interactions with system sleep
+> > >> 1e2ef05 PM: Limit race conditions between runtime PM and system sleep (v2)
+> > >> f3393b6 PM / Runtime: Add new helper function: pm_runtime_status_suspended()
+> > >>
+> > >> So (2) documents the problem, (3) fixes it, whereas (1) and (4) makes
+> > >> it possible
+> > >> to write proper _noirq() code that does not race, IIRC.
+> > >
+> > > But, after this, it's just adding new infrastructure that drivers will
+> > > then be able to use.  As I'm not adding new drivers to 3.0, there will
+> > > not be any users of this code, so why add it in the first place?  It
+> > > doesn't look like this follows the rules of the stable kernel tree at
+> > > all, does it?
 > > 
-> > I'll try with this patch. Thanks!
+> > We'll have to get some feedback from Rafael, but the way I percieved
+> > it, the patch (2) fixes a very real race, then fixing that makes it
+> > necessary for drivers using runtime_pm to do things differently to
+> > be on the safe side. But none were really fixed when first merging
+> > it.
 > > 
+> > So on second thought you probably only want patch (2)
+> > "PM: Limit race conditions between runtime PM and system sleep (v2)"
+> > for stable.
 > 
-> 
-> Thanks !
-> 
-> Here is the official submission, please add your 'Tested-by' signature
-> when you can confirm problem goes away.
-> 
-> (It did here, when I injected random NULL returns from
-> inet_csk_route_child_sock(), so I am confident this is the problem you hit )
-> 
-> [PATCH] net: add missing bh_unlock_sock() calls
-> 
-> Simon Kirby reported lockdep warnings and following messages :
-> 
-> [104661.897577] huh, entered softirq 3 NET_RX ffffffff81613740
-> preempt_count 00000101, exited with 00000102?
-> 
-> [104661.923653] huh, entered softirq 3 NET_RX ffffffff81613740
-> preempt_count 00000101, exited with 00000102?
-> 
-> Problem comes from commit 0e734419
-> (ipv4: Use inet_csk_route_child_sock() in DCCP and TCP.)
-> 
-> If inet_csk_route_child_sock() returns NULL, we should release socket
-> lock before freeing it.
-> 
-> Another lock imbalance exists if __inet_inherit_port() returns an error
-> since commit 093d282321da ( tproxy: fix hash locking issue when using
-> port redirection in __inet_inherit_port()) a backport is also needed for
-> >= 2.6.37 kernels.
-> 
-> Reported-by: Dimon Kirby <sim@hostway.ca>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-> CC: Balazs Scheidler <bazsi@balabit.hu>
-> CC: KOVACS Krisztian <hidden@balabit.hu>
+> Ok, Rafael, any objection to me applying just this one?
 
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-
-You probably also want: CC: stable@vger.kernel.org
+Well, I'd prefer not to unless there are reports confirming user problems
+being fixed specifically by this patch.  It changes the PM core's behavior
+quite significantly and I'm a little afraid of possible regressions that may
+result from it.
 
 Thanks,
-
-	tglx
-
-> ---
->  net/dccp/ipv4.c     |    1 +
->  net/ipv4/tcp_ipv4.c |    1 +
->  2 files changed, 2 insertions(+)
-> 
-> diff --git a/net/dccp/ipv4.c b/net/dccp/ipv4.c
-> index 332639b..90a919a 100644
-> --- a/net/dccp/ipv4.c
-> +++ b/net/dccp/ipv4.c
-> @@ -433,6 +433,7 @@ exit:
->  	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
->  	return NULL;
->  put_and_exit:
-> +	bh_unlock_sock(newsk);
->  	sock_put(newsk);
->  	goto exit;
->  }
-> diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-> index 0ea10ee..683d97a 100644
-> --- a/net/ipv4/tcp_ipv4.c
-> +++ b/net/ipv4/tcp_ipv4.c
-> @@ -1510,6 +1510,7 @@ exit:
->  	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
->  	return NULL;
->  put_and_exit:
-> +	bh_unlock_sock(newsk);
->  	sock_put(newsk);
->  	goto exit;
->  }
-> 
+Rafael
