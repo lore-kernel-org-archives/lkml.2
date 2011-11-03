@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933766Ab1KCPjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:39:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:47188 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932244Ab1KCPjd (ORCPT
+	id S933774Ab1KCPmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:42:16 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:57982 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244Ab1KCPmP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:39:33 -0400
-Date: Thu, 3 Nov 2011 11:39:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tejun Heo <tj@kernel.org>
-cc: Lin Ming <ming.m.lin@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
-In-Reply-To: <CAOS58YNNx7XOGov19_hucAQYvw88F2YO+KoVpn8uD+COgJRbEw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1111031139150.2136-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
+	Thu, 3 Nov 2011 11:42:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Subject: Re: CIFS: Rename bug on servers not supporting inode numbers
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=windows-1252
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+In-Reply-To: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
+Date: Thu, 3 Nov 2011 15:42:13 +0000
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Unix Support <unix-support@ucs.cam.ac.uk>
 Content-Transfer-Encoding: 8BIT
+Message-Id: <81357503-810A-477A-A320-D39F2CD69547@cam.ac.uk>
+References: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
+To: Steve French <sfrench@samba.org>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011, Tejun Heo wrote:
+Hi,
 
-> Hello,
+I should add that we are using iocharset=utf8 mount option which means that the dcache hash/compare functions done in the cifs module do not work because it uses nls_tolower() and nls_strnicmp() both of which for utf8 NLS in the kernel do not do anything at all and effectively behave case sensitively!
+
+Thus this bug/problem in all likelyhood only affects utf8 iocharset users on a case-insensitive but case-preserving CIFS server that does not support server inode numbers.
+
+That probably explains why it has not been noticed before!
+
+We need utf8 thus we still need to fix this issue.
+
+Best regards,
+
+	Anton
+
+On 3 Nov 2011, at 15:20, Anton Altaparmakov wrote:
+
+> Hi,
 > 
-> On Thu, Nov 3, 2011 at 7:37 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> >> Yes, it is a problem.  But it looks like the underlying issue is that
-> >> you're using the SCSI error handler to do something it was not intended
-> >> for.  Can't you suspend and resume the ATA port without using the error
-> >> handler?
-> >
-> > The system suspend and resume of the ATA port uses the error handler.
-> > I think the runtime suspend and resume should use the error handler too.
-> >
-> > Tejun,
-> >
-> > Could you comment more on this?
+> Our CIFS server problems seem to have no end…  The Novell CIFS server does not support server inode numbers (when I try the mount option I get the message it is being turned off as server does not support it) and thus each inode gets a different number each time it is accessed and it gets a different number again for each readdir call.
 > 
-> I don't know. I haven't really thought about it but as it's currently
-> designed, I don't think it'll be possible to avoid going through EH to
-> put ATA ports into suspend mode.
+> The fun happens with rename() when the rename source and target only differ in case, e.g.
+> 
+> 	touch foo
+> 	mv foo Foo
+> 
+> The result?  Because of the difference in inode numbers, the request gets through to the CIFS module which promptly does:
+> 
+> 	cifs_unlink(target_dir, target_dentry)
+> 	rc = cifs_do_rename(…)
+> 
+> And because the cifs_unlink() just removed the source of the rename (as it is the same as the target), "rc" comes back as -ENOENT.
+> 
+> And indeed the file is gone so we just lost the user's file for ever.  )-:
+> 
+> We are tossing around ideas how to fix this but we would be interested in your input as to what you think the fix should be.
+> 
+> In any case this probably should be fixed in the standard kernel CIFS module, too, and not just for us locally as this presumably affects anyone who is using the CIFS module against case-insensitive, non-server-inode-number-supporting CIFS servers...
+> 
+> Best regards,
+> 
+> 	Anton
 
-Why not?
-
-Alan Stern
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
