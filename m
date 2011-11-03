@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1KCWKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:10:35 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:40847 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752916Ab1KCWKa (ORCPT
+	id S1753216Ab1KCWPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 18:15:10 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60025 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab1KCWPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:10:30 -0400
-Subject: Re: [GIT PULL] UML changes for 3.2
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Foley <pefoley2@verizon.net>, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1320357369.14409.276.camel@x61.thuisdomein>
-References: <4EB14F51.1050004@nod.at>
-	 <1320348750.14409.249.camel@x61.thuisdomein>
-	 <1320352899.14409.260.camel@x61.thuisdomein>
-	 <1320354072.14409.265.camel@x61.thuisdomein>  <4EB3045A.6050501@nod.at>
-	 <1320355503.14409.269.camel@x61.thuisdomein>  <4EB30994.9050309@nod.at>
-	 <1320357369.14409.276.camel@x61.thuisdomein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Nov 2011 23:10:28 +0100
-Message-ID: <1320358228.14409.279.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Nov 2011 18:15:08 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+tR1ajgd3Dm0ussVLNdZiv
+Date: Thu, 3 Nov 2011 15:15:01 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Michael Opdenacker <michael.opdenacker@linaro.org>
+Cc: linux@arm.linux.org.uk, khilman@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH 1/1] arm: omap: removed obsolete IRQF_DISABLED
+Message-ID: <20111103221501.GD31337@atomide.com>
+References: <1318139198-6865-1-git-send-email-michael.opdenacker@linaro.org>
+ <1318139198-6865-2-git-send-email-michael.opdenacker@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1318139198-6865-2-git-send-email-michael.opdenacker@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 22:56 +0100, Paul Bolle wrote:
-> These Makefiles always make me nervous. Is SUBARCH set by the time the
-> update-po-config target is run? If so, we could simply do "env SUBARCH=
-> $(SUBARCH) [...]". But how do I check that SUBARCH really is set (ie,
-> that I'm not passing env an empty string)?
+* Michael Opdenacker <michael.opdenacker@linaro.org> [111008 22:13]:
+> This flag is a NOOP since 2.6.36
 
-It seems the trick here should be
-    env SUBARCH=$(KBUILD_BUILDHOST) [...]
+Looks like there's an ARM wide patch to do this with
+"[PATCH 03/55] arm: irq: Remove IRQF_DISABLED".
 
-Michal, does that make sense?
+Regards,
 
-
-Paul Bolle
-
+Tony
