@@ -1,128 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab1KCWaI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:30:08 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:56610 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752233Ab1KCWaH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:30:07 -0400
+	id S1753361Ab1KCWbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 18:31:16 -0400
+Received: from home.keithp.com ([63.227.221.253]:33818 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752335Ab1KCWbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 18:31:15 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 5/7] drm/i915: Make DP prepare/commit consistent with DP dpms
+In-Reply-To: <20111103130011.7946090a@jbarnes-desktop>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-6-git-send-email-keithp@keithp.com> <20111103130011.7946090a@jbarnes-desktop>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 15:30:57 -0700
+Message-ID: <yunipn0rg7y.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Message-ID: <69ed0521-cda2-4fc2-b51b-7bcc39d65afd@default>
-Date: Thu, 3 Nov 2011 15:29:34 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: RE: [GIT PULL] mm: frontswap (for 3.2 window)
-References: <75efb251-7a5e-4aca-91e2-f85627090363@default>
- <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy>
- <CAOzbF4fnD=CGR-nizZoBxmFSuAjFC3uAHf3wDj5RLneJvJhrOQ@mail.gmail.comCAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com>
- <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default20111031181651.GF3466@redhat.com>
- <60592afd-97aa-4eaf-b86b-f6695d31c7f1@default20111031223717.GI3466@redhat.com>
- <1b2e4f74-7058-4712-85a7-84198723e3ee@default20111101012017.GJ3466@redhat.com>
- <6a9db6d9-6f13-4855-b026-ba668c29ddfa@default20111101180702.GL3466@redhat.com>
- <b8a0ca71-a31b-488a-9a92-2502d4a6e9bf@default20111102013122.GA18879@redhat.com>
- <2bc86220-1e48-40e5-b502-dcd093956fd5@default
- 20111103003254.GE18879@redhat.com>
-In-Reply-To: <20111103003254.GE18879@redhat.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6562.5003]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4EB315D8.00E9,ss=1,re=0.000,fgs=0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andrea Arcangeli [mailto:aarcange@redhat.com]
-> Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Hi Andrea --
+On Thu, 3 Nov 2011 13:00:11 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
 
-Sorry for the delayed response... and for continuing this
-thread further, but I want to ensure I answer your
-points.
+> A few comments on this one (also, is it strictly required to fix your
+> bug)?
 
-First, did you see my reply to Rik that suggested a design
-as to how KVM could do batching with no change to the
-hooks or frontswap_ops API?  (Basically a guest-side
-cache and add a batching op to the KVM-tmem ABI.)  I think
-it resolves your last remaining concern (too many vmexits),
-so am eager to see if you agree.
+I think so; the panel definitely was not happy when I turned the link
+off while the panel power was on. Having the mode setting and DPMS paths
+doing things in different orders definitely doesn't seem reasonable
+though. I nearly managed to share code between the two paths, but there
+are subtle differences in requirements and so I didn't bother.
 
-> Like somebody already pointed out (and I agree) it'd be nice to get
-> the patches posted to the mailing list (with git send-emails/hg
+> Ok so you're making sure the panel has power to down the link, I think
+> that's fine.
 
-Frontswap v10 https://lkml.org/lkml/2011/9/15/367 as last posted
-to linux-mm has identical code to the git commits... in response
-to Konrad and Kame, the commit-set was slightly reorganized and
-extended from 6 commits to 8, but absolutely no code differences.
-Since no code was changed between v10 and v11, I didn't repost v11
-to linux-mm.
+No, I'm turning the panel off *before* turning off the link.  The panel
+goes nuts if you down the link before turning its power off; lots of
+technicolor.
 
-Note, every version of frontswap was posted to linux-mm and
-cc'ed to Andrew, Hugh, Nick and Rik and I was very diligent
-in responding to all comments...  Wish I would have
-cc'ed you all along as this has been a great discussion.
+Downing the link doesn't require any communication with the panel, so
+there's no issue with losing connectivity at this point:
 
-> email/quilt) and get them merged into -mm first.
+	ironlake_edp_backlight_off(intel_dp);
+	ironlake_edp_panel_off(intel_dp);               <=3D panel off
 
-Sorry, I'm still a newbie on this process, but just to clarify,
-"into -mm" means Andrew merges the patches, right?  Andrew
-said in the first snippet of https://lkml.org/lkml/2011/11/1/317 
-that linux-next is fine, so I'm not sure whether to follow your
-advice or not.
+	/* Wake up the sink first */
+	ironlake_edp_panel_vdd_on(intel_dp);
+	intel_dp_sink_dpms(intel_dp, DRM_MODE_DPMS_ON);
+	intel_dp_link_down(intel_dp);                   <=3D link down
+	ironlake_edp_panel_vdd_off(intel_dp, false);
 
-> Thanks. So this overall sounds fairly positive (or at least better
-> than neutral) to me.
+> But here it looks like you're shutting it off, then downing the link?
+> Should this be reordered?
 
-Excellent!
+Nope, it's in the same order:
 
-> On my side I hope it get improved over time to get the best out of
-> it. I've not been hugely impressed so far because at this point in
-> time it doesn't seem a vast improvement in runtime behavior compared
-> to what zram could provide, like Rik said there's no iov/SG/vectored
-> input to tmem_put (which I'd find more intuitive renamed to
-> tmem_store), like Avi said ramster is synchronous and not good having
-> to wait a long time. But if we can make these plugins stackable and we
-> can put a storage backend at the end we could do
-> storage+zcache+frontswap.
+	ironlake_edp_backlight_off(intel_dp);
+	ironlake_edp_panel_off(intel_dp);               <=3D panel off
 
-This thread has been so long, I don't even remember what I've
-replied to who, so just to clarify on these several points,
-in case you didn't see these elsewhere in the thread:
+	ironlake_edp_panel_vdd_on(intel_dp);
+	intel_dp_sink_dpms(intel_dp, mode);
+	intel_dp_link_down(intel_dp);                   <=3D link down
+	ironlake_edp_panel_vdd_off(intel_dp, false);
 
-- Nitin Gupta, author of zram, thinks zcache is an improvement
-  over zram because it is more flexible/dynamic
-- KVM can do batching fairly easily with no changes to the
-  hooks or frontswap_ops with the design I recently proposed
-- RAMster is synchronous, but the requirement is _only_ on the
-  "local" put... once the data is "in tmem", asynchronous threads
-  can do other things with it (like RAMster moving the pages
-  to a tmem pool on a remote system)
-- the plugins as they exist today (Xen, zcache) aren't stackable,
-  but the frontswap_ops registration already handles stacking,
-  so it is certainly a good future enhancement... RAMster
-  already does "stacking", but by incorporating a copy of
-  the zcache code.  (I think that's just a code organization
-  issue that can be resolved if/when RAMster goes into staging.)
+The only difference in these two code paths is that dp_prepare turns the
+sink to DPMS_ON, while dp_dpms turns the sink to DPMS_OFF.
 
-With these in mind, I hope you will now be even a "lot more
-happy now" with frontswap and MUCH better than neutral. :-) :-)
+=2D-=20
+keith.packard@intel.com
 
-Dan
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrMWIjYtFsjWk68qAQhh/Q//T4H0cVzfOqQnxAzhwjEar22vwKGRlX4W
+DbzocM7gfd0Qoc7cH630Me+Dnzn2PEdHDoRRFiw2HVGIapQ4P2gOHFHbo8bq9W+y
+Acdpg2hwBqOYG28NBfQkypFGtxw0VGtNIjnSlMcT9Q6GCIPfSbHxEmxuG1j+XTrk
+WE5in+gSQZzbcblPmkkVl7BJcfVJr1/iZnaMEpr1WjqdlRtHFXV8bVNLIditnI1H
+G8ErInTgM/etdqgaoa8oWa83govv6/Hp8S1xrPhuCmxw0ZzV1G6kr5NNx87RZNfo
+14VSfSUJXekYMAyh5slY9IQSBdb+xI1jh2HNPJZhKNJ9G8pV5To0/MUTM20OEWFQ
+9OBlEeC1ujWAzpaRdKGU+Q69QURYaiNqcf6COloYIiarhMsW3p1OHV2UGkq99GC/
+LsMkiRRsEjHzVRHhcYxTspEyBniIKHCD27t1vEhJnWZE88c8YLtjmBCjBVx390Gt
+iyDbx/gKFDyozgwTpGaLfeMfnrWA+iXjY3LozOYuYgJEfBFaF/YbKzufeFw+4AQo
+2+zjJuncJI3Gz41RVTLMihQpHRQa/WMMZkV3NpV+aAxU/8YyIXvfK5+ucTlp5DCu
+iz/JpAv+dDA6lK/PXXw/vH/z02CEVzMPdwdLGX/BvOrK4rV3uYpry6ZgimTldcgI
+MqzMQIohrk4=
+=ixv5
+-----END PGP SIGNATURE-----
+--=-=-=--
