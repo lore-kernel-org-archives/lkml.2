@@ -1,88 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab1KCOin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:38:43 -0400
-Received: from mga03.intel.com ([143.182.124.21]:30158 "EHLO mga03.intel.com"
+	id S1755536Ab1KCOlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:41:32 -0400
+Received: from linux-sh.org ([111.68.239.195]:45097 "EHLO linux-sh.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab1KCOil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:38:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,450,1315206000"; 
-   d="scan'208";a="70169633"
-Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
-From: Lin Ming <ming.m.lin@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-In-Reply-To: <Pine.LNX.4.44L0.1111031019250.2136-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1111031019250.2136-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 03 Nov 2011 22:37:43 +0800
-Message-ID: <1320331063.2813.78.camel@hp6530s>
+	id S1755277Ab1KCOla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 10:41:30 -0400
+Date: Thu, 3 Nov 2011 23:41:25 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] sh updates for 3.2
+Message-ID: <20111103144125.GA29825@linux-sh.org>
+References: <20111102142233.GC5972@linux-sh.org> <CA+55aFzE9aFuPmXGm8u64rWXD8WhLhuz+-c7rBgoiUosaru7jg@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzE9aFuPmXGm8u64rWXD8WhLhuz+-c7rBgoiUosaru7jg@mail.gmail.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 22:22 +0800, Alan Stern wrote:
-> On Thu, 3 Nov 2011, Lin Ming wrote:
+On Wed, Nov 02, 2011 at 09:52:39AM -0700, Linus Torvalds wrote:
+> On Wed, Nov 2, 2011 at 7:22 AM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > Please pull from:
+> >
+> > ? ? ? ?git://github.com/pmundt/linux-sh.git sh-latest
 > 
-> > I realize that this is not the natural way to do ata port runtime pm.
-> > Hooking it to scsi host runtime pm is not good. It does not deal with
-> > the races with system suspend/resume of host controller.
-> > 
-> > How about making ata port as the parent device of scsi host?
-> > Then, for example, the runtime suspend happens as below,
-> > 
-> > disk suspend --> scsi target suspend --> scsi host suspend --> ata port
-> > suspend.
-> > 
-> > Current device tree is:
-> > /sys/devices/pci0000:00/0000:00:1f.2/
-> > |-- ata1
-> > |-- host0
-> > 
-> > After the change, the tree will become as:
-> > /sys/devices/pci0000:00/0000:00:1f.2/ata1/
-> > |-- host0
+> Paul, please verify this for me somehow. You used to have a kernel.org
+> account, and this is a repo I haven't seen before. Admittedly all the
+> changes are to sh-specific files, so I don't think anybody *really*
+> cares, but still..
 > 
-> I don't know enough about the ATA subsystem to say much, except that 
-> this looks more logical.
-> 
-> > The tricky part is ata port(parent device) suspend need to schedule scsi
-> > EH which will resume scsi host(child device). Then the child device
-> > resume will in turn make parent device resume first. This is kind of
-> > recursive.
-> > 
-> > We can fix this by adding a flag somewhere to tell scsi EH don't resume
-> > the host in ata port pm request handling case.
-> > 
-> > What do you think?
-> 
-> Yes, it is a problem.  But it looks like the underlying issue is that
-> you're using the SCSI error handler to do something it was not intended
-> for.  Can't you suspend and resume the ATA port without using the error
-> handler?
-
-The system suspend and resume of the ATA port uses the error handler.
-I think the runtime suspend and resume should use the error handler too.
-
-Tejun,
-
-Could you comment more on this?
-
-Thanks.
-
-> 
-> Alan Stern
-> 
-
-
+That's correct. I moved to github when hera became unavailable and
+haven't gotten around to re-establishing credentials there. I'm not sure
+what else you'd like me to do to verify the tree location however, so
+please let me know if I've overlooked something.
