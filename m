@@ -1,799 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab1KCMeb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:34:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24180 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933531Ab1KCMe1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933528Ab1KCMe1 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Nov 2011 08:34:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54354 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755817Ab1KCMc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:32:27 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a guests
-Date: Thu,  3 Nov 2011 14:33:31 +0200
-Message-Id: <1320323618-10375-3-git-send-email-gleb@redhat.com>
-In-Reply-To: <1320323618-10375-1-git-send-email-gleb@redhat.com>
-References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
+Subject: [PATCH 6/9] perf: expose perf capability to other modules.
+Date: Thu,  3 Nov 2011 14:31:35 +0200
+Message-Id: <1320323498-10233-7-git-send-email-gleb@redhat.com>
+In-Reply-To: <1320323498-10233-1-git-send-email-gleb@redhat.com>
+References: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use perf_events to emulate an architectural PMU, version 2.
-
-Based on PMU version 1 emulation by Avi Kivity.
+KVM needs to know perf capability to decide which PMU it can expose to a
+guest.
 
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |   48 ++++
- arch/x86/kvm/Kconfig            |    1 +
- arch/x86/kvm/Makefile           |    2 +-
- arch/x86/kvm/pmu.c              |  529 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/x86.c              |   24 ++-
- include/linux/kvm_host.h        |    2 +
- 6 files changed, 596 insertions(+), 10 deletions(-)
- create mode 100644 arch/x86/kvm/pmu.c
+ arch/x86/include/asm/perf_event.h      |   11 +++++++++++
+ arch/x86/kernel/cpu/perf_event.c       |   11 +++++++++++
+ arch/x86/kernel/cpu/perf_event.h       |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
+ 4 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6d83264..5807a49 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -16,10 +16,12 @@
- #include <linux/mmu_notifier.h>
- #include <linux/tracepoint.h>
- #include <linux/cpumask.h>
-+#include <linux/irq_work.h>
- 
- #include <linux/kvm.h>
- #include <linux/kvm_para.h>
- #include <linux/kvm_types.h>
-+#include <linux/perf_event.h>
- 
- #include <asm/pvclock-abi.h>
- #include <asm/desc.h>
-@@ -289,6 +291,37 @@ struct kvm_mmu {
- 	u64 pdptrs[4]; /* pae */
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index f61c62f..7d7e57f 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -201,7 +201,18 @@ struct perf_guest_switch_msr {
+ 	u64 host, guest;
  };
  
-+enum pmc_type {
-+	KVM_PMC_GP = 0,
-+	KVM_PMC_FIXED,
++struct x86_pmu_capability {
++	int version;
++	int num_counters_gp;
++	int num_counters_fixed;
++	int bit_width_gp;
++	int bit_width_fixed;
++	unsigned int events_mask;
++	int events_mask_len;
 +};
 +
-+struct kvm_pmc {
-+	enum pmc_type type;
-+	u8 idx;
-+	u64 counter;
-+	u64 eventsel;
-+	struct perf_event *perf_event;
-+	struct kvm_vcpu *vcpu;
-+};
+ extern struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr);
++extern void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap);
+ #else
+ static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
+ {
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6408910..94ac9ca 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1570,3 +1570,14 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
+ 
+ 	return misc;
+ }
 +
-+struct kvm_pmu {
-+	unsigned nr_arch_gp_counters;
-+	unsigned nr_arch_fixed_counters;
-+	unsigned available_event_types;
-+	u64 fixed_ctr_ctrl;
-+	u64 global_ctrl;
-+	u64 global_status;
-+	u64 global_ovf_ctrl;
-+	u64 counter_bitmask[2];
-+	u64 global_ctrl_mask;
-+	u8 version;
-+	struct kvm_pmc gp_counters[X86_PMC_MAX_GENERIC];
-+	struct kvm_pmc fixed_counters[X86_PMC_MAX_FIXED];
-+	struct irq_work irq_work;
-+	u64 reprogram_pmi;
-+};
-+
- struct kvm_vcpu_arch {
++void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
++{
++	cap->version = x86_pmu.version;
++	cap->num_counters_gp = x86_pmu.num_counters;
++	cap->num_counters_fixed = x86_pmu.num_counters_fixed;
++	cap->bit_width_gp = cap->bit_width_fixed = x86_pmu.cntval_bits;
++	cap->events_mask = x86_pmu.events_mask;
++	cap->events_mask_len = x86_pmu.events_mask_len;
++}
++EXPORT_SYMBOL_GPL(perf_get_x86_pmu_capability);
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index b9698d4..e9ed238 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -259,6 +259,8 @@ struct x86_pmu {
+ 	int		num_counters_fixed;
+ 	int		cntval_bits;
+ 	u64		cntval_mask;
++	u32		events_mask;
++	int		events_mask_len;
+ 	int		apic;
+ 	u64		max_period;
+ 	struct event_constraint *
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index e09ca20..64e5f35 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1580,6 +1580,8 @@ __init int intel_pmu_init(void)
+ 	x86_pmu.num_counters		= eax.split.num_counters;
+ 	x86_pmu.cntval_bits		= eax.split.bit_width;
+ 	x86_pmu.cntval_mask		= (1ULL << eax.split.bit_width) - 1;
++	x86_pmu.events_mask		= ebx;
++	x86_pmu.events_mask_len		= eax.split.mask_length;
+ 
  	/*
- 	 * rip and regs accesses must go through
-@@ -422,6 +455,8 @@ struct kvm_vcpu_arch {
- 	unsigned access;
- 	gfn_t mmio_gfn;
+ 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
+@@ -1651,6 +1653,7 @@ __init int intel_pmu_init(void)
+ 			 * architectural event which is often completely bogus:
+ 			 */
+ 			intel_perfmon_event_map[PERF_COUNT_HW_BRANCH_MISSES] = 0x7f89;
++			x86_pmu.events_mask &= ~0x40;
  
-+	struct kvm_pmu pmu;
-+
- 	/* used for guest single stepping over the given code position */
- 	unsigned long singlestep_rip;
- 
-@@ -881,4 +916,17 @@ extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
- 
- void kvm_complete_insn_gp(struct kvm_vcpu *vcpu, int err);
- 
-+int kvm_is_in_guest(void);
-+
-+void kvm_pmu_init(struct kvm_vcpu *vcpu);
-+void kvm_pmu_destroy(struct kvm_vcpu *vcpu);
-+void kvm_pmu_reset(struct kvm_vcpu *vcpu);
-+void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu);
-+bool kvm_pmu_msr(struct kvm_vcpu *vcpu, u32 msr);
-+int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, u32 msr, u64 *data);
-+int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 msr, u64 data);
-+int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
-+void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
-+void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
-+
- #endif /* _ASM_X86_KVM_HOST_H */
-diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-index ff5790d..c27dd11 100644
---- a/arch/x86/kvm/Kconfig
-+++ b/arch/x86/kvm/Kconfig
-@@ -35,6 +35,7 @@ config KVM
- 	select KVM_MMIO
- 	select TASKSTATS
- 	select TASK_DELAY_ACCT
-+	select PERF_EVENTS
- 	---help---
- 	  Support hosting fully virtualized guest machines using hardware
- 	  virtualization extensions.  You will need a fairly recent
-diff --git a/arch/x86/kvm/Makefile b/arch/x86/kvm/Makefile
-index f15501f..cfca03f 100644
---- a/arch/x86/kvm/Makefile
-+++ b/arch/x86/kvm/Makefile
-@@ -12,7 +12,7 @@ kvm-$(CONFIG_IOMMU_API)	+= $(addprefix ../../../virt/kvm/, iommu.o)
- kvm-$(CONFIG_KVM_ASYNC_PF)	+= $(addprefix ../../../virt/kvm/, async_pf.o)
- 
- kvm-y			+= x86.o mmu.o emulate.o i8259.o irq.o lapic.o \
--			   i8254.o timer.o
-+			   i8254.o timer.o pmu.o
- kvm-intel-y		+= vmx.o
- kvm-amd-y		+= svm.o
- 
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-new file mode 100644
-index 0000000..d4ada30
---- /dev/null
-+++ b/arch/x86/kvm/pmu.c
-@@ -0,0 +1,529 @@
-+/*
-+ * Kernel-based Virtual Machine -- Performane Monitoring Unit support
-+ *
-+ * Copyright 2011 Red Hat, Inc. and/or its affiliates.
-+ *
-+ * Authors:
-+ *   Avi Kivity   <avi@redhat.com>
-+ *   Gleb Natapov <gleb@redhat.com>
-+ *
-+ * This work is licensed under the terms of the GNU GPL, version 2.  See
-+ * the COPYING file in the top-level directory.
-+ *
-+ */
-+
-+#include <linux/types.h>
-+#include <linux/kvm_host.h>
-+#include <linux/perf_event.h>
-+#include "x86.h"
-+#include "lapic.h"
-+
-+static struct kvm_arch_event_perf_mapping {
-+	u8 eventsel;
-+	u8 unit_mask;
-+	unsigned event_type;
-+	bool inexact;
-+} arch_events[] = {
-+	/* Index must match CPUID 0x0A.EBX bit vector */
-+	[0] = { 0x3c, 0x00, PERF_COUNT_HW_CPU_CYCLES },
-+	[1] = { 0xc0, 0x00, PERF_COUNT_HW_INSTRUCTIONS },
-+	[2] = { 0x3c, 0x01, PERF_COUNT_HW_BUS_CYCLES  },
-+	[3] = { 0x2e, 0x4f, PERF_COUNT_HW_CACHE_REFERENCES },
-+	[4] = { 0x2e, 0x41, PERF_COUNT_HW_CACHE_MISSES },
-+	[5] = { 0xc4, 0x00, PERF_COUNT_HW_BRANCH_INSTRUCTIONS },
-+	[6] = { 0xc5, 0x00, PERF_COUNT_HW_BRANCH_MISSES },
-+};
-+
-+/* mapping between fixed pmc index and arch_events array */
-+int fixed_pmc_events[] = {1, 0, 2};
-+
-+static bool pmc_is_gp(struct kvm_pmc *pmc)
-+{
-+	return pmc->type == KVM_PMC_GP;
-+}
-+
-+static inline u64 pmc_bitmask(struct kvm_pmc *pmc)
-+{
-+	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-+
-+	return pmu->counter_bitmask[pmc->type];
-+}
-+
-+static inline bool pmc_enabled(struct kvm_pmc *pmc)
-+{
-+	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-+	return test_bit(pmc->idx, (unsigned long *)&pmu->global_ctrl);
-+}
-+
-+static inline struct kvm_pmc *get_gp_pmc(struct kvm_pmu *pmu, u32 msr,
-+					 u32 base)
-+{
-+	if (msr >= base && msr < base + pmu->nr_arch_gp_counters)
-+		return &pmu->gp_counters[msr - base];
-+	return NULL;
-+}
-+
-+static inline struct kvm_pmc *get_fixed_pmc(struct kvm_pmu *pmu, u32 msr)
-+{
-+	int base = MSR_CORE_PERF_FIXED_CTR0;
-+	if (msr >= base && msr < base + pmu->nr_arch_fixed_counters)
-+		return &pmu->fixed_counters[msr - base];
-+	return NULL;
-+}
-+
-+static inline struct kvm_pmc *get_fixed_pmc_idx(struct kvm_pmu *pmu, int idx)
-+{
-+	return get_fixed_pmc(pmu, MSR_CORE_PERF_FIXED_CTR0 + idx);
-+}
-+
-+static struct kvm_pmc *global_idx_to_pmc(struct kvm_pmu *pmu, int idx)
-+{
-+	if (idx < X86_PMC_IDX_FIXED)
-+		return get_gp_pmc(pmu, MSR_P6_EVNTSEL0 + idx, MSR_P6_EVNTSEL0);
-+	else
-+		return get_fixed_pmc_idx(pmu, idx - X86_PMC_IDX_FIXED);
-+}
-+
-+void kvm_deliver_pmi(struct kvm_vcpu *vcpu)
-+{
-+	if (vcpu->arch.apic)
-+		kvm_apic_local_deliver(vcpu->arch.apic, APIC_LVTPC);
-+}
-+
-+static void trigger_pmi(struct irq_work *irq_work)
-+{
-+	struct kvm_pmu *pmu = container_of(irq_work, struct kvm_pmu,
-+			irq_work);
-+	struct kvm_vcpu *vcpu = container_of(pmu, struct kvm_vcpu,
-+			arch.pmu);
-+
-+	kvm_deliver_pmi(vcpu);
-+}
-+
-+static void kvm_perf_overflow(struct perf_event *perf_event,
-+			      struct perf_sample_data *data,
-+			      struct pt_regs *regs)
-+{
-+	struct kvm_pmc *pmc = perf_event->overflow_handler_context;
-+	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-+	__set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
-+}
-+
-+static void kvm_perf_overflow_intr(struct perf_event *perf_event,
-+		struct perf_sample_data *data, struct pt_regs *regs)
-+{
-+	struct kvm_pmc *pmc = perf_event->overflow_handler_context;
-+	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-+	if (!test_and_set_bit(pmc->idx, (unsigned long *)&pmu->reprogram_pmi)) {
-+		kvm_perf_overflow(perf_event, data, regs);
-+		kvm_make_request(KVM_REQ_PMU, pmc->vcpu);
-+		/*
-+		 * Inject PMI. If vcpu was in a guest mode during NMI PMI
-+		 * can be ejected on a guest mode re-entry. Otherwise we can't
-+		 * be sure that vcpu is not halted, so we should kick it, but
-+		 * this is impossible from NMI context. Do it from irq work
-+		 * instead.
-+		 */
-+		if (!kvm_is_in_guest())
-+			irq_work_queue(&pmc->vcpu->arch.pmu.irq_work);
-+		else
-+			kvm_make_request(KVM_REQ_PMI, pmc->vcpu);
-+	}
-+}
-+
-+static u64 read_pmc(struct kvm_pmc *pmc)
-+{
-+	u64 counter, enabled, running;
-+
-+	counter = pmc->counter;
-+
-+	if (pmc->perf_event)
-+		counter += perf_event_read_value(pmc->perf_event,
-+						 &enabled, &running);
-+
-+	/* FIXME: Scaling needed? */
-+
-+	return counter & pmc_bitmask(pmc);
-+}
-+
-+static void stop_counter(struct kvm_pmc *pmc)
-+{
-+	if (pmc->perf_event) {
-+		pmc->counter = read_pmc(pmc);
-+		perf_event_release_kernel(pmc->perf_event);
-+		pmc->perf_event = NULL;
-+	}
-+}
-+
-+static void reprogram_counter(struct kvm_pmc *pmc, u32 type,
-+		unsigned config, bool exclude_user, bool exclude_kernel,
-+		bool intr)
-+{
-+	struct perf_event *event;
-+	struct perf_event_attr attr = {
-+		.type = type,
-+		.size = sizeof(attr),
-+		.exclude_idle = true,
-+		.exclude_host = 1,
-+		.exclude_user = exclude_user,
-+		.exclude_kernel = exclude_kernel,
-+		.sample_period = (-pmc->counter) & pmc_bitmask(pmc),
-+		.config = config,
-+	};
-+
-+	event = perf_event_create_kernel_counter(&attr, -1, current,
-+						 intr ? kvm_perf_overflow_intr :
-+						 kvm_perf_overflow, pmc);
-+	if (IS_ERR(event)) {
-+		printk_once("kvm: pmu event creation failed %ld\n",
-+				PTR_ERR(event));
-+		return;
-+	}
-+
-+	pmc->perf_event = event;
-+	clear_bit(pmc->idx, (unsigned long*)&pmc->vcpu->arch.pmu.reprogram_pmi);
-+}
-+
-+static unsigned find_arch_event(struct kvm_pmu *pmu, u8 event_select,
-+		u8 unit_mask)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(arch_events); i++)
-+		if (arch_events[i].eventsel == event_select
-+				&& arch_events[i].unit_mask == unit_mask
-+				&& (pmu->available_event_types & (1 << i)))
-+			break;
-+
-+	if (i == ARRAY_SIZE(arch_events))
-+		return PERF_COUNT_HW_MAX;
-+
-+	return arch_events[i].event_type;
-+}
-+
-+static void reprogram_gp_counter(struct kvm_pmc *pmc, u64 eventsel)
-+{
-+	unsigned config, type = PERF_TYPE_RAW;
-+	u8 event_select, unit_mask;
-+
-+	pmc->eventsel = eventsel;
-+
-+	stop_counter(pmc);
-+
-+	if (!(eventsel & ARCH_PERFMON_EVENTSEL_ENABLE) || !pmc_enabled(pmc))
-+		return;
-+
-+	event_select = eventsel & ARCH_PERFMON_EVENTSEL_EVENT;
-+	unit_mask = (eventsel & ARCH_PERFMON_EVENTSEL_UMASK) >> 8;
-+
-+	if (!(event_select & (ARCH_PERFMON_EVENTSEL_EDGE |
-+				ARCH_PERFMON_EVENTSEL_INV |
-+				ARCH_PERFMON_EVENTSEL_CMASK))) {
-+		config = find_arch_event(&pmc->vcpu->arch.pmu, event_select,
-+				unit_mask);
-+		if (config != PERF_COUNT_HW_MAX)
-+			type = PERF_TYPE_HARDWARE;
-+	}
-+
-+	if (type == PERF_TYPE_RAW)
-+		config = eventsel & X86_RAW_EVENT_MASK;
-+
-+	reprogram_counter(pmc, type, config,
-+			!(eventsel & ARCH_PERFMON_EVENTSEL_USR),
-+			!(eventsel & ARCH_PERFMON_EVENTSEL_OS),
-+			eventsel & ARCH_PERFMON_EVENTSEL_INT);
-+}
-+
-+static void reprogram_fixed_counter(struct kvm_pmc *pmc, u8 en_pmi, int idx)
-+{
-+	unsigned en = en_pmi & 0x3;
-+	bool pmi = en_pmi & 0x8;
-+
-+	stop_counter(pmc);
-+
-+	if (!en || !pmc_enabled(pmc))
-+		return;
-+
-+	reprogram_counter(pmc, PERF_TYPE_HARDWARE,
-+			arch_events[fixed_pmc_events[idx]].event_type,
-+			!(en & 0x2), /* exclude user */
-+			!(en & 0x1), /* exclude kernel */
-+			pmi);
-+}
-+
-+static inline u8 fixed_en_pmi(u64 ctrl, int idx)
-+{
-+	return (ctrl >> (idx * 4)) & 0xf;
-+}
-+
-+static void reprogram_fixed_counters(struct kvm_pmu *pmu, u64 data)
-+{
-+	int i;
-+
-+	for (i = 0; i < pmu->nr_arch_fixed_counters; i++) {
-+		u8 en_pmi = fixed_en_pmi(data, i);
-+		struct kvm_pmc *pmc = get_fixed_pmc_idx(pmu, i);
-+
-+		if (fixed_en_pmi(pmu->fixed_ctr_ctrl, i) == en_pmi)
-+			continue;
-+
-+		reprogram_fixed_counter(pmc, en_pmi, i);
-+	}
-+
-+	pmu->fixed_ctr_ctrl = data;
-+}
-+
-+static void reprogram_idx(struct kvm_pmu *pmu, int idx)
-+{
-+	struct kvm_pmc *pmc = global_idx_to_pmc(pmu, idx);
-+
-+	if (!pmc)
-+		return;
-+
-+	if (pmc_is_gp(pmc))
-+		reprogram_gp_counter(pmc, pmc->eventsel);
-+	else {
-+		int fidx = idx - X86_PMC_IDX_FIXED;
-+		reprogram_fixed_counter(pmc,
-+				fixed_en_pmi(pmu->fixed_ctr_ctrl, fidx), fidx);
-+	}
-+}
-+
-+static void global_ctrl_changed(struct kvm_pmu *pmu, u64 data)
-+{
-+	int bit;
-+	u64 diff = pmu->global_ctrl ^ data;
-+
-+	pmu->global_ctrl = data;
-+
-+	for_each_set_bit(bit, (unsigned long *)&diff, X86_PMC_IDX_MAX)
-+		reprogram_idx(pmu, bit);
-+}
-+
-+bool kvm_pmu_msr(struct kvm_vcpu *vcpu, u32 msr)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	int ret;
-+
-+	switch (msr) {
-+	case MSR_CORE_PERF_FIXED_CTR_CTRL:
-+	case MSR_CORE_PERF_GLOBAL_STATUS:
-+	case MSR_CORE_PERF_GLOBAL_CTRL:
-+	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
-+		ret = pmu->version > 1;
-+		break;
-+	default:
-+		ret = get_gp_pmc(pmu, msr, MSR_IA32_PERFCTR0)
-+			|| get_gp_pmc(pmu, msr, MSR_P6_EVNTSEL0)
-+			|| get_fixed_pmc(pmu, msr);
-+		break;
-+	}
-+	return ret;
-+}
-+
-+int kvm_pmu_get_msr(struct kvm_vcpu *vcpu, u32 index, u64 *data)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	struct kvm_pmc *pmc;
-+
-+	switch (index) {
-+	case MSR_CORE_PERF_FIXED_CTR_CTRL:
-+		*data = pmu->fixed_ctr_ctrl;
-+		return 0;
-+	case MSR_CORE_PERF_GLOBAL_STATUS:
-+		*data = pmu->global_status;
-+		return 0;
-+	case MSR_CORE_PERF_GLOBAL_CTRL:
-+		*data = pmu->global_ctrl;
-+		return 0;
-+	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
-+		*data = pmu->global_ovf_ctrl;
-+		return 0;
-+	default:
-+		if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
-+				(pmc = get_fixed_pmc(pmu, index))) {
-+			*data = read_pmc(pmc);
-+			return 0;
-+		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
-+			*data = pmc->eventsel;
-+			return 0;
-+		}
-+	}
-+	return 1;
-+}
-+
-+int kvm_pmu_set_msr(struct kvm_vcpu *vcpu, u32 index, u64 data)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	struct kvm_pmc *pmc;
-+
-+	switch (index) {
-+	case MSR_CORE_PERF_FIXED_CTR_CTRL:
-+		if (pmu->fixed_ctr_ctrl == data)
-+			return 0;
-+		if (!(data & 0xfffffffffffff444)) {
-+			reprogram_fixed_counters(pmu, data);
-+			return 0;
-+		}
-+		break;
-+	case MSR_CORE_PERF_GLOBAL_STATUS:
-+		break; /* RO MSR */
-+	case MSR_CORE_PERF_GLOBAL_CTRL:
-+		if (pmu->global_ctrl == data)
-+			return 0;
-+		if (!(data & pmu->global_ctrl_mask)) {
-+			global_ctrl_changed(pmu, data);
-+			return 0;
-+		}
-+		break;
-+	case MSR_CORE_PERF_GLOBAL_OVF_CTRL:
-+		if (!(data & (pmu->global_ctrl_mask & ~(3ull<<62)))) {
-+			pmu->global_status &= ~data;
-+			pmu->global_ovf_ctrl = data;
-+			return 0;
-+		}
-+		break;
-+	default:
-+		if ((pmc = get_gp_pmc(pmu, index, MSR_IA32_PERFCTR0)) ||
-+				(pmc = get_fixed_pmc(pmu, index))) {
-+			data = (s64)(s32)data;
-+			pmc->counter += data - read_pmc(pmc);
-+			return 0;
-+		} else if ((pmc = get_gp_pmc(pmu, index, MSR_P6_EVNTSEL0))) {
-+			if (data == pmc->eventsel)
-+				return 0;
-+			if (!(data & 0xffffffff00200000ull)) {
-+				reprogram_gp_counter(pmc, data);
-+				return 0;
-+			}
-+		}
-+	}
-+	return 1;
-+}
-+
-+int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	bool fast_mode = pmc & (1u << 31);
-+	bool fixed = pmc & (1u << 30);
-+	struct kvm_pmc *counters;
-+	u64 ctr;
-+
-+	pmc &= (3u << 30) - 1;
-+	if (!fixed && pmc >= pmu->nr_arch_gp_counters)
-+		return 1;
-+	if (fixed && pmc >= pmu->nr_arch_fixed_counters)
-+		return 1;
-+	counters = fixed ? pmu->fixed_counters : pmu->gp_counters;
-+	ctr = read_pmc(&counters[pmc]);
-+	if (fast_mode)
-+		ctr = (u32)ctr;
-+	*data = ctr;
-+
-+	return 0;
-+}
-+
-+void kvm_pmu_cpuid_update(struct kvm_vcpu *vcpu)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	struct kvm_cpuid_entry2 *entry;
-+	unsigned bitmap_len;
-+
-+	pmu->nr_arch_gp_counters = 0;
-+	pmu->nr_arch_fixed_counters = 0;
-+	pmu->counter_bitmask[KVM_PMC_GP] = 0;
-+	pmu->counter_bitmask[KVM_PMC_FIXED] = 0;
-+	pmu->version = 0;
-+
-+	entry = kvm_find_cpuid_entry(vcpu, 0xa, 0);
-+	if (!entry)
-+		return;
-+
-+	pmu->version = entry->eax & 0xff;
-+	if (!pmu->version)
-+		return;
-+
-+	pmu->nr_arch_gp_counters = min((int)(entry->eax >> 8) & 0xff,
-+			X86_PMC_MAX_GENERIC);
-+	pmu->counter_bitmask[KVM_PMC_GP] =
-+		((u64)1 << ((entry->eax >> 16) & 0xff)) - 1;
-+	bitmap_len = (entry->eax >> 24) & 0xff;
-+	pmu->available_event_types = ~entry->ebx & ((1ull << bitmap_len) - 1);
-+
-+	if (pmu->version == 1) {
-+		pmu->global_ctrl = (1 << pmu->nr_arch_gp_counters) - 1;
-+		return;
-+	}
-+
-+	pmu->nr_arch_fixed_counters = min((int)(entry->edx & 0x1f),
-+			X86_PMC_MAX_FIXED);
-+	pmu->counter_bitmask[KVM_PMC_FIXED] =
-+		((u64)1 << ((entry->edx >> 5) & 0xff)) - 1;
-+	pmu->global_ctrl_mask = ~(((1 << pmu->nr_arch_gp_counters) - 1)
-+			| (((1ull << pmu->nr_arch_fixed_counters) - 1)
-+				<< X86_PMC_IDX_FIXED));
-+}
-+
-+void kvm_pmu_init(struct kvm_vcpu *vcpu)
-+{
-+	int i;
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+
-+	memset(pmu, 0, sizeof(*pmu));
-+	for (i = 0; i < X86_PMC_MAX_GENERIC; i++) {
-+		pmu->gp_counters[i].type = KVM_PMC_GP;
-+		pmu->gp_counters[i].vcpu = vcpu;
-+		pmu->gp_counters[i].idx = i;
-+	}
-+	for (i = 0; i < X86_PMC_MAX_FIXED; i++) {
-+		pmu->fixed_counters[i].type = KVM_PMC_FIXED;
-+		pmu->fixed_counters[i].vcpu = vcpu;
-+		pmu->fixed_counters[i].idx = i + X86_PMC_IDX_FIXED;
-+	}
-+	init_irq_work(&pmu->irq_work, trigger_pmi);
-+	kvm_pmu_cpuid_update(vcpu);
-+}
-+
-+void kvm_pmu_reset(struct kvm_vcpu *vcpu)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	int i;
-+
-+	irq_work_sync(&pmu->irq_work);
-+	for (i = 0; i < X86_PMC_MAX_GENERIC; i++) {
-+		struct kvm_pmc *pmc = &pmu->gp_counters[i];
-+		stop_counter(pmc);
-+		pmc->counter = pmc->eventsel = 0;
-+	}
-+
-+	for (i = 0; i < X86_PMC_MAX_FIXED; i++)
-+		stop_counter(&pmu->fixed_counters[i]);
-+
-+	pmu->fixed_ctr_ctrl = pmu->global_ctrl = pmu->global_status =
-+		pmu->global_ovf_ctrl = 0;
-+}
-+
-+void kvm_pmu_destroy(struct kvm_vcpu *vcpu)
-+{
-+	kvm_pmu_reset(vcpu);
-+}
-+
-+void kvm_handle_pmu_event(struct kvm_vcpu *vcpu)
-+{
-+	struct kvm_pmu *pmu = &vcpu->arch.pmu;
-+	u64 bitmask;
-+	int bit;
-+
-+	bitmask = pmu->reprogram_pmi;
-+
-+	for_each_set_bit(bit, (unsigned long *)&bitmask, X86_PMC_IDX_MAX) {
-+		struct kvm_pmc *pmc = global_idx_to_pmc(pmu, bit);
-+
-+		if (unlikely(!pmc || !pmc->perf_event)) {
-+			clear_bit(bit, (unsigned long *)&pmu->reprogram_pmi);
-+			continue;
-+		}
-+
-+		reprogram_idx(pmu, bit);
-+	}
-+}
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 9eff4af..52a8666 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -624,6 +624,8 @@ static void update_cpuid(struct kvm_vcpu *vcpu)
- 
- 	if (apic)
- 		apic->lapic_timer.timer_mode_mask = timer_mode_mask;
-+
-+	kvm_pmu_cpuid_update(vcpu);
- }
- 
- int kvm_set_cr4(struct kvm_vcpu *vcpu, unsigned long cr4)
-@@ -1656,8 +1658,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 	 * which we perfectly emulate ;-). Any other value should be at least
- 	 * reported, some guests depend on them.
- 	 */
--	case MSR_P6_EVNTSEL0:
--	case MSR_P6_EVNTSEL1:
- 	case MSR_K7_EVNTSEL0:
- 	case MSR_K7_EVNTSEL1:
- 	case MSR_K7_EVNTSEL2:
-@@ -1669,8 +1669,6 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 	/* at least RHEL 4 unconditionally writes to the perfctr registers,
- 	 * so we ignore writes to make it happy.
- 	 */
--	case MSR_P6_PERFCTR0:
--	case MSR_P6_PERFCTR1:
- 	case MSR_K7_PERFCTR0:
- 	case MSR_K7_PERFCTR1:
- 	case MSR_K7_PERFCTR2:
-@@ -1707,6 +1705,8 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 	default:
- 		if (msr && (msr == vcpu->kvm->arch.xen_hvm_config.msr))
- 			return xen_hvm_config(vcpu, data);
-+		if (kvm_pmu_msr(vcpu, msr))
-+			return kvm_pmu_set_msr(vcpu, msr, data);
- 		if (!ignore_msrs) {
- 			pr_unimpl(vcpu, "unhandled wrmsr: 0x%x data %llx\n",
- 				msr, data);
-@@ -1869,10 +1869,6 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_K8_SYSCFG:
- 	case MSR_K7_HWCR:
- 	case MSR_VM_HSAVE_PA:
--	case MSR_P6_PERFCTR0:
--	case MSR_P6_PERFCTR1:
--	case MSR_P6_EVNTSEL0:
--	case MSR_P6_EVNTSEL1:
- 	case MSR_K7_EVNTSEL0:
- 	case MSR_K7_PERFCTR0:
- 	case MSR_K8_INT_PENDING_MSG:
-@@ -1983,6 +1979,8 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 		data = 0xbe702111;
- 		break;
- 	default:
-+		if (kvm_pmu_msr(vcpu, msr))
-+			return kvm_pmu_get_msr(vcpu, msr, pdata);
- 		if (!ignore_msrs) {
- 			pr_unimpl(vcpu, "unhandled rdmsr: 0x%x\n", msr);
- 			return 1;
-@@ -5136,7 +5134,7 @@ static void kvm_timer_init(void)
- 
- static DEFINE_PER_CPU(struct kvm_vcpu *, current_vcpu);
- 
--static int kvm_is_in_guest(void)
-+int kvm_is_in_guest(void)
- {
- 	return percpu_read(current_vcpu) != NULL;
- }
-@@ -5719,6 +5717,10 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 			process_nmi(vcpu);
- 		req_immediate_exit =
- 			kvm_check_request(KVM_REQ_IMMEDIATE_EXIT, vcpu);
-+		if (kvm_check_request(KVM_REQ_PMU, vcpu))
-+			kvm_handle_pmu_event(vcpu);
-+		if (kvm_check_request(KVM_REQ_PMI, vcpu))
-+			kvm_deliver_pmi(vcpu);
- 	}
- 
- 	r = kvm_mmu_reload(vcpu);
-@@ -6459,6 +6461,8 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
- 	kvm_async_pf_hash_reset(vcpu);
- 	vcpu->arch.apf.halted = false;
- 
-+	kvm_pmu_reset(vcpu);
-+
- 	return kvm_x86_ops->vcpu_reset(vcpu);
- }
- 
-@@ -6547,6 +6551,7 @@ int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- 		goto fail_free_mce_banks;
- 
- 	kvm_async_pf_hash_reset(vcpu);
-+	kvm_pmu_init(vcpu);
- 
- 	return 0;
- fail_free_mce_banks:
-@@ -6565,6 +6570,7 @@ void kvm_arch_vcpu_uninit(struct kvm_vcpu *vcpu)
- {
- 	int idx;
- 
-+	kvm_pmu_destroy(vcpu);
- 	kfree(vcpu->arch.mce_banks);
- 	kvm_free_lapic(vcpu);
- 	idx = srcu_read_lock(&vcpu->kvm->srcu);
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index c6a2ec9..40d0878 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -52,6 +52,8 @@
- #define KVM_REQ_STEAL_UPDATE      13
- #define KVM_REQ_NMI               14
- #define KVM_REQ_IMMEDIATE_EXIT    15
-+#define KVM_REQ_PMU               16
-+#define KVM_REQ_PMI               17
- 
- #define KVM_USERSPACE_IRQ_SOURCE_ID	0
- 
+ 			pr_cont("erratum AAJ80 worked around, ");
+ 		}
 -- 
 1.7.5.3
 
