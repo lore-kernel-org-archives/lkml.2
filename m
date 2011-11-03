@@ -1,2023 +1,698 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab1KCGUB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 02:20:01 -0400
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:49239
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751255Ab1KCGT6 (ORCPT
+	id S1754315Ab1KCGUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 02:20:51 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:49621 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab1KCGUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 02:19:58 -0400
-X-SpamScore: 4
-X-BigFish: VPS4(zzc8kzz1202hzz8275bhz32i2a8h668h839h93fh)
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-Subject: [PATCH 1/11] MFD: DA9052 MFD core module v8
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "sameo@openedhand.com" <sameo@openedhand.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 3 Nov 2011 11:44:25 +0530
-Message-ID: <1320300865.2092.10.camel@dhruva>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+	Thu, 3 Nov 2011 02:20:46 -0400
+Date: Thu, 3 Nov 2011 17:20:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>, Linus <torvalds@linux-foundation.org>
+Subject: linux-next: Tree for Nov 3
+Message-Id: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Nov_2011_17_20_36_+1100_oD/ge2nS4c97vzls"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DA9052/53 is a highly integrated PMIC subsystem with supply domain
-flexibility to support wide range of high performance application.
+--Signature=_Thu__3_Nov_2011_17_20_36_+1100_oD/ge2nS4c97vzls
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
-control and other functionality.
+Hi all,
 
-Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
----
-Changes since v8:
-- Add read/write mask flag for SPI 
-Changes since v7:
-- Replace ADC polling with interrupt mechanism
-- Move macros related to battery module IRQs to header file
-Changes since v6:
-- Move inlined device I/O functions to header file
-Changes since v5:
-- Inline device I/O
-- Unhandle IRQ return IRQ_NONE
-- Remove register address conversion
-Changes since v4:
-- Modify KConfig 
-- Use device registration for determining chip id
-- Remove preprocessor directive with runtime bustype variable
-- Replace module_init() for spi with subsys_initcall()
-- Remove platform string from MODULE_ALIAS of spi module.
-Changes since v3:
-- Code re-factored to use REGMAP API.
-- Add Battery resources.
-- da9052_set_bits() and da9052_clear_bits() replaced by da9052_reg_update().
-- Add support for DA9053 PMIC
-Changes since v2:
-- Drop da9052_irqs[] table.
-- Move struct da9052_subdev_info[].
-- Remove initialization of static member.
-- Care for NULL pdata init().
-- Check removal of subdevices on errors.
-- Remove open source spi code.
-- Remove '_spi' from the driver name.
-- Move tbat_lookup table from header file.
-- Remove irq.h 
-- Remove num_gpio variable from pdata
----
- drivers/mfd/Kconfig               |   26 ++
- drivers/mfd/Makefile              |    7 +
- drivers/mfd/da9052-core.c         |  371 ++++++++++++++++++
- drivers/mfd/da9052-i2c.c          |  144 +++++++
- drivers/mfd/da9052-irq.c          |  175 +++++++++
- drivers/mfd/da9052-spi.c          |  169 ++++++++
- include/linux/mfd/da9052/da9052.h |  154 ++++++++
- include/linux/mfd/da9052/pdata.h  |   42 ++
- include/linux/mfd/da9052/reg.h    |  777 +++++++++++++++++++++++++++++++++++++
- 9 files changed, 1865 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/da9052-core.c
- create mode 100644 drivers/mfd/da9052-i2c.c
- create mode 100644 drivers/mfd/da9052-irq.c
- create mode 100644 drivers/mfd/da9052-spi.c
- create mode 100644 include/linux/mfd/da9052/da9052.h
- create mode 100644 include/linux/mfd/da9052/pdata.h
- create mode 100644 include/linux/mfd/da9052/reg.h
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index f1391c2..268f03b 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -328,6 +328,32 @@ config PMIC_DA903X
- 	  individual components like LCD backlight, voltage regulators,
- 	  LEDs and battery-charger under the corresponding menus.
- 
-+config PMIC_DA9052
-+	bool
-+	select MFD_CORE
-+
-+config MFD_DA9052_SPI
-+	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with SPI"
-+	select REGMAP_SPI
-+	select PMIC_DA9052
-+	depends on SPI_MASTER=y
-+	help
-+	  Support for the Dialog Semiconductor DA9052 PMIC
-+	  when controlled using SPI. This driver provides common support
-+	  for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
-+
-+config MFD_DA9052_I2C
-+	bool "Support Dialog Semiconductor DA9052/53 PMIC variants with I2C"
-+	select REGMAP_I2C
-+	select PMIC_DA9052
-+	depends on I2C=y
-+	help
-+	  Support for the Dialog Semiconductor DA9052 PMIC
-+	  when controlled using I2C. This driver provides common support
-+	  for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
-+
- config PMIC_ADP5520
- 	bool "Analog Devices ADP5520/01 MFD PMIC Core Support"
- 	depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index b2292eb..2867276 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -67,6 +67,13 @@ endif
- obj-$(CONFIG_UCB1400_CORE)	+= ucb1400_core.o
- 
- obj-$(CONFIG_PMIC_DA903X)	+= da903x.o
-+
-+da9052-objs			:= da9052-core.o da9052-irq.o
-+obj-$(CONFIG_PMIC_DA9052)	+= da9052.o
-+
-+obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
-+obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
-+
- max8925-objs			:= max8925-core.o max8925-i2c.o
- obj-$(CONFIG_MFD_MAX8925)	+= max8925.o
- obj-$(CONFIG_MFD_MAX8997)	+= max8997.o max8997-irq.o
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-new file mode 100644
-index 0000000..c6ad4c3
---- /dev/null
-+++ b/drivers/mfd/da9052-core.c
-@@ -0,0 +1,371 @@
-+/*
-+ * Device access for Dialog DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+#include <linux/mutex.h>
-+#include <linux/mfd/core.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+#define DA9052_IRQ_ALARM	5
-+#define DA9052_IRQ_NONKEY	8
-+#define DA9052_IRQ_PENDOWN	14
-+#define DA9052_IRQ_TSIREADY	15
-+
-+/*
-+ * TBAT look-up table is computed from the R90 reg (8 bit register)
-+ * reading as below. The battery temperature is in milliCentigrade
-+ * TBAT = (1/(t1+1/298) - 273) * 1000 mC
-+ * where t1 = (1/B)* ln(( ADCval * 2.5)/(R25*ITBAT*255))
-+ * Default values are R25 = 10e3, B = 3380, ITBAT = 50e-6
-+ * Example:
-+ * R25=10E3, B=3380, ITBAT=50e-6, ADCVAL=62d calculates
-+ * TBAT = 20015 mili degrees Centrigrade
-+ *
-+*/
-+static const int32_t tbat_lookup[255] = {
-+	183258, 144221, 124334, 111336, 101826, 94397, 88343, 83257,
-+	78889, 75071, 71688, 68656, 65914, 63414, 61120, 59001,
-+	570366, 55204, 53490, 51881, 50364, 48931, 47574, 46285,
-+	45059, 43889, 42772, 41703, 40678, 39694, 38748, 37838,
-+	36961, 36115, 35297, 34507, 33743, 33002, 32284, 31588,
-+	30911, 30254, 29615, 28994, 28389, 27799, 27225, 26664,
-+	26117, 25584, 25062, 24553, 24054, 23567, 23091, 22624,
-+	22167, 21719, 21281, 20851, 20429, 20015, 19610, 19211,
-+	18820, 18436, 18058, 17688, 17323, 16965, 16612, 16266,
-+	15925, 15589, 15259, 14933, 14613, 14298, 13987, 13681,
-+	13379, 13082, 12788, 12499, 12214, 11933, 11655, 11382,
-+	11112, 10845, 10582, 10322, 10066, 9812, 9562, 9315,
-+	9071, 8830, 8591, 8356, 8123, 7893, 7665, 7440,
-+	7218, 6998, 6780, 6565, 6352, 6141, 5933, 5726,
-+	5522, 5320, 5120, 4922, 4726, 4532, 4340, 4149,
-+	3961, 3774, 3589, 3406, 3225, 3045, 2867, 2690,
-+	2516, 2342, 2170, 2000, 1831, 1664, 1498, 1334,
-+	1171, 1009, 849, 690, 532, 376, 221, 67,
-+	-84, -236, -386, -535, -683, -830, -975, -1119,
-+	-1263, -1405, -1546, -1686, -1825, -1964, -2101, -2237,
-+	-2372, -2506, -2639, -2771, -2902, -3033, -3162, -3291,
-+	-3418, -3545, -3671, -3796, -3920, -4044, -4166, -4288,
-+	-4409, -4529, -4649, -4767, -4885, -5002, -5119, -5235,
-+	-5349, -5464, -5577, -5690, -5802, -5913, -6024, -6134,
-+	-6244, -6352, -6461, -6568, -6675, -6781, -6887, -6992,
-+	-7096, -7200, -7303, -7406, -7508, -7609, -7710, -7810,
-+	-7910, -8009, -8108, -8206, -8304, -8401, -8497, -8593,
-+	-8689, -8784, -8878, -8972, -9066, -9159, -9251, -9343,
-+	-9435, -9526, -9617, -9707, -9796, -9886, -9975, -10063,
-+	-10151, -10238, -10325, -10412, -10839, -10923, -11007, -11090,
-+	-11173, -11256, -11338, -11420, -11501, -11583, -11663, -11744,
-+	-11823, -11903, -11982
-+};
-+
-+static const u8 chan_mux[DA9052_ADC_VBBAT + 1] = {
-+	[DA9052_ADC_VDDOUT]	= DA9052_ADC_MAN_MUXSEL_VDDOUT,
-+	[DA9052_ADC_ICH]	= DA9052_ADC_MAN_MUXSEL_ICH,
-+	[DA9052_ADC_TBAT]	= DA9052_ADC_MAN_MUXSEL_TBAT,
-+	[DA9052_ADC_VBAT]	= DA9052_ADC_MAN_MUXSEL_VBAT,
-+	[DA9052_ADC_IN4]	= DA9052_ADC_MAN_MUXSEL_AD4,
-+	[DA9052_ADC_IN5]	= DA9052_ADC_MAN_MUXSEL_AD5,
-+	[DA9052_ADC_IN6]	= DA9052_ADC_MAN_MUXSEL_AD6,
-+	[DA9052_ADC_VBBAT]	= DA9052_ADC_MAN_MUXSEL_VBBAT
-+};
-+
-+enum da9052_auxadc {
-+	VDDOUT = DA9052_ADC_VDDOUT,
-+	ICH = DA9052_ADC_ICH,
-+	TBAT = DA9052_ADC_TBAT,
-+	VBAT = DA9052_ADC_VBAT,
-+	IN4 = DA9052_ADC_IN4,
-+	IN5 = DA9052_ADC_IN5,
-+	IN6 = DA9052_ADC_IN6,
-+	VBBAT = DA9052_ADC_VBBAT,
-+};
-+
-+struct da9052_auxadc_req {
-+	struct list_head list;
-+	enum da9052_auxadc input;
-+	struct completion done;
-+};
-+
-+int da9052_adc_manual_read(struct da9052 *da9052, unsigned char channel)
-+{
-+	struct da9052_auxadc_req *req;
-+	int ret;
-+	unsigned short calc_data;
-+	unsigned short data;
-+	unsigned char mux_sel;
-+
-+	req = kzalloc(sizeof(*req), GFP_KERNEL);
-+	if (!req)
-+		return -ENOMEM;
-+
-+	init_completion(&req->done);
-+	req->input = channel;
-+
-+	if (channel > DA9052_ADC_VBBAT)
-+		return -EINVAL;
-+
-+	mutex_lock(&da9052->auxadc_lock);
-+
-+	/* Channel gets activated on enabling the Conversion bit */
-+	mux_sel = chan_mux[channel] | DA9052_ADC_MAN_MAN_CONV;
-+
-+	if (da9052->auxadc_active) {
-+		ret = -EBUSY;
-+		goto err;
-+	}
-+
-+	/* Enqueue the request */
-+	list_add(&req->list, &da9052->auxadc_pending);
-+
-+	ret = da9052_reg_write(da9052, DA9052_ADC_MAN_REG, mux_sel);
-+	if (ret < 0)
-+		goto err;
-+
-+	da9052->auxadc_active = channel;
-+
-+	mutex_unlock(&da9052->auxadc_lock);
-+
-+	/* Wait for an interrupt */
-+	wait_for_completion_timeout(&req->done, msecs_to_jiffies(500));
-+
-+	mutex_lock(&da9052->auxadc_lock);
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_RES_H_REG);
-+	if (ret < 0)
-+		return IRQ_NONE;
-+
-+	calc_data = (unsigned short)ret;
-+	data = calc_data << 2;
-+
-+	ret = da9052_reg_read(da9052, DA9052_ADC_RES_L_REG);
-+	if (ret < 0)
-+		return IRQ_NONE;
-+
-+	calc_data = (unsigned short)(ret & DA9052_ADC_RES_LSB);
-+	data |= calc_data;
-+
-+	ret = data;
-+
-+	list_del(&req->list);
-+err:
-+	mutex_unlock(&da9052->auxadc_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(da9052_adc_manual_read);
-+
-+int da9052_adc_temperature_read(struct da9052 *da9052)
-+{
-+	int tbat;
-+
-+	tbat = da9052_reg_read(da9052, DA9052_TBAT_RES_REG);
-+
-+	if (tbat < 0)
-+		return tbat;
-+
-+	if (tbat == 0)
-+		tbat = 56;
-+
-+	/* ARRAY_SIZE check is not needed since TBAT is a 8-bit register */
-+	return tbat_lookup[tbat - 1];
-+}
-+EXPORT_SYMBOL_GPL(da9052_adc_temperature_read);
-+
-+static struct resource da9052_rtc_resource = {
-+	.name = "ALM",
-+	.start = DA9052_IRQ_ALARM,
-+	.end   = DA9052_IRQ_ALARM,
-+	.flags = IORESOURCE_IRQ,
-+};
-+
-+static struct resource da9052_onkey_resource = {
-+	.name = "ONKEY",
-+	.start = DA9052_IRQ_NONKEY,
-+	.end   = DA9052_IRQ_NONKEY,
-+	.flags = IORESOURCE_IRQ,
-+};
-+
-+static struct resource da9052_power_resources[] = {
-+	{
-+		.name = "BATT TEMP",
-+		.start = DA9052_IRQ_TBAT,
-+		.end   = DA9052_IRQ_TBAT,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "DCIN DET",
-+		.start = DA9052_IRQ_DCIN,
-+		.end   = DA9052_IRQ_DCIN,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "DCIN REM",
-+		.start = DA9052_IRQ_DCINREM,
-+		.end   = DA9052_IRQ_DCINREM,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "VBUS DET",
-+		.start = DA9052_IRQ_VBUS,
-+		.end   = DA9052_IRQ_VBUS,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "VBUS REM",
-+		.start = DA9052_IRQ_VBUSREM,
-+		.end   = DA9052_IRQ_VBUSREM,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "CHG END",
-+		.start = DA9052_IRQ_CHGEND,
-+		.end   = DA9052_IRQ_CHGEND,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource da9052_tsi_resources[] = {
-+	{
-+		.name = "PENDWN",
-+		.start = DA9052_IRQ_PENDOWN,
-+		.end   = DA9052_IRQ_PENDOWN,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+	{
-+		.name = "TSIRDY",
-+		.start = DA9052_IRQ_TSIREADY,
-+		.end   = DA9052_IRQ_TSIREADY,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+int da9052_add_regulator_devices(struct da9052 *da9052,
-+				  struct da9052_pdata *pdata)
-+{
-+	struct platform_device *pdev;
-+	int i, ret;
-+
-+	for (i = 0; i < pdata->num_regulators; i++) {
-+		pdev = platform_device_alloc("da9052-regulator", i);
-+		if (!pdev)
-+			return -ENOMEM;
-+
-+		pdev->dev.parent = da9052->dev;
-+		ret = platform_device_add(pdev);
-+		if (ret) {
-+			platform_device_put(pdev);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static struct mfd_cell __initdata da9052_subdev_info[] = {
-+	{"da9052-onkey", .resources = &da9052_onkey_resource,
-+	 .num_resources = 1},
-+	{"da9052-rtc", .resources = &da9052_rtc_resource,
-+	 .num_resources = 1},
-+	{"da9052-gpio"},
-+	{"da9052-hwmon"},
-+	{"da9052-leds"},
-+	{"da9052-wled1"},
-+	{"da9052-wled2"},
-+	{"da9052-wled3"},
-+	{"da9052-tsi", .resources = da9052_tsi_resources,
-+	 .num_resources = ARRAY_SIZE(da9052_tsi_resources)},
-+	{"da9052-bat", .resources = da9052_power_resources,
-+	 .num_resources = ARRAY_SIZE(da9052_power_resources)},
-+	{"da9052-watchdog"},
-+};
-+
-+static irqreturn_t da9052_auxadc_irq(int irq, void *irq_data)
-+{
-+	struct da9052 *da9052 = irq_data;
-+	struct da9052_auxadc_req *req;
-+
-+	mutex_lock(&da9052->auxadc_lock);
-+
-+	/* Wake up any threads waiting for this request */
-+	list_for_each_entry(req, &da9052->auxadc_pending, list) {
-+		if (req->input == da9052->auxadc_active)
-+			complete(&req->done);
-+	}
-+	da9052->auxadc_active = 0;
-+
-+	mutex_unlock(&da9052->auxadc_lock);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+int da9052_device_init(struct da9052 *da9052, u8 chip_id)
-+{
-+	struct da9052_pdata *pdata = da9052->dev->platform_data;
-+	int ret;
-+
-+	mutex_init(&da9052->io_lock);
-+	mutex_init(&da9052->auxadc_lock);
-+
-+	INIT_LIST_HEAD(&da9052->auxadc_pending);
-+
-+	if (pdata->init != NULL)
-+		pdata->init(da9052);
-+
-+	da9052->chip_id = chip_id;
-+	da9052->auxadc_active  = 0;
-+
-+	ret = da9052_irq_init(da9052, pdata);
-+	if (ret != 0)
-+		goto err;
-+
-+	ret = da9052_add_regulator_devices(da9052, pdata);
-+	if (ret)
-+		goto err;
-+
-+	ret = request_threaded_irq(pdata->irq_base + 13,
-+				   NULL, da9052_auxadc_irq,
-+				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+				   "adc irq", da9052);
-+	if (ret != 0) {
-+		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
-+		da9052->auxadc_active = -1;
-+	}
-+
-+	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
-+			      ARRAY_SIZE(da9052_subdev_info), NULL, 0);
-+	if (ret)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	mfd_remove_devices(da9052->dev);
-+	return ret;
-+}
-+
-+void da9052_device_exit(struct da9052 *da9052)
-+{
-+	mfd_remove_devices(da9052->dev);
-+	da9052_irq_exit(da9052);
-+}
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("DA9052 MFD Core");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
-new file mode 100644
-index 0000000..8b9c3b6
---- /dev/null
-+++ b/drivers/mfd/da9052-i2c.c
-@@ -0,0 +1,144 @@
-+/*
-+ * I2C access for DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/input.h>
-+#include <linux/mfd/core.h>
-+#include <linux/i2c.h>
-+#include <linux/err.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+static int da9052_i2c_enable_multiwrite(struct da9052 *da9052)
-+{
-+	int reg_val, ret;
-+
-+	ret = regmap_read(da9052->regmap, DA9052_CONTROL_B_REG, &reg_val);
-+	if (ret < 0)
-+		return ret;
-+
-+	if (reg_val & DA9052_CONTROL_B_WRITEMODE) {
-+		reg_val &= ~DA9052_CONTROL_B_WRITEMODE;
-+		ret = regmap_write(da9052->regmap, DA9052_CONTROL_B_REG,
-+				   reg_val);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct regmap_config da9052_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int __devinit da9052_i2c_probe(struct i2c_client *client,
-+				       const struct i2c_device_id *id)
-+{
-+	struct da9052 *da9052_i2c;
-+	int ret;
-+
-+	da9052_i2c = kzalloc(sizeof(struct da9052), GFP_KERNEL);
-+	if (!da9052_i2c)
-+		return -ENOMEM;
-+
-+	if (!i2c_check_functionality(client->adapter,
-+				     I2C_FUNC_SMBUS_BYTE_DATA)) {
-+		dev_info(&client->dev, "Error in %s:i2c_check_functionality\n",
-+			 __func__);
-+		return -ENODEV;
-+	}
-+
-+	da9052_i2c->bustype = BUS_I2C;
-+	da9052_i2c->dev = &client->dev;
-+
-+	i2c_set_clientdata(client, da9052_i2c);
-+
-+	da9052_i2c->regmap = regmap_init_i2c(client, &da9052_regmap_config);
-+	if (IS_ERR(da9052_i2c->regmap)) {
-+		ret = PTR_ERR(da9052_i2c->regmap);
-+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		goto err;
-+	}
-+
-+	ret = da9052_i2c_enable_multiwrite(da9052_i2c);
-+	if (ret < 0)
-+		goto err;
-+
-+	ret = da9052_device_init(da9052_i2c, id->driver_data);
-+	if (ret != 0)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	kfree(da9052_i2c);
-+	return ret;
-+}
-+
-+static int da9052_i2c_remove(struct i2c_client *client)
-+{
-+	struct da9052 *da9052 = i2c_get_clientdata(client);
-+
-+	da9052_device_exit(da9052);
-+	kfree(da9052);
-+
-+	return 0;
-+}
-+
-+static struct i2c_device_id da9052_i2c_id[] = {
-+	{"da9052", DA9052},
-+	{"da9053-aa", DA9053_AA},
-+	{"da9053-ba", DA9053_BA},
-+	{"da9053-bb", DA9053_BB},
-+	{}
-+};
-+
-+static struct i2c_driver da9052_i2c_driver = {
-+	.probe = da9052_i2c_probe,
-+	.remove = da9052_i2c_remove,
-+	.id_table = da9052_i2c_id,
-+	.driver = {
-+		.name = "da9052",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9052_i2c_init(void)
-+{
-+	int ret;
-+
-+	ret = i2c_add_driver(&da9052_i2c_driver);
-+	if (ret != 0) {
-+		pr_err("DA9052 I2C registration failed %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+subsys_initcall(da9052_i2c_init);
-+
-+static void __exit da9052_i2c_exit(void)
-+{
-+	i2c_del_driver(&da9052_i2c_driver);
-+}
-+module_exit(da9052_i2c_exit);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("I2C driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/mfd/da9052-irq.c b/drivers/mfd/da9052-irq.c
-new file mode 100644
-index 0000000..01d49df
---- /dev/null
-+++ b/drivers/mfd/da9052-irq.c
-@@ -0,0 +1,175 @@
-+/*
-+ * Interrupt controller support for Dilaog DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/irq.h>
-+#include <linux/delay.h>
-+#include <linux/mfd/core.h>
-+#include <linux/interrupt.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/pdata.h>
-+
-+#define DA9052_FIXME() {udelay(50); }
-+
-+static void da9052_irq_lock(struct irq_data *data)
-+{
-+	struct da9052 *da9052 = irq_data_get_irq_chip_data(data);
-+
-+	mutex_lock(&da9052->irq_lock);
-+}
-+
-+static void da9052_irq_sync_unlock(struct irq_data *data)
-+{
-+	struct da9052 *da9052 = irq_data_get_irq_chip_data(data);
-+	unsigned int offset, v;
-+
-+	offset = (data->irq - da9052->irq_base) / 8;
-+	v = (da9052->events_mask >> (offset * 8)) & 0xff;
-+
-+	da9052_reg_write(da9052, DA9052_IRQ_MASK_A_REG + offset, v);
-+
-+	mutex_unlock(&da9052->irq_lock);
-+}
-+
-+static void da9052_irq_unmask(struct irq_data *data)
-+{
-+	struct da9052 *da9052 = irq_data_get_irq_chip_data(data);
-+	unsigned int mask;
-+
-+	mask = 1 << ((data->irq - da9052->irq_base) % 8);
-+
-+	da9052->events_mask &= ~mask;
-+}
-+
-+static void da9052_irq_mask(struct irq_data *data)
-+{
-+	struct da9052 *da9052 = irq_data_get_irq_chip_data(data);
-+	unsigned int mask;
-+
-+	mask = 1 << ((data->irq - da9052->irq_base) % 8);
-+
-+	da9052->events_mask |= mask;
-+}
-+
-+int da9052_read_events(struct da9052 *da9052, unsigned char reg,
-+			unsigned int *events)
-+{
-+	uint8_t v[4] = {0, 0, 0, 0};
-+	int ret;
-+
-+	ret = da9052_group_read(da9052, reg, 4, v);
-+	if (ret < 0)
-+		return ret;
-+
-+	*events = (v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0];
-+
-+	return 0;
-+}
-+
-+static irqreturn_t da9052_irq_thread(int irq, void *data)
-+{
-+	struct da9052 *da9052 = data;
-+	uint8_t v[4] = {0xFF, 0xFF, 0xFF, 0xFF};
-+	unsigned short i;
-+	unsigned int events;
-+
-+	if (da9052_read_events(da9052, DA9052_EVENT_A_REG, &events))
-+		goto err;
-+
-+	events &= ~da9052->events_mask;
-+
-+	if (events == 0)
-+		goto err;
-+
-+	for (i = 0; i < 32; i++) {
-+		if (events & (1 << i))
-+			handle_nested_irq(da9052->irq_base + i);
-+	}
-+
-+	da9052_group_write(da9052, DA9052_EVENT_A_REG, 4, v);
-+
-+	if (da9052->chip_id == DA9052 || da9052->chip_id == DA9053_AA)
-+		DA9052_FIXME();
-+
-+	return IRQ_HANDLED;
-+
-+err:
-+	return IRQ_NONE;
-+}
-+
-+static struct irq_chip da9052_irq_chip = {
-+	.name = "da9052",
-+	.irq_bus_lock = da9052_irq_lock,
-+	.irq_bus_sync_unlock = da9052_irq_sync_unlock,
-+	.irq_mask = da9052_irq_mask,
-+	.irq_unmask = da9052_irq_unmask,
-+};
-+
-+int da9052_irq_init(struct da9052 *da9052, struct da9052_pdata *pdata)
-+{
-+	int ret, cur_irq, events;
-+	uint8_t v[4] = {0xC0, 0x06, 0xFF, 0xFF};
-+
-+	da9052->chip_irq = pdata->irq;
-+	da9052->irq_base = pdata->irq_base;
-+
-+	if (!da9052->chip_irq) {
-+		dev_err(da9052->dev, "No IRQ configured\n");
-+		return -EINVAL;
-+	}
-+
-+	mutex_init(&da9052->irq_lock);
-+
-+	/* Mask un-required IRQs */
-+	da9052_group_write(da9052, DA9052_IRQ_MASK_A_REG, 4, v);
-+
-+	da9052_read_events(da9052, DA9052_IRQ_MASK_A_REG, &events);
-+	da9052->events_mask = events;
-+
-+	for (cur_irq = da9052->irq_base; cur_irq < 32 + da9052->irq_base;
-+	     cur_irq++) {
-+		irq_set_chip_data(cur_irq, da9052);
-+		irq_set_chip_and_handler(cur_irq, &da9052_irq_chip,
-+					 handle_simple_irq);
-+		irq_set_nested_thread(cur_irq, 1);
-+
-+		/* ARM needs us to explicitly flag the IRQ as valid
-+		 * and will set them noprobe when we do so. */
-+#ifdef CONFIG_ARM
-+		set_irq_flags(cur_irq, IRQF_VALID);
-+#else
-+		set_irq_noprobe(cur_irq);
-+#endif
-+	}
-+
-+	ret = request_threaded_irq(da9052->chip_irq, NULL, da9052_irq_thread,
-+				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+				   "da9052", da9052);
-+	if (ret != 0) {
-+		dev_err(da9052->dev, "Failed to request IRQ %d: %d\n",
-+			da9052->chip_irq, ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+void da9052_irq_exit(struct da9052 *da9052)
-+{
-+	if (da9052->chip_irq)
-+		free_irq(da9052->chip_irq, da9052);
-+}
-diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
-new file mode 100644
-index 0000000..64674d5
---- /dev/null
-+++ b/drivers/mfd/da9052-spi.c
-@@ -0,0 +1,169 @@
-+/*
-+ * SPI access for Dialog DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/input.h>
-+#include <linux/mfd/core.h>
-+#include <linux/spi/spi.h>
-+#include <linux/err.h>
-+
-+#include <linux/mfd/da9052/da9052.h>
-+#include <linux/mfd/da9052/reg.h>
-+
-+static struct regmap_config da9052_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+	.read_flag_mask = 1,
-+	.write_flag_mask = 0,
-+};
-+
-+static int da9052_spi_probe(struct spi_device *spi)
-+{
-+	int ret;
-+	u8 chip_id = 0;
-+	struct da9052 *da9052_spi = kzalloc(sizeof(struct da9052), GFP_KERNEL);
-+
-+	if (!da9052_spi)
-+		return -ENOMEM;
-+
-+	if (strcmp(spi->modalias, "da9052") == 0)
-+		chip_id = DA9052;
-+	else if (strcmp(spi->modalias, "da9053-aa") == 0)
-+		chip_id = DA9053_AA;
-+	else if (strcmp(spi->modalias, "da9053-ba") == 0)
-+		chip_id = DA9053_BA;
-+	else if (strcmp(spi->modalias, "da9053-bb") == 0)
-+		chip_id = DA9053_BB;
-+
-+	spi->mode = SPI_MODE_0 | SPI_CPOL;
-+	spi->bits_per_word = 8;
-+	spi_setup(spi);
-+
-+	da9052_spi->bustype = BUS_SPI;
-+	da9052_spi->dev = &spi->dev;
-+	da9052_spi->spi_dev = spi;
-+
-+	dev_set_drvdata(&spi->dev, da9052_spi);
-+
-+	da9052_spi->regmap = regmap_init_spi(spi, &da9052_regmap_config);
-+	if (IS_ERR(da9052_spi->regmap)) {
-+		ret = PTR_ERR(da9052_spi->regmap);
-+		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		goto err;
-+	}
-+
-+	ret = da9052_device_init(da9052_spi, chip_id);
-+	if (ret != 0)
-+		goto err;
-+
-+	return 0;
-+
-+err:
-+	kfree(da9052_spi);
-+	return ret;
-+}
-+
-+static int da9052_spi_remove(struct spi_device *spi)
-+{
-+	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
-+
-+	da9052_device_exit(da9052);
-+	kfree(da9052);
-+
-+	return 0;
-+}
-+
-+static struct spi_driver da9052_spi_driver = {
-+	.probe = da9052_spi_probe,
-+	.remove = __devexit_p(da9052_spi_remove),
-+	.driver = {
-+		.name = "da9052",
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static struct spi_driver da9053_aa_spi_driver = {
-+	.probe = da9052_spi_probe,
-+	.remove = __devexit_p(da9052_spi_remove),
-+	.driver = {
-+		.name = "da9053-aa",
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static struct spi_driver da9053_ba_spi_driver = {
-+	.probe = da9052_spi_probe,
-+	.remove = __devexit_p(da9052_spi_remove),
-+	.driver = {
-+		.name = "da9053-ba",
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static struct spi_driver da9053_bb_spi_driver = {
-+	.probe = da9052_spi_probe,
-+	.remove = __devexit_p(da9052_spi_remove),
-+	.driver = {
-+		.name = "da9053-bb",
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static int __init da9052_spi_init(void)
-+{
-+	int ret;
-+
-+	ret = spi_register_driver(&da9052_spi_driver);
-+	if (ret != 0) {
-+		pr_err("Failed to register DA9052 SPI driver, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = spi_register_driver(&da9053_aa_spi_driver);
-+	if (ret != 0) {
-+		pr_err("Failed to register DA9053-AA SPI driver, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = spi_register_driver(&da9053_ba_spi_driver);
-+	if (ret != 0) {
-+		pr_err("Failed to register DA9053-BA SPI driver, %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = spi_register_driver(&da9053_bb_spi_driver);
-+	if (ret != 0) {
-+		pr_err("Failed to register DA9053-BB SPI driver, %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+subsys_initcall(da9052_spi_init);
-+
-+static void __exit da9052_spi_exit(void)
-+{
-+	spi_unregister_driver(&da9052_spi_driver);
-+}
-+module_exit(da9052_spi_exit);
-+
-+MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-+MODULE_DESCRIPTION("SPI driver for Dialog DA9052 PMIC");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/mfd/da9052/da9052.h b/include/linux/mfd/da9052/da9052.h
-new file mode 100644
-index 0000000..8c085cc
---- /dev/null
-+++ b/include/linux/mfd/da9052/da9052.h
-@@ -0,0 +1,154 @@
-+/*
-+ * da9052 declarations for DA952 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __MFD_DA9052_DA9052_H
-+#define __MFD_DA9052_DA9052_H
-+
-+#include <linux/interrupt.h>
-+#include <linux/regmap.h>
-+#include <linux/slab.h>
-+#include <linux/completion.h>
-+#include <linux/list.h>
-+#include <linux/mfd/core.h>
-+
-+#include <linux/mfd/da9052/reg.h>
-+
-+/* HWMON Channel Definations */
-+#define DA9052_ADC_VDDOUT	0
-+#define DA9052_ADC_ICH		1
-+#define DA9052_ADC_TBAT	2
-+#define DA9052_ADC_VBAT	3
-+#define DA9052_ADC_IN4		4
-+#define DA9052_ADC_IN5		5
-+#define DA9052_ADC_IN6		6
-+#define DA9052_ADC_TSI		7
-+#define DA9052_ADC_TJUNC	8
-+#define DA9052_ADC_VBBAT	9
-+
-+#define DA9052_MASK_ADC_EOM	0x2000
-+
-+#define DA9052_IRQ_DCIN	0
-+#define DA9052_IRQ_VBUS	1
-+#define DA9052_IRQ_DCINREM	2
-+#define DA9052_IRQ_VBUSREM	3
-+#define DA9052_IRQ_CHGEND	11
-+#define DA9052_IRQ_TBAT	12
-+
-+enum da9052_chip_id {
-+	DA9052,
-+	DA9053_AA,
-+	DA9053_BA,
-+	DA9053_BB,
-+};
-+
-+struct da9052_pdata;
-+
-+struct da9052 {
-+	struct mutex io_lock;
-+	struct mutex irq_lock;
-+	struct mutex auxadc_lock;
-+
-+	struct device *dev;
-+	struct spi_device *spi_dev;
-+	struct i2c_client *i2c_client;
-+	struct regmap *regmap;
-+
-+	struct list_head auxadc_pending;
-+	u16 auxadc_active;
-+
-+	int irq_base;
-+	u8 bustype;
-+	u8 chip_id;
-+	u32 events_mask;
-+
-+	int chip_irq;
-+};
-+
-+/* ADC API */
-+int da9052_adc_manual_read(struct da9052 *da9052,
-+			    unsigned char channel);
-+int da9052_adc_temperature_read(struct da9052 *da9052);
-+
-+/* Device I/O API */
-+static inline int da9052_reg_read(struct da9052 *da9052, unsigned char reg)
-+{
-+	int val, ret;
-+
-+	if (reg > DA9052_MAX_REG_CNT) {
-+		dev_err(da9052->dev, "invalid reg %x\n", reg);
-+		return -EINVAL;
-+	}
-+
-+	ret = regmap_read(da9052->regmap, reg, &val);
-+	if (ret < 0)
-+		return ret;
-+	return val;
-+}
-+
-+static inline int da9052_reg_write(struct da9052 *da9052, unsigned char reg,
-+				    unsigned char val)
-+{
-+	if (reg > DA9052_MAX_REG_CNT) {
-+		dev_err(da9052->dev, "invalid reg %x\n", reg);
-+		return -EINVAL;
-+	}
-+
-+	return regmap_write(da9052->regmap, reg, val);
-+}
-+
-+static inline int da9052_group_read(struct da9052 *da9052, unsigned char reg,
-+				     unsigned reg_cnt, unsigned char *val)
-+{
-+	if (reg > DA9052_MAX_REG_CNT) {
-+		dev_err(da9052->dev, "invalid reg %x\n", reg);
-+		return -EINVAL;
-+	}
-+
-+	return regmap_bulk_read(da9052->regmap, reg, val, reg_cnt);
-+}
-+
-+static inline int da9052_group_write(struct da9052 *da9052, unsigned char reg,
-+				      unsigned reg_cnt, unsigned char *val)
-+{
-+	return regmap_raw_write(da9052->regmap, reg, val, reg_cnt);
-+}
-+
-+static inline int da9052_reg_update(struct da9052 *da9052, unsigned char reg,
-+				     unsigned char bit_mask,
-+				     unsigned char reg_val)
-+{
-+	if (reg > DA9052_MAX_REG_CNT) {
-+		dev_err(da9052->dev, "invalid reg %x\n", reg);
-+		return -EINVAL;
-+	}
-+
-+	return regmap_update_bits(da9052->regmap, reg, bit_mask, reg_val);
-+}
-+
-+int da9052_device_init(struct da9052 *da9052, u8 chip_id);
-+void da9052_device_exit(struct da9052 *da9052);
-+
-+int da9052_irq_init(struct da9052 *da9052, struct da9052_pdata *pdata);
-+void da9052_irq_exit(struct da9052 *da9052);
-+
-+#endif /* __MFD_DA9052_DA9052_H */
-diff --git a/include/linux/mfd/da9052/pdata.h b/include/linux/mfd/da9052/pdata.h
-new file mode 100644
-index 0000000..b56aa7a
---- /dev/null
-+++ b/include/linux/mfd/da9052/pdata.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Platform data declarations for DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __MFD_DA9052_PDATA_H__
-+#define __MFD_DA9052_PDATA_H__
-+
-+#define DA9052_MAX_REGULATORS	15
-+
-+struct da9052;
-+
-+struct da9052_pdata {
-+	struct led_platform_data *pled;
-+	int (*init) (struct da9052 *da9052);
-+	int irq;
-+	int irq_base;
-+	int num_regulators;
-+	int gpio_base;
-+	int use_for_apm;
-+	struct regulator_init_data *regulators[DA9052_MAX_REGULATORS];
-+};
-+
-+#endif
-diff --git a/include/linux/mfd/da9052/reg.h b/include/linux/mfd/da9052/reg.h
-new file mode 100644
-index 0000000..8647522
---- /dev/null
-+++ b/include/linux/mfd/da9052/reg.h
-@@ -0,0 +1,777 @@
-+/*
-+ * Register declarations for DA9052 PMICs.
-+ *
-+ * Copyright(c) 2011 Dialog Semiconductor Ltd.
-+ *
-+ * Author: David Dajun Chen <dchen@diasemi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_MFD_DA9052_REG_H
-+#define __LINUX_MFD_DA9052_REG_H
-+
-+#define DA9052_MAX_REG_CNT		128
-+
-+/*STATUS REGISTERS*/
-+#define DA9052_STATUS_A_REG		1
-+#define DA9052_STATUS_B_REG		2
-+#define DA9052_STATUS_C_REG		3
-+#define DA9052_STATUS_D_REG		4
-+
-+/*EVENT REGISTERS*/
-+#define DA9052_EVENT_A_REG		5
-+#define DA9052_EVENT_B_REG		6
-+#define DA9052_EVENT_C_REG		7
-+#define DA9052_EVENT_D_REG		8
-+#define DA9052_FAULTLOG_REG		9
-+
-+/*IRQ REGISTERS*/
-+#define DA9052_IRQ_MASK_A_REG		10
-+#define DA9052_IRQ_MASK_B_REG		11
-+#define DA9052_IRQ_MASK_C_REG		12
-+#define DA9052_IRQ_MASK_D_REG		13
-+
-+/*CONTROL REGISTERS*/
-+#define DA9052_CONTROL_A_REG		14
-+#define DA9052_CONTROL_B_REG		15
-+#define DA9052_CONTROL_C_REG		16
-+#define DA9052_CONTROL_D_REG		17
-+
-+#define DA9052_PDDIS_REG		18
-+#define DA9052_INTERFACE_REG		19
-+#define DA9052_RESET_REG		20
-+
-+/*GPIO REGISTERS*/
-+#define DA9052_GPIO_0_1_REG		21
-+#define DA9052_GPIO_2_3_REG		22
-+#define DA9052_GPIO_4_5_REG		23
-+#define DA9052_GPIO_6_7_REG		24
-+#define DA9052_GPIO_14_15_REG		28
-+
-+/*LDO AND BUCK REGISTERS*/
-+#define DA9052_BUCKA_REG		44
-+#define DA9052_BUCKB_REG		45
-+#define DA9052_BUCKCORE_REG		46
-+#define DA9052_BUCKPRO_REG		47
-+#define DA9052_BUCKMEM_REG		48
-+#define DA9052_BUCKPERI_REG		49
-+#define DA9052_LDO1_REG		50
-+#define DA9052_LDO2_REG		51
-+#define DA9052_LDO3_REG		52
-+#define DA9052_LDO4_REG		53
-+#define DA9052_LDO5_REG		54
-+#define DA9052_LDO6_REG		55
-+#define DA9052_LDO7_REG		56
-+#define DA9052_LDO8_REG		57
-+#define DA9052_LDO9_REG		58
-+#define DA9052_LDO10_REG		59
-+#define DA9052_SUPPLY_REG		60
-+#define DA9052_PULLDOWN_REG		61
-+#define DA9052_CHGBUCK_REG		62
-+#define DA9052_WAITCONT_REG		63
-+#define DA9052_ISET_REG		64
-+#define DA9052_BATCHG_REG		65
-+
-+/*BATTERY CONTROL REGISTRS*/
-+#define DA9052_CHG_CONT_REG		66
-+#define DA9052_INPUT_CONT_REG		67
-+#define DA9052_CHG_TIME_REG		68
-+#define DA9052_BBAT_CONT_REG		69
-+
-+/*LED CONTROL REGISTERS*/
-+#define DA9052_BOOST_REG		70
-+#define DA9052_LED_CONT_REG		71
-+#define DA9052_LEDMIN123_REG		72
-+#define DA9052_LED1_CONF_REG		73
-+#define DA9052_LED2_CONF_REG		74
-+#define DA9052_LED3_CONF_REG		75
-+#define DA9052_LED1CONT_REG		76
-+#define DA9052_LED2CONT_REG		77
-+#define DA9052_LED3CONT_REG		78
-+#define DA9052_LED_CONT_4_REG		79
-+#define DA9052_LED_CONT_5_REG		80
-+
-+/*ADC CONTROL REGISTERS*/
-+#define DA9052_ADC_MAN_REG		81
-+#define DA9052_ADC_CONT_REG		82
-+#define DA9052_ADC_RES_L_REG		83
-+#define DA9052_ADC_RES_H_REG		84
-+#define DA9052_VDD_RES_REG		85
-+#define DA9052_VDD_MON_REG		86
-+
-+/*SM CONTROL REGISTERS*/
-+#define DA9052_ICHG_AV_REG		87
-+#define DA9052_ICHG_THD_REG		88
-+#define DA9052_ICHG_END_REG		89
-+#define DA9052_TBAT_RES_REG		90
-+#define DA9052_TBAT_HIGHP_REG		91
-+#define DA9052_TBAT_HIGHIN_REG		92
-+#define DA9052_TBAT_LOW_REG		93
-+#define DA9052_T_OFFSET_REG		94
-+
-+/*TSI CONTROL REGISTERS*/
-+#define DA9052_TJUNC_RES_REG		104
-+#define DA9052_TSI_CONT_A_REG		105
-+#define DA9052_TSI_CONT_B_REG		106
-+#define DA9052_TSI_X_MSB_REG		107
-+#define DA9052_TSI_Y_MSB_REG		108
-+#define DA9052_TSI_LSB_REG		109
-+#define DA9052_TSI_Z_MSB_REG		110
-+
-+/*RTC COUNT REGISTERS*/
-+#define DA9052_COUNT_S_REG		111
-+#define DA9052_COUNT_MI_REG		112
-+#define DA9052_COUNT_H_REG		113
-+#define DA9052_COUNT_D_REG		114
-+#define DA9052_COUNT_MO_REG		115
-+#define DA9052_COUNT_Y_REG		116
-+
-+/*RTC CONTROL REGISTERS*/
-+#define DA9052_ALARM_MI_REG		117
-+#define DA9052_ALARM_H_REG		118
-+#define DA9052_ALARM_D_REG		119
-+#define DA9052_ALARM_MO_REG		120
-+#define DA9052_ALARM_Y_REG		121
-+
-+/* Reg Page Configuration */
-+#define DA9052_PAGECON0_REGPAGE	0x80
-+
-+/* Onkey Event Registers */
-+#define DA9052_M_nONKEY		0x0100
-+#define DA9052_E_nONKEY		0x01
-+
-+/* TSI Event Registers */
-+#define DA9052_E_PEN_DOWN		0x4000
-+#define DA9052_E_TSI_READY		0x8000
-+
-+/* PAGE CONFIGURATION 128 REGISTER */
-+#define DA9052_PAGECON128_REGPAGE	0x80
-+
-+/* STATUS REGISTER A */
-+#define DA9052_STATUSA_VDATDET		0x80
-+#define DA9052_STATUSA_VBUSSEL		0x40
-+#define DA9052_STATUSA_DCINSEL		0x20
-+#define DA9052_STATUSA_VBUSDET		0x10
-+#define DA9052_STATUSA_DCINDET		0x08
-+#define DA9052_STATUSA_IDGND		0x04
-+#define DA9052_STATUSA_IDFLOAT		0x02
-+#define DA9052_STATUSA_NONKEY		0x01
-+
-+/* STATUS REGISTER B */
-+#define DA9052_STATUSB_COMPDET		0x80
-+#define DA9052_STATUSB_SEQUENCING	0x40
-+#define DA9052_STATUSB_GPFB2		0x20
-+#define DA9052_STATUSB_CHGTO		0x10
-+#define DA9052_STATUSB_CHGEND		0x08
-+#define DA9052_STATUSB_CHGLIM		0x04
-+#define DA9052_STATUSB_CHGPRE		0x02
-+#define DA9052_STATUSB_CHGATT		0x01
-+
-+/* STATUS REGISTER C */
-+#define DA9052_STATUSC_GPI7		0x80
-+#define DA9052_STATUSC_GPI6		0x40
-+#define DA9052_STATUSC_GPI5		0x20
-+#define DA9052_STATUSC_GPI4		0x10
-+#define DA9052_STATUSC_GPI3		0x08
-+#define DA9052_STATUSC_GPI2		0x04
-+#define DA9052_STATUSC_GPI1		0x02
-+#define DA9052_STATUSC_GPI0		0x01
-+
-+/* STATUS REGISTER D */
-+#define DA9052_STATUSD_GPI15		0x80
-+#define DA9052_STATUSD_GPI14		0x40
-+#define DA9052_STATUSD_GPI13		0x20
-+#define DA9052_STATUSD_GPI12		0x10
-+#define DA9052_STATUSD_GPI11		0x08
-+#define DA9052_STATUSD_GPI10		0x04
-+#define DA9052_STATUSD_GPI9		0x02
-+#define DA9052_STATUSD_GPI8		0x01
-+
-+/* EVENT REGISTER A */
-+#define DA9052_EVENTA_ECOMP1V2		0x80
-+#define DA9052_EVENTA_ESEQRDY		0x40
-+#define DA9052_EVENTA_EALRAM		0x20
-+#define DA9052_EVENTA_EVDDLOW		0x10
-+#define DA9052_EVENTA_EVBUSREM		0x08
-+#define DA9052_EVENTA_EDCINREM		0x04
-+#define DA9052_EVENTA_EVBUSDET		0x02
-+#define DA9052_EVENTA_EDCINDET		0x01
-+
-+/* EVENT REGISTER B */
-+#define DA9052_EVENTB_ETSIREADY	0x80
-+#define DA9052_EVENTB_EPENDOWN		0x40
-+#define DA9052_EVENTB_EADCEOM		0x20
-+#define DA9052_EVENTB_ETBAT		0x10
-+#define DA9052_EVENTB_ECHGEND		0x08
-+#define DA9052_EVENTB_EIDGND		0x04
-+#define DA9052_EVENTB_EIDFLOAT		0x02
-+#define DA9052_EVENTB_ENONKEY		0x01
-+
-+/* EVENT REGISTER C */
-+#define DA9052_EVENTC_EGPI7		0x80
-+#define DA9052_EVENTC_EGPI6		0x40
-+#define DA9052_EVENTC_EGPI5		0x20
-+#define DA9052_EVENTC_EGPI4		0x10
-+#define DA9052_EVENTC_EGPI3		0x08
-+#define DA9052_EVENTC_EGPI2		0x04
-+#define DA9052_EVENTC_EGPI1		0x02
-+#define DA9052_EVENTC_EGPI0		0x01
-+
-+/* EVENT REGISTER D */
-+#define DA9052_EVENTD_EGPI15		0x80
-+#define DA9052_EVENTD_EGPI14		0x40
-+#define DA9052_EVENTD_EGPI13		0x20
-+#define DA9052_EVENTD_EGPI12		0x10
-+#define DA9052_EVENTD_EGPI11		0x08
-+#define DA9052_EVENTD_EGPI10		0x04
-+#define DA9052_EVENTD_EGPI9		0x02
-+#define DA9052_EVENTD_EGPI8		0x01
-+
-+/* FAULT LOG REGISTER */
-+#define DA9052_FAULTLOG_WAITSET	0x80
-+#define DA9052_FAULTLOG_NSDSET		0x40
-+#define DA9052_FAULTLOG_KEYSHUT	0x20
-+#define DA9052_FAULTLOG_TEMPOVER	0x08
-+#define DA9052_FAULTLOG_VDDSTART	0x04
-+#define DA9052_FAULTLOG_VDDFAULT	0x02
-+#define DA9052_FAULTLOG_TWDERROR	0x01
-+
-+/* CONTROL REGISTER A */
-+#define DA9052_CONTROLA_GPIV		0x80
-+#define DA9052_CONTROLA_PMOTYPE	0x20
-+#define DA9052_CONTROLA_PMOV		0x10
-+#define DA9052_CONTROLA_PMIV		0x08
-+#define DA9052_CONTROLA_PMIFV		0x08
-+#define DA9052_CONTROLA_PWR1EN		0x04
-+#define DA9052_CONTROLA_PWREN		0x02
-+#define DA9052_CONTROLA_SYSEN		0x01
-+
-+/* CONTROL REGISTER B */
-+#define DA9052_CONTROLB_SHUTDOWN	0x80
-+#define DA9052_CONTROLB_DEEPSLEEP	0x40
-+#define DA9052_CONTROL_B_WRITEMODE	0x20
-+#define DA9052_CONTROLB_BBATEN		0x10
-+#define DA9052_CONTROLB_OTPREADEN	0x08
-+#define DA9052_CONTROLB_AUTOBOOT	0x04
-+#define DA9052_CONTROLB_ACTDIODE	0x02
-+#define DA9052_CONTROLB_BUCKMERGE	0x01
-+
-+/* CONTROL REGISTER C */
-+#define DA9052_CONTROLC_BLINKDUR	0x80
-+#define DA9052_CONTROLC_BLINKFRQ	0x60
-+#define DA9052_CONTROLC_DEBOUNCING	0x1C
-+#define DA9052_CONTROLC_PMFB2PIN	0x02
-+#define DA9052_CONTROLC_PMFB1PIN	0x01
-+
-+/* CONTROL REGISTER D */
-+#define DA9052_CONTROLD_WATCHDOG	0x80
-+#define DA9052_CONTROLD_ACCDETEN	0x40
-+#define DA9052_CONTROLD_GPI1415SD	0x20
-+#define DA9052_CONTROLD_NONKEYSD	0x10
-+#define DA9052_CONTROLD_KEEPACTEN	0x08
-+#define DA9052_CONTROLD_TWDSCALE	0x07
-+/* POWER DOWN DISABLE REGISTER */
-+#define DA9052_PDDIS_PMCONTPD		0x80
-+#define DA9052_PDDIS_OUT32KPD		0x40
-+#define DA9052_PDDIS_CHGBBATPD		0x20
-+#define DA9052_PDDIS_CHGPD		0x10
-+#define DA9052_PDDIS_HS2WIREPD		0x08
-+#define DA9052_PDDIS_PMIFPD		0x04
-+#define DA9052_PDDIS_GPADCPD		0x02
-+#define DA9052_PDDIS_GPIOPD		0x01
-+
-+/* CONTROL REGISTER D */
-+#define DA9052_INTERFACE_IFBASEADDR	0xE0
-+#define DA9052_INTERFACE_NCSPOL	0x10
-+#define DA9052_INTERFACE_RWPOL		0x08
-+#define DA9052_INTERFACE_CPHA		0x04
-+#define DA9052_INTERFACE_CPOL		0x02
-+#define DA9052_INTERFACE_IFTYPE	0x01
-+
-+/* CONTROL REGISTER D */
-+#define DA9052_RESET_RESETEVENT	0xC0
-+#define DA9052_RESET_RESETTIMER	0x3F
-+
-+/* GPIO REGISTERS */
-+
-+/* GPIO control register */
-+#define DA9052_GPIO_EVEN_PORT_PIN	0x03
-+#define DA9052_GPIO_EVEN_PORT_TYPE	0x04
-+#define DA9052_GPIO_EVEN_PORT_MODE	0x08
-+
-+#define DA9052_GPIO_ODD_PORT_PIN	0x30
-+#define DA9052_GPIO_ODD_PORT_TYPE	0x40
-+#define DA9052_GPIO_ODD_PORT_MODE	0x80
-+
-+/*POWER SEQUENCER REGISTER*/
-+
-+/* SEQ control register for ID 0 and 1 */
-+#define DA9052_ID01_LDO1STEP		0xF0
-+#define DA9052_ID01_SYSPRE		0x04
-+#define DA9052_ID01_DEFSUPPLY		0x02
-+#define DA9052_ID01_nRESMODE		0x01
-+
-+/* SEQ control register for ID 2 and 3 */
-+#define DA9052_ID23_LDO3STEP		0xF0
-+#define DA9052_ID23_LDO2STEP		0x0F
-+
-+/* SEQ control register for ID 4 and 5 */
-+#define DA9052_ID45_LDO5STEP		0xF0
-+#define DA9052_ID45_LDO4STEP		0x0F
-+
-+/* SEQ control register for ID 6 and 7 */
-+#define DA9052_ID67_LDO7STEP		0xF0
-+#define DA9052_ID67_LDO6STEP		0x0F
-+
-+/* SEQ control register for ID 8 and 9 */
-+#define DA9052_ID89_LDO9STEP		0xF0
-+#define DA9052_ID89_LDO8STEP		0x0F
-+
-+/* SEQ control register for ID 10 and 11 */
-+#define DA9052_ID1011_PDDISSTEP	0xF0
-+#define DA9052_ID1011_LDO10STEP	0x0F
-+
-+/* SEQ control register for ID 12 and 13 */
-+#define DA9052_ID1213_VMEMSWSTEP	0xF0
-+#define DA9052_ID1213_VPERISWSTEP	0x0F
-+
-+/* SEQ control register for ID 14 and 15 */
-+#define DA9052_ID1415_BUCKPROSTEP	0xF0
-+#define DA9052_ID1415_BUCKCORESTEP	0x0F
-+
-+/* SEQ control register for ID 16 and 17 */
-+#define DA9052_ID1617_BUCKPERISTEP	0xF0
-+#define DA9052_ID1617_BUCKMEMSTEP	0x0F
-+
-+/* SEQ control register for ID 18 and 19 */
-+#define DA9052_ID1819_GPRISE2STEP	0xF0
-+#define DA9052_ID1819_GPRISE1STEP	0x0F
-+
-+/* SEQ control register for ID 20 and 21 */
-+#define DA9052_ID2021_GPFALL2STEP	0xF0
-+#define DA9052_ID2021_GPFALL1STEP	0x0F
-+
-+/* Power SEQ Status register */
-+#define DA9052_SEQSTATUS_SEQPOINTER	0xF0
-+#define DA9052_SEQSTATUS_WAITSTEP	0x0F
-+
-+/* Power SEQ A register */
-+#define DA9052_SEQA_POWEREND		0xF0
-+#define DA9052_SEQA_SYSTEMEND		0x0F
-+
-+/* Power SEQ B register */
-+#define DA9052_SEQB_PARTDOWN		0xF0
-+#define DA9052_SEQB_MAXCOUNT		0x0F
-+
-+/* Power SEQ TIMER register */
-+#define DA9052_SEQTIMER_SEQDUMMY	0xF0
-+#define DA9052_SEQTIMER_SEQTIME	0x0F
-+
-+/*POWER SUPPLY CONTROL REGISTER*/
-+
-+/* BUCK REGISTER A */
-+#define DA9052_BUCKA_BPROILIM		0xC0
-+#define DA9052_BUCKA_BPROMODE		0x30
-+#define DA9052_BUCKA_BCOREILIM		0x0C
-+#define DA9052_BUCKA_BCOREMODE		0x03
-+
-+/* BUCK REGISTER B */
-+#define DA9052_BUCKB_BERIILIM		0xC0
-+#define DA9052_BUCKB_BPERIMODE		0x30
-+#define DA9052_BUCKB_BMEMILIM		0x0C
-+#define DA9052_BUCKB_BMEMMODE		0x03
-+
-+/* BUCKCORE REGISTER */
-+#define DA9052_BUCKCORE_BCORECONF	0x80
-+#define DA9052_BUCKCORE_BCOREEN	0x40
-+#define DA9052_BUCKCORE_VBCORE		0x3F
-+
-+/* BUCKPRO REGISTER */
-+#define DA9052_BUCKPRO_BPROCONF	0x80
-+#define DA9052_BUCKPRO_BPROEN		0x40
-+#define DA9052_BUCKPRO_VBPRO		0x3F
-+
-+/* BUCKMEM REGISTER */
-+#define DA9052_BUCKMEM_BMEMCONF	0x80
-+#define DA9052_BUCKMEM_BMEMEN		0x40
-+#define DA9052_BUCKMEM_VBMEM		0x3F
-+
-+/* BUCKPERI REGISTER */
-+#define DA9052_BUCKPERI_BPERICONF	0x80
-+#define DA9052_BUCKPERI_BPERIEN	0x40
-+#define DA9052_BUCKPERI_BPERIHS	0x20
-+#define DA9052_BUCKPERI_VBPERI		0x1F
-+
-+/* LDO1 REGISTER */
-+#define DA9052_LDO1_LDO1CONF		0x80
-+#define DA9052_LDO1_LDO1EN		0x40
-+#define DA9052_LDO1_VLDO1		0x1F
-+
-+/* LDO2 REGISTER */
-+#define DA9052_LDO2_LDO2CONF		0x80
-+#define DA9052_LDO2_LDO2EN		0x40
-+#define DA9052_LDO2_VLDO2		0x3F
-+
-+/* LDO3 REGISTER */
-+#define DA9052_LDO3_LDO3CONF		0x80
-+#define DA9052_LDO3_LDO3EN		0x40
-+#define DA9052_LDO3_VLDO3		0x3F
-+
-+/* LDO4 REGISTER */
-+#define DA9052_LDO4_LDO4CONF		0x80
-+#define DA9052_LDO4_LDO4EN		0x40
-+#define DA9052_LDO4_VLDO4		0x3F
-+
-+/* LDO5 REGISTER */
-+#define DA9052_LDO5_LDO5CONF		0x80
-+#define DA9052_LDO5_LDO5EN		0x40
-+#define DA9052_LDO5_VLDO5		0x3F
-+
-+/* LDO6 REGISTER */
-+#define DA9052_LDO6_LDO6CONF		0x80
-+#define DA9052_LDO6_LDO6EN		0x40
-+#define DA9052_LDO6_VLDO6		0x3F
-+
-+/* LDO7 REGISTER */
-+#define DA9052_LDO7_LDO7CONF		0x80
-+#define DA9052_LDO7_LDO7EN		0x40
-+#define DA9052_LDO7_VLDO7		0x3F
-+
-+/* LDO8 REGISTER */
-+#define DA9052_LDO8_LDO8CONF		0x80
-+#define DA9052_LDO8_LDO8EN		0x40
-+#define DA9052_LDO8_VLDO8		0x3F
-+
-+/* LDO9 REGISTER */
-+#define DA9052_LDO9_LDO9CONF		0x80
-+#define DA9052_LDO9_LDO9EN		0x40
-+#define DA9052_LDO9_VLDO9		0x3F
-+
-+/* LDO10 REGISTER */
-+#define DA9052_LDO10_LDO10CONF		0x80
-+#define DA9052_LDO10_LDO10EN		0x40
-+#define DA9052_LDO10_VLDO10		0x3F
-+
-+/* SUPPLY REGISTER */
-+#define DA9052_SUPPLY_VLOCK		0x80
-+#define DA9052_SUPPLY_VMEMSWEN		0x40
-+#define DA9052_SUPPLY_VPERISWEN	0x20
-+#define DA9052_SUPPLY_VLDO3GO		0x10
-+#define DA9052_SUPPLY_VLDO2GO		0x08
-+#define DA9052_SUPPLY_VBMEMGO		0x04
-+#define DA9052_SUPPLY_VBPROGO		0x02
-+#define DA9052_SUPPLY_VBCOREGO		0x01
-+
-+/* PULLDOWN REGISTER */
-+#define DA9052_PULLDOWN_LDO5PDDIS	0x20
-+#define DA9052_PULLDOWN_LDO2PDDIS	0x10
-+#define DA9052_PULLDOWN_LDO1PDDIS	0x08
-+#define DA9052_PULLDOWN_MEMPDDIS	0x04
-+#define DA9052_PULLDOWN_PROPDDIS	0x02
-+#define DA9052_PULLDOWN_COREPDDIS	0x01
-+
-+/* BAT CHARGER REGISTER */
-+
-+/* CHARGER BUCK REGISTER */
-+#define DA9052_CHGBUCK_CHGTEMP		0x80
-+#define DA9052_CHGBUCK_CHGUSBILIM	0x40
-+#define DA9052_CHGBUCK_CHGBUCKLP	0x20
-+#define DA9052_CHGBUCK_CHGBUCKEN	0x10
-+#define DA9052_CHGBUCK_ISETBUCK	0x0F
-+
-+/* WAIT COUNTER REGISTER */
-+#define DA9052_WAITCONT_WAITDIR	0x80
-+#define DA9052_WAITCONT_RTCCLOCK	0x40
-+#define DA9052_WAITCONT_WAITMODE	0x20
-+#define DA9052_WAITCONT_EN32KOUT	0x10
-+#define DA9052_WAITCONT_DELAYTIME	0x0F
-+
-+/* ISET CONTROL REGISTER */
-+#define DA9052_ISET_ISETDCIN		0xF0
-+#define DA9052_ISET_ISETVBUS		0x0F
-+
-+/* BATTERY CHARGER CONTROL REGISTER */
-+#define DA9052_BATCHG_ICHGPRE		0xC0
-+#define DA9052_BATCHG_ICHGBAT		0x3F
-+
-+/* CHARGER COUNTER REGISTER */
-+#define DA9052_CHG_CONT_VCHG_BAT	0xF8
-+#define DA9052_CHG_CONT_TCTR		0x07
-+
-+/* INPUT CONTROL REGISTER */
-+#define DA9052_INPUT_CONT_TCTR_MODE	0x80
-+#define DA9052_INPUT_CONT_VBUS_SUSP	0x10
-+#define DA9052_INPUT_CONT_DCIN_SUSP	0x08
-+
-+/* CHARGING TIME REGISTER */
-+#define DA9052_CHGTIME_CHGTIME		0xFF
-+
-+/* BACKUP BATTERY CONTROL REGISTER */
-+#define DA9052_BBATCONT_BCHARGERISET	0xF0
-+#define DA9052_BBATCONT_BCHARGERVSET	0x0F
-+
-+/* LED REGISTERS */
-+/* LED BOOST REGISTER */
-+#define DA9052_BOOST_EBFAULT		0x80
-+#define DA9052_BOOST_MBFAULT		0x40
-+#define DA9052_BOOST_BOOSTFRQ		0x20
-+#define DA9052_BOOST_BOOSTILIM		0x10
-+#define DA9052_BOOST_LED3INEN		0x08
-+#define DA9052_BOOST_LED2INEN		0x04
-+#define DA9052_BOOST_LED1INEN		0x02
-+#define DA9052_BOOST_BOOSTEN		0x01
-+
-+/* LED CONTROL REGISTER */
-+#define DA9052_LEDCONT_SELLEDMODE	0x80
-+#define DA9052_LEDCONT_LED3ICONT	0x40
-+#define DA9052_LEDCONT_LED3RAMP	0x20
-+#define DA9052_LEDCONT_LED3EN		0x10
-+#define DA9052_LEDCONT_LED2RAMP	0x08
-+#define DA9052_LEDCONT_LED2EN		0x04
-+#define DA9052_LEDCONT_LED1RAMP	0x02
-+#define DA9052_LEDCONT_LED1EN		0x01
-+
-+/* LEDMIN123  REGISTER */
-+#define DA9052_LEDMIN123_LEDMINCURRENT	0xFF
-+
-+/* LED1CONF  REGISTER */
-+#define DA9052_LED1CONF_LED1CURRENT	0xFF
-+
-+/* LED2CONF  REGISTER */
-+#define DA9052_LED2CONF_LED2CURRENT	0xFF
-+
-+/* LED3CONF  REGISTER */
-+#define DA9052_LED3CONF_LED3CURRENT	0xFF
-+
-+/* LED COUNT  REGISTER */
-+#define DA9052_LED_CONT_DIM		0x80
-+
-+/* ADC MAN registers */
-+#define DA9052_ADC_MAN_MAN_CONV	0x10
-+#define DA9052_ADC_MAN_MUXSEL_VDDOUT	0x00
-+#define DA9052_ADC_MAN_MUXSEL_ICH	0x01
-+#define DA9052_ADC_MAN_MUXSEL_TBAT	0x02
-+#define DA9052_ADC_MAN_MUXSEL_VBAT	0x03
-+#define DA9052_ADC_MAN_MUXSEL_AD4	0x04
-+#define DA9052_ADC_MAN_MUXSEL_AD5	0x05
-+#define DA9052_ADC_MAN_MUXSEL_AD6	0x06
-+#define DA9052_ADC_MAN_MUXSEL_VBBAT	0x09
-+
-+/* ADC CONTROL regsisters */
-+#define DA9052_ADCCONT_COMP1V2EN	0x80
-+#define DA9052_ADCCONT_ADCMODE		0x40
-+#define DA9052_ADCCONT_TBATISRCEN	0x20
-+#define DA9052_ADCCONT_AD4ISRCEN	0x10
-+#define DA9052_ADCCONT_AUTOAD6EN	0x08
-+#define DA9052_ADCCONT_AUTOAD5EN	0x04
-+#define DA9052_ADCCONT_AUTOAD4EN	0x02
-+#define DA9052_ADCCONT_AUTOVDDEN	0x01
-+
-+/* ADC 10 BIT MANUAL CONVERSION RESULT LOW register */
-+#define DA9052_ADC_RES_LSB		0x03
-+
-+/* ADC 10 BIT MANUAL CONVERSION RESULT HIGH register */
-+#define DA9052_ADCRESH_ADCRESMSB	0xFF
-+
-+/* VDD RES regsister*/
-+#define DA9052_VDDRES_VDDOUTRES	0xFF
-+
-+/* VDD MON regsister*/
-+#define DA9052_VDDMON_VDDOUTMON	0xFF
-+
-+/* ICHG_AV regsister*/
-+#define DA9052_ICHGAV_ICHGAV		0xFF
-+
-+/* ICHG_THD regsister*/
-+#define DA9052_ICHGTHD_ICHGTHD		0xFF
-+
-+/* ICHG_END regsister*/
-+#define DA9052_ICHGEND_ICHGEND		0xFF
-+
-+/* TBAT_RES regsister*/
-+#define DA9052_TBATRES_TBATRES		0xFF
-+
-+/* TBAT_HIGHP regsister*/
-+#define DA9052_TBATHIGHP_TBATHIGHP	0xFF
-+
-+/* TBAT_HIGHN regsister*/
-+#define DA9052_TBATHIGHN_TBATHIGHN	0xFF
-+
-+/* TBAT_LOW regsister*/
-+#define DA9052_TBATLOW_TBATLOW		0xFF
-+
-+/* T_OFFSET regsister*/
-+#define DA9052_TOFFSET_TOFFSET		0xFF
-+
-+/* ADCIN4_RES regsister*/
-+#define DA9052_ADCIN4RES_ADCIN4RES	0xFF
-+
-+/* ADCIN4_HIGH regsister*/
-+#define DA9052_AUTO4HIGH_AUTO4HIGH	0xFF
-+
-+/* ADCIN4_LOW regsister*/
-+#define DA9052_AUTO4LOW_AUTO4LOW	0xFF
-+
-+/* ADCIN5_RES regsister*/
-+#define DA9052_ADCIN5RES_ADCIN5RES	0xFF
-+
-+/* ADCIN5_HIGH regsister*/
-+#define DA9052_AUTO5HIGH_AUTOHIGH	0xFF
-+
-+/* ADCIN5_LOW regsister*/
-+#define DA9052_AUTO5LOW_AUTO5LOW	0xFF
-+
-+/* ADCIN6_RES regsister*/
-+#define DA9052_ADCIN6RES_ADCIN6RES	0xFF
-+
-+/* ADCIN6_HIGH regsister*/
-+#define DA9052_AUTO6HIGH_AUTO6HIGH	0xFF
-+
-+/* ADCIN6_LOW regsister*/
-+#define DA9052_AUTO6LOW_AUTO6LOW	0xFF
-+
-+/* TJUNC_RES regsister*/
-+#define DA9052_TJUNCRES_TJUNCRES	0xFF
-+
-+/* TSI REGISTER */
-+
-+/* TSI Control Register A */
-+#define DA9052_TSICONTA_TSIDELAY	0xC0
-+#define DA9052_TSICONTA_TSISKIP	0x38
-+#define DA9052_TSICONTA_TSIMODE	0x04
-+#define DA9052_TSICONTA_PENDETEN	0x02
-+#define DA9052_TSICONTA_AUTOTSIEN	0x01
-+
-+/* TSI Control Register B */
-+#define DA9052_TSICONTB_ADCREF		0x80
-+#define DA9052_TSICONTB_TSIMAN		0x40
-+#define DA9052_TSICONTB_TSIMUX		0x30
-+#define DA9052_TSICONTB_TSISEL3	0x08
-+#define DA9052_TSICONTB_TSISEL2	0x04
-+#define DA9052_TSICONTB_TSISEL1	0x02
-+#define DA9052_TSICONTB_TSISEL0	0x01
-+
-+/* TSI X Co-ordinate MSB Result register */
-+#define DA9052_TSIXMSB_TSIXM		0xFF
-+
-+/* TSI Y Co-ordinate MSB Result register */
-+#define DA9052_TSIYMSB_TSIYM		0xFF
-+
-+/* TSI Co-ordinate LSB Result register */
-+#define DA9052_TSILSB_PENDOWN		0x40
-+#define DA9052_TSILSB_TSIZL		0x30
-+#define DA9052_TSILSB_TSIYL		0x0C
-+#define DA9052_TSILSB_TSIXL		0x03
-+
-+/* TSI Z Measurement MSB Result register */
-+#define DA9052_TSIZMSB_TSIZM		0xFF
-+
-+/* RTC REGISTER */
-+
-+/* RTC TIMER SECONDS REGISTER */
-+#define DA9052_COUNTS_MONITOR		0x40
-+#define DA9052_RTC_SEC			0x3F
-+
-+/* RTC TIMER MINUTES REGISTER */
-+#define DA9052_RTC_MIN			0x3F
-+
-+/* RTC TIMER HOUR REGISTER */
-+#define DA9052_RTC_HOUR		0x1F
-+
-+/* RTC TIMER DAYS REGISTER */
-+#define DA9052_RTC_DAY			0x1F
-+
-+/* RTC TIMER MONTHS REGISTER */
-+#define DA9052_RTC_MONTH		0x0F
-+
-+/* RTC TIMER YEARS REGISTER */
-+#define DA9052_RTC_YEAR		0x3F
-+
-+/* RTC ALARM MINUTES REGISTER */
-+#define DA9052_ALARMM_I_TICK_TYPE	0x80
-+#define DA9052_ALARMMI_ALARMTYPE	0x40
-+
-+/* RTC ALARM YEARS REGISTER */
-+#define DA9052_ALARM_Y_TICK_ON		0x80
-+#define DA9052_ALARM_Y_ALARM_ON	0x40
-+
-+/* RTC SECONDS REGISTER  A*/
-+#define DA9052_SECONDA_SECONDSA	0xFF
-+
-+/* RTC SECONDS REGISTER  B*/
-+#define DA9052_SECONDB_SECONDSB	0xFF
-+
-+/* RTC SECONDS REGISTER  C*/
-+#define DA9052_SECONDC_SECONDSC	0xFF
-+
-+/* RTC SECONDS REGISTER  D*/
-+#define DA9052_SECONDD_SECONDSD	0xFF
-+
-+/* OTP REGISTER */
-+
-+/* CHIP IDENTIFICATION REGISTER */
-+#define DA9052_CHIPID_MRC		0xF0
-+#define DA9052_CHIPID_TRC		0x0F
-+
-+/* CONFIGURATION IDENTIFICATION REGISTER */
-+#define DA9052_CONFIGID_CUSTOMERID	0xF8
-+#define DA9052_CONFIGID_CONFID		0x07
-+
-+/* OTP CONTROL REGISTER */
-+#define DA9052_OTPCONT_GPWRITEDIS	0x80
-+#define DA9052_OTPCONT_OTPCONFLOCK	0x40
-+#define DA9052_OTPCONT_OTPGPLOCK	0x20
-+#define DA9052_OTPCONT_OTPCONFG	0x08
-+#define DA9052_OTPCONT_OTPGP		0x04
-+#define DA9052_OTPCONT_OTPRP		0x02
-+#define DA9052_OTPCONT_OTPTRANSFER	0x01
-+
-+/* RTC OSCILLATOR TRIM REGISTER */
-+#define DA9052_OSCTRIM_TRIM32K		0xFF
-+
-+/* GP ID REGISTER 0 */
-+#define DA9052_GPID0_GP0		0xFF
-+
-+/* GP ID REGISTER 1 */
-+#define DA9052_GPID1_GP1		0xFF
-+
-+/* GP ID REGISTER 2 */
-+#define DA9052_GPID2_GP2		0xFF
-+
-+/* GP ID REGISTER 3 */
-+#define DA9052_GPID3_GP3		0xFF
-+
-+/* GP ID REGISTER 4 */
-+#define DA9052_GPID4_GP4		0xFF
-+
-+/* GP ID REGISTER 5 */
-+#define DA9052_GPID5_GP5		0xFF
-+
-+/* GP ID REGISTER 6 */
-+#define DA9052_GPID6_GP6		0xFF
-+
-+/* GP ID REGISTER 7 */
-+#define DA9052_GPID7_GP7		0xFF
-+
-+/* GP ID REGISTER 8 */
-+#define DA9052_GPID8_GP8		0xFF
-+
-+/* GP ID REGISTER 9 */
-+#define DA9052_GPID9_GP9		0xFF
-+
-+#endif
-+/* __LINUX_MFD_DA9052_REG_H */
+The linux-next tree on github is no longer being updated and will be
+removed soon.
 
+The patch is still absent from kernel.org.
 
+The summary at the end now has a "git -1 --oneline" appended to the lines
+indicating which tree is being merged.   This was suggested by Mauro
+Chehab as an aid to maintainers so that they can easily tell which version
+of their tree was merged.  Comments welcome.
+
+Changes since 20111102:
+
+Renamed trees:
+	wireless -> wireless-next
+	wireless-current -> wireless
+
+My fixes tree contains:
+	Revert "hvc_console: display printk messages on console."
+
+The pci-current and pci trees gained a build failure so I used the
+versions from next-20111102.
+
+The ext3 tree lost its conflict.
+
+The watchdog tree lost its build failure.
+
+The kvmtool tree gained a conflict against the kbuild tree.
+
+I dropped some patches from the akpm tree that appeared in other trees.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 197 trees (counting Linus' and 27 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master (43672a0 Merge git://git.kernel.org/pub/scm/linux/ker=
+nel/git/steve/linux-dm)
+Merging fixes/master (956e850 Revert "hvc_console: display printk messages =
+on console.")
+Merging kbuild-current/rc-fixes (322a8b0 Linux 3.1-rc1)
+Merging arm-current/fixes (1bf1aac Merge branch 'samsung-fixes-4' of git://=
+github.com/kgene/linux-samsung)
+Merging m68k-current/for-linus (4b7cecc m68k/mac: Remove mac_irq_{en,dis}ab=
+le() wrappers)
+Merging powerpc-merge/merge (0c81e4b powerpc/p1023rds: Fix the error of ban=
+k-width of nor flash)
+Merging 52xx-and-virtex-current/powerpc/merge (c49f878 dtc/powerpc: remove =
+obsolete .gitignore entries)
+Merging sparc/master (51ce185 sparc: Hook up process_vm_{readv,writev} sysc=
+alls.)
+Merging scsi-rc-fixes/master (3ee72ca Merge git://github.com/davem330/net)
+Merging net/master (2edcd4c net: fix typo in drivers/net/ethernet/xilinx/ll=
+_temac_main.c)
+Merging sound-current/for-linus (8128c9f Merge branch 'topic/hda' into for-=
+linus)
+Merging pci-current/for-linus (571eba1 PCI: Fix compile errors with PCI_ATS=
+ and !PCI_IOV)
+$ git reset --hard HEAD^
+Merging refs/next/20111102/pci-current
+Merging wireless/master (f956c34 iwlwifi: don't perform "echo test" when cm=
+d queue stuck)
+Merging driver-core.current/driver-core-linus (094803e Merge branch 'akpm' =
+(Andrew's incoming))
+Merging tty.current/tty-linus (094803e Merge branch 'akpm' (Andrew's incomi=
+ng))
+Merging usb.current/usb-linus (094803e Merge branch 'akpm' (Andrew's incomi=
+ng))
+Merging staging.current/staging-linus (094803e Merge branch 'akpm' (Andrew'=
+s incoming))
+Merging cpufreq-current/fixes (2f84dd7 autofs4: fix debug printk warning un=
+covered by cleanup)
+Merging input-current/for-linus (6ad390a Merge branch 'next' into for-linus)
+Merging md-current/for-linus (7fcc7c8 md/raid10:  Fix bug when activating a=
+ hot-spare.)
+Merging audit-current/for-linus (def5754 Audit: remove spaces from audit_lo=
+g_d_path)
+Merging crypto-current/master (fb223c3 crypto: user - Fix rwsem leak in cry=
+pto_user)
+Merging ide/master (0ab3d8b cy82c693: fix PCI device selection)
+Merging dwmw2/master (244dc4e Merge git://git.infradead.org/users/dwmw2/ran=
+dom-2.6)
+Merging sh-current/sh-fixes-for-linus (21d41f2 sh: fix the compile error in=
+ setup-sh7757.c)
+Merging rmobile-current/rmobile-fixes-for-linus (a408bae ARM: mach-shmobile=
+: sh7372 CMT3 and CMT4 clock support)
+Merging devicetree-current/devicetree/merge (ed5f886 dt: add empty of_alias=
+_get_id() for non-dt builds)
+Merging spi-current/spi/merge (940ab88 drivercore: Add helper macro for pla=
+tform_driver boilerplate)
+Merging arm/for-next (49eaa32 Merge branch 'devel-stable' into for-linus)
+Merging arm-lpae/for-next (3c31119 fixup! ARM: pgtable: switch to use pgtab=
+le-nopud.h)
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/kernel/sleep.S
+CONFLICT (content): Merge conflict in arch/arm/kernel/head.S
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable-hwdef.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/page.h
+Merging arm-soc/for-next (a238f82 Merge branch 'next/devel2' into for-next)
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/devices.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Makefile
+Applying: arm-soc: merge fixup for fixup/reserve being added to MACHINE des=
+criptions
+Merging at91/at91-next (bcdbf16 hw_random: add driver for atmel true hardwa=
+re random number generator)
+CONFLICT (content): Merge conflict in drivers/ata/pata_at91.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/at91sam9g45.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/at91sam9260.c
+Merging davinci/davinci-next (fe0d422 Linux 3.0-rc6)
+Merging i.MX/for-next (5788f4d Merge branches 'imx-fixes', 'imx-cleanup' an=
+d 'imx-features' into master)
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/include/mach/hardwa=
+re.h
+CONFLICT (content): Merge conflict in arch/arm/mach-mx5/mm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-mx5/devices-imx53.h
+CONFLICT (content): Merge conflict in arch/arm/mach-mx5/clock-mx51-mx53.c
+Merging linux-spec/for-next (5111711 Merge branch 'for-2.6.37' of git://lin=
+ux-nfs.org/~bfields/linux)
+Merging omap/for-next (322a8b0 Linux 3.1-rc1)
+Merging pxa/for-next (19d6c13 [ARM] pxa/hx4700: actually use platform_lcd d=
+river)
+Merging samsung/next-samsung (9edb240 ARM: H1940/RX1950: Change default LED=
+ triggers)
+Merging s5p/for-next (ad97e8e ARM: SAMSUNG: Add lookup of sdhci-s3c clocks =
+using generic names)
+CONFLICT (content): Merge conflict in drivers/gpio/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-exynos4/Kconfig
+Merging tegra/for-next (80d0a76 Merge branches 'for-3.2/cleanup' and 'for-3=
+.2/features' into for-next)
+Merging xilinx/arm-next (b85a3ef ARM: Xilinx: Adding Xilinx board support)
+Merging blackfin/for-linus (e114599 Blackfin: add serial TX IRQ in individu=
+al platform resource)
+Merging c6x/for-linux-next (2141355 C6X: MAINTAINERS)
+Merging cris/for-next (ea78f5b CRIS: Update documentation)
+Merging quilt/hexagon (8e116d1 Add extra arch overrides to asm-generic/chec=
+ksum.h)
+CONFLICT (add/add): Merge conflict in arch/hexagon/mm/strnlen_user.S
+CONFLICT (add/add): Merge conflict in arch/hexagon/mm/pgalloc.c
+CONFLICT (add/add): Merge conflict in arch/hexagon/mm/Makefile
+CONFLICT (add/add): Merge conflict in arch/hexagon/lib/memset.S
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/vmlinux.lds.S
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/vm_vectors.S
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/vdso.c
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/kgdb.c
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/hexagon_ksyms.c
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/head.S
+CONFLICT (add/add): Merge conflict in arch/hexagon/kernel/Makefile
+CONFLICT (add/add): Merge conflict in arch/hexagon/include/asm/vdso.h
+CONFLICT (add/add): Merge conflict in arch/hexagon/include/asm/timex.h
+CONFLICT (add/add): Merge conflict in arch/hexagon/include/asm/Kbuild
+CONFLICT (add/add): Merge conflict in arch/hexagon/Makefile
+Merging ia64/next (0f6a1c0 Pull misc-3.2 into next branch)
+Merging m68k/for-next (4b7cecc m68k/mac: Remove mac_irq_{en,dis}able() wrap=
+pers)
+Merging m68knommu/for-next (0ada06b m68k: drop unused Kconfig symbols)
+CONFLICT (content): Merge conflict in arch/m68k/kernel/Makefile
+CONFLICT (add/add): Merge conflict in arch/m68k/Kconfig.devices
+CONFLICT (add/add): Merge conflict in arch/m68k/Kconfig.bus
+Merging microblaze/next (094803e Merge branch 'akpm' (Andrew's incoming))
+Merging mips/mips-for-linux-next (3ba1e54 MIPS: O32: Provide definition of =
+registers ta0 .. ta3.)
+CONFLICT (content): Merge conflict in sound/mips/Kconfig
+CONFLICT (content): Merge conflict in drivers/video/Kconfig
+CONFLICT (content): Merge conflict in drivers/mmc/host/au1xmmc.c
+CONFLICT (content): Merge conflict in drivers/ide/Kconfig
+CONFLICT (content): Merge conflict in arch/mips/alchemy/devboards/db1x00/pl=
+atform.c
+Merging openrisc/for-upstream (b6fd41e Linux 3.1-rc6)
+Merging parisc/for-next (fc99a91 futex: Use same lock set as lws calls)
+Merging powerpc/next (7680057 powerpc: Don't try OPAL takeover on old 970 b=
+lades)
+CONFLICT (content): Merge conflict in drivers/tty/serial/8250.c
+CONFLICT (content): Merge conflict in arch/powerpc/kernel/udbg.c
+CONFLICT (content): Merge conflict in arch/powerpc/include/asm/udbg.h
+CONFLICT (modify/delete): arch/powerpc/configs/40x/hcu4_defconfig deleted i=
+n powerpc/next and modified in HEAD. Version HEAD of arch/powerpc/configs/4=
+0x/hcu4_defconfig left in tree.
+$ git rm -f arch/powerpc/configs/40x/hcu4_defconfig
+Merging 4xx/next (9fcd768 powerpc/40x: Remove obsolete HCU4 board)
+Merging 52xx-and-virtex/powerpc/next (c1395f4 dtc/powerpc: remove obsolete =
+.gitignore entries)
+Merging galak/next (1661e5b powerpc/cpm: Clear muram before it is in use.)
+Merging s390/features (0d7c7ff [S390] add support for physical memory > 4TB)
+Merging sh/sh-latest (b9a3acf Merge branch 'sh/stable-updates' into sh-late=
+st)
+Merging rmobile/rmobile-latest (b58c580 Merge branch 'rmobile-fixes-for-lin=
+us' into rmobile-latest)
+Merging sparc-next/master (3ee72ca Merge git://github.com/davem330/net)
+Merging tile/master (0124538 nfs: fix a couple of minor portability issues)
+CONFLICT (content): Merge conflict in arch/tile/lib/atomic_asm_32.S
+CONFLICT (content): Merge conflict in arch/tile/kernel/intvec_32.S
+Merging unicore32/unicore32 (10967fd arch/unicore32: do not use EXTRA_AFLAG=
+S or EXTRA_CFLAGS)
+Merging xtensa/master (29aced6 xtensa: remove defining register numbers)
+Merging ceph/for-next (3395734 libceph: fix double-free of page vector)
+Merging cifs/master (9ef5992 cifs: Assume passwords are encoded according t=
+o iocharset (try #2))
+Merging configfs/linux-next (420118c configfs: Rework configfs_depend_item(=
+) locking and make lockdep happy)
+Merging ecryptfs/next (985ca0e ecryptfs: Make inode bdi consistent with sup=
+erblock bdi)
+Merging ext3/for_next (ed47a7d udf: Cleanup metadata flags handling)
+Merging ext4/dev (f2a4452 jbd2: Unify log messages in jbd2 code)
+Merging fatfs/master (710d440 fat: fat16 support maximum 4GB file/vol size =
+as WinXP or 7.)
+Merging fuse/for-next (c2183d1 fuse: check size of FUSE_NOTIFY_INVAL_ENTRY =
+message)
+Merging gfs2/master (809a4fa GFS2: Move readahead of metadata during deallo=
+cation into its own function)
+CONFLICT (content): Merge conflict in fs/gfs2/file.c
+Merging hfsplus/for-next (6596528 hfsplus: ensure bio requests are not smal=
+ler than the hardware sectors)
+Merging jfs/next (1c8007b jfs: flush journal completely before releasing me=
+tadata inodes)
+Merging logfs/master (51b3089 Merge branch 'master' of github.com:prasad-jo=
+shi/logfs)
+CONFLICT (content): Merge conflict in fs/logfs/file.c
+Merging nfs/linux-next (e414966 NFS: Remove no-op less-than-zero checks on =
+unsigned variables.)
+Merging nfsd/nfsd-next (fc0d14f nfsd4: typo logical vs bitwise negate in nf=
+sd4_decode_share_access)
+Merging nilfs2/for-next (93ee7a9 Linux 3.1-rc2)
+Merging ocfs2/linux-next (c849cc2 ocfs2: make direntry invalid when deletin=
+g it)
+CONFLICT (content): Merge conflict in fs/ocfs2/xattr.c
+Merging omfs/for-next (976d167 Linux 3.1-rc9)
+Merging squashfs/master (7657cac Squashfs: Add an option to set dev block s=
+ize to 4K)
+Merging v9fs/for-next (14211d0 9p: fix 9p.txt to advertise msize instead of=
+ maxdata)
+Merging ubifs/linux-next (a7fb948 UBI: do not link debug messages when debu=
+gging is disabled)
+Merging xfs/master (9e4c109 xfs: add AIL pushing tracepoints)
+Merging vfs/for-next (206b1d0 Fix POSIX ACL permission check)
+Merging vfs-scale/vfs-scale-working (32385c7 kernel: fix hlist_bl again)
+Merging pci/linux-next (6f3baa2 PCI: Fix PRI and PASID consistency)
+$ git reset --hard HEAD^
+Merging refs/next/20111102/pci
+Merging hid/for-next (31dced4 Merge branch 'for-linus' of git://git.kernel.=
+org/pub/scm/linux/kernel/git/jikos/hid)
+Merging quilt/i2c (839d881 Merge branch 'i2c-for-linus' of git://git.kernel=
+.org/pub/scm/linux/kernel/git/jdelvare/staging)
+Merging bjdooks-i2c/next-i2c (f8420b7 fixup merge)
+CONFLICT (add/add): Merge conflict in drivers/i2c/busses/i2c-designware-pla=
+tdrv.c
+Merging quilt/jdelvare-hwmon (a1933c5 hwmon: Use i2c_smbus_{read,write}_wor=
+d_swapped)
+Merging hwmon-staging/hwmon-next (c5794cf hwmon: (w83627ehf) Better fix for=
+ negative temperature values)
+Merging quilt/kernel-doc (b814f03 Documentation/PCI/pci.txt: fix a referenc=
+e doc name)
+CONFLICT (content): Merge conflict in Documentation/PCI/pci.txt
+Merging docs/docs-move (c6f211c Merge ra.kernel.org:/pub/scm/linux/kernel/g=
+it/rdunlap/linux-docs into docs-move)
+Merging v4l-dvb/master (76ba028 Merge /home/v4l/v4l/patchwork)
+CONFLICT (content): Merge conflict in drivers/staging/Makefile
+Merging kbuild/for-next (57b742f Merge branch 'kbuild/kbuild' into kbuild/f=
+or-next)
+CONFLICT (content): Merge conflict in drivers/net/ethernet/stmicro/stmmac/K=
+config
+Merging kconfig/for-next (eae1c36 Merge branch 'kconfig/for-linus-2' into k=
+config/for-next)
+Merging libata/NEXT (a0da191 pata_efar: fix register naming used in efar_se=
+t_piomode())
+Merging infiniband/for-next (504255f Merge branches 'amso1100', 'cma', 'cxg=
+b3', 'cxgb4', 'fdr', 'ipath', 'ipoib', 'misc', 'mlx4', 'misc', 'nes', 'qib'=
+ and 'xrc' into for-next)
+Merging acpi/acpi (38c0a0c Merge branches 'apei', 'bz-13195' and 'doc' into=
+ acpi)
+Merging idle-test/idle-test (a0bfa13 cpuidle: stop depending on pm_idle)
+Merging powertools/tools-test (d30c4b7 tools/power turbostat: fit output in=
+to 80 columns on snb-ep)
+Merging cpupowerutils/master (498ca79 cpupower: use man(1) when calling "cp=
+upower help subcommand")
+Merging ieee1394/for-next (a572e68 firewire: ohci: fix isochronous DMA sync=
+hronization)
+Merging ubi/linux-next (93ee7a9 Linux 3.1-rc2)
+Merging dlm/next (c3b92c8 Linux 3.1)
+Merging swiotlb/master (25b84fa swiotlb: Export io_tlb_nslabs as swiotlb_ns=
+labs and use it.)
+CONFLICT (content): Merge conflict in drivers/xen/swiotlb-xen.c
+Merging ibft/master (f1b1e06 iscsi-ibft: Fix compile warning introduced by =
+'iscsi_ibft: iscsi_ibft_find unused variable i')
+Merging scsi/master (99a700b [SCSI] mv_sas: OCZ RevoDrive3 & zDrive R4 supp=
+ort)
+Merging target-updates/for-next (2235007 target: add back error handling in=
+ transport_complete_task)
+Merging target-merge/for-next-merge (e0d85e5 ib_srpt: Initial SRP Target me=
+rge for v3.2-rc1)
+Merging slave-dma/next (4598fc2 dmaengine: mid_dma: mask_peripheral_interru=
+pt only when dmac is idle)
+Merging async_tx/next (21ef4b8 dmaengine: use DEFINE_IDR for static initial=
+ization)
+Merging net-next/master (8b3408f dp83640: free packet queues on remove)
+Merging wireless-next/master (8b3408f dp83640: free packet queues on remove)
+Merging bluetooth/master (693ff2d Bluetooth: Fix hidp_get_connection())
+CONFLICT (content): Merge conflict in net/bluetooth/l2cap_sock.c
+Merging mtd/master (3f30310 Merge git://git.infradead.org/mtd-2.6)
+Merging l2-mtd/master (48e546b mtd: tests: annotate as DANGEROUS in Kconfig)
+CONFLICT (content): Merge conflict in drivers/mtd/maps/lantiq-flash.c
+CONFLICT (modify/delete): arch/arm/mach-at91/board-usb-a9260.c deleted in H=
+EAD and modified in l2-mtd/master. Version l2-mtd/master of arch/arm/mach-a=
+t91/board-usb-a9260.c left in tree.
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-sam9m10g45ek=
+.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-sam9g20ek.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-rm9200dk.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-neocore926.c
+CONFLICT (content): Merge conflict in arch/arm/mach-at91/board-afeb-9260v1.c
+$ git rm -f arch/arm/mach-at91/board-usb-a9260.c
+Merging crypto/master (ea8bdfc crypto: user - Add dependency on NET)
+Merging sound/for-next (0a842b6 Merge branch 'fix/hda' into for-next)
+Merging sound-asoc/for-next (86f14df ASoC: Update git repository URL)
+Merging cpufreq/next (5aace58 [CPUFREQ] ARM Exynos4210 PM/Suspend compatibi=
+lity with different bootloaders)
+Merging quilt/rr (dfb79dc module: Enable dynamic debugging regardless of ta=
+int)
+Merging input/next (fb6c721 Input: tca8418_keypad - initial driver release)
+Merging input-mt/next (02f8c6a Linux 3.0)
+Merging lsm/for-next (ca05a99 capabilities: remain source compatible with 3=
+2-bit raw legacy capability support.)
+Merging block/for-next (a2da998 Merge branch 'for-3.2/core' into for-next)
+CONFLICT (content): Merge conflict in drivers/staging/zram/zram_drv.c
+CONFLICT (content): Merge conflict in drivers/md/raid5.c
+CONFLICT (content): Merge conflict in drivers/md/raid10.c
+CONFLICT (content): Merge conflict in drivers/md/raid1.c
+CONFLICT (content): Merge conflict in drivers/md/raid0.c
+CONFLICT (content): Merge conflict in drivers/md/multipath.c
+CONFLICT (content): Merge conflict in drivers/md/md.h
+CONFLICT (content): Merge conflict in drivers/md/md.c
+CONFLICT (content): Merge conflict in drivers/md/linear.c
+CONFLICT (content): Merge conflict in drivers/md/faulty.c
+Merging quilt/device-mapper (0daefd7 When devices in a RAID array are not i=
+n-sync, they are supposed to be reported as such in the status output as an=
+ 'a' character, which means "alive, but not in-sync".  But when the entire =
+array is rebuilt 'A' is being used, which is incorrect.  This patch correct=
+s this to 'a'.)
+CONFLICT (add/add): Merge conflict in Documentation/device-mapper/thin-prov=
+isioning.txt
+Merging embedded/master (4744b43 embedded: fix vc_translate operator preced=
+ence)
+Merging firmware/master (6e03a20 firmware: speed up request_firmware(), v3)
+Merging pcmcia/master (74411c0 smc91c92_cs.c: fix bogus compiler warning)
+Merging battery/master (85b5fbf power_supply: Fix sysfs format warning)
+Merging mmc/mmc-next (d517455 mmc: omap_hsmmc: fix missing parenthesis in p=
+r_info)
+Merging kgdb/kgdb-next (880ba69 lib: rename pack_hex_byte() to hex_byte_pac=
+k())
+Merging slab/for-next (e24daf8 Merge branch 'slab/next' into for-next)
+Merging uclinux/for-next (6e86841 Linux 2.6.27-rc1)
+Merging md/for-next (e0b361a Merge branch 'block-3.1' into for-next)
+Merging mfd/for-next (b958f7a mfd: Fix missing abx500 header file updates)
+CONFLICT (content): Merge conflict in drivers/mfd/wm831x-spi.c
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/include/mach/irqs.h
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3beagle=
+.c
+CONFLICT (content): Merge conflict in arch/arm/mach-imx/mach-mx31moboard.c
+Merging hdlc/hdlc-next (4a6908a Linux 2.6.28)
+Merging drm/drm-next (1717c0e Revert "drm/ttm: add a way to bo_wait for eit=
+her the last read or last write")
+Merging fbdev/fbdev-next (b57287b video: platinumfb: Add __devexit_p at nec=
+essary place)
+Merging viafb/viafb-next (4ce36bb viafb: replace strict_strtoul to kstrto* =
+and check return value)
+Merging omap_dss2/for-next (3e28189 OMAPDSS: picodlp: add missing #include =
+<linux/module.h>)
+Merging regulator/for-next (89efed4 regulator: max8649 Convert max8649 to u=
+se regmap api)
+Merging security/next (59df316 TOMOYO: Fix interactive judgment functionali=
+ty.)
+Merging selinux/master (ded5098 SELinux: skip file_name_trans_write() when =
+policy downgraded.)
+Merging lblnet/master (7e27d6e Linux 2.6.35-rc3)
+Merging watchdog/linux-next (134edca Merge branch 'fixes' into linux-next)
+Merging bdev/master (feaf384 Merge branch 'for-linus' of git://git.kernel.d=
+k/linux-2.6-block)
+Merging dwmw2-iommu/master (c3b92c8 Linux 3.1)
+Merging iommu/next (1abb4ba Merge branches 'amd/fixes', 'debug/dma-api', 'a=
+rm/omap', 'arm/msm', 'core', 'iommu/fault-reporting' and 'api/iommu-ops-per=
+-bus' into next)
+Merging cputime/cputime (f611671 [S390] cputime: add sparse checking and cl=
+eanup)
+CONFLICT (content): Merge conflict in kernel/sched_stats.h
+CONFLICT (content): Merge conflict in include/asm-generic/cputime.h
+CONFLICT (content): Merge conflict in fs/proc/stat.c
+Merging osd/linux-next (dde406e pnfs-obj: Support for RAID5 read-4-write in=
+terface.)
+Merging jc_docs/docs-next (5c050fb docs: update the development process doc=
+ument)
+Merging nommu/master (0ce790e Linux 2.6.39-rc1)
+Merging trivial/for-next (59e5253 Merge branch 'for-linus' of git://git.ker=
+nel.org/pub/scm/linux/kernel/git/jikos/trivial)
+Merging audit/for-next (def5754 Audit: remove spaces from audit_log_d_path)
+Merging pm/linux-next (a7521c1 PM / QoS: Remove redundant check)
+Merging apm/for-next (73692d9 Merge branch 'for-linus' of git://git.kernel.=
+org/pub/scm/linux/kernel/git/jikos/apm)
+Merging fsnotify/for-next (ef9bf3b fanotify: only destroy a mark if both it=
+s mask and its ignored_mask are cleared)
+Merging irda/for-next (94d57c4 enic: Update MAINTAINERS)
+Merging edac/linux_next (4d096ca MAINTAINERS: add an entry for Edac Sandy B=
+ridge driver)
+Merging edac-amd/for-next (1f6189e amd64_edac: Cleanup return type of amd64=
+_determine_edac_cap())
+Merging devicetree/devicetree/next (ae97159 of_mdio: Don't phy_scan_fixups(=
+) twice)
+Merging spi/spi/next (940ab88 drivercore: Add helper macro for platform_dri=
+ver boilerplate)
+Merging gpio/gpio/next (d92ef29 h8300: Move gpio.h to gpio-internal.h)
+Merging tip/auto-latest (e471db8 Merge branch 'perf/core' into auto-latest)
+CONFLICT (content): Merge conflict in drivers/char/random.c
+CONFLICT (content): Merge conflict in arch/x86/kernel/cpu/amd.c
+Merging rcu/rcu/next (afe24b1 rcu: Move propagation of ->completed from rcu=
+_start_gp() to rcu_report_qs_rsp())
+Merging kmemleak/kmemleak (614d29d kmemleak: Handle percpu memory allocatio=
+n)
+Merging kvm/kvm-updates/3.2 (a3e06bb KVM: emulate lapic tsc deadline timer =
+for guest)
+Merging oprofile/for-next (4167ab9 Merge branch 'core' of git://amd64.org/l=
+inux/rric into perf/core)
+Merging xen/upstream/xen (ec8161f Merge branch 'upstream/microcode' into up=
+stream/xen)
+CONFLICT (content): Merge conflict in arch/x86/xen/Kconfig
+Merging xen-two/linux-next (9d5ae84 Merge branch 'stable/vmalloc-3.2' into =
+linux-next)
+Merging xen-pvhvm/linux-next (b056b6a xen: suspend: remove xen_hvm_suspend)
+Merging percpu/for-next (bc499f9 percpu: rename pcpu_mem_alloc to pcpu_mem_=
+zalloc)
+Merging workqueues/for-next (9c5a2ba workqueue: separate out drain_workqueu=
+e() from destroy_workqueue())
+Merging sfi/sfi-test (5b026c4 SFI: use ioremap_cache() instead of ioremap())
+Merging asm-generic/next (35dbc0e asm-generic/io.h: allow people to overrid=
+e individual funcs)
+Merging drivers-x86/linux-next (15b956a acer-wmi: support Lenovo ideapad S2=
+05 wifi switch)
+Merging hwpoison/hwpoison (46e387b Merge branch 'hwpoison-hugepages' into h=
+wpoison)
+Merging sysctl/master (c2f5631 sysctl: remove impossible condition check)
+Merging namespace/master (7e05c93 proc: Fix the proc access checks to names=
+pace files.)
+Merging regmap/for-next (a084481 regmap: Prepare LZO cache for variable blo=
+ck sizes)
+Merging driver-core/driver-core-next (094803e Merge branch 'akpm' (Andrew's=
+ incoming))
+Merging tty/tty-next (094803e Merge branch 'akpm' (Andrew's incoming))
+Merging usb/usb-next (094803e Merge branch 'akpm' (Andrew's incoming))
+Merging staging/staging-next (094803e Merge branch 'akpm' (Andrew's incomin=
+g))
+Merging bkl-config/config (4ba8216 BKL: That's all, folks)
+Merging tmem/tmem (665c1e6 mm: cleancache: Use __read_mostly as appropiate.)
+CONFLICT (content): Merge conflict in mm/swapfile.c
+Merging writeback/writeback-for-next (ea7bf1d Merge branch 'requeue-io-wait=
+' into writeback-for-next)
+Merging arm-dt/devicetree/arm-next (ede338f dt: add documentation of ARM dt=
+ boot interface)
+Merging hwspinlock/linux-next (8b37fcf hwspinlock: add MAINTAINERS entries)
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/hwspinlock.c
+Merging pinctrl/for-next (ab872c8 pinctrl/sirf: fix sirfsoc_get_group_pins =
+prototype)
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/core.c
+CONFLICT (content): Merge conflict in arch/arm/mach-u300/Kconfig
+Merging moduleh/for-sfr (67b8499 Revert "tracing: Include module.h in defin=
+e_trace.h")
+CONFLICT (content): Merge conflict in include/linux/dmaengine.h
+CONFLICT (modify/delete): drivers/mfd/ab3550-core.c deleted in HEAD and mod=
+ified in moduleh/for-sfr. Version moduleh/for-sfr of drivers/mfd/ab3550-cor=
+e.c left in tree.
+CONFLICT (content): Merge conflict in drivers/media/dvb/frontends/dibx000_c=
+ommon.c
+$ git rm -f drivers/mfd/ab3550-core.c
+Applying: arm: Add export.h to recently added files for EXPORT_SYMBOL
+Applying: powerpc/powernv: include export.h in hvc_opal.h for THIS_MODULE
+Applying: drivers/md: change module.h -> export.h in persistent-data/dm-*
+Applying: device-mapper: dm-bufio.c needs to include module.h
+Applying: device-mapper: using EXPORT_SYBOL in dm-space-map-checker.c needs=
+ export.h
+Merging kvmtool/master (3b08ed0 config: Add 'make kvmconfig')
+CONFLICT (content): Merge conflict in scripts/kconfig/Makefile
+CONFLICT (content): Merge conflict in include/net/9p/9p.h
+Merging scsi-post-merge/merge-base:master ()
+$ git checkout akpm
+Applying: drm: fix kconfig unmet dependency warning
+Applying: net/netfilter/nf_conntrack_netlink.c: fix Oops on container destr=
+oy
+Applying: acerhdf: add support for Aspire 1410 BIOS v1.3314
+Applying: arch/x86/platform/iris/iris.c: register a platform device and a p=
+latform driver
+Applying: x86: fix mmap random address range
+Applying: arch/x86/kernel/e820.c: eliminate bubble sort from sanitize_e820_=
+map
+Applying: vrtc: change its year offset from 1960 to 1972
+Applying: x86: rtc: don't register a platform RTC device for Intel MID plat=
+forms
+Applying: mrst: battery fixes
+Applying: drivers/power/intel_mid_battery.c: fix build
+Applying: x86,mrst: add mapping for bma023
+Applying: arch/x86/kernel/e820.c: quiet sparse noise about plain integer as=
+ NULL pointer
+Applying: arch/x86/kernel/ptrace.c: quiet sparse noise
+Applying: arch/x86/mm/pageattr.c: quiet sparse noise; local functions shoul=
+d be static
+Applying: x86: tlb flush avoid superflous leave_mm()
+Applying: x86: reduce clock calibration time during slave cpu startup
+Applying: x86-reduce-clock-calibration-time-during-slave-cpu-startup-fix
+Applying: arch/arm/mach-ux500/mbox-db5500.c: world-writable sysfs fifo file
+Applying: arm, exec: remove redundant set_fs(USER_DS)
+Applying: audit: always follow va_copy() with va_end()
+Applying: btrfs: don't dereference extent_mapping if NULL
+Applying: ceph/mds_client.c: quiet sparse noise
+Applying: drivers/edac/mpc85xx_edac.c: fix memory controller compatible for=
+ edac
+Applying: devtmpfsd: fix task state handling
+Applying: drivers/gpu/vga/vgaarb.c: add missing kfree
+Applying: drm: avoid switching to text console if there is no panic timeout
+Applying: hrtimers: Special-case zero length sleeps
+Applying: ia64, exec: remove redundant set_fs(USER_DS)
+Applying: brlocks/lglocks: clean up code
+Applying: brlocks-lglocks-clean-up-code-checkpatch-fixes
+Applying: ipc/mqueue: cleanup definition names and locations
+Applying: ipc/mqueue: switch back to using non-max values on create
+Applying: ipc/mqueue: enforce hard limits
+Applying: ipc/mqueue: update maximums for the mqueue subsystem
+Applying: ipc-mqueue-update-maximums-for-the-mqueue-subsystem-fix
+Applying: ipc-mqueue-update-maximums-for-the-mqueue-subsystem-checkpatch-fi=
+xes
+Applying: unicore32, exec: remove redundant set_fs(USER_DS)
+Applying: drivers/net/ethernet/oki-semi/pch_gbe/pch_gbe.h: remove unused ma=
+cro pr_fmt()
+Applying: debugobjects: extend debugobjects to assert that an object is ini=
+tialized
+Applying: kernel/timer.c: use debugobjects to catch deletion of uninitializ=
+ed timers
+Applying: ext4: use proper little-endian bitops
+Applying: ocfs2: avoid unaligned access to dqc_bitmap
+Applying: parisc, exec: remove redundant set_fs(USER_DS)
+Applying: drivers/firmware/dmi_scan.c: make dmi_name_in_vendors more focused
+Applying: scsi: fix a header to include linux/types.h
+Applying: drivers/scsi/megaraid.c: fix sparse warnings
+Applying: drivers/scsi/aacraid/commctrl.c: fix mem leak in aac_send_raw_srb=
+()
+Applying: drivers/scsi/osd/osd_uld.c: use ida_simple_get() to handle id
+Applying: drivers/scsi/sg.c: convert to kstrtoul_from_user()
+Applying: drivers/scsi/mpt2sas/mpt2sas_base.c: fix mismatch in mpt2sas_base=
+_hard_reset_handler() mutex lock-unlock
+Applying: drivers/message/fusion/mptbase.c: ensure NUL-termination of MptCa=
+llbacksName elements
+Applying: loop: prevent information leak after failed read
+Applying: loop: cleanup set_status interface
+Applying: loop-cleanup-set_status-interface-checkpatch-fixes
+Applying: cciss: auto engage SCSI mid layer at driver load time
+Applying: block: avoid unnecessary plug list flush
+Applying: block: add missed trace_block_plug
+Applying: include/linux/bio.h: use a static inline function for bio_integri=
+ty_clone()
+Applying: bio: change some signed vars to unsigned
+Applying: paride: fix potential information leak in pg_read()
+Applying: slab: add taint flag outputting to debug paths.
+Applying: slub: add taint flag outputting to debug paths
+Applying: drivers/tty/serial/pch_uart.c: add console support
+Applying: mm/page-writeback.c: make determine_dirtyable_memory static again
+Applying: vmscan: fix initial shrinker size handling
+Applying: vmscan: use atomic-long for shrinker batching
+Applying: vmscan-use-atomic-long-for-shrinker-batching-fix
+Applying: vmscan: promote shared file mapped pages
+Applying: vmscan: activate executable pages after first usage
+Applying: mm: add free_hot_cold_page_list() helper
+Applying: mm: fix page-faults detection in swap-token logic
+Applying: mm: add extra free kbytes tunable
+Applying: mm-add-extra-free-kbytes-tunable-update
+Applying: mm-add-extra-free-kbytes-tunable-update-checkpatch-fixes
+Applying: mm: add vm_area_add_early()
+Applying: selinuxfs: remove custom hex_to_bin()
+Applying: include/linux/security.h: fix security_inode_init_security() arg
+Applying: hpet: factor timer allocate from open
+Applying: intel_idle: fix API misuse
+Applying: intel_idle: disable auto_demotion for hotplugged CPUs
+Applying: poll: add poll_requested_events() function
+Applying: lib/crc: add slice by 8 algorithm to crc32.c
+Applying: lib-crc-add-slice-by-8-algorithm-to-crc32c-fix
+Applying: epoll: limit paths
+Applying: init/do_mounts_rd.c: fix ramdisk identification for padded cramfs
+Applying: oprofilefs: handle zero-length writes
+Applying: cgroups: add res_counter_write_u64() API
+Applying: cgroups: new resource counter inheritance API
+Applying: cgroups: add previous cgroup in can_attach_task/attach_task callb=
+acks
+Applying: cgroups: new cancel_attach_task() subsystem callback
+Applying: cgroups: ability to stop res charge propagation on bounded ancest=
+or
+Applying: cgroups: add res counter common ancestor searching
+Applying: res_counter: allow charge failure pointer to be null
+Applying: cgroups: pull up res counter charge failure interpretation to cal=
+ler
+Applying: cgroups: allow subsystems to cancel a fork
+Applying: cgroups: add a task counter subsystem
+Applying: cgroups: ERR_PTR needs err.h
+Applying: proc: force dcache drop on unauthorized access
+Applying: ipc/sem.c: alternatives to preempt_disable()
+Applying: fs/direct-io.c: salcuate fs_count correctly in get_more_blocks()
+Applying: vfs: cache request_queue in struct block_device
+Applying: dio: optimize cache misses in the submission path
+Applying: dio-optimize-cache-misses-in-the-submission-path-v2-checkpatch-fi=
+xes
+Applying: dio: using prefetch requires including prefetch.h
+Applying: ramoops: update parameters only after successful init
+Merging akpm (11a2f1f ramoops: update parameters only after successful init)
+
+--Signature=_Thu__3_Nov_2011_17_20_36_+1100_oD/ge2nS4c97vzls
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOsjK0AAoJEECxmPOUX5FERy4QAIk2z2fpq6n18xfnA9+1hiw7
+3kFzrSPacQNLAVbgkYXLRTpekjLSR2dazyJs7swaTPQ6G/YXcEZmAEdeMT/s7OAm
+I2Y2tt+cOQ6U2Fd1ugrZkl6oOQXiKZQcSt6EERN1FHSMDc85mUPjvvX4Jq2FMH+L
+na7MOVAdW6jHyk5eyr4gLzpanqI2/J2MRm5T4JzJ8SgJvvwuhn2cdb0JyDxHBr3Y
+T1Mqk3pkYC4qFhfL3TBEEfebSzwJxxXGQSFMbrapRMmIgCOCNZZ1bn50u8ycL5rg
+ZHVxHv1dJWsPIpDHLAMqeWt3xagzWf5zqj7ln1Yx0AJfAlKxhXLsCWXgCgTR8fFv
+OST3vZ/3YH1zuQsKQ3LnfmhpPS/PKSEgXvufPFFnjxyfXOTTSfLDo+DUUyG+m0yE
+VSRTyaeDrtfgKwUVRyzJh038WDH7nceJngya5WqnzlPcqGMinoeg02tkUlZTEgZL
+vPed6Qas3kE+S4ClMnn4pGHczRaL3ERIGUnh1woOsCPxbkAaI11CzZJo+ya55QQU
+nHGYsRiL3UOhZv/7vylN5PAAfe8htpe5soZ4hA27mjw41L6UoRo/5K+Dx3AQKGl1
+jtZsG6bnggQpmIIr5QSUdLdErO64aPXNp3UtSWfAqPheHbzLLgNms8+l+XIimdNS
+cEALDezCafbjtN3DK92r
+=8F8F
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Nov_2011_17_20_36_+1100_oD/ge2nS4c97vzls--
