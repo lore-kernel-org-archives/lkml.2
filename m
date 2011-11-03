@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab1KCCWL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:22:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50241 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754499Ab1KCBcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:32:20 -0400
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  2 15:14:51 2011
-Message-Id: <20111102221451.194182696@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 02 Nov 2011 15:13:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Marek Marczykowski <marmarek@mimuw.edu.pl>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [012/107] xen-blkfront: fix data size for xenbus_gather in blkfront_connect
-In-Reply-To: <20111102221600.GA26650@kroah.com>
+	id S1754561Ab1KCCW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:22:58 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35435 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752031Ab1KCCWy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 22:22:54 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="133917970"
+Date: Wed, 2 Nov 2011 19:22:52 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-ID: <20111103022252.GA23489@huya.qualcomm.com>
+References: <20110912120501.764336af05069fa23a371b5e@canb.auug.org.au>
+ <4E6D6C0D.60100@codeaurora.org>
+ <20110913115533.403d4fe6d961ccc8ba9b58b7@canb.auug.org.au>
+ <20111103130924.5811caec6db378f467006fc3@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103130924.5811caec6db378f467006fc3@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+On Thu, Nov 03, 2011 at 01:09:24PM +1100, Stephen Rothwell wrote:
+> Hi Arnd,
+> 
+> On Tue, 13 Sep 2011 11:55:33 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > On Sun, 11 Sep 2011 19:18:53 -0700 Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > >
+> > > The device tree machine description also needs to have the .fixup and
+> > > .reserve callbacks added to it so that the device tree machines boot
+> > > properly. Perhaps the soc tree needs to pull in Russell's tree at some
+> > > point to resolve this subtle logical conflict or when the trees are
+> > > merged together someone will need to do an evil merge and add the
+> > > callbacks in the merge commit.
+> > 
+> > Ah, right.  I have added this merge fixup for today and can carry it as
+> > necessary.
+> 
+> I am still applying this patch to the arm-soc merge.  I assume that it is
+> needed in Linus' tree now.
 
-------------------
+I can look more into this tomorrow.  When I was testing linux-next
+last week, the fixups weren't working with device tree anyway, so I
+might need to come up with another solution.
 
-From: Marek Marczykowski <marmarek@mimuw.edu.pl>
+The fixups are called with the ATAGS, which aren't available with DT.
+The meminfo is passed to the fixup, but it hasn't been initialized
+from the old ATAG information, so there isn't anything to fix up.
 
-commit 4352b47ab7918108b389a48d2163c9a4c2aaf139 upstream.
+I think I'm just going to have to convince our bootloader people to
+actually pass in the right memory information in the first place.
 
-barrier variable is int, not long. This overflow caused another variable
-override: "err" (in PV code) and "binfo" (in xenlinux code -
-drivers/xen/blkfront/blkfront.c). The later caused incorrect device
-flags (RO/removable etc).
+David
 
-Signed-off-by: Marek Marczykowski <marmarek@mimuw.edu.pl>
-Acked-by: Ian Campbell <Ian.Campbell@citrix.com>
-[v1: Changed title]
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 13 Sep 2011 11:51:48 +1000
+> Subject: [PATCH] arm-soc: merge fixup for fixup/reserve being added to MACHINE descriptions
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  arch/arm/mach-msm/board-msm8x60.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+> index 328df27..4ad2afb 100644
+> --- a/arch/arm/mach-msm/board-msm8x60.c
+> +++ b/arch/arm/mach-msm/board-msm8x60.c
+> @@ -153,6 +153,8 @@ MACHINE_END
+>  #ifdef CONFIG_OF
+>  /* TODO: General device tree support for all MSM. */
+>  DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+> +	.fixup = msm8x60_fixup,
+> +	.reserve = msm8x60_reserve,
+>  	.map_io = msm8x60_map_io,
+>  	.init_irq = msm8x60_init_irq,
+>  	.init_machine = msm8x60_dt_init,
+> -- 
+> 1.7.5.4
+> 
+> 
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
 
----
- drivers/block/xen-blkfront.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -889,7 +889,7 @@ static void blkfront_connect(struct blkf
- 	}
- 
- 	err = xenbus_gather(XBT_NIL, info->xbdev->otherend,
--			    "feature-barrier", "%lu", &info->feature_barrier,
-+			    "feature-barrier", "%d", &info->feature_barrier,
- 			    NULL);
- 	if (err)
- 		info->feature_barrier = 0;
 
 
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
