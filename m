@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345Ab1KCMmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:42:50 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:59222 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933120Ab1KCMmt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:42:49 -0400
-X-Sasl-enc: r8ZsnZNpwj0s1vEJqo+TJwmCtX1/kK/4RZAFsrmb6+EO 1320324168
-Date: Thu, 3 Nov 2011 10:42:43 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: HT (Hyper Threading) aware process scheduling doesn't work as
- it should
-Message-ID: <20111103124243.GA17252@khazad-dum.debian.net>
-References: <269467866.49093.1320004632156.JavaMail.mail@webmail17>
- <20111103081835.GA9330@elte.hu>
- <1758553229.334475.1320313445172.JavaMail.mail@webmail11>
+	id S933382Ab1KCMpl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:45:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933086Ab1KCMpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:45:39 -0400
+Date: Thu, 3 Nov 2011 14:46:51 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Subject: Re: virtio-pci new configuration proposal
+Message-ID: <20111103124651.GK18296@redhat.com>
+References: <1320259767.22582.2.camel@lappy>
+ <8762j2t19l.fsf@rustcorp.com.au>
+ <1320309203.29407.1.camel@lappy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1758553229.334475.1320313445172.JavaMail.mail@webmail11>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1320309203.29407.1.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Nov 2011, Artem S. Tashkinov wrote:
-> So, now the question is whether VCPUs quite an illogical enumeration is good for
-> power users as I highly doubt that 0-4, 1-5, 2-6 and 3-7 order can be easily
-> remembered and grasped. Besides neither top, not htop are HT aware so just by
+On Thu, Nov 03, 2011 at 10:33:23AM +0200, Sasha Levin wrote:
+> On Thu, 2011-11-03 at 12:28 +1030, Rusty Russell wrote: 
+> > On Wed, 02 Nov 2011 20:49:27 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
+> > > This is a proposal for a new layout of the virtio-pci config space.
+> > > 
+> > > We will separate the current configuration into two: A virtio-pci common
+> > > configuration and a device specific configuration. This allows more flexibility
+> > > with adding features and makes usage easier, specifically in cases like the
+> > > ones in virtio-net where device specific configurations depend on device
+> > > specific features.
+> > 
+> > Thanks for this Sasha.  Several general comments:
+> > 
+> > 1) How to we distinguish the two layouts?  In theory, we need to do this
+> >    forever.  In practice we can deprecate the old layout in several
+> >    years' time.
+> 
+> Old layouts won't have the new virtio-pci cap structure in their PCI
+> config space.
 
-Power users are directed to hwloc.  There's a reason I pointed you to it.
-hwloc would have told you upfront your real memory/cache/core/thread
-topology, either in text mode, through graphics, or as XML:
+What happens next time we want to change something?
 
-Here's hwloc's "lstopo" text output for my single-processor X5550:
+> > 2) I don't think we want to turn the device-specific config into a
+> >    linked list.  We haven't needed variable-length config (yet!), and
+> >    it's (slightly) more complex.  That's also the part of the spec which
+> >    is shared with non-PCI virtio implementations.
+> 
+> Variable length config wasn't used yet because space in the device
+> specific space was reserved for a feature even if that feature wasn't
+> used.
 
-Machine (6029MB) + Socket #0 + L3 #0 (8192KB)
-  L2 #0 (256KB) + L1 #0 (32KB) + Core #0
-    PU #0 (phys=0)
-    PU #1 (phys=4)
-  L2 #1 (256KB) + L1 #1 (32KB) + Core #1
-    PU #2 (phys=1)
-    PU #3 (phys=5)
-  L2 #2 (256KB) + L1 #2 (32KB) + Core #2
-    PU #4 (phys=2)
-    PU #5 (phys=6)
-  L2 #3 (256KB) + L1 #3 (32KB) + Core #3
-    PU #6 (phys=3)
-    PU #7 (phys=7)
+Not only that, also because it is messy to debug.  With fixed offsets
+you just print the address/data and you know what it's doing.
 
-http://www.open-mpi.org/projects/hwloc/
+> For example, the MAC feature reserved 6 bytes in the config space for
+> the MAC even if VIRTIO_NET_F_MAC wasn't enabled. Here we can just avoid
+> having it pollute the config space until it's enabled.
+> 
 
-and examples/documentation:
-http://www.open-mpi.org/projects/hwloc/doc/v1.3/
+This looks like overdesign to me. The only reason PCI spec
+used capability list is
+1. to save space
+2. standard mechanism to discover features
+You say explicitly space is not an issue, and you keep
+feature bits around.
 
-Most likely, your distro will have it packaged.
+> I don't think it'll have any impact on non-PCI implementations since the
+> "pointers" are simply offsets from the beginning of the config space,
+> and are not PCI specific in any way.
 
-You should also try the turbostat tool I pointed you at, it lives in the
-"tools/power/x86" folder inside the kernel source, and will help you track
-processor core performance a lot better than top/htop (but not what is using
-the cores):
+The APIs use a single offset cookie to pass configuration.
+If you want capabilities, that will have to be changed.
 
-(turbostat output):
-core CPU   %c0   GHz  TSC   %c1    %c3    %c6   %pc3   %pc6 
-           0.29 1.60 2.67   0.94  12.63  86.14   0.00   0.00
-   0   0   0.31 1.60 2.67   1.62   3.21  94.87   0.00   0.00
-   0   4   0.48 1.61 2.67   1.45   3.21  94.87   0.00   0.00
-   1   1   0.18 1.60 2.67   0.91   2.17  96.75   0.00   0.00
-   1   5   0.24 1.60 2.67   0.84   2.17  96.75   0.00   0.00
-   2   2   0.03 1.60 2.67   0.07   0.16  99.74   0.00   0.00
-   2   6   0.02 1.60 2.67   0.08   0.16  99.74   0.00   0.00
-   3   3   1.00 1.60 2.67   0.83  44.97  53.20   0.00   0.00
-   3   7   0.09 1.60 2.67   1.75  44.97  53.20   0.00   0.00
-
-Which tells me my system spends most of its time sleeping. You will notice
-it does tell you upfront that core 0 is CPUs 0 and 4.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+> > 3) If we're changing the queue layout, it's a chance to fix a
+> >    longstanding bug: let the guest notify the host of preferred
+> >    queue size and alignment.
+> 
+> Yup, we can do that.
+> 
+> -- 
+> 
+> Sasha.
+> 
