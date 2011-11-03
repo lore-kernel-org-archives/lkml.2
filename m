@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab1KCO1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:27:14 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:47532 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753765Ab1KCO1N (ORCPT
+	id S932304Ab1KCOaU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:30:20 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55770 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752833Ab1KCOaR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:27:13 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH RESEND] ARM: OMAP: omap_device: Include linux/export.h
-Organization: Texas Instruments, Inc.
-References: <1320303638.17983.5.camel@phoenix>
-Date: Thu, 03 Nov 2011 07:26:57 -0700
-In-Reply-To: <1320303638.17983.5.camel@phoenix> (Axel Lin's message of "Thu,
-	03 Nov 2011 15:00:38 +0800")
-Message-ID: <87d3d9i8ni.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 3 Nov 2011 10:30:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1320330107.2813.73.camel@hp6530s>
+References: <1320214900-2112-1-git-send-email-ming.m.lin@intel.com>
+	<20111102151711.GB12543@dhcp-172-17-108-109.mtv.corp.google.com>
+	<1320330107.2813.73.camel@hp6530s>
+Date: Thu, 3 Nov 2011 07:30:15 -0700
+X-Google-Sender-Auth: wUM-wueVidBTaxIOCQ8h2SDsf84
+Message-ID: <CAOS58YMSwnp=Vm81+0_ZO9OYB4=NMnfETBen0QNCQwuDW0TjUA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] ata port runtime power management support
+From: Tejun Heo <tj@kernel.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin <axel.lin@gmail.com> writes:
+Hello,
 
-> Include linux/export.h to fix below build warning:
+On Thu, Nov 3, 2011 at 7:21 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> * How much does this add on top of hardware timed auto spindown and
+>>   dynamic link power management?
 >
->   CC      arch/arm/plat-omap/omap_device.o
-> arch/arm/plat-omap/omap_device.c:1055: warning: data definition has no type or storage class
-> arch/arm/plat-omap/omap_device.c:1055: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL'
-> arch/arm/plat-omap/omap_device.c:1055: warning: parameter names (without types) in function declaration
+> Sorry, I don't understand this question.
+> What do you mean?
+
+I was curious about the amount of additional power saving on top of
+the existing PM features.
+
+>> * Do the added benefits justify yet another runtime powersaving
+>>   mechanism?
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> There will be ACPI firmware which supports ata port runtime D3Cold.
+> To enable ata port runtime PM is the first step.
 
-Thanks, will queue as a fix for v3.2-rc
+libata can already turn off unused ports although it wouldn't go as
+far as putting the whole controller into D3.
 
-Kevin
+>> * Any way we can tie the other stuff with overall runtime PM?
+>
+> What's the other stuff?
+> Do you mean tie disk/link/port/controller stuff with overall runtime PM?
+
+Hardware initiated spin-down (hdparm -S) and link power saving (look
+for ata_lpm_*). It would be great if there's an overall design how
+they interact before adding yet another PM vector.
+
+Thanks.
+
+-- 
+tejun
