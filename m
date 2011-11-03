@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1KCDWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 23:22:53 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:43734 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932193Ab1KCDWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 23:22:49 -0400
-Date: Thu, 3 Nov 2011 14:22:41 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: build failure after merge of the pci-current tree
-Message-Id: <20111103142241.036d664f3bd36936824b241f@canb.auug.org.au>
-In-Reply-To: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
-References: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz"
+	id S932789Ab1KCDY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 23:24:26 -0400
+Received: from oker.escape.de ([194.120.234.254]:34689 "EHLO oker.escape.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932193Ab1KCDYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 23:24:25 -0400
+Date: Thu, 3 Nov 2011 04:22:05 +0100
+From: Jochen Striepe <jochen@tolot.escape.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Shawn Pearce <spearce@spearce.org>, Junio C Hamano <gitster@pobox.com>,
+        git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+Message-ID: <20111103032205.GA25888@pompeji.miese-zwerge.org>
+References: <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
+ <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org>
+ <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+ <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+ <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
+ <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>
+ <CA+55aFyXg32mko8TOGCfGHpr3jHBEgcKiK7HdVwq0Wez0fAs9A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyXg32mko8TOGCfGHpr3jHBEgcKiK7HdVwq0Wez0fAs9A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+	Hi,
 
-Hi Jesse,
+On Wed, Nov 02, 2011 at 07:25:17PM -0700, Linus Torvalds wrote:
+> To me, the point of the tag is so that the person doing the merge can
+> verify that he merges something trusted.
+> 
+> However, everybody else seems to disagree, and wants that stupid
+> signature to live along in the repository.
 
-On Thu, 3 Nov 2011 12:53:25 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> After merging the pci-current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/pci/ats.c:13:26: fatal error: linux/export.h: No such file or dir=
-ectory
+It seems quite useless and leading to false conclusions in several cases
+where the merger's gpg output differs from someone's checking later on,
+e.g. when
 
-So this affected the pci tree as well.  So I have used the pci tree from
-next-20111102.
+ - the signing key has been revoked in the mean time (for whatever
+   reasons)
+ - the signing key has expired
+ - the public part of the signing key is not available for the general
+   public.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+AFAIK gpg just gives you an error code and a message like e.g. "Key has
+expired" without stating if the key was valid _when signing the commit_.
 
---Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz
-Content-Type: application/pgp-signature
+How do you plan to handle this when keeping the signature in the
+repository? Or am I overlooking something?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOsgkBAAoJEECxmPOUX5FEFUIP/RNSksvsmDzIVds6BXDArcYw
-Ol5kbulIUiqWpg4fJ7igGptjc/4XnlBVEZ1V24HfYU8gGAbCUpXxmaiZvnW+g/BM
-v9WEEcsXq+YBMguCw4rBs2lSEj6GB5i1Hn6yVB6+EhEV0LtEWaiONqTJFuNJSqec
-rcskw0UCWeU7c6nlx/DHc6BwSmOM/3YWupJ15DEwtOphdywnLh4kmvqfjiO6+74D
-g9FGQdSQ1Hg52hf8P3IJca+CxBHmKYslHTKpLcJ9WgcmJCiMC9xNTcBJPQIObM5M
-AOelKUirjeLemEnuhay5bRBE4AAtfGZqK+5ia6ezvtWVl0Lz68TEJ+IhdTvnJVyo
-8QdFPfUWUKG1PsNpcruzGvO4oDBzeMkpa9qtnDwTd+KQFbeSYCz7ZL9Qfzsdtd/n
-p1mXw4YQVZF00Dde6E334cKElWzZiujpYYBNBf2jFiH/3EsRGWKzdYebmAfpGoMN
-5khaofoDY35/TSEn/wFJxnsZ58c6Sv85+mEDVtK99e24KHMScq0IfkibQnz0OFAI
-3vi07LKOblI/nB2GfzQWwo27D5MUgSW0XOTUOMcY2gzIViakB/MOaV1SQbxNOxTY
-7Oi7DSbmdviPi/kC2EWdoxcX2bMBmoNB5Zt3gLzwAY/EYYg5BCFmvohWwrAFndCf
-sKV2QZYibV/YEFu/heXf
-=Bu9E
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Nov_2011_14_22_41_+1100_nyi6aIrkz_QWIkiz--
+Thanks,
+Jochen.
