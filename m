@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab1KCCEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 22:04:45 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:41921 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932124Ab1KCCEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 22:04:40 -0400
-Date: Wed, 2 Nov 2011 19:04:36 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: linux-next: build failure after merge of the pci-current tree
-Message-ID: <20111102190436.5b4c805a@jbarnes-desktop>
-In-Reply-To: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
-References: <20111103125325.c1e20275e3a68498465b5ddf@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S932400Ab1KCCEw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 22:04:52 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:51671 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab1KCCEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 22:04:48 -0400
+Date: Wed, 2 Nov 2011 19:03:01 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Lars =?iso-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lm-sensors@lm-sensors.org, Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: Hardware running hot and without the fan
+Message-ID: <20111103020301.GA22333@ericsson.com>
+References: <4EB1108F.6070009@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EB1108F.6070009@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011 12:53:25 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>From LKML:
 
-> Hi Jesse,
+On Wed, Nov 02, 2011 at 05:42:39AM -0400, Lars Noodén wrote:
+> There seem to be two problems here, one is that the hardware is getting
+> WAY too hot, another is that the fan is not turning on when the hardware
+> gets too hot.
 > 
-> After merging the pci-current tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+>   $ uname -a
+>   Linux xubuntu 3.1.0-999-generic #201110270406 SMP Thu Oct 27
+>   08:07:41 UTC 2011 x86_64 x86_64 x86_64 GNU/Linux
 > 
-> drivers/pci/ats.c:13:26: fatal error: linux/export.h: No such file or directory
+> I've reported the problem to Ubuntu
+> 	https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
+> and the suggestion there was to report it upstream.
 > 
-> Caused by commit 571eba1b8aa9 ("PCI: Fix compile errors with PCI_ATS and !
-> PCI_IOV").
+> On the notebook computer, parts become very hot to the touch while
+> running Ubuntu, but the fan does not run even after it gets hot.  When I
+> boot back to OS X, the fan kicks in and runs until the computer returns
+> to being cool to the touch.  Similar for the desktop, though I must
+> follow the temperature with /usr/bin/sensors.
 > 
-> You didn't build this, right? :-(  linux/export.h does not yet exist in
-> Linus' tree ...  I have used the pci-current tree from next-20111102 for
-> today.
+> The notebook is a MacBookPro8,2 and the desktop is a Macmini3,1
+> 
+> What metrics do I need to collect to help fix the problem?  I've already
+> reported the problem to Ubuntu[2] and the recommendation was to try
+> reporting upstream.
+> 
+> Please CC me in the replies.
+> /Lars
+> 
+> [1] http://kernel.ubuntu.com/~kernel-ppa/mainline/daily/current/
+> 
+> [2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593
 
-Oh I thought Randy said this stuff was in -next already...  Sorry for
-the trouble.
+I see
+	applesmc: : read arg fail
+in the dmesg log. No idea what that means. Maybe the driver maintainer 
+or someone else on the lm-sensors mailing list can help.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Not sure I understand your comment about having to follow the output of the
+sensors command. Can you clarify ? Also, do you get any output from the sensors
+command on the notebook ?
+
+Thanks,
+Guenter
+
