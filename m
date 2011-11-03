@@ -1,33 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab1KCASY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 20:18:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47192 "EHLO ogre.sisk.pl"
+	id S1754341Ab1KCATI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 20:19:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47205 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754422Ab1KCASV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 20:18:21 -0400
+	id S1753478Ab1KCATH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 20:19:07 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Jones <davej@redhat.com>
-Subject: Re: ACPI / PM: Add Sony VPCEB17FX to nonvs blacklist
-Date: Thu, 3 Nov 2011 01:20:56 +0100
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: PM / OPP: Fix build when CONFIG_PM_OPP is not set
+Date: Thu, 3 Nov 2011 01:21:42 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20111101164851.GA9444@redhat.com>
-In-Reply-To: <20111101164851.GA9444@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mike Turquette <mturquette@ti.com>, Kevin Hilman <khilman@ti.com>
+References: <20111102170055.GI31337@atomide.com>
+In-Reply-To: <20111102170055.GI31337@atomide.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111030120.56143.rjw@sisk.pl>
+Message-Id: <201111030121.42432.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 01, 2011, Dave Jones wrote:
-> Another entry for the nonvs blacklist, as noted by a user in
-> https://bugzilla.redhat.com/show_bug.cgi?id=641789#c12
+On Wednesday, November 02, 2011, Tony Lindgren wrote:
+> Commit 03ca370fbf7b76d6d002380dbdc2cdc2319f9c80 (PM / OPP: Add
+> OPP availability change notifier) does not compile if CONFIG_PM_OPP
+> is not set:
 > 
-> Signed-off-by: Dave Jones <davej@redhat.com>
+> arch/arm/plat-omap/omap-pm-noop.o: In function `opp_get_notifier':
+> include/linux/opp.h:103: multiple definition of `opp_get_notifier'
+> include/linux/opp.h:103: first defined here
+> 
+> Also fix incorrect comment.
+> 
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Mike Turquette <mturquette@ti.com>
+> Cc: Kevin Hilman <khilman@ti.com>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 
 Applied to linux-pm/linux-next.
 
@@ -35,25 +51,26 @@ Thanks,
 Rafael
 
 
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index 0e46fae..6d9a3ab 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -398,6 +398,14 @@ static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
->  	},
->  	{
->  	.callback = init_nvs_nosave,
-> +	.ident = "Sony Vaio VPCEB17FX",
-> +	.matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB17FX"),
-> +		},
-> +	},
-> +	{
-> +	.callback = init_nvs_nosave,
->  	.ident = "Sony Vaio VGN-SR11M",
->  	.matches = {
->  		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+> ---
+> 
+> I'm seeing this with omap1_defconfig at least.
+> 
+> --- a/include/linux/opp.h
+> +++ b/include/linux/opp.h
+> @@ -97,11 +97,11 @@ static inline int opp_disable(struct device *dev, unsigned long freq)
+>  	return 0;
+>  }
+>  
+> -struct srcu_notifier_head *opp_get_notifier(struct device *dev)
+> +static inline struct srcu_notifier_head *opp_get_notifier(struct device *dev)
+>  {
+>  	return ERR_PTR(-EINVAL);
+>  }
+> -#endif		/* CONFIG_PM */
+> +#endif		/* CONFIG_PM_OPP */
+>  
+>  #if defined(CONFIG_CPU_FREQ) && defined(CONFIG_PM_OPP)
+>  int opp_init_cpufreq_table(struct device *dev,
 > 
 > 
 
