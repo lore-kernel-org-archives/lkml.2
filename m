@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605Ab1KCFx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 01:53:58 -0400
-Received: from home.kolivas.org ([59.167.196.135]:54907 "EHLO mine.kolivas.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751038Ab1KCFx5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 01:53:57 -0400
-From: Con Kolivas <con@kolivas.org>
-To: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] 3.1.0-ck1
-Date: Thu, 03 Nov 2011 16:53:16 +1100
-Message-ID: <1636461.EdGrGCQCuj@quad>
-User-Agent: KMail/4.7.2 (Linux/3.1.0-ck1; KDE/4.7.2; x86_64; ; )
+	id S1753244Ab1KCF63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 01:58:29 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:40820 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750880Ab1KCF61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 01:58:27 -0400
+Date: Thu, 3 Nov 2011 06:58:24 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Luis Henriques <henrix@camandro.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the crypto-current
+ tree
+Message-ID: <20111103055824.GC22141@secunet.com>
+References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+ <20111102200900.GA3454@hades>
+ <20111102233936.GA10058@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102233936.GA10058@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 03 Nov 2011 05:58:24.0585 (UTC) FILETIME=[99578390:01CC99ED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are patches designed to improve system responsiveness and interactivity 
-with specific emphasis on the desktop, but suitable to any commodity hardware 
-workload.
+On Thu, Nov 03, 2011 at 10:39:36AM +1100, Herbert Xu wrote:
+> On Wed, Nov 02, 2011 at 08:09:13PM +0000, Luis Henriques wrote:
+> >
+> > I'm not sure if this is related, but I am currently unable to build mainline
+> > kernel when disabling CONFIG_NET.  This seems to be due to the patch serie:
+> > 
+> > http://news.gmane.org/gmane.linux.kernel.cryptoapi/cutoff=6228
+> > 
+> > For instance, commit 6ad414fe710d4fd3a8c8c6c2ad8fefcfcc207968 adds a dependency
+> > over function nla_put(), which is only defined when CONFIG_NET is enabled.
+> 
+> Indeed, I missed the dependency in the report functions which
+> is built even when CRYPTO_USER is turned off.
+> 
+> Does this patch fix the problem for you?
+> 
 
-As it may take some time to get a kernel.org account, I have started hosting 
-these patches exclusively on my site for now. 
-
-
-Apply to 3.1.x:
-http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/patch-3.1.0-ck1.bz2
-
-
-Broken out tarball:
-http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/3.1.0-ck1-broken-out.tar.bz2
-
-
-Discrete patches:
-http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/patches/
-
-
-BFS by itself:
-http://ck.kolivas.org/patches/bfs/
-
-
-Web:
-http://kernel.kolivas.org
-
-
-Code blog when I feel like it:
-http://ck-hack.blogspot.com/
-
-
-Each discrete patch usually contains a brief description of what it does at 
-the top of the patch itself.
-
-Full patchlist:
-
-3.1-sched-bfs-414.patch
-sched-add-above-background-load-function.patch
-mm-minimal_swappiness.patch
-mm-enable_swaptoken_only_when_swap_full.patch
-mm-drop_swap_cache_aggressively.patch
-mm-kswapd_inherit_prio-1.patch
-mm-background_scan.patch
-mm-idleprio_prio-1.patch
-mm-lru_cache_add_lru_tail-1.patch
-mm-decrease_default_dirty_ratio.patch
-kconfig-expose_vmsplit_option.patch
-hz-default_1000.patch
-hz-no_default_250.patch
-hz-raise_max.patch
-preempt-desktop-tune.patch
-cpufreq-bfs_tweaks.patch
-ck1-version.patch
-
-
-This is mainly a resync with the linux-3.1 kernel apart from the minor 
-improvements and cleanups that were committed to the BFS CPU scheduler.
-
-
-お楽しみ下さい
-Please enjoy!
-
--- 
--ck
+Hm, did you forget to add the patch to the mail?
