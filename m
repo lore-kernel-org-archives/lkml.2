@@ -1,55 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab1KCBYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Nov 2011 21:24:10 -0400
-Received: from [85.183.114.52] ([85.183.114.52]:45683 "EHLO Dublin.logfs.org"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753516Ab1KCBYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Nov 2011 21:24:08 -0400
-Date: Thu, 3 Nov 2011 02:25:04 +0100
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Prasad Joshi <prasadjoshi.linux@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josef Bacik <josef@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the logfs tree with Linus' tree
-Message-ID: <20111103012504.GC3485@logfs.org>
-References: <20111101141000.3531dbfbf0490c6d3521d6b6@canb.auug.org.au> <20111102190046.GB3485@logfs.org> <20111103120257.c0c13ebacc8d245ca75edbf1@canb.auug.org.au>
+	id S1754064Ab1KCBYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Nov 2011 21:24:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59412 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754460Ab1KCBYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Nov 2011 21:24:15 -0400
+Message-ID: <4EB1ED9F.3060708@cn.fujitsu.com>
+Date: Thu, 03 Nov 2011 09:25:51 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111103120257.c0c13ebacc8d245ca75edbf1@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing: Restore system filter behavior
+References: <4EAF46CF.8040408@cn.fujitsu.com>	 <1320258167.4793.45.camel@gandalf.stny.rr.com>	 <1320259868.4793.46.camel@gandalf.stny.rr.com> <1320266741.4793.50.camel@gandalf.stny.rr.com>
+In-Reply-To: <1320266741.4793.50.camel@gandalf.stny.rr.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-03 09:24:14,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-03 09:24:14,
+	Serialize complete at 2011-11-03 09:24:14
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 November 2011 12:02:57 +1100, Stephen Rothwell wrote:
-> On Wed, 2 Nov 2011 20:00:46 +0100 Jörn Engel <joern@logfs.org> wrote:
-> > On Tue, 1 November 2011 14:10:00 +1100, Stephen Rothwell wrote:
-> > > 
-> > > Today's linux-next merge of the logfs tree got a conflict in
-> > > fs/logfs/file.c between commit 02c24a82187d ("fs: push i_mutex and
-> > > filemap_write_and_wait down into ->fsync() handlers") from Linus' tree
-> > > and commit 39da12ef4bbe ("logfs: take write mutex lock during fsync and
-> > > sync") from the logfs tree.
-> > > 
-> > > I have no idea what needs to be done here.  I fixed it like below to make
-> > > it build, but a better fix is needed.
-> > 
-> > From a code perspective your fix below is correct, to the best of my
-> > judgement.  I'm less sure what to do from a git perspective.
-> > Explicitly tell Linus about it in the logfs pull request?
+Steven Rostedt wrote:
+> On Wed, 2011-11-02 at 14:51 -0400, Steven Rostedt wrote:
+>> On Wed, 2011-11-02 at 14:22 -0400, Steven Rostedt wrote:
+>>
+>>> The above shows how things are just ambiguous. I have no problem in
+>>> using the top filter to set multiple events. But the top filter should
+>>> not keep the state of what was set. Perhaps just have system event
+>>> filters always show default text. Like:
+>>>
+>>> # cat /debug/tracing/events/sched/filter
+>>> ### global filter ###
+>>> # Use this to set multiple event filters
+>>> # Only affects events that have the event fields specified in the filter
+>>>
+>>>
+>>> I'll add your patch, but are you OK with the above always printing for
+>>> system event filters?  Just to remove the ambiguous state.
+>>
+>>
+>> As the filter is also used to show errors, I'll only have it print the
+>> "message" if the filter worked. If there's an error, then the error
+>> message will display instead.
+>>
 > 
-> I was concered about the locking order (or if both locks were needed at
-> all).  And, yes, tell Linus.
+> What's your thought on the below patch?
+> 
 
-Locking order should be fine.  Whether both locks are needed is a
-valid question.  I suspect the answer is yes.
+I'm fine with this idea. 
 
-Jörn
+a comment below..
 
--- 
-Simplicity is prerequisite for reliability.
--- Edsger W. Dijkstra
+> -- Steve
+> 
+> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+> index 86040d9..6dee2b5 100644
+> --- a/kernel/trace/trace_events_filter.c
+> +++ b/kernel/trace/trace_events_filter.c
+> @@ -27,6 +27,12 @@
+>  #include "trace.h"
+>  #include "trace_output.h"
+>  
+> +#define DEFAULT_SYS_FILTER_MESSAGE					\
+> +	"### global filter ###\n"					\
+> +	"# Use this to set filters for multiple events.\n"		\
+> +	"# Only events with the given fields will be affected.\n"	\
+> +	"# If no events are modified, an error message will be displayed here"
+> +
+>  enum filter_op_ids
+>  {
+>  	OP_OR,
+> @@ -646,7 +652,7 @@ void print_subsystem_event_filter(struct event_subsystem *system,
+>  	if (filter && filter->filter_string)
+>  		trace_seq_printf(s, "%s\n", filter->filter_string);
+>  	else
+> -		trace_seq_printf(s, "none\n");
+> +		trace_seq_printf(s, DEFAULT_SYS_FILTER_MESSAGE "\n");
+>  	mutex_unlock(&event_mutex);
+>  }
+>  
+> @@ -1838,7 +1844,8 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
+>  	if (!filter)
+>  		goto out;
+>  
+> -	replace_filter_string(filter, filter_string);
+> +	/* System filters just show a default message */
+> +	replace_filter_string(filter, DEFAULT_SYS_FILTER_MESSAGE);
+
+Seems we can call remove_filter_string() instead to save memory.
+
+>  	/*
+>  	 * No event actually uses the system filter
+>  	 * we can free it without synchronize_sched().
+> @@ -1848,14 +1855,12 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
+>  
+>  	parse_init(ps, filter_ops, filter_string);
+>  	err = filter_parse(ps);
+> -	if (err) {
+> -		append_filter_err(ps, system->filter);
+> -		goto out;
+> -	}
+> +	if (err)
+> +		goto err_filter;
+>  
+>  	err = replace_system_preds(system, ps, filter_string);
+>  	if (err)
+> -		append_filter_err(ps, system->filter);
+> +		goto err_filter;
+>  
+>  out:
+>  	filter_opstack_clear(ps);
+> @@ -1865,6 +1870,11 @@ out_unlock:
+>  	mutex_unlock(&event_mutex);
+>  
+>  	return err;
+> +
+> +err_filter:
+> +	replace_filter_string(filter, filter_string);
+> +	append_filter_err(ps, system->filter);
+> +	goto out;
+>  }
+>  
+>  #ifdef CONFIG_PERF_EVENTS
+> 
+> 
+> 
