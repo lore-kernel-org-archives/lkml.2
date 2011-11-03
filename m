@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab1KCRhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 13:37:11 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:57692 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab1KCRhJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 13:37:09 -0400
-X-SENDER-IP: [85.230.170.217]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq1dAOHQsk5V5qrZPGdsb2JhbAAqGqhggSAZAQEBATcygXIBAQUyASMjEAgDGC4UJQoaiBcGI7RlEoM1hHZiBJlXjCc
-X-IronPort-AV: E=Sophos;i="4.69,451,1315173600"; 
-   d="scan'208";a="66286935"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 3 Nov 2011 18:46:35 +0100
-To: Lars =?iso-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
-Cc: guenter.roeck@ericsson.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: Hardware running hot and without the fan
-Message-ID: <20111103174635.GA12229@polaris.bitmath.org>
-References: <4EB1108F.6070009@gmail.com>
- <20111103020301.GA22333@ericsson.com>
- <4EB250FD.3070000@gmail.com>
- <20111103134902.GA26121@ericsson.com>
- <4EB2A46B.8080600@gmail.com>
- <1320332801.2309.60.camel@groeck-laptop>
- <4EB2B0FD.309@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EB2B0FD.309@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933351Ab1KCRiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 13:38:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932140Ab1KCRiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 13:38:54 -0400
+Date: Thu, 3 Nov 2011 13:40:56 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Anton Altaparmakov <aia21@cam.ac.uk>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, LKML <linux-kernel@vger.kernel.org>,
+        Unix Support <unix-support@ucs.cam.ac.uk>
+Subject: Re: CIFS: Rename bug on servers not supporting inode numbers
+Message-ID: <20111103134056.178ee9e3@barsoom.rdu.redhat.com>
+In-Reply-To: <81357503-810A-477A-A320-D39F2CD69547@cam.ac.uk>
+References: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
+	<81357503-810A-477A-A320-D39F2CD69547@cam.ac.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 05:19:25PM +0200, Lars Noodén wrote:
-> On 11/03/2011 05:06 PM, Guenter Roeck wrote:
-> > On Thu, 2011-11-03 at 10:25 -0400, Lars Noodén wrote:
-> [snip]
-> >> The one machine reports one fan and the other two fans.  I haven't found
-> >> a way to set the fan speed manually.  The output from sensors
-> >> is
-> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/44
-> >> and here
-> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/47
-> > 
-> > Do the fans actually turn, or is the output bogus ?
+On Thu, 3 Nov 2011 15:42:13 +0000
+Anton Altaparmakov <aia21@cam.ac.uk> wrote:
+
+> Hi,
 > 
-> The output is bogus, the fans are not turning.  On #47 there above, I
-> think the temperatures might be inaccurate, too.  Since they'll go up
-> and down as much as 8 degrees in a few seconds.
+> I should add that we are using iocharset=utf8 mount option which means that the dcache hash/compare functions done in the cifs module do not work because it uses nls_tolower() and nls_strnicmp() both of which for utf8 NLS in the kernel do not do anything at all and effectively behave case sensitively!
 > 
-> > You should be able to set the fan speed by writing into the fanX_input
-> > and/or fanX_output sysfs attributes. You find those
-> > in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
-> > device).
+> Thus this bug/problem in all likelyhood only affects utf8 iocharset users on a case-insensitive but case-preserving CIFS server that does not support server inode numbers.
 > 
-> I can set the fan speed manually.  e.g.:
+> That probably explains why it has not been noticed before!
 > 
->  echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
+> We need utf8 thus we still need to fix this issue.
 > 
-> That helps some.
+> Best regards,
+> 
+> 	Anton
+> 
 
-I am confused.
+I'm confused...
 
->From what I gather, the fans work, and it should be possible to run
-the macfanctld daemon (not fancontrol) to tune the fans.
+If the filesystem being served out by the server is using utf8, then
+how is it handling the case-insensitivity?
 
-If there really is a problem with the applesmc, following
-http://ubuntuforums.org/showthread.php?t=924096 is a good idea.
-
-However, the root problem is most likely the GPU consuming too much
-power. Depending on the exact laptop model, there may or may not be a
-viable workaround. If you model is very new, there is most likely and
-active thread about it on the ubuntu forums.
-
-After checking around on the forums, if you find that this is still a
-fan or temperature sensor problem, and not a GPU problem, then please
-restate the problem as exactly as you can.
-
-Thanks.
-Henrik
+-- 
+Jeff Layton <jlayton@redhat.com>
