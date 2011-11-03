@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab1KCRKD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 13:10:03 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:7251 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933120Ab1KCRJ7 (ORCPT
+	id S1755958Ab1KCRL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 13:11:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41559 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab1KCRLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 13:09:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6518"; a="134262363"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: [PATCH] scripts/tags.sh: Add Page flag function magic
-Date: Thu,  3 Nov 2011 10:09:57 -0700
-Message-Id: <1320340197-9063-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.rc0
+	Thu, 3 Nov 2011 13:11:55 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/2] perf top: Fix live annotation in the --stdio interface
+Date: Thu,  3 Nov 2011 15:11:46 -0200
+Message-Id: <1320340306-24062-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1320340306-24062-1-git-send-email-acme@infradead.org>
+References: <1320340306-24062-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It takes a while to find the macro-magically defined Page*()
-functions defined in include/linux/page-flags.h if you're new to
-the kernel. Add some magic to the tags script to transform these
-macros into the actual functions they are, so that tag jumping in
-the mm code is a bit easier.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+In the old --stdio interface the annotation is done just after one
+selects a symbol, while in --tui, now the default when the required libs
+are installed, we annotate all symbols with samples so that when
+annotation is asked we see what happened recently on that symbol.
+
+To achieve that the --stdio variant checks if the hist_entry being
+processed is the one selected by the user via the 's' hotkey. What
+happens now that we share the hist_entry abstractions with 'perf report'
+is that for minimizing locking contention multiple rb_trees are used,
+one for collecting the samples and other to browse/show them after
+resorting it by number of samples and decay them, which is done
+periodically.
+
+So the simple test in record_precise_ip doesn't work as we move
+hist_entries between those rb_trees. To fix it just check that the
+underlying struct symbol associated with those hist_entries is the same.
+
+Reported-by: Mike Galbraith <efault@gmx.de>
+Tested-by: Mike Galbraith <efault@gmx.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-bcfnraqkux88fox9ba9767ds@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/builtin-top.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Tested-by welcome because I didn't actually test the emacs part.
-
- scripts/tags.sh |   46 ++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 44 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 38f6617..028dc5c 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -132,7 +132,28 @@ exuberant()
- 	--regex-asm='/^(ENTRY|_GLOBAL)\(([^)]*)\).*/\2/'        \
- 	--regex-c='/^SYSCALL_DEFINE[[:digit:]]?\(([^,)]*).*/sys_\1/' \
- 	--regex-c++='/^TRACE_EVENT\(([^,)]*).*/trace_\1/'		\
--	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'
-+	--regex-c++='/^DEFINE_EVENT\([^,)]*, *([^,)]*).*/trace_\1/'	\
-+	--regex-c++='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
-+	--regex-c++='/PAGEFLAG\(([^,)]*).*/SetPage\1/'			\
-+	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
-+	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
-+	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
-+	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
-+	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
-+	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
-+	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
-+	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
-+	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
-+	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
-+	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'		\
-+	--regex-c++='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'		\
-+	--regex-c++='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'		\
-+	--regex-c++='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
-+	--regex-c++='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/'	\
-+	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
-+	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index a13f887..c9cdedb 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -200,7 +200,8 @@ static void record_precise_ip(struct hist_entry *he, int counter, u64 ip)
+ 	struct symbol *sym;
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -154,7 +175,28 @@ emacs()
- 	--regex='/^(ENTRY|_GLOBAL)(\([^)]*\)).*/\2/'            \
- 	--regex='/^SYSCALL_DEFINE[0-9]?(\([^,)]*\).*/sys_\1/'   \
- 	--regex='/^TRACE_EVENT(\([^,)]*\).*/trace_\1/'		\
--	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/'
-+	--regex='/^DEFINE_EVENT([^,)]*, *\([^,)]*\).*/trace_\1/' \
-+	--regex='/PAGEFLAG\(([^,)]*).*/Page\1/'			\
-+	--regex='/PAGEFLAG\(([^,)]*).*/SetPage\1/'		\
-+	--regex='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
-+	--regex='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'	\
-+	--regex='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'		\
-+	--regex='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
-+	--regex='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'	\
-+	--regex='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'	\
-+	--regex='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
-+	--regex='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
-+	--regex='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
-+	--regex='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
-+	--regex='/TESTSCFLAG\(([^,)]*).*/TestSetPage\1/'	\
-+	--regex='/TESTSCFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex='/SETPAGEFLAG_NOOP\(([^,)]*).*/SetPage\1/'	\
-+	--regex='/CLEARPAGEFLAG_NOOP\(([^,)]*).*/ClearPage\1/'	\
-+	--regex='/__CLEARPAGEFLAG_NOOP\(([^,)]*).*/__ClearPage\1/' \
-+	--regex='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
-+	--regex='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/'
+ 	if (he == NULL || he->ms.sym == NULL ||
+-	    (he != top.sym_filter_entry && use_browser != 1))
++	    ((top.sym_filter_entry == NULL ||
++	      top.sym_filter_entry->ms.sym != he->ms.sym) && use_browser != 1))
+ 		return;
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+ 	sym = he->ms.sym;
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.2.5
 
