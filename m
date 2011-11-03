@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab1KCMPB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:15:01 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53956 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933086Ab1KCMO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:14:58 -0400
-MIME-Version: 1.0
-Date: Thu, 3 Nov 2011 14:14:56 +0200
-Message-ID: <CAJtFfxmovJHspHHKbvBVc4pw+u5mjGmUejCXEzdV+GqE=jVSOQ@mail.gmail.com>
-Subject: Simultaneous cat and external keyboard input causing kernel panic
-From: Timo Jyrinki <timo.jyrinki@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S933237Ab1KCMcW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:32:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48756 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755817Ab1KCMcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:32:20 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
+Subject: [PATCH 9/9] KVM: x86 emulator: implement RDPMC (0F 33)
+Date: Thu,  3 Nov 2011 14:31:38 +0200
+Message-Id: <1320323498-10233-10-git-send-email-gleb@redhat.com>
+In-Reply-To: <1320323498-10233-1-git-send-email-gleb@redhat.com>
+References: <1320323498-10233-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Avi Kivity <avi@redhat.com>
 
-I encountered a kernel panic with the 3.1.0 kernel on a Dell Latitude
-E6410 while inputting simultaneously from the integrated keyboard with
-a cat and from the external keyboard myself. I was trying to type my
-password with the external keyboard (pw dialog already visible), but I
-noticed that the computer didn't seem responsive to my typing. Then
-suddenly the cat shifted his position and there was a kernel panic
-involving input handling. I'm now using i8042.nokbd kernel parameter
-as a workaround, something I've found useful also earlier.
+Signed-off-by: Avi Kivity <avi@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ arch/x86/include/asm/kvm_emulate.h |    1 +
+ arch/x86/kvm/emulate.c             |   13 ++++++++++++-
+ arch/x86/kvm/x86.c                 |    7 +++++++
+ 3 files changed, 20 insertions(+), 1 deletions(-)
 
-I wonder if anyone else is experiencing similar problems? This didn't
-seem to happen with 3.0, which was the first kernel version I used on
-this E6410. Although it has to be noted that the internal keyboard
-input was not yet as heavy either at that time. Please test if you can
-reproduce the problem.
+diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
+index 9a4acf4..ab4092e 100644
+--- a/arch/x86/include/asm/kvm_emulate.h
++++ b/arch/x86/include/asm/kvm_emulate.h
+@@ -181,6 +181,7 @@ struct x86_emulate_ops {
+ 	int (*set_dr)(struct x86_emulate_ctxt *ctxt, int dr, ulong value);
+ 	int (*set_msr)(struct x86_emulate_ctxt *ctxt, u32 msr_index, u64 data);
+ 	int (*get_msr)(struct x86_emulate_ctxt *ctxt, u32 msr_index, u64 *pdata);
++	int (*read_pmc)(struct x86_emulate_ctxt *ctxt, u32 pmc, u64 *pdata);
+ 	void (*halt)(struct x86_emulate_ctxt *ctxt);
+ 	void (*wbinvd)(struct x86_emulate_ctxt *ctxt);
+ 	int (*fix_hypercall)(struct x86_emulate_ctxt *ctxt);
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index c0ee85b..d76a852 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -2623,6 +2623,17 @@ static int em_rdtsc(struct x86_emulate_ctxt *ctxt)
+ 	return X86EMUL_CONTINUE;
+ }
+ 
++static int em_rdpmc(struct x86_emulate_ctxt *ctxt)
++{
++	u64 pmc;
++
++	if (ctxt->ops->read_pmc(ctxt, ctxt->regs[VCPU_REGS_RCX], &pmc))
++		return emulate_gp(ctxt, 0);
++	ctxt->regs[VCPU_REGS_RAX] = (u32)pmc;
++	ctxt->regs[VCPU_REGS_RDX] = pmc >> 32;
++	return X86EMUL_CONTINUE;
++}
++
+ static int em_mov(struct x86_emulate_ctxt *ctxt)
+ {
+ 	ctxt->dst.val = ctxt->src.val;
+@@ -3254,7 +3265,7 @@ static struct opcode twobyte_table[256] = {
+ 	DI(ImplicitOps | Priv, wrmsr),
+ 	IIP(ImplicitOps, em_rdtsc, rdtsc, check_rdtsc),
+ 	DI(ImplicitOps | Priv, rdmsr),
+-	DIP(ImplicitOps, rdpmc, check_rdpmc),
++	IIP(ImplicitOps, em_rdpmc, rdpmc, check_rdpmc),
+ 	I(ImplicitOps | VendorSpecific, em_sysenter),
+ 	I(ImplicitOps | Priv | VendorSpecific, em_sysexit),
+ 	N, N,
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 56153a9..b1bd52f 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4654,6 +4654,12 @@ static int emulator_set_msr(struct x86_emulate_ctxt *ctxt,
+ 	return kvm_set_msr(emul_to_vcpu(ctxt), msr_index, data);
+ }
+ 
++static int emulator_read_pmc(struct x86_emulate_ctxt *ctxt,
++			     u32 pmc, u64 *pdata)
++{
++	return kvm_pmu_read_pmc(emul_to_vcpu(ctxt), pmc, pdata);
++}
++
+ static void emulator_halt(struct x86_emulate_ctxt *ctxt)
+ {
+ 	emul_to_vcpu(ctxt)->arch.halt_request = 1;
+@@ -4706,6 +4712,7 @@ static struct x86_emulate_ops emulate_ops = {
+ 	.set_dr              = emulator_set_dr,
+ 	.set_msr             = emulator_set_msr,
+ 	.get_msr             = emulator_get_msr,
++	.read_pmc            = emulator_read_pmc,
+ 	.halt                = emulator_halt,
+ 	.wbinvd              = emulator_wbinvd,
+ 	.fix_hypercall       = emulator_fix_hypercall,
+-- 
+1.7.5.3
 
-Photos of the panic at http://people.debian.org/~timo/kernelpaniccat/.
-The first one was taken about ten seconds after the panic and shows
-the original cat positioning. The two other ones show alternative
-possible positions together with more of the panic text. There is also
-one photo showing the pre-crash setup, which I happened to take
-without anticipating a panic. The similar but black input weight was
-not in use.
-
-The kernel was tainted because the Intel "mei" module from staging was
-loaded. The kernel used was the final 3.1 from the ubuntu mainline ppa
-archives for amd64.
-
-Thank you,
-
-Timo Jyrinki
