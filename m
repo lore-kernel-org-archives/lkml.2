@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933382Ab1KCMpl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:45:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25936 "EHLO mx1.redhat.com"
+	id S1755871Ab1KCMuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:50:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27578 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab1KCMpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:45:39 -0400
-Date: Thu, 3 Nov 2011 14:46:51 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111103124651.GK18296@redhat.com>
-References: <1320259767.22582.2.camel@lappy>
- <8762j2t19l.fsf@rustcorp.com.au>
- <1320309203.29407.1.camel@lappy>
+	id S1755824Ab1KCMuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:50:50 -0400
+Date: Thu, 3 Nov 2011 13:49:38 +0100
+From: Johannes Weiner <jweiner@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: khlebnikov@parallels.com, penberg@kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hannes@cmpxchg.org, riel@redhat.com, mel@csn.ul.ie,
+        minchan.kim@gmail.com, gene.heskett@gmail.com
+Subject: Re: [rfc 2/3] mm: vmscan: treat inactive cycling as neutral
+Message-ID: <20111103124938.GL19965@redhat.com>
+References: <20110808110658.31053.55013.stgit@localhost6>
+ <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
+ <4E3FD403.6000400@parallels.com>
+ <20111102163056.GG19965@redhat.com>
+ <20111102163213.GI19965@redhat.com>
+ <4EB1862E.8070401@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320309203.29407.1.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EB1862E.8070401@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 10:33:23AM +0200, Sasha Levin wrote:
-> On Thu, 2011-11-03 at 12:28 +1030, Rusty Russell wrote: 
-> > On Wed, 02 Nov 2011 20:49:27 +0200, Sasha Levin <levinsasha928@gmail.com> wrote:
-> > > This is a proposal for a new layout of the virtio-pci config space.
-> > > 
-> > > We will separate the current configuration into two: A virtio-pci common
-> > > configuration and a device specific configuration. This allows more flexibility
-> > > with adding features and makes usage easier, specifically in cases like the
-> > > ones in virtio-net where device specific configurations depend on device
-> > > specific features.
+On Wed, Nov 02, 2011 at 11:04:30AM -0700, KOSAKI Motohiro wrote:
+> (11/2/2011 9:32 AM), Johannes Weiner wrote:
+> > Each page that is scanned but put back to the inactive list is counted
+> > as a successful reclaim, which tips the balance between file and anon
+> > lists more towards the cycling list.
 > > 
-> > Thanks for this Sasha.  Several general comments:
+> > This does - in my opinion - not make too much sense, but at the same
+> > time it was not much of a problem, as the conditions that lead to an
+> > inactive list cycle were mostly temporary - locked page, concurrent
+> > page table changes, backing device congested - or at least limited to
+> > a single reclaimer that was not allowed to unmap or meddle with IO.
+> > More important than being moderately rare, those conditions should
+> > apply to both anon and mapped file pages equally and balance out in
+> > the end.
 > > 
-> > 1) How to we distinguish the two layouts?  In theory, we need to do this
-> >    forever.  In practice we can deprecate the old layout in several
-> >    years' time.
+> > Recently, we started cycling file pages in particular on the inactive
+> > list much more aggressively, for used-once detection of mapped pages,
+> > and when avoiding writeback from direct reclaim.
+> > 
+> > Those rotated pages do not exactly speak for the reclaimability of the
+> > list they sit on and we risk putting immense pressure on file list for
+> > no good reason.
+> > 
+> > Instead, count each page not reclaimed and put back to any list,
+> > active or inactive, as rotated, so they are neutral with respect to
+> > the scan/rotate ratio of the list class, as they should be.
+> > 
+> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> > ---
+> >  mm/vmscan.c |    9 ++++-----
+> >  1 files changed, 4 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 39d3da3..6da66a7 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1360,7 +1360,9 @@ putback_lru_pages(struct zone *zone, struct scan_control *sc,
+> >  	 */
+> >  	spin_lock(&zone->lru_lock);
+> >  	while (!list_empty(page_list)) {
+> > +		int file;
+> >  		int lru;
+> > +
+> >  		page = lru_to_page(page_list);
+> >  		VM_BUG_ON(PageLRU(page));
+> >  		list_del(&page->lru);
+> > @@ -1373,11 +1375,8 @@ putback_lru_pages(struct zone *zone, struct scan_control *sc,
+> >  		SetPageLRU(page);
+> >  		lru = page_lru(page);
+> >  		add_page_to_lru_list(zone, page, lru);
+> > -		if (is_active_lru(lru)) {
+> > -			int file = is_file_lru(lru);
+> > -			int numpages = hpage_nr_pages(page);
+> > -			reclaim_stat->recent_rotated[file] += numpages;
+> > -		}
+> > +		file = is_file_lru(lru);
+> > +		reclaim_stat->recent_rotated[file] += hpage_nr_pages(page);
+> >  		if (!pagevec_add(&pvec, page)) {
+> >  			spin_unlock_irq(&zone->lru_lock);
+> >  			__pagevec_release(&pvec);
 > 
-> Old layouts won't have the new virtio-pci cap structure in their PCI
-> config space.
+> When avoiding writeback from direct reclaim case, I think we shouldn't increase
+> recent_rotated because VM decided "the page should be eviceted, but also it
+> should be delayed". i'm not sure it's minor factor or not.
 
-What happens next time we want to change something?
+But we DO increase recent_scanned another time when the page is
+reclaimed on the next round.
 
-> > 2) I don't think we want to turn the device-specific config into a
-> >    linked list.  We haven't needed variable-length config (yet!), and
-> >    it's (slightly) more complex.  That's also the part of the spec which
-> >    is shared with non-PCI virtio implementations.
-> 
-> Variable length config wasn't used yet because space in the device
-> specific space was reserved for a feature even if that feature wasn't
-> used.
-
-Not only that, also because it is messy to debug.  With fixed offsets
-you just print the address/data and you know what it's doing.
-
-> For example, the MAC feature reserved 6 bytes in the config space for
-> the MAC even if VIRTIO_NET_F_MAC wasn't enabled. Here we can just avoid
-> having it pollute the config space until it's enabled.
-> 
-
-This looks like overdesign to me. The only reason PCI spec
-used capability list is
-1. to save space
-2. standard mechanism to discover features
-You say explicitly space is not an issue, and you keep
-feature bits around.
-
-> I don't think it'll have any impact on non-PCI implementations since the
-> "pointers" are simply offsets from the beginning of the config space,
-> and are not PCI specific in any way.
-
-The APIs use a single offset cookie to pass configuration.
-If you want capabilities, that will have to be changed.
-
-> > 3) If we're changing the queue layout, it's a chance to fix a
-> >    longstanding bug: let the guest notify the host of preferred
-> >    queue size and alignment.
-> 
-> Yup, we can do that.
-> 
-> -- 
-> 
-> Sasha.
-> 
+If we don't increase recent_rotated for deferred reclaims, they are
+counted as success twice and so considered more valuable than
+immediate reclaims.  I don't think that makes sense.
