@@ -1,128 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab1KCMgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 08:36:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12475 "EHLO mx1.redhat.com"
+	id S933660Ab1KCMg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 08:36:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33920 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933490Ab1KCMeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 08:34:25 -0400
+	id S933455Ab1KCMeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 08:34:23 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: avi@redhat.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCHv2 6/9] perf: expose perf capability to other modules.
-Date: Thu,  3 Nov 2011 14:33:35 +0200
-Message-Id: <1320323618-10375-7-git-send-email-gleb@redhat.com>
+Subject: [PATCHv2 1/9] KVM: Expose kvm_lapic_local_deliver()
+Date: Thu,  3 Nov 2011 14:33:30 +0200
+Message-Id: <1320323618-10375-2-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320323618-10375-1-git-send-email-gleb@redhat.com>
 References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KVM needs to know perf capability to decide which PMU it can expose to a
-guest.
+From: Avi Kivity <avi@redhat.com>
 
+Needed to deliver performance monitoring interrupts.
+
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/include/asm/perf_event.h      |   15 +++++++++++++++
- arch/x86/kernel/cpu/perf_event.c       |   11 +++++++++++
- arch/x86/kernel/cpu/perf_event.h       |    2 ++
- arch/x86/kernel/cpu/perf_event_intel.c |    3 +++
- 4 files changed, 31 insertions(+), 0 deletions(-)
+ arch/x86/kvm/lapic.c |    2 +-
+ arch/x86/kvm/lapic.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index f61c62f..44b9145 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -81,6 +81,15 @@ union cpuid10_edx {
- 	unsigned int full;
- };
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 54abb40..e87e43e 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1120,7 +1120,7 @@ int apic_has_pending_timer(struct kvm_vcpu *vcpu)
+ 	return 0;
+ }
  
-+struct x86_pmu_capability {
-+	int version;
-+	int num_counters_gp;
-+	int num_counters_fixed;
-+	int bit_width_gp;
-+	int bit_width_fixed;
-+	unsigned int events_mask;
-+	int events_mask_len;
-+};
- 
- /*
-  * Fixed-purpose performance events:
-@@ -202,6 +211,7 @@ struct perf_guest_switch_msr {
- };
- 
- extern struct perf_guest_switch_msr *perf_guest_get_msrs(int *nr);
-+extern void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap);
- #else
- static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
+-static int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
  {
-@@ -209,6 +219,11 @@ static inline perf_guest_switch_msr *perf_guest_get_msrs(int *nr)
- 	return NULL;
- }
+ 	u32 reg = apic_get_reg(apic, lvt_type);
+ 	int vector, mode, trig_mode;
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 138e8cc..6f4ce25 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,6 +34,7 @@ void kvm_apic_set_version(struct kvm_vcpu *vcpu);
+ int kvm_apic_match_physical_addr(struct kvm_lapic *apic, u16 dest);
+ int kvm_apic_match_logical_addr(struct kvm_lapic *apic, u8 mda);
+ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq);
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type);
  
-+static inline void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
-+{
-+	memset(cap, 0, sizeof(*cap));
-+}
-+
- static inline void perf_events_lapic_init(void)	{ }
- #endif
- 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 6408910..94ac9ca 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1570,3 +1570,14 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
- 
- 	return misc;
- }
-+
-+void perf_get_x86_pmu_capability(struct x86_pmu_capability *cap)
-+{
-+	cap->version = x86_pmu.version;
-+	cap->num_counters_gp = x86_pmu.num_counters;
-+	cap->num_counters_fixed = x86_pmu.num_counters_fixed;
-+	cap->bit_width_gp = cap->bit_width_fixed = x86_pmu.cntval_bits;
-+	cap->events_mask = x86_pmu.events_mask;
-+	cap->events_mask_len = x86_pmu.events_mask_len;
-+}
-+EXPORT_SYMBOL_GPL(perf_get_x86_pmu_capability);
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index b9698d4..e9ed238 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -259,6 +259,8 @@ struct x86_pmu {
- 	int		num_counters_fixed;
- 	int		cntval_bits;
- 	u64		cntval_mask;
-+	u32		events_mask;
-+	int		events_mask_len;
- 	int		apic;
- 	u64		max_period;
- 	struct event_constraint *
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index e09ca20..64e5f35 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1580,6 +1580,8 @@ __init int intel_pmu_init(void)
- 	x86_pmu.num_counters		= eax.split.num_counters;
- 	x86_pmu.cntval_bits		= eax.split.bit_width;
- 	x86_pmu.cntval_mask		= (1ULL << eax.split.bit_width) - 1;
-+	x86_pmu.events_mask		= ebx;
-+	x86_pmu.events_mask_len		= eax.split.mask_length;
- 
- 	/*
- 	 * Quirk: v2 perfmon does not report fixed-purpose events, so
-@@ -1651,6 +1653,7 @@ __init int intel_pmu_init(void)
- 			 * architectural event which is often completely bogus:
- 			 */
- 			intel_perfmon_event_map[PERF_COUNT_HW_BRANCH_MISSES] = 0x7f89;
-+			x86_pmu.events_mask &= ~0x40;
- 
- 			pr_cont("erratum AAJ80 worked around, ");
- 		}
+ u64 kvm_get_apic_base(struct kvm_vcpu *vcpu);
+ void kvm_set_apic_base(struct kvm_vcpu *vcpu, u64 data);
 -- 
 1.7.5.3
 
