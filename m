@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab1KCVkj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 17:40:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36017 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab1KCVki (ORCPT
+	id S1752693Ab1KCVpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 17:45:49 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43076 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab1KCVps (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 17:40:38 -0400
-Date: Thu, 3 Nov 2011 14:40:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Christoph Lameter <cl@gentwo.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [patch 1/2] slab: rename slab_break_gfp_order to
- slab_max_order
-In-Reply-To: <alpine.DEB.2.00.1110182207500.5907@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1111031440130.31612@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1110182207500.5907@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 3 Nov 2011 17:45:48 -0400
+Date: Thu, 3 Nov 2011 14:39:59 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Watts <akwatts@ymail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
+Message-ID: <20111103213959.GP4417@google.com>
+References: <20111101124759.GA1326@zeus>
+ <20111102054658.GA29035@core.coreip.homeip.net>
+ <20111102160208.GA6657@zeus>
+ <20111102163109.GA29430@core.coreip.homeip.net>
+ <20111103155956.GG4417@google.com>
+ <20111103184559.GA3295@zeus>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103184559.GA3295@zeus>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Oct 2011, David Rientjes wrote:
+Hello, Andrew.
 
-> slab_break_gfp_order is more appropriately named slab_max_order since it
-> enforces the maximum order size of slabs as long as a single object will
-> still fit.
+On Thu, Nov 03, 2011 at 01:46:19PM -0500, Andrew Watts wrote:
+> On Thu, Nov 03, 2011 at 08:59:56AM -0700, Tejun Heo wrote:
+> > Andrew, just in case, can you please double check that you're
+> > reverting only that single commit (not all the ones afterwards) and
+> > the test results?  If they're all okay, can you please trigger the
+> > problem, wait a while, trigger sysrq-t and attach the kernel log?
 > 
-> Also rename BREAK_GFP_ORDER_{LO,HI} accordingly.
+> Hi Tejun.
 > 
+> I am only reverting 8ee294cd9def0004887da7f44b80563493b0a097 though I first
+> revert part of 1d64b655dc083df5c5ac39945ccbbc6532903bf1 so it reverts 
+> cleanly. 
+> 
+> I am very sure of my test results; normally I get 4-5 bad resumes on a 20
+> hibernate loop and get no bad resumes with the commit reverted. I have
+> been very thorough in my testing to ensure I am not generating false
+> positives or false negatives (repeating the loops many times).
 
-Ping on these two patches?  I don't see them in slab/next.
+Thanks.  Yeah, this is odd & interesting.
 
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  mm/slab.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
+> Below is the output you asked for (sysrq t).
 > 
-> diff --git a/mm/slab.c b/mm/slab.c
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -481,9 +481,9 @@ EXPORT_SYMBOL(slab_buffer_size);
->  /*
->   * Do not go above this order unless 0 objects fit into the slab.
->   */
-> -#define	BREAK_GFP_ORDER_HI	1
-> -#define	BREAK_GFP_ORDER_LO	0
-> -static int slab_break_gfp_order = BREAK_GFP_ORDER_LO;
-> +#define	SLAB_MAX_ORDER_HI	1
-> +#define	SLAB_MAX_ORDER_LO	0
-> +static int slab_max_order = SLAB_MAX_ORDER_LO;
->  
->  /*
->   * Functions for storing/retrieving the cachep and or slab from the page
-> @@ -1502,7 +1502,7 @@ void __init kmem_cache_init(void)
->  	 * page orders on machines with more than 32MB of memory.
->  	 */
->  	if (totalram_pages > (32 << 20) >> PAGE_SHIFT)
-> -		slab_break_gfp_order = BREAK_GFP_ORDER_HI;
-> +		slab_max_order = SLAB_MAX_ORDER_HI;
->  
->  	/* Bootstrap is tricky, because several objects are allocated
->  	 * from caches that do not exist yet:
-> @@ -2112,7 +2112,7 @@ static size_t calculate_slab_order(struct kmem_cache *cachep,
->  		 * Large number of objects is good, but very large slabs are
->  		 * currently bad for the gfp()s.
->  		 */
-> -		if (gfporder >= slab_break_gfp_order)
-> +		if (gfporder >= slab_max_order)
->  			break;
->  
->  		/*
+> Thanks.
 > 
+> ~ Andy
+> 
+> ======================
+> 
+> 
+> kernel: [  345.226523] SysRq : Show State
+> kernel: [  345.226531]   task                PC stack   pid father
+> kernel: [  345.226535] init            S f4a47b68  5488     1      0 0x00000000
+> kernel: [  345.226765] kthreadd        S 00000000  7172     2      0 0x00000000
+
+This is missing all stack traces.  Can you please turn on
+FRAME_POINTER and adjust log level such that all stack dumps are
+included too?
+
+Thank you.
+
+-- 
+tejun
