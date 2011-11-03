@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab1KCOTk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 10:19:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:46437 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab1KCOTj (ORCPT
+	id S1755170Ab1KCOWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 10:22:47 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47090 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753201Ab1KCOWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 10:19:39 -0400
-X-Authority-Analysis: v=1.1 cv=PzmnriOiyqYdyw8suerSEFMr8oy2Ua58JL+Rk7iuDKE= c=1 sm=0 a=CMzmyBkqurIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=6rqHouBjAAAA:8 a=8i2gTpztnxHGoKo4l_kA:9 a=PUjeQqilurYA:10 a=TAmEwCHjoHMA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1320329977.27370.16.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] event: fix TP_printk() argument in sched_switch
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Andrew Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, devel@openvz.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Thu, 03 Nov 2011 10:19:37 -0400
-In-Reply-To: <1320275277.4793.54.camel@gandalf.stny.rr.com>
-References: <1320273611-2463347-1-git-send-email-avagin@openvz.org>
-	 <1320275277.4793.54.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 3 Nov 2011 10:22:45 -0400
+Date: Thu, 3 Nov 2011 10:22:45 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@Parallels.com>, Tejun Heo <tj@kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>
+Subject: Re: [PATCH 2/3] scsi: add hooks for host runtime power management
+In-Reply-To: <1320325700.2813.61.camel@hp6530s>
+Message-ID: <Pine.LNX.4.44L0.1111031019250.2136-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 19:07 -0400, Steven Rostedt wrote:
-> On Thu, 2011-11-03 at 01:40 +0300, Andrew Vagin wrote:
-> > process_arg(...) can't parse "__entry->prev_state & (TASK_STATE_MAX-1)",
-> > because a complicated argument should be within brackets.
-> 
-> No it is fine, the userspace tool is broken.
-> 
-> > 
-> > Without this patch "perf report" prints following errors:
-> > $ ./perf record -ag -e sched:sched_switch
-> > ...
-> > $ ./perf report
-> >   Warning: Error: expected type 5 but read 4
-> >   Warning: Error: expected type 4 but read 0
-> >   Fatal: bad op token {
-> > 
-> > Signed-off-by: Andrew Vagin <avagin@openvz.org>
-> 
-> NACK!
-> 
-> This is a perf userspace bug, not a kernel one. Please fix the userspace
-> tool instead.
-> 
-> Note, the new version of libparsevent handles this case without issue.
-> Perf just needs to be updated.
-> 
+On Thu, 3 Nov 2011, Lin Ming wrote:
 
-Can you try this patch on perf. It's untested (not even compiled tested)
+> I realize that this is not the natural way to do ata port runtime pm.
+> Hooking it to scsi host runtime pm is not good. It does not deal with
+> the races with system suspend/resume of host controller.
+> 
+> How about making ata port as the parent device of scsi host?
+> Then, for example, the runtime suspend happens as below,
+> 
+> disk suspend --> scsi target suspend --> scsi host suspend --> ata port
+> suspend.
+> 
+> Current device tree is:
+> /sys/devices/pci0000:00/0000:00:1f.2/
+> |-- ata1
+> |-- host0
+> 
+> After the change, the tree will become as:
+> /sys/devices/pci0000:00/0000:00:1f.2/ata1/
+> |-- host0
 
--- Steve
+I don't know enough about the ATA subsystem to say much, except that 
+this looks more logical.
 
-diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
-index 0a7ed5b..6c164dc 100644
---- a/tools/perf/util/trace-event-parse.c
-+++ b/tools/perf/util/trace-event-parse.c
-@@ -1537,6 +1537,8 @@ process_flags(struct event *event, struct print_arg *arg, char **tok)
- 	field = malloc_or_die(sizeof(*field));
- 
- 	type = process_arg(event, field, &token);
-+	while (type == EVENT_OP)
-+		type = process_op(event, field, &token);
- 	if (test_type_token(type, token, EVENT_DELIM, ","))
- 		goto out_free;
- 
+> The tricky part is ata port(parent device) suspend need to schedule scsi
+> EH which will resume scsi host(child device). Then the child device
+> resume will in turn make parent device resume first. This is kind of
+> recursive.
+> 
+> We can fix this by adding a flag somewhere to tell scsi EH don't resume
+> the host in ata port pm request handling case.
+> 
+> What do you think?
 
+Yes, it is a problem.  But it looks like the underlying issue is that
+you're using the SCSI error handler to do something it was not intended
+for.  Can't you suspend and resume the ATA port without using the error
+handler?
+
+Alan Stern
 
