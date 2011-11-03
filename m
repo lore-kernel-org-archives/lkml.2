@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934535Ab1KCTZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 15:25:44 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58734 "EHLO mx2.parallels.com"
+	id S934545Ab1KCT0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 15:26:35 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:40401 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934458Ab1KCTZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 15:25:43 -0400
-Message-ID: <4EB2EA93.2050206@parallels.com>
-Date: Thu, 3 Nov 2011 17:25:07 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S934458Ab1KCT0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 15:26:33 -0400
+X-Greylist: delayed 636 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Nov 2011 15:26:33 EDT
+Date: Thu, 3 Nov 2011 20:15:55 +0100
+From: Giel van Schijndel <me@mortis.eu>
+To: Xin Tong <xerox.time.tech@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Undefined Instruction
+Message-ID: <20111103191555.GC7197@vps.mortis.eu>
+References: <CALKntY3zkAHc92_6Sk2Mg06J6N1RCj38O7AQk0a5d6pCtivD-Q@mail.gmail.com>
+ <alpine.LRH.2.00.1111022205100.17927@twin.jikos.cz>
+ <CALKntY1S9HCQkqVBQSJLUO=L=DfwaSuN4m=akJBKuQ2dxBj4MQ@mail.gmail.com>
+ <alpine.LNX.2.00.1111022209560.348@pobox.suse.cz>
+ <CALKntY2yJm1Usi60dbZo-8OmfpfZp4AELFbw7QH5QsgvjFLdCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, <linux-kernel@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] new cgroup controller "fork"
-References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag> <4EB2C4A5.6000406@parallels.com> <20111103165903.GA4755@Debian-60-squeeze-64-minimal> <20111103182101.5037c1e5@lxorguk.ukuu.org.uk> <20111103185108.GA5153@Debian-60-squeeze-64-minimal> <20111103190330.02590426@lxorguk.ukuu.org.uk> <20111103192039.GA5300@Debian-60-squeeze-64-minimal>
-In-Reply-To: <20111103192039.GA5300@Debian-60-squeeze-64-minimal>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALKntY2yJm1Usi60dbZo-8OmfpfZp4AELFbw7QH5QsgvjFLdCQ@mail.gmail.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 05:20 PM, Max Kellermann wrote:
-> On 2011/11/03 20:03, Alan Cox<alan@lxorguk.ukuu.org.uk>  wrote:
->> Sure - I'm just not seeing that a whole separate cgroup for it is
->> appropriate or a good plan. Anyone doing real resource management needs
->> the rest of the stuff anyway.
->
-> Right.  When I saw Frederic's controller today, my first thought was
-> that one could move the fork limit code over into that controller.  If
-> we reach a consensus that this would be a good idea, and would have
-> chances to get merged, I could probably take some time to refactor my
-> code.
->
-> Max
-I'd advise you to take a step back and think if this is really needed. 
-As Alan pointed out, the really expensive resource here is already being
-constrained by Frederic's controller.
+On Wed, Nov 02, 2011 at 05:14:17PM -0400, Xin Tong wrote:
+> On Wed, Nov 2, 2011 at 5:10 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> On Wed, 2 Nov 2011, Xin Tong wrote:
+>>
+>>> If i change the kernel, i could have the application stary alive
+>>> right?
+>>
+>> No need for any kernel changes. You can set your own signal handler
+>> for SIGILL (but iirc that will make any further behavior of your
+>> application undefined as long as POSIX is involved).
+> 
+> There must be a default handler install for every application on
+> linux, right  ? Is there any signal that the operating system simply
+> kills the programs without sending a signal to the user level ?
 
-But ultimately, you're the only one that knows about your real 
-requirements.
+It's known by the rather straightforward name of SIGKILL. I.e. userland
+cannot install a signal handler for that signal, the process just gets
+killed.
+
+-- 
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
