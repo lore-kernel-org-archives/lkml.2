@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1KCPUW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 11:20:22 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:32892 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755670Ab1KCPUU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 11:20:20 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Subject: CIFS: Rename bug on servers not supporting inode numbers
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-Date: Thu, 3 Nov 2011 15:20:17 +0000
-Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Unix Support <unix-support@ucs.cam.ac.uk>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9A609E6D-DF91-4AF9-855A-6D28E9B95D15@cam.ac.uk>
-To: Steve French <sfrench@samba.org>
-X-Mailer: Apple Mail (2.1251.1)
+	id S1756190Ab1KCPZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 11:25:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755749Ab1KCPZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 11:25:05 -0400
+Date: Thu, 3 Nov 2011 11:27:04 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
+        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] wait_event_freezekillable: use
+ freezer_do_not_count/freezer_count
+Message-ID: <20111103112704.4b905bfc@barsoom.rdu.redhat.com>
+In-Reply-To: <20111103141354.GB4417@google.com>
+References: <20111101163059.GR18855@google.com>
+	<20111101175953.GB5358@redhat.com>
+	<20111101180601.GV18855@google.com>
+	<20111101181329.GA6739@redhat.com>
+	<20111101182753.GW18855@google.com>
+	<20111101193923.GA9444@redhat.com>
+	<20111101194601.GB9444@redhat.com>
+	<20111101215710.GA13803@google.com>
+	<20111102175327.GA4446@redhat.com>
+	<20111103064215.48939e1a@tlielax.poochiereds.net>
+	<20111103141354.GB4417@google.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 3 Nov 2011 07:13:54 -0700
+Tejun Heo <tj@kernel.org> wrote:
 
-Our CIFS server problems seem to have no end…  The Novell CIFS server does not support server inode numbers (when I try the mount option I get the message it is being turned off as server does not support it) and thus each inode gets a different number each time it is accessed and it gets a different number again for each readdir call.
+> Hello,
+> 
+> On Thu, Nov 03, 2011 at 06:42:15AM -0400, Jeff Layton wrote:
+> > I'm not sure we really need this macro anymore since this is much
+> > simpler. I could just move cifs back to using wait_event_killable and
+> > simply wrap it in freezer_do_not_count/freezer_count (with some
+> > comments to explain why we're doing that).
+> > 
+> > In any event, I plan to test this scheme out today and will let you
+> > know whether it works...
+> 
+> I think it would be better to put this in a macro as the
+> implementation is likely to change in future and I really don't want
+> to see FREEZER_SKIP scattered around the tree.
+> 
 
-The fun happens with rename() when the rename source and target only differ in case, e.g.
+Ok, note though that I also need to do a similar set of changes to the
+nfs and sunrpc code [1].
 
-	touch foo
-	mv foo Foo
+Those call sites do not use wait_event_* macros though. So I'll either
+need to add a separate set of functions/macros to handle those, or
+sprinkle freezer_do_not_count/freezer_count around the code there...
 
-The result?  Because of the difference in inode numbers, the request gets through to the CIFS module which promptly does:
+[1] Here are the older patches that depended on the change to
+fake_signal_wake_up. I'll need to convert these to use the new scheme
+once you guys settle on what it should be:
 
-	cifs_unlink(target_dir, target_dentry)
-	rc = cifs_do_rename(…)
+https://git.samba.org/jlayton/?p=jlayton/linux.git;a=commitdiff;h=0f85cbb747a0f9f8a582ae9bf642e094168001be
+https://git.samba.org/jlayton/?p=jlayton/linux.git;a=commitdiff;h=084535708bcb33dd2448e73be5a0f4cac69bea92
 
-And because the cifs_unlink() just removed the source of the rename (as it is the same as the target), "rc" comes back as -ENOENT.
-
-And indeed the file is gone so we just lost the user's file for ever.  )-:
-
-We are tossing around ideas how to fix this but we would be interested in your input as to what you think the fix should be.
-
-In any case this probably should be fixed in the standard kernel CIFS module, too, and not just for us locally as this presumably affects anyone who is using the CIFS module against case-insensitive, non-server-inode-number-supporting CIFS servers...
-
-Best regards,
-
-	Anton
 -- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
-
+Jeff Layton <jlayton@redhat.com>
