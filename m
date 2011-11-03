@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753589Ab1KCWrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 18:47:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51209 "EHLO mga03.intel.com"
+	id S1753684Ab1KCWs4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 18:48:56 -0400
+Received: from home.keithp.com ([63.227.221.253]:54179 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752786Ab1KCWrQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 18:47:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,452,1315206000"; 
-   d="scan'208";a="70344796"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, H Peter Anvin <hpa@zytor.com>,
-        Zwane Mwaikambo <zwane@arm.linux.org.uk>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 3 Nov 2011 15:47:10 -0700
-Subject: RE: [PATCH 6/8] x86, topology.c: Enable CPU0 online/offline
-Thread-Topic: [PATCH 6/8] x86, topology.c: Enable CPU0 online/offline
-Thread-Index: AcyDk+q7TcaTmsh+Rl6W+FDtfK3rcQW4dYTw
-Message-ID: <493994B35A117E4F832F97C4719C4C04013E1A6784@orsmsx505.amr.corp.intel.com>
-References: <1317832759-10223-1-git-send-email-fenghua.yu@intel.com>
- <1317832759-10223-7-git-send-email-fenghua.yu@intel.com>
- <alpine.LFD.2.02.1110052113370.18778@ionos>
-In-Reply-To: <alpine.LFD.2.02.1110052113370.18778@ionos>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753353Ab1KCWsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 18:48:55 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 7/7] drm/i915: Remove trailing white space
+In-Reply-To: <20111103130349.594aa200@jbarnes-desktop>
+References: <1320214830-12696-1-git-send-email-keithp@keithp.com> <1320214830-12696-8-git-send-email-keithp@keithp.com> <20111103130349.594aa200@jbarnes-desktop>
+User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 03 Nov 2011 15:48:44 -0700
+Message-ID: <yun8vnwrfeb.fsf@aiko.keithp.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	bsp_hotplug	[X86] BSP (aka CPU0) is hotpluggable.
-> > +			Suspend/resume depends on BSP. It's said some PCI
-> > +			quirks depend on BSP too. But not sure which quirks.
-> 
-> Right, not sure what breaks. Go ahead and watch your machine explode.
-> 
-> > +			If don't care the dependencies, you can turn on
-> > +			bsp_ hotplug. Suspend will fail if BSP is offlined
-> and
-> > +			you need to online BSP before suspend/resume.
-> 
-> And you forgot poweroff and reboot, which have similar dependencies on
-> some machines. That whole low level ACPI stuff is sensitive.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I tested poweroff, shutdown, and reboot with various reboot_type on a few different platforms. I haven't seen poweroff and reboot issues after CPU0 is offline.
+On Thu, 3 Nov 2011 13:03:49 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
 
-Do you have specific platforms that I can test poweroff and reboot dependency on CPU0? Or we just assume there are some platforms out there that depend on CPU0 for poweroff/reboot?
+> Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Thanks.
+I've updated the pch-edp-fixes branch with your suggestions and attached
+your R-b: to the reviewed patches.
 
--Fenghua 
+That leaves only the panel power sequencing changes, which could
+probably use more testing to make sure no existing systems stop
+working. I've got an ILK eDP system here that I haven't tested yet, so I
+can do that. I have tested SNB CPU eDP on the MacBook and CPT PCH eDP on
+the other system.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTrMaTDYtFsjWk68qAQgm+BAAnxb5k/hK606EJAgIACU29XeYtXGzUMhT
+X9PWRD0pqQKO7leYz2FFolGz1W5sngfrr932zU3NA9X6k5gnJvjbfbCy3mClso1f
+eTcGjv0ivYDVNQ1AOvEuKIX+2UQoLTTVzBtZBBlxodJyFV53KzbviQMmWXeHrnlC
+eoQqlVSyMm4svon9dvhbDfmiet3h8+dpUIHzlK4lqlhBUevy9tGr7DhWSQ8l5JtX
+LNyE9wdbwbdmZPJhMbUhWiaz8a7OFtnhrEUjJ/khoh1lOGXb7HzNU5vj3+RJicbH
+PmEaUUhqYEJc3r+iT9FqZoT+WsvCYpOotaaMJRmwVrwEXkeC+uhzh6UAlxjWqCMZ
+E4kaGsAgXx/HpYlrpne1VjLhnfU3ZZyH44pCYThi7jSn3KnsYdBnOOpf/AAkCBZ1
+AjLXZh5wVn2OK87BrbKn0qSieqA7NGkkpf07CV2RwpZBiRPFemMK75o7N+McoiZq
+ezn9OCpNZvyNmX5mhyc9te08vW5ZFni+c3H/skUkSIg/YkJcFOZYJRLWzorNEl1R
+RXKB8TRlua4FBO+Ga5ju6CM9i/mY/CfuR1s8ovB04Pv0Iso9ggCmrKCrGjMAsZkK
+wxHIUgCs0L5+CajHjGrgKFnYiqxgb9dAgpgyQLytHEB+ZqdKpcUFhhNOgPFLrCzL
+G1ZNtTUMg6s=
+=Nyyc
+-----END PGP SIGNATURE-----
+--=-=-=--
