@@ -1,78 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab1KCLPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 07:15:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12304 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753267Ab1KCLPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 07:15:39 -0400
-Date: Thu, 3 Nov 2011 07:15:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Steve French <sfrench@samba.org>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-cifs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        trond.myklebust@netapp.com, linux-nfs@vger.kernel.org
-Subject: Re: [RFC PATCH] freezer: revert 27920651fe "PM / Freezer: Make
- fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-Message-ID: <20111103071516.79fb42fa@tlielax.poochiereds.net>
-In-Reply-To: <201111030011.24062.rjw@sisk.pl>
-References: <20111101041337.39077229@tlielax.poochiereds.net>
-	<20111101215710.GA13803@google.com>
-	<20111102162331.GA31947@redhat.com>
-	<201111030011.24062.rjw@sisk.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932368Ab1KCLSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 07:18:12 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64433 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1KCLSK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 07:18:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <1320107362.22361.185.camel@sli10-conroe>
+References: <CADAg6uxLj_ePPbcrVcqcE7y+CxGZfqWUA1zYOtm9e-TYShBDsQ@mail.gmail.com>
+	<CANejiEWBpeiBKvg+_W5OC0onQQLpAFCsgADWW1mTutUWF9ZQfA@mail.gmail.com>
+	<CADAg6uy7iDG1QxHd=5hX7J=9dYGLA+Ze1uE6WwF7Nfxc83T4hA@mail.gmail.com>
+	<1319676161.22361.148.camel@sli10-conroe>
+	<CADAg6uy2xOoAaAhVg07oYia+AZAuOGKywPGx8fvT0EF4ThuKCQ@mail.gmail.com>
+	<1320039564.22361.178.camel@sli10-conroe>
+	<CANejiEVxdX7KC6MFqBZ2azPtETmwJXML6v1L5-kq+UrRTmf+Tg@mail.gmail.com>
+	<CADAg6uwi8bgo3gQuWPeTHeD44biRR4=0E0BjvZradQMtfMCigA@mail.gmail.com>
+	<1320107362.22361.185.camel@sli10-conroe>
+Date: Thu, 3 Nov 2011 16:48:09 +0530
+Message-ID: <CADAg6uy_7GyB9Zm+aO1v-4t1FiMdRO2Q7KkqOU4XGtcfX1BBCQ@mail.gmail.com>
+Subject: Re: Multi-partition block layer behaviour
+From: Tiju Jacob <jacobtiju@gmail.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011 00:11:23 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> please ignore the patch. There is a fix in upstream:
+> 9c40cef2b799f9b5e7fa5de4
+> and it's marked -stable, so it will go to 3.0 stable.
+> if 3.1 kernel doesn't work, please report back with a log.
+>
+Thanks Shaohua. We tried with 3.0.8 and 3.1. It works fine.
 
-> On Wednesday, November 02, 2011, Oleg Nesterov wrote:
-> > Hi,
-> > 
-> > On 11/01, Tejun Heo wrote:
-> > >
-> > > For now, let's go with the count/dont_count.  Can you please write up
-> > > a patch for that?  Jeff, does this seem okay to you?
-> > 
-> > OK, will do in a minute. On top of
-> > "[PATCH pm] freezer: fix wait_event_freezable/__thaw_task races"
-> > you sent. (btw, thanks, I forgout about it ;)
-> > 
-> > Rafael, could you remind why freezer_do_not_count/freezer_count check
-> > ->mm != NULL ?
-> 
-> You're asking difficult questions. ;-)
-> 
-> The intention was to prevent PF_FREEZER_SKIP from having any effect on
-> kernel threads, IIRC.  Anyway, there are only two legitimate users of it
-> (vfork and apm_ioctl) and in both cases the task in question is user space.
-> 
-> > The comment says "However, we don't want kernel threads to be frozen",
-> > but it is not clear anyway. A kernel thread simply shouldn't use this
-> > interface if it doesn't want to freeze.
-> > 
-> > And in any case, PF_KTHREAD looks better if we really need to filter
-> > out the kernel threads.
-> 
-> PF_FREEZER_SKIP was introduced specifically with vfork in mind and I'm not
-> sure if it's a good idea to re-use it for something else (at least not for
-> something entirely obvious).
-> 
-
-FWIW, wrapping wait_event_killable in freezer_do_not_count/freezer_count
-seems to work. The machine suspends consistently with it. It sounds
-like Rafael has concerns about this scheme however, so I'll let you
-guys argue this out :)
-
-Once you tell me the right scheme to use, I'll be happy to fix up cifs
-and nfs to use it.
-
-Thanks,
--- 
-Jeff Layton <jlayton@redhat.com>
+--TJ
