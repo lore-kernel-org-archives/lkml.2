@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab1KCRg3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 13:36:29 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:51956 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755829Ab1KCRg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 13:36:28 -0400
-Message-ID: <4EB2D0F2.40309@parallels.com>
-Date: Thu, 3 Nov 2011 15:35:46 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1756434Ab1KCRhL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 13:37:11 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:57692 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab1KCRhJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 13:37:09 -0400
+X-SENDER-IP: [85.230.170.217]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq1dAOHQsk5V5qrZPGdsb2JhbAAqGqhggSAZAQEBATcygXIBAQUyASMjEAgDGC4UJQoaiBcGI7RlEoM1hHZiBJlXjCc
+X-IronPort-AV: E=Sophos;i="4.69,451,1315173600"; 
+   d="scan'208";a="66286935"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 3 Nov 2011 18:46:35 +0100
+To: Lars =?iso-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
+Cc: guenter.roeck@ericsson.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: Hardware running hot and without the fan
+Message-ID: <20111103174635.GA12229@polaris.bitmath.org>
+References: <4EB1108F.6070009@gmail.com>
+ <20111103020301.GA22333@ericsson.com>
+ <4EB250FD.3070000@gmail.com>
+ <20111103134902.GA26121@ericsson.com>
+ <4EB2A46B.8080600@gmail.com>
+ <1320332801.2309.60.camel@groeck-laptop>
+ <4EB2B0FD.309@gmail.com>
 MIME-Version: 1.0
-To: Paul Menage <paul@paulmenage.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tim Hockin <thockin@hockin.org>, LKML <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Containers <containers@lists.linux-foundation.org>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH 00/10] cgroups: Task counter subsystem v6
-References: <1317668832-10784-1-git-send-email-fweisbec@gmail.com> <20111004150111.e9337268.akpm00@gmail.com> <CAAAKZwu67VMiZgdpp=i5p7zyGbOHGHXwF_iprufGPzTLkkUF2A@mail.gmail.com> <20111028163021.1ce61f8a.akpm@linux-foundation.org> <CAA6-i6o0SPfZJDx4SRR1hY-He0L6zHuv0saH6EaE7Mrc2HF6PA@mail.gmail.com> <20111103164917.GF8198@somewhere.redhat.com> <4EB2C852.6020706@parallels.com> <CALdu-PDY8zpXYM3V9KRk4f2NyGevfNnuaWVdoT-qzSHOK--K3A@mail.gmail.com> <4EB2CA03.7030601@parallels.com> <CALdu-PA2CDoeUMoNd1y44p_QzphX8J4s6NDcSyVC-rP1HGYwkA@mail.gmail.com>
-In-Reply-To: <CALdu-PA2CDoeUMoNd1y44p_QzphX8J4s6NDcSyVC-rP1HGYwkA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EB2B0FD.309@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 03:28 PM, Paul Menage wrote:
-> On Thu, Nov 3, 2011 at 10:06 AM, Glauber Costa<glommer@parallels.com>  wrote:
->> Sorry if I wasn't clear: It removes the need to walk multiple independent
->> hierarchies. The walk is done only once.
->
-> You're talking about at fork time, and the concern is the cache
-> footprint involved in walking up the parent pointer chain?
+On Thu, Nov 03, 2011 at 05:19:25PM +0200, Lars Noodén wrote:
+> On 11/03/2011 05:06 PM, Guenter Roeck wrote:
+> > On Thu, 2011-11-03 at 10:25 -0400, Lars Noodén wrote:
+> [snip]
+> >> The one machine reports one fan and the other two fans.  I haven't found
+> >> a way to set the fan speed manually.  The output from sensors
+> >> is
+> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/44
+> >> and here
+> >>  https://bugs.launchpad.net/ubuntu/+source/linux/+bug/881593/comments/47
+> > 
+> > Do the fans actually turn, or is the output bogus ?
+> 
+> The output is bogus, the fans are not turning.  On #47 there above, I
+> think the temperatures might be inaccurate, too.  Since they'll go up
+> and down as much as 8 degrees in a few seconds.
+> 
+> > You should be able to set the fan speed by writing into the fanX_input
+> > and/or fanX_output sysfs attributes. You find those
+> > in /sys/class/hwmon/hwmon0/device (assuming there is only one hwmon
+> > device).
+> 
+> I can set the fan speed manually.  e.g.:
+> 
+>  echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
+> 
+> That helps some.
 
-Yes, we can say this is my main concern.
+I am confused.
 
-> Isn't that an argument against multiple hierarchies (which is a
-> decision for the admin), rather than against more subsystem
-> flexibility?
+>From what I gather, the fans work, and it should be possible to run
+the macfanctld daemon (not fancontrol) to tune the fans.
 
-Not always it is a decision for the admin. In most cases, it is a 
-constraint of the problem. For containers - take lxc as an example,
-the most reasonable thing to do is to grab all cgroups subsystems 
-available, and contain them.
+If there really is a problem with the applesmc, following
+http://ubuntuforums.org/showthread.php?t=924096 is a good idea.
 
-> If multiple subsystems on the same hierarchy each need to
-> walk up the pointer chain on the same event, then after the first
-> subsystem has done so the chain will be in cache for any subsequent
-> walks from other subsystems.
-No, it won't. Precisely because different subsystems have completely
-independent pointer chains.
+However, the root problem is most likely the GPU consuming too much
+power. Depending on the exact laptop model, there may or may not be a
+viable workaround. If you model is very new, there is most likely and
+active thread about it on the ubuntu forums.
 
+After checking around on the forums, if you find that this is still a
+fan or temperature sensor problem, and not a GPU problem, then please
+restate the problem as exactly as you can.
+
+Thanks.
+Henrik
