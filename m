@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab1KCUZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 16:25:43 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36456 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751035Ab1KCUZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 16:25:42 -0400
+	id S1751614Ab1KCU1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 16:27:40 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:43657 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751304Ab1KCU1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 16:27:39 -0400
+Date: Thu, 3 Nov 2011 13:19:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
+        patches@linaro.org
+Subject: Re: [PATCH RFC tip/core/rcu 24/28] rcu: Introduce bulk reference
+ count
+Message-ID: <20111103201912.GA31590@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111102203017.GA3830@linux.vnet.ibm.com>
+ <1320265849-5744-24-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20111103043441.GF2042@leaf>
+ <20111103133435.GB2287@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-Originating-IP: [71.233.110.244]
-In-Reply-To: <alpine.LFD.2.02.1111021901440.2829@ionos>
-References: <1320175784-6745-1-git-send-email-edward.donovan@numble.net> <alpine.LFD.2.02.1111021901440.2829@ionos>
-From: Edward Donovan <ed@numble.net>
-Date: Thu, 3 Nov 2011 16:25:20 -0400
-Message-ID: <CADdbW+FENazoLGPYTdrQ8qitk_Mc=2gckfxTb2cUH2jJ3qb1RA@mail.gmail.com>
-Subject: Re: [PATCH] genirq: spurious.c: fix regression that broke irqfixup,irqpoll
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: maciej.rutecki@gmail.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103133435.GB2287@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11110320-3534-0000-0000-0000013C900C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 2, 2011 2:02 PM, "Thomas Gleixner" <tglx@linutronix.de> wrote:
->
-> Good catch! I was staring at it with my conference and flu damaged
-> brain ....
->
+On Thu, Nov 03, 2011 at 06:34:35AM -0700, Paul E. McKenney wrote:
+> On Wed, Nov 02, 2011 at 09:34:41PM -0700, Josh Triplett wrote:
+> > On Wed, Nov 02, 2011 at 01:30:45PM -0700, Paul E. McKenney wrote:
+> > > The RCU implementations, including SRCU, are designed to be used in a
+> > > lock-like fashion, so that the read-side lock and unlock primitives must
+> > > execute in the same context for any given read-side critical section.
+> > > This constraint is enforced by lockdep-RCU.  However, there is a need for
+> > > something that acts more like a reference count than a lock, in order
+> > > to allow (for example) the reference to be acquired within the context
+> > > of an exception, while that same reference is released in the context of
+> > > the task that encountered the exception.  The cost of this capability is
+> > > that the read-side operations incur the overhead of disabling interrupts.
+> > > Some optimization is possible, and will be carried out if warranted.
+> > > 
+> > > Note that although the current implementation allows a given reference to
+> > > be acquired by one task and then released by another, all known possible
+> > > implementations that allow this have scalability problems.  Therefore,
+> > > a given reference must be released by the same task that acquired it,
+> > > though perhaps from an interrupt or exception handler running within
+> > > that task's context.
+> > 
+> > This new bulkref API seems in dire need of documentation. :)
+> > 
+> > > --- a/include/linux/srcu.h
+> > > +++ b/include/linux/srcu.h
+> > > @@ -181,4 +181,54 @@ static inline void srcu_read_unlock(struct srcu_struct *sp, int idx)
+> > >  	__srcu_read_unlock(sp, idx);
+> > >  }
+> > >  
+> > > +/* Definitions for bulkref_t, currently defined in terms of SRCU. */
+> > > +
+> > > +typedef struct srcu_struct bulkref_t;
+> > > +int init_srcu_struct_fields(struct srcu_struct *sp);
+> > > +
+> > > +static inline int init_bulkref(bulkref_t *brp)
+> > > +{
+> > > +	return init_srcu_struct_fields(brp);
+> > > +}
+> > 
+> > Why can't this call init_srcu_struct and avoid the need to use the
+> > previously unexported internal function?
+> 
+> Seems reasonable now that you mention it.  ;-)
 
-Thanks, Thomas.  It had me running around for quite a while before I
-caught it. :)
+Except that doing so results in lockdep initialization that cannot be
+used.  :-(
 
-I hoped this had nailed the failure of irqfixup/poll, since the .39
-merge window.  But I have one machine where this fix doesn't help.
-(With this patch, 2.6.39+ went from never handling that bad irq, to
-handling it in a fraction of bootups.  I have to dig into that
-more.)
+							Thanx, Paul
 
-On my Ubuntu bug report I have asked the other reporters for
-testing, but haven't heard yet.
-
-It may be back to the bisecting board for me, and I'll post again
-if I learn anything.
-
- Ed
