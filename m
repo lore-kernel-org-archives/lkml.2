@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260Ab1KCS0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 14:26:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756424Ab1KCS0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 14:26:07 -0400
-Date: Thu, 3 Nov 2011 14:25:48 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-        gmuelas@de.ibm.com
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20111103182548.GA12131@redhat.com>
-References: <1318608184.3018.42.camel@dabdike.int.hansenpartnership.com>
- <4E9BEB68.1050707@ce.jp.nec.com>
- <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
- <4E9D7FA8.9000000@ce.jp.nec.com>
- <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
- <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com>
- <20111031100557.GA2621@osiris.boeblingen.de.ibm.com>
- <1320057746.2964.1.camel@dabdike>
- <4EAE8A7E.8000504@ce.jp.nec.com>
- <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+	id S934281Ab1KCS2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 14:28:35 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:32873 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756446Ab1KCS2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 14:28:34 -0400
+X-Sasl-enc: 9+kedVHz8gLGWxSOAF4e3unN+KTf1dbOT3UfBTgYVKdo 1320344913
+Date: Thu, 3 Nov 2011 16:28:30 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Clemens Ladisch <clemens@ladisch.de>
+Cc: Timo Jyrinki <timo.jyrinki@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Simultaneous cat and external keyboard input causing kernel
+ panic
+Message-ID: <20111103182830.GB3844@khazad-dum.debian.net>
+References: <CAJtFfxmovJHspHHKbvBVc4pw+u5mjGmUejCXEzdV+GqE=jVSOQ@mail.gmail.com>
+ <4EB2AD70.7060607@ladisch.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EB2AD70.7060607@ladisch.de>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 31 2011 at  9:00am -0400,
-Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+On Thu, 03 Nov 2011, Clemens Ladisch wrote:
+> Timo Jyrinki wrote:
+> > Then suddenly the cat shifted his position and there was a kernel panic
+> 
+> Your cat wanted to find out what the magic in "magic SysRq key" means
+> and pressed Alt+SysRq+C.  The problem is that he did not consult
+> Documentation/sysrq.txt first; the "C" does _not_ stand for "catnip".
 
-> On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
-> > Hm, dm_softirq_done is generic completion code of original
-> > request in dm-multipath.
-> > So oops here might be another manifestation of use-after-free.
-> > 
-> > Do you always hit the oops at the same address?
-> 
-> I think we saw this bug the first time. But before that the scsi
-> logging level was higher. Gonzalo is trying to recreate it with
-> the same (old) scsi logging level.
-> Afterwards we will try with barrier=0.
-> 
-> Both on v3.0.7 btw.
-> 
-> > Could you find corresponding source code line for
-> > the crashed address, dm_softirq_done+0x72/0x140,
-> > and which pointer was invalid?
-> 
-> It crashes in the inlined function dm_done() when trying to
-> dereference tio (aka clone->end_io_data):
-> 
-> static void dm_done(struct request *clone, int error, bool mapped)
-> {
->         int r = error;
->         struct dm_rq_target_io *tio = clone->end_io_data;
->         dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
+Yes, it was a catastrophe.
 
-Hi,
+Truth is, cats are great panic generators and as fuzzy beings themselves,
+they're also great fuzzers.  Only, normally they restrict themselves to
+fuzzing clothes, computer fans, their owner's food, spreadsheets, the nose
+of anyone alergic to catty fuzzy feelings in a 100m radius, word
+processors, and IRS forms.
 
-Which underlying storage driver is being used by this multipath device?
+However, it is the first time I've seen documented proof that a cat
+sucessfully fuzzed an input device into a panic.  Must be a lolcat's revenge
+to the lack of mouses since touchpads took over.  And Linux has no
+cat-proofing for the keyboard and touchpads[1], which will leave us
+wide-open to surprise fuzzer attacks from the lolcats!  Maybe we should
+issue a CVE about it?
 
-Thanks,
-Mike
+;-)
+
+[1] Windows _has_ third-party cat-proofing for keyboards, by detecting
+clustered pressing of nearby keys.  I don't think it can yet figure out a
+catpaw press on the touchpad, however.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
