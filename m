@@ -1,148 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932896Ab1KDSpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 14:45:52 -0400
-Received: from nm27-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.232]:23709 "HELO
-	nm27-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932622Ab1KDSpv (ORCPT
+	id S932888Ab1KDTG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 15:06:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52832 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932296Ab1KDTG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 14:45:51 -0400
-X-Yahoo-Newman-Id: 735060.69262.bm@smtp211.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 1h1lw2YVM1nvwm9TS13BIf0JIOsqfDhqNVn4OrlHqkkcq_u
- U6qNWP2WficdYmpkOdNNJwdVFQcUYepQxeF0tzjmAERgZwdaPRV.ib3G68KE
- kfUV7VnBaKTZM7LUDTy5Ka586MoghkCNYl2K3PK9Fq3vwtih7LtSFLtBNjd.
- dYpvn2KpBLRcovbfVK4WCD79OTuDZcHEognAORIyohIiGYHvjYumT2zHBmV3
- tSOWZu8ldlI4btYaP0.LvsizRrk1gFBp2GUtZF.A1QPciKu3bn0z_e3x13J9
- RZgSSSy5iOsyGibyf_k38RkNYKJGMZY9z3PvE16DDQZYmmtI_iVVfI4vIckE
- 97uMl.R93TAyu59jOH_1FHnMzCAToMgiEKnWiNGAYHGCS.p2DD9rX_q.C8Cy
- d9xXVfpH8H4cVJK5rdd2EUXIS
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Fri, 4 Nov 2011 13:45:22 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: Jerome Glisse <j.glisse@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-Message-ID: <20111104184514.GA2772@zeus>
-References: <20111102054658.GA29035@core.coreip.homeip.net>
- <20111102160208.GA6657@zeus>
- <20111102163109.GA29430@core.coreip.homeip.net>
- <20111103155956.GG4417@google.com>
- <20111103184559.GA3295@zeus>
- <20111103213959.GP4417@google.com>
- <20111104134347.GA2480@zeus>
- <20111104161431.GZ4417@google.com>
- <20111104173441.GA2157@zeus>
- <20111104174401.GB2015@homer.localdomain>
+	Fri, 4 Nov 2011 15:06:27 -0400
+Date: Fri, 4 Nov 2011 19:06:16 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Xiaotian Feng <dfeng@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Message-ID: <20111104190616.GB3366@decadent.org.uk>
+References: <20111102221600.GA26650@kroah.com>
+ <20111102221454.703920975@clark.kroah.org>
+ <1320420256.3079.172.camel@deadeye>
+ <20111104171425.GA4893@suse.de>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="pWyiEgJYm5f9v55/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111104174401.GB2015@homer.localdomain>
+In-Reply-To: <20111104171425.GA4893@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [050/107] block: check for proper length of iov entries
+ earlier in blk_rq_map_user_iov()
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Fri, Nov 04, 2011 at 01:44:01PM -0400, Jerome Glisse wrote:
+On Fri, Nov 04, 2011 at 10:14:26AM -0700, Greg KH wrote:
+> On Fri, Nov 04, 2011 at 03:24:16PM +0000, Ben Hutchings wrote:
+> > On Wed, 2011-11-02 at 15:14 -0700, Greg KH wrote:
+> > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > 
+> > > ------------------
+> > > 
+> > > From: Xiaotian Feng <dfeng@redhat.com>
+> > > 
+> > > commit 5478755616ae2ef1ce144dded589b62b2a50d575 upstream.
+> > > 
+> > > commit 9284bcf checks for proper length of iov entries in
+> > > blk_rq_map_user_iov(). But if the map is unaligned, kernel
+> > > will break out the loop without checking for the proper length.
+> > > So we need to check the proper length before the unalign check.
+> > 
+> > This will catch an unaligned zero-length entry.  But there's still no
+> > check for zero-length iov entries *after* the unaligned entry.
+> > 
+> > [...]
+> > > --- a/block/blk-map.c
+> > > +++ b/block/blk-map.c
+> > > @@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_q
+> > >  	for (i = 0; i < iov_count; i++) {
+> > >  		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+> > >  
+> > > +		if (!iov[i].iov_len)
+> > > +			return -EINVAL;
+> > > +
+> > >  		if (uaddr & queue_dma_alignment(q)) {
+> > >  			unaligned = 1;
+> > >  			break;
+> > 
+> > I think the correct fix is just to remove the 'break'.
 > 
-> Attached patch might hide the issue.
-> 
-> Cheers,
-> Jerome
+> Then the fix should go upstream first :)
 
-Unfortunately, the patch did not help.
+But if I'm right, this is a non-fix and doesn't belong in the
+longterm update.
 
-Attached is the full hibernate->resume dmesg requested.
+Ben.
 
-Thanks.
-
-~ Andy
-
-
---pWyiEgJYm5f9v55/
-Content-Type: application/x-gunzip
-Content-Disposition: attachment; filename="bad-dmesg.txt.gz"
-Content-Transfer-Encoding: base64
-
-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
-aERxjys5AAA=
-
---pWyiEgJYm5f9v55/--
+-- 
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
