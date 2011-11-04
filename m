@@ -1,60 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab1KDQs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:48:26 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42286 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754798Ab1KDQsY convert rfc822-to-8bit (ORCPT
+	id S932840Ab1KDQuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:50:46 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:44852 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab1KDQun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:48:24 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: RE: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
-Thread-Topic: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
-Thread-Index: AQHMmvAZ0k5z8ytqW0i9aFLP+z33G5WcYzoAgABeBtD//7jHgIAAYTBw//+tnACAAFyJoP//qWSAAAuXTzA=
-Date: Fri, 4 Nov 2011 16:48:09 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A9019691@DBDE01.ent.ti.com>
-References: <1320410928-20349-1-git-send-email-afzal@ti.com>
- <20111104140422.GA28615@opensource.wolfsonmicro.com>
- <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
- <20111104152559.GC28615@opensource.wolfsonmicro.com>
- <C8443D0743D26F4388EA172BF4E2A7A9019607@DBDE01.ent.ti.com>
- <20111104161855.GC28902@opensource.wolfsonmicro.com>
- <C8443D0743D26F4388EA172BF4E2A7A9019650@DBDE01.ent.ti.com>
- <20111104164009.GA753@opensource.wolfsonmicro.com>
-In-Reply-To: <20111104164009.GA753@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
+	Fri, 4 Nov 2011 12:50:43 -0400
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+In-Reply-To: <4EB41227.3070708@siemens.com>
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
+	 <20111104121601.GA15206@infradead.org>
+	 <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
+	 <20111104130225.GA24563@infradead.org>
+	 <CAOJsxLG4+-Hmpt-dfa7auEs6H1RgWWwYYs=zzb8uvJg8m10_Nw@mail.gmail.com>
+	 <4EB3F9CE.1050407@siemens.com> <1320419814.3334.45.camel@lappy>
+	 <4EB41227.3070708@siemens.com>
 Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Fri, 04 Nov 2011 18:48:17 +0200
+Message-ID: <1320425297.3334.53.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Fri, Nov 04, 2011 at 22:10:09, Mark Brown wrote:
+On Fri, 2011-11-04 at 17:26 +0100, Jan Kiszka wrote:
+> On 2011-11-04 16:16, Sasha Levin wrote:
+> > On Fri, 2011-11-04 at 15:42 +0100, Jan Kiszka wrote:
+> >> On 2011-11-04 14:32, Pekka Enberg wrote:
+> >>> I know you don't see the benefits of integrated code base but I as a
+> >>> developer do.
+> >>
+> >> IIRC, this discussion still lacks striking, concrete examples from the
+> >> KVM tool vs. QEMU development processes.
+> > 
+> > I'll give a current example: Michael and Rusty are currently considering
+> > a change in the virtio spec (allowing MMIO config BARs - but thats
+> > irrelevant).
+> > 
+> > I'll quote what Anthony said about how he sees the big picture of how
+> > this change is going to be implemented - something which we all agree
+> > with:
+> > 
+> > On Thu, 2011-11-03 at 09:37 -0500, Anthony Liguori wrote:
+> >> Well, what's needed before the spec is changed is an interesting question, but I 
+> >> think the main thing is, don't commit any virtio ABI changes to vhost, QEMU, 
+> >> NKT, or the kernel until the spec for the change has been committed.
+> >>
+> >> It would be nice to have a working implementation before committing a spec 
+> >> change.  Even nicer would be to have Acked-by's a maintainer in each area affected.
+> > 
+> > Which is pretty smart. Get a working implementation before we commit to
+> > a spec.
+> > 
+> > Now, how would the development process look when the trees aren't
+> > integrated? You'd try to get the kernel side stabilized, then you'd do
+> > your usermode changes, go back to the kernel patches to fix bugs and
+> > things people missed, which would require in turn new patches to the
+> > usermode part, and so until you get 5-6 versions (best case) of this
+> > change in *each* tree.
 > 
-> What do you mean when you say "gain"?
+> This can happen if the kernel API went totally wrong on the first run.
+> It happens, but not frequently. Or do you see many examples for this in
+> KVM's history?
+
+A recent example is the NMI emulation fix which reached v6 for both
+trees. And from what I gather it's supposed to be a smaller scale change
+than the virtio one I've mentioned before.
+
+There are more similar examples.
+
 > 
+> I don't remember finding this particularly problematic for any of my own
+> patch sets. If the API is controversial, you usually try to get that
+> conceptually resolved instead of updating all bits over and over again.
+> Once the API is accepted, changes to the implementations become
+> independent anyway.
+> 
+> > 
+> > Add some technical difficulties which just make it uglier, such as
+> > having to copy over new kernel headers into the usermode tool for each
+> > new version you want to send (linux-headers/ dir in QEMU) and you get a
+> > process which is not that pretty anymore :)
+> 
+> Synching headers has become trivial these days (reloading updated KVM
+> modules may take more steps ;) ).
 
-Effective voltage expression is (value1 * 12.5mV + 562.5 mV) * value2.
+Yup, it's a simple copy - I didn't say it was hard, I said it's ugly.
 
-In this value2 is being called as gain.
+> > 
+> > How would it look for an integrated project? You'd be working on the
+> > same codebase, one series of patches would take care of both the kernel
+> > changes and the userspace changes, this would speed up iterations and
+> > make testing quite easier.
+> 
+> I can't imagine that the ability to do a single 'make' for a change that
+> remains split nevertheless justifies merging more user land into the
+> kernel. You can always set up a meta project for this.
 
-value1 can have values from 3 to 75, both inclusive (73 steps)
-value2 can have from 1 to 3, both inclusive (3 numbers)
+Thats not the only reason for the merge ofcourse, it's just one which
+you asked about.
 
-Regards
-Afzal
+You can do a meta project, you can't send patches out like that though -
+which makes that meaningless.
+
+-- 
+
+Sasha.
+
