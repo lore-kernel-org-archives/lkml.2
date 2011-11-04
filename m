@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab1KDLJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:09:31 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51206 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab1KDLJP (ORCPT
+	id S1754187Ab1KDLLT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:11:19 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35687 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab1KDLLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 07:09:15 -0400
-Date: Fri, 4 Nov 2011 22:09:02 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Change of URL for the MIPS linux-next tree
-Message-Id: <20111104220902.b0c67d0760337f5da66b9c28@canb.auug.org.au>
-In-Reply-To: <20111104095351.GA2659@linux-mips.org>
-References: <20111104095351.GA2659@linux-mips.org>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo"
+	Fri, 4 Nov 2011 07:11:18 -0400
+Date: Fri, 4 Nov 2011 12:11:15 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <greg@kroah.com>, x86 <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL 3.0.x-stable] AMD F15h cache aliasing fixes
+Message-ID: <20111104111115.GA8020@aftab>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo
-Content-Type: text/plain; charset=US-ASCII
+
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Ralf,
+Hi Greg,
 
-On Fri, 4 Nov 2011 09:53:51 +0000 Ralf Baechle <ralf@linux-mips.org> wrote:
->
-> I've moved things on linux-mips.org a bit around, so the new URL for
-> my tree for linux-next is:
->=20
->   git://git.linux-mips.org/pub/scm/ralf/upstream-sfr.git
+as previously discussed, here are the 4 patches needed for addressing
+the issue in $Subject. I'm sending them as mails but I have them also in
+a git-pullable form in case you'd like to verify them:
 
-I have switched to that, now.
+git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git l1i-3.0.x
+
+Here are the patches on the branch above along with SHA1s (from the
+bottom up):
+
+bf27c8742db1e2c01bff6e8e2cce3b14d5d6cca5 x86-32, amd: Move va_align definit=
+ion to unbreak 32-bit build
+57d8c29f231049d7b10a497c8afa42dba4672a70 x86, amd: Move BSP code to cpu_dev=
+ helper
+28b1d99bcde97b468585bdf6c94fa51931d2a1aa x86: Add a BSP cpu_dev helper
+5c303905f98ab4e378488c919cc60483d59002ff x86, amd: Avoid cache aliasing pen=
+alties on AMD family 15h
+
+Please apply,
+thanks.
+
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Regards/Gruss,
+Boris.
 
---Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo
-Content-Type: application/pgp-signature
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
+
+--SLDf9lqlvOQaIe6s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOs8fOAAoJEECxmPOUX5FE7H0P/0x0KX5ecmCFWx2eVwXW9Ze/
-v6FlmF5HQgg9csuDhghGyveG/Z8y9IPCPnWrfryvpjCeGcYRYrIHsMUueFLMHfte
-k/HhKr2avJpgCnSSMnsdwRcsvrVBNpFAu5768rpSXoOxwZlDqUlyF5HJh/92ewMK
-j+TUO2J0VTJqaL0RL0pxcpQGysQ44TM7WDKFdZVqNWs0fecxhFwL70Ya7DWs/n/m
-TgkMKzOuXmauoNOMvgHLmVEyCZZZ7TpIiGSbGjFjEe1ngkwDK2bVd4xg7GyZSnQp
-vFi4+0+WqBi49GIFPDAANxIlGK44nl//zwmkX4WOUdKMI+EfoOpxyL7LTA3kfRAk
-0znOXh4ENfNrXLj88dmv2PjyjNEY6K2Ky/1dfT4QRBSbmgJ6uoGhtN8jVjfz9AQM
-pX6hiMl0MJGkYvwwk1HBGdTaI1+4F6b5hp338TwhhapZG8XDuvKx/buDY4M8q6ov
-gHW8KNscYyHD/BHdT0sUQSXlV1Y6XtcInJrRLuJXmEdVQ9bMTPYkUJ9il7NEiFoq
-flIyg22j5Z91H4SFCQxfra0Q353aMkHr6aZXcOyDoelDPt+IUtVitlwdR67wXB+H
-uvVkB+jtNJQUbQJhPXek7SgszF4/ZPMULscMNTC/2yZZTPjj/YmAtymGHKXssV1v
-t57M+xoA+SrC4S1vluAe
-=BnP8
+iQIcBAEBAgAGBQJOs8hTAAoJEBLB8Bhh3lVKC8UQALLoMV6oQ/1zt/MUnjueL+qX
+zYuZTOzCJ1ntdgX3aZMb1k2+pQM3UiXbPEnN7Tz6zNDHH/NcrjUrMBizWcqQagQ5
+6MDJj+diw4dhFa++5vz1z9yp3kb+GHwzQMaOD8l5Nk7E1u62Nh7WFoOfqg/Jh4Oq
+PGmXNH/ewzYFNAWom2HDiDCsFG6YGkG0bXFPpyZ0MlrMM1ol9XVQ/l3ekUqrjMR7
+nW7uVSgHU1gxoFMcDs7vhKttA0ubcCX1AN0+J/UQoOo60CjgSP2KVPbSvCJbXu/x
+n9+SzO3OROS27Db6IikBtgR8hnQ/S2EkoUUQRQg4A4FAi1xeTfZLopndZcU7DSBJ
+GTIHmu1vGKT86b9GrKznm1ktMYyHMMn7tKcLmWsA4PYRjW/W36FAkJX5y2qSeAJj
+ylRCL5Kd8h+A2QCxySO+00GXOd4EqxEJoQOUWmZBsc84jJyy5J5JbZfGMLJHsJuK
+D/xTc0kkOFlzg37gyuH4HTa4P2vd+yuIdWBvIlG5ZCaou8V/NAx9yHGg2NwPmZlw
+NOYTcW6GdH3ymhVnhhYefi6u1KTeXWGIWmo2gGdeEqg5NFIsV+y0Js+LoDh1kZIA
+Z/ZYN37zVqRdz5jZnxzhY5xPJ3Gc8VH3HpgIf4857DFacwL1OVUBRFMd75rmbi7G
+kOeuf9r/oEaBkCqvDqJ6
+=D+g8
 -----END PGP SIGNATURE-----
 
---Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo--
+--SLDf9lqlvOQaIe6s--
