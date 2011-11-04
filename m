@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1KDJZZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 05:25:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54570 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751262Ab1KDJZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 05:25:24 -0400
-Date: Fri, 4 Nov 2011 10:25:20 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111104092520.GA16897@gere.osrc.amd.com>
-References: <20111020212353.GZ25124@google.com>
- <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
- <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
- <20111021094520.GA9884@zhy>
- <20111103071735.GA3228@swordfish.minsk.epam.com>
- <20111103072705.GA15871@zhy>
- <20111103074506.GB3228@swordfish.minsk.epam.com>
- <20111103075354.GA16666@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111103075354.GA16666@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753914Ab1KDJ1H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:27:07 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51987 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1KDJ1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 05:27:05 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: sergey.senozhatsky@gmail.com, bp@alien8.de
+Subject: [PATCH 0/4] patches to cure race in lock_set_class()
+Date: Fri,  4 Nov 2011 17:26:26 +0800
+Message-Id: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 03:53:54PM +0800, Yong Zhang wrote:
-> On Thu, Nov 03, 2011 at 10:45:06AM +0300, Sergey Senozhatsky wrote:
-> > On (11/03/11 15:27), Yong Zhang wrote:
-> > > Did you have tried it? Though I don't find time to polish it yet but
-> > > I think will smooth your concern.
-> > > 
-> > 
-> > I'm compiling the kernel with you patch right now.
-> > The whole point was just for
-> > case if someone has different approach or whatsoever.
-> 
-> Understood. If someone can come up with a simple patch which could
-> cover the case I mentioned before, that would be great.
-> /me goes to poke at it.
+This a new version of my previous post[1].
 
-I dunno whether this is related but I get the following on 3.1:
+patch#1 is the one which fix the reported bug.
+  So Sergey, Borislav, would you please give it a test?
 
-[ 5499.537074] INFO: trying to register non-static key.
-[ 5499.537080] the code is fine but needs lockdep annotation.
-[ 5499.537083] turning off the locking correctness validator.
-[ 5499.537088] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0 #1
-[ 5499.537091] Call Trace:
-[ 5499.537094]  <IRQ>  [<ffffffff8107beed>] __lock_acquire+0x165d/0x1e30
-[ 5499.537109]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-[ 5499.537115]  [<ffffffff8107ccd3>] lock_acquire+0x93/0x160
-[ 5499.537120]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-[ 5499.537126]  [<ffffffff814d9866>] _raw_spin_lock+0x36/0x50
-[ 5499.537130]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-[ 5499.537135]  [<ffffffff810321fc>] double_rq_lock+0x2c/0x80
-[ 5499.537140]  [<ffffffff81039195>] load_balance+0x215/0x6c0
-[ 5499.537146]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
-[ 5499.537151]  [<ffffffff810396fd>] rebalance_domains+0xbd/0x1d0
-[ 5499.537155]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
-[ 5499.537161]  [<ffffffff810398ec>] run_rebalance_domains+0xdc/0x130
-[ 5499.537166]  [<ffffffff81048dcd>] __do_softirq+0xbd/0x290
-[ 5499.537173]  [<ffffffff814dc42c>] call_softirq+0x1c/0x30
-[ 5499.537178]  [<ffffffff81003eb5>] do_softirq+0x85/0xc0
-[ 5499.537183]  [<ffffffff810492ce>] irq_exit+0x9e/0xc0
-[ 5499.537189]  [<ffffffff8101ca9f>] smp_call_function_single_interrupt+0x2f/0x40
-[ 5499.537195]  [<ffffffff814dbeb0>] call_function_single_interrupt+0x70/0x80
-[ 5499.537199]  <EOI>  [<ffffffff810096e6>] ? native_sched_clock+0x26/0x70
-[ 5499.537212]  [<ffffffffa0038e1a>] ? acpi_idle_enter_simple+0xee/0x11f [processor]
-[ 5499.537221]  [<ffffffffa0038e15>] ? acpi_idle_enter_simple+0xe9/0x11f [processor]
-[ 5499.537227]  [<ffffffff813f8b1d>] cpuidle_idle_call+0xdd/0x350
-[ 5499.537233]  [<ffffffff8100081f>] cpu_idle+0x6f/0xd0
-[ 5499.537238]  [<ffffffff814cc665>] start_secondary+0x1ae/0x1b3
+patch#2~4 is an enhancement which fix a potential race in
+  lock_set_class(). But the fact is the only current user
+  in kernel is lock_set_subclass(), we still have no
+  user which change its 'key' in flying. So I mark it
+  with RFC.
+
+More detail in each patch :)
+
+Thanks,
+Yong
+
+[1]:http://marc.info/?l=linux-kernel&m=131919035525533
+
+Yong Zhang (4):
+  lockdep: lock_set_subclass() fix
+  lockdep: Let register_lock_class() can be called with/without
+    graph_lock
+  lockdep: split lockdep_init_map()
+  lockdep: fix race condition in __lock_set_class()
+
+ include/linux/lockdep.h |    2 +-
+ kernel/lockdep.c        |   50 ++++++++++++++++++++++++++++++++--------------
+ 2 files changed, 36 insertions(+), 16 deletions(-)
 
 -- 
-Regards/Gruss,
-Boris.
+1.7.5.4
+
