@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab1KDU3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:29:35 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:4677 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751548Ab1KDU3e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:29:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 04 Nov 2011 13:29:16 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 4 Nov 2011 13:29:15 -0700
-Subject: RE: [PATCH v2 1/8] arm/tegra: initial device tree for tegra30
-Thread-Topic: [PATCH v2 1/8] arm/tegra: initial device tree for tegra30
-Thread-Index: AcyZaQCmyXYQjo54STyiXcMVEIJRKQBxznTA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4E3D@HQMAIL01.nvidia.com>
-References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
- <1320242948-21061-2-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1320242948-21061-2-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752371Ab1KDUax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:30:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53228 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab1KDUaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 16:30:52 -0400
+Date: Fri, 4 Nov 2011 13:28:06 -0700
+From: Greg KH <gregkh@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, Xiaotian Feng <dfeng@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [050/107] block: check for proper length of iov entries earlier
+ in blk_rq_map_user_iov()
+Message-ID: <20111104202806.GA9715@suse.de>
+References: <20111102221600.GA26650@kroah.com>
+ <20111102221454.703920975@clark.kroah.org>
+ <1320420256.3079.172.camel@deadeye>
+ <20111104171425.GA4893@suse.de>
+ <20111104190616.GB3366@decadent.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111104190616.GB3366@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Wednesday, November 02, 2011 8:09 AM:
-> This patch adds the initial device tree for tegra30
-...
-> diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-...
-> +	intc: interrupt-controller@50041000 {
-> +		compatible = "nvidia,tegra30-gic", "nvidia,tegra20-gic";
-> +		interrupt-controller;
-> +		#interrupt-cells = <1>;
-> +		reg = < 0x50041000 0x1000 >,
-> +		< 0x50040100 0x0100 >;
+On Fri, Nov 04, 2011 at 07:06:16PM +0000, Ben Hutchings wrote:
+> On Fri, Nov 04, 2011 at 10:14:26AM -0700, Greg KH wrote:
+> > On Fri, Nov 04, 2011 at 03:24:16PM +0000, Ben Hutchings wrote:
+> > > On Wed, 2011-11-02 at 15:14 -0700, Greg KH wrote:
+> > > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Xiaotian Feng <dfeng@redhat.com>
+> > > > 
+> > > > commit 5478755616ae2ef1ce144dded589b62b2a50d575 upstream.
+> > > > 
+> > > > commit 9284bcf checks for proper length of iov entries in
+> > > > blk_rq_map_user_iov(). But if the map is unaligned, kernel
+> > > > will break out the loop without checking for the proper length.
+> > > > So we need to check the proper length before the unalign check.
+> > > 
+> > > This will catch an unaligned zero-length entry.  But there's still no
+> > > check for zero-length iov entries *after* the unaligned entry.
+> > > 
+> > > [...]
+> > > > --- a/block/blk-map.c
+> > > > +++ b/block/blk-map.c
+> > > > @@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_q
+> > > >  	for (i = 0; i < iov_count; i++) {
+> > > >  		unsigned long uaddr = (unsigned long)iov[i].iov_base;
+> > > >  
+> > > > +		if (!iov[i].iov_len)
+> > > > +			return -EINVAL;
+> > > > +
+> > > >  		if (uaddr & queue_dma_alignment(q)) {
+> > > >  			unaligned = 1;
+> > > >  			break;
+> > > 
+> > > I think the correct fix is just to remove the 'break'.
+> > 
+> > Then the fix should go upstream first :)
+> 
+> But if I'm right, this is a non-fix and doesn't belong in the
+> longterm update.
 
-The indentation of that last line isn't quite right; I think the < are
-usually aligned.
+Doesn't this still fix one issue here, just not both of them described,
+right?
 
--- 
-nvpublic
+thanks,
 
+greg k-h
