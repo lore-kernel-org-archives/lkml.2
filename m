@@ -1,212 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1KDGuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 02:50:07 -0400
+	id S1752421Ab1KDGuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 02:50:06 -0400
 Received: from mailout2.samsung.com ([203.254.224.25]:33713 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1KDGuD (ORCPT
+	with ESMTP id S1750864Ab1KDGuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 02:50:03 -0400
-X-AuditID: cbfee61a-b7cf1ae00000208e-0e-4eb38b1653cf
+	Fri, 4 Nov 2011 02:50:00 -0400
+X-AuditID: cbfee61a-b7cf1ae00000208e-0c-4eb38b16275b
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
 To: lm-sensors@lm-sensors.org
 Cc: linux-kernel@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
         Guenter Roeck <guenter.roeck@ericsson.com>, dg77.kim@samsung.com,
         kyungmin.park@samsung.com, myungjoo.ham@gmail.com
-Subject: [RFC PATCH 1/2] HWMON: add interfaces to read/write hwmon values
- inside kernel
-Date: Fri, 04 Nov 2011 15:50:32 +0900
-Message-id: <1320389433-1671-2-git-send-email-myungjoo.ham@samsung.com>
+Subject: [RFC PATCH 0/2] HWMON: add in-kernel interfaces to read sensor values.
+Date: Fri, 04 Nov 2011 15:50:31 +0900
+Message-id: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1320389433-1671-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 04 Nov 2011 06:49:43.0665 (UTC)
- FILETIME=[EF079610:01CC9ABD]
+X-OriginalArrivalTime: 04 Nov 2011 06:49:43.0649 (UTC)
+ FILETIME=[EF052510:01CC9ABD]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/hwmon/hwmon.c |  108 ++++++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/hwmon.h |   11 +++++-
- 2 files changed, 117 insertions(+), 2 deletions(-)
+We have been reading hwmon values (TMU, the SoC-core temperature sensor,
+and NTC, the ambient or battery surface temperature sensor) for
+Charger-Manager. However, because hwmon does not have in-kernel interface,
+we have been using undesired method, including "../../../fs/*.h".
 
-diff --git a/drivers/hwmon/hwmon.c b/drivers/hwmon/hwmon.c
-index a61e781..1ea6736c 100644
---- a/drivers/hwmon/hwmon.c
-+++ b/drivers/hwmon/hwmon.c
-@@ -33,13 +33,20 @@ static DEFINE_SPINLOCK(idr_lock);
- /**
-  * hwmon_device_register - register w/ hwmon
-  * @dev: the device to register
-+ * @attrs: the sysfs attribute group managed by hwmon for the hwmon device.
-  *
-  * hwmon_device_unregister() must be called when the device is no
-  * longer needed.
-  *
-  * Returns the pointer to the new device.
-+ *
-+ * If attrs is not null, it is used to call sysfs_create_group()
-+ * for dev->kobj. And then sysfs_remove_group() is called with
-+ * hwmon_device_unregister().
-+ *
-  */
--struct device *hwmon_device_register(struct device *dev)
-+struct device *hwmon_device_register(struct device *dev,
-+				     struct attribute_group *attrs)
- {
- 	struct device *hwdev;
- 	int id, err;
-@@ -65,8 +72,17 @@ again:
- 		spin_lock(&idr_lock);
- 		idr_remove(&hwmon_idr, id);
- 		spin_unlock(&idr_lock);
-+		goto out;
- 	}
- 
-+	if (attrs) {
-+		err = sysfs_create_group(&dev->kobj, attrs);
-+		if (err)
-+			return ERR_PTR(err);
-+	}
-+
-+	dev_set_drvdata(hwdev, attrs);
-+out:
- 	return hwdev;
- }
- 
-@@ -78,6 +94,10 @@ again:
- void hwmon_device_unregister(struct device *dev)
- {
- 	int id;
-+	struct attribute_group *attrs = dev_get_drvdata(dev);
-+
-+	if (attrs)
-+		sysfs_remove_group(&dev->parent->kobj, attrs);
- 
- 	if (likely(sscanf(dev_name(dev), HWMON_ID_FORMAT, &id) == 1)) {
- 		device_unregister(dev);
-@@ -89,6 +109,92 @@ void hwmon_device_unregister(struct device *dev)
- 			"hwmon_device_unregister() failed: bad class ID!\n");
- }
- 
-+static int hwmon_access_value(struct device *hwmon_dev, const char *name,
-+			      char *buf, int bufsize, bool write)
-+{
-+	struct attribute_group *attrs;
-+	struct device_attribute *attr;
-+	int i, err = 0;
-+
-+	get_device(hwmon_dev);
-+
-+	attrs = dev_get_drvdata(hwmon_dev);
-+	if (!attrs)
-+		goto out;
-+	for (i = 0; attrs->attrs[i]; i++) {
-+		attr = container_of(attrs->attrs[i], struct device_attribute,
-+				    attr);
-+		if (!strcmp(attrs->attrs[i]->name, name))
-+			goto found;
-+	}
-+	err = -EINVAL;
-+	goto out;
-+
-+found:
-+	if (write) {
-+		if (!attr->store) {
-+			err = -EINVAL;
-+			goto out;
-+		}
-+		err = attr->store(hwmon_dev->parent, attr, buf, bufsize);
-+	} else {
-+		if (!attr->show) {
-+			err = -EINVAL;
-+			goto out;
-+		}
-+		err = attr->show(hwmon_dev->parent, attr, buf);
-+	}
-+
-+out:
-+	put_device(hwmon_dev);
-+	return err;
-+}
-+
-+/**
-+ * hwmon_get_value - get the sysfs entry value of the hwmon device.
-+ *
-+ * @hwmon_dev
-+ * @name
-+ * @buf
-+ */
-+int hwmon_get_value(struct device *hwmon_dev, const char *name, char *buf)
-+{
-+	return hwmon_access_value(hwmon_dev, name, buf, 0, false);
-+}
-+EXPORT_SYMBOL_GPL(hwmon_get_value);
-+
-+/**
-+ * hwmon_set_value - set the sysfs entry value of the hwmon device.
-+ *
-+ * @hwmon_dev
-+ * @name
-+ * @buf
-+ * @bufsize
-+ */
-+int hwmon_set_value(struct device *hwmon_dev, const char *name, char *buf,
-+		    int bufsize)
-+{
-+	return hwmon_access_value(hwmon_dev, name, buf, bufsize, true);
-+}
-+EXPORT_SYMBOL_GPL(hwmon_set_value);
-+
-+static int hwmon_dev_match(struct device *dev, void *data)
-+{
-+	if (dev->class == hwmon_class)
-+		return 1;
-+	return 0;
-+}
-+
-+/**
-+ * hwmon_find_device - find the hwmon-device of the given device
-+ *
-+ * @dev
-+ */
-+struct device *hwmon_find_device(struct device *dev)
-+{
-+	return device_find_child(dev, NULL, hwmon_dev_match);
-+}
-+
- static void __init hwmon_pci_quirks(void)
- {
- #if defined CONFIG_X86 && defined CONFIG_PCI
-diff --git a/include/linux/hwmon.h b/include/linux/hwmon.h
-index 6b6ee70..f787cfc 100644
---- a/include/linux/hwmon.h
-+++ b/include/linux/hwmon.h
-@@ -16,10 +16,19 @@
- 
- #include <linux/device.h>
- 
--struct device *hwmon_device_register(struct device *dev);
-+struct device *hwmon_device_register(struct device *dev,
-+				     struct attribute_group *attrs);
- 
- void hwmon_device_unregister(struct device *dev);
- 
-+
-+extern int hwmon_get_value(struct device *hwmon_dev, const char *name,
-+			   char *buf);
-+extern int hwmon_set_value(struct device *hwmon_dev, const char *name,
-+			   char *buf, int bufsize);
-+
-+extern struct device *hwmon_find_device(struct device *dev);
-+
- /* Scale user input to sensible values */
- static inline int SENSORS_LIMIT(long value, long low, long high)
- {
+This patch is to provide in-kernel interface for hwmon:
+hwmon_get_value and hwmon_set_value. In order to use these two functions,
+the hwmon driver should provide its sysfs attributes to hwmon framework
+as well. If the hwmon driver does not provide (by providing NULL), the users
+of the hwmon won't be able to use hwmon_get/set_value();
+The sysfs attribute (struct attribuyte_group *) is provided with
+hwmon_device_register; adding the second parameter to hwmon_device_register().
+The 2/2 patch shows the changes in device drivers due to this.
+
+Among the HWMON device, all but ntc_thermistor.c does not setup attribute_group
+for HWMON; thus they do not support hwmon_get/set_value with this patch.
+
+As soon as the server synchronizes git repositories, you can see how
+hwmon_get_value() is used at:
+http://git.infradead.org/users/kmpark/linux-2.6-samsung/shortlog/refs/heads/charger-manager
+
+
+MyungJoo Ham (2):
+  HWMON: add interfaces to read/write hwmon values inside kernel
+  HWMON: adapt to the HWMON interface changes
+
+ drivers/char/i8k.c                   |    2 +-
+ drivers/gpu/drm/nouveau/nouveau_pm.c |    2 +-
+ drivers/gpu/drm/radeon/radeon_pm.c   |    2 +-
+ drivers/hwmon/abituguru.c            |    2 +-
+ drivers/hwmon/abituguru3.c           |    2 +-
+ drivers/hwmon/acpi_power_meter.c     |    2 +-
+ drivers/hwmon/ad7414.c               |    2 +-
+ drivers/hwmon/ad7418.c               |    2 +-
+ drivers/hwmon/adcxx.c                |    2 +-
+ drivers/hwmon/adm1021.c              |    2 +-
+ drivers/hwmon/adm1025.c              |    2 +-
+ drivers/hwmon/adm1026.c              |    2 +-
+ drivers/hwmon/adm1029.c              |    2 +-
+ drivers/hwmon/adm1031.c              |    2 +-
+ drivers/hwmon/adm9240.c              |    2 +-
+ drivers/hwmon/ads1015.c              |    2 +-
+ drivers/hwmon/ads7828.c              |    2 +-
+ drivers/hwmon/ads7871.c              |    2 +-
+ drivers/hwmon/adt7411.c              |    2 +-
+ drivers/hwmon/adt7462.c              |    2 +-
+ drivers/hwmon/adt7470.c              |    2 +-
+ drivers/hwmon/adt7475.c              |    2 +-
+ drivers/hwmon/amc6821.c              |    2 +-
+ drivers/hwmon/applesmc.c             |    2 +-
+ drivers/hwmon/asb100.c               |    2 +-
+ drivers/hwmon/asc7621.c              |    2 +-
+ drivers/hwmon/asus_atk0110.c         |    2 +-
+ drivers/hwmon/atxp1.c                |    2 +-
+ drivers/hwmon/coretemp.c             |    2 +-
+ drivers/hwmon/dme1737.c              |    4 +-
+ drivers/hwmon/ds1621.c               |    2 +-
+ drivers/hwmon/ds620.c                |    2 +-
+ drivers/hwmon/emc1403.c              |    2 +-
+ drivers/hwmon/emc2103.c              |    2 +-
+ drivers/hwmon/emc6w201.c             |    2 +-
+ drivers/hwmon/f71805f.c              |    2 +-
+ drivers/hwmon/f71882fg.c             |    2 +-
+ drivers/hwmon/f75375s.c              |    2 +-
+ drivers/hwmon/fam15h_power.c         |    2 +-
+ drivers/hwmon/fschmd.c               |    2 +-
+ drivers/hwmon/g760a.c                |    2 +-
+ drivers/hwmon/gl518sm.c              |    2 +-
+ drivers/hwmon/gl520sm.c              |    2 +-
+ drivers/hwmon/gpio-fan.c             |    2 +-
+ drivers/hwmon/hwmon.c                |  108 +++++++++++++++++++++++++++++++++-
+ drivers/hwmon/i5k_amb.c              |    2 +-
+ drivers/hwmon/ibmaem.c               |    4 +-
+ drivers/hwmon/ibmpex.c               |    2 +-
+ drivers/hwmon/it87.c                 |    2 +-
+ drivers/hwmon/jc42.c                 |    2 +-
+ drivers/hwmon/jz4740-hwmon.c         |    2 +-
+ drivers/hwmon/k10temp.c              |    2 +-
+ drivers/hwmon/k8temp.c               |    2 +-
+ drivers/hwmon/lineage-pem.c          |    2 +-
+ drivers/hwmon/lm63.c                 |    2 +-
+ drivers/hwmon/lm70.c                 |    2 +-
+ drivers/hwmon/lm73.c                 |    2 +-
+ drivers/hwmon/lm75.c                 |    2 +-
+ drivers/hwmon/lm77.c                 |    2 +-
+ drivers/hwmon/lm78.c                 |    4 +-
+ drivers/hwmon/lm80.c                 |    2 +-
+ drivers/hwmon/lm83.c                 |    2 +-
+ drivers/hwmon/lm85.c                 |    2 +-
+ drivers/hwmon/lm87.c                 |    2 +-
+ drivers/hwmon/lm90.c                 |    2 +-
+ drivers/hwmon/lm92.c                 |    2 +-
+ drivers/hwmon/lm93.c                 |    2 +-
+ drivers/hwmon/lm95241.c              |    2 +-
+ drivers/hwmon/lm95245.c              |    2 +-
+ drivers/hwmon/ltc4151.c              |    2 +-
+ drivers/hwmon/ltc4215.c              |    2 +-
+ drivers/hwmon/ltc4245.c              |    2 +-
+ drivers/hwmon/ltc4261.c              |    2 +-
+ drivers/hwmon/max1111.c              |    2 +-
+ drivers/hwmon/max16065.c             |    2 +-
+ drivers/hwmon/max1619.c              |    2 +-
+ drivers/hwmon/max1668.c              |    2 +-
+ drivers/hwmon/max6639.c              |    2 +-
+ drivers/hwmon/max6642.c              |    2 +-
+ drivers/hwmon/max6650.c              |    2 +-
+ drivers/hwmon/mc13783-adc.c          |    2 +-
+ drivers/hwmon/ntc_thermistor.c       |   15 +----
+ drivers/hwmon/pc87360.c              |    2 +-
+ drivers/hwmon/pc87427.c              |    2 +-
+ drivers/hwmon/pcf8591.c              |    2 +-
+ drivers/hwmon/pmbus/pmbus_core.c     |    2 +-
+ drivers/hwmon/s3c-hwmon.c            |    2 +-
+ drivers/hwmon/sch5627.c              |    2 +-
+ drivers/hwmon/sch5636.c              |    2 +-
+ drivers/hwmon/sht15.c                |    2 +-
+ drivers/hwmon/sht21.c                |    2 +-
+ drivers/hwmon/sis5595.c              |    2 +-
+ drivers/hwmon/smm665.c               |    2 +-
+ drivers/hwmon/smsc47b397.c           |    2 +-
+ drivers/hwmon/smsc47m1.c             |    2 +-
+ drivers/hwmon/smsc47m192.c           |    2 +-
+ drivers/hwmon/thmc50.c               |    2 +-
+ drivers/hwmon/tmp102.c               |    2 +-
+ drivers/hwmon/tmp401.c               |    2 +-
+ drivers/hwmon/tmp421.c               |    2 +-
+ drivers/hwmon/twl4030-madc-hwmon.c   |    2 +-
+ drivers/hwmon/ultra45_env.c          |    2 +-
+ drivers/hwmon/via-cputemp.c          |    2 +-
+ drivers/hwmon/via686a.c              |    2 +-
+ drivers/hwmon/vt1211.c               |    2 +-
+ drivers/hwmon/vt8231.c               |    2 +-
+ drivers/hwmon/w83627ehf.c            |    2 +-
+ drivers/hwmon/w83627hf.c             |    2 +-
+ drivers/hwmon/w83781d.c              |    4 +-
+ drivers/hwmon/w83791d.c              |    2 +-
+ drivers/hwmon/w83792d.c              |    2 +-
+ drivers/hwmon/w83793.c               |    2 +-
+ drivers/hwmon/w83795.c               |    2 +-
+ drivers/hwmon/w83l785ts.c            |    2 +-
+ drivers/hwmon/w83l786ng.c            |    2 +-
+ drivers/hwmon/wm831x-hwmon.c         |    2 +-
+ drivers/hwmon/wm8350-hwmon.c         |    2 +-
+ drivers/input/touchscreen/ads7846.c  |    2 +-
+ drivers/platform/x86/asus-wmi.c      |    2 +-
+ drivers/platform/x86/compal-laptop.c |    2 +-
+ drivers/platform/x86/eeepc-laptop.c  |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c |    2 +-
+ drivers/thermal/thermal_sys.c        |    2 +-
+ include/linux/hwmon.h                |   11 +++-
+ 124 files changed, 245 insertions(+), 139 deletions(-)
+
 -- 
 1.7.4.1
 
