@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755483Ab1KDNAy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 09:00:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54243 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230Ab1KDNAx (ORCPT
+	id S1755510Ab1KDNC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:02:58 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33999
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751230Ab1KDNC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:00:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: arm-soc samsung patches blocked on dmaengine patches
-Date: Fri, 4 Nov 2011 14:00:43 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+	Fri, 4 Nov 2011 09:02:56 -0400
+Date: Fri, 4 Nov 2011 09:02:25 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+Message-ID: <20111104130225.GA24563@infradead.org>
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
+ <20111104121601.GA15206@infradead.org>
+ <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111041400.44486.arnd@arndb.de>
-X-Provags-ID: V02:K0:C5Y5y8WAkqQfSqDAt0sSyHD0/R5oDPrs7LAwWj2dmCm
- DuAyN8uIxsY6TAaJotGuj6B7p3RjhAuFguSQWKPZTXtzyvWZf5
- 11j6dToi3bxbRBZ9pa53UtYxxba3hLs3ogCVHAb+xO4oxPSbaA
- eBQ9WuGGsYckE6+T18O7xAY9xjfAGGqF3ucXItXK12qSql9XrS
- cCeLVE/BffdkvURDAj1euAmhs43Kz2qdK1jeR2W9RKngrz6453
- iS3kbmi/Y8SiqbSi0Pb31NhphHXPl5U18BYBcp2/l/6wPBPaxA
- Ts3Qz+7qAAe+iiXbpAD0fUYkDkYmmabAFisFk30Fpj26LVv7bJ
- 5umC0BXzYpYr1OZ4pdao=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod and Kukjin,
+On Fri, Nov 04, 2011 at 02:35:18PM +0200, Pekka Enberg wrote:
+> We are reusing kernel code and headers and I am not interested in
+> copying them over. Living in the kernel tree is part of the design,
+> whether you like it or not.
 
-Right now, all the patches from the arm-soc tree are merged into 3.2, but the
-samsung/cleanup and samsung/devel series are missing because they depend on
-patches in the dmaengine tree. I'm not sure about the status of that tree,
-but I didn't see a pull request for them yet.
+That's pretty much a blanko argument for throwing everything into the
+kernel.  What's next, throwing your jvm into the kernel because you like
+some kernel helpers?
 
-Should I just submit the samsung tree with the dmaengine patches included,
-or keep waiting?
+We've been through this a few times - there is no reason why a tool
+using the KVM ioctls should be considered close to the kernel - all
+other users get away just fine staying out of tree, and that has
+helped to keep the ABI stable.
 
-	Arnd
+This sounds more like you should create a libkernelutil with useful
+data structures we use in the kernel for userspace programs.  I'd love
+to use that for a few projects, btw.
+
