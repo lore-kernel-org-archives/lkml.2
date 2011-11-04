@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab1KDRAW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 13:00:22 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:36475 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932807Ab1KDRAU (ORCPT
+	id S932972Ab1KDRD7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 13:03:59 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:56051 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932550Ab1KDRD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 13:00:20 -0400
-Message-ID: <4EB419F5.6070308@xenotime.net>
-Date: Fri, 04 Nov 2011 09:59:33 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
-        x86 maintainers <x86@kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: linux-next: Tree for Nov 3 (KVMTOOL_TEST_ENABLE)
-References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au> <4EB33525.808@xenotime.net>
-In-Reply-To: <4EB33525.808@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 4 Nov 2011 13:03:58 -0400
+Subject: Re: [GIT] Networking
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        "Grumbach, Emmanuel" <emmanuel.grumbach@intel.com>,
+        "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+In-Reply-To: <CA+55aFzkZofnUmBOGVvmNKyA0_FApo73xZ7J=aevbHPS_0+xKQ@mail.gmail.com>
+References: <20111025.063206.2273357152859701628.davem@davemloft.net>
+	 <CA+55aFzkZofnUmBOGVvmNKyA0_FApo73xZ7J=aevbHPS_0+xKQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Nov 2011 18:03:42 +0100
+Message-ID: <1320426222.3969.121.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2011 05:43 PM, Randy Dunlap wrote:
-> On 11/02/2011 11:20 PM, Stephen Rothwell wrote:
->> Hi all,
+On Tue, 2011-10-25 at 12:26 +0000, Linus Torvalds wrote:
+> On Tue, Oct 25, 2011 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
+> >
+> > The most visible thing in here is the reorganization of the drivers
+> > under drivers/net.
 > 
+> Nope, the most visible thing are some new annoying warnings, that seem
+> absolutely broken.
 > 
-> When KVMTOOL_TEST_ENABLE is enabled but CONFIG_BLOCK is not enabled, there are
-> MANY build errors.  This one (case) is probably fixed by adding "select BLOCK", but it's
-> all rather ugly.
+> At the very minimum, that WARN_ON(1) should be a WARN_ON_ONCE() or
+> something like that. Because showing it over an dover again is not
+> helpful.
+> 
+> Added the people who signed off on the changes to the affected files,
+> since they hopefully know why this happens and can fix it..
 
-kconfig even tells us:
+Sorry for the late reply.
 
-warning: (KVMTOOL_TEST_ENABLE) selects KGDB which has unmet direct dependencies (HAVE_ARCH_KGDB && DEBUG_KERNEL && EXPERIMENTAL)
-warning: (KVMTOOL_TEST_ENABLE) selects BLK_DEV which has unmet direct dependencies (BLOCK)
+I think this was actually caused by some changes from Ben Greear
+"optimising" stuff in net/mac80211/work.c and keeping the wrong channel,
+Stanislaw was also looking at this at some point I think. I agree that
+it would be good to change to WARN_ON_ONCE(), will do that.
 
+The warning itself has been around forever, but the fact that it
+triggers now is probably related to the channel work & band switches.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+johannes
+
