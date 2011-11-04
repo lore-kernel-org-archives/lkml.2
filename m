@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab1KDQZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:25:34 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:40260 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755898Ab1KDQZd (ORCPT
+	id S1755986Ab1KDQ0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:26:46 -0400
+Received: from goliath.siemens.de ([192.35.17.28]:32446 "EHLO
+	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab1KDQ0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:25:33 -0400
-Message-ID: <4EB411FB.8050803@lougher.demon.co.uk>
-Date: Fri, 04 Nov 2011 16:25:31 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 4 Nov 2011 12:26:45 -0400
+Message-ID: <4EB41227.3070708@siemens.com>
+Date: Fri, 04 Nov 2011 17:26:15 +0100
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: NamJae Jeon <linkinjeon@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Squashfs updates for 3.2
-References: <4EB3F094.30307@lougher.demon.co.uk> <CAKYAXd87eNQqDs2Ks5pFkA8dxsb49Ub2UmmWfsQVC8n6F3sfKA@mail.gmail.com>
-In-Reply-To: <CAKYAXd87eNQqDs2Ks5pFkA8dxsb49Ub2UmmWfsQVC8n6F3sfKA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>  <20111104121601.GA15206@infradead.org>  <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>  <20111104130225.GA24563@infradead.org>  <CAOJsxLG4+-Hmpt-dfa7auEs6H1RgWWwYYs=zzb8uvJg8m10_Nw@mail.gmail.com>  <4EB3F9CE.1050407@siemens.com> <1320419814.3334.45.camel@lappy>
+In-Reply-To: <1320419814.3334.45.camel@lappy>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NamJae Jeon wrote:
+On 2011-11-04 16:16, Sasha Levin wrote:
+> On Fri, 2011-11-04 at 15:42 +0100, Jan Kiszka wrote:
+>> On 2011-11-04 14:32, Pekka Enberg wrote:
+>>> I know you don't see the benefits of integrated code base but I as a
+>>> developer do.
+>>
+>> IIRC, this discussion still lacks striking, concrete examples from the
+>> KVM tool vs. QEMU development processes.
+> 
+> I'll give a current example: Michael and Rusty are currently considering
+> a change in the virtio spec (allowing MMIO config BARs - but thats
+> irrelevant).
+> 
+> I'll quote what Anthony said about how he sees the big picture of how
+> this change is going to be implemented - something which we all agree
+> with:
+> 
+> On Thu, 2011-11-03 at 09:37 -0500, Anthony Liguori wrote:
+>> Well, what's needed before the spec is changed is an interesting question, but I 
+>> think the main thing is, don't commit any virtio ABI changes to vhost, QEMU, 
+>> NKT, or the kernel until the spec for the change has been committed.
+>>
+>> It would be nice to have a working implementation before committing a spec 
+>> change.  Even nicer would be to have Acked-by's a maintainer in each area affected.
+> 
+> Which is pretty smart. Get a working implementation before we commit to
+> a spec.
+> 
+> Now, how would the development process look when the trees aren't
+> integrated? You'd try to get the kernel side stabilized, then you'd do
+> your usermode changes, go back to the kernel patches to fix bugs and
+> things people missed, which would require in turn new patches to the
+> usermode part, and so until you get 5-6 versions (best case) of this
+> change in *each* tree.
+
+This can happen if the kernel API went totally wrong on the first run.
+It happens, but not frequently. Or do you see many examples for this in
+KVM's history?
+
+I don't remember finding this particularly problematic for any of my own
+patch sets. If the API is controversial, you usually try to get that
+conceptually resolved instead of updating all bits over and over again.
+Once the API is accepted, changes to the implementations become
+independent anyway.
 
 > 
-> I already posted this patch before ([PATCH] squashfs : devblksize set
-> to 4KB intead of BLOCK_SIZE(1KB).).
+> Add some technical difficulties which just make it uglier, such as
+> having to copy over new kernel headers into the usermode tool for each
+> new version you want to send (linux-headers/ dir in QEMU) and you get a
+> process which is not that pretty anymore :)
 
-No you didn't.  You posted a patch that simply unconditionally changed
-the block size from  1K -> 4K.
+Synching headers has become trivial these days (reloading updated KVM
+modules may take more steps ;) ).
 
-https://lkml.org/lkml/2011/9/18/66
+> 
+> How would it look for an integrated project? You'd be working on the
+> same codebase, one series of patches would take care of both the kernel
+> changes and the userspace changes, this would speed up iterations and
+> make testing quite easier.
 
-This is an unacceptable change, Squashfs is used on many devices not only
-NAND, and the default value of 1K is optimal for these other devices, and
-should not be changed.
+I can't imagine that the ability to do a single 'make' for a change that
+remains split nevertheless justifies merging more user land into the
+kernel. You can always set up a meta project for this.
 
-Second, if you are going to change long-term existing behaviour you should
-always allow users to "buy-in" to the change, rather than surprising them
-with new unexpected behaviour.
+Jan
 
-> It is similar with my patch except option.
-
-The option *is* the patch.
-
-> Have you ever seen this patch ? I didn't response about this patch from you.
-
-Since 2008 (and probably before) I have had reports that a 1K block size was
-causing performance issues on NAND
-
-http://old.nabble.com/Default-FS-block-size-td15423970.html
-
-However, I chose to do nothing at that time because the results were
-inconclusive.
-
-The impetus for moving to a 1K block on NAND was due to the development
-of the UBIBLK driver for NAND earlier this year
-
-http://lists.infradead.org/pipermail/linux-mtd/2011-June/036595.html
-
-where the 1K dev block behaviour of Squashfs was discovered to be the
-reason (in the early V1 driver referenced above) why Squashfs filesystems
-worked, but ext2/3 and vfat filesystems did not.
-
-Your patch was merely the 3rd or 4th unacceptable patch I have
-received changing the block size unconditionally.
-
-The month before your patch I received this truly horrible patch, which
-though it is extremely long, does nothing more than change the max dev
-block size to 4K.  I dropped that patch too.
-
-Phillip
+-- 
+Siemens AG, Corporate Technology, CT T DE IT 1
+Corporate Competence Center Embedded Linux
