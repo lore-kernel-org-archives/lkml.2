@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359Ab1KDIQV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 04:16:21 -0400
+	id S1753531Ab1KDIQy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 04:16:54 -0400
 Received: from mga09.intel.com ([134.134.136.24]:62538 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab1KDIQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 04:16:18 -0400
+	id S1752911Ab1KDIQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 04:16:17 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="70971325"
+   d="scan'208";a="70971316"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Chris Ball <cjb@laptop.org>
 Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V3 4/4] mmc: sdhci-pci: get gpio numbers from platform data
-Date: Fri,  4 Nov 2011 10:16:03 +0200
-Message-Id: <1320394563-29682-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 3/4] mmc: sdhci-pci: add platform data
+Date: Fri,  4 Nov 2011 10:16:02 +0200
+Message-Id: <1320394563-29682-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1320394563-29682-1-git-send-email-adrian.hunter@intel.com>
 References: <1320394563-29682-1-git-send-email-adrian.hunter@intel.com>
@@ -24,251 +24,193 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Retrieve the GPIO numbers for hardware reset and
-card detect from platform data.
+Add a means of getting platform data for the SDHCI PCI
+devices.  The data is stored against the slot not the
+device in order to support multi-slot devices.
+
+The data allows platform-specific setup (such as getting
+GPIO numbers from firmware or setting up wl12xx for SDIO)
+to be done in platform support files instead of the
+sdhci-pci driver.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- drivers/mmc/host/sdhci-pci.c |  109 ++++++++++++++++--------------------------
- 1 files changed, 41 insertions(+), 68 deletions(-)
+ drivers/Makefile                   |    2 +-
+ drivers/mmc/Makefile               |    3 +--
+ drivers/mmc/host/Makefile          |    1 +
+ drivers/mmc/host/sdhci-pci-data.c  |    5 +++++
+ drivers/mmc/host/sdhci-pci.c       |   32 ++++++++++++++++++++++++++++----
+ include/linux/mmc/sdhci-pci-data.h |   18 ++++++++++++++++++
+ 6 files changed, 54 insertions(+), 7 deletions(-)
+ create mode 100644 drivers/mmc/host/sdhci-pci-data.c
+ create mode 100644 include/linux/mmc/sdhci-pci-data.h
 
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 7fa433a..fe621d9 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -95,7 +95,7 @@ obj-$(CONFIG_EISA)		+= eisa/
+ obj-y				+= lguest/
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+-obj-$(CONFIG_MMC)		+= mmc/
++obj-y				+= mmc/
+ obj-$(CONFIG_MEMSTICK)		+= memstick/
+ obj-y				+= leds/
+ obj-$(CONFIG_INFINIBAND)	+= infiniband/
+diff --git a/drivers/mmc/Makefile b/drivers/mmc/Makefile
+index 12eef39..400756e 100644
+--- a/drivers/mmc/Makefile
++++ b/drivers/mmc/Makefile
+@@ -6,5 +6,4 @@ subdir-ccflags-$(CONFIG_MMC_DEBUG) := -DDEBUG
+ 
+ obj-$(CONFIG_MMC)		+= core/
+ obj-$(CONFIG_MMC)		+= card/
+-obj-$(CONFIG_MMC)		+= host/
+-
++obj-$(subst m,y,$(CONFIG_MMC))	+= host/
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index b4b83f3..745f8fc 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_MMC_MXC)		+= mxcmmc.o
+ obj-$(CONFIG_MMC_MXS)		+= mxs-mmc.o
+ obj-$(CONFIG_MMC_SDHCI)		+= sdhci.o
+ obj-$(CONFIG_MMC_SDHCI_PCI)	+= sdhci-pci.o
++obj-$(subst m,y,$(CONFIG_MMC_SDHCI_PCI))	+= sdhci-pci-data.o
+ obj-$(CONFIG_MMC_SDHCI_PXAV3)	+= sdhci-pxav3.o
+ obj-$(CONFIG_MMC_SDHCI_PXAV2)	+= sdhci-pxav2.o
+ obj-$(CONFIG_MMC_SDHCI_S3C)	+= sdhci-s3c.o
+diff --git a/drivers/mmc/host/sdhci-pci-data.c b/drivers/mmc/host/sdhci-pci-data.c
+new file mode 100644
+index 0000000..a611217
+--- /dev/null
++++ b/drivers/mmc/host/sdhci-pci-data.c
+@@ -0,0 +1,5 @@
++#include <linux/module.h>
++#include <linux/mmc/sdhci-pci-data.h>
++
++struct sdhci_pci_data *(*sdhci_pci_get_data)(struct pci_dev *pdev, int slotno);
++EXPORT_SYMBOL_GPL(sdhci_pci_get_data);
 diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index 9d1874a..23b369d 100644
+index d833d9c..9d1874a 100644
 --- a/drivers/mmc/host/sdhci-pci.c
 +++ b/drivers/mmc/host/sdhci-pci.c
-@@ -23,7 +23,6 @@
- #include <linux/scatterlist.h>
- #include <linux/io.h>
+@@ -25,6 +25,7 @@
  #include <linux/gpio.h>
--#include <linux/sfi.h>
+ #include <linux/sfi.h>
  #include <linux/pm_runtime.h>
- #include <linux/mmc/sdhci-pci-data.h>
++#include <linux/mmc/sdhci-pci-data.h>
  
-@@ -174,32 +173,9 @@ static int mrst_hc_probe(struct sdhci_pci_chip *chip)
- 	return 0;
- }
+ #include "sdhci.h"
  
--/* Medfield eMMC hardware reset GPIOs */
--static int mfd_emmc0_rst_gpio = -EINVAL;
--static int mfd_emmc1_rst_gpio = -EINVAL;
--
--static int mfd_emmc_gpio_parse(struct sfi_table_header *table)
--{
--	struct sfi_table_simple *sb = (struct sfi_table_simple *)table;
--	struct sfi_gpio_table_entry *entry;
--	int i, num;
--
--	num = SFI_GET_NUM_ENTRIES(sb, struct sfi_gpio_table_entry);
--	entry = (struct sfi_gpio_table_entry *)sb->pentry;
--
--	for (i = 0; i < num; i++, entry++) {
--		if (!strncmp(entry->pin_name, "emmc0_rst", SFI_NAME_LEN))
--			mfd_emmc0_rst_gpio = entry->pin_no;
--		else if (!strncmp(entry->pin_name, "emmc1_rst", SFI_NAME_LEN))
--			mfd_emmc1_rst_gpio = entry->pin_no;
--	}
--
--	return 0;
--}
--
- #ifdef CONFIG_PM_RUNTIME
+@@ -62,6 +63,7 @@ struct sdhci_pci_fixes {
+ struct sdhci_pci_slot {
+ 	struct sdhci_pci_chip	*chip;
+ 	struct sdhci_host	*host;
++	struct sdhci_pci_data	*data;
  
--static irqreturn_t mfd_sd_cd(int irq, void *dev_id)
-+static irqreturn_t sdhci_pci_sd_cd(int irq, void *dev_id)
+ 	int			pci_bar;
+ 	int			rst_n_gpio;
+@@ -1188,11 +1190,12 @@ static const struct dev_pm_ops sdhci_pci_pm_ops = {
+ \*****************************************************************************/
+ 
+ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
+-	struct pci_dev *pdev, struct sdhci_pci_chip *chip, int bar)
++	struct pci_dev *pdev, struct sdhci_pci_chip *chip, int first_bar,
++	int slotno)
  {
- 	struct sdhci_pci_slot *slot = dev_id;
- 	struct sdhci_host *host = slot->host;
-@@ -208,15 +184,16 @@ static irqreturn_t mfd_sd_cd(int irq, void *dev_id)
- 	return IRQ_HANDLED;
- }
+ 	struct sdhci_pci_slot *slot;
+ 	struct sdhci_host *host;
+-	int ret;
++	int ret, bar = first_bar + slotno;
  
--#define MFLD_SD_CD_PIN 69
--
--static int mfd_sd_probe_slot(struct sdhci_pci_slot *slot)
-+static void sdhci_pci_add_own_cd(struct sdhci_pci_slot *slot)
- {
--	int err, irq, gpio = MFLD_SD_CD_PIN;
-+	int err, irq, gpio = slot->cd_gpio;
- 
- 	slot->cd_gpio = -EINVAL;
- 	slot->cd_irq = -EINVAL;
- 
-+	if (!gpio_is_valid(gpio))
-+		return;
-+
- 	err = gpio_request(gpio, "sd_cd");
- 	if (err < 0)
- 		goto out;
-@@ -229,7 +206,7 @@ static int mfd_sd_probe_slot(struct sdhci_pci_slot *slot)
- 	if (irq < 0)
- 		goto out_free;
- 
--	err = request_irq(irq, mfd_sd_cd, IRQF_TRIGGER_RISING |
-+	err = request_irq(irq, sdhci_pci_sd_cd, IRQF_TRIGGER_RISING |
- 			  IRQF_TRIGGER_FALLING, "sd_cd", slot);
- 	if (err)
- 		goto out_free;
-@@ -238,65 +215,41 @@ static int mfd_sd_probe_slot(struct sdhci_pci_slot *slot)
- 	slot->cd_irq = irq;
- 	slot->host->quirks2 |= SDHCI_QUIRK2_OWN_CARD_DETECTION;
- 
--	return 0;
-+	return;
- 
- out_free:
- 	gpio_free(gpio);
- out:
- 	dev_warn(&slot->chip->pdev->dev, "failed to setup card detect wake up\n");
--	return 0;
- }
- 
--static void mfd_sd_remove_slot(struct sdhci_pci_slot *slot, int dead)
-+static void sdhci_pci_remove_own_cd(struct sdhci_pci_slot *slot)
- {
- 	if (slot->cd_irq >= 0)
- 		free_irq(slot->cd_irq, slot);
--	gpio_free(slot->cd_gpio);
-+	if (gpio_is_valid(slot->cd_gpio))
-+		gpio_free(slot->cd_gpio);
- }
- 
- #else
- 
--#define mfd_sd_probe_slot	NULL
--#define mfd_sd_remove_slot	NULL
-+static inline void sdhci_pci_add_own_cd(struct sdhci_pci_slot *slot)
-+{
-+}
-+
-+static inline void sdhci_pci_remove_own_cd(struct sdhci_pci_slot *slot)
-+{
-+}
- 
- #endif
- 
- static int mfd_emmc_probe_slot(struct sdhci_pci_slot *slot)
- {
--	const char *name = NULL;
--	int gpio = -EINVAL;
--
--	sfi_table_parse(SFI_SIG_GPIO, NULL, NULL, mfd_emmc_gpio_parse);
--
--	switch (slot->chip->pdev->device) {
--	case PCI_DEVICE_ID_INTEL_MFD_EMMC0:
--		gpio = mfd_emmc0_rst_gpio;
--		name = "eMMC0_reset";
--		break;
--	case PCI_DEVICE_ID_INTEL_MFD_EMMC1:
--		gpio = mfd_emmc1_rst_gpio;
--		name = "eMMC1_reset";
--		break;
--	}
--
--	if (!gpio_request(gpio, name)) {
--		gpio_direction_output(gpio, 1);
--		slot->rst_n_gpio = gpio;
--		slot->host->mmc->caps |= MMC_CAP_HW_RESET;
--	}
--
- 	slot->host->mmc->caps |= MMC_CAP_8_BIT_DATA | MMC_CAP_NONREMOVABLE;
--
- 	slot->host->mmc->caps2 = MMC_CAP2_BOOTPART_NOACC;
--
- 	return 0;
- }
- 
--static void mfd_emmc_remove_slot(struct sdhci_pci_slot *slot, int dead)
--{
--	gpio_free(slot->rst_n_gpio);
--}
--
- static const struct sdhci_pci_fixes sdhci_intel_mrst_hc0 = {
- 	.quirks		= SDHCI_QUIRK_BROKEN_ADMA | SDHCI_QUIRK_NO_HISPD_BIT,
- 	.probe_slot	= mrst_hc_probe_slot,
-@@ -310,8 +263,6 @@ static const struct sdhci_pci_fixes sdhci_intel_mrst_hc1_hc2 = {
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sd = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
- 	.allow_runtime_pm = true,
--	.probe_slot	= mfd_sd_probe_slot,
--	.remove_slot	= mfd_sd_remove_slot,
- };
- 
- static const struct sdhci_pci_fixes sdhci_intel_mfd_sdio = {
-@@ -323,7 +274,6 @@ static const struct sdhci_pci_fixes sdhci_intel_mfd_emmc = {
- 	.quirks		= SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC,
- 	.allow_runtime_pm = true,
- 	.probe_slot	= mfd_emmc_probe_slot,
--	.remove_slot	= mfd_emmc_remove_slot,
- };
- 
- /* O2Micro extra registers */
-@@ -1229,6 +1179,7 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
- 	slot->host = host;
+ 	if (!(pci_resource_flags(pdev, bar) & IORESOURCE_MEM)) {
+ 		dev_err(&pdev->dev, "BAR %d is not iomem. Aborting.\n", bar);
+@@ -1227,6 +1230,20 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
  	slot->pci_bar = bar;
  	slot->rst_n_gpio = -EINVAL;
-+	slot->cd_gpio = -EINVAL;
  
- 	/* Retrieve platform data if there is any */
- 	if (*sdhci_pci_get_data)
-@@ -1242,6 +1193,8 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
- 				goto free;
- 			}
- 		}
-+		slot->rst_n_gpio = slot->data->rst_n_gpio;
-+		slot->cd_gpio = slot->data->cd_gpio;
- 	}
- 
- 	host->hw_name = "PCI";
-@@ -1269,15 +1222,30 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
- 			goto unmap;
- 	}
- 
-+	if (gpio_is_valid(slot->rst_n_gpio)) {
-+		if (!gpio_request(slot->rst_n_gpio, "eMMC_reset")) {
-+			gpio_direction_output(slot->rst_n_gpio, 1);
-+			slot->host->mmc->caps |= MMC_CAP_HW_RESET;
-+		} else {
-+			dev_warn(&pdev->dev, "failed to request rst_n_gpio\n");
-+			slot->rst_n_gpio = -EINVAL;
++	/* Retrieve platform data if there is any */
++	if (*sdhci_pci_get_data)
++		slot->data = sdhci_pci_get_data(pdev, slotno);
++
++	if (slot->data) {
++		if (slot->data->setup) {
++			ret = slot->data->setup(slot->data);
++			if (ret) {
++				dev_err(&pdev->dev, "platform setup failed\n");
++				goto free;
++			}
 +		}
 +	}
 +
- 	host->mmc->pm_caps = MMC_PM_KEEP_POWER | MMC_PM_WAKE_SDIO_IRQ;
+ 	host->hw_name = "PCI";
+ 	host->ops = &sdhci_pci_ops;
+ 	host->quirks = chip->quirks;
+@@ -1236,7 +1253,7 @@ static struct sdhci_pci_slot * __devinit sdhci_pci_probe_slot(
+ 	ret = pci_request_region(pdev, bar, mmc_hostname(host->mmc));
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "cannot request region\n");
+-		goto free;
++		goto cleanup;
+ 	}
  
- 	ret = sdhci_add_host(host);
- 	if (ret)
- 		goto remove;
+ 	host->ioaddr = pci_ioremap_bar(pdev, bar);
+@@ -1270,6 +1287,10 @@ unmap:
+ release:
+ 	pci_release_region(pdev, bar);
  
-+	sdhci_pci_add_own_cd(slot);
++cleanup:
++	if (slot->data && slot->data->cleanup)
++		slot->data->cleanup(slot->data);
 +
- 	return slot;
+ free:
+ 	sdhci_free_host(host);
  
- remove:
-+	if (gpio_is_valid(slot->rst_n_gpio))
-+		gpio_free(slot->rst_n_gpio);
-+
- 	if (chip->fixes && chip->fixes->remove_slot)
- 		chip->fixes->remove_slot(slot, 0);
- 
-@@ -1302,6 +1270,8 @@ static void sdhci_pci_remove_slot(struct sdhci_pci_slot *slot)
- 	int dead;
- 	u32 scratch;
- 
-+	sdhci_pci_remove_own_cd(slot);
-+
- 	dead = 0;
- 	scratch = readl(slot->host->ioaddr + SDHCI_INT_STATUS);
- 	if (scratch == (u32)-1)
-@@ -1309,6 +1279,9 @@ static void sdhci_pci_remove_slot(struct sdhci_pci_slot *slot)
- 
- 	sdhci_remove_host(slot->host, dead);
- 
-+	if (gpio_is_valid(slot->rst_n_gpio))
-+		gpio_free(slot->rst_n_gpio);
-+
+@@ -1291,6 +1312,9 @@ static void sdhci_pci_remove_slot(struct sdhci_pci_slot *slot)
  	if (slot->chip->fixes && slot->chip->fixes->remove_slot)
  		slot->chip->fixes->remove_slot(slot, dead);
  
++	if (slot->data && slot->data->cleanup)
++		slot->data->cleanup(slot->data);
++
+ 	pci_release_region(slot->chip->pdev, slot->pci_bar);
+ 
+ 	sdhci_free_host(slot->host);
+@@ -1377,7 +1401,7 @@ static int __devinit sdhci_pci_probe(struct pci_dev *pdev,
+ 	slots = chip->num_slots;	/* Quirk may have changed this */
+ 
+ 	for (i = 0; i < slots; i++) {
+-		slot = sdhci_pci_probe_slot(pdev, chip, first_bar + i);
++		slot = sdhci_pci_probe_slot(pdev, chip, first_bar, i);
+ 		if (IS_ERR(slot)) {
+ 			for (i--; i >= 0; i--)
+ 				sdhci_pci_remove_slot(chip->slots[i]);
+diff --git a/include/linux/mmc/sdhci-pci-data.h b/include/linux/mmc/sdhci-pci-data.h
+new file mode 100644
+index 0000000..8959604
+--- /dev/null
++++ b/include/linux/mmc/sdhci-pci-data.h
+@@ -0,0 +1,18 @@
++#ifndef LINUX_MMC_SDHCI_PCI_DATA_H
++#define LINUX_MMC_SDHCI_PCI_DATA_H
++
++struct pci_dev;
++
++struct sdhci_pci_data {
++	struct pci_dev	*pdev;
++	int		slotno;
++	int		rst_n_gpio; /* Set to -EINVAL if unused */
++	int		cd_gpio;    /* Set to -EINVAL if unused */
++	int		(*setup)(struct sdhci_pci_data *data);
++	void		(*cleanup)(struct sdhci_pci_data *data);
++};
++
++extern struct sdhci_pci_data *(*sdhci_pci_get_data)(struct pci_dev *pdev,
++				int slotno);
++
++#endif
 -- 
 1.7.6.4
 
