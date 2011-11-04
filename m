@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751372Ab1KDEjX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 00:39:23 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:51585 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1KDEjV (ORCPT
+	id S1751192Ab1KDEu6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 00:50:58 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44659 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750810Ab1KDEu5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 00:39:21 -0400
-Date: Fri, 4 Nov 2011 15:39:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: linux-next: manual merge of the moduleh tree with the v4l-dvb tree
-Message-Id: <20111104153911.9e0c0650581af106b33aaf41@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+	Fri, 4 Nov 2011 00:50:57 -0400
+Subject: Re: [PATCH] add new cgroup list to CC notice
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mk@cm4all.com,
+        "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>,
+        nishimura@mxp.nes.nec.co.jp, oleg@redhat.com,
+        Michal Hocko <mhocko@suse.cz>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>, tj@kernel.org,
+        cgroups@vger.kernel.org, akpm@linux-foundation.org, fweisbec@gmail.com,
+        paul@paulmenage.org
+In-Reply-To: <4EB3495B.8080700@free.fr>
+References: <20111104094030.cf8d5860.kamezawa.hiroyu@jp.fujitsu.com>
+	 <4EB3495B.8080700@free.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Nov 2011 08:50:49 +0400
+Message-ID: <1320382250.3108.4.camel@dabdike>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh"
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-11-04 at 03:09 +0100, Daniel Lezcano wrote:
+> On 11/04/2011 01:40 AM, KAMEZAWA Hiroyuki wrote:
+> > As discussed at Kernel Summit(2011), new cgroups mailing list is opened by
+> > James. This list is for discussing general cgroup design and patches
+> > including all subsystems and for getting more attentions to cgroups/namespaces
+> > related issues by developpers.
+> >
+> > Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> 
+> I don't see the point to unilaterally change the mailing list to 
+> vger.kernel.org as the discussions will be  the same as the actual 
+> mailing list containers@.
 
-Hi Paul,
+It's not a unilateral list change.  We will still have containers@lf.
 
-Today's linux-next merge of the moduleh tree got conflicts in
-drivers/media/video/mt9m111.c and drivers/media/video/ov6650.c between
-commit 95d20109ad64 ("[media] V4L: replace soc-camera specific
-soc_mediabus.h with v4l2-mediabus.h") from the v4l-dvb tree and commit
-7a707b89202f ("drivers/media: Add module.h to all files using it
-implicitly") from the moduleh tree.
+The problem is that not all cgroup related stuff goes over it ...
+particularly the currently active controller discussions tend not to be
+cc'd there.  With systemd (and things like the I/O controllers for
+xen/kvm), cgroups is seen as being wider than containers.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The desire was for a single list where someone could go to get an
+overall view of what's going on in cgroups ... particularly if you're a
+confused subsystem maintainer who just had a request to put a controller
+in your subsystem ...
 
-diff --cc drivers/media/video/mt9m111.c
-index f023cc0,66e3c3c..0000000
---- a/drivers/media/video/mt9m111.c
-+++ b/drivers/media/video/mt9m111.c
-@@@ -13,12 -13,11 +13,13 @@@
-  #include <linux/log2.h>
-  #include <linux/gpio.h>
-  #include <linux/delay.h>
- +#include <linux/v4l2-mediabus.h>
-+ #include <linux/module.h>
- =20
- +#include <media/soc_camera.h>
-  #include <media/v4l2-common.h>
- +#include <media/v4l2-ctrls.h>
-  #include <media/v4l2-chip-ident.h>
- -#include <media/soc_camera.h>
- =20
-  /*
-   * MT9M111, MT9M112 and MT9M131:
-diff --cc drivers/media/video/ov6650.c
-index d5b0572,2e16806..0000000
---- a/drivers/media/video/ov6650.c
-+++ b/drivers/media/video/ov6650.c
-@@@ -28,7 -28,7 +28,8 @@@
-  #include <linux/delay.h>
-  #include <linux/i2c.h>
-  #include <linux/slab.h>
- +#include <linux/v4l2-mediabus.h>
-+ #include <linux/module.h>
- =20
-  #include <media/soc_camera.h>
-  #include <media/v4l2-chip-ident.h>
+James
 
---Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh
-Content-Type: application/pgp-signature
+>  May be there is a good reason to do that but I 
+> don't see it, can someone enlight me please ?
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOs2xvAAoJEECxmPOUX5FEPd4P/R7cNEhfTYJWa+8zGdXwJHhO
-0Nqpaz9ZJ8Xrm1d4dV9fXL2NOAeGV/w9S0iRmHKsFk41GQzLBb2mq8j/ihgIjV7r
-XupW082bJugKeD+p9D5s37qBCpXce0KBxEt/nfp5Jkol9AjkA8hlcFo6L9OsL/aS
-dZ1qg3xYNEzcZLvNBDOkSZImWR2f0af6I/NwgkBDAoGsRTGxWDkE8ysUv2P58vf9
-+x2UplR2ecG1ky2xllMDy0vYG5Fs1uxBhl7H9wg/Lziie4QVWr0stWjBFArfjQPE
-jHVI9gfVZHDiwelAKljpw/GsfpUhHQc+z5TQOeU5PHSpdK8VCfrxfOiBqoc3GZTf
-gppQEFNJ8/u8g8By0GL+zXF6RvClCN8+1c2uBSKWbSQLUKLKaHOjDVqNLrTYorJr
-UAm/MsmF5ebNVVmgR4mWw87JX1JcaGfnOuKfh8xcxb70N12LbcrZokzlWfSI7uDw
-2GQPrXEZygRZGQ0WfaQ8Rf03wYtxioAgYJFZwXj5uSe8Ktk8evVfwOy+L/8oPpEc
-xRZhjsga9A3zHj7uWFX7dXmsEiHBWIZLImiW4RAOkFUlQu4Frz7RxdNXL9n3hjhX
-5bxWnHM6ZVyANuZ1VqU7dye+mnTMJZ+8PKGDKpiZRXVkzHfKv5IQURd/oeSbXCT5
-LuazTFekD29At39NQ4nT
-=ScdL
------END PGP SIGNATURE-----
-
---Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh--
