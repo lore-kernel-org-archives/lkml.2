@@ -1,49 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751071Ab1KDEBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 00:01:31 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60508 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1KDEB3 convert rfc822-to-8bit (ORCPT
+	id S1751223Ab1KDEIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 00:08:12 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:41941 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab1KDEIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 00:01:29 -0400
+	Fri, 4 Nov 2011 00:08:11 -0400
+Message-ID: <4EB36519.5010003@ce.jp.nec.com>
+Date: Fri, 04 Nov 2011 13:07:53 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6t-xaH4U9F7uGOabYD-KKSHZNyQ3Ds036FhubScqR=vGQ@mail.gmail.com>
-References: <CACxGe6t-xaH4U9F7uGOabYD-KKSHZNyQ3Ds036FhubScqR=vGQ@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 4 Nov 2011 00:01:07 -0400
-X-Google-Sender-Auth: 13mR3_nMG69KtZbjoZfqbSWu3JU
-Message-ID: <CACxGe6uAKBrkxQ2puiO+hhcymXTjev3LG=0kzaSeGnsEHdeX6A@mail.gmail.com>
-Subject: Re: [GIT PULL] A few more device tree changes
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, Olof Johansson <olof@lixom.net>,
-        Rob Herring <robherring2@gmail.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        Mike Snitzer <snitzer@redhat.com>, gmuelas@de.ibm.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+References: <4E9BEB68.1050707@ce.jp.nec.com> <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com> <4E9D7FA8.9000000@ce.jp.nec.com> <20111018154542.GB3869@osiris.boeblingen.de.ibm.com> <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com> <20111031100557.GA2621@osiris.boeblingen.de.ibm.com> <1320057746.2964.1.camel@dabdike> <4EAE8A7E.8000504@ce.jp.nec.com> <20111031130004.GB4768@osiris.boeblingen.de.ibm.com> <4EB13972.30308@ce.jp.nec.com> <20111102134730.GA2490@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20111102134730.GA2490@osiris.boeblingen.de.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 3, 2011 at 11:56 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Hi Linus,
->
-> A few more for 3.2.  Nothing exciting here.
->
-> g.
->
-> The following changes since commit d6748066ad0e8b2514545998f8367ebb3906f299:
->
->  Merge branch 'upstream' of
-> git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2011-11-03
-> 13:28:14 -0700)
->
-> are available in the git repository at:
->
->  git://git.secretlab.ca/git/linux-2.6 ..BRANCH.NOT.VERIFIED..
+On 11/02/11 22:47, Heiko Carstens wrote:
+> On Wed, Nov 02, 2011 at 09:37:06PM +0900, Jun'ichi Nomura wrote:
+>> On 10/31/11 22:00, Heiko Carstens wrote:
+>>> On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
+>>>> Hm, dm_softirq_done is generic completion code of original
+>>>> request in dm-multipath.
+>>>> So oops here might be another manifestation of use-after-free.
+>>>>
+>>>> Do you always hit the oops at the same address?
+>>>
+>>> I think we saw this bug the first time. But before that the scsi
+>>> logging level was higher. Gonzalo is trying to recreate it with
+>>> the same (old) scsi logging level.
+>>> Afterwards we will try with barrier=0.
+>>>
+>>> Both on v3.0.7 btw.
+>>>
+>>>> Could you find corresponding source code line for
+>>>> the crashed address, dm_softirq_done+0x72/0x140,
+>>>> and which pointer was invalid?
+>>>
+>>> It crashes in the inlined function dm_done() when trying to
+>>> dereference tio (aka clone->end_io_data):
+>>>
+>>> static void dm_done(struct request *clone, int error, bool mapped)
+>>> {
+>>>         int r = error;
+>>>         struct dm_rq_target_io *tio = clone->end_io_data;
+>>>         dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
+>>
+>> Thank you. But, hmm. I have no idea about scenario.
+>>
+>> struct dm_rq_target_io is a container of clone request
+>> and clone->end_io_data points to its container.
+>>
+>>   struct dm_rq_target_io {
+>>         struct mapped_device *md;
+>>         struct dm_target *ti;
+>>         struct request *orig, clone;
+>>         int error;
+>>         union map_info info;
+>>   };
+>>
+>> If clone can be dereferenced, clone->end_io_data should be, too.
+> 
+> If it helps: the above *ti pointer is the only one that points to
+> an (invalid) vmalloc area address. Invalid means the page was unmapped
+> because it was freed because of DEBUG_PAGEALLOC.
+> All other addresses I followed to get to this one belong to
+> the 1:1 mapping of the kernel, so no vmalloc involved.
 
-Okay, well that was stupid.  I'll push out the branch and send out a
-new pull req.
+Thanks, ok it was ti which was invalid. Not tio.
+ti is a pointer to dm table entry, which is vmalloc-ed.
+So it means the dm table was replaced while I/O was in-flight.
 
-g.
+dm has a machanism to prevent it: in dm_suspend(),
+stop_queue() is called to stop block queue processing
+and no new I/O becomes in-flight after that.
+Then all in-flight I/Os are waited to be completed or requeued
+(dm_wait_for_completion()).
+If the wait was successful, the table can become "suspended",
+i.e. ready to be replaced.
+
+So ti should be always valid.
+Hmm..
+
+-- 
+Jun'ichi Nomura, NEC Corporation
