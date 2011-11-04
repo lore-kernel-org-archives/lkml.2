@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1KDOiG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 10:38:06 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57818 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755202Ab1KDOiE convert rfc822-to-8bit (ORCPT
+	id S1755780Ab1KDOiQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 10:38:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41681 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755202Ab1KDOiN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 10:38:04 -0400
+	Fri, 4 Nov 2011 10:38:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <4EB3F094.30307@lougher.demon.co.uk>
-References: <4EB3F094.30307@lougher.demon.co.uk>
-Date: Fri, 4 Nov 2011 23:38:02 +0900
-Message-ID: <CAKYAXd87eNQqDs2Ks5pFkA8dxsb49Ub2UmmWfsQVC8n6F3sfKA@mail.gmail.com>
-Subject: Re: [GIT PULL] Squashfs updates for 3.2
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20111104104042.46a33554@stein>
+References: <4EB2BC88.3070105@suse.cz>
+	<20111103161436.GJ4417@google.com>
+	<20111103162634.GK4417@google.com>
+	<20111104104042.46a33554@stein>
+Date: Fri, 4 Nov 2011 07:38:11 -0700
+X-Google-Sender-Auth: 7KhMKahkuQZzaail0gSde5BVQ6M
+Message-ID: <CAOS58YMM=75x_hCjRjV8a8j4eSLUuaRf1CEaPvZ=VXz0Qkj6qw@mail.gmail.com>
+Subject: Re: [PATCH block/for-next] block: don't call blk_drain_queue() if
+ elevator is not up
+From: Tejun Heo <tj@kernel.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Jiri Slaby <jslaby@suse.cz>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/4 Phillip Lougher <phillip@lougher.demon.co.uk>:
-> Hi Linus,
->
-> Please consider pulling the following minor Squashfs update.
->
-> Thanks
->
-> Phillip
->
->
-> The following changes since commit c3b92c8787367a8bb53d57d9789b558f1295cc96:
->
->  Linux 3.1 (2011-10-24 09:10:05 +0200)
->
-> are available in the git repository at:
->  git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-next.git master
->
-> Phillip Lougher (1):
->      Squashfs: Add an option to set dev block size to 4K
->
->  fs/squashfs/Kconfig       |   22 ++++++++++++++++++++++
->  fs/squashfs/squashfs_fs.h |    7 +++++++
->  fs/squashfs/super.c       |    2 +-
->  3 files changed, 30 insertions(+), 1 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-Hi. Phillip.
+Hello,
 
-I already posted this patch before ([PATCH] squashfs : devblksize set
-to 4KB intead of BLOCK_SIZE(1KB).).
-It is similar with my patch except option.
-Have you ever seen this patch ? I didn't response about this patch from you.
+On Fri, Nov 4, 2011 at 2:40 AM, Stefan Richter
+<stefanr@s5r6.in-berlin.de> wrote:
+>> � � � /* @q won't process any more request, flush async actions */
+>> � � � del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
+>
+> What prevents elevator_attach to be called and requests to be inserted
+> between 'if (q-elevator)' and 'blk_put_queue(q)'?
+
+The fact that the queue owner has called blk_cleaup_queue()?
 
 Thanks.
+
+-- 
+tejun
