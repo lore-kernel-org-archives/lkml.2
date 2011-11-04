@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab1KDPZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 11:25:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1591 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab1KDPZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 11:25:15 -0400
-Message-ID: <4EB403C0.9030503@redhat.com>
-Date: Fri, 04 Nov 2011 10:24:48 -0500
-From: David Smith <dsmith@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755856Ab1KDP0D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 11:26:03 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38797 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752708Ab1KDP0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 11:26:01 -0400
+Date: Fri, 4 Nov 2011 15:25:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Mohammed, Afzal" <afzal@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Subject: Re: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
+Message-ID: <20111104152559.GC28615@opensource.wolfsonmicro.com>
+References: <1320410928-20349-1-git-send-email-afzal@ti.com>
+ <20111104140422.GA28615@opensource.wolfsonmicro.com>
+ <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Pedro Alves <pedro@codesourcery.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC PATCH v2] Tracepoint: add exec tracepoint
-References: <4EB2BA74.5070207@redhat.com> <201111041208.38163.pedro@codesourcery.com>
-In-Reply-To: <201111041208.38163.pedro@codesourcery.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
+X-Cookie: You are magnetic in your bearing.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2011 07:08 AM, Pedro Alves wrote:
+On Fri, Nov 04, 2011 at 02:26:05PM +0000, Mohammed, Afzal wrote:
+> Hi Brown,
 
-> On Thursday 03 November 2011 15:59:48, David Smith wrote:
->> +                               if (depth == 0) {
->> +                                       trace_sched_process_exec(current, bprm);
->>                                         ptrace_event(PTRACE_EVENT_EXEC,
->>                                                         old_pid);
->> +                               }
-> 
-> Won't tracepoints be interested in the old pid as well?  Or does bprm
-> carry that info?  That was only recently added to the ptrace event,
-> which probably postdates your original patch.
+Ahem.
 
+> On Fri, Nov 04, 2011 at 19:34:22, Mark Brown wrote:
+> > On Fri, Nov 04, 2011 at 06:18:48PM +0530, Afzal Mohammed wrote:
 
-Looking back at commit bb188d7 and the reasons why 'old_pid' was added,
-it seems like a good idea to go ahead and add 'old_pid' to the
-tracepoint as well.
+> > >  		if (i == TPS65910_REG_VDD1 || i == TPS65910_REG_VDD2) {
+> > >  			pmic->desc[i].ops = &tps65910_ops_dcdc;
+> > > +			pmic->desc[i].n_voltages = VDD1_2_NUM_VOLTS * 3;
 
-v3 coming up...
+> > This looks suspicous - what's the * 3 about?
 
-Thanks for looking at this.
+> Gain in voltage possible is x1, 0x2 & 0x3, I am shaky
+> about this change, but voltage could be changed with this,
 
--- 
-David Smith
-dsmith@redhat.com
-Red Hat
-http://www.redhat.com
-256.217.0141 (direct)
-256.837.0057 (fax)
+That doesn't really clarify things - the question is why the number of
+voltages we can set is three times a constant called _NUM_VOLTS?
