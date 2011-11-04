@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab1KDPnx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 11:43:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49035 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755761Ab1KDPnw convert rfc822-to-8bit (ORCPT
+	id S932573Ab1KDPpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 11:45:35 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59999 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755609Ab1KDPpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 11:43:52 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH 1/2] mfd: TPS65910: Improvements
-Thread-Topic: [PATCH 1/2] mfd: TPS65910: Improvements
-Thread-Index: AQHMmvAPfIftAWALckqyR6YHiImU9JWceYeAgABfsGA=
-Date: Fri, 4 Nov 2011 15:43:40 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A90195CA@DBDE01.ent.ti.com>
-References: <1320410912-20293-1-git-send-email-afzal@ti.com>
- <20111104152411.GB28615@opensource.wolfsonmicro.com>
-In-Reply-To: <20111104152411.GB28615@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Nov 2011 11:45:34 -0400
+X-Sasl-enc: 8GgSvp1ZTySumNJyMkP4SjPcEApQzUN7flc8s+00LNU0 1320421533
+Date: Fri, 4 Nov 2011 08:45:13 -0700
+From: Greg KH <greg@kroah.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Greg KH <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 00/19] First round in OTG rework
+Message-ID: <20111104154513.GB30439@kroah.com>
+References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <20111104132611.GA9965@xps8300>
+ <20111104135116.GA15231@suse.de>
+ <20111104144024.GA2753@xps8300>
+ <20111104153505.GA5924@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111104153505.GA5924@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Fri, Nov 04, 2011 at 20:54:11, Mark Brown wrote:
-> ...should be in two separate commits.
-
-Ok
-
+On Fri, Nov 04, 2011 at 05:35:07PM +0200, Felipe Balbi wrote:
+> Hi,
 > 
-> > 2. struct tps65910_platform_data usage can be avoided
-> >  by making use of struct tps65910_board to simplify
-> >  driver. Hence remove it
+> On Fri, Nov 04, 2011 at 04:40:24PM +0200, Heikki Krogerus wrote:
+> > On Fri, Nov 04, 2011 at 06:51:16AM -0700, Greg KH wrote:
+> > > > It seems that there are not more comments to these. When can you take
+> > > > them?
+> > > 
+> > > Please realize that this is the "busy" period for the subsystem
+> > > maintainers during the merge window.  We will be glad to review these
+> > > _after_ the window closes, and queue them up for next time.
+> > > 
+> > > Well, in this case, Felipe will do the reviewing and queuing up, not me,
+> > > he's a busy person, give him some time please :)
+> > 
+> > Of course. Forgive for being so impatient.
 > 
-> Why is this a simplification?  Note that one of the reasons platform
-> data is kept separate from any runtime data the device needs is that it
-> makes the configuration available easier to see and understand.
-> 
+> yeah, sorry about that. I generally wait the merge window to close until
+> I get back reviewing patches.
 
-Ok, I understand that this simplification should not be done.
+It's a good idea, that's exactly what I do as well.
 
-Regards
-Afzal
+greg k-h
