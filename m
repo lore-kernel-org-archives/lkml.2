@@ -1,194 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752265Ab1KDHbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 03:31:08 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45198 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab1KDHbG (ORCPT
+	id S1752531Ab1KDHhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 03:37:36 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:37718 "EHLO
+	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab1KDHhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 03:31:06 -0400
-Date: Fri, 4 Nov 2011 00:31:04 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Mel Gorman <mgorman@suse.de>, Nai Xia <nai.xia@gmail.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-In-Reply-To: <1320082040-1190-1-git-send-email-aarcange@redhat.com>
-Message-ID: <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
-References: <20111031171441.GD3466@redhat.com> <1320082040-1190-1-git-send-email-aarcange@redhat.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 4 Nov 2011 03:37:35 -0400
+From: Barry Song <Barry.Song@csr.com>
+To: <linux-pm@lists.linux-foundation.org>, <pavel@ucw.cz>, <rjw@sisk.pl>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Barry Song <Baohua.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+Subject: [PATCH] PM: HIBERNATION: skip the swap size check if the snapshot image size is anticipative
+Date: Fri, 4 Nov 2011 00:36:16 -0700
+Message-ID: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
+X-Originating-IP: [10.125.36.58]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
+From: Barry Song <Baohua.Song@csr.com>
 
-> migrate was doing a rmap_walk with speculative lock-less access on
-> pagetables. That could lead it to not serialize properly against
-> mremap PT locks. But a second problem remains in the order of vmas in
-> the same_anon_vma list used by the rmap_walk.
+Current swsusp requires swap partitions even larger than real saved pages
+due to the worst compress ratio:
+but for an embedded system, which has limited storage space, then it might
+can't give the big size partition to save snapshot.
+In the another way, some embedded systems can definitely know the most size
+needed for snapshot since they run some specific application lists.
+So this patch provides the possibility for bootloader to tell kernel even
+the system has a little snapshot partition, but it is still enough.
+For example, if the system need to save 120MB memory, origin swsusp will require
+a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+compressed image will be less than 30MB), they just make a 30MB partition.
 
-I do think that Nai Xia deserves special credit for thinking deeper
-into this than the rest of us (before you came back): something like
+Signed-off-by: Barry Song <Baohua.Song@csr.com>
+Cc: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+---
+ this is another patch after I provide resumewait/resumedelay kernel params
+ to make swsusp support embedded systems better.
+ This patch is tested on CSR SiRFprimaII platform.
 
-Issue-conceived-by: Nai Xia <nai.xia@gmail.com>
+ Documentation/kernel-parameters.txt |    7 +++++++
+ kernel/power/swap.c                 |   13 +++++++++++++
+ 2 files changed, 20 insertions(+), 0 deletions(-)
 
-> 
-> If vma_merge would succeed in copy_vma, the src vma could be placed
-> after the dst vma in the same_anon_vma list. That could still lead
-> migrate to miss some pte.
-> 
-> This patch adds a anon_vma_order_tail() function to force the dst vma
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a0c5c5f..2ad2e9c 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2277,6 +2277,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			in <PAGE_SIZE> units (needed only for swap files).
+ 			See  Documentation/power/swsusp-and-swap-files.txt
+ 
++	swapenough	[SWSUSP]
++			Tell kernel the swap partition size is enough and let kernel
++			skip checking whether the swap partition has enough size to
++			save snapshot.
++			It is used for embedded systems, typically using NAND and SD
++			card, which have not large space.
++
+ 	resumedelay=	[HIBERNATION] Delay (in seconds) to pause before attempting to
+ 			read the resume files
+ 
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index 11a594c..97c30b5 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -36,6 +36,8 @@
+ 
+ #define HIBERNATE_SIG	"S1SUSPEND"
+ 
++static int swapenough;
++
+ /*
+  *	The swap map is a data structure used for keeping track of each page
+  *	written to a swap partition.  It consists of many swap_map_page
+@@ -772,6 +774,9 @@ static int enough_swap(unsigned int nr_pages, unsigned int flags)
+ 	unsigned int free_swap = count_swap_pages(root_swap, 1);
+ 	unsigned int required;
+ 
++	if (swapenough)
++		return 1;
++
+ 	pr_debug("PM: Free swap pages: %u\n", free_swap);
+ 
+ 	required = PAGES_FOR_IO + ((flags & SF_NOCOMPRESS_MODE) ?
+@@ -1449,3 +1454,11 @@ static int swsusp_header_init(void)
+ }
+ 
+ core_initcall(swsusp_header_init);
++
++static int __init swapenough_setup(char *str)
++{
++	swapenough = 1;
++	return 1;
++}
++
++__setup("swapenough", swapenough_setup);
+-- 
+1.7.1
 
-I agree with Mel that anon_vma_moveto_tail() would be a better name;
-or even anon_vma_move_to_tail().
 
-> at the end of the list before mremap starts to solve the problem.
-> 
-> If the mremap is very large and there are a lots of parents or childs
-> sharing the anon_vma root lock, this should still scale better than
-> taking the anon_vma root lock around every pte copy practically for
-> the whole duration of mremap.
 
-But I'm sorry to say that I'm actually not persuaded by the patch,
-on three counts.
-
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
->  include/linux/rmap.h |    1 +
->  mm/mmap.c            |    8 ++++++++
->  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 53 insertions(+), 0 deletions(-)
-B
-> 
-> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-> index 2148b12..45eb098 100644
-> --- a/include/linux/rmap.h
-> +++ b/include/linux/rmap.h
-> @@ -120,6 +120,7 @@ void anon_vma_init(void);	/* create anon_vma_cachep */
->  int  anon_vma_prepare(struct vm_area_struct *);
->  void unlink_anon_vmas(struct vm_area_struct *);
->  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
-> +void anon_vma_order_tail(struct vm_area_struct *);
->  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
->  void __anon_vma_link(struct vm_area_struct *);
->  
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index a65efd4..a5858dc 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
->  		 */
->  		if (vma_start >= new_vma->vm_start &&
->  		    vma_start < new_vma->vm_end)
-> +			/*
-> +			 * No need to call anon_vma_order_tail() in
-> +			 * this case because the same PT lock will
-> +			 * serialize the rmap_walk against both src
-> +			 * and dst vmas.
-> +			 */
-
-Really?  Please convince me: I just do not see what ensures that
-the same pt lock covers both src and dst areas in this case.
-
->  			*vmap = new_vma;
-> +		else
-> +			anon_vma_order_tail(new_vma);
-
-And if this puts new_vma in the right position for the normal
-move_page_tables(), as anon_vma_clone() does in the block below,
-aren't they both in exactly the wrong position for the abnormal
-move_page_tables(), called to put ptes back where they were if
-the original move_page_tables() fails?
-
-It might be possible to argue that move_page_tables() can only
-fail by failing to allocate memory for pud or pmd, and that (perhaps)
-could only happen if the task was being OOM-killed and ran out of
-reserves at this point, and if it's being OOM-killed then we don't
-mind losing a migration entry for a moment... perhaps.
-
-Certainly I'd agree that it's a very rare case.  But it feels wrong
-to be attempting to fix the already unlikely issue, while ignoring
-this aspect, or relying on such unrelated implementation details.
-
-Perhaps some further anon_vma_ordering could fix it up,
-but that would look increasingly desperate.
-
->  	} else {
->  		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
->  		if (new_vma) {
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 8005080..6dbc165 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
->  }
->  
->  /*
-> + * Some rmap walk that needs to find all ptes/hugepmds without false
-> + * negatives (like migrate and split_huge_page) running concurrent
-> + * with operations that copy or move pagetables (like mremap() and
-> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
-> + * in a certain order: the dst_vma must be placed after the src_vma in
-> + * the list. This is always guaranteed by fork() but mremap() needs to
-> + * call this function to enforce it in case the dst_vma isn't newly
-> + * allocated and chained with the anon_vma_clone() function but just
-> + * an extension of a pre-existing vma through vma_merge.
-> + *
-> + * NOTE: the same_anon_vma list can still be changed by other
-> + * processes while mremap runs because mremap doesn't hold the
-> + * anon_vma mutex to prevent modifications to the list while it
-> + * runs. All we need to enforce is that the relative order of this
-> + * process vmas isn't changing (we don't care about other vmas
-> + * order). Each vma corresponds to an anon_vma_chain structure so
-> + * there's no risk that other processes calling anon_vma_order_tail()
-> + * and changing the same_anon_vma list under mremap() will screw with
-> + * the relative order of this process vmas in the list, because we
-> + * won't alter the order of any vma that isn't belonging to this
-> + * process. And there can't be another anon_vma_order_tail running
-> + * concurrently with mremap() coming from this process because we hold
-> + * the mmap_sem for the whole mremap(). fork() ordering dependency
-> + * also shouldn't be affected because we only care that the parent
-> + * vmas are placed in the list before the child vmas and
-> + * anon_vma_order_tail won't reorder vmas from either the fork parent
-> + * or child.
-> + */
-> +void anon_vma_order_tail(struct vm_area_struct *dst)
-> +{
-> +	struct anon_vma_chain *pavc;
-> +	struct anon_vma *root = NULL;
-> +
-> +	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
-> +		struct anon_vma *anon_vma = pavc->anon_vma;
-> +		VM_BUG_ON(pavc->vma != dst);
-> +		root = lock_anon_vma_root(root, anon_vma);
-> +		list_del(&pavc->same_anon_vma);
-> +		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
-> +	}
-> +	unlock_anon_vma_root(root);
-> +}
-
-I thought this was correct, but now I'm not so sure.  You rightly
-consider the question of interference between concurrent mremaps in
-different mms in your comment above, but I'm still not convinced it
-is safe.  Oh, probably just my persistent failure to picture these
-avcs properly.
-
-If we were back in the days of the simple anon_vma list, I'd probably
-share your enthusiasm for the list ordering solution; but now it looks
-like a fragile and contorted way of avoiding the obvious... we just
-need to use the anon_vma_lock (but perhaps there are some common and
-easily tested conditions under which we can skip it e.g. when a single
-pt lock covers src and dst?).
-
-Sorry to be so negative!  I may just be wrong on all counts.
-
-Hugh
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
