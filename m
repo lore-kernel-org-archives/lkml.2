@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab1KDLQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:16:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44692 "EHLO
+	id S1755097Ab1KDLP7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:15:59 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44682 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab1KDLP5 (ORCPT
+	with ESMTP id S1751668Ab1KDLP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Nov 2011 07:15:57 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: linux-stable <stable@vger.kernel.org>
 Cc: Greg Kroah-Hartman <greg@kroah.com>, X86-ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] x86-32, amd: Move va_align definition to unbreak 32-bit build
-Date: Fri,  4 Nov 2011 12:15:54 +0100
-Message-Id: <1320405354-9850-4-git-send-email-bp@amd64.org>
+Subject: [PATCH 2/4] x86: Add a BSP cpu_dev helper
+Date: Fri,  4 Nov 2011 12:15:52 +0100
+Message-Id: <1320405354-9850-2-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.8.rc0
 In-Reply-To: <1320405354-9850-1-git-send-email-bp@amd64.org>
 References: <20111104111115.GA8020@aftab>
@@ -22,68 +22,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Upstream commit: a110b5ec7371592eac856ac5c22dc7b518952d44
 
-Upstream commit: 9387f774d61b01ab71bade85e6d0bfab0b3419bd
-
-hpa reported that dfb09f9b7ab03fd367740e541a5caf830ed56726 breaks 32-bit
-builds with the following error message:
-
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:437: undefined
-reference to `va_align'
-/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:436: undefined
-reference to `va_align'
-
-This is due to the fact that va_align is a global in a 64-bit only
-compilation unit. Move it to mmap.c where it is visible to both
-subarches.
+Add a function ptr to struct cpu_dev which is destined to be run only
+once on the BSP during boot.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/1312633899-1131-1-git-send-email-bp@amd64.org
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/20110805180116.GB26217@aftab
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/sys_x86_64.c |    4 ----
- arch/x86/mm/mmap.c           |    5 ++++-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/common.c |    3 +++
+ arch/x86/kernel/cpu/cpu.h    |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
-index aaa8d09..fe7d2da 100644
---- a/arch/x86/kernel/sys_x86_64.c
-+++ b/arch/x86/kernel/sys_x86_64.c
-@@ -18,10 +18,6 @@
- #include <asm/ia32.h>
- #include <asm/syscalls.h>
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 22a073d..8ed394a 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -681,6 +681,9 @@ static void __init early_identify_cpu(struct cpuinfo_x86 *c)
+ 	filter_cpuid_features(c, false);
  
--struct __read_mostly va_alignment va_align = {
--	.flags = -1,
--};
--
- /*
-  * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
-  *
-diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
-index d4c0736..4b5ba85 100644
---- a/arch/x86/mm/mmap.c
-+++ b/arch/x86/mm/mmap.c
-@@ -31,6 +31,10 @@
- #include <linux/sched.h>
- #include <asm/elf.h>
- 
-+struct __read_mostly va_alignment va_align = {
-+	.flags = -1,
-+};
+ 	setup_smep(c);
 +
- static unsigned int stack_maxrandom_size(void)
- {
- 	unsigned int max = 0;
-@@ -42,7 +46,6 @@ static unsigned int stack_maxrandom_size(void)
- 	return max;
++	if (this_cpu->c_bsp_init)
++		this_cpu->c_bsp_init(c);
  }
  
--
- /*
-  * Top of mmap area (just below the process stack).
-  *
+ void __init early_cpu_init(void)
+diff --git a/arch/x86/kernel/cpu/cpu.h b/arch/x86/kernel/cpu/cpu.h
+index e765633..1b22dcc 100644
+--- a/arch/x86/kernel/cpu/cpu.h
++++ b/arch/x86/kernel/cpu/cpu.h
+@@ -18,6 +18,7 @@ struct cpu_dev {
+ 	struct		cpu_model_info c_models[4];
+ 
+ 	void            (*c_early_init)(struct cpuinfo_x86 *);
++	void		(*c_bsp_init)(struct cpuinfo_x86 *);
+ 	void		(*c_init)(struct cpuinfo_x86 *);
+ 	void		(*c_identify)(struct cpuinfo_x86 *);
+ 	unsigned int	(*c_size_cache)(struct cpuinfo_x86 *, unsigned int);
 -- 
 1.7.8.rc0
 
