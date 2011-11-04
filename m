@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755195Ab1KDMfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 08:35:20 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53474 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab1KDMfS (ORCPT
+	id S1755407Ab1KDMfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 08:35:34 -0400
+Received: from imr-da04.mx.aol.com ([205.188.105.146]:47695 "EHLO
+	imr-da04.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab1KDMfc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 08:35:18 -0400
+	Fri, 4 Nov 2011 08:35:32 -0400
+To: lighth7015@msn.com, linux-kernel@vger.kernel.org, listserv@lists.maine.edu,
+        literature@nteinc.com, lpulsifer@cmcc.edu
+Content-Transfer-Encoding: 8BIT
+Subject: Re:1
+X-MB-Message-Source: WebUI
+X-MB-Message-Type: User
 MIME-Version: 1.0
-In-Reply-To: <20111104121601.GA15206@infradead.org>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<20111104121601.GA15206@infradead.org>
-Date: Fri, 4 Nov 2011 14:35:18 +0200
-X-Google-Sender-Auth: JQuB-Inbvx8jHX6FSFfwqnQA76Y
-Message-ID: <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+From: bfeely@aol.com
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 34290-MOBILE
+Message-Id: <8CE69054FAED8A8-215C-105DD1@webmail-m160.sysops.aol.com>
+X-Originating-IP: [149.174.17.218]
+Date: Fri, 4 Nov 2011 08:35:03 -0400 (EDT)
+x-aol-global-disposition: G
+X-AOL-SCOLL-SCORE: 0:2:274451840:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d29484eb3dbf8796d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 10:38:21AM +0200, Pekka Enberg wrote:
->> Please consider pulling the latest KVM tool tree from:
+..Try to change something in your life.  
+http://www.biz-analyst.com/m.friends.page.php?kuyahoo_id=65xo0
 
-On Fri, Nov 4, 2011 at 2:16 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> There still is absolutely zero reason to throw it in the kernel tree.
->
-> Please prepare a nice standalone git repository and tarball for it.
 
-We are reusing kernel code and headers and I am not interested in
-copying them over. Living in the kernel tree is part of the design,
-whether you like it or not.
-
-                        Pekka
