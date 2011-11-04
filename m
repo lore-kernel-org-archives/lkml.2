@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab1KDWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 18:21:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:9875 "EHLO mga02.intel.com"
+	id S1756126Ab1KDWVi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 18:21:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32977 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753280Ab1KDWVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 18:21:13 -0400
+	id S1755014Ab1KDWVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 18:21:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="71337188"
+   d="scan'208";a="71337222"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         "Ingo Molnar" <mingo@elte.hu>,
@@ -21,9 +21,9 @@ To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
         "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH 1/9] include/linux/cpu.h: Define architecture dependent cpu map update and state check functions
-Date: Fri,  4 Nov 2011 15:03:53 -0700
-Message-Id: <1320444241-834-2-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH 9/9] Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0 online/offline feature
+Date: Fri,  4 Nov 2011 15:04:01 -0700
+Message-Id: <1320444241-834-10-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
 References: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
@@ -33,42 +33,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-arch_cpu_maps_update_begin() and arch_cpu_maps_update_done() are architecture
-dependent cpu map update functions which are called during cpu_up() and
-cpu_down().
+Add x86 CPU0 online/offline feature in the two documentations.
 
-arch_state_check() is architecture dependent state check function which is
-called during hibernate and suspend.
+By default BSP is not pluggable. Kernel parameter bsp_hotplug enables BSP
+online/offline feature.
 
-They are empty __weak functions and are overriden in x86.
+The documentations point out two BSP dependencies. First, resume from hibernate
+or suspend always starts from BSP. So hibernate and suspend are prevented if BSP
+is offline. Another dependency is PIC interrupts always go to BSP.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- include/linux/cpu.h |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+---
+ Documentation/cpu-hotplug.txt       |   19 +++++++++++++++++++
+ Documentation/kernel-parameters.txt |   13 +++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index b1a635a..88a6390 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -137,6 +137,8 @@ int cpu_up(unsigned int cpu);
- void notify_cpu_starting(unsigned int cpu);
- extern void cpu_maps_update_begin(void);
- extern void cpu_maps_update_done(void);
-+extern void arch_cpu_maps_update_begin(void);
-+extern void arch_cpu_maps_update_done(void);
+diff --git a/Documentation/cpu-hotplug.txt b/Documentation/cpu-hotplug.txt
+index a20bfd4..ebd41e7 100644
+--- a/Documentation/cpu-hotplug.txt
++++ b/Documentation/cpu-hotplug.txt
+@@ -207,6 +207,25 @@ by making it not-removable.
  
- #else	/* CONFIG_SMP */
+ In such cases you will also notice that the online file is missing under cpu0.
  
-@@ -207,4 +209,8 @@ static inline int disable_nonboot_cpus(void) { return 0; }
- static inline void enable_nonboot_cpus(void) {}
- #endif /* !CONFIG_PM_SLEEP_SMP */
- 
-+#ifdef CONFIG_PM
-+extern int  arch_state_check(void);
-+#endif
++Q: Is CPU0 removable on X86?
++A: Yes. If given kernel option bsp_hotplug, CPU0 is removable.
 +
- #endif /* _LINUX_CPU_H_ */
++But some features may depend on BSP. Known dependencies are:
++1. Hibernate/suspend depends on BSP. Hibernate/suspend will fail if BSP is
++offline and you need to online BSP before hibernate/suspend can continue.
++2. PIC interrupts also depend on BSP. BSP can't be removed if a PIC interrupt
++is detected.
++
++It's said poweroff/reboot may depend on BSP on some machines although I haven't
++seen any poweroff/reboot failure so far after BSP is offline on a few tested
++machines.
++
++Please let me know if you know or see any other dependencies of BSP.
++
++If the dependencies are under your control, you can turn on bsp_hotplug.
++
++--Fenghua Yu
++
+ Q: How do i find out if a particular CPU is not removable?
+ A: Depending on the implementation, some architectures may show this by the
+ absence of the "online" file. This is done if it can be determined ahead of
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index a0c5c5f..b1c7e68 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1842,6 +1842,19 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 
+ 	nox2apic	[X86-64,APIC] Do not enable x2APIC mode.
+ 
++	bsp_hotplug	[X86] BSP (aka CPU0) is hotpluggable.
++			Some features may depend on BSP. Known dependencies are
++			1. Suspend/resume depends on BSP. Suspend will fail if
++			BSP is offline and you need to online BSP before
++			suspend/resume.
++			2. PIC interrupts also depend on BSP. BSP can't be
++			removed if a PIC interrupt is detected.
++			It's said poweroff/reboot may depend on BSP on some
++			machines although I haven't seen such issues so far
++			after BSP is offline on a few tested machines.
++			If the dependencies are under your control, you can
++			turn on bsp_hotplug.
++
+ 	nptcg=		[IA-64] Override max number of concurrent global TLB
+ 			purges which is reported from either PAL_VM_SUMMARY or
+ 			SAL PALO.
 -- 
 1.6.0.3
 
