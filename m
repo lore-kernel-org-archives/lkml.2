@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751957Ab1KDUV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:21:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44368 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab1KDUV1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:21:27 -0400
+	id S1752012Ab1KDU1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:27:52 -0400
+Received: from na3sys010aog107.obsmtp.com ([74.125.245.82]:50083 "HELO
+	na3sys010aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751220Ab1KDU1u convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 16:27:50 -0400
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20111027090847.GC6641@opensource.wolfsonmicro.com>
-References: <1319702185-16108-1-git-send-email-rnayak@ti.com>
-	<20111027090847.GC6641@opensource.wolfsonmicro.com>
-Date: Fri, 4 Nov 2011 13:21:26 -0700
-Message-ID: <CAOesGMii8v3DOCjWpuF3=+EVu+-HYGys=7RRgpk+9U=FxTHwOA@mail.gmail.com>
-Subject: Re: [PATCH v3 0/4] Device tree support for regulators
-From: Olof Johansson <olof@lixom.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Rajendra Nayak <rnayak@ti.com>, patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
+References: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
+From: Roland Dreier <roland@purestorage.com>
+Date: Fri, 4 Nov 2011 13:27:28 -0700
+Message-ID: <CAL1RGDXLOXwJJcPXf8z_QAPAcNR6LywYX4OZk-48g24=NqStHQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Bart Van Assche <bart.vanassche@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 2:08 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Oct 27, 2011 at 01:26:21PM +0530, Rajendra Nayak wrote:
->
->> v3 is based on the latest devicetree/next and is tested
->> (with twl adaptaions, which will be posted seperately)
->> on the OMAP4 panda and OMAP4 sdp boards.
->
-> Looking at the device bindings I notice that these bindings loose the
-> ability to assign a descriptive name to regulator outputs.  This is
-> really useful for making it easy to tie the code and the schematics
-> together - you can make the runing system use the same name as the
-> schematic.
+On Fri, Nov 4, 2011 at 1:10 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> At this point should we should have a stable userspace API for the
+> layout of /sys/kernel/config/target/srpt/, and a number of legacy module
+> parameters have been removed or converted into per endpoint attributes
+> as per Roland's feedback.  This code has been getting build testing in
+> next the past week, and does not touch any external code.
 
-That can easily be added by having a output-name property in the
-regulator device node.
+Given the confidence that the userspace ABI is stable,
 
--Olof
+Acked-by: Roland Dreier <roland@purestorage.com>
+
+ - R.
