@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab1KDJeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 05:34:04 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39106 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262Ab1KDJeB (ORCPT
+	id S1754348Ab1KDJeZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:34:25 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64853 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab1KDJeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 05:34:01 -0400
-Date: Fri, 4 Nov 2011 12:31:24 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+	Fri, 4 Nov 2011 05:34:24 -0400
+Date: Fri, 4 Nov 2011 17:34:14 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
 To: Borislav Petkov <bp@alien8.de>
-Cc: Yong Zhang <yong.zhang0@gmail.com>, David Rientjes <rientjes@google.com>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
 Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111104093123.GA2957@swordfish>
+Message-ID: <20111104093414.GA16273@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
 References: <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
  <20111020213644.GB25124@google.com>
  <20111020230040.GC3586@swordfish.minsk.epam.com>
@@ -27,7 +29,7 @@ References: <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
  <20111103075354.GA16666@zhy>
  <20111104092520.GA16897@gere.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 In-Reply-To: <20111104092520.GA16897@gere.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -35,18 +37,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/04/11 10:25), Borislav Petkov wrote:
+On Fri, Nov 04, 2011 at 10:25:20AM +0100, Borislav Petkov wrote:
+> On Thu, Nov 03, 2011 at 03:53:54PM +0800, Yong Zhang wrote:
+> > On Thu, Nov 03, 2011 at 10:45:06AM +0300, Sergey Senozhatsky wrote:
+> > > On (11/03/11 15:27), Yong Zhang wrote:
+> > > > Did you have tried it? Though I don't find time to polish it yet but
+> > > > I think will smooth your concern.
+> > > > 
+> > > 
+> > > I'm compiling the kernel with you patch right now.
+> > > The whole point was just for
+> > > case if someone has different approach or whatsoever.
+> > 
 > > Understood. If someone can come up with a simple patch which could
 > > cover the case I mentioned before, that would be great.
 > > /me goes to poke at it.
 > 
 > I dunno whether this is related but I get the following on 3.1:
->
 
-I think this is different problem. Failed check that lockdep key is marked as `static'.
+Maybe, so could you try my patches just sent out?
+http://marc.info/?l=linux-kernel&m=132039886826672
 
-	Sergey
- 
+Thanks,
+Yong
+
+> 
 > [ 5499.537074] INFO: trying to register non-static key.
 > [ 5499.537080] the code is fine but needs lockdep annotation.
 > [ 5499.537083] turning off the locking correctness validator.
@@ -80,4 +95,11 @@ I think this is different problem. Failed check that lockdep key is marked as `s
 > -- 
 > Regards/Gruss,
 > Boris.
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Only stand for myself
