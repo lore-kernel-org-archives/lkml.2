@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1KDSXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 14:23:07 -0400
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:54623 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933135Ab1KDSXE (ORCPT
+	id S933183Ab1KDSXL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 14:23:11 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:37033 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933135Ab1KDSXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 14:23:04 -0400
-Message-ID: <4EB42D5B.6050201@xenotime.net>
-Date: Fri, 04 Nov 2011 11:22:19 -0700
+	Fri, 4 Nov 2011 14:23:08 -0400
+Message-ID: <4EB42D5E.7090104@xenotime.net>
+Date: Fri, 04 Nov 2011 11:22:22 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 Organization: YPO4
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-CC: Antonio Ospite <ospite@studenti.unina.it>
-Subject: [PATCH 4/8] Documentation: update CodingStyle use of braces
+CC: Marcos Paulo de Souza <marcos.mage@gmail.com>
+Subject: [PATCH 5/8] Documentation: HFS is orphaned
 References: <4EB423D8.9030102@xenotime.net>
 In-Reply-To: <4EB423D8.9030102@xenotime.net>
 Content-Type: text/plain; charset=UTF-8
@@ -26,28 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+From: Marcos Paulo de Souza <marcos.mage@gmail.com>
 
-After commit 38829dc highlight that if _only_one_ branch of a
-conditional statement is a single statement, then braces are to be used
-on both branches.
+Removed the reference of Roman Zippel, last maintainer, of orphaned
+HFS filesystem.
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
 Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
- Documentation/CodingStyle |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ Documentation/filesystems/hfs.txt |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- lnx1104.orig/Documentation/CodingStyle
-+++ lnx1104/Documentation/CodingStyle
-@@ -166,8 +166,8 @@ if (condition)
- else
- 	do_that();
+--- lnx1104.orig/Documentation/filesystems/hfs.txt
++++ lnx1104/Documentation/filesystems/hfs.txt
+@@ -1,3 +1,4 @@
++Note: This filesystem doesn't have a maintainer.
  
--This does not apply if one branch of a conditional statement is a single
--statement. Use braces in both branches.
-+This does not apply if only one branch of a conditional statement is a single
-+statement; in the latter case use braces in both branches:
+ Macintosh HFS Filesystem for Linux
+ ==================================
+@@ -76,8 +77,6 @@ hformat that can be used to create HFS f
+ Credits
+ =======
  
- if (condition) {
- 	do_this();
+-The HFS drivers was written by Paul H. Hargrovea (hargrove@sccm.Stanford.EDU)
+-and is now maintained by Roman Zippel (roman@ardistech.com) at Ardis
+-Technologies.
+-Roman rewrote large parts of the code and brought in btree routines derived
+-from Brad Boyer's hfsplus driver (also maintained by Roman now).
++The HFS drivers was written by Paul H. Hargrovea (hargrove@sccm.Stanford.EDU).
++Roman Zippel (roman@ardistech.com) rewrote large parts of the code and brought
++in btree routines derived from Brad Boyer's hfsplus driver.
