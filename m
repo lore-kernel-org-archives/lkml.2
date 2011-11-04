@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab1KDQ4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:56:36 -0400
-Received: from oz.csail.mit.edu ([128.30.30.239]:35670 "EHLO mail.mgebm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807Ab1KDQzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:55:17 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: avi@redhat.com
-Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
-        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
-        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
-        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6 V3] Add check for suspended vm in softlockup detector
-Date: Fri,  4 Nov 2011 12:55:11 -0400
-Message-Id: <1320425712-5312-6-git-send-email-emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1320425712-5312-1-git-send-email-emunson@mgebm.net>
-References: <1320425712-5312-1-git-send-email-emunson@mgebm.net>
+	id S932969Ab1KDRAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 13:00:22 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:36475 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932807Ab1KDRAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 13:00:20 -0400
+Message-ID: <4EB419F5.6070308@xenotime.net>
+Date: Fri, 04 Nov 2011 09:59:33 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
+        x86 maintainers <x86@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: linux-next: Tree for Nov 3 (KVMTOOL_TEST_ENABLE)
+References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au> <4EB33525.808@xenotime.net>
+In-Reply-To: <4EB33525.808@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A suspended VM can cause spurious soft lockup warnings.  To avoid these, the
-watchdog now checks if the kernel knows it was stopped by the host and skips
-the warning if so.
+On 11/03/2011 05:43 PM, Randy Dunlap wrote:
+> On 11/02/2011 11:20 PM, Stephen Rothwell wrote:
+>> Hi all,
+> 
+> 
+> When KVMTOOL_TEST_ENABLE is enabled but CONFIG_BLOCK is not enabled, there are
+> MANY build errors.  This one (case) is probably fixed by adding "select BLOCK", but it's
+> all rather ugly.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
-Cc: mingo@redhat.com
-Cc: hpa@zytor.com
-Cc: arnd@arndb.de
-Cc: ryanh@linux.vnet.ibm.com
-Cc: aliguori@us.ibm.com
-Cc: mtosatti@redhat.com
-Cc: jeremy.fitzhardinge@citrix.com
-Cc: kvm@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- kernel/watchdog.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+kconfig even tells us:
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 1d7bca7..b5a1c08 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -25,6 +25,7 @@
- #include <linux/sysctl.h>
- 
- #include <asm/irq_regs.h>
-+#include <linux/kvm_para.h>
- #include <linux/perf_event.h>
- 
- int watchdog_enabled = 1;
-@@ -292,6 +293,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	 */
- 	duration = is_softlockup(touch_ts);
- 	if (unlikely(duration)) {
-+		/*
-+		 * If a virtual machine is stopped by the host it can look to
-+		 * the watchdog like a soft lockup, check to see if the host
-+		 * stopped the vm before we issue the warning
-+		 */
-+		if (kvm_check_and_clear_guest_paused(smp_processor_id()))
-+			return HRTIMER_RESTART;
-+
- 		/* only warn once */
- 		if (__this_cpu_read(soft_watchdog_warn) == true)
- 			return HRTIMER_RESTART;
+warning: (KVMTOOL_TEST_ENABLE) selects KGDB which has unmet direct dependencies (HAVE_ARCH_KGDB && DEBUG_KERNEL && EXPERIMENTAL)
+warning: (KVMTOOL_TEST_ENABLE) selects BLK_DEV which has unmet direct dependencies (BLOCK)
+
+
 -- 
-1.7.5.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
