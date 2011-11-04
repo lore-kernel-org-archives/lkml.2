@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab1KDRpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 13:45:49 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:40864 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871Ab1KDRps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 13:45:48 -0400
-Message-ID: <4EB424C3.5030508@nod.at>
-Date: Fri, 04 Nov 2011 18:45:39 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: menage@google.com
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org
-Subject: Too early cgroup_init_early()
-X-Enigmail-Version: 1.3.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig051F90A2E7054692F988F83B"
+	id S1756087Ab1KDR7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 13:59:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45088 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab1KDR7k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 13:59:40 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: rdunlap@xenotime.net
+Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        gregkh@suse.de, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH] linux-next: et131x: Fix build error when CONFIG_PM_SLEEP not enabled
+Date: Fri,  4 Nov 2011 17:58:02 +0000
+Message-Id: <1320429482-2332-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <4EB30C0B.8080200@xenotime.net>
+References: <4EB30C0B.8080200@xenotime.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig051F90A2E7054692F988F83B
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+Randy Dunlap reports that the ex131x driver doesn't build when CONFIG_PM_SLEEP is not enabled.
+This bug was introduced when moving code around to remove some forward declarations earlier, the #endif part of #ifdef CONFIG_PM_SLEEP was not moved at the same time. Now fixed by moving it to its proper place.
 
-Hi!
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et131x.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Is it really necessary to call cgroup_init_early() before
-printk(KERN_NOTICE "%s", linux_banner)?
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index f5f44a0..0c1c6ca 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -4469,6 +4469,12 @@ static int et131x_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
++#define ET131X_PM_OPS (&et131x_pm_ops)
++#else
++#define ET131X_PM_OPS NULL
++#endif
++
+ /* ISR functions */
+ 
+ /**
+@@ -5470,12 +5476,6 @@ err_out:
+ 	return result;
+ }
+ 
+-static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
+-#define ET131X_PM_OPS (&et131x_pm_ops)
+-#else
+-#define ET131X_PM_OPS NULL
+-#endif
+-
+ static DEFINE_PCI_DEVICE_TABLE(et131x_pci_table) = {
+ 	{ PCI_VDEVICE(ATT, ET131X_PCI_DEVICE_ID_GIG), 0UL},
+ 	{ PCI_VDEVICE(ATT, ET131X_PCI_DEVICE_ID_FAST), 0UL},
+-- 
+1.7.6.4
 
-IMHO the Linux banner should be always the first line...
-
----8<---
-Initializing cgroup subsys cpuset
-Initializing cgroup subsys cpu
-Linux version 3.1.0-09317-g9b89480 (rw@raccoon) (gcc version 4.5.3
-20110428 [gcc-4_5-branch revision 173117] (SUSE Linux) ) #2 Fri Nov 4
-18:32:15 CET 2011
---->8---
-
-Thanks,
-//richard
-
-
---------------enig051F90A2E7054692F988F83B
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOtCTIAAoJEN9758yqZn9e6sgH/A1Yn3FPIUjS9FSsPCWMSQ6B
-2dtY6w/cg8CLrufrJRSgYtjgFbyWTpFRJoImojDerARkoMBhS1Oroq/GdDvXDZO3
-lOMTZwND7mT0ypv2zMupbX7AhzPKyXjRPAWGBOChc1cwwPVgoGcmloNESvOFAxtB
-I6HvyQs0jfN/lAGemrlVhKBnP94jHAuCeda8MpVf67Gx2c7D1HibGeSDLJ0jBvET
-O4H+vvxPF0CvrBPw9kOOKmeUeh4Yf0x4dHalBKvT+MJOEHdBrEunUlnEviSEW4BQ
-gT5jNxvWGvpuCYMQLJa9P0Sywc9/s07EDUIAuOGkll9RFimgzaD0eXsS3/yPD8s=
-=Q8OT
------END PGP SIGNATURE-----
-
---------------enig051F90A2E7054692F988F83B--
