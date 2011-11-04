@@ -1,100 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab1KDQ0q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:26:46 -0400
-Received: from goliath.siemens.de ([192.35.17.28]:32446 "EHLO
-	goliath.siemens.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab1KDQ0p (ORCPT
+	id S932775Ab1KDQar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:30:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59028 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932554Ab1KDQaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:26:45 -0400
-Message-ID: <4EB41227.3070708@siemens.com>
-Date: Fri, 04 Nov 2011 17:26:15 +0100
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Sasha Levin <levinsasha928@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
+	Fri, 4 Nov 2011 12:30:46 -0400
+Date: Fri, 4 Nov 2011 16:30:17 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Olof Johansson <olof@lixom.net>
+Cc: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Colin Cross <ccross@android.com>, Stephen Warren <swarren@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>  <20111104121601.GA15206@infradead.org>  <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>  <20111104130225.GA24563@infradead.org>  <CAOJsxLG4+-Hmpt-dfa7auEs6H1RgWWwYYs=zzb8uvJg8m10_Nw@mail.gmail.com>  <4EB3F9CE.1050407@siemens.com> <1320419814.3334.45.camel@lappy>
-In-Reply-To: <1320419814.3334.45.camel@lappy>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 2/8] arm/tegra: prepare early init for multiple
+	tegra variants
+Message-ID: <20111104163017.GA12913@n2100.arm.linux.org.uk>
+References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com> <1320242948-21061-3-git-send-email-pdeschrijver@nvidia.com> <CAMbhsRSTcR8qgYESmM6OxkXeVeg6vS49woCe_OX6CY4pAj2g_A@mail.gmail.com> <20111103092116.GO13358@tbergstrom-lnx.Nvidia.com> <20111103100235.GK12913@n2100.arm.linux.org.uk> <CAOesGMh7LqUtBkB5Dffr-bJSkC__V+55yLsp7KAYs-6oRAGMhA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMh7LqUtBkB5Dffr-bJSkC__V+55yLsp7KAYs-6oRAGMhA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-04 16:16, Sasha Levin wrote:
-> On Fri, 2011-11-04 at 15:42 +0100, Jan Kiszka wrote:
->> On 2011-11-04 14:32, Pekka Enberg wrote:
->>> I know you don't see the benefits of integrated code base but I as a
->>> developer do.
->>
->> IIRC, this discussion still lacks striking, concrete examples from the
->> KVM tool vs. QEMU development processes.
-> 
-> I'll give a current example: Michael and Rusty are currently considering
-> a change in the virtio spec (allowing MMIO config BARs - but thats
-> irrelevant).
-> 
-> I'll quote what Anthony said about how he sees the big picture of how
-> this change is going to be implemented - something which we all agree
-> with:
-> 
-> On Thu, 2011-11-03 at 09:37 -0500, Anthony Liguori wrote:
->> Well, what's needed before the spec is changed is an interesting question, but I 
->> think the main thing is, don't commit any virtio ABI changes to vhost, QEMU, 
->> NKT, or the kernel until the spec for the change has been committed.
->>
->> It would be nice to have a working implementation before committing a spec 
->> change.  Even nicer would be to have Acked-by's a maintainer in each area affected.
-> 
-> Which is pretty smart. Get a working implementation before we commit to
-> a spec.
-> 
-> Now, how would the development process look when the trees aren't
-> integrated? You'd try to get the kernel side stabilized, then you'd do
-> your usermode changes, go back to the kernel patches to fix bugs and
-> things people missed, which would require in turn new patches to the
-> usermode part, and so until you get 5-6 versions (best case) of this
-> change in *each* tree.
+On Fri, Nov 04, 2011 at 08:09:42AM -0700, Olof Johansson wrote:
+> Sounds reasonable to me. Want a patch to put in your arch_reset
+> cleanup branch, I presume? I'll post something later today.
 
-This can happen if the kernel API went totally wrong on the first run.
-It happens, but not frequently. Or do you see many examples for this in
-KVM's history?
+I would, but I've just changed the method slightly.
 
-I don't remember finding this particularly problematic for any of my own
-patch sets. If the API is controversial, you usually try to get that
-conceptually resolved instead of updating all bits over and over again.
-Once the API is accepted, changes to the implementations become
-independent anyway.
+It was becoming silly adding functions to every platform to initialize
+arm_pm_restart() in some way (preferably as early as possible) so I've
+scrapped that idea.
 
-> 
-> Add some technical difficulties which just make it uglier, such as
-> having to copy over new kernel headers into the usermode tool for each
-> new version you want to send (linux-headers/ dir in QEMU) and you get a
-> process which is not that pretty anymore :)
+I've just replaced it with something a little better, which is to put
+a pointer directly in the machine_desc stuff, and have generic code
+setup the pointer if this is set.
 
-Synching headers has become trivial these days (reloading updated KVM
-modules may take more steps ;) ).
-
-> 
-> How would it look for an integrated project? You'd be working on the
-> same codebase, one series of patches would take care of both the kernel
-> changes and the userspace changes, this would speed up iterations and
-> make testing quite easier.
-
-I can't imagine that the ability to do a single 'make' for a change that
-remains split nevertheless justifies merging more user land into the
-kernel. You can always set up a meta project for this.
-
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT T DE IT 1
-Corporate Competence Center Embedded Linux
+I'll post some new patches sometime in the next few days.
