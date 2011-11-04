@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1KDJ2G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 05:28:06 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:36635 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754326Ab1KDJ2D (ORCPT
+	id S1754592Ab1KDJ2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:28:37 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40697 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab1KDJ2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 05:28:03 -0400
-Date: Fri, 4 Nov 2011 10:26:47 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Make dmi_name_in_vendors more focused
-Message-ID: <20111104102647.0b3eba22@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Nov 2011 05:28:36 -0400
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [RFC PATCH 2/4] lockdep: Let register_lock_class() can be called with/without graph_lock
+Date: Fri,  4 Nov 2011 17:26:28 +0800
+Message-Id: <1320398790-21663-3-git-send-email-yong.zhang0@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of dmi_name_in_vendors() is an invitation
-to lazy coding and false positives [1]. Searching for a string in 8
-different DMI fields is something nobody should ever need to do. You
-know what you're looking for, so you should know where to look. strstr
-isn't fast, especially when it fails, so we should avoid calling it
-when it just can't succeed.
+Will be used in later patch which fix some race condition in
+lock_set_class().
 
-Looking at the current users of the function, it seems clear to me
-that they are looking for a system or board vendor name, so let's
-limit dmi_name_in_vendors to these two DMI fields. This much better
-matches the function name, BTW.
-
-[1] We currently have code looking for short names in DMI data, such
-as "IBM" or "ASUS". I let you guess what will happen the day other
-vendors ship products named, for example, "SCHREIBMEISTER" or "PEGASUS".
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
 ---
-This patch was already sent on 2011-05-15. I thought Andrew had picked
-it up but apparently not, otherwise it should already be upstream by
-now.
+ kernel/lockdep.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
- drivers/firmware/dmi_scan.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
---- linux-2.6.39-rc7.orig/drivers/firmware/dmi_scan.c	2011-03-15 22:52:48.000000000 +0100
-+++ linux-2.6.39-rc7/drivers/firmware/dmi_scan.c	2011-05-15 15:05:29.000000000 +0200
-@@ -585,14 +585,12 @@ int dmi_name_in_serial(const char *str)
- }
- 
- /**
-- *	dmi_name_in_vendors - Check if string is anywhere in the DMI vendor information.
-+ *	dmi_name_in_vendors - Check if string is in the DMI system or board vendor name
-  *	@str: 	Case sensitive Name
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 4a16b0a..e7d38fa 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -711,9 +711,13 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
+  * Register a lock's class in the hash-table, if the class is not present
+  * yet. Otherwise we look it up. We cache the result in the lock object
+  * itself, so actual lookup of the hash should be once per lock object.
++ *
++ * NOTE: register_lock_class() can be called with/without graph_lock hold
++ *	 depending on @locked. But it will release graph_lock before return.
   */
- int dmi_name_in_vendors(const char *str)
+ static inline struct lock_class *
+-register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
++register_lock_class(struct lockdep_map *lock, unsigned int subclass,
++		    int force, int locked)
  {
--	static int fields[] = { DMI_BIOS_VENDOR, DMI_BIOS_VERSION, DMI_SYS_VENDOR,
--				DMI_PRODUCT_NAME, DMI_PRODUCT_VERSION, DMI_BOARD_VENDOR,
--				DMI_BOARD_NAME, DMI_BOARD_VERSION, DMI_NONE };
-+	static int fields[] = { DMI_SYS_VENDOR, DMI_BOARD_VENDOR, DMI_NONE };
- 	int i;
- 	for (i = 0; fields[i] != DMI_NONE; i++) {
- 		int f = fields[i];
-
-
+ 	struct lockdep_subclass_key *key;
+ 	struct list_head *hash_head;
+@@ -741,7 +745,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
+ 	hash_head = classhashentry(key);
+ 
+ 	raw_local_irq_save(flags);
+-	if (!graph_lock()) {
++	if (!locked && !graph_lock()) {
+ 		raw_local_irq_restore(flags);
+ 		return NULL;
+ 	}
+@@ -2986,7 +2990,7 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 		return;
+ 
+ 	if (subclass)
+-		register_lock_class(lock, subclass, 1);
++		register_lock_class(lock, subclass, 1, 0);
+ }
+ EXPORT_SYMBOL_GPL(lockdep_init_map);
+ 
+@@ -3032,7 +3036,7 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
+ 	 * Not cached?
+ 	 */
+ 	if (unlikely(!class)) {
+-		class = register_lock_class(lock, subclass, 0);
++		class = register_lock_class(lock, subclass, 0, 0);
+ 		if (!class)
+ 			return 0;
+ 	}
+@@ -3276,7 +3280,7 @@ found_it:
+ 	/* optimizing for lock_set_subclass() */
+ 	if (key) {
+ 		lockdep_init_map(lock, name, key, 0);
+-		register_lock_class(lock, subclass, 0);
++		register_lock_class(lock, subclass, 0, 0);
+ 	}
+ 
+ 	curr->lockdep_depth = i;
 -- 
-Jean Delvare
+1.7.5.4
+
