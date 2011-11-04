@@ -1,31 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab1KDLbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:31:39 -0400
-Received: from d246500.freehost.com.ua ([178.20.152.145]:43637 "EHLO
-	free1.domen-hosting.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1KDLbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 07:31:38 -0400
-X-Greylist: delayed 1184 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Nov 2011 07:31:38 EDT
-Date: Fri, 4 Nov 2011 13:32:33 +0200 (EET)
-Message-Id: <201111041132.pA4BWXAr045776@free1.domen-hosting.net>
-To: linux-kernel@vger.kernel.org
-Subject: request
-From: Ted Anderson <tedanderson@juno.com>
-Reply-To: tedanderson@juno.com
+	id S1755232Ab1KDLky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:40:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab1KDLkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 07:40:53 -0400
+Date: Fri, 4 Nov 2011 13:40:33 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        Anthony Liguori <anthony@codemonkey.ws>
+Subject: Re: virtio-pci new configuration proposal
+Message-ID: <20111104114033.GA21308@redhat.com>
+References: <1320259767.22582.2.camel@lappy>
+ <8762j2t19l.fsf@rustcorp.com.au>
+ <1320309203.29407.1.camel@lappy>
+ <87lirwrzlg.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lirwrzlg.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello I will like to place a quick order with you to my location here in Beirut,Lebanon.Please advice if you can have it shipped to me.In regards to shipping my order,i will advice the best and easy way to have my order shipped to me in-case you might want to have difficulties sending orders to my location.Please also advice if you accept visa or master credit card cause i will be paying with my credit card.Let me know soon so i can place my order right away.
+On Fri, Nov 04, 2011 at 08:14:43PM +1030, Rusty Russell wrote:
+> > > 3) If we're changing the queue layout, it's a chance to fix a
+> > >    longstanding bug: let the guest notify the host of preferred
+> > >    queue size and alignment.
+> > 
+> > Yup, we can do that.
 
- Sincerely 
+We don't need to change all of layout for that - just add another field
+in the common config structure to supply the alignment.
 
+> The seabios guys will definitely thank you!
 
-Ted
-
-
+-- 
+MST
