@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab1KDPV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 11:21:58 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:64465 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab1KDPV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 11:21:57 -0400
-Date: Fri, 4 Nov 2011 08:21:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com
-Subject: Re: [PATCH 04/10] cgroup: always lock threadgroup during migration
-Message-ID: <20111104152150.GX4417@google.com>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
- <1320191193-8110-5-git-send-email-tj@kernel.org>
- <20111104175413.30afaf8e.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755767Ab1KDPW0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 11:22:26 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41811 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755612Ab1KDPWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 11:22:25 -0400
+Date: Fri, 4 Nov 2011 16:20:38 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
+ overflow when adjusted
+Message-ID: <20111104152035.GA1847@elte.hu>
+References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
+ <20111103211000.GA17895@elte.hu>
+ <1320412312.3514.1.camel@js-netbook>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111104175413.30afaf8e.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1320412312.3514.1.camel@js-netbook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Fri, Nov 04, 2011 at 05:54:13PM +0900, KAMEZAWA Hiroyuki wrote:
-> > -	/* if PF_EXITING is set, the tsk->cgroups pointer is no longer safe. */
-> > +	/* @tsk can't exit as its threadgroup is locked */
-> >  	task_lock(tsk);
-> > -	if (tsk->flags & PF_EXITING) {
-> > -		task_unlock(tsk);
-> > -		put_css_set(newcg);
-> > -		return -ESRCH;
-> > -	}
-> > +	WARN_ON_ONCE(tsk->flags & PF_EXITING);
-> >  	rcu_assign_pointer(tsk->cgroups, newcg);
-> >  	task_unlock(tsk);
+* John Stultz <john.stultz@linaro.org> wrote:
+
+> On Thu, 2011-11-03 at 22:10 +0100, Ingo Molnar wrote:
+> > * John Stultz <john.stultz@linaro.org> wrote:
+> > 
+> > > For some frequqencies, the clocks_calc_mult_shift() function will
+> > > unfortunately select mult values very close to 0xffffffff.  This
+> > > has the potential to overflow when NTP adjusts the clock, adding
+> > > to the mult value.
+> > > 
+> > > This patch adds a clocksource.maxadj value, which provides
+> > > an approximation of an 11% adjustment(NTP limits adjustments to
+> > > 500ppm and the tick adjustment is limited to 10%), which could
+> > > be made to the clocksource.mult value. This is then used to both
+> > > check that the current mult value won't overflow/underflow, as
+> > > well as warning us if the timekeeping_adjust() code pushes over
+> > > that 11% boundary.
+> > > 
+> > > CC: Yong Zhang <yong.zhang0@gmail.com>
+> > > CC: David Daney <ddaney.cavm@gmail.com>
+> > > CC: Thomas Gleixner <tglx@linutronix.de>
+> > > Reported-by: Chen Jie <chenj@lemote.com>
+> > > Reported-by: zhangfx <zhangfx@lemote.com>
+> > > Signed-off-by: John Stultz <john.stultz@linaro.org>
+> > > ---
+> > >  include/linux/clocksource.h |    3 +-
+> > >  kernel/time/clocksource.c   |   53 ++++++++++++++++++++++++++++++++++--------
+> > >  kernel/time/timekeeping.c   |    3 ++
+> > >  3 files changed, 48 insertions(+), 11 deletions(-)
+> > 
+> > This patch (included in tip:timers/urgent) causes the following boot 
+> > warning x86:
+> > 
+> > [    0.000000] Fast TSC calibration using PIT
+> > [    0.000000] ------------[ cut here ]------------
+> > [    0.000000] WARNING: at kernel/time/timekeeping.c:855 do_timer+0x47f/0x4c0()
+> > [    0.000000] Hardware name: System Product Name
+> > [    0.000000] Adjusting more then 11%
+> > [    0.000000] Modules linked in:
+> > [    0.000000] Pid: 0, comm: swapper Not tainted 3.1.0-tip+ #161792
+> > [    0.000000] Call Trace:
+> > [    0.000000]  <IRQ>  [<ffffffff81042d0a>] warn_slowpath_common+0x7a/0xb0
+> > [    0.000000]  [<ffffffff81042de1>] warn_slowpath_fmt+0x41/0x50
+> > [    0.000000]  [<ffffffff8106e78f>] do_timer+0x47f/0x4c0
+> > [    0.000000]  [<ffffffff81073953>] tick_periodic+0x63/0x80
+> > [    0.000000]  [<ffffffff810739f1>] tick_handle_periodic+0x21/0x70
+> > [    0.000000]  [<ffffffff810046d8>] timer_interrupt+0x18/0x20
+> > [    0.000000]  [<ffffffff8109ff9e>] handle_irq_event_percpu+0x5e/0x220
+> > [    0.000000]  [<ffffffff810a019b>] handle_irq_event+0x3b/0x60
+> > [    0.000000]  [<ffffffff810a295c>] handle_level_irq+0x6c/0xd0
+> > [    0.000000]  [<ffffffff81003f34>] handle_irq+0x44/0xa0
+> > 
+> > Full bootlog and config attached.
+> > 
+> > i've excluded it from tip:master for now.
 > 
-> Is this task_lock/unlock is required ?
+> Sounds good. Thanks for the heads up.  Do you have a dmesg for this 
+> system as well, so I can narrow down what I should try to reproduce 
+> this on?
 
-For put, I don't think it's necessary.
+The full bootlog that i attached to my report is a dmesg - do you 
+need any other info beyond that?
 
-> > @@ -2116,11 +2120,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
-> >  			continue;
-> >  		/* get old css_set pointer */
-> >  		task_lock(tsk);
-> > -		if (tsk->flags & PF_EXITING) {
-> > -			/* ignore this task if it's going away */
-> > -			task_unlock(tsk);
-> > -			continue;
-> > -		}
-> >  		oldcg = tsk->cgroups;
-> >  		get_css_set(oldcg);
-> >  		task_unlock(tsk);
+Thanks,
 
-For get, I think it is; otherwise, nothing prevents someone else from
-changing tsk->cgroups between load and get, and destroying it.
-
-Thanks.
-
--- 
-tejun
+	Ingo
