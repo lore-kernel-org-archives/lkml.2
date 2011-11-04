@@ -1,54 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932705Ab1KDOaJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 10:30:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41172 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572Ab1KDOaH (ORCPT
+	id S932726Ab1KDOe5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 10:34:57 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42146 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932550Ab1KDOez convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 10:30:07 -0400
+	Fri, 4 Nov 2011 10:34:55 -0400
 MIME-Version: 1.0
-In-Reply-To: <4EB3F680.1070309@kernel.dk>
-References: <4EB2BC88.3070105@suse.cz>
-	<20111103161436.GJ4417@google.com>
-	<20111103162634.GK4417@google.com>
-	<4EB2D441.9040708@kernel.dk>
-	<20111103211253.GO4417@google.com>
-	<4EB39E63.9020804@kernel.dk>
-	<CAOS58YM-6v2nriMv8izhePD04YiJe0s7wqwWw=Dc9w-4er_McA@mail.gmail.com>
-	<4EB3F680.1070309@kernel.dk>
-Date: Fri, 4 Nov 2011 07:30:05 -0700
-X-Google-Sender-Auth: MdnCKU66wQJgoRQExkiZJOLaf2I
-Message-ID: <CAOS58YPMpbH_ex97g25G1375HPrphdXzuOe=DR78b4S07nJugw@mail.gmail.com>
-Subject: Re: [PATCH block/for-next] block: don't call blk_drain_queue() if
- elevator is not up
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
+In-Reply-To: <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+References: <20111031171441.GD3466@redhat.com>
+	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
+	<alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+Date: Fri, 4 Nov 2011 22:34:54 +0800
+Message-ID: <CAPQyPG4DNofTw=rqJXPTbo3w4xGMdPF3SYt3qyQCWXYsDLa08A@mail.gmail.com>
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+From: Nai Xia <nai.xia@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Nov 4, 2011 at 7:28 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> Hmmm... yeah, the first and second patchsets kinda go together but
->> well the first one definitely is pretty good bug fix without others,
->> so I guess that split isn't too bad either. Alright, no objection.
+On Fri, Nov 4, 2011 at 3:31 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
 >
-> OK, I'll push off what I have now and then we can queue #2 up shortly. I
-> would probably prefer pushing the cfq locking cleanup to 3.3 to get some
-> more testing time on that, but it all depends on what your level of
-> confidence in it is?
+>> migrate was doing a rmap_walk with speculative lock-less access on
+>> pagetables. That could lead it to not serialize properly against
+>> mremap PT locks. But a second problem remains in the order of vmas in
+>> the same_anon_vma list used by the rmap_walk.
+>
+> I do think that Nai Xia deserves special credit for thinking deeper
+> into this than the rest of us (before you came back): something like
+>
+> Issue-conceived-by: Nai Xia <nai.xia@gmail.com>
 
-Not that confident. Those definitely belong to the next window.
+Thanks! ;-)
 
-Thank you.
+>
+>>
+>> If vma_merge would succeed in copy_vma, the src vma could be placed
+>> after the dst vma in the same_anon_vma list. That could still lead
+>> migrate to miss some pte.
+>>
+>> This patch adds a anon_vma_order_tail() function to force the dst vma
+>
+> I agree with Mel that anon_vma_moveto_tail() would be a better name;
+> or even anon_vma_move_to_tail().
+>
+>> at the end of the list before mremap starts to solve the problem.
+>>
+>> If the mremap is very large and there are a lots of parents or childs
+>> sharing the anon_vma root lock, this should still scale better than
+>> taking the anon_vma root lock around every pte copy practically for
+>> the whole duration of mremap.
+>
+> But I'm sorry to say that I'm actually not persuaded by the patch,
+> on three counts.
+>
+>>
+>> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+>> ---
+>>  include/linux/rmap.h |    1 +
+>>  mm/mmap.c            |    8 ++++++++
+>>  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 53 insertions(+), 0 deletions(-)
+> B
+>>
+>> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+>> index 2148b12..45eb098 100644
+>> --- a/include/linux/rmap.h
+>> +++ b/include/linux/rmap.h
+>> @@ -120,6 +120,7 @@ void anon_vma_init(void); /* create anon_vma_cachep */
+>>  int  anon_vma_prepare(struct vm_area_struct *);
+>>  void unlink_anon_vmas(struct vm_area_struct *);
+>>  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
+>> +void anon_vma_order_tail(struct vm_area_struct *);
+>>  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+>>  void __anon_vma_link(struct vm_area_struct *);
+>>
+>> diff --git a/mm/mmap.c b/mm/mmap.c
+>> index a65efd4..a5858dc 100644
+>> --- a/mm/mmap.c
+>> +++ b/mm/mmap.c
+>> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+>>                */
+>>               if (vma_start >= new_vma->vm_start &&
+>>                   vma_start < new_vma->vm_end)
+>> +                     /*
+>> +                      * No need to call anon_vma_order_tail() in
+>> +                      * this case because the same PT lock will
+>> +                      * serialize the rmap_walk against both src
+>> +                      * and dst vmas.
+>> +                      */
+>
+> Really?  Please convince me: I just do not see what ensures that
+> the same pt lock covers both src and dst areas in this case.
 
--- 
-tejun
+At the first glance that rmap_walk does travel this merged VMA
+once...
+But, Now, Wait...., I am actually really puzzled that this case can really
+happen at all, you see that vma_merge() does not break the validness
+between page->index and its VMA. So if this can really happen,
+a page->index should be valid in both areas in a same VMA.
+It's strange to imagine that a PTE is copy inside a _same_ VMA
+and page->index is valid at both old and new places.
+
+IMO, the only case that src VMA can be merged by the new
+is that src VMA hasn't been faulted yet and the pgoff
+is recalculated. And if my reasoning is true, this place
+does not need to be worried about.
+
+How do you think?
+
+>
+>>                       *vmap = new_vma;
+>> +             else
+>> +                     anon_vma_order_tail(new_vma);
+>
+> And if this puts new_vma in the right position for the normal
+> move_page_tables(), as anon_vma_clone() does in the block below,
+> aren't they both in exactly the wrong position for the abnormal
+> move_page_tables(), called to put ptes back where they were if
+> the original move_page_tables() fails?
+
+OH,MY, at least 6 six eye balls missed another apparent case...
+Now you know why I said "Human brains are all weak in...." :P
+
+>
+> It might be possible to argue that move_page_tables() can only
+> fail by failing to allocate memory for pud or pmd, and that (perhaps)
+> could only happen if the task was being OOM-killed and ran out of
+> reserves at this point, and if it's being OOM-killed then we don't
+> mind losing a migration entry for a moment... perhaps.
+>
+> Certainly I'd agree that it's a very rare case.  But it feels wrong
+> to be attempting to fix the already unlikely issue, while ignoring
+> this aspect, or relying on such unrelated implementation details.
+>
+> Perhaps some further anon_vma_ordering could fix it up,
+> but that would look increasingly desperate.
+>
+>>       } else {
+>>               new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
+>>               if (new_vma) {
+>> diff --git a/mm/rmap.c b/mm/rmap.c
+>> index 8005080..6dbc165 100644
+>> --- a/mm/rmap.c
+>> +++ b/mm/rmap.c
+>> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+>>  }
+>>
+>>  /*
+>> + * Some rmap walk that needs to find all ptes/hugepmds without false
+>> + * negatives (like migrate and split_huge_page) running concurrent
+>> + * with operations that copy or move pagetables (like mremap() and
+>> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
+>> + * in a certain order: the dst_vma must be placed after the src_vma in
+>> + * the list. This is always guaranteed by fork() but mremap() needs to
+>> + * call this function to enforce it in case the dst_vma isn't newly
+>> + * allocated and chained with the anon_vma_clone() function but just
+>> + * an extension of a pre-existing vma through vma_merge.
+>> + *
+>> + * NOTE: the same_anon_vma list can still be changed by other
+>> + * processes while mremap runs because mremap doesn't hold the
+>> + * anon_vma mutex to prevent modifications to the list while it
+>> + * runs. All we need to enforce is that the relative order of this
+>> + * process vmas isn't changing (we don't care about other vmas
+>> + * order). Each vma corresponds to an anon_vma_chain structure so
+>> + * there's no risk that other processes calling anon_vma_order_tail()
+>> + * and changing the same_anon_vma list under mremap() will screw with
+>> + * the relative order of this process vmas in the list, because we
+>> + * won't alter the order of any vma that isn't belonging to this
+>> + * process. And there can't be another anon_vma_order_tail running
+>> + * concurrently with mremap() coming from this process because we hold
+>> + * the mmap_sem for the whole mremap(). fork() ordering dependency
+>> + * also shouldn't be affected because we only care that the parent
+>> + * vmas are placed in the list before the child vmas and
+>> + * anon_vma_order_tail won't reorder vmas from either the fork parent
+>> + * or child.
+>> + */
+>> +void anon_vma_order_tail(struct vm_area_struct *dst)
+>> +{
+>> +     struct anon_vma_chain *pavc;
+>> +     struct anon_vma *root = NULL;
+>> +
+>> +     list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
+>> +             struct anon_vma *anon_vma = pavc->anon_vma;
+>> +             VM_BUG_ON(pavc->vma != dst);
+>> +             root = lock_anon_vma_root(root, anon_vma);
+>> +             list_del(&pavc->same_anon_vma);
+>> +             list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
+>> +     }
+>> +     unlock_anon_vma_root(root);
+>> +}
+>
+> I thought this was correct, but now I'm not so sure.  You rightly
+> consider the question of interference between concurrent mremaps in
+> different mms in your comment above, but I'm still not convinced it
+> is safe.  Oh, probably just my persistent failure to picture these
+> avcs properly.
+>
+> If we were back in the days of the simple anon_vma list, I'd probably
+> share your enthusiasm for the list ordering solution; but now it looks
+> like a fragile and contorted way of avoiding the obvious... we just
+> need to use the anon_vma_lock (but perhaps there are some common and
+> easily tested conditions under which we can skip it e.g. when a single
+> pt lock covers src and dst?).
+>
+> Sorry to be so negative!  I may just be wrong on all counts.
+>
+> Hugh
+>
