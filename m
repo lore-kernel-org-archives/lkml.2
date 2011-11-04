@@ -1,108 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1KDNMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 09:12:39 -0400
-Received: from mx2.parallels.com ([64.131.90.16]:58930 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752578Ab1KDNMh convert rfc822-to-8bit (ORCPT
+	id S1755565Ab1KDNNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:13:35 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55197 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755313Ab1KDNNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:12:37 -0400
-Message-ID: <4EB3E47E.2080003@parallels.com>
-Date: Fri, 4 Nov 2011 11:11:26 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: "Brian K. White" <brian@aljex.com>, <cgroups@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <max@duempel.org>
-Subject: Re: [PATCH] new cgroup controller "fork"
-References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag>	<4EB2C4A5.6000406@parallels.com>	<20111103165903.GA4755@Debian-60-squeeze-64-minimal>	<20111103182101.5037c1e5@lxorguk.ukuu.org.uk>	<20111103185108.GA5153@Debian-60-squeeze-64-minimal>	<20111103190330.02590426@lxorguk.ukuu.org.uk>	<20111103192039.GA5300@Debian-60-squeeze-64-minimal>	<4EB2EA93.2050206@parallels.com> <4EB2F5CF.5010604@aljex.com> <4EB30DAF.4090704@parallels.com> <4EB3560D.7000002@cn.fujitsu.com>
-In-Reply-To: <4EB3560D.7000002@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [201.82.130.234]
+	Fri, 4 Nov 2011 09:13:34 -0400
+Message-ID: <1320412312.3514.1.camel@js-netbook>
+Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
+ overflow when adjusted
+From: John Stultz <john.stultz@linaro.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 04 Nov 2011 09:11:52 -0400
+In-Reply-To: <20111103211000.GA17895@elte.hu>
+References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
+	 <20111103211000.GA17895@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11110413-7282-0000-0000-0000033C0B5E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2011 01:03 AM, Li Zefan wrote:
-> 于 2011年11月04日 05:54, Glauber Costa 写道:
->> On 11/03/2011 06:13 PM, Brian K. White wrote:
->>> On 11/3/2011 3:25 PM, Glauber Costa wrote:
->>>> On 11/03/2011 05:20 PM, Max Kellermann wrote:
->>>>> On 2011/11/03 20:03, Alan Cox<alan@lxorguk.ukuu.org.uk>  wrote:
->>>>>> Sure - I'm just not seeing that a whole separate cgroup for it is
->>>>>> appropriate or a good plan. Anyone doing real resource management needs
->>>>>> the rest of the stuff anyway.
->>>>>
->>>>> Right. When I saw Frederic's controller today, my first thought was
->>>>> that one could move the fork limit code over into that controller. If
->>>>> we reach a consensus that this would be a good idea, and would have
->>>>> chances to get merged, I could probably take some time to refactor my
->>>>> code.
->>>>>
->>>>> Max
->>>> I'd advise you to take a step back and think if this is really needed.
->>>> As Alan pointed out, the really expensive resource here is already being
->>>> constrained by Frederic's controller.
->>>
->>> I think this really is a different knob that is nice to have as long as
->>> it doesn't cost much. It's a way to set a max lifespan in a way that
->>> isn't really addressed by the other controls. (I could absolutely be
->>> missing something.)
->>>
->>> I think Max explained the issue clearly enough.
->>
->> He did, indeed.
->>
->>> It doesn't matter that the fork itself is supposedly so cheap.
->>>
->>> It's still nice to have a way to say, you may not fork/die/fork/die/fork
->>> in a race.
->>>
->>> What's so unimaginable about having a process that you know needs a lot
->>> of cpu and ram or other resources to do it's job, and you expressly want
->>> to allow it to take as much of those resources as it can, but you know
->>> it has no need to fork, so if it forks, _that_ is the only indication of
->>> a problem, so you may only want to block it based on that.
->>>
->>> Sure many other processes would legitimately fork/die/fork/die a lot
->>> while never exceeding a few total concurrent tasks, and for them you
->>> would not want to set any such fork limit. So what?
->>>
->> As I said previously, he knows his use cases better than anyone else.
->> If a use case can be found in which the summation of cpu+task controllers is not enough, and if this is implemented as an option to the task controller, and does not make it:
->> 1) confusing,
->> 2) more expensive,
->>
->> then I don't see why not we shouldn't take it.
->
-> Quoted from Lennart's reply in another mail thread:
->
-> "Given that shutting down some services might involve forking off a few
-> things (think: a shell script handling shutdown which forks off a couple
-> of shell utilities) we'd want something that is between "from now on no
-> forking at all" and "unlimited forking". This could be done in many
-> different ways: we'd be happy if we could do time-based rate limiting,
-> but we'd also be fine with defining a certain budget of additional forks
-> a cgroup can do (i.e. "from now on you can do 50 more forks, then you'll
-> get EPERM)."
->
-> (http://lkml.org/lkml/2011/10/19/468)
->
-> The last sentence suggests he might like this fork controller.
+On Thu, 2011-11-03 at 22:10 +0100, Ingo Molnar wrote:
+> * John Stultz <john.stultz@linaro.org> wrote:
+> 
+> > For some frequqencies, the clocks_calc_mult_shift() function will
+> > unfortunately select mult values very close to 0xffffffff.  This
+> > has the potential to overflow when NTP adjusts the clock, adding
+> > to the mult value.
+> > 
+> > This patch adds a clocksource.maxadj value, which provides
+> > an approximation of an 11% adjustment(NTP limits adjustments to
+> > 500ppm and the tick adjustment is limited to 10%), which could
+> > be made to the clocksource.mult value. This is then used to both
+> > check that the current mult value won't overflow/underflow, as
+> > well as warning us if the timekeeping_adjust() code pushes over
+> > that 11% boundary.
+> > 
+> > CC: Yong Zhang <yong.zhang0@gmail.com>
+> > CC: David Daney <ddaney.cavm@gmail.com>
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > Reported-by: Chen Jie <chenj@lemote.com>
+> > Reported-by: zhangfx <zhangfx@lemote.com>
+> > Signed-off-by: John Stultz <john.stultz@linaro.org>
+> > ---
+> >  include/linux/clocksource.h |    3 +-
+> >  kernel/time/clocksource.c   |   53 ++++++++++++++++++++++++++++++++++--------
+> >  kernel/time/timekeeping.c   |    3 ++
+> >  3 files changed, 48 insertions(+), 11 deletions(-)
+> 
+> This patch (included in tip:timers/urgent) causes the following boot 
+> warning x86:
+> 
+> [    0.000000] Fast TSC calibration using PIT
+> [    0.000000] ------------[ cut here ]------------
+> [    0.000000] WARNING: at kernel/time/timekeeping.c:855 do_timer+0x47f/0x4c0()
+> [    0.000000] Hardware name: System Product Name
+> [    0.000000] Adjusting more then 11%
+> [    0.000000] Modules linked in:
+> [    0.000000] Pid: 0, comm: swapper Not tainted 3.1.0-tip+ #161792
+> [    0.000000] Call Trace:
+> [    0.000000]  <IRQ>  [<ffffffff81042d0a>] warn_slowpath_common+0x7a/0xb0
+> [    0.000000]  [<ffffffff81042de1>] warn_slowpath_fmt+0x41/0x50
+> [    0.000000]  [<ffffffff8106e78f>] do_timer+0x47f/0x4c0
+> [    0.000000]  [<ffffffff81073953>] tick_periodic+0x63/0x80
+> [    0.000000]  [<ffffffff810739f1>] tick_handle_periodic+0x21/0x70
+> [    0.000000]  [<ffffffff810046d8>] timer_interrupt+0x18/0x20
+> [    0.000000]  [<ffffffff8109ff9e>] handle_irq_event_percpu+0x5e/0x220
+> [    0.000000]  [<ffffffff810a019b>] handle_irq_event+0x3b/0x60
+> [    0.000000]  [<ffffffff810a295c>] handle_level_irq+0x6c/0xd0
+> [    0.000000]  [<ffffffff81003f34>] handle_irq+0x44/0xa0
+> 
+> Full bootlog and config attached.
+> 
+> i've excluded it from tip:master for now.
 
-Well, If I understand Frederic's work well enough, this can be achieved 
-by setting the task limit to 0 in his controller. No?
+Sounds good. Thanks for the heads up.  Do you have a dmesg for this
+system as well, so I can narrow down what I should try to reproduce this
+on?
 
-Because being lower than your limit won't kick tasks out, the practical 
-effect is that no forks will be allowed in the group with this setting.
+Just FYI: I'm traveling, but will try to nail this down early next week.
+thanks
+-john
 
-So for time-based rate limiting, it is trivial to just set it to 0 after 
-x seconds.
 
-For other uses, we can watch the task counter increase until a certain 
-value, and then set the limit to 0.
-
-Max, wouldn't it be enough for your use?
