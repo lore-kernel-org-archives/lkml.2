@@ -1,44 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab1KDKlq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 06:41:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35371 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab1KDKlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 06:41:44 -0400
-Message-ID: <4EB3C167.3020508@suse.cz>
-Date: Fri, 04 Nov 2011 11:41:43 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S932264Ab1KDKqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 06:46:46 -0400
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:55300 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab1KDKqp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 06:46:45 -0400
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Richard Weinberger <richard@nod.at>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+In-Reply-To: <1320339328.2309.78.camel@groeck-laptop>
+References: <4EB1108F.6070009@gmail.com>
+	<20111103020301.GA22333@ericsson.com>
+	<4EB250FD.3070000@gmail.com>
+	<20111103134902.GA26121@ericsson.com>
+	<4EB2A46B.8080600@gmail.com>
+	<1320332801.2309.60.camel@groeck-laptop>
+	<4EB2B0FD.309@gmail.com>
+	<1320334322.2309.68.camel@groeck-laptop>
+	<20111103174321.37274532@endymion.delvare>
+	<1320339328.2309.78.camel@groeck-laptop>
+Date: Fri, 4 Nov 2011 13:46:44 +0300
+Message-ID: <CACq_q0eru4AOgV9Km5PqXPUDUVWphxFeZPFkwR5cJzPbkz7PCQ@mail.gmail.com>
+Subject: Re: [lm-sensors] Hardware running hot and without the fan
+From: lars nooden <lars.nooden@gmail.com>
+To: guenter.roeck@ericsson.com
+Cc: Jean Delvare <khali@linux-fr.org>, Henrik Rydberg <rydberg@euromail.se>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Foley <pefoley2@verizon.net>
-Subject: Re: [GIT PULL] UML changes for 3.2
-References: <4EB14F51.1050004@nod.at>	 <1320348750.14409.249.camel@x61.thuisdomein>	 <1320352899.14409.260.camel@x61.thuisdomein>	 <1320354072.14409.265.camel@x61.thuisdomein>  <4EB3045A.6050501@nod.at>	 <1320355503.14409.269.camel@x61.thuisdomein>  <4EB30994.9050309@nod.at>	 <1320357369.14409.276.camel@x61.thuisdomein> <1320358228.14409.279.camel@x61.thuisdomein>
-In-Reply-To: <1320358228.14409.279.camel@x61.thuisdomein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3.11.2011 23:10, Paul Bolle wrote:
-> On Thu, 2011-11-03 at 22:56 +0100, Paul Bolle wrote:
->> These Makefiles always make me nervous. Is SUBARCH set by the time the
->> update-po-config target is run? If so, we could simply do "env SUBARCH=
->> $(SUBARCH) [...]". But how do I check that SUBARCH really is set (ie,
->> that I'm not passing env an empty string)?
-> 
-> It seems the trick here should be
->     env SUBARCH=$(KBUILD_BUILDHOST) [...]
-> 
-> Michal, does that make sense?
+On 11/3/11, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> On Thu, 2011-11-03 at 12:43 -0400, Jean Delvare wrote:
+>> On Thu, 3 Nov 2011 08:32:02 -0700, Guenter Roeck wrote:
+>> > On Thu, 2011-11-03 at 11:19 -0400, Lars Noodén wrote:
+>> > > I can set the fan speed manually.  e.g.:
+>> > >
+>> > >  echo 3500 > /sys/class/hwmon/hwmon0/device/fan1_output
+>> > >
+>> > > That helps some.
+>> > >
+>> > If you can do that, you should be able to set up fancontrol to
+>> > automatically control fan speed based on system temperatures.
+>>
+>> This won't work, as fancontrol wants pwmX attributes which the applesmc
+>> driver doesn't implement.
+>>
+> Yes, you are right - it won't work without patching it to use
+> fanX_output and to accept larger values for the limits.
+>
+> Wonder how this works for other Apple systems. Maybe there is an
+> Apple-specific script out there to control fan speed.
+>
+>> > There is another sysfs attribute - fanX_manual. I don't find driver
+>> > documentation, so I have no idea what it is doing. The name indicates
+>> > that it might set manual vs. automatic fan control. What is it set to in
+>> > your system ? From the code, looks like it should be 0 or 1. Try to
+>> > toggle it and see what happens - after all, it can not get worse ;).
+>>
+>> Might be worth looking at files fanX_min, _max and _safe too. Too bad
+>> there doesn't seem to be any documentation available for all these
+>> non-standard attributes :(
+>>
+> Here is some info from the web about the problem. See
+> http://ubuntuforums.org/archive/index.php/t-981280.html.
+>
+> So, for those that have reported high temperatures due to low fan
+> speeds: check the value of
+>
+> cat /sys/devices/platform/applesmc.768/fan1_manual
 
-I doub't kxgettext needs $SUBARCH at all, it only cares about the
-prompts and help texts, it does not evaluate any kconfig symbols.
+It is zero already:
+  $ cat /sys/devices/platform/applesmc.768/fan1_manual
+  0
 
-Michal
+/Lars
+
+> With no software control of the fans, which is the case with the
+> macbooks (fancontrol and pwmconfig does not work), the fan speed seems
+> to be controlled automatically by the SMC without issues - but only if
+> fan1_manual is zero.
+>
+> Guenter
+>
+>
+>
