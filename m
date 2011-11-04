@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab1KDCTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 22:19:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38756 "EHLO mx2.suse.de"
+	id S1754616Ab1KDCUk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 22:20:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38780 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab1KDCTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 22:19:30 -0400
+	id S1754349Ab1KDCUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 22:20:39 -0400
 From: Thomas Renninger <trenn@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: trenn@suse.de, linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, bjorn.helgaas@hp.com,
+        "Eric W. Biederman" <ebiederm@xmission.com>, bhelgaas@google.com,
         lenb@kernel.org, stable@kernel.org, Ingo Molnar <mingo@elte.hu>,
         H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
 Subject: [PATCH] PNP ACPI: Use real gsi
-Date: Fri,  4 Nov 2011 03:19:21 +0100
-Message-Id: <1320373161-3526-1-git-send-email-trenn@suse.de>
+Date: Fri,  4 Nov 2011 03:20:33 +0100
+Message-Id: <1320373233-3725-1-git-send-email-trenn@suse.de>
 X-Mailer: git-send-email 1.7.6.1
 In-Reply-To: <1320372728-3235-1-git-send-email-trenn@suse.de>
 References: <1320372728-3235-1-git-send-email-trenn@suse.de>
@@ -48,7 +48,7 @@ overseen.
 
 Tested-by: Thomas Renninger <trenn@suse.de>
 CC: Eric W. Biederman <ebiederm@xmission.com>
-CC: bjorn.helgaas@hp.com
+CC: bhelgaas@google.com
 CC: lenb@kernel.org
 CC: stable@kernel.org
 CC: Ingo Molnar <mingo@elte.hu>
