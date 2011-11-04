@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab1KDUfZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:35:25 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:7199 "EHLO
+	id S1751786Ab1KDUoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:44:11 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8001 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab1KDUfY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1750974Ab1KDUoJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:35:24 -0400
+	Fri, 4 Nov 2011 16:44:09 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 04 Nov 2011 13:35:08 -0700
+	by hqnvupgp07.nvidia.com on Fri, 04 Nov 2011 13:43:58 -0700
 From: Stephen Warren <swarren@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>,
         Peter De Schrijver <pdeschrijver@nvidia.com>
@@ -18,16 +18,14 @@ CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Fri, 4 Nov 2011 13:35:07 -0700
-Subject: RE: [PATCH v2 4/8] arm/tegra: prepare pinmux code for multiple
- tegra variants
-Thread-Topic: [PATCH v2 4/8] arm/tegra: prepare pinmux code for multiple
- tegra variants
-Thread-Index: AcyZaQOjQwu/0unPQI6QHoWw5NFvgwBx7aeQ
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4E46@HQMAIL01.nvidia.com>
+Date: Fri, 4 Nov 2011 13:43:57 -0700
+Subject: RE: [PATCH v2 7/8] arm/tegra: implement support for tegra30
+Thread-Topic: [PATCH v2 7/8] arm/tegra: implement support for tegra30
+Thread-Index: AcyZaQYs8EsmRC81T4GIyTrPN9mbBwByNIzQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A4E4F@HQMAIL01.nvidia.com>
 References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
- <1320242948-21061-5-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1320242948-21061-5-git-send-email-pdeschrijver@nvidia.com>
+ <1320242948-21061-8-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1320242948-21061-8-git-send-email-pdeschrijver@nvidia.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -41,24 +39,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Peter De Schrijver wrote at Wednesday, November 02, 2011 8:09 AM:
-> This patch modifies the pinmux code to be useable for multiple tegra variants.
-> Some tegra20 specific constants will be replaced by variables which will be
-> initialized to the appropriate value at runtime.
+> Add support for tegra30 SoC. This includes a device tree compatible type for
+> this SoC ("nvidia,tegra30") and adds L2 cache initialization for this new SoC.
+> The clock framework is still missing, which prevents most drivers from working.
 ...
-> diff --git a/arch/arm/mach-tegra/include/mach/pinmux.h b/arch/arm/mach-tegra/include/mach/pinmux.h
+> diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
 ...
-> @@ -219,13 +213,20 @@ struct tegra_pingroup_desc {
->  	s8 pupd_bit;	/* offset into the PULL_UPDOWN_REG_* register bit */
->  };
+> @@ -17,7 +14,18 @@ config ARCH_TEGRA_2x_SOC
+>  	  Support for NVIDIA Tegra AP20 and T20 processors, based on the
+>  	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
 > 
-> -extern const struct tegra_pingroup_desc tegra_soc_pingroups[];
-> -extern const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[];
-> +struct tegra_pinmux_pm {
-> +	void (*suspend)(void);
-> +	void (*resume)(void);
-> +};
+> -endchoice
+> +config ARCH_TEGRA_3x_SOC
 
-You still don't need that struct type.
+Wasn't that config option already used earlier in the series, e.g. in
+[PATCH v2 6/8] arm/tegra: pinmux tables and definitions for tegra30.
+Should this patch be pushed earlier so it isn't used before it's created?
+I'm not sure how much that matters.
 
 -- 
 nvpublic
