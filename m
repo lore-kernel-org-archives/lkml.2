@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1KDJyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 05:54:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42923 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab1KDJyF (ORCPT
+	id S1754313Ab1KDJzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:55:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41300 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab1KDJzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 05:54:05 -0400
-Date: Fri, 4 Nov 2011 12:51:29 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
-Message-ID: <20111104095129.GB2957@swordfish>
-References: <20111020213644.GB25124@google.com>
- <20111020230040.GC3586@swordfish.minsk.epam.com>
- <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
- <20111021094520.GA9884@zhy>
- <20111103071735.GA3228@swordfish.minsk.epam.com>
- <20111103072705.GA15871@zhy>
- <20111103074506.GB3228@swordfish.minsk.epam.com>
- <20111103075354.GA16666@zhy>
- <20111104092520.GA16897@gere.osrc.amd.com>
- <20111104093414.GA16273@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104093414.GA16273@zhy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Nov 2011 05:55:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 4 Nov 2011 18:54:37 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        akpm@linux-foundation.org, yinghan@google.com
+Subject: Re: [PATCH] memcg: doc the pagefault count
+Message-Id: <20111104185437.406a3764.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (11/04/11 17:34), Yong Zhang wrote:
-> > > > I'm compiling the kernel with you patch right now.
-> > > > The whole point was just for
-> > > > case if someone has different approach or whatsoever.
-> > > 
-> > > Understood. If someone can come up with a simple patch which could
-> > > cover the case I mentioned before, that would be great.
-> > > /me goes to poke at it.
-> > 
-> > I dunno whether this is related but I get the following on 3.1:
-> 
-> Maybe, so could you try my patches just sent out?
-> http://marc.info/?l=linux-kernel&m=132039886826672
->
+On Fri, 4 Nov 2011 17:15:21 +0800
+Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
 
-Sure I'll try you patches. Later today or (most likely) during the upcoming
-weekend, since now I'm extremly busy at work.
+> Pagefault count has added to memcg stats since commit 456f998e,
+> but forgot to doc it.
+> 
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 
 Thanks,
-	Sergey
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
- 
-> Thanks,
-> Yong
+> ---
+>  Documentation/cgroups/memory.txt |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> > 
-> > [ 5499.537074] INFO: trying to register non-static key.
-> > [ 5499.537080] the code is fine but needs lockdep annotation.
-> > [ 5499.537083] turning off the locking correctness validator.
-> > [ 5499.537088] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0 #1
-> > [ 5499.537091] Call Trace:
-> > [ 5499.537094]  <IRQ>  [<ffffffff8107beed>] __lock_acquire+0x165d/0x1e30
-> > [ 5499.537109]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-> > [ 5499.537115]  [<ffffffff8107ccd3>] lock_acquire+0x93/0x160
-> > [ 5499.537120]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-> > [ 5499.537126]  [<ffffffff814d9866>] _raw_spin_lock+0x36/0x50
-> > [ 5499.537130]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
-> > [ 5499.537135]  [<ffffffff810321fc>] double_rq_lock+0x2c/0x80
-> > [ 5499.537140]  [<ffffffff81039195>] load_balance+0x215/0x6c0
-> > [ 5499.537146]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
-> > [ 5499.537151]  [<ffffffff810396fd>] rebalance_domains+0xbd/0x1d0
-> > [ 5499.537155]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
-> > [ 5499.537161]  [<ffffffff810398ec>] run_rebalance_domains+0xdc/0x130
-> > [ 5499.537166]  [<ffffffff81048dcd>] __do_softirq+0xbd/0x290
-> > [ 5499.537173]  [<ffffffff814dc42c>] call_softirq+0x1c/0x30
-> > [ 5499.537178]  [<ffffffff81003eb5>] do_softirq+0x85/0xc0
-> > [ 5499.537183]  [<ffffffff810492ce>] irq_exit+0x9e/0xc0
-> > [ 5499.537189]  [<ffffffff8101ca9f>] smp_call_function_single_interrupt+0x2f/0x40
-> > [ 5499.537195]  [<ffffffff814dbeb0>] call_function_single_interrupt+0x70/0x80
-> > [ 5499.537199]  <EOI>  [<ffffffff810096e6>] ? native_sched_clock+0x26/0x70
-> > [ 5499.537212]  [<ffffffffa0038e1a>] ? acpi_idle_enter_simple+0xee/0x11f [processor]
-> > [ 5499.537221]  [<ffffffffa0038e15>] ? acpi_idle_enter_simple+0xe9/0x11f [processor]
-> > [ 5499.537227]  [<ffffffff813f8b1d>] cpuidle_idle_call+0xdd/0x350
-> > [ 5499.537233]  [<ffffffff8100081f>] cpu_idle+0x6f/0xd0
-> > [ 5499.537238]  [<ffffffff814cc665>] start_secondary+0x1ae/0x1b3
-> > 
-> > -- 
-> > Regards/Gruss,
-> > Boris.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Only stand for myself
-> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index cc0ebc5..081f4f44 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -389,6 +389,13 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+>  swap		- # of bytes of swap usage
+> +
+> +pgfault		- # of page-faults
+> +pgmajfault	- # of major page-faults
+> +		These two are different from "pgpgin"/"pgpgout" stat which
+> +		count number of pages charged/discharged to the cgroup and
+> +		have no meaning of reading/writing page to disk.
+> +
+
+
+
+
