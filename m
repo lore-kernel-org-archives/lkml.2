@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932346Ab1KDNSg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 09:18:36 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:39189 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab1KDNSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:18:35 -0400
-Message-ID: <4EB3E5F9.80308@free.fr>
-Date: Fri, 04 Nov 2011 14:17:45 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S1755588Ab1KDN0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:26:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40427 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab1KDN0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 09:26:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="71044908"
+Date: Fri, 4 Nov 2011 15:26:11 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 00/19] First round in OTG rework
+Message-ID: <20111104132611.GA9965@xps8300>
+References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mk@cm4all.com,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        nishimura@mxp.nes.nec.co.jp, oleg@redhat.com,
-        Michal Hocko <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>, tj@kernel.org,
-        cgroups@vger.kernel.org, akpm@linux-foundation.org, fweisbec@gmail.com,
-        paul@paulmenage.org
-Subject: Re: [PATCH] add new cgroup list to CC notice
-References: <20111104094030.cf8d5860.kamezawa.hiroyu@jp.fujitsu.com>  <4EB3495B.8080700@free.fr> <1320382250.3108.4.camel@dabdike>
-In-Reply-To: <1320382250.3108.4.camel@dabdike>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2011 05:50 AM, James Bottomley wrote:
-> On Fri, 2011-11-04 at 03:09 +0100, Daniel Lezcano wrote:
->> On 11/04/2011 01:40 AM, KAMEZAWA Hiroyuki wrote:
->>> As discussed at Kernel Summit(2011), new cgroups mailing list is opened by
->>> James. This list is for discussing general cgroup design and patches
->>> including all subsystems and for getting more attentions to cgroups/namespaces
->>> related issues by developpers.
->>>
->>> Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
->>> ---
->> I don't see the point to unilaterally change the mailing list to
->> vger.kernel.org as the discussions will be  the same as the actual
->> mailing list containers@.
-> It's not a unilateral list change.  We will still have containers@lf.
+Hi Greg and Felipe,
+
+On Fri, Oct 28, 2011 at 03:35:06PM +0300, Heikki Krogerus wrote:
+> Changes since v5:
+> - Cleanup isp1704_charger.c
+> 
+> Quick summary:
+> This introduces struct usb_phy and struct usb_otg that
+> replace struct otg_transceiver. The transceiver and phy
+> members from struct otg_transceiver are left in struct
+> usb_phy and otg specific members are moved to struct
+> usb_otg.
+> 
+> So the idea is simply to separate USB PHY handling from OTG.
 >
-> The problem is that not all cgroup related stuff goes over it ...
-> particularly the currently active controller discussions tend not to be
-> cc'd there.  With systemd (and things like the I/O controllers for
-> xen/kvm), cgroups is seen as being wider than containers.
->
-> The desire was for a single list where someone could go to get an
-> overall view of what's going on in cgroups ... particularly if you're a
-> confused subsystem maintainer who just had a request to put a controller
-> in your subsystem ...
+> Heikki Krogerus (19):
+>   usb: otg: Rename otg_transceiver to usb_phy
+>   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
+>   usb: otg: Separate otg members from usb_phy
+>   usb: otg: ab8500: Start using struct usb_otg
+>   usb: otg: fsl: Start using struct usb_otg
+>   usb: otg: gpio_vbus: Start using struct usb_otg
+>   usb: otg: isp1301_omap: Start using struct usb_otg
+>   usb: otg: msm: Start using struct usb_otg
+>   usb: otg: langwell: Start using struct usb_otg
+>   usb: otg: nop: Start using struct usb_otg
+>   usb: otg: twl4030: Start using struct usb_otg
+>   usb: otg: twl6030: Start using struct usb_otg
+>   usb: otg: ulpi: Start using struct usb_otg
+>   arm: imx: Start using struct usb_otg
+>   usb: musb: Start using struct usb_otg
+>   power_supply: Convert all users to new usb_phy
+>   usb: Convert all users to new usb_phy
+>   usb: otg: Remove OTG specific members from usb_phy
+>   usb: otg: Convert all users to pass struct usb_otg for OTG functions
 
-Ok, thanks for the clarification. May I suggest to create also a 
-namespace@ mailing list ?
+It seems that there are not more comments to these. When can you take
+them?
 
-
-
+-- 
+heikki
