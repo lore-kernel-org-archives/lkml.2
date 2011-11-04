@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab1KDUHR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:07:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56983 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab1KDUHP (ORCPT
+	id S1751475Ab1KDUJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:09:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59559 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab1KDUJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:07:15 -0400
-Message-ID: <4EB445F0.10709@kernel.dk>
-Date: Fri, 04 Nov 2011 21:07:12 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
+	Fri, 4 Nov 2011 16:09:15 -0400
+Subject: [GIT PULL] target: Updates for v3.2-rc1 (round two)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Block IO driver changes for 3.2
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@purestorage.com>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Nov 2011 13:09:05 -0700
+Message-ID: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,116 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-This is the driver part of the 3.2 block IO pull requests. The major
-parts are:
+The following is the second round of target core updates for the v3.2
+merge window.  Please go ahead and pull from:
 
-- Various bug fixes to xen blkfront/blkback.
+   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
 
-- Bug fixes for CISS and hpsa.
+A separate PULL request for the ib_srpt fabric merge will be going out
+shortly.
 
-- Discard support for loop. This is useful for trimming image size, and
-  also for finding bugs in the file system discard code.
+This series includes:
 
-- Improve virtio-blk disk index allocation scheme by using ida instead.
-  This avoids a wrapping problem.
+*) Bugfixes from Joern for TMR processing during LUN_RESET handling
+*) Bugfix for tcm_loop to explictly clear control CDB READ payload
+*) Conversion of TFO->check_stop_free to return status as a hint to
+   LUN_RESET processing
+*) Removal of TRANSPORT_FREE_CMD_INTR in favor of per fabric release
+   workqueues
+*) Initial pieces of generic active I/O shutdown tracking.  (Will be enabled
+   for ib_srpt in a seperate patch)
+*) Convert control CDB code to pass se_task into CDB emulation callback
+*) Refactoring of CDB emulation from Christoph to universally use
+   cmd->execute_task()
 
-- A set of bug fixes for nbd.
+The generic active I/O shutdown bits and ->execute_task conversion got
+in a bit late, but I still think are suitable v3.2 material.  Also, we
+have one more bugfix+cleanup patch to remove legacy PYX_TRANSPORT_*
+return code usage still being discussed, and will be sent out post merge
+window to address existing breakage with se_cmd->scsi_sense_reason
+assignment and errno return code conversion.
 
-This depends on the previous pull request, for-3.2/core.
+Thanks!
 
-Please pull!
+--nab
 
-  git://git.kernel.dk/linux-block.git for-3.2/drivers
+Christoph Hellwig (7):
+  target: add back error handling in transport_complete_task
+  target: split core_scsi2_emulate_crh
+  target: split core_scsi3_emulate_pr
+  target: pass the se_task to the CDB emulation callback
+  target: refactor transport_emulate_control_cdb
+  target: remove SCF_EMULATE_CDB_ASYNC
+  target: use ->exectute_task for all CDB emulation
 
-Andrew Morton (1):
-      nbd-replace-some-printk-with-dev_warn-and-dev_info-checkpatch-fixes
+Dan Carpenter (1):
+  target/pscsi: blk_make_request() returns an ERR_PTR()
 
-Ayan George (1):
-      drivers/block/loop.c: remove unnecessary bdev argument from loop_clr_fd()
+Joern Engel (4):
+  target: Fix incorrect se_cmd assignment in core_tmr_drain_tmr_list
+  target: Fix wrong se_tmr being added to drain_tmr_list
+  target: Minor cleanups to core_tmr_drain_tmr_list
+  target: Avoid double list_del for aborted se_tmr_req
 
-Jan Beulich (1):
-      xen-blkback: use kzalloc() in favor of kmalloc()+memset()
+Nicholas Bellinger (8):
+  target: Fix compile warning w/ missing module.h include
+  tcm_loop: Add explict read buffer memset for
+    SCF_SCSI_CONTROL_SG_IO_CDB
+  target: Check -ENOMEM to signal QUEUE_FULL from fabric callbacks
+  iscsi-target: Add missing CMDSN_LOWER_THAN_EXP check in
+    iscsit_handle_scsi_cmd
+  iscsi-target: Fix non-immediate TMR handling
+  target: Make TFO->check_stop_free return free status
+  target: Remove core TRANSPORT_FREE_CMD_INTR usage
+  target: Add generic active I/O shutdown logic
 
-Jens Axboe (2):
-      Merge branch 'for-3.2/core' into for-3.2/drivers
-      Merge branch 'stable/for-jens-3.2' of git://oss.oracle.com/git/kwilk/xen into for-3.2/drivers
+ drivers/target/iscsi/iscsi_target.c     |   11 +-
+ drivers/target/loopback/tcm_loop.c      |   23 ++-
+ drivers/target/target_core_alua.c       |   11 +-
+ drivers/target/target_core_alua.h       |    4 +-
+ drivers/target/target_core_cdb.c        |  217 +++++++-----------
+ drivers/target/target_core_cdb.h        |   14 +
+ drivers/target/target_core_device.c     |   14 +-
+ drivers/target/target_core_pr.c         |  349 ++++++++++++++++------------
+ drivers/target/target_core_pr.h         |    7 +-
+ drivers/target/target_core_pscsi.c      |    2 +-
+ drivers/target/target_core_tmr.c        |   23 +--
+ drivers/target/target_core_transport.c  |  392 ++++++++++++++++++++-----------
+ drivers/target/tcm_fc/tcm_fc.h          |    2 +-
+ drivers/target/tcm_fc/tfc_cmd.c         |    3 +-
+ include/target/target_core_base.h       |   13 +-
+ include/target/target_core_device.h     |    2 +-
+ include/target/target_core_fabric_ops.h |   11 +-
+ include/target/target_core_transport.h  |    7 +-
+ 18 files changed, 630 insertions(+), 475 deletions(-)
+ create mode 100644 drivers/target/target_core_cdb.h
 
-Joe Handzik (1):
-      cciss: add transport mode attribute to sys
-
-Joe Jin (1):
-      xen-blkback: fixed indentation and comments
-
-Joseph Handzik (1):
-      cciss: Adds simple mode functionality
-
-Kay Sievers (1):
-      loop: always allow userspace partitions and optionally support automatic scanning
-
-Konrad Rzeszutek Wilk (6):
-      xen-blkfront: If no barrier or flush is supported, use invalid operation.
-      xen/blkback: Support 'feature-barrier' aka old-style BARRIER requests.
-      xen/blkback: Report VBD_WSECT (wr_sect) properly.
-      xen/blkback: Fix the inhibition to map pages when discarding sector ranges.
-      xen/blkback: Check for proper operation.
-      xen/blkback: Fix two races in the handling of barrier requests.
-
-Laszlo Ersek (1):
-      xen-blkfront: plug device number leak in xlblk_init() error path
-
-Li Dongyang (4):
-      xen-blkfront: add BLKIF_OP_DISCARD and discard request struct
-      xen-blkback: Implement discard requests ('feature-discard')
-      xen-blkfront: Handle discard requests.
-      xen-blkfront: fix a deadlock while handling discard response
-
-Lukas Czerner (1):
-      loop: add discard support for loop devices
-
-Michael S. Tsirkin (1):
-      virtio-blk: use ida to allocate disk index
-
-Mike Miller (2):
-      cciss: add small delay when using PCI Power Management to reset for kump
-      hpsa: add small delay when using PCI Power Management to reset for kump
-
-Phillip Susi (1):
-      drivers/block/loop.c: emit uevent on auto release
-
-Sergei Shtylyov (1):
-      drivers/block/cpqarray.c: use pci_dev->revision
-
-Tejun Heo (1):
-      block: add GENHD_FL_NO_PART_SCAN
-
-WANG Cong (5):
-      nbd: use task_pid_nr() to get current pid
-      nbd: replace sysfs_create_file() with device_create_file()
-      nbd: replace printk KERN_ERR with dev_err()
-      nbd: lower the loglevel of an error message
-      nbd: replace some printk with dev_warn() and dev_info()
-
- .../ABI/testing/sysfs-bus-pci-devices-cciss        |    7 +
- Documentation/blockdev/cciss.txt                   |   10 ++
- block/genhd.c                                      |    4 +-
- block/ioctl.c                                      |    2 +-
- drivers/block/cciss.c                              |   76 ++++++++++--
- drivers/block/cciss.h                              |    1 +
- drivers/block/cpqarray.c                           |    2 +-
- drivers/block/loop.c                               |  110 ++++++++++++++++-
- drivers/block/nbd.c                                |   69 +++++------
- drivers/block/virtio_blk.c                         |   30 ++++-
- drivers/block/xen-blkback/blkback.c                |  130 ++++++++++++++++---
- drivers/block/xen-blkback/common.h                 |  100 ++++++++++++---
- drivers/block/xen-blkback/xenbus.c                 |   80 ++++++++++++-
- drivers/block/xen-blkfront.c                       |  123 +++++++++++++++----
- drivers/scsi/hpsa.c                                |    7 +
- fs/block_dev.c                                     |    2 +-
- include/linux/genhd.h                              |    6 +-
- include/linux/loop.h                               |    1 +
- include/xen/interface/io/blkif.h                   |   36 ++++++
- 19 files changed, 664 insertions(+), 132 deletions(-)
-
--- 
-Jens Axboe
 
