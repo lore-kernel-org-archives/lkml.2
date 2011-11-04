@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475Ab1KDUJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:09:17 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59559 "EHLO
+	id S1751866Ab1KDUK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:10:57 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:59568 "EHLO
 	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab1KDUJP (ORCPT
+	with ESMTP id S1751029Ab1KDUKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:09:15 -0400
-Subject: [GIT PULL] target: Updates for v3.2-rc1 (round two)
+	Fri, 4 Nov 2011 16:10:55 -0400
+Subject: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>,
+        Bart Van Assche <bart.vanassche@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Nov 2011 13:09:05 -0700
-Message-ID: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
+Date: Fri, 04 Nov 2011 13:10:52 -0700
+Message-ID: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -27,88 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-The following is the second round of target core updates for the v3.2
-merge window.  Please go ahead and pull from:
+This is the PULL request for an initial merge of the ib_srpt driver
+using mainline target infrastructure into v3.2-rc1.  Please go ahead and
+pull from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
 
-A separate PULL request for the ib_srpt fabric merge will be going out
-shortly.
+Note that 'target: Updates for v3.2-rc1 (round two)' should be pulled
+first via target-pending.git/for-next, and has gone out in a separate
+PULL request. 
 
-This series includes:
+At this point should we should have a stable userspace API for the
+layout of /sys/kernel/config/target/srpt/, and a number of legacy module
+parameters have been removed or converted into per endpoint attributes
+as per Roland's feedback.  This code has been getting build testing in
+next the past week, and does not touch any external code.
 
-*) Bugfixes from Joern for TMR processing during LUN_RESET handling
-*) Bugfix for tcm_loop to explictly clear control CDB READ payload
-*) Conversion of TFO->check_stop_free to return status as a hint to
-   LUN_RESET processing
-*) Removal of TRANSPORT_FREE_CMD_INTR in favor of per fabric release
-   workqueues
-*) Initial pieces of generic active I/O shutdown tracking.  (Will be enabled
-   for ib_srpt in a seperate patch)
-*) Convert control CDB code to pass se_task into CDB emulation callback
-*) Refactoring of CDB emulation from Christoph to universally use
-   cmd->execute_task()
+There is an known issue with active I/O shutdown is currently being
+addressed using the new generic active I/O shutdown bits in for-next,
+and will be sent out post merge after more testing and feedback.  I also
+see a few patches from DanC this morning to address a handful of non
+critical issues that will be included post merge as well.
 
-The generic active I/O shutdown bits and ->execute_task conversion got
-in a bit late, but I still think are suitable v3.2 material.  Also, we
-have one more bugfix+cleanup patch to remove legacy PYX_TRANSPORT_*
-return code usage still being discussed, and will be sent out post merge
-window to address existing breakage with se_cmd->scsi_sense_reason
-assignment and errno return code conversion.
+Here are full set of review changes from Roland and Bart that have been
+made:
+
+v1 -> v2 review changes:
+
+ib_srpt: Fix potential out-of-bounds array access
+ib_srpt: Avoid failed multipart RDMA transfers
+ib_srpt: Fix srpt_alloc_fabric_acl failure case return value
+ib_srpt: Update comments to reference $driver/$port layout
+ib_srpt: Fix sport->port_guid formatting code
+ib_srpt: Remove legacy use_port_guid_in_session_name module parameter
+ib_srpt: Convert srp_max_rdma_size into per port configfs attribute
+ib_srpt: Convert srp_max_rsp_size into per port configfs attribute
+ib_srpt: Convert srpt_sq_size into per port configfs attribute
+
+v2 -> v3 review changes:
+
+ib_srpt: Fix possible race with srp_sq_size in srpt_create_ch_ib
+ib_srpt: Fix possible race with srp_max_rsp_size in srpt_release_channel_work
+ib_srpt: Fix up MAX_SRPT_RDMA_SIZE define
+ib_srpt: Make srpt_map_sg_to_ib_sge() failure case return -EAGAIN
+ib_srpt: Convert port_guid to use subnet_prefix + interface_id formatting
+ib_srpt: Make srpt_check_stop_free return kref_put status
 
 Thanks!
 
 --nab
 
-Christoph Hellwig (7):
-  target: add back error handling in transport_complete_task
-  target: split core_scsi2_emulate_crh
-  target: split core_scsi3_emulate_pr
-  target: pass the se_task to the CDB emulation callback
-  target: refactor transport_emulate_control_cdb
-  target: remove SCF_EMULATE_CDB_ASYNC
-  target: use ->exectute_task for all CDB emulation
+Bart Van Assche (1):
+  ib_srpt: Initial SRP Target merge for v3.2-rc1
 
-Dan Carpenter (1):
-  target/pscsi: blk_make_request() returns an ERR_PTR()
+ drivers/infiniband/Kconfig              |    1 +
+ drivers/infiniband/Makefile             |    1 +
+ drivers/infiniband/ulp/srpt/Kconfig     |   12 +
+ drivers/infiniband/ulp/srpt/Makefile    |    2 +
+ drivers/infiniband/ulp/srpt/ib_dm_mad.h |  139 ++
+ drivers/infiniband/ulp/srpt/ib_srpt.c   | 4081 +++++++++++++++++++++++++++++++
+ drivers/infiniband/ulp/srpt/ib_srpt.h   |  444 ++++
+ 7 files changed, 4680 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/infiniband/ulp/srpt/Kconfig
+ create mode 100644 drivers/infiniband/ulp/srpt/Makefile
+ create mode 100644 drivers/infiniband/ulp/srpt/ib_dm_mad.h
+ create mode 100644 drivers/infiniband/ulp/srpt/ib_srpt.c
+ create mode 100644 drivers/infiniband/ulp/srpt/ib_srpt.h
 
-Joern Engel (4):
-  target: Fix incorrect se_cmd assignment in core_tmr_drain_tmr_list
-  target: Fix wrong se_tmr being added to drain_tmr_list
-  target: Minor cleanups to core_tmr_drain_tmr_list
-  target: Avoid double list_del for aborted se_tmr_req
-
-Nicholas Bellinger (8):
-  target: Fix compile warning w/ missing module.h include
-  tcm_loop: Add explict read buffer memset for
-    SCF_SCSI_CONTROL_SG_IO_CDB
-  target: Check -ENOMEM to signal QUEUE_FULL from fabric callbacks
-  iscsi-target: Add missing CMDSN_LOWER_THAN_EXP check in
-    iscsit_handle_scsi_cmd
-  iscsi-target: Fix non-immediate TMR handling
-  target: Make TFO->check_stop_free return free status
-  target: Remove core TRANSPORT_FREE_CMD_INTR usage
-  target: Add generic active I/O shutdown logic
-
- drivers/target/iscsi/iscsi_target.c     |   11 +-
- drivers/target/loopback/tcm_loop.c      |   23 ++-
- drivers/target/target_core_alua.c       |   11 +-
- drivers/target/target_core_alua.h       |    4 +-
- drivers/target/target_core_cdb.c        |  217 +++++++-----------
- drivers/target/target_core_cdb.h        |   14 +
- drivers/target/target_core_device.c     |   14 +-
- drivers/target/target_core_pr.c         |  349 ++++++++++++++++------------
- drivers/target/target_core_pr.h         |    7 +-
- drivers/target/target_core_pscsi.c      |    2 +-
- drivers/target/target_core_tmr.c        |   23 +--
- drivers/target/target_core_transport.c  |  392 ++++++++++++++++++++-----------
- drivers/target/tcm_fc/tcm_fc.h          |    2 +-
- drivers/target/tcm_fc/tfc_cmd.c         |    3 +-
- include/target/target_core_base.h       |   13 +-
- include/target/target_core_device.h     |    2 +-
- include/target/target_core_fabric_ops.h |   11 +-
- include/target/target_core_transport.h  |    7 +-
- 18 files changed, 630 insertions(+), 475 deletions(-)
- create mode 100644 drivers/target/target_core_cdb.h
 
 
