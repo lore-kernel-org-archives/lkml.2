@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932774Ab1KDWY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 18:24:58 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45266 "EHLO
+	id S1756211Ab1KDWY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 18:24:56 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45294 "EHLO
 	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab1KDWYJ (ORCPT
+	with ESMTP id S1755415Ab1KDWYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 18:24:09 -0400
+	Fri, 4 Nov 2011 18:24:10 -0400
 From: Serge Hallyn <serge@hallyn.com>
 To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
 Cc: oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
         ebiederm@xmission.com, serge@hallyn.com, dhowells@redhat.com,
-        eparis@redhat.com, "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Andrew Morgan <morgan@kernel.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: [PATCH 3/6] user namespace: clamp down users of cap_raised
-Date: Fri,  4 Nov 2011 22:24:39 +0000
-Message-Id: <1320445482-8459-4-git-send-email-serge@hallyn.com>
+        eparis@redhat.com, "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: [PATCH 5/6] user namespace: make each net (net_ns) belong to a user_ns
+Date: Fri,  4 Nov 2011 22:24:41 +0000
+Message-Id: <1320445482-8459-6-git-send-email-serge@hallyn.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1320445482-8459-1-git-send-email-serge@hallyn.com>
 References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
@@ -26,100 +24,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Serge E. Hallyn <serge.hallyn@canonical.com>
 
-A few modules are using cap_raised(current_cap(), cap) to authorize
-actions.  This means that tasks which are privileged in non-initial
-user namespaces will be deemed privileged.  The privilege should only
-be granted if the task is in the initial user namespace.
-
-Switching the calls to capable() would change the behavior - it would
-cause the LSM capable hooks to be called, and set PF_SUPERPRIV if
-the capability was used.  So instead, put in an explicit check and
-refuse privilege if the caller is not in init_user_ns.
+The user namespace which creates a new network namespace owns that
+namespace and all resources created in it.  This way we can target
+capability checks for privileged operations against network resources to
+the user_ns which created the network namespace in which the resource
+lives.  Privilege to the user namespace which owns the network
+namespace, or any parent user namespace thereof, provides the same
+privilege to the network resource.
 
 Changelog:
-Oct 23: Use a nice macro to make the code shorter and easier to read,
-	per advice from Andrew Morgan and David Howells.
+   jul 8: nsproxy: don't assign netns->userns if not cloning.
 
 Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
 Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Andrew Morgan <morgan@kernel.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: David Howells <dhowells@redhat.com>
 ---
- drivers/block/drbd/drbd_nl.c           |    2 +-
- drivers/md/dm-log-userspace-transfer.c |    2 +-
- drivers/staging/pohmelfs/config.c      |    2 +-
- drivers/video/uvesafb.c                |    2 +-
- include/linux/cred.h                   |    2 ++
- 5 files changed, 6 insertions(+), 4 deletions(-)
+ include/net/net_namespace.h |    2 ++
+ kernel/nsproxy.c            |    2 ++
+ net/core/net_namespace.c    |    3 +++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index af2a250..b7b19b8 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -2297,7 +2297,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
- 		return;
- 	}
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 3bb6fa0..d91fe5f 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -29,6 +29,7 @@ struct ctl_table_header;
+ struct net_generic;
+ struct sock;
+ struct netns_ipvs;
++struct user_namespace;
  
--	if (!cap_raised(current_cap(), CAP_SYS_ADMIN)) {
-+	if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN)) {
- 		retcode = ERR_PERM;
- 		goto fail;
- 	}
-diff --git a/drivers/md/dm-log-userspace-transfer.c b/drivers/md/dm-log-userspace-transfer.c
-index 1f23e04..126a79b 100644
---- a/drivers/md/dm-log-userspace-transfer.c
-+++ b/drivers/md/dm-log-userspace-transfer.c
-@@ -134,7 +134,7 @@ static void cn_ulog_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
- {
- 	struct dm_ulog_request *tfr = (struct dm_ulog_request *)(msg + 1);
  
--	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-+	if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
- 	spin_lock(&receiving_list_lock);
-diff --git a/drivers/staging/pohmelfs/config.c b/drivers/staging/pohmelfs/config.c
-index b6c42cb..327c047 100644
---- a/drivers/staging/pohmelfs/config.c
-+++ b/drivers/staging/pohmelfs/config.c
-@@ -525,7 +525,7 @@ static void pohmelfs_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *n
- {
- 	int err;
- 
--	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-+	if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
- 	switch (msg->flags) {
-diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-index 7f8472c..94e0e9d 100644
---- a/drivers/video/uvesafb.c
-+++ b/drivers/video/uvesafb.c
-@@ -73,7 +73,7 @@ static void uvesafb_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *ns
- 	struct uvesafb_task *utask;
- 	struct uvesafb_ktask *task;
- 
--	if (!cap_raised(current_cap(), CAP_SYS_ADMIN))
-+	if (!IN_ROOT_USER_NS() || !cap_raised(current_cap(), CAP_SYS_ADMIN))
- 		return;
- 
- 	if (msg->seq >= UVESAFB_TASKS_MAX)
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index 4030896..2f75da7 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -359,9 +359,11 @@ static inline void put_cred(const struct cred *_cred)
- 
- #ifdef CONFIG_USER_NS
- #define current_user_ns() (current_cred_xxx(user_ns))
-+#define IN_ROOT_USER_NS() (current_user_ns() == &init_user_ns)
- #else
- extern struct user_namespace init_user_ns;
- #define current_user_ns() (&init_user_ns)
-+#define IN_ROOT_USER_NS() (1)
+ #define NETDEV_HASHBITS    8
+@@ -101,6 +102,7 @@ struct net {
+ 	struct netns_xfrm	xfrm;
  #endif
+ 	struct netns_ipvs	*ipvs;
++	struct user_namespace	*user_ns;
+ };
  
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 9aeab4b..0d5bf8d 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -95,6 +95,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
+ 		err = PTR_ERR(new_nsp->net_ns);
+ 		goto out_net;
+ 	}
++	if (flags & CLONE_NEWNET)
++		new_nsp->net_ns->user_ns = get_user_ns(task_cred_xxx(tsk, user_ns));
+ 
+ 	return new_nsp;
+ 
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 5bbdbf0..791c19c 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -10,6 +10,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/proc_fs.h>
+ #include <linux/file.h>
++#include <linux/user_namespace.h>
+ #include <net/net_namespace.h>
+ #include <net/netns/generic.h>
+ 
+@@ -209,6 +210,7 @@ static void net_free(struct net *net)
+ 	}
+ #endif
+ 	kfree(net->gen);
++	put_user_ns(net->user_ns);
+ 	kmem_cache_free(net_cachep, net);
+ }
+ 
+@@ -389,6 +391,7 @@ static int __init net_ns_init(void)
+ 	rcu_assign_pointer(init_net.gen, ng);
+ 
+ 	mutex_lock(&net_mutex);
++	init_net.user_ns = &init_user_ns;
+ 	if (setup_net(&init_net))
+ 		panic("Could not setup the initial network namespace");
  
 -- 
 1.7.0.4
