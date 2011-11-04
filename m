@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945Ab1KDMVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 08:21:47 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42510 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751228Ab1KDMVq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 08:21:46 -0400
-Message-ID: <4EB3D8BE.7050600@linux.vnet.ibm.com>
-Date: Fri, 04 Nov 2011 17:51:18 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1752879Ab1KDMXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 08:23:06 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:63241 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab1KDMXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 08:23:05 -0400
+Date: Fri, 4 Nov 2011 13:23:00 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: siglesia@cern.ch, manohar.vanga@cern.ch
+Subject: [RGC PATCH 0/2] split file2alias using elf sections
+Message-ID: <cover.1320408578.git.rubini@gnudd.com>
 MIME-Version: 1.0
-To: Robert Lee <rob.lee@linaro.org>
-CC: rjw@sisk.pl, len.brown@intel.com, hpa@linux.intel.com,
-        daniel.lezcano@linaro.org, amit.kucheria@linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] pm: remove useless array definition in cpuidle_structure
-References: <1320356693-18982-1-git-send-email-rob.lee@linaro.org>
-In-Reply-To: <1320356693-18982-1-git-send-email-rob.lee@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110412-3352-0000-0000-00000091DDB2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 November 2011 03:14 AM, Robert Lee wrote:
-> From: Daniel Lezcano <daniel.lezcano@linaro.org>
-> 
-> All the modules name are ro-data, it is never copied to the array.
-> 
-> eg.
-> 
-> static struct cpuidle_driver intel_idle_driver = {
->         .name = "intel_idle",
->         .owner = THIS_MODULE,
-> };
-> 
-> It safe to assign the pointer of this ro-data to a const char *.
-> By this way we save 12 bytes.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> Signed-off-by: Robert Lee <rob.lee@linaro.org>
-> ---
->  include/linux/cpuidle.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index b51629e..16f9dce 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -117,8 +117,8 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
->   ****************************/
-> 
->  struct cpuidle_driver {
-> -	char			name[CPUIDLE_NAME_LEN];
-> -	struct module 		*owner;
-> +	const char    *name;
-> +	struct module *owner;
->  };
-> 
->  #ifdef CONFIG_CPU_IDLE
+When adding a new bus type with autoloading of modules, people should
+always change the global scripts/mod/file2alias.c source file, whereas
+most of the new code is just new files and individual Makefile/Kconfig
+lines.
 
-This looks good, and makes it fool-proof by  not allowing one to tamper the name of the driver.
-Tested OK on x86 (both Intel idle and ACPI)
+The first patch turns all the "normal" alias generation in a
+table-driven loop. The second patch moves a few alias types out of the
+main file2alias.c source, as a demonstration that the thing works.
 
-Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Reviewed-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+I didn't move all bus/alias types out of the main file, as it's a huge
+work. But if the approach is going to be accepted I can do that (or
+happily leave the task to who volunteers).
 
+/alessandro
+
+Alessandro Rubini (2):
+  modpost: use table-lookup to build module aliases
+  modpost: use config and ELF sections to build file2alias
+
+ scripts/mod/Makefile        |   13 ++-
+ scripts/mod/alias_acpi.c    |   14 ++
+ scripts/mod/alias_bcma.c    |   25 ++++
+ scripts/mod/alias_pci.c     |   49 +++++++
+ scripts/mod/alias_spi.c     |   15 +++
+ scripts/mod/device_switch.h |   47 +++++++
+ scripts/mod/file2alias.c    |  294 ++++++++-----------------------------------
+ scripts/mod/modpost.h       |   18 +++
+ scripts/mod/modpost.lds     |    9 ++
+ 9 files changed, 243 insertions(+), 241 deletions(-)
+ create mode 100644 scripts/mod/alias_acpi.c
+ create mode 100644 scripts/mod/alias_bcma.c
+ create mode 100644 scripts/mod/alias_pci.c
+ create mode 100644 scripts/mod/alias_spi.c
+ create mode 100644 scripts/mod/device_switch.h
+ create mode 100644 scripts/mod/modpost.lds
