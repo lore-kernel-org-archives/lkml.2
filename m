@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1KDIM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 04:12:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49498 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab1KDIM1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 04:12:27 -0400
-Message-ID: <4EB39E63.9020804@kernel.dk>
-Date: Fri, 04 Nov 2011 09:12:19 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jiri Slaby <jslaby@suse.cz>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH block/for-next] block: don't call blk_drain_queue() if
- elevator is not up
-References: <4EB2BC88.3070105@suse.cz> <20111103161436.GJ4417@google.com> <20111103162634.GK4417@google.com> <4EB2D441.9040708@kernel.dk> <20111103211253.GO4417@google.com>
-In-Reply-To: <20111103211253.GO4417@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753103Ab1KDIQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 04:16:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62538 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752684Ab1KDIQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 04:16:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="70971306"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V3 2/4] mmc: sdhci: prevent card detection activity for non-removable cards
+Date: Fri,  4 Nov 2011 10:16:01 +0200
+Message-Id: <1320394563-29682-3-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <1320394563-29682-1-git-send-email-adrian.hunter@intel.com>
+References: <1320394563-29682-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-03 22:12, Tejun Heo wrote:
-> On Thu, Nov 03, 2011 at 06:49:53PM +0100, Jens Axboe wrote:
->>> Fix it by making blk_cleanup_queue() check whether q->elevator is set
->>> up before invoking blk_drain_queue.
->>
->> Thanks, glad this got caught before the merge...
-> 
-> Heh, yeah, definitely, and just to be paranoid, this whole thing is
-> for the next merge window.
+Do not enable card detection interrupts for non-removable cards.
 
-Ehm, what parts? If the bug is in for-next, things are queued up for
-_this_ merge window.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ drivers/mmc/host/sdhci.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 5b01eff..2213366 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -146,10 +146,9 @@ static void sdhci_set_card_detection(struct sdhci_host *host, bool enable)
+ {
+ 	u32 present, irqs;
+ 
+-	if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
+-		return;
+-
+-	if (host->quirks2 & SDHCI_QUIRK2_OWN_CARD_DETECTION)
++	if ((host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION) ||
++	    (host->quirks2 & SDHCI_QUIRK2_OWN_CARD_DETECTION) ||
++	    !mmc_card_is_removable(host->mmc))
+ 		return;
+ 
+ 	present = sdhci_readl(host, SDHCI_PRESENT_STATE) &
 -- 
-Jens Axboe
+1.7.6.4
 
