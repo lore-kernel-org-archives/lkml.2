@@ -1,645 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab1KDOrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 10:47:07 -0400
-Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:46804 "EHLO
-	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932517Ab1KDOrF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 10:47:05 -0400
+	id S932798Ab1KDOrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 10:47:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9454 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932517Ab1KDOre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 10:47:34 -0400
+Message-ID: <4EB3FA89.6090601@redhat.com>
+Date: Fri, 04 Nov 2011 15:45:29 +0100
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <001e01cc99cb$5a144370$0e3cca50$%jun@samsung.com>
-References: <1320220990-13378-1-git-send-email-tgih.jun@samsung.com>
- <CANfBPZ_mF7XLGc=f7dohHvEnQOQ4cxSpcx0My_pMWFqa+HzP-g@mail.gmail.com> <001e01cc99cb$5a144370$0e3cca50$%jun@samsung.com>
-From: "S, Venkatraman" <svenkatr@ti.com>
-Date: Fri, 4 Nov 2011 20:16:39 +0530
-Message-ID: <CANfBPZ9A3XpVn6QBxDGpqJdzfx7fPywyrYMWWRYgUuBmPmxPQQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mmc: core: Support packed command for eMMC4.5 device
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        kgene.kim@samsung.com, dh.han@samsung.com
+To: linux-mm@kvack.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [RFC PATCH] Enforce RSS+Swap rlimit
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 3, 2011 at 7:23 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> S, Venkatraman <svenkatr@ti.com> wrote:
->> On Wed, Nov 2, 2011 at 1:33 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
->> > This patch supports packed command of eMMC4.5 device.
->> > Several reads(or writes) can be grouped in packed command
->> > and all data of the individual commands can be sent in a
->> > single transfer on the bus.
->> >
->> > Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->> > ---
->> >  drivers/mmc/card/block.c |  355 ++++++++++++++++++++++++++++++++++++++++++++--
->> >  drivers/mmc/card/queue.c |   48 ++++++-
->> >  drivers/mmc/card/queue.h |   12 ++
->> >  include/linux/mmc/core.h |    3 +
->> >  4 files changed, 404 insertions(+), 14 deletions(-)
->> >
->> > diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
->> > index a1cb21f..6c49656 100644
->> > --- a/drivers/mmc/card/block.c
->> > +++ b/drivers/mmc/card/block.c
->> > @@ -59,6 +59,13 @@ MODULE_ALIAS("mmc:block");
->> >  #define INAND_CMD38_ARG_SECTRIM1 0x81
->> >  #define INAND_CMD38_ARG_SECTRIM2 0x88
->> >
->> > +#define mmc_req_rel_wr(req)    (((req->cmd_flags & REQ_FUA) || \
->> > +                       (req->cmd_flags & REQ_META)) && \
->> > +                       (rq_data_dir(req) == WRITE))
->> > +#define PACKED_CMD_VER         0x01
->> > +#define PACKED_CMD_RD          0x01
->> > +#define PACKED_CMD_WR          0x02
->> > +
->> >  static DEFINE_MUTEX(block_mutex);
->> >
->> >  /*
->> > @@ -943,7 +950,8 @@ static int mmc_blk_err_check(struct mmc_card *card,
->> >         * kind.  If it was a write, we may have transitioned to
->> >         * program mode, which we have to wait for it to complete.
->> >         */
->> > -       if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
->> > +       if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
->> > +                       (mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
->> >                u32 status;
->> >                do {
->> >                        int err = get_card_status(card, &status, 5);
->> > @@ -980,12 +988,67 @@ static int mmc_blk_err_check(struct mmc_card *card,
->> >        if (!brq->data.bytes_xfered)
->> >                return MMC_BLK_RETRY;
->> >
->> > +       if (mq_mrq->packed_cmd != MMC_PACKED_NONE) {
->> > +               if (unlikely(brq->data.blocks << 9 != brq->data.bytes_xfered))
->> > +                       return MMC_BLK_PARTIAL;
->> > +               else
->> > +                       return MMC_BLK_SUCCESS;
->> > +       }
->> > +
->> >        if (blk_rq_bytes(req) != brq->data.bytes_xfered)
->> >                return MMC_BLK_PARTIAL;
->> >
->> >        return MMC_BLK_SUCCESS;
->> >  }
->> >
->> > +static int mmc_blk_packed_err_check(struct mmc_card *card,
->> > +                            struct mmc_async_req *areq)
->> > +{
->> > +       struct mmc_queue_req *mq_mrq = container_of(areq, struct mmc_queue_req,
->> > +                                                   mmc_active);
->> > +       int err, check, status;
->> > +       u8 ext_csd[512];
->> > +
->> > +       check = mmc_blk_err_check(card, areq);
->> > +
->> > +       if (check == MMC_BLK_SUCCESS)
->> > +               return check;
->> > +
->> > +       if (check == MMC_BLK_PARTIAL) {
->> > +               err = get_card_status(card, &status, 0);
->> > +               if (err)
->> > +                       return MMC_BLK_ABORT;
->> > +
->> > +               if (status & R1_EXP_EVENT) {
->> > +                       err = mmc_send_ext_csd(card, ext_csd);
->> > +                       if (err)
->> > +                               return MMC_BLK_ABORT;
->> > +
->> > +                       if ((ext_csd[EXT_CSD_EXP_EVENTS_STATUS + 0] &
->> > +                                               EXT_CSD_PACKED_FAILURE) &&
->> > +                                       (ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
->> > +                                        EXT_CSD_PACKED_GENERIC_ERROR)) {
->> > +                               if (ext_csd[EXT_CSD_PACKED_CMD_STATUS] &
->> > +                                               EXT_CSD_PACKED_INDEXED_ERROR) {
->> > +                                       /* Make be 0-based */
->> > +                                       mq_mrq->packed_fail_idx =
->> > +                                               ext_csd[EXT_CSD_PACKED_FAILURE_INDEX] - 1;
->> > +                                       return MMC_BLK_PARTIAL;
->> > +                               } else {
->> > +                                       return MMC_BLK_RETRY;
->> > +                               }
->> > +                       }
->> > +               } else {
->> > +                       return MMC_BLK_RETRY;
->> > +               }
->> > +       }
->> > +
->> > +       if (check != MMC_BLK_ABORT)
->> > +               return MMC_BLK_RETRY;
->> > +       else
->> > +               return MMC_BLK_ABORT;
->> > +}
->> > +
->> >  static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
->> >                               struct mmc_card *card,
->> >                               int disable_multi,
->> > @@ -1129,6 +1192,211 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
->> >        mmc_queue_bounce_pre(mqrq);
->> >  }
->> >
->> > +static u8 mmc_blk_chk_packable(struct mmc_queue *mq, struct request *req)
->> > +{
->> > +       struct request_queue *q = mq->queue;
->> > +       struct mmc_card *card = mq->card;
->> > +       struct request *cur = req, *next = NULL;
->> > +       struct mmc_blk_data *md = mq->data;
->> > +       bool en_rel_wr = card->ext_csd.rel_param & EXT_CSD_WR_REL_PARAM_EN;
->> > +       unsigned int req_sectors = 0, phys_segments = 0;
->> > +       unsigned int max_blk_count, max_phys_segs;
->> > +       u8 max_packed_rw = 0;
->> > +       u8 reqs = 0;
->> > +
->> > +       if (!(md->flags & MMC_BLK_CMD23) &&
->> > +                       !card->ext_csd.packed_event_en)
->> > +               goto no_packed;
->> > +
->> > +       if (rq_data_dir(cur) == READ)
->> > +               max_packed_rw = card->ext_csd.max_packed_reads;
->> > +       else
->> > +               max_packed_rw = card->ext_csd.max_packed_writes;
->> > +
->> > +       if (max_packed_rw == 0)
->> > +               goto no_packed;
->> > +
->> > +       if (mmc_req_rel_wr(cur) &&
->> > +                       (md->flags & MMC_BLK_REL_WR) &&
->> > +                       !en_rel_wr) {
->> > +               goto no_packed;
->> > +       }
->> > +
->> > +       max_blk_count = min(card->host->max_blk_count,
->> > +                       card->host->max_req_size >> 9);
->> > +       if (unlikely(max_blk_count > 0xffff))
->> > +               max_blk_count = 0xffff;
->> > +
->> > +       max_phys_segs = queue_max_segments(q);
->> > +       req_sectors += blk_rq_sectors(cur);
->> > +       phys_segments += req->nr_phys_segments;
->> > +
->> > +       if (rq_data_dir(cur) == WRITE) {
->> > +               req_sectors++;
->> > +               phys_segments++;
->> > +       }
->> > +
->> > +       while (reqs < max_packed_rw - 1) {
->> > +               next = blk_fetch_request(q);
->> > +               if (!next)
->> > +                       break;
->> > +
->> > +               if (rq_data_dir(cur) != rq_data_dir(next)) {
->> > +                       blk_requeue_request(q, next);
->> > +                       break;
->> > +               }
->> > +
->> > +               if (mmc_req_rel_wr(next) &&
->> > +                               (md->flags & MMC_BLK_REL_WR) &&
->> > +                               !en_rel_wr) {
->> > +                       blk_requeue_request(q, next);
->> > +                       break;
->> > +               }
->> > +
->> > +               req_sectors += blk_rq_sectors(next);
->> > +               if (req_sectors > max_blk_count) {
->> > +                       blk_requeue_request(q, next);
->> > +                       break;
->> > +               }
->> > +
->> > +               phys_segments +=  next->nr_phys_segments;
->> > +               if (phys_segments > max_phys_segs) {
->> > +                       blk_requeue_request(q, next);
->> > +                       break;
->> > +               }
->> I mentioned this before - if the next request is not packable and requeued,
->> blk_fetch_request will retrieve it again and this while loop will
->> never terminate.
->>
-> If next request is not packable, it is requeued and 'break' terminates this loop.
-> So it not infinite.
 
-Right !! But that doesn't help finding the commands that are packable.
-Ideally, you'd need to pack all neighbouring requests into one packed command.
-The way CFQ works, it is not necessary that the fetch would return all
-outstanding
-requests that are packable (unless you invoke a forced dispatch)
+Currently RSS rlimit is not enforced. We can not forbid a process to exceeds
+its RSS limit and allow it swap out. That would hurts the performance of all
+system, even when memory resources are plentiful.
 
-It would be good to see some numbers on the number of pack hits / misses that
-you would encounter with this logic, on a typical usecase.
+Therefore, instead of enforcing a limit on rss usage alone, this patch enforces
+a limit on rss+swap value. This is similar to memsw limits of cgroup.
+If a process rss+swap usage exceeds RLIMIT_RSS max limit, he received a SIGBUS
+signal. 
 
->> > +
->> > +               list_add_tail(&next->queuelist, &mq->mqrq_cur->packed_list);
->> > +               cur = next;
->> > +               reqs++;
->> > +       }
->> > +
->> > +       if (reqs > 0) {
->> > +               list_add(&req->queuelist, &mq->mqrq_cur->packed_list);
->> > +               return (reqs + 1);
->> > +       }
->> > +
->> > +no_packed:
->> > +       mq->mqrq_cur->packed_cmd = MMC_PACKED_NONE;
->> > +       return reqs;
->> > +}
->> > +
->> > +static void mmc_blk_packed_hdr_wrq_prep(struct mmc_queue_req *mqrq,
->> > +                              struct mmc_card *card,
->> > +                              struct mmc_queue *mq,
->> > +                              u8 reqs)
->> > +{
->> > +       struct mmc_blk_request *brq = &mqrq->brq;
->> > +       struct request *req = mqrq->req;
->> > +       struct request *prq;
->> > +       struct mmc_blk_data *md = mq->data;
->> > +       bool do_rel_wr;
->> > +       u32 *packed_cmd_hdr = mqrq->packed_cmd_hdr;
->> > +       u8 i =1;
->> > +
->> > +       mqrq->packed_cmd = (rq_data_dir(req) == READ) ?
->> > +               MMC_PACKED_WR_HDR : MMC_PACKED_WRITE;
->> > +       mqrq->packed_blocks = 0;
->> > +       mqrq->packed_fail_idx = -1;
->> > +
->> > +       memset(packed_cmd_hdr, 0, sizeof(mqrq->packed_cmd_hdr));
->> > +       packed_cmd_hdr[0] = (reqs << 16) |
->> > +               (((rq_data_dir(req) == READ) ? PACKED_CMD_RD: PACKED_CMD_WR) << 8) |
->> > +               PACKED_CMD_VER;
->> > +
->> > +       /*
->> > +        * Argument for each entry of packed group
->> > +        */
->> > +       list_for_each_entry(prq, &mqrq->packed_list, queuelist) {
->> > +               do_rel_wr = mmc_req_rel_wr(prq) && (md->flags & MMC_BLK_REL_WR);
->> > +               /* Argument of CMD23*/
->> > +               packed_cmd_hdr[(i * 2)] = (do_rel_wr ? MMC_CMD23_ARG_REL_WR : 0) |
->> > +                       blk_rq_sectors(prq);
->> > +               /* Argument of CMD18 or CMD25 */
->> > +               packed_cmd_hdr[((i * 2)) + 1] = mmc_card_blockaddr(card) ?
->> > +                       blk_rq_pos(prq) : blk_rq_pos(prq) << 9;
->> > +               mqrq->packed_blocks += blk_rq_sectors(prq);
->> > +               i++;
->> > +       }
->> > +
->> > +       memset(brq, 0, sizeof(struct mmc_blk_request));
->> > +       brq->mrq.cmd = &brq->cmd;
->> > +       brq->mrq.data = &brq->data;
->> > +       brq->mrq.sbc = &brq->sbc;
->> > +       brq->mrq.stop = &brq->stop;
->> > +
->> > +       brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
->> > +       brq->sbc.arg = MMC_CMD23_ARG_PACKED |
->> > +               ((rq_data_dir(req) == READ) ? 1 : mqrq->packed_blocks + 1);
->> > +       brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
->> > +
->> > +       brq->cmd.opcode = MMC_WRITE_MULTIPLE_BLOCK;
->> > +       brq->cmd.arg = blk_rq_pos(req);
->> > +       if (!mmc_card_blockaddr(card))
->> > +               brq->cmd.arg <<= 9;
->> > +       brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
->> > +
->> > +       brq->data.blksz = 512;
->> > +       /*
->> > +        * Write separately the packd command header only for packed read.
->> > +        * In case of packed write, header is sent with blocks of data.
->> > +        */
->> > +       brq->data.blocks = (rq_data_dir(req) == READ) ?
->> > +               1 : mqrq->packed_blocks + 1;
->> > +       brq->data.flags |= MMC_DATA_WRITE;
->> > +
->> > +       brq->stop.opcode = MMC_STOP_TRANSMISSION;
->> > +       brq->stop.arg = 0;
->> > +       brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
->> > +
->> > +       mmc_set_data_timeout(&brq->data, card);
->> > +
->> > +       brq->data.sg = mqrq->sg;
->> > +       brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
->> > +
->> > +       mqrq->mmc_active.mrq = &brq->mrq;
->> > +       mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
->> > +
->> > +       mmc_queue_bounce_pre(mqrq);
->> > +}
->> > +
->> > +static void mmc_blk_packed_rrq_prep(struct mmc_queue_req *mqrq,
->> > +                              struct mmc_card *card,
->> > +                              struct mmc_queue *mq)
->> > +{
->> > +       struct mmc_blk_request *brq = &mqrq->brq;
->> > +       struct request *req = mqrq->req;
->> > +
->> > +       mqrq->packed_cmd = MMC_PACKED_READ;
->> > +
->> > +       memset(brq, 0, sizeof(struct mmc_blk_request));
->> > +       brq->mrq.cmd = &brq->cmd;
->> > +       brq->mrq.data = &brq->data;
->> > +       brq->mrq.stop = &brq->stop;
->> > +
->> > +       brq->cmd.opcode = MMC_READ_MULTIPLE_BLOCK;
->> > +       brq->cmd.arg = blk_rq_pos(req);
->> > +       if (!mmc_card_blockaddr(card))
->> > +               brq->cmd.arg <<= 9;
->> > +       brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
->> > +       brq->data.blksz = 512;
->> > +       brq->data.blocks = mqrq->packed_blocks;
->> > +       brq->data.flags |= MMC_DATA_READ;
->> > +
->> > +       brq->stop.opcode = MMC_STOP_TRANSMISSION;
->> > +       brq->stop.arg = 0;
->> > +       brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
->> > +
->> > +       mmc_set_data_timeout(&brq->data, card);
->> > +
->> > +       brq->data.sg = mqrq->sg;
->> > +       brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
->> > +
->> > +       mqrq->mmc_active.mrq = &brq->mrq;
->> > +       mqrq->mmc_active.err_check = mmc_blk_packed_err_check;
->> > +
->> > +       mmc_queue_bounce_pre(mqrq);
->> > +}
->> > +
->> >  static int mmc_blk_cmd_err(struct mmc_blk_data *md, struct mmc_card *card,
->> >                           struct mmc_blk_request *brq, struct request *req,
->> >                           int ret)
->> > @@ -1166,15 +1434,33 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->> >        int ret = 1, disable_multi = 0, retry = 0, type;
->> >        enum mmc_blk_status status;
->> >        struct mmc_queue_req *mq_rq;
->> > -       struct request *req;
->> > +       struct request *req, *prq;
->> >        struct mmc_async_req *areq;
->> > +       u8 reqs = 0;
->> >
->> >        if (!rqc && !mq->mqrq_prev->req)
->> >                return 0;
->> >
->> > +       if (rqc)
->> > +               reqs = mmc_blk_chk_packable(mq, rqc);
->> > +
->> >        do {
->> >                if (rqc) {
->> > -                       mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->> > +                       if (reqs >= 2) {
->> > +                               mmc_blk_packed_hdr_wrq_prep(mq->mqrq_cur, card, mq, reqs);
->> > +                               if (rq_data_dir(rqc) == READ) {
->> > +                                       areq = &mq->mqrq_cur->mmc_active;
->> > +                                       mmc_wait_for_req(card->host, areq->mrq);
->> > +                                       status = mmc_blk_packed_err_check(card, areq);
->> > +                                       if (status == MMC_BLK_SUCCESS) {
->> > +                                               mmc_blk_packed_rrq_prep(mq->mqrq_cur, card, mq);
->> > +                                       } else {
->> > +                                               goto check_status;
->> > +                                       }
->> > +                               }
->> > +                       } else {
->>
->> IIUC, the code in mmc_blk_chk_packable
->> <snip>
->>        if (reqs > 0) {
->>                list_add(&req->queuelist, &mq->mqrq_cur->packed_list);
->>               return (reqs + 1);
->> </snip>
->> adds the request to the packed list, and needs to be reversed if it's
->> decided to not to do a packed request ?
-> Any condition or reason  not to do packed request after several requests
-> is added in packed list? I didn't catch your comment exactly.
->
-What I meant was that the request should be removed from queuelist
-when you decide not to pack.
+My tests show that code in do_anonymous_page() and __do_fault() indeed prevents
+processes to get more memory than the limit and I haven't seen any adverse
+effect, but so far I have no test coverage of the code in do_wp_page(). I'm
+not sure how to test it.
 
->>
->>
->> > +                               mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->> > +                       }
->> >                        areq = &mq->mqrq_cur->mmc_active;
->> >                } else
->> >                        areq = NULL;
->> > @@ -1182,6 +1468,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->> >                if (!areq)
->> >                        return 0;
->> >
->> > +check_status:
->> >                mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
->> >                brq = &mq_rq->brq;
->> >                req = mq_rq->req;
->> > @@ -1195,10 +1482,32 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->> >                         * A block was successfully transferred.
->> >                         */
->> >                        mmc_blk_reset_success(md, type);
->> > -                       spin_lock_irq(&md->lock);
->> > -                       ret = __blk_end_request(req, 0,
->> > +
->> > +                       if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
->> > +                               int idx = mq_rq->packed_fail_idx, i = 0;
->> > +                               while (!list_empty(&mq_rq->packed_list)) {
->> > +                                       prq = list_entry_rq(mq_rq->packed_list.next);
->> > +                                       if (idx == i) {
->> > +                                               /* retry from error index */
->> > +                                               reqs -= idx;
->> > +                                               mq_rq->req = prq;
->> > +                                               ret = 1;
->> > +                                               break;
->> > +                                       }
->> > +                                       list_del_init(&prq->queuelist);
->> > +                                       spin_lock_irq(&md->lock);
->> > +                                       ret = __blk_end_request(prq, 0, blk_rq_bytes(prq));
->> > +                                       spin_unlock_irq(&md->lock);
->> > +                                       i++;
->> > +                               }
->> > +                               break;
->> > +                       } else {
->> > +                               spin_lock_irq(&md->lock);
->> > +                               ret = __blk_end_request(req, 0,
->> >                                                brq->data.bytes_xfered);
->> > -                       spin_unlock_irq(&md->lock);
->> > +                               spin_unlock_irq(&md->lock);
->> > +                       }
->> > +
->> >                        /*
->> >                         * If the blk_end_request function returns non-zero even
->> >                         * though all data has been transferred and no errors
->> > @@ -1257,7 +1566,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->> >                        break;
->> >                }
->> >
->> > -               if (ret) {
->> > +               if (ret && (mq_rq->packed_cmd == MMC_PACKED_NONE)) {
->> >                        /*
->> >                         * In case of a incomplete request
->> >                         * prepare it again and resend.
->> > @@ -1270,13 +1579,37 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
->> >        return 1;
->> >
->> >  cmd_abort:
->> > -       spin_lock_irq(&md->lock);
->> > -       while (ret)
->> > -               ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
->> > -       spin_unlock_irq(&md->lock);
->> > +       if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
->> > +               spin_lock_irq(&md->lock);
->> > +               while (ret)
->> > +                       ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
->> > +               spin_unlock_irq(&md->lock);
->> > +       } else {
->> > +               while (!list_empty(&mq_rq->packed_list)) {
->> > +                       prq = list_entry_rq(mq_rq->packed_list.next);
->> > +                       list_del_init(&prq->queuelist);
->> > +                       spin_lock_irq(&md->lock);
->> > +                       __blk_end_request(prq, -EIO, blk_rq_bytes(prq));
->> > +                       spin_unlock_irq(&md->lock);
->> > +               }
->> > +       }
->> >
->> >  start_new_req:
->> >        if (rqc) {
->> > +               /*
->> > +                * If current request is packed, it need to put back.
->> > +                */
->> > +               if (mq->mqrq_cur->packed_cmd != MMC_PACKED_NONE) {
->> > +                       while (!list_empty(&mq->mqrq_cur->packed_list)) {
->> > +                               prq = list_entry_rq(mq->mqrq_cur->packed_list.prev);
->> > +                               if (prq->queuelist.prev != &mq->mqrq_cur->packed_list) {
->> > +                                       list_del_init(&prq->queuelist);
->> > +                                       blk_requeue_request(mq->queue, prq);
->> > +                               } else {
->> > +                                       list_del_init(&prq->queuelist);
->> > +                               }
->> > +                       }
->> > +               }
->> >                mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
->> >                mmc_start_req(card->host, &mq->mqrq_cur->mmc_active, NULL);
->> >        }
->> > diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
->> > index dcad59c..3a4542e 100644
->> > --- a/drivers/mmc/card/queue.c
->> > +++ b/drivers/mmc/card/queue.c
->> > @@ -172,6 +172,8 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
->> >
->> >        memset(&mq->mqrq_cur, 0, sizeof(mq->mqrq_cur));
->> >        memset(&mq->mqrq_prev, 0, sizeof(mq->mqrq_prev));
->> > +       INIT_LIST_HEAD(&mqrq_cur->packed_list);
->> > +       INIT_LIST_HEAD(&mqrq_prev->packed_list);
->> >        mq->mqrq_cur = mqrq_cur;
->> >        mq->mqrq_prev = mqrq_prev;
->> >        mq->queue->queuedata = mq;
->> > @@ -372,6 +374,39 @@ void mmc_queue_resume(struct mmc_queue *mq)
->> >        }
->> >  }
->> >
->> > +static unsigned int mmc_queue_packed_map_sg(struct mmc_queue *mq,
->> > +                               struct mmc_queue_req *mqrq,
->> > +                               struct scatterlist *sg)
->> > +{
->> > +       struct scatterlist *__sg;
->> > +       unsigned int sg_len = 0;
->> > +       struct request *req;
->> > +       enum mmc_packed_cmd cmd;
->> > +
->> > +       cmd = mqrq->packed_cmd;
->> > +
->> > +       if (cmd == MMC_PACKED_WR_HDR || cmd == MMC_PACKED_WRITE) {
->> > +               __sg =sg;
->> > +               sg_set_buf(__sg, mqrq->packed_cmd_hdr,
->> > +                               sizeof(mqrq->packed_cmd_hdr));
->> > +               sg_len++;
->> > +               if (cmd == MMC_PACKED_WR_HDR) {
->> > +                       sg_mark_end(__sg);
->> > +                       return sg_len;
->> > +               }
->> > +               __sg->page_link &= ~0x02;
->> > +       }
->> > +
->> > +       __sg = sg + sg_len;
->> > +       list_for_each_entry(req, &mqrq->packed_list, queuelist) {
->> > +               sg_len += blk_rq_map_sg(mq->queue, req, __sg);
->> > +               __sg = sg + (sg_len - 1);
->> > +               (__sg++)->page_link &= ~0x02;
->> > +       }
->> > +       sg_mark_end(sg + (sg_len - 1));
->> > +       return sg_len;
->> > +}
->> > +
->> >  /*
->> >  * Prepare the sg list(s) to be handed of to the host driver
->> >  */
->> > @@ -382,12 +417,19 @@ unsigned int mmc_queue_map_sg(struct mmc_queue *mq, struct mmc_queue_req *mqrq)
->> >        struct scatterlist *sg;
->> >        int i;
->> >
->> > -       if (!mqrq->bounce_buf)
->> > -               return blk_rq_map_sg(mq->queue, mqrq->req, mqrq->sg);
->> > +       if (!mqrq->bounce_buf) {
->> > +               if (!list_empty(&mqrq->packed_list))
->> > +                       return mmc_queue_packed_map_sg(mq, mqrq, mqrq->sg);
->> > +               else
->> > +                       return blk_rq_map_sg(mq->queue, mqrq->req, mqrq->sg);
->> > +       }
->> >
->> >        BUG_ON(!mqrq->bounce_sg);
->> >
->> > -       sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq->bounce_sg);
->> > +       if (!list_empty(&mqrq->packed_list))
->> > +               sg_len = mmc_queue_packed_map_sg(mq, mqrq, mqrq->bounce_sg);
->> > +       else
->> > +               sg_len = blk_rq_map_sg(mq->queue, mqrq->req, mqrq->bounce_sg);
->> >
->> >        mqrq->bounce_sg_len = sg_len;
->> >
->> > diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
->> > index d2a1eb4..5d0131e 100644
->> > --- a/drivers/mmc/card/queue.h
->> > +++ b/drivers/mmc/card/queue.h
->> > @@ -12,6 +12,13 @@ struct mmc_blk_request {
->> >        struct mmc_data         data;
->> >  };
->> >
->> > +enum mmc_packed_cmd {
->> > +       MMC_PACKED_NONE = 0,
->> > +       MMC_PACKED_WR_HDR,
->> > +       MMC_PACKED_WRITE,
->> > +       MMC_PACKED_READ,
->> > +};
->> > +
->> >  struct mmc_queue_req {
->> >        struct request          *req;
->> >        struct mmc_blk_request  brq;
->> > @@ -20,6 +27,11 @@ struct mmc_queue_req {
->> >        struct scatterlist      *bounce_sg;
->> >        unsigned int            bounce_sg_len;
->> >        struct mmc_async_req    mmc_active;
->> > +       struct list_head        packed_list;
->> > +       u32                     packed_cmd_hdr[128];
->> > +       unsigned int            packed_blocks;
->> > +       enum mmc_packed_cmd     packed_cmd;
->> > +       int             packed_fail_idx;
->> >  };
->> >
->> >  struct mmc_queue {
->> > diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
->> > index 174a844..3c61d5a 100644
->> > --- a/include/linux/mmc/core.h
->> > +++ b/include/linux/mmc/core.h
->> > @@ -18,6 +18,8 @@ struct mmc_request;
->> >  struct mmc_command {
->> >        u32                     opcode;
->> >        u32                     arg;
->> > +#define MMC_CMD23_ARG_REL_WR   (1 << 31)
->> > +#define MMC_CMD23_ARG_PACKED   ((0 << 31) | (1 << 30))
->> >        u32                     resp[4];
->> >        unsigned int            flags;          /* expected response type */
->> >  #define MMC_RSP_PRESENT        (1 << 0)
->> > @@ -143,6 +145,7 @@ extern int mmc_app_cmd(struct mmc_host *, struct mmc_card *);
->> >  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
->> >        struct mmc_command *, int);
->> >  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
->> > +extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
->>
->> Stray change / doesn't belong to this patch.
-> Do you mean to split this in another patch?
->
-Yes. In fact all the changes to the header files are independent of
-the implementation, so they belong to a separate patch.
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ include/linux/mm.h |    7 +++++++
+ mm/memory.c        |   21 +++++++++++++++++++--
+ 2 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..3b54ff1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1092,6 +1092,13 @@ static inline unsigned long get_mm_rss(struct mm_struct *mm)
+ 		get_mm_counter(mm, MM_ANONPAGES);
+ }
+ 
++static inline unsigned long get_mm_memsw(struct mm_struct *mm)
++{
++	return get_mm_counter(mm, MM_FILEPAGES) +
++		get_mm_counter(mm, MM_ANONPAGES) +
++		get_mm_counter(mm, MM_SWAPENTS);
++}
++
+ static inline unsigned long get_mm_hiwater_rss(struct mm_struct *mm)
+ {
+ 	return max(mm->hiwater_rss, get_mm_rss(mm));
+diff --git a/mm/memory.c b/mm/memory.c
+index b2b8731..c7226f5 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2661,8 +2661,14 @@ gotten:
+ 				dec_mm_counter_fast(mm, MM_FILEPAGES);
+ 				inc_mm_counter_fast(mm, MM_ANONPAGES);
+ 			}
+-		} else
++		} else {
++			if (get_mm_memsw(mm) >=
++			    rlimit_max(RLIMIT_RSS) >> PAGE_SHIFT) {
++				ret |= VM_FAULT_SIGBUS;
++				goto release;
++			}
+ 			inc_mm_counter_fast(mm, MM_ANONPAGES);
++		}
+ 		flush_cache_page(vma, address, pte_pfn(orig_pte));
+ 		entry = mk_pte(new_page, vma->vm_page_prot);
+ 		entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+@@ -2713,6 +2719,7 @@ gotten:
+ 	} else
+ 		mem_cgroup_uncharge_page(new_page);
+ 
++release:
+ 	if (new_page)
+ 		page_cache_release(new_page);
+ unlock:
+@@ -3073,6 +3080,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct page *page;
+ 	spinlock_t *ptl;
+ 	pte_t entry;
++	int ret = 0;
+ 
+ 	pte_unmap(page_table);
+ 
+@@ -3109,6 +3117,10 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (!pte_none(*page_table))
+ 		goto release;
+ 
++	if (get_mm_memsw(mm) >=  rlimit_max(RLIMIT_RSS) >> PAGE_SHIFT) {
++		ret = VM_FAULT_SIGBUS;
++		goto release;
++	}
+ 	inc_mm_counter_fast(mm, MM_ANONPAGES);
+ 	page_add_new_anon_rmap(page, vma, address);
+ setpte:
+@@ -3118,7 +3130,7 @@ setpte:
+ 	update_mmu_cache(vma, address, page_table);
+ unlock:
+ 	pte_unmap_unlock(page_table, ptl);
+-	return 0;
++	return ret;
+ release:
+ 	mem_cgroup_uncharge_page(page);
+ 	page_cache_release(page);
+@@ -3263,6 +3275,10 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		entry = mk_pte(page, vma->vm_page_prot);
+ 		if (flags & FAULT_FLAG_WRITE)
+ 			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
++		if (get_mm_memsw(mm) >=  rlimit_max(RLIMIT_RSS) >> PAGE_SHIFT) {
++			ret = VM_FAULT_SIGBUS;
++			goto unlock;
++		}
+ 		if (anon) {
+ 			inc_mm_counter_fast(mm, MM_ANONPAGES);
+ 			page_add_new_anon_rmap(page, vma, address);
+@@ -3287,6 +3303,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			anon = 1; /* no anon but release faulted_page */
+ 	}
+ 
++unlock:
+ 	pte_unmap_unlock(page_table, ptl);
+ 
+ 	if (dirty_page) {
