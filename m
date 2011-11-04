@@ -1,120 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab1KDQuq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:50:46 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44852 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523Ab1KDQun (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:50:43 -0400
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jan Kiszka <jan.kiszka@siemens.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-In-Reply-To: <4EB41227.3070708@siemens.com>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	 <20111104121601.GA15206@infradead.org>
-	 <CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
-	 <20111104130225.GA24563@infradead.org>
-	 <CAOJsxLG4+-Hmpt-dfa7auEs6H1RgWWwYYs=zzb8uvJg8m10_Nw@mail.gmail.com>
-	 <4EB3F9CE.1050407@siemens.com> <1320419814.3334.45.camel@lappy>
-	 <4EB41227.3070708@siemens.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Fri, 04 Nov 2011 18:48:17 +0200
-Message-ID: <1320425297.3334.53.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S932960Ab1KDQzV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:55:21 -0400
+Received: from oz.csail.mit.edu ([128.30.30.239]:35659 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932686Ab1KDQzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 12:55:17 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        arnd@arndb.de, ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com,
+        mtosatti@redhat.com, jeremy.fitzhardinge@citrix.com,
+        kvm@vger.kernel.org, linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/6 V3] Add generic stubs for kvm stop check functions
+Date: Fri,  4 Nov 2011 12:55:10 -0400
+Message-Id: <1320425712-5312-5-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1320425712-5312-1-git-send-email-emunson@mgebm.net>
+References: <1320425712-5312-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-04 at 17:26 +0100, Jan Kiszka wrote:
-> On 2011-11-04 16:16, Sasha Levin wrote:
-> > On Fri, 2011-11-04 at 15:42 +0100, Jan Kiszka wrote:
-> >> On 2011-11-04 14:32, Pekka Enberg wrote:
-> >>> I know you don't see the benefits of integrated code base but I as a
-> >>> developer do.
-> >>
-> >> IIRC, this discussion still lacks striking, concrete examples from the
-> >> KVM tool vs. QEMU development processes.
-> > 
-> > I'll give a current example: Michael and Rusty are currently considering
-> > a change in the virtio spec (allowing MMIO config BARs - but thats
-> > irrelevant).
-> > 
-> > I'll quote what Anthony said about how he sees the big picture of how
-> > this change is going to be implemented - something which we all agree
-> > with:
-> > 
-> > On Thu, 2011-11-03 at 09:37 -0500, Anthony Liguori wrote:
-> >> Well, what's needed before the spec is changed is an interesting question, but I 
-> >> think the main thing is, don't commit any virtio ABI changes to vhost, QEMU, 
-> >> NKT, or the kernel until the spec for the change has been committed.
-> >>
-> >> It would be nice to have a working implementation before committing a spec 
-> >> change.  Even nicer would be to have Acked-by's a maintainer in each area affected.
-> > 
-> > Which is pretty smart. Get a working implementation before we commit to
-> > a spec.
-> > 
-> > Now, how would the development process look when the trees aren't
-> > integrated? You'd try to get the kernel side stabilized, then you'd do
-> > your usermode changes, go back to the kernel patches to fix bugs and
-> > things people missed, which would require in turn new patches to the
-> > usermode part, and so until you get 5-6 versions (best case) of this
-> > change in *each* tree.
-> 
-> This can happen if the kernel API went totally wrong on the first run.
-> It happens, but not frequently. Or do you see many examples for this in
-> KVM's history?
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: arnd@arndb.de
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: jeremy.fitzhardinge@citrix.com
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ include/asm-generic/kvm_para.h |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/kvm_para.h
 
-A recent example is the NMI emulation fix which reached v6 for both
-trees. And from what I gather it's supposed to be a smaller scale change
-than the virtio one I've mentioned before.
-
-There are more similar examples.
-
-> 
-> I don't remember finding this particularly problematic for any of my own
-> patch sets. If the API is controversial, you usually try to get that
-> conceptually resolved instead of updating all bits over and over again.
-> Once the API is accepted, changes to the implementations become
-> independent anyway.
-> 
-> > 
-> > Add some technical difficulties which just make it uglier, such as
-> > having to copy over new kernel headers into the usermode tool for each
-> > new version you want to send (linux-headers/ dir in QEMU) and you get a
-> > process which is not that pretty anymore :)
-> 
-> Synching headers has become trivial these days (reloading updated KVM
-> modules may take more steps ;) ).
-
-Yup, it's a simple copy - I didn't say it was hard, I said it's ugly.
-
-> > 
-> > How would it look for an integrated project? You'd be working on the
-> > same codebase, one series of patches would take care of both the kernel
-> > changes and the userspace changes, this would speed up iterations and
-> > make testing quite easier.
-> 
-> I can't imagine that the ability to do a single 'make' for a change that
-> remains split nevertheless justifies merging more user land into the
-> kernel. You can always set up a meta project for this.
-
-Thats not the only reason for the merge ofcourse, it's just one which
-you asked about.
-
-You can do a meta project, you can't send patches out like that though -
-which makes that meaningless.
-
+diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
+new file mode 100644
+index 0000000..177e1eb
+--- /dev/null
++++ b/include/asm-generic/kvm_para.h
+@@ -0,0 +1,14 @@
++#ifndef _ASM_GENERIC_KVM_PARA_H
++#define _ASM_GENERIC_KVM_PARA_H
++
++
++/*
++ * This function is used by architectures that support kvm to avoid issuing
++ * false soft lockup messages.
++ */
++static inline bool kvm_check_and_clear_guest_paused(int cpu)
++{
++	return false;
++}
++
++#endif
 -- 
-
-Sasha.
+1.7.5.4
 
