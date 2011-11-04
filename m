@@ -1,70 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab1KDHQN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 03:16:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46767 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813Ab1KDHQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 03:16:12 -0400
-Message-ID: <4EB39139.3090709@suse.de>
-Date: Fri, 04 Nov 2011 08:16:09 +0100
-From: Ismail Donmez <idoenmez@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0a1) Gecko/20111103 Thunderbird/10.0a1
+	id S1752265Ab1KDHbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 03:31:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45198 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab1KDHbG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 03:31:06 -0400
+Date: Fri, 4 Nov 2011 00:31:04 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Mel Gorman <mgorman@suse.de>, Nai Xia <nai.xia@gmail.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+In-Reply-To: <1320082040-1190-1-git-send-email-aarcange@redhat.com>
+Message-ID: <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+References: <20111031171441.GD3466@redhat.com> <1320082040-1190-1-git-send-email-aarcange@redhat.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, stable@kernel.org
-Subject: Re: [PATCH] x86: Fix reboot issue for Dell Optiplex 990 V2
-References: <1320373797-4393-1-git-send-email-trenn@suse.de>
-In-Reply-To: <1320373797-4393-1-git-send-email-trenn@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi;
+On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
 
-On 11/04/2011 03:29 AM, Thomas Renninger wrote:
-> This was the only (reboot=p) option that worked for this desktop.
-> Default does not reboot as well.
->
-> V2: Remove copy and paste left over from another machine
->
-> CC: Ismail Donmez<idoenmez@suse.de>
-> CC: stable@kernel.org
-> Signed-off-by: Thomas Renninger<trenn@suse.de>
+> migrate was doing a rmap_walk with speculative lock-less access on
+> pagetables. That could lead it to not serialize properly against
+> mremap PT locks. But a second problem remains in the order of vmas in
+> the same_anon_vma list used by the rmap_walk.
+
+I do think that Nai Xia deserves special credit for thinking deeper
+into this than the rest of us (before you came back): something like
+
+Issue-conceived-by: Nai Xia <nai.xia@gmail.com>
+
+> 
+> If vma_merge would succeed in copy_vma, the src vma could be placed
+> after the dst vma in the same_anon_vma list. That could still lead
+> migrate to miss some pte.
+> 
+> This patch adds a anon_vma_order_tail() function to force the dst vma
+
+I agree with Mel that anon_vma_moveto_tail() would be a better name;
+or even anon_vma_move_to_tail().
+
+> at the end of the list before mremap starts to solve the problem.
+> 
+> If the mremap is very large and there are a lots of parents or childs
+> sharing the anon_vma root lock, this should still scale better than
+> taking the anon_vma root lock around every pte copy practically for
+> the whole duration of mremap.
+
+But I'm sorry to say that I'm actually not persuaded by the patch,
+on three counts.
+
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > ---
->   arch/x86/kernel/reboot.c |    9 +++++++++
->   1 files changed, 9 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-> index e334be1..42f8cd7 100644
-> --- a/arch/x86/kernel/reboot.c
-> +++ b/arch/x86/kernel/reboot.c
-> @@ -443,6 +443,15 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
->   			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
->   		},
->   	},
-> +	{
-> +		.callback = set_pci_reboot,
-> +		.ident = "Dell Optiplex 990",
-> +		.matches = {
-> +			/* Found in BIOS version A06 */
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 990"),
-> +		},
-> +	},
->   	{ }
->   };
+>  include/linux/rmap.h |    1 +
+>  mm/mmap.c            |    8 ++++++++
+>  mm/rmap.c            |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 53 insertions(+), 0 deletions(-)
+B
+> 
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index 2148b12..45eb098 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -120,6 +120,7 @@ void anon_vma_init(void);	/* create anon_vma_cachep */
+>  int  anon_vma_prepare(struct vm_area_struct *);
+>  void unlink_anon_vmas(struct vm_area_struct *);
+>  int anon_vma_clone(struct vm_area_struct *, struct vm_area_struct *);
+> +void anon_vma_order_tail(struct vm_area_struct *);
+>  int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+>  void __anon_vma_link(struct vm_area_struct *);
+>  
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index a65efd4..a5858dc 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+>  		 */
+>  		if (vma_start >= new_vma->vm_start &&
+>  		    vma_start < new_vma->vm_end)
+> +			/*
+> +			 * No need to call anon_vma_order_tail() in
+> +			 * this case because the same PT lock will
+> +			 * serialize the rmap_walk against both src
+> +			 * and dst vmas.
+> +			 */
 
-I have this machine and can confirm reboot=pci is only way to get it to 
-reboot. But also Dell's very recent Latitude E6520 laptop needs the same 
-workaround. It would be nice to send a patch for it too.
+Really?  Please convince me: I just do not see what ensures that
+the same pt lock covers both src and dst areas in this case.
 
-Regards.
+>  			*vmap = new_vma;
+> +		else
+> +			anon_vma_order_tail(new_vma);
 
--- 
-İsmail Dönmez - openSUSE Booster
-SUSE LINUX Products GmbH
-Maxfeldstr. 5, 90409 Nürnberg, Germany
-GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg)
+And if this puts new_vma in the right position for the normal
+move_page_tables(), as anon_vma_clone() does in the block below,
+aren't they both in exactly the wrong position for the abnormal
+move_page_tables(), called to put ptes back where they were if
+the original move_page_tables() fails?
+
+It might be possible to argue that move_page_tables() can only
+fail by failing to allocate memory for pud or pmd, and that (perhaps)
+could only happen if the task was being OOM-killed and ran out of
+reserves at this point, and if it's being OOM-killed then we don't
+mind losing a migration entry for a moment... perhaps.
+
+Certainly I'd agree that it's a very rare case.  But it feels wrong
+to be attempting to fix the already unlikely issue, while ignoring
+this aspect, or relying on such unrelated implementation details.
+
+Perhaps some further anon_vma_ordering could fix it up,
+but that would look increasingly desperate.
+
+>  	} else {
+>  		new_vma = kmem_cache_alloc(vm_area_cachep, GFP_KERNEL);
+>  		if (new_vma) {
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 8005080..6dbc165 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -272,6 +272,50 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+>  }
+>  
+>  /*
+> + * Some rmap walk that needs to find all ptes/hugepmds without false
+> + * negatives (like migrate and split_huge_page) running concurrent
+> + * with operations that copy or move pagetables (like mremap() and
+> + * fork()) to be safe depends the anon_vma "same_anon_vma" list to be
+> + * in a certain order: the dst_vma must be placed after the src_vma in
+> + * the list. This is always guaranteed by fork() but mremap() needs to
+> + * call this function to enforce it in case the dst_vma isn't newly
+> + * allocated and chained with the anon_vma_clone() function but just
+> + * an extension of a pre-existing vma through vma_merge.
+> + *
+> + * NOTE: the same_anon_vma list can still be changed by other
+> + * processes while mremap runs because mremap doesn't hold the
+> + * anon_vma mutex to prevent modifications to the list while it
+> + * runs. All we need to enforce is that the relative order of this
+> + * process vmas isn't changing (we don't care about other vmas
+> + * order). Each vma corresponds to an anon_vma_chain structure so
+> + * there's no risk that other processes calling anon_vma_order_tail()
+> + * and changing the same_anon_vma list under mremap() will screw with
+> + * the relative order of this process vmas in the list, because we
+> + * won't alter the order of any vma that isn't belonging to this
+> + * process. And there can't be another anon_vma_order_tail running
+> + * concurrently with mremap() coming from this process because we hold
+> + * the mmap_sem for the whole mremap(). fork() ordering dependency
+> + * also shouldn't be affected because we only care that the parent
+> + * vmas are placed in the list before the child vmas and
+> + * anon_vma_order_tail won't reorder vmas from either the fork parent
+> + * or child.
+> + */
+> +void anon_vma_order_tail(struct vm_area_struct *dst)
+> +{
+> +	struct anon_vma_chain *pavc;
+> +	struct anon_vma *root = NULL;
+> +
+> +	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
+> +		struct anon_vma *anon_vma = pavc->anon_vma;
+> +		VM_BUG_ON(pavc->vma != dst);
+> +		root = lock_anon_vma_root(root, anon_vma);
+> +		list_del(&pavc->same_anon_vma);
+> +		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
+> +	}
+> +	unlock_anon_vma_root(root);
+> +}
+
+I thought this was correct, but now I'm not so sure.  You rightly
+consider the question of interference between concurrent mremaps in
+different mms in your comment above, but I'm still not convinced it
+is safe.  Oh, probably just my persistent failure to picture these
+avcs properly.
+
+If we were back in the days of the simple anon_vma list, I'd probably
+share your enthusiasm for the list ordering solution; but now it looks
+like a fragile and contorted way of avoiding the obvious... we just
+need to use the anon_vma_lock (but perhaps there are some common and
+easily tested conditions under which we can skip it e.g. when a single
+pt lock covers src and dst?).
+
+Sorry to be so negative!  I may just be wrong on all counts.
+
+Hugh
