@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab1KDEUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 00:20:41 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38605 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab1KDEUi (ORCPT
+	id S1751879Ab1KDEdw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 00:33:52 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46825 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990Ab1KDEdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 00:20:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 4 Nov 2011 13:19:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        levinsasha928@gmail.com, Chris Mason <chris.mason@oracle.com>,
-        JBeulich@novell.com, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Neo Jia <cyclonusj@gmail.com>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-Message-Id: <20111104131932.ccafb402.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <785a9dc0-2f15-40bf-b9a8-e3ab28e650bd@default>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	<20111031171321.097a166c.kamezawa.hiroyu@jp.fujitsu.com>
-	<ef778e79-72d0-4c58-99e8-3b36d85fa30d@default>
-	<20111101095038.30289914.kamezawa.hiroyu@jp.fujitsu.com>
-	<f62e02cd-fa41-44e8-8090-efe2ef052f64@default
- 20111102101414.457e0a08.kamezawa.hiroyu@jp.fujitsu.com>
-	<785a9dc0-2f15-40bf-b9a8-e3ab28e650bd@default>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Fri, 4 Nov 2011 00:33:51 -0400
+Message-ID: <1320381208.3079.61.camel@deadeye>
+Subject: Re: [005/107] sparc: Allow handling signals when stack is corrupted.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Date: Fri, 04 Nov 2011 04:33:28 +0000
+In-Reply-To: <20111102221450.536525065@clark.kroah.org>
+References: <20111102221600.GA26650@kroah.com>
+	 <20111102221450.536525065@clark.kroah.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-5cncu/MNZ6OV6YXHcnjZ"
+X-Mailer: Evolution 3.0.3-2 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Nov 2011 08:12:01 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-> > > Kame, can I add you to the list of people who support
-> > > merging frontswap, assuming more good performance numbers
-> > > are posted?
-> 
-> So I'm not asking you if Fujitsu enterprise QoS-guarantee
-> customers will use zcache.... Andrew said yesterday:
-> 
-> "At kernel summit there was discussion and overall agreement
->  that we've been paying insufficient attention to the
->  big-picture "should we include this feature at all" issues.
->  We resolved to look more intensely and critically at new
->  features with a view to deciding whether their usefulness
->  justified their maintenance burden."
-> 
-> I am asking you, who are an open source Linux developer and
-> a respected -mm developer, do you think the usefulness
-> of frontswap justifies the maintenance burden, and frontswap
-> should be merged?
-> 
+--=-5cncu/MNZ6OV6YXHcnjZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-When you convince other guys that the design is good.
-At reading the whole threads, it seems other deveoppers raise
-2 problems.
-  1. justification of usage
-  2. API design.
+On Wed, 2011-11-02 at 15:13 -0700, Greg KH wrote:
+> 2.6.32-longterm review patch.  If anyone has any objections, please let u=
+s know.
+>=20
+> ------------------
+>=20
+> From: "David S. Miller" <davem@davemloft.net>
+>=20
+> commit 5598473a5b40c47a8c5349dd2c2630797169cf1a upstream.
+>=20
+> If we can't push the pending register windows onto the user's stack,
+> we disallow signal delivery even if the signal would be delivered on a
+> valid seperate signal stack.
+>=20
+> Add a register window save area in the signal frame, and store any
+> unsavable windows there.
+>=20
+> On sigreturn, if any windows are still queued up in the signal frame,
+> try to push them back onto the stack and if that fails we kill the
+> process immediately.
+>=20
+> This allows the debug/tst-longjmp_chk2 glibc test case to pass.
+[...]
 
-For 1, you'll need to show performance and benefits. I think
-you tried and you'll do, again. But please take care of "2", it
-seems some guys (Rik and Andrea) has concerns. 
+But is there a real application that needs this?
 
-Please CC me, I'd like to join code review process, at least.
-I'd like to think of a new usage for frontswap/cleancache benficial
-for enterprise users.
+Ben.
 
-Thanks,
--Kame
+--=20
+Ben Hutchings
+Sturgeon's Law: Ninety percent of everything is crap.
 
+--=-5cncu/MNZ6OV6YXHcnjZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATrNrGee/yOyVhhEJAQpUxQ//VJCTX7rhLe00SKcV3nFmfm2mTv/b6ZiB
+OzGCbJLEeEmSgnc3trq8dciYLwzlrqNWuY4Tnrmtws2WGVgnVbLobRESQQFsVf3o
+LAu5NxpWcEu0mQ9etgCb71cRwl6uLN0lYqFmxkUYl1t4snloN0oetVBxiVRQxniV
+xMV1zrB8SKi8b3w9qLMtCShVeEHXvSWZAeFOKqt10JMXrLYgZIo2qDAGOHKVLXbo
+ASJlTxgO6tuhDHt1shTVF+4dxiE6WG9lHp80YgACpj7HCii7Mhk1aHiXxOxz9eLx
+vnqx3gZKdplQYUeSsP0mHBp+zyFImZsEKUQR6NGBupcmeGJCZF7zVyIfW6UVX9xC
+0amTnhpbVHLOlk/IyXFB85dsAgjpjwzHnIkVk+sBaVdn3PYBDkeS3yoC+5CBsOT7
+poOQij2Bc1PpHpQq8MfYHNFOPGEjhwK+1DNIt7n/rkeJN07Qqw+1p6U1U+eyMA7I
+PesE/cCb4n4uoxES/gGMza2J71iEoexIWzWiRjbKwJ2bh2oaMGFenU5mj0k/6T14
+gIQH1BE7EmgFOB2PJtaZMxPIHTK2tkpRD++qPFgiLyMCCFeY0BVk0WVWPVz9VvTH
+UdN1Pc+ftx3NAZtdVkukUgQ/Quq+4pBS19bFjfQY80X7eCfRN00od8ZTOBD7Op7i
+EAO9585s340=
+=l2Ty
+-----END PGP SIGNATURE-----
+
+--=-5cncu/MNZ6OV6YXHcnjZ--
