@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab1KDN7o (ORCPT <rfc822;w@1wt.eu>);
+	id S932537Ab1KDN7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:59:46 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:38895 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab1KDN7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Nov 2011 09:59:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53207 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932418Ab1KDN7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:59:43 -0400
-Date: Fri, 4 Nov 2011 06:51:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+Date: Fri, 4 Nov 2011 14:59:43 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Glauber Costa <glommer@parallels.com>, "Brian K. White" <brian@aljex.com>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/19] First round in OTG rework
-Message-ID: <20111104135116.GA15231@suse.de>
-References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
- <20111104132611.GA9965@xps8300>
+Subject: Re: [PATCH] new cgroup controller "fork"
+Message-ID: <20111104135943.GB14377@tango.0pointer.de>
+References: <4EB2C4A5.6000406@parallels.com>
+ <20111103165903.GA4755@Debian-60-squeeze-64-minimal>
+ <20111103182101.5037c1e5@lxorguk.ukuu.org.uk>
+ <20111103185108.GA5153@Debian-60-squeeze-64-minimal>
+ <20111103190330.02590426@lxorguk.ukuu.org.uk>
+ <20111103192039.GA5300@Debian-60-squeeze-64-minimal>
+ <4EB2EA93.2050206@parallels.com>
+ <4EB2F5CF.5010604@aljex.com>
+ <4EB30DAF.4090704@parallels.com>
+ <4EB3560D.7000002@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111104132611.GA9965@xps8300>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EB3560D.7000002@cn.fujitsu.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 03:26:11PM +0200, Heikki Krogerus wrote:
-> Hi Greg and Felipe,
-> 
-> On Fri, Oct 28, 2011 at 03:35:06PM +0300, Heikki Krogerus wrote:
-> > Changes since v5:
-> > - Cleanup isp1704_charger.c
+On Fri, 04.11.11 11:03, Li Zefan (lizf@cn.fujitsu.com) wrote:
+
+> >> Sure many other processes would legitimately fork/die/fork/die a lot
+> >> while never exceeding a few total concurrent tasks, and for them you
+> >> would not want to set any such fork limit. So what?
+> >>
+> > As I said previously, he knows his use cases better than anyone else.
+> > If a use case can be found in which the summation of cpu+task controllers is not enough, and if this is implemented as an option to the task controller, and does not make it:
+> > 1) confusing,
+> > 2) more expensive,
 > > 
-> > Quick summary:
-> > This introduces struct usb_phy and struct usb_otg that
-> > replace struct otg_transceiver. The transceiver and phy
-> > members from struct otg_transceiver are left in struct
-> > usb_phy and otg specific members are moved to struct
-> > usb_otg.
-> > 
-> > So the idea is simply to separate USB PHY handling from OTG.
-> >
-> > Heikki Krogerus (19):
-> >   usb: otg: Rename otg_transceiver to usb_phy
-> >   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
-> >   usb: otg: Separate otg members from usb_phy
-> >   usb: otg: ab8500: Start using struct usb_otg
-> >   usb: otg: fsl: Start using struct usb_otg
-> >   usb: otg: gpio_vbus: Start using struct usb_otg
-> >   usb: otg: isp1301_omap: Start using struct usb_otg
-> >   usb: otg: msm: Start using struct usb_otg
-> >   usb: otg: langwell: Start using struct usb_otg
-> >   usb: otg: nop: Start using struct usb_otg
-> >   usb: otg: twl4030: Start using struct usb_otg
-> >   usb: otg: twl6030: Start using struct usb_otg
-> >   usb: otg: ulpi: Start using struct usb_otg
-> >   arm: imx: Start using struct usb_otg
-> >   usb: musb: Start using struct usb_otg
-> >   power_supply: Convert all users to new usb_phy
-> >   usb: Convert all users to new usb_phy
-> >   usb: otg: Remove OTG specific members from usb_phy
-> >   usb: otg: Convert all users to pass struct usb_otg for OTG functions
+> > then I don't see why not we shouldn't take it.
 > 
-> It seems that there are not more comments to these. When can you take
-> them?
+> Quoted from Lennart's reply in another mail thread:
+> 
+> "Given that shutting down some services might involve forking off a few
+> things (think: a shell script handling shutdown which forks off a couple
+> of shell utilities) we'd want something that is between "from now on no
+> forking at all" and "unlimited forking". This could be done in many
+> different ways: we'd be happy if we could do time-based rate limiting,
+> but we'd also be fine with defining a certain budget of additional forks
+> a cgroup can do (i.e. "from now on you can do 50 more forks, then you'll
+> get EPERM)."
+> 
+> (http://lkml.org/lkml/2011/10/19/468)
+> 
+> The last sentence suggests he might like this fork controller.
 
-Please realize that this is the "busy" period for the subsystem
-maintainers during the merge window.  We will be glad to review these
-_after_ the window closes, and queue them up for next time.
+Yes, indeed. Limiting forks like this would be pretty much exactly what
+we need in systemd to make the shutdown of services robust towards
+code which tries to fork faster than we could kill it. I am all in
+favour of this code, especially due to its simplicity.
 
-Well, in this case, Felipe will do the reviewing and queuing up, not me,
-he's a busy person, give him some time please :)
+However, I'd like to see this implemented as part of the core cgroup
+interfaces, instead of an independent controller. Otherwise we might
+have multiple userspace frameworks fighting over it: LXC might want to
+take posession of it, systemd too, and Max' own CGI tool might as
+well. I believe limiting forks like this is an important part of the
+basic cgroup management that userspace needs, independently of what a
+specific software actually wants to do with it (i.e. which cgroup
+controller it wants to use, if any), and it hence should be available in
+all hierarchies, including the named ones that are useful to ensure that
+a specific controller is not monopolized by one userspace consumer.
 
-thanks,
+Lennart
 
-greg k-h
+-- 
+Lennart Poettering - Red Hat, Inc.
