@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904Ab1KDP0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 11:26:16 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53766 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755863Ab1KDP0M (ORCPT
+	id S1755800Ab1KDPfN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 11:35:13 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:48413 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752684Ab1KDPfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 11:26:12 -0400
-X-Sasl-enc: HxHRjtrBQPVLmJ1toH6jvJhI9x1ANuk9oP7NdSInXgql 1320420372
-Date: Fri, 4 Nov 2011 08:25:32 -0700
-From: Greg KH <greg@kroah.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: linux-stable <stable@vger.kernel.org>, X86-ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] x86, amd: Avoid cache aliasing penalties on AMD
- family 15h
-Message-ID: <20111104152532.GB29754@kroah.com>
-References: <20111104112209.GB8020@aftab>
- <1320405995-10199-1-git-send-email-bp@amd64.org>
+	Fri, 4 Nov 2011 11:35:11 -0400
+Date: Fri, 4 Nov 2011 17:35:07 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv6 00/19] First round in OTG rework
+Message-ID: <20111104153505.GA5924@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <20111104132611.GA9965@xps8300>
+ <20111104135116.GA15231@suse.de>
+ <20111104144024.GA2753@xps8300>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
 Content-Disposition: inline
-In-Reply-To: <1320405995-10199-1-git-send-email-bp@amd64.org>
+In-Reply-To: <20111104144024.GA2753@xps8300>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 12:26:32PM +0100, Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Upstream commit: dfb09f9b7ab03fd367740e541a5caf830ed56726
-> 
-> This patch provides performance tuning for the "Bulldozer" CPU. With its
-> shared instruction cache there is a chance of generating an excessive
-> number of cache cross-invalidates when running specific workloads on the
-> cores of a compute module.
-> 
-> This excessive amount of cross-invalidations can be observed if cache
-> lines backed by shared physical memory alias in bits [14:12] of their
-> virtual addresses, as those bits are used for the index generation.
-> 
-> This patch addresses the issue by clearing all the bits in the [14:12]
-> slice of the file mapping's virtual address at generation time, thus
-> forcing those bits the same for all mappings of a single shared library
-> across processes and, in doing so, avoids instruction cache aliases.
-> 
-> It also adds the command line option "align_va_addr=(32|64|on|off)" with
-> which virtual address alignment can be enabled for 32-bit or 64-bit x86
-> individually, or both, or be completely disabled.
-> 
-> This change leaves virtual region address allocation on other families
-> and/or vendors unaffected.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> Link: http://lkml.kernel.org/r/1312550110-24160-2-git-send-email-bp@amd64.org
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> ---
->  Documentation/kernel-parameters.txt |   13 ++++++
->  arch/x86/include/asm/elf.h          |   31 +++++++++++++
->  arch/x86/kernel/cpu/amd.c           |   13 ++++++
->  arch/x86/kernel/sys_x86_64.c        |   81 +++++++++++++++++++++++++++++++++-
->  arch/x86/mm/mmap.c                  |   15 ------
->  arch/x86/vdso/vma.c                 |    9 ++++
->  6 files changed, 144 insertions(+), 18 deletions(-)
 
-I really feel nervous adding this patch to the -stable tree(s).  It's
-bigger than "just a bugfix" and it adds new functionality.
+--SUOF0GtieIMvvwua
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm aware that it is needed for your new hardware, which is great, but
-it doesn't really follow the Documentation/stable_kernel_rules.txt
-requirements, does it?
+Hi,
 
-I need an ACK from the x86 maintainers before I'm going to be
-comfortable adding this, and then the other, patches in this series.
+On Fri, Nov 04, 2011 at 04:40:24PM +0200, Heikki Krogerus wrote:
+> On Fri, Nov 04, 2011 at 06:51:16AM -0700, Greg KH wrote:
+> > > It seems that there are not more comments to these. When can you take
+> > > them?
+> >=20
+> > Please realize that this is the "busy" period for the subsystem
+> > maintainers during the merge window.  We will be glad to review these
+> > _after_ the window closes, and queue them up for next time.
+> >=20
+> > Well, in this case, Felipe will do the reviewing and queuing up, not me,
+> > he's a busy person, give him some time please :)
+>=20
+> Of course. Forgive for being so impatient.
 
-Peter, Ingo, Thomas, your opinions?
+yeah, sorry about that. I generally wait the merge window to close until
+I get back reviewing patches.
 
-thanks,
+After Linus tags the first -rc, I have already quite a few pending
+patches to apply, so hang on for a while.
 
-greg k-h
+--=20
+balbi
+
+--SUOF0GtieIMvvwua
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOtAYpAAoJEIaOsuA1yqRE9AQQALZsc3JsCNWWuIfIP0Ye+Im8
+Eq0ppZahT/f/tQbr523KdqIVvgw3jOWEqnN0KbbjPMbKLwxF9KbbSg6lpWxqZ/vJ
+qMb/8UucszczCn8IbyfuXJZ1UKuDoajNdzeR6AZMv4kgCoUqrgvD/AAvyb74zpC5
+GXWZrJJFpdukXvUbKobVvzdnlm53BpcGZJmjTr3Ty59l1Fs9xblG+q7wY5rHXwCE
+Xz5aaidlVmCyqfEkiMopsVup++TH7eL4dztZnNQ/ZL9B/4q95j+0FVC5z1ZqwUMe
+1AfMHKhgDd2a3u2ps9K7Agk2UI5SpGzwxLTYpl8gsHh57tDYNU1tuWvCw+lKaTZ1
+GDkghb/UFyVAu27qU1M+EEZKTXAyk/buLUd5C1wg2/XxKyHXgaZ4pPgUlIb1lUdu
+WQA6Bi0B0K1hTJYUZToAhZsil7hEs0tWTobWczl5aXytrKMCgMb3llpt+S2CJjzT
+WMZuKoURwk7G5SiaEsm5mYp63kVnuCcIozUrYeRHYwz/FH0TN4dzpMxbUlF8Jn1h
+yco+j6Dpd5rBKHuNphUQLNnl6EPxkb6yUcgjfnYmdvg//LmDqxMTjvgR/bbctqoH
+4mBM/z8aAbjSPRkL0aw1gRqBB0hxnt1cHk4shG0tNrtX1uKHF3b8ug+vxsKUFvvK
+jhOyKvZFy5D2j/Kepnrj
+=RNuC
+-----END PGP SIGNATURE-----
+
+--SUOF0GtieIMvvwua--
