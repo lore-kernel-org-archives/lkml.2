@@ -1,122 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751168Ab1KDEiV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 00:38:21 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33958 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1KDEiU (ORCPT
+	id S1751372Ab1KDEjX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 00:39:23 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:51585 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab1KDEjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 00:38:20 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 4 Nov 2011 13:37:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Glauber Costa <glommer@parallels.com>, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] new cgroup controller "fork"
-Message-Id: <20111104133720.44042a5c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4EB3560D.7000002@cn.fujitsu.com>
-References: <20111103162238.27609.11515.stgit@rabbit.intern.cm-ag>
-	<4EB2C4A5.6000406@parallels.com>
-	<20111103165903.GA4755@Debian-60-squeeze-64-minimal>
-	<20111103182101.5037c1e5@lxorguk.ukuu.org.uk>
-	<20111103185108.GA5153@Debian-60-squeeze-64-minimal>
-	<20111103190330.02590426@lxorguk.ukuu.org.uk>
-	<20111103192039.GA5300@Debian-60-squeeze-64-minimal>
-	<4EB2EA93.2050206@parallels.com>
-	<4EB2F5CF.5010604@aljex.com>
-	<4EB30DAF.4090704@parallels.com>
-	<4EB3560D.7000002@cn.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Fri, 4 Nov 2011 00:39:21 -0400
+Date: Fri, 4 Nov 2011 15:39:11 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: linux-next: manual merge of the moduleh tree with the v4l-dvb tree
+Message-Id: <20111104153911.9e0c0650581af106b33aaf41@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Nov 2011 11:03:41 +0800
-Li Zefan <lizf@cn.fujitsu.com> wrote:
+--Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 于 2011年11月04日 05:54, Glauber Costa 写道:
-> > On 11/03/2011 06:13 PM, Brian K. White wrote:
-> >> On 11/3/2011 3:25 PM, Glauber Costa wrote:
-> >>> On 11/03/2011 05:20 PM, Max Kellermann wrote:
-> >>>> On 2011/11/03 20:03, Alan Cox<alan@lxorguk.ukuu.org.uk> wrote:
-> >>>>> Sure - I'm just not seeing that a whole separate cgroup for it is
-> >>>>> appropriate or a good plan. Anyone doing real resource management needs
-> >>>>> the rest of the stuff anyway.
-> >>>>
-> >>>> Right. When I saw Frederic's controller today, my first thought was
-> >>>> that one could move the fork limit code over into that controller. If
-> >>>> we reach a consensus that this would be a good idea, and would have
-> >>>> chances to get merged, I could probably take some time to refactor my
-> >>>> code.
-> >>>>
-> >>>> Max
-> >>> I'd advise you to take a step back and think if this is really needed.
-> >>> As Alan pointed out, the really expensive resource here is already being
-> >>> constrained by Frederic's controller.
-> >>
-> >> I think this really is a different knob that is nice to have as long as
-> >> it doesn't cost much. It's a way to set a max lifespan in a way that
-> >> isn't really addressed by the other controls. (I could absolutely be
-> >> missing something.)
-> >>
-> >> I think Max explained the issue clearly enough.
-> > 
-> > He did, indeed.
-> > 
-> >> It doesn't matter that the fork itself is supposedly so cheap.
-> >>
-> >> It's still nice to have a way to say, you may not fork/die/fork/die/fork
-> >> in a race.
-> >>
-> >> What's so unimaginable about having a process that you know needs a lot
-> >> of cpu and ram or other resources to do it's job, and you expressly want
-> >> to allow it to take as much of those resources as it can, but you know
-> >> it has no need to fork, so if it forks, _that_ is the only indication of
-> >> a problem, so you may only want to block it based on that.
-> >>
-> >> Sure many other processes would legitimately fork/die/fork/die a lot
-> >> while never exceeding a few total concurrent tasks, and for them you
-> >> would not want to set any such fork limit. So what?
-> >>
-> > As I said previously, he knows his use cases better than anyone else.
-> > If a use case can be found in which the summation of cpu+task controllers is not enough, and if this is implemented as an option to the task controller, and does not make it:
-> > 1) confusing,
-> > 2) more expensive,
-> > 
-> > then I don't see why not we shouldn't take it.
-> 
-> Quoted from Lennart's reply in another mail thread:
-> 
-> "Given that shutting down some services might involve forking off a few
-> things (think: a shell script handling shutdown which forks off a couple
-> of shell utilities) we'd want something that is between "from now on no
-> forking at all" and "unlimited forking". This could be done in many
-> different ways: we'd be happy if we could do time-based rate limiting,
-> but we'd also be fine with defining a certain budget of additional forks
-> a cgroup can do (i.e. "from now on you can do 50 more forks, then you'll
-> get EPERM)."
-> 
-> (http://lkml.org/lkml/2011/10/19/468)
-> 
-> The last sentence suggests he might like this fork controller.
-> 
+Hi Paul,
 
-Hmm, IMHO, this feature may have some use case. But I don't like to have
-both of fork/task controller at the same time and need to mount 2 of them.
+Today's linux-next merge of the moduleh tree got conflicts in
+drivers/media/video/mt9m111.c and drivers/media/video/ov6650.c between
+commit 95d20109ad64 ("[media] V4L: replace soc-camera specific
+soc_mediabus.h with v4l2-mediabus.h") from the v4l-dvb tree and commit
+7a707b89202f ("drivers/media: Add module.h to all files using it
+implicitly") from the moduleh tree.
 
-How about accounting the number of fork or fork-speed in 'task'
-controller and  add 'notifier' as memcg's memory usage notification ?
-(Or fork-limit in task controller.)
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-BTW, what is performance impact to add lock/counter in fork/die path ?
+diff --cc drivers/media/video/mt9m111.c
+index f023cc0,66e3c3c..0000000
+--- a/drivers/media/video/mt9m111.c
++++ b/drivers/media/video/mt9m111.c
+@@@ -13,12 -13,11 +13,13 @@@
+  #include <linux/log2.h>
+  #include <linux/gpio.h>
+  #include <linux/delay.h>
+ +#include <linux/v4l2-mediabus.h>
++ #include <linux/module.h>
+ =20
+ +#include <media/soc_camera.h>
+  #include <media/v4l2-common.h>
+ +#include <media/v4l2-ctrls.h>
+  #include <media/v4l2-chip-ident.h>
+ -#include <media/soc_camera.h>
+ =20
+  /*
+   * MT9M111, MT9M112 and MT9M131:
+diff --cc drivers/media/video/ov6650.c
+index d5b0572,2e16806..0000000
+--- a/drivers/media/video/ov6650.c
++++ b/drivers/media/video/ov6650.c
+@@@ -28,7 -28,7 +28,8 @@@
+  #include <linux/delay.h>
+  #include <linux/i2c.h>
+  #include <linux/slab.h>
+ +#include <linux/v4l2-mediabus.h>
++ #include <linux/module.h>
+ =20
+  #include <media/soc_camera.h>
+  #include <media/v4l2-chip-ident.h>
 
-Thanks,
--Kame
+--Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJOs2xvAAoJEECxmPOUX5FEPd4P/R7cNEhfTYJWa+8zGdXwJHhO
+0Nqpaz9ZJ8Xrm1d4dV9fXL2NOAeGV/w9S0iRmHKsFk41GQzLBb2mq8j/ihgIjV7r
+XupW082bJugKeD+p9D5s37qBCpXce0KBxEt/nfp5Jkol9AjkA8hlcFo6L9OsL/aS
+dZ1qg3xYNEzcZLvNBDOkSZImWR2f0af6I/NwgkBDAoGsRTGxWDkE8ysUv2P58vf9
++x2UplR2ecG1ky2xllMDy0vYG5Fs1uxBhl7H9wg/Lziie4QVWr0stWjBFArfjQPE
+jHVI9gfVZHDiwelAKljpw/GsfpUhHQc+z5TQOeU5PHSpdK8VCfrxfOiBqoc3GZTf
+gppQEFNJ8/u8g8By0GL+zXF6RvClCN8+1c2uBSKWbSQLUKLKaHOjDVqNLrTYorJr
+UAm/MsmF5ebNVVmgR4mWw87JX1JcaGfnOuKfh8xcxb70N12LbcrZokzlWfSI7uDw
+2GQPrXEZygRZGQ0WfaQ8Rf03wYtxioAgYJFZwXj5uSe8Ktk8evVfwOy+L/8oPpEc
+xRZhjsga9A3zHj7uWFX7dXmsEiHBWIZLImiW4RAOkFUlQu4Frz7RxdNXL9n3hjhX
+5bxWnHM6ZVyANuZ1VqU7dye+mnTMJZ+8PKGDKpiZRXVkzHfKv5IQURd/oeSbXCT5
+LuazTFekD29At39NQ4nT
+=ScdL
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__4_Nov_2011_15_39_11_+1100_vMTQqldO9jjLzmjh--
