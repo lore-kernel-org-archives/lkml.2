@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab1KDQqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:46:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5400 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754798Ab1KDQqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:46:15 -0400
-Date: Fri, 4 Nov 2011 17:45:32 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Neo Jia <cyclonusj@gmail.com>, levinsasha928@gmail.com,
-        JeremyFitzhardinge <jeremy@goop.org>, linux-mm@kvack.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>, Chris Mason <chris.mason@oracle.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, ngupta@vflare.org,
-        LKML <linux-kernel@vger.kernel.org>, Theodore Tso <tytso@mit.edu>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [GIT PULL] mm: frontswap (SUMMARY)
-Message-ID: <20111104164532.GO18879@redhat.com>
-References: <904b5bd7-efef-49fe-8413-966f0a554d1e@default>
+	id S1756047Ab1KDQs0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:48:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42286 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab1KDQsY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 12:48:24 -0400
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
+Subject: RE: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
+Thread-Topic: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
+Thread-Index: AQHMmvAZ0k5z8ytqW0i9aFLP+z33G5WcYzoAgABeBtD//7jHgIAAYTBw//+tnACAAFyJoP//qWSAAAuXTzA=
+Date: Fri, 4 Nov 2011 16:48:09 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A9019691@DBDE01.ent.ti.com>
+References: <1320410928-20349-1-git-send-email-afzal@ti.com>
+ <20111104140422.GA28615@opensource.wolfsonmicro.com>
+ <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
+ <20111104152559.GC28615@opensource.wolfsonmicro.com>
+ <C8443D0743D26F4388EA172BF4E2A7A9019607@DBDE01.ent.ti.com>
+ <20111104161855.GC28902@opensource.wolfsonmicro.com>
+ <C8443D0743D26F4388EA172BF4E2A7A9019650@DBDE01.ent.ti.com>
+ <20111104164009.GA753@opensource.wolfsonmicro.com>
+In-Reply-To: <20111104164009.GA753@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <904b5bd7-efef-49fe-8413-966f0a554d1e@default>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 07:01:23AM -0700, Dan Magenheimer wrote:
->   evolve", "this overall sounds very positive (or at least
+Hi Mark,
 
-You quoted me wrong! If you check back my email I said:
+On Fri, Nov 04, 2011 at 22:10:09, Mark Brown wrote:
+> 
+> What do you mean when you say "gain"?
+> 
 
-=====
-Thanks. So this overall sounds _fairly_ positive (or at least better
-than neutral) to me.
-=====
+Effective voltage expression is (value1 * 12.5mV + 562.5 mV) * value2.
 
-I guess your clipboard buffer stored in tmem memory in between the cut
-and paste and you still got a bug in there that corrupts memory :).
+In this value2 is being called as gain.
 
->   last remaining issue (need batching for KVM) now has a viable
->   solution that works with no frontswap commit-set changes,
->   but Andrea has not confirmed
+value1 can have values from 3 to 75, both inclusive (73 steps)
+value2 can have from 1 to 3, both inclusive (3 numbers)
 
-I think it really should be vectored, just like get_user_pages is
-vectored and we're not forced to call it one page at time. This is
-even more important here because you have a "size" parameter which
-means you can push "bytes" into tmem memory, so there's no way you can
-possibly want to push bytes with an external call for each one of
-those bytes.
-
-You said the tmem.c is all free to be modified so it may be improved
-later.
-
-My biggest concern of all is this moves memory outside the VM, and in
-control of tmem, but the major trouble will be how the VM controls the
-size of tmem. It'll be huge hard to be able to tell what's the ideal
-size of tmem at any given time. You admitted yourself that's the messy
-part. And your current code isn't handling this properly today, so it
-looks simpler than what will really happen if we can handle a mlockall
-program allocating 90% of ram at max CPU speed without going OOM
-because of zcache enabled.
-
-I also don't think the frontswap+KVM effort is worth it, I doubt we
-want to deal with the added complexity of it and the obvious
-unreliability we'd run into to shrink the tmem pools. Xen may be ok
-unreliable, KVM must be rock solid, we have a design that is as solid
-as Linux bare metal, no change at all in terms of VM algorithms in the
-hypervisor, and that's our core value. There's no way we add
-unreliability with a mlock program allocating ram in the host and going OOM
-because some VM is running, even if we solve the vmexit every 4k which
-would destroy performance.
-
-So my main interest is only for having compressed swap for linux in
-general. It may speedup swap I/O too if done right. I'm still not sure
-what's the right design it to handle compressed swap, but whatever we
-do should eventually be able to write to disk the compressed data,
-which zcache can't today, so I focused on making sure it's freely
-hackable and not constrained by Xen ABI, so I liked your confirmation
-it's all hackable. It's an intriguing design if we can make the
-plugins stackable and we can change the backing store of the zcache
-compressed ram with ramster or a one writing to disk. The dark side of
-it, is the magic algorithm that will be needed to reliably shrink the
-tmem pools, which right now seems disconnected to the VM and can't be
-reliable. It looks a design that simplify things but once it will be
-reliable things will get more complex and it will have to be driven by
-the core VM so that it can react fast to memory pressure events, even
-the decision to write to disk or send the zcache compressed pages to
-other nodes with ramster should come from the main VM. I still have no
-idea if this is the simpler design to allow it or not though, but
-again I can't exclude it is and for some things it's certainly
-intriguing.
+Regards
+Afzal
