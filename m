@@ -1,74 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037Ab1KDAui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 20:50:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55284 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab1KDAuh (ORCPT
+	id S1751704Ab1KDA4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 20:56:43 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57656 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810Ab1KDA4l convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 20:50:37 -0400
-Date: Thu, 3 Nov 2011 17:54:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Jan Beulich" <JBeulich@suse.com>
-Cc: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Dan Magenheimer" <dan.magenheimer@oracle.com>,
-        "Neo Jia" <cyclonusj@gmail.com>, <levinsasha928@gmail.com>,
-        "JeremyFitzhardinge" <jeremy@goop.org>, <linux-mm@kvack.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>,
-        "Seth Jennings" <sjenning@linux.vnet.ibm.com>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Chris Mason" <chris.mason@oracle.com>,
-        "Konrad Wilk" <konrad.wilk@oracle.com>, <ngupta@vflare.org>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-Message-Id: <20111103175410.b15efb8c.akpm@linux-foundation.org>
-In-Reply-To: <4EB2D427020000780005ED64@nat28.tlf.novell.com>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default>
-	<4EB2D427020000780005ED64@nat28.tlf.novell.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Nov 2011 20:56:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1320204101.31823.140.camel@wwguy-huron>
+References: <1319003304.31823.46.camel@wwguy-huron>
+	<20111019064628.GA14817@gamma.logic.tuwien.ac.at>
+	<1319004836.31823.57.camel@wwguy-huron>
+	<20111020045927.GB23044@gamma.logic.tuwien.ac.at>
+	<1319119852.2111.2.camel@wwguy-ubuntu>
+	<20111021012442.GB26758@gamma.logic.tuwien.ac.at>
+	<alpine.DEB.2.00.1110231424500.17218@chino.kir.corp.google.com>
+	<20111026025014.GB24956@gamma.logic.tuwien.ac.at>
+	<1319601333.14693.19.camel@wwguy-ubuntu>
+	<20111026040332.GF24956@gamma.logic.tuwien.ac.at>
+	<20111102031345.GA10851@gamma.logic.tuwien.ac.at>
+	<1320204101.31823.140.camel@wwguy-huron>
+Date: Thu, 3 Nov 2011 20:56:40 -0400
+X-Google-Sender-Auth: cjPM1s6HUtEjuXMB3_1fLnMP4dk
+Message-ID: <CABDyM6RtCV1=0mgcmsgquFBjx-sDg9ZD5YQEzs_nLmSPLaJdpQ@mail.gmail.com>
+Subject: Re: iwlagn is getting very shaky
+From: Richard Yao <ryao@cs.stonybrook.edu>
+To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+Cc: Norbert Preining <preining@logic.at>, David Rientjes <rientjes@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ipw3945-devel@lists.sourceforge.net" 
+	<ipw3945-devel@lists.sourceforge.net>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Nov 2011 16:49:27 +0000 "Jan Beulich" <JBeulich@suse.com> wrote:
+Dear Wey,
 
-> >>> On 27.10.11 at 20:52, Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-> > Hi Linus --
-> > 
-> > Frontswap now has FOUR users: Two already merged in-tree (zcache
-> > and Xen) and two still in development but in public git trees
-> > (RAMster and KVM).  Frontswap is part 2 of 2 of the core kernel
-> > changes required to support transcendent memory; part 1 was cleancache
-> > which you merged at 3.0 (and which now has FIVE users).
-> > 
-> > Frontswap patches have been in linux-next since June 3 (with zero
-> > changes since Sep 22).  First posted to lkml in June 2009, frontswap 
-> > is now at version 11 and has incorporated feedback from a wide range
-> > of kernel developers.  For a good overview, see
-> >    http://lwn.net/Articles/454795.
-> > If further rationale is needed, please see the end of this email
-> > for more info.
-> > 
-> > SO... Please pull:
-> > 
-> > git://oss.oracle.com/git/djm/tmem.git #tmem
-> > 
-> >...
-> > Linux kernel distros incorporating frontswap:
-> > - Oracle UEK 2.6.39 Beta:
-> >    http://oss.oracle.com/git/?p=linux-2.6-unbreakable-beta.git;a=summary 
-> > - OpenSuSE since 11.2 (2009) [see mm/tmem-xen.c]
-> >    http://kernel.opensuse.org/cgit/kernel/ 
-> 
-> I've been away so I am too far behind to read this entire
-> very long thread, but wanted to confirm that we've been
-> carrying an earlier version of this code as indicated above
-> and it would simplify our kernel maintenance if frontswap
-> got merged.  So please count me as supporting frontswap.
+My situation is very similar to Norbert's. At my house, I have no
+issues at all, but at my university, I tend to have issues. In the
+past, using 11n_disable=1 would cause the wireless interface to break
+until I executed "modprobe -r iwlagn && modprobe iwlagn" as root. That
+was around Linux 3.0-rc4. I haven't tried it since, but what seems to
+help is "iwconfig wlan0 rts 0", but even that is not perfect. I just
+gave "modprobe -r iwlagn && modprobe iwlagn 11n_disable=1" another try
+and it makes no difference.
 
-Are you able to tell use *why* you're carrying it, and what benefit it
-is providing to your users?
+Issues with the campus Wi-Fi are not isolated to Linux users. I
+suspect it has something to do with the 100 or so access points that I
+see when I do "iwlist wlan0 scan" at my university and the 4 that I
+see when I do that off campus. I don't want to imagine how many
+devices are trying to use the available bandwidth. I imagine that
+implementing "auto" for rts would improve both my and Norbert's
+situations.
 
+Yours truly,
+Richard Yao
+
+On Tue, Nov 1, 2011 at 11:21 PM, Guy, Wey-Yi <wey-yi.w.guy@intel.com> wrote:
+> Hi Norbert,
+>
+> On Tue, 2011-11-01 at 20:13 -0700, Norbert Preining wrote:
+>> Hi all,
+>>
+>> On Mi, 26 Okt 2011, Norbert Preining wrote:
+>> > On Di, 25 Okt 2011, wwguy wrote:
+>> > > so this is different problem, right? it looks different compare to what
+>> > > you described before which is cause by queue stopped.
+>> >
+>> > I assume that this is a different regression concerning 3.1.0 released.
+>>
+>> Is there any progress on that? Currently linux git status is unusable
+>> with respect to iwlwifi?
+>>
+>> Are there any changes planned before rc1?
+>>
+> after the firmware reloaded, is the traffic resume? or it is continuous
+> without traffic?
+>
+> Looks like the different "queue stuck" problem you are seeing. you
+> mention you only seeing this at university but not home. So what the
+> differences are?
+> what Band/channel you are using, also, if you disable 11n, are you still
+> seeing the problem?
+>
+> you also mention it is might related to suspend/resume, could you please
+> give a better description why you think it might be related
+>
+> Thanks
+> Wey
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
