@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab1KDNu3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 09:50:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023Ab1KDNu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:50:27 -0400
-Date: Fri, 4 Nov 2011 15:51:15 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111104135113.GA24452@redhat.com>
-References: <1320259767.22582.2.camel@lappy>
- <8762j2t19l.fsf@rustcorp.com.au>
- <1320309203.29407.1.camel@lappy>
- <87lirwrzlg.fsf@rustcorp.com.au>
- <20111104114033.GA21308@redhat.com>
- <1320409939.3334.6.camel@lappy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320409939.3334.6.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932475Ab1KDNvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:51:47 -0400
+Received: from 206.83.70.73.ptr.us.xo.net ([206.83.70.73]:23138 "EHLO
+	king.tilera.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab1KDNvq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 09:51:46 -0400
+Date: Fri, 4 Nov 2011 09:51:42 -0400
+Message-Id: <201111041351.pA4Dpg1T031768@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/tile update for 3.2
+X-OriginalArrivalTime: 04 Nov 2011 13:51:45.0333 (UTC) FILETIME=[E3EB7E50:01CC9AF8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 02:32:19PM +0200, Sasha Levin wrote:
-> On Fri, 2011-11-04 at 13:40 +0200, Michael S. Tsirkin wrote:
-> > On Fri, Nov 04, 2011 at 08:14:43PM +1030, Rusty Russell wrote:
-> > > > > 3) If we're changing the queue layout, it's a chance to fix a
-> > > > >    longstanding bug: let the guest notify the host of preferred
-> > > > >    queue size and alignment.
-> > > > 
-> > > > Yup, we can do that.
-> > 
-> > We don't need to change all of layout for that - just add another field
-> > in the common config structure to supply the alignment.
-> 
-> How would you do it without changing the layout? Add another optional
-> field at the end which will shift offsets based on whether the host and
-> guest support this new feature or not?
-> 
-> This leads to 3 different things which now shift config offsets around.
+Linus,
 
-No. Just put the field at offset 24 from the offset specified
-by VIRTIO_PCI_CAP_COMMON_CFG.
+Could you pull the following changes for v3.2?
 
-> As you said, the PCI cap list was introduced both to save space (which
-> is not the motivation here), and because it's a very efficient
+The exports.c change allows us to build Linux with the gcc we are now
+returning to the community (a libgcc symbol name change happened as
+part of stabilizing the API) and the other three changes will allow us
+to use unmodified v3.2 "make headers_install" to build the glibc that
+we are now also returning to the community.
 
-It's actually pretty inefficient - there's an overhead of 3 bytes for
-each vendor specific option.
+Since I'm still working to get my kernel.org repository re-enabled
+(any more folks out there want to sign my key?) the Tilera tree is
+still hosted at github, but I've pgp-signed the pull line itself in
+this email with my new 4096-bit cmetcalf@tilera.com key, so hopefully
+that will do for now.
 
-> and easy way to manage optional features without requiring tricks
-> which move offsets around like we do now.
+Thanks!
 
-Tricks with offsets only appeared because we had datapath, device
-specific and common config in the same place.
-feature list isn't needed to fix that.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> -- 
-> 
-> Sasha.
+  git@github.com:cmetcalf-tilera/linux-tile.git for-linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.5 (GNU/Linux)
+
+iQIVAwUBTrPrC1yCCJqv9XTAAQKeCg//bJj1gsGi/bNMKXi/vv5ccbR2NCcDuje4
+3Tf3dh8tvmrFAjq6GvPxm6yet3d1Cu55zrprdCQSTRy0fnd5JzcyvS5/vAlnNxCY
+2z0HOImhzG3r45xvlomssRKOEG5IpiLWOL+1hbEic/yG8d5CPQ5z5WkUV9suotBY
+wQMnxWGDL04g9quVh3xDyLwK2wW+LjK4Einy07veabqj2Otva9GLxtWP22zZucyf
+fuVw6KARSYj28rglT5YpcaaIefthlaCjCsBP/UiUGRlJd5xtiBNYZSzSdwjx149k
++2ggDnvqlD2cwgJyzl1jRJIjUW6YisWgNosQPuPvuD4ka5CU2mb1S+WpNGogz1VT
+4gRQmNlVoTig/ihynXMM6oyg9IBkw0VA/AHJ7mvxQ2tlIGJr9/AQIOJHfog9sVpd
+5KZq0ujCF6paP2t20C1WhK/mSXEgz2w7LBXXlWvK5L0hrU1lpqPXH7rAiM5aSQIz
+QR21AkR7ue3OrYGPEfTuWxNxS5F8BvSbYZdShxv3TxmexFUE5tGoKRkHU5DPNXgr
+JdTCXYxImB8nUO/NPi+9Lz/7A6sreD34eMqIXota5pac2E7zWej1WlInko3t8m4B
+zfJk4TJcPgs+fcFt3/ow4vbhYsygB/t0ErBMIcBI5mVFwg6fopCs1EoP0W6b1R4A
+DpWuit5+Xo0=
+=J41B
+-----END PGP SIGNATURE-----
+
+Chris Metcalf (4):
+      arch/tile: avoid ISO namespace pollution with <asm/sigcontext.h>
+      arch/tile: avoid exporting a symbol no longer used by gcc
+      arch/tile: add the <arch> headers to the set of installed kernel headers
+      arch/tile: factor out <arch/opcode.h> header
+
+ arch/tile/include/arch/Kbuild                      |   17 +
+ arch/tile/include/arch/abi.h                       |   99 +-
+ .../{asm/opcode_constants.h => arch/opcode.h}      |   17 +-
+ arch/tile/include/arch/opcode_tilegx.h             | 1405 ++++++++++++
+ arch/tile/include/arch/opcode_tilepro.h            | 1471 +++++++++++++
+ arch/tile/include/asm/Kbuild                       |    2 +
+ arch/tile/include/asm/opcode-tile_32.h             | 1513 -------------
+ arch/tile/include/asm/opcode-tile_64.h             | 1248 -----------
+ arch/tile/include/asm/opcode_constants_32.h        |  480 -----
+ arch/tile/include/asm/opcode_constants_64.h        |  609 ------
+ arch/tile/include/asm/sigcontext.h                 |   18 +-
+ .../include/asm/{opcode-tile.h => tile-desc.h}     |   19 +-
+ arch/tile/include/asm/tile-desc_32.h               |  553 +++++
+ arch/tile/include/asm/tile-desc_64.h               |  483 +++++
+ arch/tile/kernel/backtrace.c                       |   19 +-
+ arch/tile/kernel/module.c                          |    2 +-
+ arch/tile/kernel/single_step.c                     |    9 +-
+ arch/tile/kernel/tile-desc_32.c                    | 2242 ++++++++++----------
+ arch/tile/kernel/tile-desc_64.c                    |   28 +-
+ arch/tile/kernel/traps.c                           |    5 +-
+ arch/tile/lib/exports.c                            |    2 -
+ 21 files changed, 5241 insertions(+), 5000 deletions(-)
+ create mode 100644 arch/tile/include/arch/Kbuild
+ rename arch/tile/include/{asm/opcode_constants.h => arch/opcode.h} (62%)
+ create mode 100644 arch/tile/include/arch/opcode_tilegx.h
+ create mode 100644 arch/tile/include/arch/opcode_tilepro.h
+ delete mode 100644 arch/tile/include/asm/opcode-tile_32.h
+ delete mode 100644 arch/tile/include/asm/opcode-tile_64.h
+ delete mode 100644 arch/tile/include/asm/opcode_constants_32.h
+ delete mode 100644 arch/tile/include/asm/opcode_constants_64.h
+ rename arch/tile/include/asm/{opcode-tile.h => tile-desc.h} (56%)
+ create mode 100644 arch/tile/include/asm/tile-desc_32.h
+ create mode 100644 arch/tile/include/asm/tile-desc_64.h
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
