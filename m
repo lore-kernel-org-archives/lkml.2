@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932888Ab1KDTG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 15:06:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52832 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932296Ab1KDTG1 (ORCPT
+	id S933158Ab1KDTQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 15:16:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54223 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932418Ab1KDTQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 15:06:27 -0400
-Date: Fri, 4 Nov 2011 19:06:16 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Xiaotian Feng <dfeng@redhat.com>,
-        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Message-ID: <20111104190616.GB3366@decadent.org.uk>
-References: <20111102221600.GA26650@kroah.com>
- <20111102221454.703920975@clark.kroah.org>
- <1320420256.3079.172.camel@deadeye>
- <20111104171425.GA4893@suse.de>
+	Fri, 4 Nov 2011 15:16:08 -0400
+Date: Fri, 4 Nov 2011 12:16:03 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Nai Xia <nai.xia@gmail.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+In-Reply-To: <CAPQyPG4DNofTw=rqJXPTbo3w4xGMdPF3SYt3qyQCWXYsDLa08A@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1111041158440.1554@sister.anvils>
+References: <20111031171441.GD3466@redhat.com> <1320082040-1190-1-git-send-email-aarcange@redhat.com> <alpine.LSU.2.00.1111032318290.2058@sister.anvils> <CAPQyPG4DNofTw=rqJXPTbo3w4xGMdPF3SYt3qyQCWXYsDLa08A@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104171425.GA4893@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [050/107] block: check for proper length of iov entries
- earlier in blk_rq_map_user_iov()
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-916335275-1320434175=:1554"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 10:14:26AM -0700, Greg KH wrote:
-> On Fri, Nov 04, 2011 at 03:24:16PM +0000, Ben Hutchings wrote:
-> > On Wed, 2011-11-02 at 15:14 -0700, Greg KH wrote:
-> > > 2.6.32-longterm review patch.  If anyone has any objections, please let us know.
-> > > 
-> > > ------------------
-> > > 
-> > > From: Xiaotian Feng <dfeng@redhat.com>
-> > > 
-> > > commit 5478755616ae2ef1ce144dded589b62b2a50d575 upstream.
-> > > 
-> > > commit 9284bcf checks for proper length of iov entries in
-> > > blk_rq_map_user_iov(). But if the map is unaligned, kernel
-> > > will break out the loop without checking for the proper length.
-> > > So we need to check the proper length before the unalign check.
-> > 
-> > This will catch an unaligned zero-length entry.  But there's still no
-> > check for zero-length iov entries *after* the unaligned entry.
-> > 
-> > [...]
-> > > --- a/block/blk-map.c
-> > > +++ b/block/blk-map.c
-> > > @@ -201,12 +201,13 @@ int blk_rq_map_user_iov(struct request_q
-> > >  	for (i = 0; i < iov_count; i++) {
-> > >  		unsigned long uaddr = (unsigned long)iov[i].iov_base;
-> > >  
-> > > +		if (!iov[i].iov_len)
-> > > +			return -EINVAL;
-> > > +
-> > >  		if (uaddr & queue_dma_alignment(q)) {
-> > >  			unaligned = 1;
-> > >  			break;
-> > 
-> > I think the correct fix is just to remove the 'break'.
-> 
-> Then the fix should go upstream first :)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-But if I'm right, this is a non-fix and doesn't belong in the
-longterm update.
+--8323584-916335275-1320434175=:1554
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Ben.
+On Fri, 4 Nov 2011, Nai Xia wrote:
+> On Fri, Nov 4, 2011 at 3:31 PM, Hugh Dickins <hughd@google.com> wrote:
+> > On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
+> >> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_=
+struct **vmap,
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0*/
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (vma_start >=3D new_vma->vm_start &&
+> >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 vma_start < new_vma->vm_end)
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 /*
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* No need to call anon_vm=
+a_order_tail() in
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* this case because the s=
+ame PT lock will
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* serialize the rmap_walk=
+ against both src
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* and dst vmas.
+> >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0*/
+> >
+> > Really? =A0Please convince me: I just do not see what ensures that
+> > the same pt lock covers both src and dst areas in this case.
+>=20
+> At the first glance that rmap_walk does travel this merged VMA
+> once...
+> But, Now, Wait...., I am actually really puzzled that this case can reall=
+y
+> happen at all, you see that vma_merge() does not break the validness
+> between page->index and its VMA. So if this can really happen,
+> a page->index should be valid in both areas in a same VMA.
+> It's strange to imagine that a PTE is copy inside a _same_ VMA
+> and page->index is valid at both old and new places.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+Yes, I think you are right, thank you for elucidating it.
+
+That was a real case when we wrote copy_vma(), when rmap was using
+pte_chains; but once anon_vma came in, and imposed vm_pgoff matching
+on anonymous mappings too, it became dead code.  With linear vm_pgoff
+matching, you cannot fit a range in two places within the same vma.
+(And even the non-linear case relies upon vm_pgoff defaults.)
+
+So we could simplify the copy_vma() interface a little now (get rid of
+that nasty **vmap): I'm not quite sure whether we ought to do that,
+but certainly Andrea's comment there should be updated (if he also
+agrees with your analysis).
+
+>=20
+> IMO, the only case that src VMA can be merged by the new
+> is that src VMA hasn't been faulted yet and the pgoff
+> is recalculated. And if my reasoning is true, this place
+> does not need to be worried about.
+
+I don't see a place where "the pgoff is recalculated" (except in
+the consistent way when expanding or splitting or merging vma), nor
+where vma merge would allow for variable pgoff.  I agree that we
+could avoid finalizing vm_pgoff for an anonymous area until its
+anon_vma is assigned: were you imagining doing that in future,
+or am I overlooking something already there?
+
+Hugh
+--8323584-916335275-1320434175=:1554--
