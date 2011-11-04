@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab1KDU2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 16:28:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60446 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab1KDU2p (ORCPT
+	id S1752230Ab1KDU2v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 16:28:51 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:48772 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1KDU2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 16:28:45 -0400
-Date: Fri, 4 Nov 2011 13:29:05 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Rajendra Nayak <rnayak@ti.com>
-Cc: broonie@opensource.wolfsonmicro.com, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/4] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111104202905.GA3918@quad.lixom.net>
-References: <1319721864-30067-1-git-send-email-rnayak@ti.com>
+	Fri, 4 Nov 2011 16:28:48 -0400
+Date: Fri, 4 Nov 2011 15:41:03 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jerome Glisse <j.glisse@gmail.com>
+Cc: linux-kernel@vger.kernel.org, thellstrom@vmware.com, thomas@shipmail.org,
+        airlied@redhat.com, jglisse@redhat.com, bskeggs@redhat.com,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH] TTM DMA pool v2.2 or [GIT PULL]
+ (stable/ttm.dma_pool.v2.3) for 3.3
+Message-ID: <20111104194102.GA15923@phenom.dumpdata.com>
+References: <1320173252-2812-1-git-send-email-konrad.wilk@oracle.com>
+ <20111104183110.GC2015@homer.localdomain>
+ <20111104184453.GB1616@phenom.dumpdata.com>
+ <20111104192451.GE2015@homer.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319721864-30067-1-git-send-email-rnayak@ti.com>
+In-Reply-To: <20111104192451.GE2015@homer.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4EB44ADC.006F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 27, 2011 at 06:54:24PM +0530, Rajendra Nayak wrote:
-> The helper routine is meant to be used by the regulator drivers
-> to extract the regulator_init_data structure from the data
-> that is passed from device tree.
-> 'consumer_supplies' which is part of regulator_init_data is not extracted
-> as the regulator consumer mappings are passed through DT differently,
-> implemented in subsequent patches.
-> Similarly the regulator<-->parent/supply mapping is handled in
-> subsequent patches.
+On Fri, Nov 04, 2011 at 03:24:51PM -0400, Jerome Glisse wrote:
+> On Fri, Nov 04, 2011 at 02:44:53PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/ttm.dma_pool.v2.3
+> > > > 
+> > > 
+> > > On what hw did you tested ? With and without xen ? Here radeon
+> > 
+> > On AMD and Intel. And with both Nvidia and Radeon cards.
+> > 64-bit cards (I have a patch where I forced the 64-bit card to use
+> > the TTM DMA pool code to test) and 32-bit cards (ATI ES1000)
+> > 
+> > On baremetal and Xen. Um, Fedora Core 16 as distro.
+> > 
+> > Oh, and I also tried PPC (Power Mac 4) but could not get it to boot
+> > the 3.1 kernel. Something with the LILO grub loader did not work.
+> > 
+> > > that doesn't need dma32 doesn't work when forcing swiotlb which
+> > > kind of expected i guess. Should we expose if swiotlb is enabled
+> > 
+> > You did 'swiotlb=force' ?
+> > > forced so we use dma pool in such case ?
 > 
-> Also add documentation for regulator bindings to be used to pass
-> regulator_init_data struct information from device tree.
-> 
-> Some of the regulator properties which are linux and board specific,
-> are left out since its not clear if they can
-> be in someway embedded into the kernel or passed in from DT.
-> They will be revisited later.
-> 
-> Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  .../devicetree/bindings/regulator/regulator.txt    |   33 ++++++++
->  drivers/regulator/Kconfig                          |    7 ++
->  drivers/regulator/Makefile                         |    1 +
->  drivers/regulator/of_regulator.c                   |   81 ++++++++++++++++++++
->  include/linux/regulator/of_regulator.h             |   20 +++++
->  5 files changed, 142 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
->  create mode 100644 drivers/regulator/of_regulator.c
->  create mode 100644 include/linux/regulator/of_regulator.h
-> 
-> diff --git a/Documentation/devicetree/bindings/regulator/regulator.txt b/Documentation/devicetree/bindings/regulator/regulator.txt
-> new file mode 100644
-> index 0000000..c488bf3
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/regulator/regulator.txt
-> @@ -0,0 +1,33 @@
-> +Voltage/Current Regulators
-> +
+> Issue is that when booted without force swiotlb_nr_tlb still return
+> positive thus we endup using the dma pool path.
 
-There should be a mandatory compatible field here, right? I.e. a topmost
-generic one, "regulator" or similar.
+Did " Using software bounce buffering for IO (SWIOTLB)" or "software IO TLB at"
+show up in the dmesg output? You might have to run it with 'debug loglevel=8'?
+Presumarily yes, since the code "swiotlb: Expose.." sets
+  io_tlb_nslabs = 0
 
-> +Optional properties:
-> +- regulator-name: A string used as a descriptive name for regulator outputs
+if there is no need for it. And since io_tlb_nslabs is set, then the code
+did start.
 
-Ah, there it is. Ignore my previous comment then, Mark. :)
+Some AMD boxes with the AMD-Vi chipset enable the SWIOTLB b/c not all of
+the PCI devices are on the IOMMU chipset path. The Intel VT-d does the same
+thing.
 
-> +- regulator-min-uV: smallest voltage consumers may set
-> +- regulator-max-uV: largest voltage consumers may set
-> +- regulator-uV-offset: Offset applied to voltages to compensate for voltage drops
-> +- regulator-min-uA: smallest current consumers may set
-> +- regulator-max-uA: largest current consumers may set
-> +- regulator-always-on: boolean, regulator should never be disabled
-> +- regulator-boot-on: bootloader/firmware enabled regulator
+Hmm, I think the reason for those devices to turn SWIOTLB on is that they
+are not comfortable handling 32-bit devices, and the TTM DMA pool code would
+only turn itself on when the radeon|nouveau was 32-bit _and_ SWIOTLB was enabled.
 
-Once you have a compatible field that can determine what kind of device node,
-and binding, this is, you can drop the regulator- prefix and save some space in
-the device tree. Properties are rarely prefixed by their subsystem. Only
-exception would/could be the regulator-name property where it could make
-sense to keep the prefix.
-
-Also, lower-caps is common instead of V and A.
-
-> +- <name>-supply: phandle to the parent supply/regulator node
-
-Having a fixed name here instead of a free form string would probably be a good
-idea?
-
-
-
--Olof
+.. Testing the patches you posted on my AMD box.
