@@ -1,118 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1KDClH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 22:41:07 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47566 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab1KDClG convert rfc822-to-8bit (ORCPT
+	id S1754784Ab1KDCnD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 22:43:03 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:49524 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab1KDCnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 22:41:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGW+__+=q6W92+0HZWeQsqKt+wiBu7sPU8jTOxbaR_JEfqo6Qw@mail.gmail.com>
-References: <1320215670-10157-1-git-send-email-heguanbo@gmail.com>
-	<CAJd=RBD7iov62=OdZOb3L4S+2ok6CEconGMmmPrzFnzWkQJ+Rg@mail.gmail.com>
-	<CAGW+__+=q6W92+0HZWeQsqKt+wiBu7sPU8jTOxbaR_JEfqo6Qw@mail.gmail.com>
-Date: Fri, 4 Nov 2011 10:41:05 +0800
-Message-ID: <CAGW+__LrtzqXem-o77UOzd0Fr8ORrHM7r_eiyMK8aX5t63+vBw@mail.gmail.com>
-Subject: Re: [PATCH][mm] adjust the logic of checking THP
-From: GuanJun He <heguanbo@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: gjhe@suse.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Nov 2011 22:43:01 -0400
+Date: Thu, 03 Nov 2011 22:40:39 -0400 (EDT)
+Message-Id: <20111103.224039.583140439749870987.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 03 Nov 2011 19:41:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 3, 2011 at 10:19 AM, GuanJun He <heguanbo@gmail.com> wrote:
-> On Wed, Nov 2, 2011 at 8:17 PM, Hillf Danton <dhillf@gmail.com> wrote:
->> On Wed, Nov 2, 2011 at 2:34 PM, Guanjun He <heguanbo@gmail.com> wrote:
->>>
->>> Acturally, pmd_trans_huge(orig_pmd) only checks the _PAGE_PSE bits,
->>> it's a pmd entry bits, only mark a size, not a flag;As one can easily
->>> create the same pmd entry bits for some special use,then the check
->>> will get confused.And this patch is to adjust the logic to use the flag,
->>> it can perfectly avoid this potential issuse,and basically no impact
->>> to the current code.
->>>
->>>
->>> Signed-off-by: Guanjun He <heguanbo@gmail.com>
->>> ---
->>>  mm/memory.c |   28 +++++++++++++++-------------
->>>  1 files changed, 15 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/mm/memory.c b/mm/memory.c
->>> index a56e3ba..a76b17f 100644
->>> --- a/mm/memory.c
->>> +++ b/mm/memory.c
->>> @@ -3465,20 +3465,22 @@ int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->>>        pmd = pmd_alloc(mm, pud, address);
->>>        if (!pmd)
->>>                return VM_FAULT_OOM;
->>> -       if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
->>> -               if (!vma->vm_ops)
->>> -                       return do_huge_pmd_anonymous_page(mm, vma, address,
->>> -                                                         pmd, flags);
->>> -       } else {
->>> -               pmd_t orig_pmd = *pmd;
->>> -               barrier();
->>> -               if (pmd_trans_huge(orig_pmd)) {
->>> -                       if (flags & FAULT_FLAG_WRITE &&
->>> -                           !pmd_write(orig_pmd) &&
->>> -                           !pmd_trans_splitting(orig_pmd))
->>> -                               return do_huge_pmd_wp_page(mm, vma, address,
->>> -                                                          pmd, orig_pmd);
->>> +       if (transparent_hugepage_enabled(vma)) {
->>
->> Well, how about THP not configured?
->
-> What do you mean 'not configured'? assume not enabled.
-> If THP not enabled, of course the transparent_hugepage_enabled(vma)
-> will be false.
 
-In the original logic,  it's possible that the code go into the logic
-of THP while the THP is not enabled.
-Just think, If build another module that make pmd with the same bits,
-even THP is not enabled, the code can go into the logic of the THP.And
-this adjust can avoid this.
+1) NULL crash in x25_recvmsg(), fix from Dave Jones.
 
-best,
-Guanjun
+2) __alloc_skb() alignments need adjusting for SLOB, fix from Tony Lindgren.
 
->
->>
->> Thanks,
->>              Hillf
->>
->>> +               if (pmd_none(*pmd)) {
->>> +                       if (!vma->vm_ops)
->>> +                               return do_huge_pmd_anonymous_page(mm, vma, address,
->>> +                                                                 pmd, flags);
->>> +               } else {
->>> +                       pmd_t orig_pmd = *pmd;
->>> +                       barrier();
->>> +                       if (pmd_trans_huge(orig_pmd)) {
->>> +                               if (flags & FAULT_FLAG_WRITE &&
->>> +                                   !pmd_write(orig_pmd) &&
->>> +                                   !pmd_trans_splitting(orig_pmd))
->>> +                                       return do_huge_pmd_wp_page(mm, vma, address,
->>> +                                                                  pmd, orig_pmd);
->>>                        return 0;
->>> +                       }
->>>                }
->>>        }
->>>
->>> --
->>> 1.7.7
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>>
->>>
->>
->
+3) l2tp_recv_dequeue() can leave queue in inconsistent state, resulting in
+   a subsequent crash, fix from Eric Dumazet.
+
+4) Missing bh_unlock_sock() in inet_csk_route_child_sock(), from Eric
+   Dumazet.
+
+5) Build fix for 3c505 driver from Andrew Morton.
+
+6) Fix docbook comment in skbuff.h, from Marcos Paulo de Souza.
+
+7) IPVS netfilter fixes from Krzysztof Wilczynski and Simon Horman.
+
+8) Fix refcount leak in ipv6 netfilter core, from Florian Westphal.
+
+9) Fix multicast/promisc state refcounting bug due to vlan propagating
+   flag state changes on downed devices.  Fix from Matthijs Kooijman.
+
+10) Fix build error due to typo in ll_temac driver, from Stephen Rothwell.
+
+11) Fix build of AF_PACKET due to bogus inline prototypes, from Olof
+    Johansson.
+
+12) be2net driver bug fixes from Padmanabh Ratnakar.
+
+13) Intel ethernet fixes from Bruce Allan, Jesse Brandeburg, Tomasz Kantecki,
+    Emil Tantilov, John Fastabend, and Greg Rose.
+
+Please pull, thanks a lot!
+
+The following changes since commit d6748066ad0e8b2514545998f8367ebb3906f299:
+
+  Merge branch 'upstream' of git://git.linux-mips.org/pub/scm/ralf/upstream-linus (2011-11-03 13:28:14 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Andrew Morton (1):
+      drivers/net/ethernet/i825xx/3c505.c: fix build with dynamic debug
+
+Arjan van de Ven (1):
+      net: make the tcp and udp file_operations for the /proc stuff const
+
+Bruce Allan (1):
+      e1000e: demote a debugging WARN to a debug log message
+
+Cesar Eduardo Barros (1):
+      net/ethernet: sc92031 is not Realtek
+
+Dave Jones (1):
+      x25: Fix NULL dereference in x25_recvmsg
+
+David S. Miller (2):
+      neigh: Kill bogus SMP protected debugging message.
+      Merge git://git.kernel.org/.../jkirsher/net
+
+Emil Tantilov (3):
+      ixgbe: Fix link issues caused by a reset while interface is down
+      ixgbe: fix disabling of Tx laser at probe
+      ixgbe: fix reading of the buffer returned by the firmware
+
+Eric Dumazet (3):
+      udp: fix a race in encap_rcv handling
+      l2tp: fix race in l2tp_recv_dequeue()
+      net: add missing bh_unlock_sock() calls
+
+Florian Westphal (2):
+      netfilter: ipv6: fix afinfo->route refcnt leak on error
+      netfilter: do not propagate nf_queue errors in nf_hook_slow
+
+Geert Uytterhoeven (1):
+      net/ethernet: Move mac89x0.c from apple to cirrus
+
+Greg Rose (2):
+      ixgbe: Fix compiler warnings
+      ixgbevf: Update release version
+
+Jesse Brandeburg (1):
+      e100: make sure vlan support isn't advertised on old adapters
+
+Joe Perches (1):
+      netfilter: Remove unnecessary OOM logging messages
+
+John Fastabend (2):
+      ixgbe: fix smatch splat due to missing NULL check
+      ixgbe: DCB, return max for IEEE traffic classes
+
+Kantecki, Tomasz (1):
+      igb: Fix for I347AT4 PHY cable length unit detection
+
+Krzysztof Wilczynski (3):
+      ipvs: Expose ip_vs_ftp module parameters via sysfs.
+      ipvs: Remove unused variable "cs" from ip_vs_leave function.
+      ipvs: Fix compilation error in ip_vs.h for ip_vs_confirm_conntrack function.
+
+Marcos Paulo de Souza (1):
+      include: linux: skbuf.h: Fix parameter documentation
+
+Matthijs Kooijman (1):
+      vlan: Don't propagate flag changes on down interfaces.
+
+Oliver Hartkopp (1):
+      MAINTAINERS: Add can-gw include to maintained files
+
+Olof Johansson (1):
+      af_packet: de-inline some helper functions
+
+Pablo Neira Ayuso (2):
+      netfilter: export NAT definitions through linux/netfilter_ipv4/nf_nat.h
+      MAINTAINERS: update netfilter maintainers
+
+Padmanabh Ratnakar (4):
+      be2net: Fix endian issue in RX filter command
+      be2net: Fix disabling multicast promiscous mode
+      be2net: Prevent CQ full condition for Lancer
+      be2net: Add detect UE feature for Lancer
+
+Paul Bolle (1):
+      isdn: hisax: Fix typo 'HISAX_DE_AOC'
+
+Simon Horman (6):
+      ipvs: Add documentation for new sysctl entries
+      ipvs: Remove unused parameter from ip_vs_confirm_conntrack()
+      ipvs: Remove unused return value of protocol state transitions
+      ipvs: Removed unused variables
+      ipvs: secure_tcp does provide alternate state timeouts
+      ipvs: Enhance grammar used to refer to Kconfig options
+
+Stephen Rothwell (1):
+      net: fix typo in drivers/net/ethernet/xilinx/ll_temac_main.c
+
+Tony Lindgren (1):
+      net: Add back alignment for size for __alloc_skb
+
+Weiping Pan (1):
+      bonding:update speed/duplex for NETDEV_CHANGE
+
+ Documentation/networking/ipvs-sysctl.txt          |   62 +++++++++++++++++--
+ MAINTAINERS                                       |    5 +-
+ drivers/isdn/hisax/l3dss1.c                       |    6 +-
+ drivers/net/bonding/bond_main.c                   |   37 ++++--------
+ drivers/net/bonding/bond_procfs.c                 |   12 +++-
+ drivers/net/ethernet/Kconfig                      |    1 +
+ drivers/net/ethernet/Makefile                     |    1 +
+ drivers/net/ethernet/apple/Kconfig                |   12 ----
+ drivers/net/ethernet/apple/Makefile               |    1 -
+ drivers/net/ethernet/cirrus/Kconfig               |   14 ++++-
+ drivers/net/ethernet/cirrus/Makefile              |    1 +
+ drivers/net/ethernet/{apple => cirrus}/mac89x0.c  |    0
+ drivers/net/ethernet/emulex/benet/be_cmds.c       |   12 +++-
+ drivers/net/ethernet/emulex/benet/be_hw.h         |    2 +
+ drivers/net/ethernet/emulex/benet/be_main.c       |   68 +++++++++++++-------
+ drivers/net/ethernet/i825xx/3c505.c               |    6 +-
+ drivers/net/ethernet/intel/e100.c                 |    4 +
+ drivers/net/ethernet/intel/e1000e/ich8lan.c       |    3 +-
+ drivers/net/ethernet/intel/igb/e1000_phy.c        |    2 +-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_common.c   |   20 +++---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_dcb_nl.c   |   10 ++-
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c     |   48 ++++++---------
+ drivers/net/ethernet/intel/ixgbe/ixgbe_sriov.h    |    2 +
+ drivers/net/ethernet/intel/ixgbevf/ixgbevf_main.c |    2 +-
+ drivers/net/ethernet/realtek/Kconfig              |   12 ----
+ drivers/net/ethernet/realtek/Makefile             |    1 -
+ drivers/net/ethernet/silan/Kconfig                |   33 ++++++++++
+ drivers/net/ethernet/silan/Makefile               |    5 ++
+ drivers/net/ethernet/{realtek => silan}/sc92031.c |    0
+ drivers/net/ethernet/xilinx/ll_temac_main.c       |    4 +-
+ include/linux/netfilter_ipv4/Kbuild               |    1 +
+ include/linux/netfilter_ipv4/nf_nat.h             |   58 ++++++++++++++++++
+ include/linux/skbuff.h                            |    4 +-
+ include/net/ip_vs.h                               |   11 ++--
+ include/net/netfilter/nf_conntrack_tuple.h        |   27 +--------
+ include/net/netfilter/nf_nat.h                    |   26 +--------
+ include/net/tcp.h                                 |   10 ++-
+ include/net/udp.h                                 |   12 ++--
+ net/8021q/vlan_dev.c                              |   10 ++-
+ net/bridge/netfilter/ebt_ulog.c                   |    7 +-
+ net/core/neighbour.c                              |    6 +--
+ net/core/skbuff.c                                 |    1 +
+ net/dccp/ipv4.c                                   |    1 +
+ net/ipv4/netfilter/ipt_CLUSTERIP.c                |    1 -
+ net/ipv4/netfilter/ipt_ULOG.c                     |    4 +-
+ net/ipv4/netfilter/nf_nat_snmp_basic.c            |   22 +------
+ net/ipv4/tcp_ipv4.c                               |   23 ++++---
+ net/ipv4/udp.c                                    |   30 +++++----
+ net/ipv4/udplite.c                                |   13 +++-
+ net/ipv6/netfilter.c                              |   13 +++-
+ net/ipv6/netfilter/nf_conntrack_reasm.c           |    7 +-
+ net/ipv6/tcp_ipv6.c                               |   12 +++-
+ net/ipv6/udp.c                                    |   12 +++-
+ net/ipv6/udplite.c                                |   13 +++-
+ net/l2tp/l2tp_core.c                              |    3 +-
+ net/netfilter/core.c                              |   11 ++--
+ net/netfilter/ipset/ip_set_core.c                 |    4 +-
+ net/netfilter/ipvs/ip_vs_core.c                   |   20 +++---
+ net/netfilter/ipvs/ip_vs_ctl.c                    |   22 ++-----
+ net/netfilter/ipvs/ip_vs_dh.c                     |    5 +-
+ net/netfilter/ipvs/ip_vs_ftp.c                    |    5 +-
+ net/netfilter/ipvs/ip_vs_lblc.c                   |    9 +--
+ net/netfilter/ipvs/ip_vs_lblcr.c                  |   13 +---
+ net/netfilter/ipvs/ip_vs_nfct.c                   |    2 +-
+ net/netfilter/ipvs/ip_vs_proto.c                  |    5 +-
+ net/netfilter/ipvs/ip_vs_proto_sctp.c             |   14 +---
+ net/netfilter/ipvs/ip_vs_proto_tcp.c              |    6 +-
+ net/netfilter/ipvs/ip_vs_proto_udp.c              |    5 +-
+ net/netfilter/ipvs/ip_vs_sh.c                     |    5 +-
+ net/netfilter/ipvs/ip_vs_wrr.c                    |    5 +-
+ net/netfilter/ipvs/ip_vs_xmit.c                   |    2 +-
+ net/netfilter/nf_conntrack_core.c                 |    5 +-
+ net/netfilter/nfnetlink_log.c                     |    7 +--
+ net/netfilter/xt_IDLETIMER.c                      |    2 -
+ net/netfilter/xt_hashlimit.c                      |    5 +-
+ net/packet/af_packet.c                            |   52 ++++++++--------
+ net/x25/af_x25.c                                  |   11 +++-
+ 77 files changed, 506 insertions(+), 422 deletions(-)
+ rename drivers/net/ethernet/{apple => cirrus}/mac89x0.c (100%)
+ create mode 100644 drivers/net/ethernet/silan/Kconfig
+ create mode 100644 drivers/net/ethernet/silan/Makefile
+ rename drivers/net/ethernet/{realtek => silan}/sc92031.c (100%)
+ create mode 100644 include/linux/netfilter_ipv4/nf_nat.h
