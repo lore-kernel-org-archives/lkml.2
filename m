@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753043Ab1KDVeh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 17:34:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58719 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab1KDVeg convert rfc822-to-8bit (ORCPT
+	id S1753859Ab1KDVgI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 17:36:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38109 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab1KDVgG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 17:34:36 -0400
-MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <20111104212910.GB8266@opensource.wolfsonmicro.com>
-References: <1319721864-30067-1-git-send-email-rnayak@ti.com>
-	<20111104202905.GA3918@quad.lixom.net>
-	<20111104211447.GC2541@opensource.wolfsonmicro.com>
-	<20111104212216.GA5756@quad.lixom.net>
-	<20111104212910.GB8266@opensource.wolfsonmicro.com>
-Date: Fri, 4 Nov 2011 14:34:35 -0700
-Message-ID: <CAOesGMgA7UayF9SJUP0YLnj86GmKBrajsBxv4_kRNNqCsvKTYg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/4] regulator: helper routine to extract regulator_init_data
-From: Olof Johansson <olof@lixom.net>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Nov 2011 17:36:06 -0400
+From: Stephen Warren <swarren@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Jon Medhurst <tixy@yxit.co.uk>, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Sumit Bhattacharya <sumitb@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] arm: dma:  Drop GFP_COMP for DMA memory allocations
+Date: Fri,  4 Nov 2011 15:35:39 -0600
+Message-Id: <1320442539-7753-1-git-send-email-swarren@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 4, 2011 at 2:29 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Fri, Nov 04, 2011 at 02:22:16PM -0700, Olof Johansson wrote:
->> On Fri, Nov 04, 2011 at 09:14:48PM +0000, Mark Brown wrote:
->
->> > The name will be fixed by the individual device bindings, this is
->> > specifying the general form of a supply property.  Each device binding
->> > will define the set of supplies that the device can use.
->
->> Ah, ok. It shouldn't be a part of this binding then and instead be added
->> to the bindings for the consumers.
->
-> I think it's useful to define how consumers are supposed to do this
-> somewhere - it is actually part of the core binding how consumers are
-> supposed to do this.
+From: Sumit Bhattacharya <sumitb@nvidia.com>
 
-Yeah, ok, but it shouldn't be part of the description of regulator
-properties per se. See how gpio does it, defining how a gpio-specifier
-is crafted. The equivalent should be done for regulators.
+dma_alloc_coherent wants to split pages after allocation in order to
+reduce the memory footprint. This does not work well with GFP_COMP
+pages, so drop this flag before allocation.
 
-> There's also a bit of magic here for chained supplies with one regulator
-> supplying another (eg, using a DCDC to drop the system supply down to a
-> lower voltage to supply a bunch of LDOs for improved efficiency).
+This patch is ported from arch/avr32
+(commit 3611553ef985ef7c5863c8a94641738addd04cff).
 
-Describing that in the device tree using regulator-specifiers
-shouldn't be too bad? The LDO will reference the DCDC as the parent
-supply (or input or whatever language you prefer). They don't have to
-be in the same topology, they will instead be under whatever
-controller/bus they are on for control -- i2c, etc.
+Signed-off-by: Sumit Bhattacharya <sumitb@nvidia.com>
+Tested-by: Varun Colbert <vcolbert@nvidia.com>
+[swarren: s/HUGETLB_PAGE/HUGETLBFS/ in comment, minor comment cleanup]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/mm/dma-mapping.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index e4e7f6c..68d64b4 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -332,6 +332,15 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
+ 	struct page *page;
+ 	void *addr;
+ 
++	/*
++	 * Following is a work-around (a.k.a. hack) to prevent pages
++	 * with __GFP_COMP being passed to split_page() which cannot
++	 * handle them.  The real problem is that this flag probably
++	 * should be 0 on ARM as it is not supported on this
++	 * platform; see CONFIG_HUGETLBFS.
++	 */
++	gfp &= ~(__GFP_COMP);
++
+ 	*handle = ~0;
+ 	size = PAGE_ALIGN(size);
+ 
+-- 
+1.7.0.4
 
--Olof
