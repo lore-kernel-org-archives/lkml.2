@@ -1,131 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1KDIzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 04:55:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45398 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab1KDIzQ (ORCPT
+	id S1754497Ab1KDJCT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:02:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35354 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab1KDJCS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 04:55:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 4 Nov 2011 17:54:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: paul@paulmenage.org, rjw@sisk.pl, lizf@cn.fujitsu.com,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, fweisbec@gmail.com,
-        matthltc@us.ibm.com, akpm@linux-foundation.org, oleg@redhat.com,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH 04/10] cgroup: always lock threadgroup during migration
-Message-Id: <20111104175413.30afaf8e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1320191193-8110-5-git-send-email-tj@kernel.org>
-References: <1320191193-8110-1-git-send-email-tj@kernel.org>
-	<1320191193-8110-5-git-send-email-tj@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Nov 2011 05:02:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <4EB3A5DA.3080305@cn.fujitsu.com>
+References: <20111003161335.GA2403@linux.vnet.ibm.com>
+	<20111004074637.GA14061@elte.hu>
+	<20111024100501.GA24913@linux.vnet.ibm.com>
+	<20111024114806.GA3340@linux.vnet.ibm.com>
+	<20111026203020.GA10285@elte.hu>
+	<20111027075901.GB2313@linux.vnet.ibm.com>
+	<20111027080016.GA16885@elte.hu>
+	<4EAA14A1.5060204@cn.fujitsu.com>
+	<20111029182710.GG6160@linux.vnet.ibm.com>
+	<4EAE57AF.1060706@cn.fujitsu.com>
+	<20111031093256.GI6160@linux.vnet.ibm.com>
+	<4EAF5B68.8090005@cn.fujitsu.com>
+	<CABPqkBS-fio57xePQ76LLxPxVMJRM1cKzU1DgXH7q9oNG54N8Q@mail.gmail.com>
+	<4EB3A5DA.3080305@cn.fujitsu.com>
+Date: Fri, 4 Nov 2011 09:02:17 +0000
+Message-ID: <CABPqkBR=dB3E1ba-cR7L5A2uknidBJTMdMBNFzyr+zsmjuxacw@mail.gmail.com>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
+From: Stephane Eranian <eranian@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
+        eric.dumazet@gmail.com, shaohua.li@intel.com, ak@linux.intel.com,
+        mhocko@suse.cz, alex.shi@intel.com, efault@gmx.de,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Nov 2011 16:46:27 -0700
-Tejun Heo <tj@kernel.org> wrote:
-
-> Update cgroup to take advantage of the fack that threadgroup_lock()
-> guarantees stable threadgroup.
-> 
-> * Lock threadgroup even if the target is a single task.  This
->   guarantees that when the target tasks stay stable during migration
->   regardless of the target type.
-> 
-> * Remove PF_EXITING early exit optimization from attach_task_by_pid()
->   and check it in cgroup_task_migrate() instead.  The optimization was
->   for rather cold path to begin with and PF_EXITING state can be
->   trusted throughout migration by checking it after locking
->   threadgroup.
-> 
-> * Don't add PF_EXITING tasks to target task array in
->   cgroup_attach_proc().  This ensures that task migration is performed
->   only for live tasks.
-> 
-> * Remove -ESRCH failure path from cgroup_task_migrate().  With the
->   above changes, it's guaranteed to be called only for live tasks.
-> 
-> After the changes, only live tasks are migrated and they're guaranteed
-> to stay alive until migration is complete.  This removes problems
-> caused by exec and exit racing against cgroup migration including
-> symmetry among cgroup attach methods and different cgroup methods
-> racing each other.
-> 
-> v2: Oleg pointed out that one more PF_EXITING check can be removed
->     from cgroup_attach_proc().  Removed.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-A few questions below.
-
-
-> ---
->  kernel/cgroup.c |   51 +++++++++++++++++++++++----------------------------
->  1 files changed, 23 insertions(+), 28 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index f0e099f..83e10f9 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1762,7 +1762,7 @@ EXPORT_SYMBOL_GPL(cgroup_path);
->   *
->   * 'guarantee' is set if the caller promises that a new css_set for the task
->   * will already exist. If not set, this function might sleep, and can fail with
-> - * -ENOMEM. Otherwise, it can only fail with -ESRCH.
-> + * -ENOMEM. Must be called with cgroup_mutex and threadgroup locked.
->   */
->  static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
->  			       struct task_struct *tsk, bool guarantee)
-> @@ -1800,13 +1800,9 @@ static int cgroup_task_migrate(struct cgroup *cgrp, struct cgroup *oldcgrp,
->  	}
->  	put_css_set(oldcg);
->  
-> -	/* if PF_EXITING is set, the tsk->cgroups pointer is no longer safe. */
-> +	/* @tsk can't exit as its threadgroup is locked */
->  	task_lock(tsk);
-> -	if (tsk->flags & PF_EXITING) {
-> -		task_unlock(tsk);
-> -		put_css_set(newcg);
-> -		return -ESRCH;
-> -	}
-> +	WARN_ON_ONCE(tsk->flags & PF_EXITING);
->  	rcu_assign_pointer(tsk->cgroups, newcg);
->  	task_unlock(tsk);
-
-Is this task_lock/unlock is required ?
-
-
-
+On Fri, Nov 4, 2011 at 8:44 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> Stephane Eranian wrote:
+>> Paul,
+>>
+>> On Tue, Nov 1, 2011 at 2:37 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>>> (I shoud have cced Stephane Eranian instead of Turner..)
+>>>
+>>> Paul E. McKenney wrote:
+>>>> On Mon, Oct 31, 2011 at 04:09:19PM +0800, Li Zefan wrote:
+>>>>> (Let's cc Peter and Paul Turner for this perf cgroup issue.)
+>>>>>
+>>>>>> Thank you for the analysis.  Does the following patch fix this problem?
+>>>>>>
+>>>>>>                                                     Thanx, Paul
+>>>>>>
+>>>>>> ------------------------------------------------------------------------
+>>>>>>
+>>>>>> fs: Add RCU protection in set_task_comm()
+>>>>>>
+>>>>>> Running "perf stat true" results in the following RCU-lockdep splat:
+>>>>>>
+>>>>>> ===============================
+>>>>>> [ INFO: suspicious RCU usage. ]
+>>>>>> -------------------------------
+>>>>>> include/linux/cgroup.h:548 suspicious rcu_dereference_check() usage!
+>>>>>>
+>>>>>> other info that might help us debug this:
+>>>>>>
+>>>>>> rcu_scheduler_active = 1, debug_locks = 0
+>>>>>> 1 lock held by true/655:
+>>>>>> #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<810d1bd7>] prepare_bprm_creds+0x27/0x70
+>>>>>>
+>>>>>> stack backtrace:
+>>>>>> Pid: 655, comm: true Not tainted 3.1.0-tip-01868-g1271bd2-dirty #161079
+>>>>>> Call Trace:
+>>>>>> [<81abe239>] ? printk+0x18/0x1a
+>>>>>> [<81064920>] lockdep_rcu_suspicious+0xc0/0xd0
+>>>>>> [<8108aa02>] perf_event_enable_on_exec+0x1d2/0x1e0
+>>>>>> [<81063764>] ? __lock_release+0x54/0xb0
+>>>>>> [<8108cca8>] perf_event_comm+0x18/0x60
+>>>>>> [<810d1abd>] ? set_task_comm+0x5d/0x80
+>>>>>> [<81af622d>] ? _raw_spin_unlock+0x1d/0x40
+>>>>>> [<810d1ac4>] set_task_comm+0x64/0x80
+>>>>>> [<810d25fd>] setup_new_exec+0xbd/0x1d0
+>>>>>> [<810d1b61>] ? flush_old_exec+0x81/0xa0
+>>>>>> [<8110753e>] load_elf_binary+0x28e/0xa00
+>>>>>> [<810d2101>] ? search_binary_handler+0xd1/0x1d0
+>>>>>> [<81063764>] ? __lock_release+0x54/0xb0
+>>>>>> [<811072b0>] ? load_elf_library+0x260/0x260
+>>>>>> [<810d2108>] search_binary_handler+0xd8/0x1d0
+>>>>>> [<810d2060>] ? search_binary_handler+0x30/0x1d0
+>>>>>> [<810d242f>] do_execve_common+0x22f/0x2a0
+>>>>>> [<810d24b2>] do_execve+0x12/0x20
+>>>>>> [<81009592>] sys_execve+0x32/0x70
+>>>>>> [<81af7752>] ptregs_execve+0x12/0x20
+>>>>>> [<81af76d4>] ? sysenter_do_call+0x12/0x36
+>>>>>>
+>>>>>> Li Zefan noted that this is due to set_task_comm() dropping the task
+>>>>>> lock before invoking perf_event_comm(), which could in fact result in
+>>>>>> the task being freed up before perf_event_comm() completed tracing in
+>>>>>> the case where one task invokes set_task_comm() on another task -- which
+>>>>>> actually does occur via comm_write(), which can be invoked via /proc.
+>>>>>>
+>>>>>
+>>>>> This is not true. The caller should ensure @tsk is valid during
+>>>>> set_task_comm().
+>>>>>
+>>>>> The warning comes from perf_cgroup_from_task(). We can trigger this warning
+>>>>> in some other cases where perf cgroup is used, for example:
+>>>>
+>>>> I must defer to your greater knowledge of this situation.  What patch
+>>>> would you propose?
+>>>>
+>>>
+>>> With the following patch, we should see no rcu warning from perf, but as I
+>>> don't know the internel of perf, I guess we have to defer to Peter and
+>>> Stephane. ;)
+>>>
+>>> I have two doubts:
+>>>
+>>> - in perf_cgroup_sched_out/in(), we retrieve the task's cgroup twice in the function
+>>> and it's callee perf_cgroup_switch(), but the task can move to another cgroup between
+>>> two calls, so they might return two different cgroup pointers. Does it matter?
+>>>
+>> We don't retrieve the task cgroup twice. We retrieve the cgroup for
+>> each of the two
+>> tasks: current and prev or next.
+>>
+>> I don't understand what you mean by 'between two calls'. Two calls of
+>> which function?
+>>
 >
-> @@ -2116,11 +2120,6 @@ int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
->  			continue;
->  		/* get old css_set pointer */
->  		task_lock(tsk);
-> -		if (tsk->flags & PF_EXITING) {
-> -			/* ignore this task if it's going away */
-> -			task_unlock(tsk);
-> -			continue;
-> -		}
->  		oldcg = tsk->cgroups;
->  		get_css_set(oldcg);
->  		task_unlock(tsk);
+> perf_cgroup_sched_out(task, next)
+> {
+>        cgrp1 = perf_cgroup_from_task(task);
+>        ...
+>        perf_cgroup_switch(task, PERF_CGROUP_SWOUT);
+> }
+>
+> perf_cgroup_switch(task)
+> {
+>        ...
+>        cpuctx->cgrp = perf_cgroup_from_task(task);
+> }
+>
+Ok, yes it may happen that we call it twice.
 
-ditto.
+I tested your patch and it looks good to me. I would make the
+following adjustments though:
+- perf_cgroup_set_timestamp(), move rcu_read_unlock() before
+info->timestamp = as it is not needed
+  for this statement.
 
 
-Thanks,
--Kame
-
+> So we call perf_cgroup_from_task() twice on @task. Just want to be sure the code
+> is not problematic.
+>
+>>> - in perf_cgroup_switch():
+>>>
+>>>         cpuctx->cgrp = perf_cgroup_from_task(task);
+>>>
+>>> but seems the cgroup is not pinned, so cpuctx->cgrp can be invalid in later use.
+>>>
+>> What do you mean by cgroup pinning?
+>>
+>> If a task migrates from one cgroup to another, the cgroup code calls
+>> ss->attach_task
+>> which ends up in perf_cgroup_attach_task() if the task is currently
+>> running on a CPU.
+>> If so perf_cgroup_switch() is eventually called and it will update
+>> cpuctx->cgrp. If the
+>> tasks is not running anywhere, then there is nothing to do, state will
+>> be updated when
+>> the task is scheduled back in.
+>>
+>
+> Thanks for clarification!
+>
