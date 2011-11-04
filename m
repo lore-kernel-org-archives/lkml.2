@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab1KDRlk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 13:41:40 -0400
-Received: from nm33-vm7.bullet.mail.bf1.yahoo.com ([72.30.239.207]:27814 "HELO
-	nm33-vm7.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751603Ab1KDRlj (ORCPT
+	id S932749Ab1KDRlu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 13:41:50 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:42299 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab1KDRlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 13:41:39 -0400
-X-Greylist: delayed 385 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Nov 2011 13:41:39 EDT
-X-Yahoo-Newman-Id: 240613.72417.bm@smtp217.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: WSlFQe0VM1m3KS6f.7y6TyilXa4vu1RzgFr98MHtS74CtzA
- P3yExW.nWBqN.lFypogLfYcuGJnVGmVm.qQ19RRTz1Qcjl70V6mwFwDtO.Es
- RlAc_Lqu1FXi97ihuQkfq7EMSMkPyvqWqNmPOoquxNJM7NzwVYK_MfvgwAh_
- Nuhz3ml4E6ZAJrhYWVM3wcADrE0GJ.sVw1lQbzzHfCqayQfF2CkR_TzJ3.N9
- Hm5OUkdG8_LAg.PypA9Ikecc5tCRBBpjloPCLRjcUCv2xT7kbI0MMKZPyvc.
- BBwHrHqQZ8Epj5LE6YsZHjEEBNjJ8zWX9GHR6XPbWi8GHMnIT8YkFLv.E_1g
- y52.Y8T.ihO8qapXW6k6Npv7i6yX2jUF5NgOHl2CCf42VAy2MPVlmr3gaj9l
- 9qpQNC6tz6t5RxnSqGB53deFOr.rOLBk0XC4YjYd.4vIpnugGvlzBjTDEq2U
- qru_mknFnc2Fxs9sE3PRu2sbmhQ--
-X-Yahoo-SMTP: gvIQca6swBCF5pMq54eC.XuJ8SoqXA5fBgqzSmaH
-Date: Fri, 4 Nov 2011 12:34:58 -0500
-From: Andrew Watts <akwatts@ymail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, j.glisse@gmail.com
-Subject: Re: [REGRESSION]: hibernate/sleep regression w/ bisection
-Message-ID: <20111104173441.GA2157@zeus>
-References: <20111101124759.GA1326@zeus>
- <20111102054658.GA29035@core.coreip.homeip.net>
- <20111102160208.GA6657@zeus>
- <20111102163109.GA29430@core.coreip.homeip.net>
- <20111103155956.GG4417@google.com>
- <20111103184559.GA3295@zeus>
- <20111103213959.GP4417@google.com>
- <20111104134347.GA2480@zeus>
- <20111104161431.GZ4417@google.com>
+	Fri, 4 Nov 2011 13:41:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104161431.GZ4417@google.com>
+In-Reply-To: <4EB415DF.3050906@siemens.com>
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
+	<20111104121601.GA15206@infradead.org>
+	<CAOJsxLGf78q7rR7-q4d6TizmghFcKyK3tFOAew4i2-SHrZcvhQ@mail.gmail.com>
+	<20111104130225.GA24563@infradead.org>
+	<CAOJsxLG4+-Hmpt-dfa7auEs6H1RgWWwYYs=zzb8uvJg8m10_Nw@mail.gmail.com>
+	<4EB3F9CE.1050407@siemens.com>
+	<20111104161329.GO1512@8bytes.org>
+	<4EB415DF.3050906@siemens.com>
+Date: Fri, 4 Nov 2011 19:41:46 +0200
+X-Google-Sender-Auth: TnlhZCVo1IRCao8C8XUHiVsfGi8
+Message-ID: <CAOJsxLE-z7HdmWDiLTGOzPv9n12XLQ472VPN8VS7WXyU-9gDAA@mail.gmail.com>
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+From: Pekka Enberg <penberg@kernel.org>
+To: Jan Kiszka <jan.kiszka@siemens.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 09:14:31AM -0700, Tejun Heo wrote:
-> Andrew, can you please kill the X server after the hang and see
-> whether that brings the system back?  I think sshd should still work
-> and if not you can write a script to kill the X server after 30secs
-> after resume (and kill that script if resume succeeds).
+On Fri, Nov 4, 2011 at 6:42 PM, Jan Kiszka <jan.kiszka@siemens.com> wrote:
+>> How does it matter? KVM tool does not compete with QEMU.
+>
+> I'm still under the impression that it will start to compete for the
+> reference implementation of KVM changes. I might see ghosts, but I
+> surely do not want to see this happen for many reasons.
 
-Hi Tejun & Jerome.
+Yes, you are indeed seeing ghosts.
 
-Tejun: My script killed X after a small wait from a bad resume. I am returned 
-to the funcioning calling console. I can then re-start X and all subsystems
-seem to working fine.
-
-Jerome: I posted a post-bad-resume dmesg snippet with a GPU lockup warning
-and trace here:
-
-   http://article.gmane.org/gmane.linux.kernel/1210057
-
-Did you need to see more?
-
-Thanks.
-
-~ Andy
-
+                        Pekka
