@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab1KDHhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 03:37:36 -0400
-Received: from cluster-g.mailcontrol.com ([208.87.233.190]:37718 "EHLO
+	id S1752711Ab1KDHhw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 03:37:52 -0400
+Received: from cluster-g.mailcontrol.com ([208.87.233.190]:42329 "EHLO
 	cluster-g.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab1KDHhf (ORCPT
+	with ESMTP id S1752404Ab1KDHhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 03:37:35 -0400
+	Fri, 4 Nov 2011 03:37:51 -0400
 From: Barry Song <Barry.Song@csr.com>
 To: <linux-pm@lists.linux-foundation.org>, <pavel@ucw.cz>, <rjw@sisk.pl>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Barry Song <Baohua.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+        <workgroup.linux@csr.com>, Barry Song <Baohua.Song@csr.com>,
+        Xiangzhen Ye <Xiangzhen.Ye@csr.com>
 Subject: [PATCH] PM: HIBERNATION: skip the swap size check if the snapshot image size is anticipative
-Date: Fri, 4 Nov 2011 00:36:16 -0700
-Message-ID: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+Date: Fri, 4 Nov 2011 00:37:23 -0700
+Message-ID: <1320392243-3948-1-git-send-email-Barry.Song@csr.com>
 X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
 Content-Type: text/plain
