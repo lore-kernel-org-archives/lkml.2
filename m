@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab1KDPfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 11:35:13 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:48413 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752684Ab1KDPfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 11:35:11 -0400
-Date: Fri, 4 Nov 2011 17:35:07 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Greg KH <gregkh@suse.de>, Felipe Balbi <balbi@ti.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/19] First round in OTG rework
-Message-ID: <20111104153505.GA5924@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
- <20111104132611.GA9965@xps8300>
- <20111104135116.GA15231@suse.de>
- <20111104144024.GA2753@xps8300>
+	id S932429Ab1KDPgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 11:36:09 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52847 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932185Ab1KDPgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 11:36:08 -0400
+Message-ID: <4EB403C0.3040803@austin.ibm.com>
+Date: Fri, 04 Nov 2011 10:24:48 -0500
+From: Joel Schopp <jschopp@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SUOF0GtieIMvvwua"
-Content-Disposition: inline
-In-Reply-To: <20111104144024.GA2753@xps8300>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: hagar <hagar@iinet.net.au>
+CC: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Zwane Mwaikambo <zwane@arm.linux.org.uk>,
+        Nathan Lynch <nathanl@austin.ibm.com>, Ashok Raj <ashok.raj@intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: Fwd: Kernel Power management ?? turning off used devices that
+ are in use.
+References: <4EA67567.3020704@iinet.net.au> <4EB38A44.5030606@iinet.net.au>
+In-Reply-To: <4EB38A44.5030606@iinet.net.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 11110415-5806-0000-0000-0000022E46B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---SUOF0GtieIMvvwua
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I need to be able to either switch off cpu hotpluging - or at least 
+> prevent hotplugging certain cpu's
+>
+> there should really be a mincpu's option or better a 
+> nohotplug="0,1,2,5,7,etc" option.
+>
+> It would appear that cpu1 is the default cpu for those interrupts - 
+> and they are not being transferred to cpu0 properly.
+>
+The proper way to fix this is to find why the interrupts are not being 
+transferred and fix that.  Forcing cpus to not be hotpluggable is just 
+hiding the problem.
 
-Hi,
+> I have tried the kernel parameters noapic nosmp maxcpus acpi=off 
+> possible_cpus=2 etc - with no success
+>
+> I did find a flaw in "possible_cpus=0" - this prevents the kernel 
+> booting (no cpus available )
+> This option should be set to a minimum of 1
+>
+We allow users to shoot themselves in the foot if they do silly things.  
+This is a design decision.
 
-On Fri, Nov 04, 2011 at 04:40:24PM +0200, Heikki Krogerus wrote:
-> On Fri, Nov 04, 2011 at 06:51:16AM -0700, Greg KH wrote:
-> > > It seems that there are not more comments to these. When can you take
-> > > them?
-> >=20
-> > Please realize that this is the "busy" period for the subsystem
-> > maintainers during the merge window.  We will be glad to review these
-> > _after_ the window closes, and queue them up for next time.
-> >=20
-> > Well, in this case, Felipe will do the reviewing and queuing up, not me,
-> > he's a busy person, give him some time please :)
->=20
-> Of course. Forgive for being so impatient.
-
-yeah, sorry about that. I generally wait the merge window to close until
-I get back reviewing patches.
-
-After Linus tags the first -rc, I have already quite a few pending
-patches to apply, so hang on for a while.
-
---=20
-balbi
-
---SUOF0GtieIMvvwua
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOtAYpAAoJEIaOsuA1yqRE9AQQALZsc3JsCNWWuIfIP0Ye+Im8
-Eq0ppZahT/f/tQbr523KdqIVvgw3jOWEqnN0KbbjPMbKLwxF9KbbSg6lpWxqZ/vJ
-qMb/8UucszczCn8IbyfuXJZ1UKuDoajNdzeR6AZMv4kgCoUqrgvD/AAvyb74zpC5
-GXWZrJJFpdukXvUbKobVvzdnlm53BpcGZJmjTr3Ty59l1Fs9xblG+q7wY5rHXwCE
-Xz5aaidlVmCyqfEkiMopsVup++TH7eL4dztZnNQ/ZL9B/4q95j+0FVC5z1ZqwUMe
-1AfMHKhgDd2a3u2ps9K7Agk2UI5SpGzwxLTYpl8gsHh57tDYNU1tuWvCw+lKaTZ1
-GDkghb/UFyVAu27qU1M+EEZKTXAyk/buLUd5C1wg2/XxKyHXgaZ4pPgUlIb1lUdu
-WQA6Bi0B0K1hTJYUZToAhZsil7hEs0tWTobWczl5aXytrKMCgMb3llpt+S2CJjzT
-WMZuKoURwk7G5SiaEsm5mYp63kVnuCcIozUrYeRHYwz/FH0TN4dzpMxbUlF8Jn1h
-yco+j6Dpd5rBKHuNphUQLNnl6EPxkb6yUcgjfnYmdvg//LmDqxMTjvgR/bbctqoH
-4mBM/z8aAbjSPRkL0aw1gRqBB0hxnt1cHk4shG0tNrtX1uKHF3b8ug+vxsKUFvvK
-jhOyKvZFy5D2j/Kepnrj
-=RNuC
------END PGP SIGNATURE-----
-
---SUOF0GtieIMvvwua--
