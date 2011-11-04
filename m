@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1KDCKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 22:10:19 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:53605 "EHLO smtp1-g21.free.fr"
+	id S1754442Ab1KDCMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 22:12:19 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38607 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab1KDCKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 22:10:17 -0400
-Message-ID: <4EB3495B.8080700@free.fr>
-Date: Fri, 04 Nov 2011 03:09:31 +0100
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mk@cm4all.com,
-        "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>,
-        nishimura@mxp.nes.nec.co.jp, oleg@redhat.com,
-        Michal Hocko <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>, tj@kernel.org,
-        cgroups@vger.kernel.org, akpm@linux-foundation.org, fweisbec@gmail.com,
-        paul@paulmenage.org
-Subject: Re: [PATCH] add new cgroup list to CC notice
-References: <20111104094030.cf8d5860.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111104094030.cf8d5860.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753068Ab1KDCMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 22:12:18 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: trenn@suse.de, linux-acpi@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, bjorn.helgaas@hp.com,
+        lenb@kernel.org, stable@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] PNP ACPI: Use real gsi
+Date: Fri,  4 Nov 2011 03:12:08 +0100
+Message-Id: <1320372728-3235-1-git-send-email-trenn@suse.de>
+X-Mailer: git-send-email 1.7.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/2011 01:40 AM, KAMEZAWA Hiroyuki wrote:
-> As discussed at Kernel Summit(2011), new cgroups mailing list is opened by
-> James. This list is for discussing general cgroup design and patches
-> including all subsystems and for getting more attentions to cgroups/namespaces
-> related issues by developpers.
->
-> Signed-off-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> ---
+From: Yinghai Lu <yinghai@kernel.org>
 
-I don't see the point to unilaterally change the mailing list to 
-vger.kernel.org as the discussions will be  the same as the actual 
-mailing list containers@. May be there is a good reason to do that but I 
-don't see it, can someone enlight me please ?
+In 2.6.35 a lot cleanups in this area (not pnp, but x86 ioapic setup) have
+been introduced.
+On an IBM Xseries (x3850) this caused the machine to freeze around when
+the init userspace process is tried to get started.
+The reason is that the timer interrupt is not set up correctly on this machine.
 
+I could bisect the issue to one of ioapic cleanups introduced in 2.6.35:
+commit a4384df3e24579d6292a1b3b41d500349948f30b
 
+While on this machine the problem was an interrupt timer issue,
+there may be other platforms with different interrupt issues relatd to this
+problem. Kernel logs with similar IOAPIC errors inside pnpacpi setup might
+need this patch:
+  pnp 00:04: [io  0x02f8-0x02ff]
+  IOAPIC[1]: Invalid reference to IRQ 0
+  pnp 00:04: [irq 2]
+  pnp 00:04: Plug and Play ACPI device, IDs PNP0501 (active)
+
+Yinghai came up with this patch which fixes the problem for me.
+Looks like the bisected commit is correct, but the pnp layer has been
+overseen.
+
+Tested-by: Thomas Renninger <trenn@suse.de>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+CC: bjorn.helgaas@hp.com
+CC: lenb@kernel.org
+CC: stable@kernel.org
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H Peter Anvin <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+---
+ drivers/pnp/pnpacpi/rsparser.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
+index bbf3edd..dad5da9 100644
+--- a/drivers/pnp/pnpacpi/rsparser.c
++++ b/drivers/pnp/pnpacpi/rsparser.c
+@@ -106,6 +106,14 @@ static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
+ 		return;
+ 	}
+ 
++#ifdef CONFIG_X86_IO_APIC
++	/*
++	 * Convert it back to real gsi
++	 */
++	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
++		acpi_isa_irq_to_gsi(gsi, &gsi);
++#endif
++
+ 	/*
+ 	 * in IO-APIC mode, use overrided attribute. Two reasons:
+ 	 * 1. BIOS bug in DSDT
+-- 
+1.7.6.1
 
