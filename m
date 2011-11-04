@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab1KDWY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 18:24:56 -0400
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45294 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab1KDWYK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 18:24:10 -0400
-From: Serge Hallyn <serge@hallyn.com>
-To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
-Cc: oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
-        ebiederm@xmission.com, serge@hallyn.com, dhowells@redhat.com,
-        eparis@redhat.com, "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Subject: [PATCH 5/6] user namespace: make each net (net_ns) belong to a user_ns
-Date: Fri,  4 Nov 2011 22:24:41 +0000
-Message-Id: <1320445482-8459-6-git-send-email-serge@hallyn.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1320445482-8459-1-git-send-email-serge@hallyn.com>
-References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+	id S1756170Ab1KDW0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 18:26:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51510 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754574Ab1KDW0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 18:26:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: len.brown@intel.com, Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] pm: remove useless array definition in cpuidle_structure
+Date: Fri, 4 Nov 2011 23:28:43 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Robert Lee <rob.lee@linaro.org>, hpa@linux.intel.com,
+        daniel.lezcano@linaro.org, amit.kucheria@linaro.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@linaro.org
+References: <1320356693-18982-1-git-send-email-rob.lee@linaro.org> <4EB3D8BE.7050600@linux.vnet.ibm.com>
+In-Reply-To: <4EB3D8BE.7050600@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111042328.43358.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Len, Arjan,
 
-The user namespace which creates a new network namespace owns that
-namespace and all resources created in it.  This way we can target
-capability checks for privileged operations against network resources to
-the user_ns which created the network namespace in which the resource
-lives.  Privilege to the user namespace which owns the network
-namespace, or any parent user namespace thereof, provides the same
-privilege to the network resource.
+On Friday, November 04, 2011, Deepthi Dharwar wrote:
+> On Friday 04 November 2011 03:14 AM, Robert Lee wrote:
+> > From: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > 
+> > All the modules name are ro-data, it is never copied to the array.
+> > 
+> > eg.
+> > 
+> > static struct cpuidle_driver intel_idle_driver = {
+> >         .name = "intel_idle",
+> >         .owner = THIS_MODULE,
+> > };
+> > 
+> > It safe to assign the pointer of this ro-data to a const char *.
+> > By this way we save 12 bytes.
+> > 
+> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > Signed-off-by: Robert Lee <rob.lee@linaro.org>
+> > ---
+> >  include/linux/cpuidle.h |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> > index b51629e..16f9dce 100644
+> > --- a/include/linux/cpuidle.h
+> > +++ b/include/linux/cpuidle.h
+> > @@ -117,8 +117,8 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
+> >   ****************************/
+> > 
+> >  struct cpuidle_driver {
+> > -	char			name[CPUIDLE_NAME_LEN];
+> > -	struct module 		*owner;
+> > +	const char    *name;
+> > +	struct module *owner;
+> >  };
+> > 
+> >  #ifdef CONFIG_CPU_IDLE
+> 
+> This looks good, and makes it fool-proof by  not allowing one to tamper the name of the driver.
+> Tested OK on x86 (both Intel idle and ACPI)
+> 
+> Tested-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> Reviewed-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
 
-Changelog:
-   jul 8: nsproxy: don't assign netns->userns if not cloning.
+This is simple enough for me to push it for 3.2, but I woulnd't like to
+step on anyone's toes.  Please let me know what you think.
 
-Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
----
- include/net/net_namespace.h |    2 ++
- kernel/nsproxy.c            |    2 ++
- net/core/net_namespace.c    |    3 +++
- 3 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 3bb6fa0..d91fe5f 100644
---- a/include/net/net_namespace.h
-+++ b/include/net/net_namespace.h
-@@ -29,6 +29,7 @@ struct ctl_table_header;
- struct net_generic;
- struct sock;
- struct netns_ipvs;
-+struct user_namespace;
- 
- 
- #define NETDEV_HASHBITS    8
-@@ -101,6 +102,7 @@ struct net {
- 	struct netns_xfrm	xfrm;
- #endif
- 	struct netns_ipvs	*ipvs;
-+	struct user_namespace	*user_ns;
- };
- 
- 
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 9aeab4b..0d5bf8d 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -95,6 +95,8 @@ static struct nsproxy *create_new_namespaces(unsigned long flags,
- 		err = PTR_ERR(new_nsp->net_ns);
- 		goto out_net;
- 	}
-+	if (flags & CLONE_NEWNET)
-+		new_nsp->net_ns->user_ns = get_user_ns(task_cred_xxx(tsk, user_ns));
- 
- 	return new_nsp;
- 
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index 5bbdbf0..791c19c 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -10,6 +10,7 @@
- #include <linux/nsproxy.h>
- #include <linux/proc_fs.h>
- #include <linux/file.h>
-+#include <linux/user_namespace.h>
- #include <net/net_namespace.h>
- #include <net/netns/generic.h>
- 
-@@ -209,6 +210,7 @@ static void net_free(struct net *net)
- 	}
- #endif
- 	kfree(net->gen);
-+	put_user_ns(net->user_ns);
- 	kmem_cache_free(net_cachep, net);
- }
- 
-@@ -389,6 +391,7 @@ static int __init net_ns_init(void)
- 	rcu_assign_pointer(init_net.gen, ng);
- 
- 	mutex_lock(&net_mutex);
-+	init_net.user_ns = &init_user_ns;
- 	if (setup_net(&init_net))
- 		panic("Could not setup the initial network namespace");
- 
--- 
-1.7.0.4
-
+Rafael
