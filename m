@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab1KDWfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 18:35:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55316 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752973Ab1KDWfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 18:35:22 -0400
-Date: Fri, 4 Nov 2011 22:35:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 1/4] regulator: helper routine to extract
- regulator_init_data
-Message-ID: <20111104223518.GC16978@opensource.wolfsonmicro.com>
-References: <1319721864-30067-1-git-send-email-rnayak@ti.com>
- <20111104202905.GA3918@quad.lixom.net>
- <20111104211447.GC2541@opensource.wolfsonmicro.com>
- <20111104212216.GA5756@quad.lixom.net>
- <20111104212910.GB8266@opensource.wolfsonmicro.com>
- <CAOesGMgA7UayF9SJUP0YLnj86GmKBrajsBxv4_kRNNqCsvKTYg@mail.gmail.com>
- <20111104214650.GC8266@opensource.wolfsonmicro.com>
- <CAOesGMjkcExKXhNN1nFGey=wBie0PQGp2XS_r-5Rr3X0p4eNhg@mail.gmail.com>
+	id S1756182Ab1KDWiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 18:38:22 -0400
+Received: from home.kolivas.org ([59.167.196.135]:43016 "EHLO mine.kolivas.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752973Ab1KDWiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 18:38:20 -0400
+From: Con Kolivas <kernel@kolivas.org>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Juergen Beisert <jbe@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [ANNOUNCE] 3.1.0-ck1
+Date: Sat, 05 Nov 2011 09:37:35 +1100
+Message-ID: <6835841.YG8RRyOs5I@quad>
+User-Agent: KMail/4.7.2 (Linux/3.1.0-ck1; KDE/4.7.2; x86_64; ; )
+In-Reply-To: <CAAfyv37ZJhhYgRWQW_zPsGPU6m_QuqGOPrTcbs2bfg6tibE0bg@mail.gmail.com>
+References: <1636461.EdGrGCQCuj@quad> <201111031118.21407.jbe@pengutronix.de> <CAAfyv37ZJhhYgRWQW_zPsGPU6m_QuqGOPrTcbs2bfg6tibE0bg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOesGMjkcExKXhNN1nFGey=wBie0PQGp2XS_r-5Rr3X0p4eNhg@mail.gmail.com>
-X-Cookie: You will be misunderstood by everyone.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 03:16:12PM -0700, Olof Johansson wrote:
-> On Fri, Nov 4, 2011 at 2:46 PM, Mark Brown
+On Fri, 4 Nov 2011 22:50:15 Belisko Marek wrote:
+> On Thu, Nov 3, 2011 at 11:18 AM, Juergen Beisert <jbe@pengutronix.de> wrote:
+> > Con Kolivas wrote:
+> >> These are patches designed to improve system responsiveness and
+> >> interactivity with specific emphasis on the desktop, but suitable to
+> >> any
+> >> commodity hardware workload.
+> >> 
+> >> As it may take some time to get a kernel.org account, I have started
+> >> hosting these patches exclusively on my site for now.
+> >> 
+> >> 
+> >> Apply to 3.1.x:
+> >> http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/patch-3.1.0-ck1.bz2
+> > 
+> > Tried here with Mini2440 (=ARM arch) to compile:
+> Seems in kernel/sched_bfs.c is missing #include <linux/prefetch.h>
+> With that fix it compiles fine. Problem is that prefetch is defined in
+> ARM headers only for version > v5 (mini is v4).
 
-> >> Describing that in the device tree using regulator-specifiers
-> >> shouldn't be too bad? The LDO will reference the DCDC as the parent
-> >> supply (or input or whatever language you prefer). They don't have to
-> >> be in the same topology, they will instead be under whatever
-> >> controller/bus they are on for control -- i2c, etc.
+Thanks for that. The prefetch is only of questionable advantage so it can be 
+removed entirely. The following patch should fix it:
 
-> > That's not great as it means you've got a separate binding for supplies
-> > that happen to be connected to another regulator from that used for
-> > other supplies on the device which is particularly confusing in the
-> > fairly common case where a regulator chip has multiple supplies.  Using
-> > the same method for binding all supplies seems much neater.
+http://ck.kolivas.org/patches/3.0/3.1/3.1.0-ck1/bfs414-noprefetch.patch
 
-> I'm not following the above 100%, but I think you are saying that you
-> would prefer to describe the regulator / power hierarchy in the
-> functional topology instead of how the various regulators and supplies
-> are organized on i2c busses and other controllers?  And the obvious
-> one that would be less than trivial to find a home for would be the
-> top-level or freestanding fixed regulators that don't sit on a
-> controlling bus.
+Regards,
+Con
 
-No, that's not the issue at all.  The issue is that we want a single way
-of describing the supplies a device has regardless of their function
-(which is what the existing stuff does).
-
-Consider the case of a simple regulator with register control.  It is
-going to have a supply used for the regulator itself and almost
-certainly also a separate digital buffer supply used to reference the
-digital I/O.  It seems bad to specify the first supply in a different
-manner to the second, and there are more complex examples where a supply
-can be both a regulator input and also a more general purpose supply.
+-- 
+-ck
