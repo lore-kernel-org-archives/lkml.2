@@ -1,68 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab1KDN0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 09:26:15 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40427 "EHLO mga02.intel.com"
+	id S1755583Ab1KDNcT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 09:32:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab1KDN0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 09:26:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="71044908"
-Date: Fri, 4 Nov 2011 15:26:11 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv6 00/19] First round in OTG rework
-Message-ID: <20111104132611.GA9965@xps8300>
-References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1750835Ab1KDNcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 09:32:17 -0400
+Date: Fri, 4 Nov 2011 09:30:52 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        gmuelas@de.ibm.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+Message-ID: <20111104133052.GA17643@redhat.com>
+References: <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
+ <4E9D7FA8.9000000@ce.jp.nec.com>
+ <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
+ <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com>
+ <20111031100557.GA2621@osiris.boeblingen.de.ibm.com>
+ <1320057746.2964.1.camel@dabdike>
+ <4EAE8A7E.8000504@ce.jp.nec.com>
+ <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
+ <20111103182548.GA12131@redhat.com>
+ <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg and Felipe,
+On Fri, Nov 04 2011 at  5:19am -0400,
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-On Fri, Oct 28, 2011 at 03:35:06PM +0300, Heikki Krogerus wrote:
-> Changes since v5:
-> - Cleanup isp1704_charger.c
+> On Thu, Nov 03, 2011 at 02:25:48PM -0400, Mike Snitzer wrote:
+> > On Mon, Oct 31 2011 at  9:00am -0400,
+> > Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
+> > 
+> > > On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
+> > > > Hm, dm_softirq_done is generic completion code of original
+> > > > request in dm-multipath.
+> > > > So oops here might be another manifestation of use-after-free.
+> > > > 
+> > > > Do you always hit the oops at the same address?
+> > > 
+> > > I think we saw this bug the first time. But before that the scsi
+> > > logging level was higher. Gonzalo is trying to recreate it with
+> > > the same (old) scsi logging level.
+> > > Afterwards we will try with barrier=0.
+> > > 
+> > > Both on v3.0.7 btw.
+> > > 
+> > > > Could you find corresponding source code line for
+> > > > the crashed address, dm_softirq_done+0x72/0x140,
+> > > > and which pointer was invalid?
+> > > 
+> > > It crashes in the inlined function dm_done() when trying to
+> > > dereference tio (aka clone->end_io_data):
+> > > 
+> > > static void dm_done(struct request *clone, int error, bool mapped)
+> > > {
+> > >         int r = error;
+> > >         struct dm_rq_target_io *tio = clone->end_io_data;
+> > >         dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
+> > 
+> > Hi,
+> > 
+> > Which underlying storage driver is being used by this multipath device?
 > 
-> Quick summary:
-> This introduces struct usb_phy and struct usb_otg that
-> replace struct otg_transceiver. The transceiver and phy
-> members from struct otg_transceiver are left in struct
-> usb_phy and otg specific members are moved to struct
-> usb_otg.
+> It's the s390 only zfcp device driver.
 > 
-> So the idea is simply to separate USB PHY handling from OTG.
->
-> Heikki Krogerus (19):
->   usb: otg: Rename otg_transceiver to usb_phy
->   usb: otg: Rename usb_otg and usb_xceiv to usb_phy
->   usb: otg: Separate otg members from usb_phy
->   usb: otg: ab8500: Start using struct usb_otg
->   usb: otg: fsl: Start using struct usb_otg
->   usb: otg: gpio_vbus: Start using struct usb_otg
->   usb: otg: isp1301_omap: Start using struct usb_otg
->   usb: otg: msm: Start using struct usb_otg
->   usb: otg: langwell: Start using struct usb_otg
->   usb: otg: nop: Start using struct usb_otg
->   usb: otg: twl4030: Start using struct usb_otg
->   usb: otg: twl6030: Start using struct usb_otg
->   usb: otg: ulpi: Start using struct usb_otg
->   arm: imx: Start using struct usb_otg
->   usb: musb: Start using struct usb_otg
->   power_supply: Convert all users to new usb_phy
->   usb: Convert all users to new usb_phy
->   usb: otg: Remove OTG specific members from usb_phy
->   usb: otg: Convert all users to pass struct usb_otg for OTG functions
+> FWIW, yet another use-after-free crash, this time however in multipath_end_io:
+> 
+> [96875.870593] Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
+> [96875.870602] Oops: 0038 [#1]
+> [96875.870674] PREEMPT SMP DEBUG_PAGEALLOC
+> [96875.870683] Modules linked in: dm_round_robin sunrpc ipv6 qeth_l2 binfmt_misc dm_multipath scsi_dh dm_mod qeth ccwgroup [la\
+> st unloaded: scsi_wait_scan]
+> [96875.870722] CPU: 2 Tainted: G        W   3.0.7-50.x.20111024-s390xdefault #1
+> [96875.870728] Process udevd (pid: 36697, task: 0000000072c8a3a8, ksp: 0000000057c43868)
+> [96875.870732] Krnl PSW : 0704200180000000 000003e001347138 (multipath_end_io+0x50/0x140 [dm_multipath])
+> [96875.870746]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
+> [96875.870751] Krnl GPRS: 0000000000000000 000003e000000000 6b6b6b6b6b6b6b6b 00000000717ab940
+> [96875.870755]            0000000000000000 00000000717abab0 0000000000000002 0700000000000008
+> [96875.870759]            0000000000000002 0000000000000000 0000000058dd37a8 000000006f845478
+> [96875.870764]            000003e0012e1000 000000005613d1f0 000000007a737bf0 000000007a737ba0
+> [96875.870768] Krnl Code: 000003e00134712a: b90200dd            ltgr %r13,%r13
+> [96875.870793]            000003e00134712e: a7840017            brc 8,3e00134715c
+> [96875.870800]            000003e001347132: e320d0100004        lg %r2,16(%r13)
+> [96875.870809]           >000003e001347138: e31020180004        lg %r1,24(%r2)
+> [96875.870818]            000003e00134713e: e31010580004        lg %r1,88(%r1)
+> [96875.870827]            000003e001347144: b9020011            ltgr %r1,%r1
+> [96875.870835]            000003e001347148: a784000a            brc 8,3e00134715c
+> [96875.870841]            000003e00134714c: 41202018            la %r2,24(%r2)
+> [96875.870889] Call Trace:
+> [96875.870892] ([<0700000000000008>] 0x700000000000008)
+> [96875.870897]  [<000003e0012e3662>] dm_softirq_done+0x9a/0x140 [dm_mod]
+> [96875.870915]  [<000000000040d29c>] blk_done_softirq+0xd4/0xf0
+> [96875.870925]  [<00000000001587c2>] __do_softirq+0xda/0x398
+> [96875.870932]  [<000000000010f47e>] do_softirq+0xe2/0xe8
+> [96875.870940]  [<0000000000158e2c>] irq_exit+0xc8/0xcc
+> [96875.870945]  [<00000000004ceb48>] do_IRQ+0x910/0x1bfc
+> [96875.870953]  [<000000000061a164>] io_return+0x0/0x16
+> [96875.870961]  [<000000000019c84e>] lock_acquire+0xd2/0x204
+> [96875.870969] ([<000000000019c836>] lock_acquire+0xba/0x204)
+> [96875.870974]  [<0000000000615f8e>] mutex_lock_killable_nested+0x92/0x520
+> [96875.870983]  [<0000000000292796>] vfs_readdir+0x8a/0xe4
+> [96875.870992]  [<00000000002928e0>] SyS_getdents+0x60/0xe8
+> [96875.870999]  [<0000000000619af2>] sysc_noemu+0x16/0x1c
+> [96875.871024]  [<000003fffd1ec83e>] 0x3fffd1ec83e
+> [96875.871028] INFO: lockdep is turned off.
+> [96875.871031] Last Breaking-Event-Address:
+> [96875.871037]  [<000003e0012e3660>] dm_softirq_done+0x98/0x140 [dm_mod]
+> 
+> static int multipath_end_io(struct dm_target *ti, struct request *clone,
+> 			    int error, union map_info *map_context)
+> {
+> 	struct multipath *m = ti->private;
+> 	struct dm_mpath_io *mpio = map_context->ptr;
+> 	struct pgpath *pgpath = mpio->pgpath;
+> 	struct path_selector *ps;
+> 	int r;
+> 
+> 	r  = do_end_io(m, clone, error, mpio);
+> 	if (pgpath) {
+> 		ps = &pgpath->pg->ps; <--- crashes here
+> 		if (ps->type->end_io)
+> 			ps->type->end_io(ps, &pgpath->path, mpio->nr_bytes);
+> 	}
+> 	mempool_free(mpio, m->mpio_pool);
+> 
+> 	return r;
+> }
+> 
+> It crashes when trying to derefence pgpath, which was freed. Since we have
+> SLUB debugging turned on the freed object tells us that it was allocated
+> via a call to multipath_ctr() and freed via a call to free_priority_group().
+> 
+> FWIW, this reproduction was done with barriers off.
+> 
+> Btw, since I cc'ed you rather late I'm not sure if you are aware of the
+> test scenario: it's I/O stress with multipathing were paths come and go
+> all the time. It usually takes quite a few hours before the crashes are
+> observed.
 
-It seems that there are not more comments to these. When can you take
-them?
+OK, thanks for the backstory.
 
--- 
-heikki
+That is the same type of testing we've been doing with some partners
+for RHEL6.2 with the qla2xxx driver.  They have seen the same crash that
+you originally reported here: https://lkml.org/lkml/2011/10/31/64
+
+The really interesting observation that was made is that the qla2xxx
+driver was made lockless in RHEL6.2.  We've found that reverting the
+qla2xxx lockless changes eliminates the problems seen with it and I/O
+stress testing with multipath path failures.
+
+The zfcp driver was also made lockless upstream, via this commit:
+e55f875 [SCSI] zfcp: Issue FCP command without holding SCSI host_lock
+
+It would be great if you could try reverting e55f875 and see how your
+testing goes.
+
+If doing so resolves the crashes for you then the post mortem on why
+these lockless SCSI driver changes are causing such odd multipath
+completion failures is going to be "fun" ;)
+
+Mike
