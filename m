@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781Ab1KDVGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 17:06:11 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55049 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016Ab1KDVGJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 17:06:09 -0400
-Date: Fri, 4 Nov 2011 14:06:29 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v2 5/8] arm/tegra: add new fields to struct
- tegra_pingroup_desc
-Message-ID: <20111104210629.GA4685@quad.lixom.net>
-References: <1320242948-21061-1-git-send-email-pdeschrijver@nvidia.com>
- <1320242948-21061-6-git-send-email-pdeschrijver@nvidia.com>
+	id S1752986Ab1KDVHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 17:07:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54747 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752033Ab1KDVHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 17:07:13 -0400
+Date: Fri, 4 Nov 2011 14:04:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Xiaotian Feng <dfeng@redhat.com>,
+        Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [050/107] block: check for proper length of iov entries earlier
+ in blk_rq_map_user_iov()
+Message-ID: <20111104210447.GA3934@suse.de>
+References: <20111102221600.GA26650@kroah.com>
+ <20111102221454.703920975@clark.kroah.org>
+ <1320420256.3079.172.camel@deadeye>
+ <20111104171425.GA4893@suse.de>
+ <20111104190616.GB3366@decadent.org.uk>
+ <20111104202806.GA9715@suse.de>
+ <20111104210055.GK4751@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320242948-21061-6-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <20111104210055.GK4751@mwanda>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 02, 2011 at 04:09:04PM +0200, Peter De Schrijver wrote:
-> Add new fields to struct tegra_pingroup_desc to support new hardware features
-> introduced in the tegra30 SoC. The pinmux driver won't use those fields yet,
-> but the tegra30 pinmux tables will already provide the necessary data.
+On Sat, Nov 05, 2011 at 12:00:55AM +0300, Dan Carpenter wrote:
+> On Fri, Nov 04, 2011 at 01:28:06PM -0700, Greg KH wrote:
+> > Doesn't this still fix one issue here, just not both of them described,
+> > right?
 > 
-> Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
-
-Just a nit below.
-
-> ---
->  arch/arm/mach-tegra/include/mach/pinmux.h   |   10 ++++++++++
->  arch/arm/mach-tegra/pinmux-tegra20-tables.c |    4 ++++
->  2 files changed, 14 insertions(+), 0 deletions(-)
+> Not really.
 > 
-> diff --git a/arch/arm/mach-tegra/include/mach/pinmux.h b/arch/arm/mach-tegra/include/mach/pinmux.h
-> index fb101f5..1ea2018 100644
-> --- a/arch/arm/mach-tegra/include/mach/pinmux.h
-> +++ b/arch/arm/mach-tegra/include/mach/pinmux.h
-> @@ -2,6 +2,7 @@
->   * linux/arch/arm/mach-tegra/include/mach/pinmux.h
->   *
->   * Copyright (C) 2010 Google, Inc.
-> + * Copyright (C) 2010,2011 Nvidia, Inc.
->   *
->   * This software is licensed under the terms of the GNU General Public
->   * License version 2, as published by the Free Software Foundation, and
-> @@ -99,6 +100,11 @@ enum tegra_tristate {
->  	TEGRA_TRI_TRISTATE = 1,
->  };
->  
-> +enum tegra_pin_io {
-> +	TEGRA_PIN_OUTPUT = 0,
-> +	TEGRA_PIN_INPUT = 1,
-> +};
-> +
->  enum tegra_vddio {
->  	TEGRA_VDDIO_BB = 0,
->  	TEGRA_VDDIO_LCD,
-> @@ -211,6 +217,10 @@ struct tegra_pingroup_desc {
->  	s8 tri_bit; 	/* offset into the TRISTATE_REG_* register bit */
->  	s8 mux_bit;	/* offset into the PIN_MUX_CTL_* register bit */
->  	s8 pupd_bit;	/* offset into the PULL_UPDOWN_REG_* register bit */
-> +	s8 lock_bit;	/* offset of the LOCK bit into mux register bit */
-> +	s8 od_bit;	/* offset of the OD bit into mux register bit */
-> +	s8 ioreset_bit;	/* offset of the IO_RESET bit into mux register bit */
-> +	s8 io_default;
+> We've got a list from 0 - 100.  We should be checking them all.
+> If number 50 is unaligned in the old version we would check 0 - 50,
+> but with this patch applied we check from 0 to 51.
 
-Shouldn't this be an enum tegra_pin_io? Also, feel free to move it up above the
-s16/s8 members.
+Ugh, you are right.
 
+Xiaotian, please fix this correctly upstream, I'll go drop this patch
+for now from the stable trees.
 
--Olof
+thanks,
 
+greg k-h
