@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab1KDO0T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 10:26:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59968 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932550Ab1KDO0S convert rfc822-to-8bit (ORCPT
+	id S932660Ab1KDO0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 10:26:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36980 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932550Ab1KDO03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 10:26:18 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: RE: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
-Thread-Topic: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
-Thread-Index: AQHMmvAZ0k5z8ytqW0i9aFLP+z33G5WcYzoAgABeBtA=
-Date: Fri, 4 Nov 2011 14:26:05 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
-References: <1320410928-20349-1-git-send-email-afzal@ti.com>
- <20111104140422.GA28615@opensource.wolfsonmicro.com>
-In-Reply-To: <20111104140422.GA28615@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Nov 2011 10:26:29 -0400
 MIME-Version: 1.0
+In-Reply-To: <4EB39E63.9020804@kernel.dk>
+References: <4EB2BC88.3070105@suse.cz>
+	<20111103161436.GJ4417@google.com>
+	<20111103162634.GK4417@google.com>
+	<4EB2D441.9040708@kernel.dk>
+	<20111103211253.GO4417@google.com>
+	<4EB39E63.9020804@kernel.dk>
+Date: Fri, 4 Nov 2011 07:26:27 -0700
+X-Google-Sender-Auth: KHuItdHzOWWsAXiLRRKhpeTxIiA
+Message-ID: <CAOS58YM-6v2nriMv8izhePD04YiJe0s7wqwWw=Dc9w-4er_McA@mail.gmail.com>
+Subject: Re: [PATCH block/for-next] block: don't call blk_drain_queue() if
+ elevator is not up
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Brown,
+Hello,
 
-On Fri, Nov 04, 2011 at 19:34:22, Mark Brown wrote:
-> On Fri, Nov 04, 2011 at 06:18:48PM +0530, Afzal Mohammed wrote:
-> 
-> >  		if (i == TPS65910_REG_VDD1 || i == TPS65910_REG_VDD2) {
-> >  			pmic->desc[i].ops = &tps65910_ops_dcdc;
-> > +			pmic->desc[i].n_voltages = VDD1_2_NUM_VOLTS * 3;
-> 
-> This looks suspicous - what's the * 3 about?
-> 
+On Fri, Nov 4, 2011 at 1:12 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> Heh, yeah, definitely, and just to be paranoid, this whole thing is
+>> for the next merge window.
+>
+> Ehm, what parts? If the bug is in for-next, things are queued up for
+> _this_ merge window.
 
-Gain in voltage possible is x1, 0x2 & 0x3, I am shaky
-about this change, but voltage could be changed with this,
-cc'ing original author's
+So, we had four patchsets - the original drain improvements, updates
+to drain improvements, cfq locking cleanup, and cfq api cleanup.
+Currently, the first one is in block tree but the other three are not.
+I was thinking all four were going mainline in the next merge window.
 
-Specification @ http://www.ti.com/product/tps65910
+Hmmm... yeah, the first and second patchsets kinda go together but
+well the first one definitely is pretty good bug fix without others,
+so I guess that split isn't too bad either. Alright, no objection.
 
-Regards
-Afzal
+Thanks.
+
+-- 
+tejun
