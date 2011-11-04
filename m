@@ -1,157 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab1KDJTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 05:19:44 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:51350 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab1KDJTm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 05:19:42 -0400
-Date: Fri, 4 Nov 2011 10:19:36 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-        gmuelas@de.ibm.com
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
-References: <4E9BEB68.1050707@ce.jp.nec.com>
- <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com>
- <4E9D7FA8.9000000@ce.jp.nec.com>
- <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
- <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com>
- <20111031100557.GA2621@osiris.boeblingen.de.ibm.com>
- <1320057746.2964.1.camel@dabdike>
- <4EAE8A7E.8000504@ce.jp.nec.com>
- <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
- <20111103182548.GA12131@redhat.com>
+	id S1753831Ab1KDJZZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 05:25:25 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54570 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262Ab1KDJZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 05:25:24 -0400
+Date: Fri, 4 Nov 2011 10:25:20 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
+Message-ID: <20111104092520.GA16897@gere.osrc.amd.com>
+References: <20111020212353.GZ25124@google.com>
+ <alpine.DEB.2.00.1110201425560.5552@chino.kir.corp.google.com>
+ <20111020213644.GB25124@google.com>
+ <20111020230040.GC3586@swordfish.minsk.epam.com>
+ <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
+ <20111021094520.GA9884@zhy>
+ <20111103071735.GA3228@swordfish.minsk.epam.com>
+ <20111103072705.GA15871@zhy>
+ <20111103074506.GB3228@swordfish.minsk.epam.com>
+ <20111103075354.GA16666@zhy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111103182548.GA12131@redhat.com>
+In-Reply-To: <20111103075354.GA16666@zhy>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 02:25:48PM -0400, Mike Snitzer wrote:
-> On Mon, Oct 31 2011 at  9:00am -0400,
-> Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
-> 
-> > On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
-> > > Hm, dm_softirq_done is generic completion code of original
-> > > request in dm-multipath.
-> > > So oops here might be another manifestation of use-after-free.
+On Thu, Nov 03, 2011 at 03:53:54PM +0800, Yong Zhang wrote:
+> On Thu, Nov 03, 2011 at 10:45:06AM +0300, Sergey Senozhatsky wrote:
+> > On (11/03/11 15:27), Yong Zhang wrote:
+> > > Did you have tried it? Though I don't find time to polish it yet but
+> > > I think will smooth your concern.
 > > > 
-> > > Do you always hit the oops at the same address?
 > > 
-> > I think we saw this bug the first time. But before that the scsi
-> > logging level was higher. Gonzalo is trying to recreate it with
-> > the same (old) scsi logging level.
-> > Afterwards we will try with barrier=0.
-> > 
-> > Both on v3.0.7 btw.
-> > 
-> > > Could you find corresponding source code line for
-> > > the crashed address, dm_softirq_done+0x72/0x140,
-> > > and which pointer was invalid?
-> > 
-> > It crashes in the inlined function dm_done() when trying to
-> > dereference tio (aka clone->end_io_data):
-> > 
-> > static void dm_done(struct request *clone, int error, bool mapped)
-> > {
-> >         int r = error;
-> >         struct dm_rq_target_io *tio = clone->end_io_data;
-> >         dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
+> > I'm compiling the kernel with you patch right now.
+> > The whole point was just for
+> > case if someone has different approach or whatsoever.
 > 
-> Hi,
-> 
-> Which underlying storage driver is being used by this multipath device?
+> Understood. If someone can come up with a simple patch which could
+> cover the case I mentioned before, that would be great.
+> /me goes to poke at it.
 
-It's the s390 only zfcp device driver.
+I dunno whether this is related but I get the following on 3.1:
 
-FWIW, yet another use-after-free crash, this time however in multipath_end_io:
+[ 5499.537074] INFO: trying to register non-static key.
+[ 5499.537080] the code is fine but needs lockdep annotation.
+[ 5499.537083] turning off the locking correctness validator.
+[ 5499.537088] Pid: 0, comm: kworker/0:1 Not tainted 3.1.0 #1
+[ 5499.537091] Call Trace:
+[ 5499.537094]  <IRQ>  [<ffffffff8107beed>] __lock_acquire+0x165d/0x1e30
+[ 5499.537109]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
+[ 5499.537115]  [<ffffffff8107ccd3>] lock_acquire+0x93/0x160
+[ 5499.537120]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
+[ 5499.537126]  [<ffffffff814d9866>] _raw_spin_lock+0x36/0x50
+[ 5499.537130]  [<ffffffff810321fc>] ? double_rq_lock+0x2c/0x80
+[ 5499.537135]  [<ffffffff810321fc>] double_rq_lock+0x2c/0x80
+[ 5499.537140]  [<ffffffff81039195>] load_balance+0x215/0x6c0
+[ 5499.537146]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
+[ 5499.537151]  [<ffffffff810396fd>] rebalance_domains+0xbd/0x1d0
+[ 5499.537155]  [<ffffffff81039640>] ? load_balance+0x6c0/0x6c0
+[ 5499.537161]  [<ffffffff810398ec>] run_rebalance_domains+0xdc/0x130
+[ 5499.537166]  [<ffffffff81048dcd>] __do_softirq+0xbd/0x290
+[ 5499.537173]  [<ffffffff814dc42c>] call_softirq+0x1c/0x30
+[ 5499.537178]  [<ffffffff81003eb5>] do_softirq+0x85/0xc0
+[ 5499.537183]  [<ffffffff810492ce>] irq_exit+0x9e/0xc0
+[ 5499.537189]  [<ffffffff8101ca9f>] smp_call_function_single_interrupt+0x2f/0x40
+[ 5499.537195]  [<ffffffff814dbeb0>] call_function_single_interrupt+0x70/0x80
+[ 5499.537199]  <EOI>  [<ffffffff810096e6>] ? native_sched_clock+0x26/0x70
+[ 5499.537212]  [<ffffffffa0038e1a>] ? acpi_idle_enter_simple+0xee/0x11f [processor]
+[ 5499.537221]  [<ffffffffa0038e15>] ? acpi_idle_enter_simple+0xe9/0x11f [processor]
+[ 5499.537227]  [<ffffffff813f8b1d>] cpuidle_idle_call+0xdd/0x350
+[ 5499.537233]  [<ffffffff8100081f>] cpu_idle+0x6f/0xd0
+[ 5499.537238]  [<ffffffff814cc665>] start_secondary+0x1ae/0x1b3
 
-[96875.870593] Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
-[96875.870602] Oops: 0038 [#1]
-[96875.870674] PREEMPT SMP DEBUG_PAGEALLOC
-[96875.870683] Modules linked in: dm_round_robin sunrpc ipv6 qeth_l2 binfmt_misc dm_multipath scsi_dh dm_mod qeth ccwgroup [la\
-st unloaded: scsi_wait_scan]
-[96875.870722] CPU: 2 Tainted: G        W   3.0.7-50.x.20111024-s390xdefault #1
-[96875.870728] Process udevd (pid: 36697, task: 0000000072c8a3a8, ksp: 0000000057c43868)
-[96875.870732] Krnl PSW : 0704200180000000 000003e001347138 (multipath_end_io+0x50/0x140 [dm_multipath])
-[96875.870746]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
-[96875.870751] Krnl GPRS: 0000000000000000 000003e000000000 6b6b6b6b6b6b6b6b 00000000717ab940
-[96875.870755]            0000000000000000 00000000717abab0 0000000000000002 0700000000000008
-[96875.870759]            0000000000000002 0000000000000000 0000000058dd37a8 000000006f845478
-[96875.870764]            000003e0012e1000 000000005613d1f0 000000007a737bf0 000000007a737ba0
-[96875.870768] Krnl Code: 000003e00134712a: b90200dd            ltgr %r13,%r13
-[96875.870793]            000003e00134712e: a7840017            brc 8,3e00134715c
-[96875.870800]            000003e001347132: e320d0100004        lg %r2,16(%r13)
-[96875.870809]           >000003e001347138: e31020180004        lg %r1,24(%r2)
-[96875.870818]            000003e00134713e: e31010580004        lg %r1,88(%r1)
-[96875.870827]            000003e001347144: b9020011            ltgr %r1,%r1
-[96875.870835]            000003e001347148: a784000a            brc 8,3e00134715c
-[96875.870841]            000003e00134714c: 41202018            la %r2,24(%r2)
-[96875.870889] Call Trace:
-[96875.870892] ([<0700000000000008>] 0x700000000000008)
-[96875.870897]  [<000003e0012e3662>] dm_softirq_done+0x9a/0x140 [dm_mod]
-[96875.870915]  [<000000000040d29c>] blk_done_softirq+0xd4/0xf0
-[96875.870925]  [<00000000001587c2>] __do_softirq+0xda/0x398
-[96875.870932]  [<000000000010f47e>] do_softirq+0xe2/0xe8
-[96875.870940]  [<0000000000158e2c>] irq_exit+0xc8/0xcc
-[96875.870945]  [<00000000004ceb48>] do_IRQ+0x910/0x1bfc
-[96875.870953]  [<000000000061a164>] io_return+0x0/0x16
-[96875.870961]  [<000000000019c84e>] lock_acquire+0xd2/0x204
-[96875.870969] ([<000000000019c836>] lock_acquire+0xba/0x204)
-[96875.870974]  [<0000000000615f8e>] mutex_lock_killable_nested+0x92/0x520
-[96875.870983]  [<0000000000292796>] vfs_readdir+0x8a/0xe4
-[96875.870992]  [<00000000002928e0>] SyS_getdents+0x60/0xe8
-[96875.870999]  [<0000000000619af2>] sysc_noemu+0x16/0x1c
-[96875.871024]  [<000003fffd1ec83e>] 0x3fffd1ec83e
-[96875.871028] INFO: lockdep is turned off.
-[96875.871031] Last Breaking-Event-Address:
-[96875.871037]  [<000003e0012e3660>] dm_softirq_done+0x98/0x140 [dm_mod]
-
-static int multipath_end_io(struct dm_target *ti, struct request *clone,
-			    int error, union map_info *map_context)
-{
-	struct multipath *m = ti->private;
-	struct dm_mpath_io *mpio = map_context->ptr;
-	struct pgpath *pgpath = mpio->pgpath;
-	struct path_selector *ps;
-	int r;
-
-	r  = do_end_io(m, clone, error, mpio);
-	if (pgpath) {
-		ps = &pgpath->pg->ps; <--- crashes here
-		if (ps->type->end_io)
-			ps->type->end_io(ps, &pgpath->path, mpio->nr_bytes);
-	}
-	mempool_free(mpio, m->mpio_pool);
-
-	return r;
-}
-
-It crashes when trying to derefence pgpath, which was freed. Since we have
-SLUB debugging turned on the freed object tells us that it was allocated
-via a call to multipath_ctr() and freed via a call to free_priority_group().
-
-FWIW, this reproduction was done with barriers off.
-
-Btw, since I cc'ed you rather late I'm not sure if you are aware of the
-test scenario: it's I/O stress with multipathing were paths come and go
-all the time. It usually takes quite a few hours before the crashes are
-observed.
+-- 
+Regards/Gruss,
+Boris.
