@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab1KDLJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:09:16 -0400
-Received: from imr-da06.mx.aol.com ([205.188.169.203]:38392 "EHLO
-	imr-da06.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753933Ab1KDLJM (ORCPT
+	id S1755008Ab1KDLJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:09:31 -0400
+Received: from calzone.tip.net.au ([203.10.76.15]:51206 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab1KDLJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 07:09:12 -0400
-X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Nov 2011 07:09:12 EDT
-Message-Id: <201111041100.pA4B02C6017433@imr-da06.mx.aol.com>
-Reply-To: <aliaram150@yahoo.com>
-From: "Ali Ibrahim" <fcybnormal@aol.com>
-Subject: Kindly Reply, Salam
-Date: Fri, 4 Nov 2011 03:58:17 -0700
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_00EA_01C2A9A6.66D6516C"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/75830
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:254021376:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/75830
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:237378480:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33844eb3c5b2783d
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 4 Nov 2011 07:09:15 -0400
+Date: Fri, 4 Nov 2011 22:09:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Change of URL for the MIPS linux-next tree
+Message-Id: <20111104220902.b0c67d0760337f5da66b9c28@canb.auug.org.au>
+In-Reply-To: <20111104095351.GA2659@linux-mips.org>
+References: <20111104095351.GA2659@linux-mips.org>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+--Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-------=_NextPart_000_00EA_01C2A9A6.66D6516C
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+Hi Ralf,
 
-Dear Friend,
+On Fri, 4 Nov 2011 09:53:51 +0000 Ralf Baechle <ralf@linux-mips.org> wrote:
+>
+> I've moved things on linux-mips.org a bit around, so the new URL for
+> my tree for linux-next is:
+>=20
+>   git://git.linux-mips.org/pub/scm/ralf/upstream-sfr.git
 
-With a very desperate need for assistance, I have summed up courage to contact you. Read the details as attached
+I have switched to that, now.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-------=_NextPart_000_00EA_01C2A9A6.66D6516C
-Content-Type: application/octet-stream;
-	name="message from ali.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="message from ali.rtf"
+--Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo
+Content-Type: application/pgp-signature
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgRGVhciBGcmllbmQsXHBhcg0KXHBhcg0KV2l0aCBhIHZl
-cnkgZGVzcGVyYXRlIG5lZWQgZm9yIGFzc2lzdGFuY2UsIEkgaGF2ZSBzdW1t
-ZWQgdXAgY291cmFnZSB0byBjb250YWN0IHlvdS4gSSBhbSBmcm9tICh3aWxs
-IGRpc2Nsb3NlIHRoaXMgbGF0ZXIpLHByZXNlbnRseSB3b3JraW5nIGluIEly
-YXEgd2l0aCBhbiBpbnRlcm5hdGlvbmFsIG9yZ2FuaXphdGlvbiB0aGF0IEkg
-d2lsbCBhbHNvIGRpc2Nsb3NlIGxhdGVyLCBJIGZvdW5kIHlvdXIgY29udGFj
-dCBwYXJ0aWN1bGFycyBpbiBhbiBhZGRyZXNzIGpvdXJuYWwuSSBhbSBzZWVr
-aW5nIHlvdXIgYXNzaXN0YW5jZSB0byBldmFjdWF0ZSB0aGUgc3VtIG9mIChV
-UyQxOC41MjMgTWlsbGlvbiBEb2xsYXJzKSBFaWdodGVlbiBNaWxsaW9uLCBm
-aXZlIEh1bmRyZWQgQW5kIFR3ZW50eSBUaHJlZSBUaG91c2FuZCBVUyBEb2xs
-YXJzIHRvIHlvdXIgY291bnRyeSBvciBhbnkgb3RoZXIgc2FmZSBjb3VudHJ5
-IG9mIHlvdXIgY2hvaWNlLCBhcyBmYXIgYXMgSSBjYW4gYmUgYXNzdXJlZCB0
-aGF0IG15IHNoYXJlIHdpbGwgYmUgc2FmZSBpbiB5b3VyIGNhcmUgdW50aWxs
-IEkgY29tcGxldGUgbXkgc2VydmljZSBoZXJlLHRoaXMgaXMgbm8gc3RvbGVu
-IG1vbmV5LGFuZCB0aGVyZSBhcmUgbm8gZGFuZ2VycyBpbnZvbHZlZC5ccGFy
-DQpTT1VSQ0UgT0YgTU9ORVk6XHBhcg0KaHR0cDovL25ld3MuYmJjLmNvLnVr
-LzIvaGkvbWlkZGxlX2Vhc3QvMjk4ODQ1NS5zdG1ccGFyDQpTb21lIG1vbmV5
-IGluIHZhcmlvdXMgY3VycmVuY2llcyB3YXMgZGlzY292ZXJlZCBjb25jZWFs
-ZWQgaW4gYmFycmVscyB3aXRoIHBpbGVzIG9mIHdlYXBvbnMgYW5kIGFtbXVu
-aXRpb25zIGF0IGEgbG9jYXRpb24gbmVhciBvbmUgb2YgU2FkZGFtLHMgb2xk
-IHBhbGFjZXMgZHVyaW5nIGEgcmVzY3VlIG9wZXJhdGlvbiwgYW5kIGl0IHdh
-cyBhZ3JlZWQgYnkgYWxsIHBhcnR5IHByZXNlbnQgdGhhdCB0aGUgbW9uZXkg
-YmUgc2hhcmVkIGFtb25nc3QgdXMsIHRoaXMgd2FzIHF1aXRlIGFuIGlsbGVn
-YWwgdGhpbmcgdG8gZG8sIGJ1dCBJIHRlbGwgeW91IHdoYXQ/IG5vIGNvbXBl
-bnNhdGlvbiBjYW4gbWFrZSB1cCBmb3IgdGhlIHJpc2tzIHdlIGhhdmUgdGFr
-ZW4gd2l0aCBvdXIgbGl2ZXMgaW4gdGhpcyBoZWxsIGhvbGUuIFRoZSBhYm92
-ZSBmaWd1cmUgd2FzIGdpdmVuIHRvIG1lIGFzIG15IHNoYXJlLCBhbmQgdG8g
-Y29uY2VhbCB0aGlzIGtpbmQgb2YgbW9uZXkgYmVjYW1lIGEgcHJvYmxlbSBm
-b3IgbWUsIHNvIHdpdGggdGhlIGhlbHAgb2YgYSBHZXJtYW4gY29udGFjdCB3
-b3JraW5nIGhlcmUsIGFuZCBoaXMgb2ZmaWNlIGVuam95cyBzb21lIGltbXVu
-aXR5LCBJIHdhcyBhYmxlIHRvIGdldCB0aGUgcGFja2FnZSBvdXQgdG8gYSBz
-YWZlIGNhdGlvbiBlbnRpcmVseSBvdXQgb2YgdHJvdWJsZSBzcG90LlxwYXIN
-CkhlIGRvZXMgbm90IGtub3cgdGhlIHJlYWwgY29udGVudHMgb2YgdGhlIHBh
-Y2thZ2UsIGFuZCBiZWxpZXZlcyB0aGF0IGl0IGJlbG9uZ3MgdG8gYW4gQXNp
-YW4vQW1lcmljYW4gd2hvIGRpZWQgaW4gYW4gYWlyIHJhaWQsIGFuZCBiZWZv
-cmUgZ2l2aW5nIHVwLCB0cnVzdGVkIG1lIHRvIGhhbmQgb3ZlciB0aGUgcGFj
-a2FnZSB0byBoaXMgYnVzaW5lc3MgYXNzb2NpYXRlLiBJIGhhdmUgbm93IGZv
-dW5kIGEgc2VjdXJlZCB3YXkgb2YgZ2V0dGluZyB0aGUgcGFja2FnZSBvdXQg
-dG8gYSBzYWZlciBjb3VudHJ5IGZvciB5b3UgdG8gcGljayB1cCwgYW5kIHdp
-bGwgZGlzY3VzcyB0aGlzIHdpdGggeW91IHdoZW4gSSBhbSBzdXJlIHRoYXQg
-eW91IGFyZSB3aWxsaW5nIHRvIGFzc2lzdCBtZS5PbmUgcGFzc2lvbmF0ZSBh
-cHBlYWwgSSB3aWxsIG1ha2UgdG8geW91IGlzIG5vdCB0byBkaXNjdXNzIHRo
-aXMgbWF0dGVyIHdpdGggYSB0aGlyZCBwYXJ0eSwgc2hvdWxkIHlvdSBoYXZl
-IHJlYXNvbnMgdG8gcmVqZWN0IHRoaXMgb2ZmZXIsIHBsZWFzZSBkZXN0cm95
-IHRoaXMgbWFpbCBhcyBhbnkgbGVha2FnZSBvZiB0aGlzIGluZm9ybWF0aW9u
-IHdpbGwgYmUgdG9vIGJhZCBmb3IgdXMuSSBkbyBub3Qga25vdyBmb3IgaG93
-IGxvbmcgd2Ugd2lsbCByZW1haW4gaGVyZSwgYW5kIEkgaGF2ZSBzdXJ2aXZl
-ZCA2IHN1aWNpZGUgYm9tYiBhdHRhY2tzIGJ5IHRoZSBzcGVjaWFsIGdyYWNl
-IG9mIEdvZCwgdGhpcyBhbmQgb3RoZXIgcmVhc29ucyBJIHdpbGwgbWVudGlv
-biBsYXRlciBoYXMgcHJvbXB0ZWQgbWUgdG8gcmVhY2ggb3V0IGZvciBoZWxw
-LCBJIGhvbmVzdGx5IHdhbnQgdGhpcyBtYXR0ZXIgdG8gYmUgcmVzb2x2ZWQg
-aW1tZWRpYXRlbHkuXHBhcg0KXHBhcg0Ka2luZGx5IGZpbGwgdXAgdGhpcyBy
-ZXF1aXJlbWVudHMgbGlrZTpLaW5kbHkgcmVzcG9uZCAuXHBhcg0KXHBhcg0K
-WW91ciBmdWxsIG5hbWU6XHBhcg0KWW91ciBjb3VudHJ5OlxwYXINCkNvbnRh
-Y3QgcGhvbmUvZmF4IG51bWJlclxwYXINCkFnZTpccGFyDQpPY2N1cGF0aW9u
-OlxwYXINClxwYXINClJlZ2FyZHMsXHBhcg0KTXIgQWxpIElicmFoaW0uXHBh
-cg0KfQ0KAA==
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-------=_NextPart_000_00EA_01C2A9A6.66D6516C--
+iQIcBAEBCAAGBQJOs8fOAAoJEECxmPOUX5FE7H0P/0x0KX5ecmCFWx2eVwXW9Ze/
+v6FlmF5HQgg9csuDhghGyveG/Z8y9IPCPnWrfryvpjCeGcYRYrIHsMUueFLMHfte
+k/HhKr2avJpgCnSSMnsdwRcsvrVBNpFAu5768rpSXoOxwZlDqUlyF5HJh/92ewMK
+j+TUO2J0VTJqaL0RL0pxcpQGysQ44TM7WDKFdZVqNWs0fecxhFwL70Ya7DWs/n/m
+TgkMKzOuXmauoNOMvgHLmVEyCZZZ7TpIiGSbGjFjEe1ngkwDK2bVd4xg7GyZSnQp
+vFi4+0+WqBi49GIFPDAANxIlGK44nl//zwmkX4WOUdKMI+EfoOpxyL7LTA3kfRAk
+0znOXh4ENfNrXLj88dmv2PjyjNEY6K2Ky/1dfT4QRBSbmgJ6uoGhtN8jVjfz9AQM
+pX6hiMl0MJGkYvwwk1HBGdTaI1+4F6b5hp338TwhhapZG8XDuvKx/buDY4M8q6ov
+gHW8KNscYyHD/BHdT0sUQSXlV1Y6XtcInJrRLuJXmEdVQ9bMTPYkUJ9il7NEiFoq
+flIyg22j5Z91H4SFCQxfra0Q353aMkHr6aZXcOyDoelDPt+IUtVitlwdR67wXB+H
+uvVkB+jtNJQUbQJhPXek7SgszF4/ZPMULscMNTC/2yZZTPjj/YmAtymGHKXssV1v
+t57M+xoA+SrC4S1vluAe
+=BnP8
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__4_Nov_2011_22_09_02_+1100_Ecgtb=CcHPvIJcAo--
