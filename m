@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932325Ab1KDL1D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:27:03 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58209 "EHLO
+	id S932290Ab1KDL1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:27:00 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58211 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755108Ab1KDL0i (ORCPT
+	with ESMTP id S1755111Ab1KDL0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Nov 2011 07:26:38 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: linux-stable <stable@vger.kernel.org>
 Cc: Greg Kroah-Hartman <greg@kroah.com>, X86-ML <x86@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] x86, amd: Move BSP code to cpu_dev helper
-Date: Fri,  4 Nov 2011 12:26:34 +0100
-Message-Id: <1320405995-10199-3-git-send-email-bp@amd64.org>
+Subject: [PATCH 4/4] x86-32, amd: Move va_align definition to unbreak 32-bit build
+Date: Fri,  4 Nov 2011 12:26:35 +0100
+Message-Id: <1320405995-10199-4-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.8.rc0
 In-Reply-To: <20111104112209.GB8020@aftab>
 References: <20111104112209.GB8020@aftab>
@@ -21,104 +21,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upstream commit: 8fa8b035085e7320c15875c1f6b03b290ca2dd66
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-Move code which is run once on the BSP during boot into the cpu_dev
-helper.
+Upstream commit: 9387f774d61b01ab71bade85e6d0bfab0b3419bd
 
-[ hpa: removed bogus cpu_has -> static_cpu_has conversion ]
+hpa reported that dfb09f9b7ab03fd367740e541a5caf830ed56726 breaks 32-bit
+builds with the following error message:
+
+/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:437: undefined
+reference to `va_align'
+/home/hpa/kernel/linux-tip.cpu/arch/x86/kernel/cpu/amd.c:436: undefined
+reference to `va_align'
+
+This is due to the fact that va_align is a global in a 64-bit only
+compilation unit. Move it to mmap.c where it is visible to both
+subarches.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Link: http://lkml.kernel.org/r/20110805180409.GC26217@aftab
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/1312633899-1131-1-git-send-email-bp@amd64.org
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/cpu/amd.c |   59 ++++++++++++++++++++++-----------------------
- 1 files changed, 29 insertions(+), 30 deletions(-)
+ arch/x86/kernel/sys_x86_64.c |    4 ----
+ arch/x86/mm/mmap.c           |    5 ++++-
+ 2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b0234bc..b6e3e87 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -410,6 +410,34 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
- #endif
- }
+diff --git a/arch/x86/kernel/sys_x86_64.c b/arch/x86/kernel/sys_x86_64.c
+index aaa8d09..fe7d2da 100644
+--- a/arch/x86/kernel/sys_x86_64.c
++++ b/arch/x86/kernel/sys_x86_64.c
+@@ -18,10 +18,6 @@
+ #include <asm/ia32.h>
+ #include <asm/syscalls.h>
  
-+static void __cpuinit bsp_init_amd(struct cpuinfo_x86 *c)
-+{
-+	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
+-struct __read_mostly va_alignment va_align = {
+-	.flags = -1,
+-};
+-
+ /*
+  * Align a virtual address to avoid aliasing in the I$ on AMD F15h.
+  *
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index d4c0736..4b5ba85 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -31,6 +31,10 @@
+ #include <linux/sched.h>
+ #include <asm/elf.h>
+ 
++struct __read_mostly va_alignment va_align = {
++	.flags = -1,
++};
 +
-+		if (c->x86 > 0x10 ||
-+		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
-+			u64 val;
-+
-+			rdmsrl(MSR_K7_HWCR, val);
-+			if (!(val & BIT(24)))
-+				printk(KERN_WARNING FW_BUG "TSC doesn't count "
-+					"with P0 frequency!\n");
-+		}
-+	}
-+
-+	if (c->x86 == 0x15) {
-+		unsigned long upperbit;
-+		u32 cpuid, assoc;
-+
-+		cpuid	 = cpuid_edx(0x80000005);
-+		assoc	 = cpuid >> 16 & 0xff;
-+		upperbit = ((cpuid >> 24) << 10) / assoc;
-+
-+		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
-+		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
-+	}
-+}
-+
- static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ static unsigned int stack_maxrandom_size(void)
  {
- 	early_init_amd_mc(c);
-@@ -441,36 +469,6 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
- 	}
- #endif
--
--	/* We need to do the following only once */
--	if (c != &boot_cpu_data)
--		return;
--
--	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
--
--		if (c->x86 > 0x10 ||
--		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
--			u64 val;
--
--			rdmsrl(MSR_K7_HWCR, val);
--			if (!(val & BIT(24)))
--				printk(KERN_WARNING FW_BUG "TSC doesn't count "
--					"with P0 frequency!\n");
--		}
--	}
--
--	if (c->x86 == 0x15) {
--		unsigned long upperbit;
--		u32 cpuid, assoc;
--
--		cpuid	 = cpuid_edx(0x80000005);
--		assoc	 = cpuid >> 16 & 0xff;
--		upperbit = ((cpuid >> 24) << 10) / assoc;
--
--		va_align.mask	  = (upperbit - 1) & PAGE_MASK;
--		va_align.flags    = ALIGN_VA_32 | ALIGN_VA_64;
--
--	}
+ 	unsigned int max = 0;
+@@ -42,7 +46,6 @@ static unsigned int stack_maxrandom_size(void)
+ 	return max;
  }
  
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-@@ -692,6 +690,7 @@ static const struct cpu_dev __cpuinitconst amd_cpu_dev = {
- 	.c_size_cache	= amd_size_cache,
- #endif
- 	.c_early_init   = early_init_amd,
-+	.c_bsp_init	= bsp_init_amd,
- 	.c_init		= init_amd,
- 	.c_x86_vendor	= X86_VENDOR_AMD,
- };
+-
+ /*
+  * Top of mmap area (just below the process stack).
+  *
 -- 
 1.7.8.rc0
 
