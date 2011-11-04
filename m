@@ -1,110 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab1KDCzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Nov 2011 22:55:37 -0400
-Received: from calzone.tip.net.au ([203.10.76.15]:52895 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754761Ab1KDCzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Nov 2011 22:55:35 -0400
-Date: Fri, 4 Nov 2011 13:55:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mat Martineau <mathewm@codeaurora.org>
-Subject: linux-next: manual merge of the bluetooth tree with Linus' tree
-Message-Id: <20111104135523.e82306ceccecef3e4687f58f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+	id S932126Ab1KDCzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Nov 2011 22:55:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21187 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754761Ab1KDCzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Nov 2011 22:55:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,453,1315206000"; 
+   d="scan'208";a="70409032"
+Subject: Re: [PATCH] PNP ACPI: Use real gsi
+From: Zhang Rui <rui.zhang@intel.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1320373233-3725-1-git-send-email-trenn@suse.de>
+References: <1320372728-3235-1-git-send-email-trenn@suse.de>
+	 <1320373233-3725-1-git-send-email-trenn@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Nov 2011 10:54:06 +0800
+Message-ID: <1320375246.27436.1353.camel@rui>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__4_Nov_2011_13_55_23_+1100_dbpxy8RMvquvSzvY"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__4_Nov_2011_13_55_23_+1100_dbpxy8RMvquvSzvY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-11-04 at 10:20 +0800, Thomas Renninger wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
+> 
+> In 2.6.35 a lot cleanups in this area (not pnp, but x86 ioapic setup) have
+> been introduced.
+> On an IBM Xseries (x3850) this caused the machine to freeze around when
+> the init userspace process is tried to get started.
+> The reason is that the timer interrupt is not set up correctly on this machine.
+> 
+> I could bisect the issue to one of ioapic cleanups introduced in 2.6.35:
+> commit a4384df3e24579d6292a1b3b41d500349948f30b
+> 
+> While on this machine the problem was an interrupt timer issue,
+> there may be other platforms with different interrupt issues relatd to this
+> problem. Kernel logs with similar IOAPIC errors inside pnpacpi setup might
+> need this patch:
+>   pnp 00:04: [io  0x02f8-0x02ff]
+>   IOAPIC[1]: Invalid reference to IRQ 0
+>   pnp 00:04: [irq 2]
+>   pnp 00:04: Plug and Play ACPI device, IDs PNP0501 (active)
+> 
+> Yinghai came up with this patch which fixes the problem for me.
+> Looks like the bisected commit is correct, but the pnp layer has been
+> overseen.
+> 
+> Tested-by: Thomas Renninger <trenn@suse.de>
+> CC: Eric W. Biederman <ebiederm@xmission.com>
+> CC: bhelgaas@google.com
+> CC: lenb@kernel.org
+> CC: stable@kernel.org
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: H Peter Anvin <hpa@zytor.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> ---
+>  drivers/pnp/pnpacpi/rsparser.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
+> index bbf3edd..dad5da9 100644
+> --- a/drivers/pnp/pnpacpi/rsparser.c
+> +++ b/drivers/pnp/pnpacpi/rsparser.c
+> @@ -106,6 +106,14 @@ static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
+>  		return;
+>  	}
+>  
+> +#ifdef CONFIG_X86_IO_APIC
+> +	/*
+> +	 * Convert it back to real gsi
+> +	 */
+> +	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
+> +		acpi_isa_irq_to_gsi(gsi, &gsi);
+> +#endif
+> +
+>  
+I'm looking at this piece of code recently, and I have a few questions.
 
-Hi Gustavo,
+Interrupt resource descriptor returns gsi, right?
+why you do need to do the isa-irq-to-gsi map again? is this problem
+caused by an interrupt override table on this machine?
+But if this is true, I don't see why
+a4384df3e24579d6292a1b3b41d500349948f30b introduces this regression.
 
-Today's linux-next merge of the bluetooth tree got a conflict in
-include/net/bluetooth/bluetooth.h between commit b9075fa968a0 ("treewide:
-use __printf not __attribute__((format(printf,...)))") from Linus' tree
-and commit 5254c96d4e25 ("Bluetooth: Add BT_CHANNEL_POLICY socket
-option") from the bluetooth tree.
+can you attach the acpidump table please?
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
+rui
 
-diff --cc include/net/bluetooth/bluetooth.h
-index e86af08,38cd3da..0000000
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@@ -77,7 -77,34 +77,34 @@@ struct bt_power=20
-  #define BT_POWER_FORCE_ACTIVE_OFF 0
-  #define BT_POWER_FORCE_ACTIVE_ON  1
- =20
-+ #define BT_CHANNEL_POLICY	10
-+=20
-+ /* BR/EDR only (default policy)
-+  *   AMP controllers cannot be used.
-+  *   Channel move requests from the remote device are denied.
-+  *   If the L2CAP channel is currently using AMP, move the channel to BR/=
-EDR.
-+  */
-+ #define BT_CHANNEL_POLICY_BREDR_ONLY		0
-+=20
-+ /* BR/EDR Preferred
-+  *   Allow use of AMP controllers.
-+  *   If the L2CAP channel is currently on AMP, move it to BR/EDR.
-+  *   Channel move requests from the remote device are allowed.
-+  */
-+ #define BT_CHANNEL_POLICY_BREDR_PREFERRED	1
-+=20
-+ /* AMP Preferred
-+  *   Allow use of AMP controllers
-+  *   If the L2CAP channel is currently on BR/EDR and AMP controller
-+  *     resources are available, initiate a channel move to AMP.
-+  *   Channel move requests from the remote device are allowed.
-+  *   If the L2CAP socket has not been connected yet, try to create
-+  *     and configure the channel directly on an AMP controller rather
-+  *     than BR/EDR.
-+  */
-+ #define BT_CHANNEL_POLICY_AMP_PREFERRED		2
-+=20
- -__attribute__((format (printf, 2, 3)))
- +__printf(2, 3)
-  int bt_printk(const char *level, const char *fmt, ...);
- =20
-  #define BT_INFO(fmt, arg...)   bt_printk(KERN_INFO, pr_fmt(fmt), ##arg)
+> 	/*
+>  	 * in IO-APIC mode, use overrided attribute. Two reasons:
+>  	 * 1. BIOS bug in DSDT
 
---Signature=_Fri__4_Nov_2011_13_55_23_+1100_dbpxy8RMvquvSzvY
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOs1QbAAoJEECxmPOUX5FE7+IP/2Sk2tyDsVRal2yjDs7zGs4f
-0bz7jteU4dF7dyJVAQvQP4ARqpnQLoAXj8JP/eBc5CrAEPhWMSFSHeFwRMBG+qaC
-2TUSQCtSC3gg5UHwR7G5DuS4l1wf52j4LWqIUK+xPhuyyFiqt1/7KCgcop1nA8vx
-zJYzotijvHPyerAFKSKu4R1CvLtUE6r++ZEHaV7nKoQHON6khSMFZufy7WSiyZyx
-skm4JbVQ0vtIJW2u2qZWIKskRhoclrUFAYEfGwxIfWBCBozqX0btyX/hv7GSGFcX
-GQCSvXa2yTazqAPOCOhokDp/OENBhmYHvExVoDRQ6pqjxdoBsOOrQ8ZoAQULg6+k
-AwPqlS9qO+5LjLqxPG4/atMMsmBRcQVJ8WnusNjq3wkUao4dV0EGj4Vj2H8Ng8EP
-LufuWX8hVVtKtjzSArfiXlmdjjR84Q8JJIyUBNYQXZ4tZNtjclZUPbYFdLH13k3Q
-BdxuPabo9QMwQBVTJTKWL5xlXFmoQncZPgfiVA9rQoUEohDyTmMyT9ewFl27wmqg
-GsmqL6cGsjeiw6Mrp8ZTVP2jV/s4mHXLXBmLtk7kWxdaf6+9dMS9eeoJ4kn9PChy
-BrWPhxA+a4Tw8bp6JfGneCt/6SbdnWniJjAexX2Nnk629UzPXX/Q7ssg/vhmwA7z
-FK/WUTSeE4IbRZXJW7Fq
-=iDiM
------END PGP SIGNATURE-----
-
---Signature=_Fri__4_Nov_2011_13_55_23_+1100_dbpxy8RMvquvSzvY--
