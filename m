@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab1KDQS7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 12:18:59 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33284 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753076Ab1KDQS6 (ORCPT
+	id S1755972Ab1KDQZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 12:25:34 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:40260 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755898Ab1KDQZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 12:18:58 -0400
-Date: Fri, 4 Nov 2011 16:18:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Mohammed, Afzal" <afzal@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: Re: [PATCH 2/2] regulator:TPS65910: VDD1/2 voltage selector count
-Message-ID: <20111104161855.GC28902@opensource.wolfsonmicro.com>
-References: <1320410928-20349-1-git-send-email-afzal@ti.com>
- <20111104140422.GA28615@opensource.wolfsonmicro.com>
- <C8443D0743D26F4388EA172BF4E2A7A90194B0@DBDE01.ent.ti.com>
- <20111104152559.GC28615@opensource.wolfsonmicro.com>
- <C8443D0743D26F4388EA172BF4E2A7A9019607@DBDE01.ent.ti.com>
+	Fri, 4 Nov 2011 12:25:33 -0400
+Message-ID: <4EB411FB.8050803@lougher.demon.co.uk>
+Date: Fri, 04 Nov 2011 16:25:31 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C8443D0743D26F4388EA172BF4E2A7A9019607@DBDE01.ent.ti.com>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: NamJae Jeon <linkinjeon@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Squashfs updates for 3.2
+References: <4EB3F094.30307@lougher.demon.co.uk> <CAKYAXd87eNQqDs2Ks5pFkA8dxsb49Ub2UmmWfsQVC8n6F3sfKA@mail.gmail.com>
+In-Reply-To: <CAKYAXd87eNQqDs2Ks5pFkA8dxsb49Ub2UmmWfsQVC8n6F3sfKA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 04:01:04PM +0000, Mohammed, Afzal wrote:
-> On Fri, Nov 04, 2011 at 20:55:59, Mark Brown wrote:
+NamJae Jeon wrote:
 
-> > That doesn't really clarify things - the question is why the number of
-> > voltages we can set is three times a constant called _NUM_VOLTS?
+> 
+> I already posted this patch before ([PATCH] squashfs : devblksize set
+> to 4KB intead of BLOCK_SIZE(1KB).).
 
-> _NUM_VOLTS is the number of voltage steps.
+No you didn't.  You posted a patch that simply unconditionally changed
+the block size from  1K -> 4K.
 
-> I will try to come up with a better explanation or rather the
-> right solution, new to regulator world as of now.
+https://lkml.org/lkml/2011/9/18/66
 
-So that definitely seems wrong then - n_voltages is supposed to be the
-number of voltages that can be selected so if the regulator supports
-_NUM_VOLTS steps then I'd expect to see that constant used directly.
-Otherwise I'd suggest that the magic number needs a #define.
+This is an unacceptable change, Squashfs is used on many devices not only
+NAND, and the default value of 1K is optimal for these other devices, and
+should not be changed.
+
+Second, if you are going to change long-term existing behaviour you should
+always allow users to "buy-in" to the change, rather than surprising them
+with new unexpected behaviour.
+
+> It is similar with my patch except option.
+
+The option *is* the patch.
+
+> Have you ever seen this patch ? I didn't response about this patch from you.
+
+Since 2008 (and probably before) I have had reports that a 1K block size was
+causing performance issues on NAND
+
+http://old.nabble.com/Default-FS-block-size-td15423970.html
+
+However, I chose to do nothing at that time because the results were
+inconclusive.
+
+The impetus for moving to a 1K block on NAND was due to the development
+of the UBIBLK driver for NAND earlier this year
+
+http://lists.infradead.org/pipermail/linux-mtd/2011-June/036595.html
+
+where the 1K dev block behaviour of Squashfs was discovered to be the
+reason (in the early V1 driver referenced above) why Squashfs filesystems
+worked, but ext2/3 and vfat filesystems did not.
+
+Your patch was merely the 3rd or 4th unacceptable patch I have
+received changing the block size unconditionally.
+
+The month before your patch I received this truly horrible patch, which
+though it is extremely long, does nothing more than change the max dev
+block size to 4K.  I dropped that patch too.
+
+Phillip
