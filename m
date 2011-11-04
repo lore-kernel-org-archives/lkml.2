@@ -1,52 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab1KDWX1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 18:23:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49370 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754814Ab1KDWX0 (ORCPT
+	id S932500Ab1KDWYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 18:24:15 -0400
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:45273 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab1KDWYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 18:23:26 -0400
-Date: Fri, 4 Nov 2011 22:23:23 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Rajendra Nayak <rnayak@ti.com>, grant.likely@secretlab.ca,
-        patches@linaro.org, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/4] regulator: adapt fixed regulator driver to dt
-Message-ID: <20111104222323.GB16978@opensource.wolfsonmicro.com>
-References: <1319702185-16108-1-git-send-email-rnayak@ti.com>
- <1319702185-16108-3-git-send-email-rnayak@ti.com>
- <20111104203422.GB3918@quad.lixom.net>
- <20111104210151.GA2541@opensource.wolfsonmicro.com>
- <20111104211824.GA5608@quad.lixom.net>
- <20111104212538.GA8266@opensource.wolfsonmicro.com>
- <CAOesGMh2_C+yx=_5PjqoKxZmAMvx-puRjq45s+G2kz2EaEEtqw@mail.gmail.com>
- <20111104215733.GD8266@opensource.wolfsonmicro.com>
- <CAOesGMh-fpUSMvOGkq_b4DVzFUby6pnMmKDXQ=sFJpn+g4FzOw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMh-fpUSMvOGkq_b4DVzFUby6pnMmKDXQ=sFJpn+g4FzOw@mail.gmail.com>
-X-Cookie: You will be misunderstood by everyone.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 4 Nov 2011 18:24:09 -0400
+From: Serge Hallyn <serge@hallyn.com>
+To: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Cc: oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
+        ebiederm@xmission.com, serge@hallyn.com, dhowells@redhat.com,
+        eparis@redhat.com, "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 4/6] Add Documentation/namespaces/user_namespace.txt (v3)
+Date: Fri,  4 Nov 2011 22:24:40 +0000
+Message-Id: <1320445482-8459-5-git-send-email-serge@hallyn.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 03:09:32PM -0700, Olof Johansson wrote:
+From: Serge E. Hallyn <serge@hallyn.com>
 
-> But even things like allowing (optional) attributes such as
-> startup-delay on non-fixed regulators could make sense. Keep in mind
-> that the device tree should focus on describing the hardware, not just
-> what the linux driver needs from it. So maybe instead of
-> startup-delay, specifying ramp-up speed instead of time needed until
-> power is good could be the way to go there.
+Provide a description of user namespaces
 
-This is in general something that a driver should know as a result of
-knowing which regulator it's dealing with - in many cases these are
-properties which can be varied at runtime on hardware which has register
-control.  Replicating this into the device tree would make things more
-error prone.
+Changelog:
+   jul 26: incorporate feedback from David Howells.
+   jul 29: incorporate feedback from Randy Dunlap.
+   sep 15: remove information which is not yet certain.
+   Oct 26: add changes suggested by David on Oct 19
+
+Signed-off-by: Serge E. Hallyn <serge.hallyn@canonical.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+---
+ Documentation/namespaces/user_namespace.txt |   54 +++++++++++++++++++++++++++
+ 1 files changed, 54 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/namespaces/user_namespace.txt
+
+diff --git a/Documentation/namespaces/user_namespace.txt b/Documentation/namespaces/user_namespace.txt
+new file mode 100644
+index 0000000..805f0ef
+--- /dev/null
++++ b/Documentation/namespaces/user_namespace.txt
+@@ -0,0 +1,54 @@
++Description
++===========
++
++Traditionally, each task is owned by a user ID (UID) and belongs to one or more
++groups (GID).  Both are simple numeric IDs, though userspace usually translates
++them to names.  The user namespace allows tasks to have different views of the
++UIDs and GIDs associated with tasks and other resources.  (See 'UID mapping'
++below for more.)
++
++The user namespace is a simple hierarchical one.  The system starts with all
++tasks belonging to the initial user namespace.  A task creates a new user
++namespace by passing the CLONE_NEWUSER flag to clone(2).  This requires the
++creating task to have the CAP_SETUID, CAP_SETGID, and CAP_CHOWN capabilities,
++but it does not need to be running as root.  The clone(2) call will result in a
++new task which to itself appears to be running as UID and GID 0, but to its
++creator seems to have the creator's credentials.
++
++To this new task, any resource belonging to the initial user namespace will
++appear to belong to user and group 'nobody', which are UID and GID -1.
++Permission to open such files will be granted according to world access
++permissions.  UID comparisons and group membership checks will fail, and
++privilege will be denied.
++
++When a task belonging to (for example) UID 500 in the initial user namespace
++creates a new user namespace, even though the new task will see itself as
++belonging to UID 0, any task in the initial user namespace will see it as
++belonging to UID 500.  Therefore, UID 500 in the initial user namespace will be
++able to kill the new task.
++
++UID mapping for the VFS is not yet implemented, though prototypes exist.
++
++Relationship between the User namespace and other namespaces
++============================================================
++
++Other namespaces, such as UTS and network, are owned by a user namespace.  When
++such a namespace is created, it is assigned to the user namespace of the task
++by which it was created.  Therefore attempts to exercise privilege over a
++resource can be properly validated by checking for privilege targeted to the
++user namespace which owns the resource.  For instance, a check for the special
++privilege to change a network interface address could be done by checking for
++CAP_NET_ADMIN against the user namespace which created the network namespace
++owning the network interface.
++
++( XXX TODO: add a list of capabilities corresponding to different namespaces)
++
++As an example, if a new task is cloned with a private user namespace but
++not a private network namespace, then the task's network namespace is owned
++by the parent user namespace.  The new task has no special privilege over the
++parent user namespace, so it will not be able to create or configure the
++network devices therein.  If instead the task were cloned with both private
++user and network namespaces, then the private network namespace is owned
++by the private user namespace, and so root in the new user namespace
++will have privilege over resources owned by the network namespace.  It will
++be able to create and configure network devices.
+-- 
+1.7.0.4
+
