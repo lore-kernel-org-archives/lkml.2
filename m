@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab1KDLJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 07:09:03 -0400
-Received: from exprod5og113.obsmtp.com ([64.18.0.26]:48170 "EHLO
-	exprod5og113.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab1KDLJB (ORCPT
+	id S1754908Ab1KDLJQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 07:09:16 -0400
+Received: from imr-da06.mx.aol.com ([205.188.169.203]:38392 "EHLO
+	imr-da06.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753933Ab1KDLJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 07:09:01 -0400
-Message-ID: <4EB3C69A.6090709@ge.com>
-Date: Fri, 04 Nov 2011 11:03:54 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Fri, 4 Nov 2011 07:09:12 -0400
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Nov 2011 07:09:12 EDT
+Message-Id: <201111041100.pA4B02C6017433@imr-da06.mx.aol.com>
+Reply-To: <aliaram150@yahoo.com>
+From: "Ali Ibrahim" <fcybnormal@aol.com>
+Subject: Kindly Reply, Salam
+Date: Fri, 4 Nov 2011 03:58:17 -0700
 MIME-Version: 1.0
-To: Manohar Vanga <manohar.vanga@cern.ch>
-CC: gregkh@suse.de, cota@braap.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] staging: vme: fix comment for struct vme_dev
-References: <1320401551-29287-1-git-send-email-manohar.vanga@cern.ch> <1320401551-29287-4-git-send-email-manohar.vanga@cern.ch>
-In-Reply-To: <1320401551-29287-4-git-send-email-manohar.vanga@cern.ch>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 04 Nov 2011 11:01:45.0236 (UTC) FILETIME=[24303540:01CC9AE1]
+Content-Type: multipart/mixed;
+	boundary="----=_NextPart_000_00EA_01C2A9A6.66D6516C"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-AOL-VSS-INFO: 5400.1158/75830
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:254021376:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-global-disposition: G
+X-AOL-VSS-INFO: 5400.1158/75830
+X-AOL-VSS-CODE: clean
+X-AOL-SCOLL-SCORE: 0:2:237378480:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+x-aol-sid: 3039ac1d33844eb3c5b2783d
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/11 10:12, Manohar Vanga wrote:
-> Signed-off-by: Manohar Vanga <manohar.vanga@cern.ch>
+This is a multi-part message in MIME format.
 
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+------=_NextPart_000_00EA_01C2A9A6.66D6516C
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 
-> ---
->  drivers/staging/vme/vme.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/vme/vme.h b/drivers/staging/vme/vme.h
-> index e3828ba..e62a323 100644
-> --- a/drivers/staging/vme/vme.h
-> +++ b/drivers/staging/vme/vme.h
-> @@ -97,7 +97,7 @@ extern struct bus_type vme_bus_type;
->  
->  /**
->   * Structure representing a VME device
-> - * @id: The ID of the device (currently the bus and slot number)
-> + * @num: The device number
->   * @bridge: Pointer to the bridge device this device is on
->   * @dev: Internal device structure
->   * @drv_list: List of devices (per driver)
+Dear Friend,
 
+With a very desperate need for assistance, I have summed up courage to contact you. Read the details as attached
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)1327322748                         | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+------=_NextPart_000_00EA_01C2A9A6.66D6516C
+Content-Type: application/octet-stream;
+	name="message from ali.rtf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+	filename="message from ali.rtf"
+
+e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
+bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
+cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
+YXJkXGYwXGZzMjAgRGVhciBGcmllbmQsXHBhcg0KXHBhcg0KV2l0aCBhIHZl
+cnkgZGVzcGVyYXRlIG5lZWQgZm9yIGFzc2lzdGFuY2UsIEkgaGF2ZSBzdW1t
+ZWQgdXAgY291cmFnZSB0byBjb250YWN0IHlvdS4gSSBhbSBmcm9tICh3aWxs
+IGRpc2Nsb3NlIHRoaXMgbGF0ZXIpLHByZXNlbnRseSB3b3JraW5nIGluIEly
+YXEgd2l0aCBhbiBpbnRlcm5hdGlvbmFsIG9yZ2FuaXphdGlvbiB0aGF0IEkg
+d2lsbCBhbHNvIGRpc2Nsb3NlIGxhdGVyLCBJIGZvdW5kIHlvdXIgY29udGFj
+dCBwYXJ0aWN1bGFycyBpbiBhbiBhZGRyZXNzIGpvdXJuYWwuSSBhbSBzZWVr
+aW5nIHlvdXIgYXNzaXN0YW5jZSB0byBldmFjdWF0ZSB0aGUgc3VtIG9mIChV
+UyQxOC41MjMgTWlsbGlvbiBEb2xsYXJzKSBFaWdodGVlbiBNaWxsaW9uLCBm
+aXZlIEh1bmRyZWQgQW5kIFR3ZW50eSBUaHJlZSBUaG91c2FuZCBVUyBEb2xs
+YXJzIHRvIHlvdXIgY291bnRyeSBvciBhbnkgb3RoZXIgc2FmZSBjb3VudHJ5
+IG9mIHlvdXIgY2hvaWNlLCBhcyBmYXIgYXMgSSBjYW4gYmUgYXNzdXJlZCB0
+aGF0IG15IHNoYXJlIHdpbGwgYmUgc2FmZSBpbiB5b3VyIGNhcmUgdW50aWxs
+IEkgY29tcGxldGUgbXkgc2VydmljZSBoZXJlLHRoaXMgaXMgbm8gc3RvbGVu
+IG1vbmV5LGFuZCB0aGVyZSBhcmUgbm8gZGFuZ2VycyBpbnZvbHZlZC5ccGFy
+DQpTT1VSQ0UgT0YgTU9ORVk6XHBhcg0KaHR0cDovL25ld3MuYmJjLmNvLnVr
+LzIvaGkvbWlkZGxlX2Vhc3QvMjk4ODQ1NS5zdG1ccGFyDQpTb21lIG1vbmV5
+IGluIHZhcmlvdXMgY3VycmVuY2llcyB3YXMgZGlzY292ZXJlZCBjb25jZWFs
+ZWQgaW4gYmFycmVscyB3aXRoIHBpbGVzIG9mIHdlYXBvbnMgYW5kIGFtbXVu
+aXRpb25zIGF0IGEgbG9jYXRpb24gbmVhciBvbmUgb2YgU2FkZGFtLHMgb2xk
+IHBhbGFjZXMgZHVyaW5nIGEgcmVzY3VlIG9wZXJhdGlvbiwgYW5kIGl0IHdh
+cyBhZ3JlZWQgYnkgYWxsIHBhcnR5IHByZXNlbnQgdGhhdCB0aGUgbW9uZXkg
+YmUgc2hhcmVkIGFtb25nc3QgdXMsIHRoaXMgd2FzIHF1aXRlIGFuIGlsbGVn
+YWwgdGhpbmcgdG8gZG8sIGJ1dCBJIHRlbGwgeW91IHdoYXQ/IG5vIGNvbXBl
+bnNhdGlvbiBjYW4gbWFrZSB1cCBmb3IgdGhlIHJpc2tzIHdlIGhhdmUgdGFr
+ZW4gd2l0aCBvdXIgbGl2ZXMgaW4gdGhpcyBoZWxsIGhvbGUuIFRoZSBhYm92
+ZSBmaWd1cmUgd2FzIGdpdmVuIHRvIG1lIGFzIG15IHNoYXJlLCBhbmQgdG8g
+Y29uY2VhbCB0aGlzIGtpbmQgb2YgbW9uZXkgYmVjYW1lIGEgcHJvYmxlbSBm
+b3IgbWUsIHNvIHdpdGggdGhlIGhlbHAgb2YgYSBHZXJtYW4gY29udGFjdCB3
+b3JraW5nIGhlcmUsIGFuZCBoaXMgb2ZmaWNlIGVuam95cyBzb21lIGltbXVu
+aXR5LCBJIHdhcyBhYmxlIHRvIGdldCB0aGUgcGFja2FnZSBvdXQgdG8gYSBz
+YWZlIGNhdGlvbiBlbnRpcmVseSBvdXQgb2YgdHJvdWJsZSBzcG90LlxwYXIN
+CkhlIGRvZXMgbm90IGtub3cgdGhlIHJlYWwgY29udGVudHMgb2YgdGhlIHBh
+Y2thZ2UsIGFuZCBiZWxpZXZlcyB0aGF0IGl0IGJlbG9uZ3MgdG8gYW4gQXNp
+YW4vQW1lcmljYW4gd2hvIGRpZWQgaW4gYW4gYWlyIHJhaWQsIGFuZCBiZWZv
+cmUgZ2l2aW5nIHVwLCB0cnVzdGVkIG1lIHRvIGhhbmQgb3ZlciB0aGUgcGFj
+a2FnZSB0byBoaXMgYnVzaW5lc3MgYXNzb2NpYXRlLiBJIGhhdmUgbm93IGZv
+dW5kIGEgc2VjdXJlZCB3YXkgb2YgZ2V0dGluZyB0aGUgcGFja2FnZSBvdXQg
+dG8gYSBzYWZlciBjb3VudHJ5IGZvciB5b3UgdG8gcGljayB1cCwgYW5kIHdp
+bGwgZGlzY3VzcyB0aGlzIHdpdGggeW91IHdoZW4gSSBhbSBzdXJlIHRoYXQg
+eW91IGFyZSB3aWxsaW5nIHRvIGFzc2lzdCBtZS5PbmUgcGFzc2lvbmF0ZSBh
+cHBlYWwgSSB3aWxsIG1ha2UgdG8geW91IGlzIG5vdCB0byBkaXNjdXNzIHRo
+aXMgbWF0dGVyIHdpdGggYSB0aGlyZCBwYXJ0eSwgc2hvdWxkIHlvdSBoYXZl
+IHJlYXNvbnMgdG8gcmVqZWN0IHRoaXMgb2ZmZXIsIHBsZWFzZSBkZXN0cm95
+IHRoaXMgbWFpbCBhcyBhbnkgbGVha2FnZSBvZiB0aGlzIGluZm9ybWF0aW9u
+IHdpbGwgYmUgdG9vIGJhZCBmb3IgdXMuSSBkbyBub3Qga25vdyBmb3IgaG93
+IGxvbmcgd2Ugd2lsbCByZW1haW4gaGVyZSwgYW5kIEkgaGF2ZSBzdXJ2aXZl
+ZCA2IHN1aWNpZGUgYm9tYiBhdHRhY2tzIGJ5IHRoZSBzcGVjaWFsIGdyYWNl
+IG9mIEdvZCwgdGhpcyBhbmQgb3RoZXIgcmVhc29ucyBJIHdpbGwgbWVudGlv
+biBsYXRlciBoYXMgcHJvbXB0ZWQgbWUgdG8gcmVhY2ggb3V0IGZvciBoZWxw
+LCBJIGhvbmVzdGx5IHdhbnQgdGhpcyBtYXR0ZXIgdG8gYmUgcmVzb2x2ZWQg
+aW1tZWRpYXRlbHkuXHBhcg0KXHBhcg0Ka2luZGx5IGZpbGwgdXAgdGhpcyBy
+ZXF1aXJlbWVudHMgbGlrZTpLaW5kbHkgcmVzcG9uZCAuXHBhcg0KXHBhcg0K
+WW91ciBmdWxsIG5hbWU6XHBhcg0KWW91ciBjb3VudHJ5OlxwYXINCkNvbnRh
+Y3QgcGhvbmUvZmF4IG51bWJlclxwYXINCkFnZTpccGFyDQpPY2N1cGF0aW9u
+OlxwYXINClxwYXINClJlZ2FyZHMsXHBhcg0KTXIgQWxpIElicmFoaW0uXHBh
+cg0KfQ0KAA==
+
+------=_NextPart_000_00EA_01C2A9A6.66D6516C--
