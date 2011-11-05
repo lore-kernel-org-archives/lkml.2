@@ -1,46 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab1KEQMg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 12:12:36 -0400
-Received: from ns1.alshayauae.ae ([94.200.30.181]:3466 "EHLO ns1.alshayauae.ae"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab1KEQMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 12:12:34 -0400
-X-Greylist: delayed 1165 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Nov 2011 12:12:32 EDT
-Date: Sat, 05 Nov 2011 19:53:01 +0400
-From: Bootsdiy <bootsdiy@alshayauae.ae>
-Reply-To: bienvenidosa@gncn.net
-Subject: 
-Message-ID: <1fe0b8ab0ac4a887c78d4f2a0cedea01@alshayauae.ae>
-X-Mailer: IceWarp Web Mail 5.4.1
-X-Originating-IP: 41.203.64.129
+	id S1753214Ab1KEQVR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 12:21:17 -0400
+Received: from server1.usb.org.br ([200.178.205.157]:52287 "EHLO usb.org.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750804Ab1KEQVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 12:21:16 -0400
+X-Greylist: delayed 3793 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Nov 2011 12:21:15 EDT
+Message-ID: <41107.68.68.108.166.1320506155.squirrel@webmail.usb.org.br>
+Date: Sat, 5 Nov 2011 13:15:55 -0200 (BRST)
+Subject: RE
+From: "Western Union" <sj_claimsunit@w.cn>
+Reply-To: sj_claimsunit@w.cn
+User-Agent: SquirrelMail/1.4.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0.1 (usb.org.br [10.11.0.1]); Sat, 05 Nov 2011 13:15:55 -0200 (BRST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Dear Webmail Account Owner,
-
-This message is from Webmail messaging center to all Webmail account owners. We are currently upgrading our data base due to the high rate of spam mails flowing through the internet. Update and by filling your account detail with below infromation:
-
-****************************************************************************
-CONFIRM YOUR EMAIL IDENTITY BELOW
-Email Username/Login ID : .....
-EMAIL Password : ..............
-Confirm Password :.............
-Date of Birth : ...............
-*****************************************************************************
-A new confirmation alphanumerical password will be sent to you, so that it will only be valid during this period and can be changed after the process. Failiure to send us your account detail your account will be deleted from our data base
-
-We apologize for any inconvenience this might cause for this period, but we are here to serve you better and provide more technology which revolves around e-mail Internet networking.
-
-
-
-Thanks
-Webmail Project Team.
-
+You have $85,000USD in cash credit by the International Monetary Funds via
+western union. Confirm receipt to due process unit office with Full 
+Name,Address,Tel,Occupation
 
