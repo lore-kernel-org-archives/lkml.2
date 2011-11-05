@@ -1,93 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1KEAya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 20:54:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53901 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205Ab1KEAy3 (ORCPT
+	id S1752638Ab1KEA7F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 20:59:05 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57920 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282Ab1KEA7D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 20:54:29 -0400
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Beregalov <a.beregalov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>, stable@kernel.org
-Subject: [PATCH] hwmon: (w83627ehf): fix broken driver init
-Date: Sat,  5 Nov 2011 04:54:10 +0400
-Message-Id: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
-X-Mailer: git-send-email 1.7.7.2
+	Fri, 4 Nov 2011 20:59:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+References: <20111031171441.GD3466@redhat.com>
+	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
+	<alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+	<20111104235603.GT18879@redhat.com>
+	<CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+Date: Sat, 5 Nov 2011 08:59:02 +0800
+Message-ID: <CAPQyPG5=a0HM-wK72-a-1AGjMVUtg3o03ttoZigb+tvKcxjJ6g@mail.gmail.com>
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
-sensor types) results in kernel panic if data->temp_label was not
-initialized.
-The problem was found with chip W83627DHG-P.
+On Sat, Nov 5, 2011 at 8:21 AM, Nai Xia <nai.xia@gmail.com> wrote:
+> On Sat, Nov 5, 2011 at 7:56 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>> On Fri, Nov 04, 2011 at 12:31:04AM -0700, Hugh Dickins wrote:
+>>> On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
+>>> > diff --git a/mm/mmap.c b/mm/mmap.c
+>>> > index a65efd4..a5858dc 100644
+>>> > --- a/mm/mmap.c
+>>> > +++ b/mm/mmap.c
+>>> > @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+>>> >              */
+>>> >             if (vma_start >= new_vma->vm_start &&
+>>> >                 vma_start < new_vma->vm_end)
+>>> > +                   /*
+>>> > +                    * No need to call anon_vma_order_tail() in
+>>> > +                    * this case because the same PT lock will
+>>> > +                    * serialize the rmap_walk against both src
+>>> > +                    * and dst vmas.
+>>> > +                    */
+>>>
+>>> Really?  Please convince me: I just do not see what ensures that
+>>> the same pt lock covers both src and dst areas in this case.
+>>
+>> Right, vma being the same for src/dst doesn't mean the PT lock is the
+>> same, it might be if source pte entry fit in the same pagetable but
+>> maybe not if the vma is >2M (the max a single pagetable can point to).
+>>
+>>> >                     *vmap = new_vma;
+>>> > +           else
+>>> > +                   anon_vma_order_tail(new_vma);
+>>>
+>>> And if this puts new_vma in the right position for the normal
+>>> move_page_tables(), as anon_vma_clone() does in the block below,
+>>> aren't they both in exactly the wrong position for the abnormal
+>>> move_page_tables(), called to put ptes back where they were if
+>>> the original move_page_tables() fails?
+>>
+>> Failure paths. Good point, they'd need to be reversed again in that
+>> case.
+>>
+>>> It might be possible to argue that move_page_tables() can only
+>>> fail by failing to allocate memory for pud or pmd, and that (perhaps)
+>>> could only happen if the task was being OOM-killed and ran out of
+>>> reserves at this point, and if it's being OOM-killed then we don't
+>>> mind losing a migration entry for a moment... perhaps.
+>>
+>> Hmm no it wouldn't be ok, or I wouldn't want to risk that.
+>>
+>>> Certainly I'd agree that it's a very rare case.  But it feels wrong
+>>> to be attempting to fix the already unlikely issue, while ignoring
+>>> this aspect, or relying on such unrelated implementation details.
+>>
+>> Agreed.
+>>
+>>> Perhaps some further anon_vma_ordering could fix it up,
+>>> but that would look increasingly desperate.
+>>
+>> I think what Nai didn't consider in explaining this theoretical race
+>> that I noticed now is the anon_vma root lock taken by adjust_vma.
+>>
+>> If the merge succeeds adjust_vma will take the lock and flush away
+>> from all others CPUs any sign of rmap_walk before the move_page_tables
+>> can start.
+>>
+>> So it can't happen that you do rmap_walk, check vma1, mremap moves
+>> stuff from vma2 to vma1 (wrong order), and then rmap_walk continues
+>> checking vma2 where the pte won't be there anymore. It can't happen
+>> because mremap would block in vma_merge waiting the rmap_walk to
+>> complete. Before proceeding moving any pte. Thanks to the anon_vma
+>> lock already taken by adjust_vma.
+>
+> Still,  I think it's not rmap_walk() ---> mremap() --> rmap_walk() that trigger
+> the bug,  but this events would:
+>
+> copy_vma() ---> rmap_walk() scan dst VMA --> move_page_tables() moves src to dst
+> --->  rmap_walk() scan src VMA.  :D
 
-backtrace:
-page_fault()
-w83627ehf_probe() 0x8e2
+OK, I think I need to be more concise: Your last reasoning only
+ensures that mremap
+as a whole entity cannot interleave with  rmap_walk(). But I think
+nothing can prevent
+move_page_tables() from doing this. As long as copy_vma() gives an
+wrong ordering,
+the racing between  rmap_walk() & move_page_tables() afterwards may
+trigger the bug.
 
-w83627ehf_init_device:
-1837:	for (i = 0; i < 3; i++) {
-		const char *label = data->temp_label[data->temp_src[i]];
+Do you agree?
 
-		/* Digital source overrides analog type */
-		if (strncmp(label, "PECI", 4) == 0)
-			data->temp_type[i] = 6;
 
-	movzbl	128(%r14), %edx	# data->temp_src, tmp737
-	movq	144(%r13), %rax	# data_32->temp_label, data_32->temp_label
-	movq	$.LC18, %rsi	#,
-	movl	%r14d, %r15d	#, i
-	subl	%r13d, %r15d	# D.29277, i
-0x928	movq	(%rax,%rdx,8), %rcx	#* data_32->temp_label, label
-	movl	$4, %edx	#,
-	movq	%rcx, %rdi	# label,
-	movq	%rcx, -96(%rbp)	#,
-	call	strncmp	#
 
-page_fault() is called at 0x928 (0x8e2+0x46).
-
-Add check if data->temp->label was set before use.
-
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: stable@kernel.org
-Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
----
- drivers/hwmon/w83627ehf.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 483cb26..70f1c73 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1835,14 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
- 		diode = 0x70;
- 	}
- 	for (i = 0; i < 3; i++) {
--		const char *label = data->temp_label[data->temp_src[i]];
--
--		/* Digital source overrides analog type */
--		if (strncmp(label, "PECI", 4) == 0)
--			data->temp_type[i] = 6;
--		else if (strncmp(label, "AMD", 3) == 0)
--			data->temp_type[i] = 5;
--		else if ((tmp & (0x02 << i)))
-+		if (data->temp_label) {
-+			const char *label = data->temp_label[data->temp_src[i]];
-+
-+			/* Digital source overrides analog type */
-+			if (strncmp(label, "PECI", 4) == 0)
-+				data->temp_type[i] = 6;
-+			else if (strncmp(label, "AMD", 3) == 0)
-+				data->temp_type[i] = 5;
-+		} else if ((tmp & (0x02 << i)))
- 			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
- 		else
- 			data->temp_type[i] = 4; /* thermistor */
--- 
-1.7.7.2
-
+>
+> I might be wrong. But thank you all for the time and patience for
+> playing this racing game
+> with me. It's really an honor to exhaust my mind on a daunting thing
+> with you. :)
+>
+>
+> Best Regards,
+>
+> Nai
+>
