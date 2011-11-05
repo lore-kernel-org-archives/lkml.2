@@ -1,168 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1KEB4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 21:56:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8617 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1KEBxv (ORCPT
+	id S1752888Ab1KECAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 22:00:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56700 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1KECAx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 21:53:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:in-reply-to:references:organization:x-system-of-record;
-	b=AOrQmvsgY7MrmP9kJXyz3EcpcFfWg8hTlwItW6BpSvDvynkSkMafiMyaoipFOCEy0
-	F/plB0fLbT8XdYFjFoEyg==
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net v3 9/9] forcedeth: fix a few sparse warnings (variable shadowing)
-Date: Fri,  4 Nov 2011 18:53:33 -0700
-Message-Id: <50304d145f909f73dd7ed86335adba3ee38020d4.1320457247.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1320457247.git.david.decotigny@google.com>
-References: <cover.1320457247.git.david.decotigny@google.com>
-In-Reply-To: <cover.1320457247.git.david.decotigny@google.com>
-References: <cover.1320457247.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	Fri, 4 Nov 2011 22:00:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111105013317.GU18879@redhat.com>
+References: <20111031171441.GD3466@redhat.com>
+	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
+	<alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+	<20111104235603.GT18879@redhat.com>
+	<CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+	<20111105013317.GU18879@redhat.com>
+Date: Sat, 5 Nov 2011 10:00:52 +0800
+Message-ID: <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+From: Nai Xia <nai.xia@gmail.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following sparse warnings:
-drivers/net/ethernet/nvidia/forcedeth.c:2113:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2102:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2155:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2102:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2227:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2215:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2271:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2215:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2986:20: warning: symbol 'addr' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2963:6: originally declared here
+On Sat, Nov 5, 2011 at 9:33 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> On Sat, Nov 05, 2011 at 08:21:03AM +0800, Nai Xia wrote:
+>> copy_vma() ---> rmap_walk() scan dst VMA --> move_page_tables() moves src to dst
+>> --->  rmap_walk() scan src VMA.  :D
+>
+> Hmm yes. I think I got in the wrong track because I focused too much
+> on that line you started talking about, the *vmap = new_vma, you said
+> I had to reorder stuff there too, and that didn't make sense.
+
+Oh, I think you misunderstood me in that. I was just saying:
+
+if (*vmap = new_vma), then _NO_ PTEs need to be moved afterwards,
+because vma has not yet been faulted at all. Otherwise, it breaks the
+page->index semantics in the way I explained in my reply to Hugh.
+
+So nothing need to be added there, but the reason is because
+the above reasoning, not the same PTL locking...
+
+And for this case alone, I think the proper solving place
+should be outside move_vma() but inside do_mremap()
+by only vma_adjust() and vma_merge() like stuff.
+Because really it does not involve  move_page_tables().
+
+>
+> The reason it doesn't make sense is that it can't be ok to reorder
+> stuff when *vmap = new_vma (i.e. new_vma = old_vma). So if I didn't
+> need to reorder in that case I thought I could extrapolate it was
+> always ok.
+>
+> But the opposite is true: that case can't be solved.
+>
+> Can it really happen that vma_merge will pack (prev_vma, new_range,
+> old_vma) together in a single vma? (i.e. prev_vma extended to
+> old_vma->vm_end)
+>
+> Even if there's no prev_vma in the picture (but that's the extreme
+> case) it cannot be safe: i.e. a (new_range, old_vma) or (old_vma,
+> new_range).
+>
+> 1 single "vma" for src and dst virtual ranges, means 1 single
+> vma->vm_pgoff. But we've two virtual addresses and two ptes. So the
+> same page->index can't work for both if the vma->vm_pgoff is the
+> same.
+>
+> So regardless of the ordering here we're dealing with something more
+> fundamental.
+>
+> If rmap_walk runs immediately after vma_merge completes and releases
+> the anon_vma_lock, it won't find any pte in the vma anymore. No matter
+> the order.
+>
+> I thought at this before and I didn't mention it but at the light of
+> the above issue I start to think this is the only possible correct
+> solution to the problem. We should just never call vma_merge before
+> move_page_tables. And do the merge by hand later after mremap is
+> complete.
+>
+> The only safe way to do it is to have _two_ different vmas, with two
+> different ->vm_pgoff. Then it will work. And by always creating a new
+> vma we'll always have it queued at the end, and it'll be safe for the
+> same reasons fork is safe.
+>
+> Always allocate a new vma, and then after the whole vma copy is
+> complete, look if we can merge and free some vma. After the fact, so
+> it means we can't use vma_merge anymore. vma_merge assumes the
+> new_range is "virtual" and no vma is mapped there I think. Anyway
+> that's an implementation issue. In some unlikely case we'll allocate 1
+> more vma than before, and we'll free it once mremap is finished, but
+> that's small problem compared to solving this once and for all.
+>
+> And that will fix it without ordering games and it'll fix the *vmap=
+> new_vma case too. That case really tripped on me as I was assuming
+> *that* was correct.
+
+Yes. "Allocating a new vma, copy first and merge later " seems
+another solution without the tricky reordering. But you know,
+I now share some of Hugh's feeling that maybe we are too
+desperate using racing in places where locks are simpler
+and guaranteed to be safe.
+
+But I think Mel indicated that anon_vma_locking might be
+harmful to JVM SMP performance.
+How severe you expect this to be, Mel ?
 
 
+Thanks
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   34 +++++++++++++++---------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 08c512b..5ca9859 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -2131,10 +2131,10 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	/* add fragments to entries count */
- 	for (i = 0; i < fragments; i++) {
--		u32 size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		u32 frag_size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 
--		entries += (size >> NV_TX2_TSO_MAX_SHIFT) +
--			   ((size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
-+		entries += (frag_size >> NV_TX2_TSO_MAX_SHIFT) +
-+			   ((frag_size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
- 	}
- 
- 	spin_lock_irqsave(&np->lock, flags);
-@@ -2173,13 +2173,13 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	/* setup the fragments */
- 	for (i = 0; i < fragments; i++) {
- 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
--		u32 size = skb_frag_size(frag);
-+		u32 frag_size = skb_frag_size(frag);
- 		offset = 0;
- 
- 		do {
- 			prev_tx = put_tx;
- 			prev_tx_ctx = np->put_tx_ctx;
--			bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
-+			bcnt = (frag_size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : frag_size;
- 			np->put_tx_ctx->dma = skb_frag_dma_map(
- 							&np->pci_dev->dev,
- 							frag, offset,
-@@ -2191,12 +2191,12 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			put_tx->flaglen = cpu_to_le32((bcnt-1) | tx_flags);
- 
- 			offset += bcnt;
--			size -= bcnt;
-+			frag_size -= bcnt;
- 			if (unlikely(put_tx++ == np->last_tx.orig))
- 				put_tx = np->first_tx.orig;
- 			if (unlikely(np->put_tx_ctx++ == np->last_tx_ctx))
- 				np->put_tx_ctx = np->first_tx_ctx;
--		} while (size);
-+		} while (frag_size);
- 	}
- 
- 	/* set last fragment flag  */
-@@ -2245,10 +2245,10 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 
- 	/* add fragments to entries count */
- 	for (i = 0; i < fragments; i++) {
--		u32 size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		u32 frag_size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 
--		entries += (size >> NV_TX2_TSO_MAX_SHIFT) +
--			   ((size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
-+		entries += (frag_size >> NV_TX2_TSO_MAX_SHIFT) +
-+			   ((frag_size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
- 	}
- 
- 	spin_lock_irqsave(&np->lock, flags);
-@@ -2289,13 +2289,13 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 	/* setup the fragments */
- 	for (i = 0; i < fragments; i++) {
- 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
--		u32 size = skb_frag_size(frag);
-+		u32 frag_size = skb_frag_size(frag);
- 		offset = 0;
- 
- 		do {
- 			prev_tx = put_tx;
- 			prev_tx_ctx = np->put_tx_ctx;
--			bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
-+			bcnt = (frag_size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : frag_size;
- 			np->put_tx_ctx->dma = skb_frag_dma_map(
- 							&np->pci_dev->dev,
- 							frag, offset,
-@@ -2308,12 +2308,12 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 			put_tx->flaglen = cpu_to_le32((bcnt-1) | tx_flags);
- 
- 			offset += bcnt;
--			size -= bcnt;
-+			frag_size -= bcnt;
- 			if (unlikely(put_tx++ == np->last_tx.ex))
- 				put_tx = np->first_tx.ex;
- 			if (unlikely(np->put_tx_ctx++ == np->last_tx_ctx))
- 				np->put_tx_ctx = np->first_tx_ctx;
--		} while (size);
-+		} while (frag_size);
- 	}
- 
- 	/* set last fragment flag  */
-@@ -2969,11 +2969,11 @@ static void nv_set_multicast(struct net_device *dev)
- 				struct netdev_hw_addr *ha;
- 
- 				netdev_for_each_mc_addr(ha, dev) {
--					unsigned char *addr = ha->addr;
-+					unsigned char *hw_addr = ha->addr;
- 					u32 a, b;
- 
--					a = le32_to_cpu(*(__le32 *) addr);
--					b = le16_to_cpu(*(__le16 *) (&addr[4]));
-+					a = le32_to_cpu(*(__le32 *) hw_addr);
-+					b = le16_to_cpu(*(__le16 *) (&hw_addr[4]));
- 					alwaysOn[0] &= a;
- 					alwaysOff[0] &= ~a;
- 					alwaysOn[1] &= b;
--- 
-1.7.3.1
-
+Nai
