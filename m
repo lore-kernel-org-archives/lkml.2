@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab1KEVjp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 17:39:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7491 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293Ab1KEVjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 17:39:44 -0400
-Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 05 Nov 2011 17:39:41 -0400
-In-Reply-To: <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
-References: <1320179267.14825.107.camel@deneb.redhat.com>
-	 <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
+	id S1752022Ab1KEVmL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 17:42:11 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:60889 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751293Ab1KEVmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 17:42:10 -0400
+X-Sasl-enc: 86R29aYHa/dt1jZc18qKaY+BIYEiuEZWIJn4dtYqYT67 1320529328
+Message-ID: <4EB5ADA9.6010104@ladisch.de>
+Date: Sat, 05 Nov 2011 22:42:01 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+CC: linux-media@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] media: fix truncated entity specification
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-ID: <1320529182.14081.78.camel@deneb.redhat.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-04 at 18:23 -0700, Linus Torvalds wrote:
-> On Tue, Nov 1, 2011 at 1:27 PM, Mark Salter <msalter@redhat.com> wrote:
-> >
-> > Please pull this port of Linux to the Texas Instruments C6X architecture.
-> > The patches have all been acked and available for some time in linux-net.
-> 
-> Ugh. So I finally was about to merge this, but wanted to check the
-> non-C6x files before I did.
-> 
-> And that seems broken. If I read that code correctly, your
-> ARCH_PFN_OFFSET thing is just insane, and thinking that "pfn_valid()"
-> has anything to do with PAGE_OFFSET is crazy.
-> 
-> PAGE_OFFSET is about *virtual* addresses. It has absolutely nothing to
-> do with pfn's that are the physical page number. virt_to_pfn() already
-> corrects for PAGE_OFFSET (that part of your patch looks fine), your
-> change to *also* do it in pfn_valid() looks entirely bogus to me.
-> 
-> I'm not pulling new architectures that look like they will break old
-> ones, and do odd things to generic files.
+When enumerating an entity, assign the entire entity specification
+instead of only the first two words.  (This requires giving the
+specification union a name.)
 
-Okay, first of all, it doesn't break any old ones. There is one arch
-that currently uses asm-generic/page.h (blackfin) and that one uses a
-PAGE_OFFSET of 0x0 and has physical RAM starting at 0x0. My patch (wrong
-as it may otherwise be) won't break blackfin.
+So far, no driver actually uses more than two words, but this will
+be needed for ALSA entities.
 
-Are you saying that PAGE_OFFSET should always be zero in the NOMMU case?
-Or that ARCH_PFN_OFFSET shouldn't use PAGE_OFFSET (five existing arches
-use that same definition)?
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ include/media/media-entity.h      |    2 +-
+ drivers/media/media-device.c      |    3 +--
+ drivers/media/video/v4l2-dev.c    |    4 ++--
+ drivers/media/video/v4l2-device.c |    4 ++--
+ 4 files changed, 6 insertions(+), 7 deletions(-)
 
-If PAGE_OFFSET should be zero for NOMMU, then the existing generic
-page.h is wrong to use CONFIG_KERNEL_RAM_BASE_ADDRESS. Also,
-free_area_init() in mm/page_alloc.c uses __pa(PAGE_OFFSET) which
-seems wrong and is definitely broken in the NOMMU case if PAGE_OFFSET
-must be zero on an arch where the RAM base is non-zero.
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index cd8bca6..d13de27 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -98,7 +98,7 @@ struct media_entity {
 
-So what do I need to do to get this straightened out?
+ 		/* Sub-device specifications */
+ 		/* Nothing needed yet */
+-	};
++	} specification;
+ };
 
---Mark
-
-
-
-
+ static inline u32 media_entity_type(struct media_entity *entity)
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index 16b70b4..bfb4e0b 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -107,8 +107,7 @@ static long media_device_enum_entities(struct media_device *mdev,
+ 	u_ent.group_id = ent->group_id;
+ 	u_ent.pads = ent->num_pads;
+ 	u_ent.links = ent->num_links - ent->num_backlinks;
+-	u_ent.v4l.major = ent->v4l.major;
+-	u_ent.v4l.minor = ent->v4l.minor;
++	memcpy(&u_ent.v4l, &ent->specification, sizeof(ent->specification));
+ 	if (copy_to_user(uent, &u_ent, sizeof(u_ent)))
+ 		return -EFAULT;
+ 	return 0;
+diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
+index a5c9ed1..1eb9ba1 100644
+--- a/drivers/media/video/v4l2-dev.c
++++ b/drivers/media/video/v4l2-dev.c
+@@ -703,8 +703,8 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
+ 	    vdev->vfl_type != VFL_TYPE_SUBDEV) {
+ 		vdev->entity.type = MEDIA_ENT_T_DEVNODE_V4L;
+ 		vdev->entity.name = vdev->name;
+-		vdev->entity.v4l.major = VIDEO_MAJOR;
+-		vdev->entity.v4l.minor = vdev->minor;
++		vdev->entity.specification.v4l.major = VIDEO_MAJOR;
++		vdev->entity.specification.v4l.minor = vdev->minor;
+ 		ret = media_device_register_entity(vdev->v4l2_dev->mdev,
+ 			&vdev->entity);
+ 		if (ret < 0)
+diff --git a/drivers/media/video/v4l2-device.c b/drivers/media/video/v4l2-device.c
+index e6a2c3b..d8f58d8 100644
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -217,8 +217,8 @@ int v4l2_device_register_subdev_nodes(struct v4l2_device *v4l2_dev)
+ 		if (err < 0)
+ 			return err;
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+-		sd->entity.v4l.major = VIDEO_MAJOR;
+-		sd->entity.v4l.minor = vdev->minor;
++		sd->entity.specification.v4l.major = VIDEO_MAJOR;
++		sd->entity.specification.v4l.minor = vdev->minor;
+ #endif
+ 	}
+ 	return 0;
