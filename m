@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab1KEWUT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 18:20:19 -0400
-Received: from mail1.pi.infn.it ([212.189.153.2]:50946 "EHLO mail.pi.infn.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751380Ab1KEWUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 18:20:18 -0400
-X-Greylist: delayed 931 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Nov 2011 18:20:17 EDT
+	id S1752183Ab1KEWii (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 18:38:38 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57831 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab1KEWih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 18:38:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Sat, 05 Nov 2011 22:00:14 +0000
-From: "Mr.Ling Tia Liu" <manuela.camarda@pi.infn.it>
-To: undisclosed-recipients:;
-Subject: RE
-Reply-To: <mrtailing@yahoo.com.hk>
-Mail-Reply-To: <mrtailing@yahoo.com.hk>
-Message-ID: <e46a3d76cc10c109a72dd33fc0c32775@mail.pi.infn.it>
-User-Agent: Roundcube Webmail/0.5.1
+In-Reply-To: <1320529182.14081.78.camel@deneb.redhat.com>
+References: <1320179267.14825.107.camel@deneb.redhat.com> <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
+ <1320529182.14081.78.camel@deneb.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 5 Nov 2011 15:38:15 -0700
+X-Google-Sender-Auth: FVztXzXG16XEKJpJ6ftdfXOV2ic
+Message-ID: <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
+Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Nov 5, 2011 at 2:39 PM, Mark Salter <msalter@redhat.com> wrote:
+>
+> Okay, first of all, it doesn't break any old ones. There is one arch
+> that currently uses asm-generic/page.h (blackfin) and that one uses a
+> PAGE_OFFSET of 0x0 and has physical RAM starting at 0x0. My patch (wrong
+> as it may otherwise be) won't break blackfin.
 
+Ok. And I didn't notice that when you added the PFN_OFFSET, you did
+actually remove the subtraction of PAGE_OFFSET from the
+virtual->physical translation.
 
--- 
- My name is Mr. Ling Tia Liu; I work with Industrial and Commercial Bank 
- of China, Hong Kong. I have a business proposal in the tune of 
- $21,300,000.00 US Dollars, to be transferred out of my bank with your 
- assistance.
+But I don't really understand why you did that. It makes very little sense.
 
- After the successful transfer, we shall share in ratio of 50% for you 
- and 50% for me. Should you be interested, please respond to my letter 
- immediately, so we can commence all arrangements and I will give you 
- more information on the project and how we would handle it. Please treat 
- this business with utmost confidentiality.
+> Are you saying that PAGE_OFFSET should always be zero in the NOMMU case?
+> Or that ARCH_PFN_OFFSET shouldn't use PAGE_OFFSET (five existing arches
+> use that same definition)?
 
- You can contact me on my private email :(mrtailing@yahoo.com.hk) along
- with the Following information's for documentation purpose:
+So If the memory is mapped at some non-zero offset, what would make
+*sense* to me is have the old
 
- (1) Full names:
- (2) Direct phone number:
- (3) Current residential address:
- (4) Occupation:
- (5) Age and Sex:
+   #define __pa(x) ((unsigned long)(x) -- PAGE_OFFSET)
 
- I look forward to hearing from you.
+and that should already make sure that then the PFN is in the right
+range, and doesn't need any fixups.
 
- Kind Regards,
- Mr.Ling Tia Liu
+That's what the old version of the file did, and that seems to be a
+sensible model. Why isn't it?
+
+                      Linus
