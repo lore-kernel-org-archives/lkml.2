@@ -1,168 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452Ab1KEEFF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 00:05:05 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19363 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728Ab1KEEFD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 00:05:03 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:in-reply-to:references:organization:x-system-of-record;
-	b=q6jr1Yy2pAYIyBPx02OGeTqWTwZ+OXgHjg495K/0by+17ELaaDalUIHXgJqB99bBc
-	mPzS1NOezlRMFoQ9dM2bQ==
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net v4 4/4] forcedeth: fix a few sparse warnings (variable shadowing)
-Date: Fri,  4 Nov 2011 21:04:42 -0700
-Message-Id: <b42241015ecab122886533aa2511a1554af08297.1320463771.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
-References: <cover.1320463771.git.david.decotigny@google.com>
-In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
-References: <cover.1320463771.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	id S1751734Ab1KEEha (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 00:37:30 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63655 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921Ab1KEEh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 00:37:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=KN4+/kiXuoVTiQhIdLef6wOZK65R+rW4
+	1+3tpzn7Wlr0kXn456u9dQ21tiiHe8e7VwgPDJ2CIGO4W1YSM/ndIJuwRfb4NTiU
+	z12U0EBxIEFK6/iZ34uQWbvnzOBttsgq/Qed2RToOUInUPTr4yotFVl9gVYyu4W7
+	2rar5KKuMFA=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: git@vger.kernel.org, Shawn Pearce <spearce@spearce.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+References: <20111026202235.GA20928@havoc.gtf.org>
+ <1319969101.5215.20.camel@dabdike>
+ <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+ <1320049150.8283.19.camel@dabdike>
+ <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+ <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+ <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+ <7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
+ <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org>
+ <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+ <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+ <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
+ <CA+55aFzstE-+NzfSAWMEokB7-rYsZOcZe9Ez-LxPNOKnciJ3UQ@mail.gmail.com>
+ <7vlirvbq47.fsf@alter.siamese.dyndns.org>
+ <7v39e3bn1n.fsf@alter.siamese.dyndns.org>
+ <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com>
+Date: Fri, 04 Nov 2011 21:37:25 -0700
+In-Reply-To: <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com> (Linus
+ Torvalds's message of "Fri, 4 Nov 2011 16:10:59 -0700")
+Message-ID: <7vipmz9oca.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: DD2407A0-0767-11E1-B6C1-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following sparse warnings:
-drivers/net/ethernet/nvidia/forcedeth.c:2113:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2102:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2155:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2102:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2227:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2215:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2271:7: warning: symbol 'size' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2215:6: originally declared here
-drivers/net/ethernet/nvidia/forcedeth.c:2986:20: warning: symbol 'addr' shadows an earlier one
-drivers/net/ethernet/nvidia/forcedeth.c:2963:6: originally declared here
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
+> However - exactly beause git apparently makes it do that "Merge commit
+> " message, I suspect we've peeled things too early and too much. We've
+> peeled it so early that once again something thinks it's a commit, not
+> a tag.
 
+And you are right.
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
+I am working on a larger series that should sit on top of 89587fa (Split
+GPG interface into its own helper library, 2011-09-07), which is the first
+commit in jc/signed-commit topic.
+
+-- >8 --
+Subject: [PATCH] merge: notice local merging of tags and keep it unwrapped
+
+Signed-off-by: Junio C Hamano <gitster@pobox.com>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   34 +++++++++++++++---------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ builtin/merge.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index fe2ba70..d32cd4b 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -2103,10 +2103,10 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	/* add fragments to entries count */
- 	for (i = 0; i < fragments; i++) {
--		u32 size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		u32 frag_size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 
--		entries += (size >> NV_TX2_TSO_MAX_SHIFT) +
--			   ((size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
-+		entries += (frag_size >> NV_TX2_TSO_MAX_SHIFT) +
-+			   ((frag_size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
- 	}
- 
- 	spin_lock_irqsave(&np->lock, flags);
-@@ -2145,13 +2145,13 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	/* setup the fragments */
- 	for (i = 0; i < fragments; i++) {
- 		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
--		u32 size = skb_frag_size(frag);
-+		u32 frag_size = skb_frag_size(frag);
- 		offset = 0;
- 
- 		do {
- 			prev_tx = put_tx;
- 			prev_tx_ctx = np->put_tx_ctx;
--			bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
-+			bcnt = (frag_size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : frag_size;
- 			np->put_tx_ctx->dma = skb_frag_dma_map(
- 							&np->pci_dev->dev,
- 							frag, offset,
-@@ -2163,12 +2163,12 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 			put_tx->flaglen = cpu_to_le32((bcnt-1) | tx_flags);
- 
- 			offset += bcnt;
--			size -= bcnt;
-+			frag_size -= bcnt;
- 			if (unlikely(put_tx++ == np->last_tx.orig))
- 				put_tx = np->first_tx.orig;
- 			if (unlikely(np->put_tx_ctx++ == np->last_tx_ctx))
- 				np->put_tx_ctx = np->first_tx_ctx;
--		} while (size);
-+		} while (frag_size);
- 	}
- 
- 	/* set last fragment flag  */
-@@ -2217,10 +2217,10 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 
- 	/* add fragments to entries count */
- 	for (i = 0; i < fragments; i++) {
--		u32 size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
-+		u32 frag_size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
- 
--		entries += (size >> NV_TX2_TSO_MAX_SHIFT) +
--			   ((size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
-+		entries += (frag_size >> NV_TX2_TSO_MAX_SHIFT) +
-+			   ((frag_size & (NV_TX2_TSO_MAX_SIZE-1)) ? 1 : 0);
- 	}
- 
- 	spin_lock_irqsave(&np->lock, flags);
-@@ -2261,13 +2261,13 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 	/* setup the fragments */
- 	for (i = 0; i < fragments; i++) {
- 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
--		u32 size = skb_frag_size(frag);
-+		u32 frag_size = skb_frag_size(frag);
- 		offset = 0;
- 
- 		do {
- 			prev_tx = put_tx;
- 			prev_tx_ctx = np->put_tx_ctx;
--			bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
-+			bcnt = (frag_size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : frag_size;
- 			np->put_tx_ctx->dma = skb_frag_dma_map(
- 							&np->pci_dev->dev,
- 							frag, offset,
-@@ -2280,12 +2280,12 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 			put_tx->flaglen = cpu_to_le32((bcnt-1) | tx_flags);
- 
- 			offset += bcnt;
--			size -= bcnt;
-+			frag_size -= bcnt;
- 			if (unlikely(put_tx++ == np->last_tx.ex))
- 				put_tx = np->first_tx.ex;
- 			if (unlikely(np->put_tx_ctx++ == np->last_tx_ctx))
- 				np->put_tx_ctx = np->first_tx_ctx;
--		} while (size);
-+		} while (frag_size);
- 	}
- 
- 	/* set last fragment flag  */
-@@ -2933,11 +2933,11 @@ static void nv_set_multicast(struct net_device *dev)
- 				struct netdev_hw_addr *ha;
- 
- 				netdev_for_each_mc_addr(ha, dev) {
--					unsigned char *addr = ha->addr;
-+					unsigned char *hw_addr = ha->addr;
- 					u32 a, b;
- 
--					a = le32_to_cpu(*(__le32 *) addr);
--					b = le16_to_cpu(*(__le16 *) (&addr[4]));
-+					a = le32_to_cpu(*(__le32 *) hw_addr);
-+					b = le16_to_cpu(*(__le16 *) (&hw_addr[4]));
- 					alwaysOn[0] &= a;
- 					alwaysOff[0] &= ~a;
- 					alwaysOn[1] &= b;
+diff --git a/builtin/merge.c b/builtin/merge.c
+index f61b367..ce3b4f8 100644
+--- a/builtin/merge.c
++++ b/builtin/merge.c
+@@ -428,6 +428,11 @@ static void merge_name(const char *remote, struct strbuf *msg)
+ 				    sha1_to_hex(branch_head), remote);
+ 			goto cleanup;
+ 		}
++		if (!prefixcmp(found_ref, "refs/tags/")) {
++			strbuf_addf(msg, "%s\t\ttag '%s' of .\n",
++				    sha1_to_hex(branch_head), remote);
++			goto cleanup;
++		}
+ 		if (!prefixcmp(found_ref, "refs/remotes/")) {
+ 			strbuf_addf(msg, "%s\t\tremote-tracking branch '%s' of .\n",
+ 				    sha1_to_hex(branch_head), remote);
 -- 
-1.7.3.1
+1.7.8.rc0.108.g71b5ec
 
