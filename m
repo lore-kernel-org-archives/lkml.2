@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab1KESEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 14:04:09 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:41360 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223Ab1KESEH (ORCPT
+	id S1754050Ab1KESWq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 14:22:46 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52878 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753895Ab1KESWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 14:04:07 -0400
-Subject: Re: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <CAO+b5-pOi_+Y+jcExxEzParHOdU6YB4WaB-onH_PLXugzLKjzg@mail.gmail.com>
-References: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-pOi_+Y+jcExxEzParHOdU6YB4WaB-onH_PLXugzLKjzg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Nov 2011 11:04:03 -0700
-Message-ID: <1320516243.5859.184.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Nov 2011 14:22:45 -0400
+Date: Sat, 5 Nov 2011 19:22:44 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Barry Song <Barry.Song@csr.com>
+Cc: linux-pm@lists.linux-foundation.org, rjw@sisk.pl,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Barry Song <Baohua.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+Subject: Re: [PATCH] PM: HIBERNATION: skip the swap size check if the
+ snapshot image size is anticipative
+Message-ID: <20111105182244.GB6772@elf.ucw.cz>
+References: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-11-05 at 08:37 +0100, Bart Van Assche wrote:
-> On Fri, Nov 4, 2011 at 9:10 PM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > This is the PULL request for an initial merge of the ib_srpt driver
-> > using mainline target infrastructure into v3.2-rc1.
+Hi!
+
+> From: Barry Song <Baohua.Song@csr.com>
 > 
-> In case anyone is interested, the most important unaddressed comments
-> for this version of ib_srpt are:
-> - There are still too many module parameters. This makes ib_srpt
-> harder to use than necessary because several of these parameters can
-> only be set at module load time.
+> Current swsusp requires swap partitions even larger than real saved pages
+> due to the worst compress ratio:
+> but for an embedded system, which has limited storage space, then it might
+> can't give the big size partition to save snapshot.
+> In the another way, some embedded systems can definitely know the most size
+> needed for snapshot since they run some specific application lists.
+> So this patch provides the possibility for bootloader to tell kernel even
+> the system has a little snapshot partition, but it is still enough.
+> For example, if the system need to save 120MB memory, origin swsusp will require
+> a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+> compressed image will be less than 30MB), they just make a 30MB
+> partition.
 
-Can you be more specific here..?  I went through the module parameters
-and made the ones that where used in a per-port specific context into
-configfs attributes as Roland recommended, but it seems like you are
-saying that more should be made into attributes.  Which ones..?
+Would it be better to have /sys/power/... entry which would allow
+configuring expected compression ratio at runtime?
+								Pavel
 
-> - The last WQE event can arrive before the queue pair is reset,
-> resulting in a hanging session and blocking future logins
-> (http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg09678.html).
-
-Yep, was going to get this resolved post merge along with my patch now
-in lio-core.git to address active I/O shutdown with ib_srpt.
-
-> - The "ib_srpt: Convert srp_max_rdma_size into per port configfs
-> attribute" contradicts the I/O controller concept. This is a bug.
-> (http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg09677.html).
-> 
-
-As mentioned in the thread, I deferred to Roland's input on that one.
-So you're saying this should be made back into a module parameter now,
-or what..?
-
---nab
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
