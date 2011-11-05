@@ -1,87 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab1KEDzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 23:55:48 -0400
-Received: from 99-108-226-0.lightspeed.iplsin.sbcglobal.net ([99.108.226.0]:33856
-	"EHLO peff.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab1KEDzp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 23:55:45 -0400
-Date: Fri, 4 Nov 2011 23:55:42 -0400
-From: Jeff King <peff@peff.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Junio C Hamano <junio@pobox.com>, git@vger.kernel.org,
-        Shawn Pearce <spearce@spearce.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-Message-ID: <20111105035542.GA1974@sigill.intra.peff.net>
-References: <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org>
- <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
- <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
- <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
- <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
- <CA+55aFzstE-+NzfSAWMEokB7-rYsZOcZe9Ez-LxPNOKnciJ3UQ@mail.gmail.com>
- <7vlirvbq47.fsf@alter.siamese.dyndns.org>
- <7v39e3bn1n.fsf@alter.siamese.dyndns.org>
- <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com>
+	id S1753502Ab1KEEFK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 00:05:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19368 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab1KEEFD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 00:05:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
+	references:in-reply-to:references:organization:x-system-of-record;
+	b=Z8nZGiz1yRFw22uzuHuA4F760A2uVb8IYceXbwuyI+J9BtB3EzQYMZ9ayn4VAknD2
+	0zyailOq4sWIFN6KK86Pg==
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net v4 2/4] forcedeth: remove unneeded stats updates
+Date: Fri,  4 Nov 2011 21:04:40 -0700
+Message-Id: <7fe565e70f02686b4789a548250fbdf212205802.1320463771.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
+References: <cover.1320463771.git.david.decotigny@google.com>
+In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
+References: <cover.1320463771.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 04:10:59PM -0700, Linus Torvalds wrote:
+Function ndo_get_stats() updates most of the stats from hardware
+registers, making the manual updates un-needed. This change removes
+these manual updates. Main exception is rx_missed_errors which needs
+manual update. Another exception is rx_packets, still updated manually
+in this commit to make sure this patch doesn't change behavior of
+driver (this is addressed by a later commit in this series).
 
-> I'm pretty sure people have already done "git merge v3.1" kind of
-> things using local tags (where no peeling of FETCH_HEAD has been
-> done). See
-> 
->     git log --merges --grep 'Merge.*v[23]\.[0-9]'
-> 
-> for a ton of examples of this (and there's something odd going on: we
-> have "Merge commit .." and "Merge tag ..", and I suspect the latter is
-> people editing it to be correct by hand, but I dunno).
 
-It looks like fmt-merge-msg looks in FETCH_HEAD to see if each line is
-marked as "branch" or "tag". So I get "Merge tag ..." with:
 
-  git pull . tag v1.0
-
-but I get "Merge commit ..." with:
-
-  git merge v1.0
-
-When "git merge" is run, it actually creates a fake FETCH_HEAD in memory
-and feeds it to fmt-merge-msg. But that process doesn't seem to bother
-looking at tags. I think we just need this:
-
+Signed-off-by: David Decotigny <david.decotigny@google.com>
 ---
-diff --git a/builtin/merge.c b/builtin/merge.c
-index dffd5ec..6a44b6d 100644
---- a/builtin/merge.c
-+++ b/builtin/merge.c
-@@ -439,10 +439,15 @@ static void merge_name(const char *remote, struct strbuf *msg)
- 		if (!prefixcmp(found_ref, "refs/heads/")) {
- 			strbuf_addf(msg, "%s\t\tbranch '%s' of .\n",
- 				    sha1_to_hex(branch_head), remote);
- 			goto cleanup;
- 		}
-+		if (!prefixcmp(found_ref, "refs/tags/")) {
-+			strbuf_addf(msg, "%s\t\ttag '%s' of .\n",
-+				    sha1_to_hex(branch_head), remote);
-+			goto cleanup;
-+		}
- 		if (!prefixcmp(found_ref, "refs/remotes/")) {
- 			strbuf_addf(msg, "%s\t\tremote-tracking branch '%s' of .\n",
- 				    sha1_to_hex(branch_head), remote);
- 			goto cleanup;
- 		}
+ drivers/net/ethernet/nvidia/forcedeth.c |   35 +------------------------------
+ 1 files changed, 1 insertions(+), 34 deletions(-)
 
-where the result of merge_name is just fed to fmt-merge-msg eventually.
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 056986b..0bcb18e 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -2374,16 +2374,8 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		if (np->desc_ver == DESC_VER_1) {
+ 			if (flags & NV_TX_LASTPACKET) {
+ 				if (flags & NV_TX_ERROR) {
+-					if (flags & NV_TX_UNDERFLOW)
+-						dev->stats.tx_fifo_errors++;
+-					if (flags & NV_TX_CARRIERLOST)
+-						dev->stats.tx_carrier_errors++;
+ 					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
+-					dev->stats.tx_errors++;
+-				} else {
+-					dev->stats.tx_packets++;
+-					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2392,16 +2384,8 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		} else {
+ 			if (flags & NV_TX2_LASTPACKET) {
+ 				if (flags & NV_TX2_ERROR) {
+-					if (flags & NV_TX2_UNDERFLOW)
+-						dev->stats.tx_fifo_errors++;
+-					if (flags & NV_TX2_CARRIERLOST)
+-						dev->stats.tx_carrier_errors++;
+ 					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
+-					dev->stats.tx_errors++;
+-				} else {
+-					dev->stats.tx_packets++;
+-					dev->stats.tx_bytes += np->get_tx_ctx->skb->len;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2434,9 +2418,7 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 		nv_unmap_txskb(np, np->get_tx_ctx);
+ 
+ 		if (flags & NV_TX2_LASTPACKET) {
+-			if (!(flags & NV_TX2_ERROR))
+-				dev->stats.tx_packets++;
+-			else {
++			if (flags & NV_TX2_ERROR) {
+ 				if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK)) {
+ 					if (np->driver_data & DEV_HAS_GEAR_MODE)
+ 						nv_gear_backoff_reseed(dev);
+@@ -2636,7 +2618,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					if ((flags & NV_RX_ERROR_MASK) == NV_RX_ERROR4) {
+ 						len = nv_getlen(dev, skb->data, len);
+ 						if (len < 0) {
+-							dev->stats.rx_errors++;
+ 							dev_kfree_skb(skb);
+ 							goto next_pkt;
+ 						}
+@@ -2650,11 +2631,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					else {
+ 						if (flags & NV_RX_MISSEDFRAME)
+ 							dev->stats.rx_missed_errors++;
+-						if (flags & NV_RX_CRCERR)
+-							dev->stats.rx_crc_errors++;
+-						if (flags & NV_RX_OVERFLOW)
+-							dev->stats.rx_over_errors++;
+-						dev->stats.rx_errors++;
+ 						dev_kfree_skb(skb);
+ 						goto next_pkt;
+ 					}
+@@ -2670,7 +2646,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					if ((flags & NV_RX2_ERROR_MASK) == NV_RX2_ERROR4) {
+ 						len = nv_getlen(dev, skb->data, len);
+ 						if (len < 0) {
+-							dev->stats.rx_errors++;
+ 							dev_kfree_skb(skb);
+ 							goto next_pkt;
+ 						}
+@@ -2682,11 +2657,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 					}
+ 					/* the rest are hard errors */
+ 					else {
+-						if (flags & NV_RX2_CRCERR)
+-							dev->stats.rx_crc_errors++;
+-						if (flags & NV_RX2_OVERFLOW)
+-							dev->stats.rx_over_errors++;
+-						dev->stats.rx_errors++;
+ 						dev_kfree_skb(skb);
+ 						goto next_pkt;
+ 					}
+@@ -2704,7 +2674,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		napi_gro_receive(&np->napi, skb);
+ 		dev->stats.rx_packets++;
+-		dev->stats.rx_bytes += len;
+ next_pkt:
+ 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+ 			np->get_rx.orig = np->first_rx.orig;
+@@ -2787,9 +2756,7 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 				__vlan_hwaccel_put_tag(skb, vid);
+ 			}
+ 			napi_gro_receive(&np->napi, skb);
+-
+ 			dev->stats.rx_packets++;
+-			dev->stats.rx_bytes += len;
+ 		} else {
+ 			dev_kfree_skb(skb);
+ 		}
+-- 
+1.7.3.1
 
--Peff
