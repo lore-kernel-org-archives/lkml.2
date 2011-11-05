@@ -1,134 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab1KEA7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 20:59:05 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57920 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab1KEA7D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 20:59:03 -0400
+	id S1752670Ab1KEBAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 21:00:55 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:55314 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752454Ab1KEBAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 21:00:54 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Jan Beulich <JBeulich@novell.com>
+Subject: [PATCH] module: Fix performance regression on modules with large
+ symbol tables
+Date: Fri, 04 Nov 2011 17:48:58 -0700
+Message-Id: <467be983bed865e1b772136ed488f9ff@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-In-Reply-To: <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
-References: <20111031171441.GD3466@redhat.com>
-	<1320082040-1190-1-git-send-email-aarcange@redhat.com>
-	<alpine.LSU.2.00.1111032318290.2058@sister.anvils>
-	<20111104235603.GT18879@redhat.com>
-	<CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
-Date: Sat, 5 Nov 2011 08:59:02 +0800
-Message-ID: <CAPQyPG5=a0HM-wK72-a-1AGjMVUtg3o03ttoZigb+tvKcxjJ6g@mail.gmail.com>
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-From: Nai Xia <nai.xia@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 5, 2011 at 8:21 AM, Nai Xia <nai.xia@gmail.com> wrote:
-> On Sat, Nov 5, 2011 at 7:56 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
->> On Fri, Nov 04, 2011 at 12:31:04AM -0700, Hugh Dickins wrote:
->>> On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
->>> > diff --git a/mm/mmap.c b/mm/mmap.c
->>> > index a65efd4..a5858dc 100644
->>> > --- a/mm/mmap.c
->>> > +++ b/mm/mmap.c
->>> > @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
->>> >              */
->>> >             if (vma_start >= new_vma->vm_start &&
->>> >                 vma_start < new_vma->vm_end)
->>> > +                   /*
->>> > +                    * No need to call anon_vma_order_tail() in
->>> > +                    * this case because the same PT lock will
->>> > +                    * serialize the rmap_walk against both src
->>> > +                    * and dst vmas.
->>> > +                    */
->>>
->>> Really?  Please convince me: I just do not see what ensures that
->>> the same pt lock covers both src and dst areas in this case.
->>
->> Right, vma being the same for src/dst doesn't mean the PT lock is the
->> same, it might be if source pte entry fit in the same pagetable but
->> maybe not if the vma is >2M (the max a single pagetable can point to).
->>
->>> >                     *vmap = new_vma;
->>> > +           else
->>> > +                   anon_vma_order_tail(new_vma);
->>>
->>> And if this puts new_vma in the right position for the normal
->>> move_page_tables(), as anon_vma_clone() does in the block below,
->>> aren't they both in exactly the wrong position for the abnormal
->>> move_page_tables(), called to put ptes back where they were if
->>> the original move_page_tables() fails?
->>
->> Failure paths. Good point, they'd need to be reversed again in that
->> case.
->>
->>> It might be possible to argue that move_page_tables() can only
->>> fail by failing to allocate memory for pud or pmd, and that (perhaps)
->>> could only happen if the task was being OOM-killed and ran out of
->>> reserves at this point, and if it's being OOM-killed then we don't
->>> mind losing a migration entry for a moment... perhaps.
->>
->> Hmm no it wouldn't be ok, or I wouldn't want to risk that.
->>
->>> Certainly I'd agree that it's a very rare case.  But it feels wrong
->>> to be attempting to fix the already unlikely issue, while ignoring
->>> this aspect, or relying on such unrelated implementation details.
->>
->> Agreed.
->>
->>> Perhaps some further anon_vma_ordering could fix it up,
->>> but that would look increasingly desperate.
->>
->> I think what Nai didn't consider in explaining this theoretical race
->> that I noticed now is the anon_vma root lock taken by adjust_vma.
->>
->> If the merge succeeds adjust_vma will take the lock and flush away
->> from all others CPUs any sign of rmap_walk before the move_page_tables
->> can start.
->>
->> So it can't happen that you do rmap_walk, check vma1, mremap moves
->> stuff from vma2 to vma1 (wrong order), and then rmap_walk continues
->> checking vma2 where the pte won't be there anymore. It can't happen
->> because mremap would block in vma_merge waiting the rmap_walk to
->> complete. Before proceeding moving any pte. Thanks to the anon_vma
->> lock already taken by adjust_vma.
->
-> Still,  I think it's not rmap_walk() ---> mremap() --> rmap_walk() that trigger
-> the bug,  but this events would:
->
-> copy_vma() ---> rmap_walk() scan dst VMA --> move_page_tables() moves src to dst
-> --->  rmap_walk() scan src VMA.  :D
+Commit 554bdfe5acf3715e87c8d5e25a4f9a896ac9f014 (module: reduce string
+table for loaded modules) introduced an optimization to shrink the size of
+the resident string table.  Part of this involves calling bitmap_weight()
+on the strmap bitmap once for each core symbol.  strmap contains one bit
+for each byte of the module's strtab.
 
-OK, I think I need to be more concise: Your last reasoning only
-ensures that mremap
-as a whole entity cannot interleave with  rmap_walk(). But I think
-nothing can prevent
-move_page_tables() from doing this. As long as copy_vma() gives an
-wrong ordering,
-the racing between  rmap_walk() & move_page_tables() afterwards may
-trigger the bug.
+For kernel modules with a large number of symbols, the addition of the
+bitmap_weight() operation to each iteration of the add_kallsyms() loop
+resulted in a significant "insmod" performance regression from 2.6.31
+to 2.6.32.  bitmap_weight() is expensive when the bitmap is large.
 
-Do you agree?
+The proposed alternative optimizes the common case in this loop
+(is_core_symbol() == true, and the symbol name is not a duplicate), while
+penalizing the exceptional case of a duplicate symbol.
+
+My test was run on a 600 MHz MIPS processor, using a kernel module with
+15,000 "core" symbols and 10,000 symbols in .init.text.  .strtab takes up
+250,227 bytes.
+
+Original code: insmod takes 3.39 seconds
+Patched code: insmod takes 0.07 seconds
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+
+Since the new code performs an exhaustive string compare search when it
+encounters duplicate symbols inside a module (i.e. multiple symtab entries
+referring to the same strtab index), I did some extra checking on my
+Linux PC to see how common this is:
+
+For modules other than nvidia, there were 35 duplicate symbols out of
+9,956 total LKM symbols (0.4%).  This is with KALLSYMS and KALLSYMS_ALL
+enabled.  Many were ".LCx" literal constants, and others were random
+duplications of trace_kmalloc(), cache_put(), do_vfs_lock(), etc.
+Probably caused by combining multiple *.o files into a single *.ko file.
+
+The nvidia module has 29,296 total entries, and 3,045 duplicates (10%).
+There were 597 instances of each of: _nv009058rm, _nv009059rm,
+_nv009060rm, and _nv009061rm.
+
+To make sure the degenerate case of nvidia.ko was still covered, I ran
+additional tests with qemu-system-arm (ARM Versatile) on Linus' head of
+tree:
+
+Latest kernel (commit 15831714), 25,000 symbol test (as above): 4.5s
+
+Latest kernel with 2,400 (16%) of my module's core symbols turned into
+duplicates through hex editing: 4.4s
+
+Patched kernel, 25,000 symbol test: 0.1s
+
+Patched kernel, with 2,400 duplicate symbols: 0.8s
+
+So, even a module with large numbers of duplicate symbols loads more
+quickly with my patch, than without it.
 
 
+ kernel/module.c |   26 ++++++++++++++++++--------
+ 1 files changed, 18 insertions(+), 8 deletions(-)
 
->
-> I might be wrong. But thank you all for the time and patience for
-> playing this racing game
-> with me. It's really an honor to exhaust my mind on a daunting thing
-> with you. :)
->
->
-> Best Regards,
->
-> Nai
->
+diff --git a/kernel/module.c b/kernel/module.c
+index 93342d9..7f5dcbf 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2221,7 +2221,7 @@ static void layout_symtab(struct module *mod, struct load_info *info)
+ 
+ static void add_kallsyms(struct module *mod, const struct load_info *info)
+ {
+-	unsigned int i, ndst;
++	unsigned int i, j, stridx = 1, ndst;
+ 	const Elf_Sym *src;
+ 	Elf_Sym *dst;
+ 	char *s;
+@@ -2237,22 +2237,32 @@ static void add_kallsyms(struct module *mod, const struct load_info *info)
+ 		mod->symtab[i].st_info = elf_type(&mod->symtab[i], info);
+ 
+ 	mod->core_symtab = dst = mod->module_core + info->symoffs;
++	mod->core_strtab = s = mod->module_core + info->stroffs;
+ 	src = mod->symtab;
+ 	*dst = *src;
++	*s++ = 0;
+ 	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
+ 		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
+ 			continue;
+ 		dst[ndst] = *src;
+-		dst[ndst].st_name = bitmap_weight(info->strmap,
+-						  dst[ndst].st_name);
++		if (unlikely(!test_bit(src->st_name, info->strmap))) {
++			dst[ndst].st_name = 0;
++			for (j = 1; j < ndst; j++)
++				if (!strcmp(&mod->strtab[src->st_name],
++					    &mod->core_strtab[dst[j].st_name]))
++					dst[ndst].st_name = dst[j].st_name;
++		} else {
++			dst[ndst].st_name = stridx;
++			j = src->st_name;
++			clear_bit(j, info->strmap);
++			do {
++				*s = mod->strtab[j++];
++				stridx++;
++			} while (*s++);
++		}
+ 		++ndst;
+ 	}
+ 	mod->core_num_syms = ndst;
+-
+-	mod->core_strtab = s = mod->module_core + info->stroffs;
+-	for (*s = 0, i = 1; i < info->sechdrs[info->index.str].sh_size; ++i)
+-		if (test_bit(i, info->strmap))
+-			*++s = mod->strtab[i];
+ }
+ #else
+ static inline void layout_symtab(struct module *mod, struct load_info *info)
+-- 
+1.7.6.3
+
