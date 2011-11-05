@@ -1,125 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab1KEQyi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 12:54:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48177 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab1KEQyh (ORCPT
+	id S1753935Ab1KEREN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 13:04:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:44023 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab1KEREL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 12:54:37 -0400
+	Sat, 5 Nov 2011 13:04:11 -0400
+Date: Sat, 5 Nov 2011 13:04:01 -0400
+From: Tyler Hicks <tyhicks@canonical.com>
+To: Thieu Le <thieule@chromium.org>
+Cc: viro@zeniv.linux.org.uk, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: Export fallocate facility to kernel modules
+Message-ID: <20111105170357.GA24875@boyd>
+References: <1320088445-12373-1-git-send-email-thieule@chromium.org>
+ <20111105123001.GA23778@boyd>
 MIME-Version: 1.0
-In-Reply-To: <CAJ70YRAtuPXM=8Wcc_W6_RyZsNgHMfUGBR81pBD-xhJsEYtM-Q@mail.gmail.com>
-References: <CAJ70YRAtuPXM=8Wcc_W6_RyZsNgHMfUGBR81pBD-xhJsEYtM-Q@mail.gmail.com>
-From: Madura Anushanga <madura.x86@gmail.com>
-Date: Sat, 5 Nov 2011 22:24:17 +0530
-Message-ID: <CAJ70YRBHm+3OKE_vFCUYEfNcsuWBguJeQozvAvszBg142fr_cg@mail.gmail.com>
-Subject: Re: Linux dead lock on asus notebook
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+In-Reply-To: <20111105123001.GA23778@boyd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I'm using an Asus K42Jc notebook, which freezes up randomly(after
-about 5-6hrs of usage). I compiled a kernel with debugging on and got
-this message on dmesg,
-[  226.687892] =======================================================
-[  226.687896] [ INFO: possible circular locking dependency detected ]
-[  226.687899] 3.0.4-custom #4
-[  226.687900] -------------------------------------------------------
-[  226.687902] apt-get/2166 is trying to acquire lock:
-[  226.687904]  (&sb->s_type->i_mutex_key#13){+.+.+.}, at:
-[<ffffffff8122cd26>] ext4_evict_inode+0x26/0x3a0
-[  226.687916]
-[  226.687917] but task is already holding lock:
-[  226.687919]  (&mm->mmap_sem){++++++}, at: [<ffffffff8114c7d8>]
-sys_munmap+0x48/0x80
-[  226.687924]
-[  226.687925] which lock already depends on the new lock.
-[  226.687925]
-[  226.687927]
-[  226.687927] the existing dependency chain (in reverse order) is:
-[  226.687929]
-[  226.687929] -> #1 (&mm->mmap_sem){++++++}:
-[  226.687933]        [<ffffffff810a126a>] check_prevs_add+0xfa/0x160
-[  226.687939]        [<ffffffff810a18c0>] validate_chain.isra.38+0x5f0/0x720
-[  226.687943]        [<ffffffff810a22c8>] __lock_acquire+0x458/0x990
-[  226.687946]        [<ffffffff810a2d7f>] lock_acquire+0x9f/0x140
-[  226.687949]        [<ffffffff81141fc9>] might_fault+0x89/0xb0
-[  226.687954]        [<ffffffff81195ca7>] filldir+0x77/0xe0
-[  226.687960]        [<ffffffff8121ff0a>] call_filldir+0x9a/0xd0
-[  226.687963]        [<ffffffff812200c2>] ext4_dx_readdir+0x182/0x240
-[  226.687966]        [<ffffffff81220362>] ext4_readdir+0x72/0x400
-[  226.687969]        [<ffffffff81195f70>] vfs_readdir+0xb0/0xe0
-[  226.687971]        [<ffffffff81196099>] sys_getdents+0x89/0x100
-[  226.687974]        [<ffffffff81684a82>] system_call_fastpath+0x16/0x1b
-[  226.687980]
-[  226.687980] -> #0 (&sb->s_type->i_mutex_key#13){+.+.+.}:
-[  226.687984]        [<ffffffff810a1168>] check_prev_add+0x6b8/0x6c0
-[  226.687987]        [<ffffffff810a126a>] check_prevs_add+0xfa/0x160
-[  226.687990]        [<ffffffff810a18c0>] validate_chain.isra.38+0x5f0/0x720
-[  226.687993]        [<ffffffff810a22c8>] __lock_acquire+0x458/0x990
-[  226.687996]        [<ffffffff810a2d7f>] lock_acquire+0x9f/0x140
-[  226.687999]        [<ffffffff81679635>] mutex_lock_nested+0x55/0x330
-[  226.688004]        [<ffffffff8122cd26>] ext4_evict_inode+0x26/0x3a0
-[  226.688007]        [<ffffffff8119e95b>] evict+0x8b/0x170
-[  226.688011]        [<ffffffff8119eb68>] iput_final+0xd8/0x1b0
-[  226.688014]        [<ffffffff8119ec78>] iput+0x38/0x50
-[  226.688016]        [<ffffffff811984b8>] dentry_iput+0x98/0xe0
-[  226.688019]        [<ffffffff8119b61e>] dput+0x14e/0x280
-[  226.688022]        [<ffffffff811836a0>] __fput+0x160/0x220
-[  226.688027]        [<ffffffff81183785>] fput+0x25/0x30
-[  226.688030]        [<ffffffff81149be6>] remove_vma+0x56/0xa0
-[  226.688034]        [<ffffffff8114b063>] do_munmap+0x1f3/0x2f0
-[  226.688037]        [<ffffffff8114c7e6>] sys_munmap+0x56/0x80
-[  226.688039]        [<ffffffff81684a82>] system_call_fastpath+0x16/0x1b
-[  226.688043]
-[  226.688043] other info that might help us debug this:
-[  226.688044]
-[  226.688045]  Possible unsafe locking scenario:
-[  226.688046]
-[  226.688047]        CPU0                    CPU1
-[  226.688048]        ----                    ----
-[  226.688050]   lock(&mm->mmap_sem);
-[  226.688052]                                lock(&sb->s_type->i_mutex_key);
-[  226.688055]                                lock(&mm->mmap_sem);
-[  226.688057]   lock(&sb->s_type->i_mutex_key);
-[  226.688059]
-[  226.688060]  *** DEADLOCK ***
-[  226.688060]
-[  226.688062] 1 lock held by apt-get/2166:
-[  226.688064]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8114c7d8>]
-sys_munmap+0x48/0x80
-[  226.688068]
-[  226.688069] stack backtrace:
-[  226.688071] Pid: 2166, comm: apt-get Tainted: G         C  3.0.4-custom #4
-[  226.688074] Call Trace:
-[  226.688079]  [<ffffffff816619e2>] print_circular_bug+0xd3/0xe4
-[  226.688082]  [<ffffffff810a1168>] check_prev_add+0x6b8/0x6c0
-[  226.688085]  [<ffffffff8109dc53>] ? __bfs+0x23/0x270
-[  226.688088]  [<ffffffff810a126a>] check_prevs_add+0xfa/0x160
-[  226.688091]  [<ffffffff810a18c0>] validate_chain.isra.38+0x5f0/0x720
-[  226.688094]  [<ffffffff810a22c8>] __lock_acquire+0x458/0x990
-[  226.688097]  [<ffffffff810a2d7f>] lock_acquire+0x9f/0x140
-[  226.688100]  [<ffffffff8122cd26>] ? ext4_evict_inode+0x26/0x3a0
-[  226.688103]  [<ffffffff81679635>] mutex_lock_nested+0x55/0x330
-[  226.688106]  [<ffffffff8122cd26>] ? ext4_evict_inode+0x26/0x3a0
-[  226.688108]  [<ffffffff8119e916>] ? evict+0x46/0x170
-[  226.688111]  [<ffffffff8122cd26>] ext4_evict_inode+0x26/0x3a0
-[  226.688114]  [<ffffffff8119e95b>] evict+0x8b/0x170
-[  226.688116]  [<ffffffff8119eb68>] iput_final+0xd8/0x1b0
-[  226.688119]  [<ffffffff8119ec78>] iput+0x38/0x50
-[  226.688121]  [<ffffffff811984b8>] dentry_iput+0x98/0xe0
-[  226.688123]  [<ffffffff8119b61e>] dput+0x14e/0x280
-[  226.688126]  [<ffffffff811836a0>] __fput+0x160/0x220
-[  226.688129]  [<ffffffff81183785>] fput+0x25/0x30
-[  226.688131]  [<ffffffff81149be6>] remove_vma+0x56/0xa0
-[  226.688134]  [<ffffffff8114b063>] do_munmap+0x1f3/0x2f0
-[  226.688137]  [<ffffffff8114c7e6>] sys_munmap+0x56/0x80
-[  226.688139]  [<ffffffff81684a82>] system_call_fastpath+0x16/0x1b
 
-This time it was apt-get and before it was another executable, this
-dead lock happens after every start up for some process.
-Thanks,
-            - Madura A.
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On 2011-11-05 08:30:02, Tyler Hicks wrote:
+> On 2011-10-31 12:14:05, Thieu Le wrote:
+> > Export fallocate facility so layered file systems such as ecryptfs can
+> > take advantage of this feature.  One example of the need for fallocate
+> > is by ecryptfs.  ecryptfs has recently switched to a writeback cache
+> > model so its dirty pages are not written to the lower file system
+> > immediately.  In order to ensure that space is available when the page
+> > is later written, ecryptfs can efficiently preallocate that space using
+> > vfs_fallocate().
+>=20
+> Hi Thieu - Thanks for the patch. Something like this is definitely
+> needed for eCryptfs.
+>=20
+> >=20
+> > vfs_fallocate() does not perform all of the checkings of do_fallocate()
+> > because those checks are done higher in the stack.
+>=20
+> After taking a closer look at the checks in do_fallocate(), I don't know
+> that this statement is correct. The sanity checks around offset, len,
+> and mode aren't guaranteed to be done higher up in the stack. The
+> existing VFS helper functions also seem to do these types of checks. I
+> think the rest of the checks are redundant.
+
+I obviously goofed up here. Thieu states where offset and len are
+checked in his following sentence. Not sure how I missed that. My
+apologies.
+
+However, I do still think that we need the fallocate mode checks in
+vfs_fallocate().
+
+Tyler
+
+> > Checking of offset and
+> > len are done by rw_verify_area() and generic_write_checks().  These
+> > functions are called by VFS before ecryptfs invokes vfs_fallocate() in =
+its
+> > ecryptfs_write_end() function.  And since ecryptfs directly opens the l=
+ower
+> > file, it ensures that the file is opened with the proper flags and mode.
+> >=20
+> > Signed-off-by: Thieu Le <thieule@chromium.org>
+> > ---
+> >  fs/open.c          |   14 ++++++++++----
+> >  include/linux/fs.h |    2 ++
+> >  2 files changed, 12 insertions(+), 4 deletions(-)
+> >=20
+> > diff --git a/fs/open.c b/fs/open.c
+> > index f711921..8a4ba20 100644
+> > --- a/fs/open.c
+> > +++ b/fs/open.c
+> > @@ -214,6 +214,15 @@ SYSCALL_ALIAS(sys_ftruncate64, SyS_ftruncate64);
+> >  #endif /* BITS_PER_LONG =3D=3D 32 */
+> > =20
+> > =20
+> > +int vfs_fallocate(struct file *file, int mode, loff_t offset, loff_t l=
+en)
+> > +{
+> > +	if (!file->f_op->fallocate)
+> > +		return -EOPNOTSUPP;
+> > +
+> > +	return file->f_op->fallocate(file, mode, offset, len);
+> > +}
+> > +EXPORT_SYMBOL(vfs_fallocate);
+> > +
+> >  int do_fallocate(struct file *file, int mode, loff_t offset, loff_t le=
+n)
+> >  {
+> >  	struct inode *inode =3D file->f_path.dentry->d_inode;
+> > @@ -263,10 +272,7 @@ int do_fallocate(struct file *file, int mode, loff=
+_t offset, loff_t len)
+> >  	if (((offset + len) > inode->i_sb->s_maxbytes) || ((offset + len) < 0=
+))
+> >  		return -EFBIG;
+> > =20
+> > -	if (!file->f_op->fallocate)
+> > -		return -EOPNOTSUPP;
+> > -
+> > -	return file->f_op->fallocate(file, mode, offset, len);
+> > +	return vfs_fallocate(file, mode, offset, len);
+> >  }
+> > =20
+> >  SYSCALL_DEFINE(fallocate)(int fd, int mode, loff_t offset, loff_t len)
+> > diff --git a/include/linux/fs.h b/include/linux/fs.h
+> > index 277f497..c0e1225 100644
+> > --- a/include/linux/fs.h
+> > +++ b/include/linux/fs.h
+> > @@ -1504,6 +1504,8 @@ extern int vfs_link(struct dentry *, struct inode=
+ *, struct dentry *);
+> >  extern int vfs_rmdir(struct inode *, struct dentry *);
+> >  extern int vfs_unlink(struct inode *, struct dentry *);
+> >  extern int vfs_rename(struct inode *, struct dentry *, struct inode *,=
+ struct dentry *);
+> > +extern int vfs_fallocate(struct file *file, int mode, loff_t offset,
+> > +			 loff_t len);
+> > =20
+> >  /*
+> >   * VFS dentry helper functions.
+> > --=20
+> > 1.7.3.1
+> >=20
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel=
+" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJOtWx9AAoJENaSAD2qAscKXW0QAMzYJrqGbdNzDE4gku4PhyN8
+sbPHkkTCanmuUBILOQuSYUJn/1oKu3AxlDhBCK+geGqtzVbTYuBY1H3K5xKIxk8o
+J1MT7bnbQW24jpt8jMDTllfUYM2dbzl/7HnIo0tU0Px92D5JbWhKxaWyy132bs9i
+dwcTKPjc+cz0CuCq8CpohKzmHxDhV6MRtvgU0EK+J8ZG30YPUFutGh4D8TYXDB2K
+SsZzMsJQWMkZPVY30jHcA9BsYkYOULgIywz8vgk7Ohy22Zg/n1Bs3TivnXarplNy
+KrxOc/dMrpgrXvKSMEYIQPA3uD8bHtOTe/2yLkMIuRqYSMdfwmu+MoSyfMxUgPpu
++DpWt3lwK/GamJv7tE3sgHXNZKa//xVEx8D8CoLY6dNGAFfGzJsHybS5VMKvEN+Y
+5AXtGG8sBMsjyV8b3hAfvfl93JblMVNPfhkSIJ9OINzesaQPHiKeBQOwlBDUuyK3
+4gygRd04JgZNmOx+NNwoy+ue9j/up7ZJebmvzQpstLnn9jVod41bPsWdLCtf8dXw
+UVQmtDRJcDYxAWj1JmVt33qUK/cPuz3Ph8/zJUaSlSgllm/JTfwOxNBPIZyNe5Ck
+vyGrCSbe+CqUFS7ETxa2bOVfkMqzrtFTNrTNEgsVmJN3lZ99+D25AQ4wEbweAQ0v
+ZbrSjwX6ESMtb+djJYiQ
+=HtQ3
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
