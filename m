@@ -1,220 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab1KEH21 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 03:28:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45331 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059Ab1KEH2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 03:28:25 -0400
-Message-ID: <1320478098.16609.9.camel@edumazet-laptop>
-Subject: Re: [PATCH net v3 8/9] forcedeth: 64-bit stats
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Decotigny <david.decotigny@google.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>
-Date: Sat, 05 Nov 2011 08:28:18 +0100
-In-Reply-To: <4c77142ad7c6019e908884723d3c299163a55e2e.1320457247.git.david.decotigny@google.com>
-References: <cover.1320457247.git.david.decotigny@google.com>
-	 <4c77142ad7c6019e908884723d3c299163a55e2e.1320457247.git.david.decotigny@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1751369Ab1KEHgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 03:36:47 -0400
+Received: from nm14-vm4.bullet.mail.ne1.yahoo.com ([98.138.91.174]:22838 "HELO
+	nm14-vm4.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750810Ab1KEHgq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 03:36:46 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Nov 2011 03:36:46 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 349468.96285.bm@omp1002.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=p/NLAD4OFkLqR3sdI0mjQFkpIOEzy3Ulvzl6qAFr3rSxpTKxDzwC9nl6fjYjUu21B6rf4EkYekNyMdmazBym7bXED10gODDJCZSHbqRDfaQPxNUtFrIEi9uleU19lAH5HulNKm28PD9OqIfl+xgFpfHGMHiZiSKIKw3zu6wn0tk=;
+X-YMail-OSG: tunVAoEVM1mmhX0j_KBZIUrUheXTp6D1BaRlNAFyW8rt0kl
+ HR0cFmqxxp.JRn7FO0UwS_uZqE3.Kxl9AoOKMx6_GublUoe_w5HAZ8YMqwEy
+ SCnjMgHEmSb3bAYgiVEE5mUxNpKogOATGckVqrzSxP8A3FCLwm0P.HYCbuNG
+ MGKfKRP69uBZeQvsgb19.xV.OTNAIW1GctQtMTEfR7ptaaX52dYPzc0RQ7re
+ ASEQtjTNBZlHok07KRuluwSIUdvbDvN1O3lMJnBYbPokKzM15_MSZ8iMF7_i
+ 9HecrjYntdHhWdujQ.FjGF_d3uABMSGnT3rhTK2uFcsQ4M5n2fzd3FOEQx7b
+ 79KyMAQ2tlfDFJ1WEVBM7Ac72jLY9ErXu50vSXEg7zoxcdsiEMN.vY6gOnzL
+ zQBfpxxHoRlhjzwOSc_rgov4ACFaJRCuWarp9imnTiERYiJReZ50Gcyl1eat
+ FqUp_ZYVrQ6m1UlxE5HNbbhoGWc429doJuBKXXjtmyveeZr7hWh5LUSc9KIh
+ pagPM2HIa1_TOgbL1ZILkt9pfyg--
+X-Mailer: YahooMailWebService/0.8.115.325013
+References: <1320269478.98312.YahooMailNeo@web27408.mail.ukl.yahoo.com>  <1320271853.29441.8.camel@localhost.localdomain> <1320273520.29441.12.camel@localhost.localdomain>
+Message-ID: <1320478202.932.YahooMailNeo@web121019.mail.ne1.yahoo.com>
+Date: Sat, 5 Nov 2011 00:30:02 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Reply-To: Alex Dubov <oakad@yahoo.com>
+Subject: Re: Bug: [Toshiba Satellite A200] SD card recognised but not automounted
+To: Thomas Meyer <thomas@m3y3r.de>, Lampra <lamprakisa@yahoo.gr>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1320273520.29441.12.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 04 novembre 2011 Ã  18:53 -0700, David Decotigny a Ã©crit :
-> This converts forcedeth stats to be 64-bits. It also improves
-> accounting for dropped rx frames.
-> 
-> Tested:
->   16-way SMP x86_64 ->
->   RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
-> 
 > 
 
-This changelog and patch title are misleading.
-
-On a 32bit x86, stats are still 32bit wide after your patch.
-
-On a 64bit x86_64, stats were already 64bit wide before your patch.
-
-So the real thing is about not using the embedded netdevice dev->stats
-structure, to reduce false sharing.
-
+> Am Mittwoch, den 02.11.2011, 23:10 +0100 schrieb Thomas Meyer:
+>>  Am Mittwoch, den 02.11.2011, 21:31 +0000 schrieb Lampra:
+>>  > 
+>>  > Hi,
+>> 
+>>  Hi Lampra.
 > 
-> Signed-off-by: David Decotigny <david.decotigny@google.com>
-> ---
->  drivers/net/ethernet/nvidia/forcedeth.c |   69 +++++++++++++++++++-----------
->  1 files changed, 44 insertions(+), 25 deletions(-)
+> Added maintainer.
 > 
-> diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-> index 90cdf26..08c512b 100644
-> --- a/drivers/net/ethernet/nvidia/forcedeth.c
-> +++ b/drivers/net/ethernet/nvidia/forcedeth.c
-> @@ -799,6 +799,8 @@ struct fe_priv {
->  	struct timer_list stats_poll;
->  	u32 nic_poll_irq;
->  	int rx_ring_size;
-> +	unsigned long stats_rx_dropped;
-> +	unsigned long stats_rx_missed_errors;
->  
->  	/* media detection workaround.
->  	 * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
-> @@ -821,6 +823,7 @@ struct fe_priv {
->  	struct nv_skb_map *tx_change_owner;
->  	struct nv_skb_map *tx_end_flip;
->  	int tx_stop;
-> +	unsigned long stats_tx_dropped;
->  
->  	/* msi/msi-x fields */
->  	u32 msi_flags;
-> @@ -1700,33 +1703,47 @@ static void nv_get_hw_stats(struct net_device *dev)
->  }
->  
->  /*
-> - * nv_get_stats: dev->get_stats function
-> + * nv_get_stats: dev->ndo_get_stats64 function
->   * Get latest stats value from the nic.
->   * Called with read_lock(&dev_base_lock) held for read -
->   * only synchronized against unregister_netdevice.
->   */
-> -static struct net_device_stats *nv_get_stats(struct net_device *dev)
-> +static struct rtnl_link_stats64*
-> +nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
->  {
->  	struct fe_priv *np = netdev_priv(dev);
->  
->  	/* If the nic supports hw counters then retrieve latest values */
-> -	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
-> +	if (np->driver_data & (DEV_HAS_STATISTICS_V1
-> +			       | DEV_HAS_STATISTICS_V2
-> +			       | DEV_HAS_STATISTICS_V3)) {
->  		nv_get_hw_stats(dev);
->  
-> -		/* copy to net_device stats */
-> -		dev->stats.tx_packets = np->estats.tx_packets;
-> -		dev->stats.rx_bytes = np->estats.rx_bytes;
-> -		dev->stats.tx_bytes = np->estats.tx_bytes;
-> -		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
-> -		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
-> -		dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
-> -		dev->stats.rx_over_errors = np->estats.rx_over_errors;
-> -		dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
-> -		dev->stats.rx_errors = np->estats.rx_errors_total;
-> -		dev->stats.tx_errors = np->estats.tx_errors_total;
-> -	}
-> -
-> -	return &dev->stats;
-> +		/* generic stats */
-> +		storage->rx_packets = np->estats.rx_packets;
-> +		storage->tx_packets = np->estats.tx_packets;
-> +		storage->rx_bytes   = np->estats.rx_bytes;
-> +		storage->tx_bytes   = np->estats.tx_bytes;
-> +		storage->rx_errors  = np->estats.rx_errors_total;
-> +		storage->tx_errors  = np->estats.tx_errors_total;
-> +		storage->rx_dropped = np->stats_rx_dropped;
-> +		storage->tx_dropped = np->stats_tx_dropped;
-> +		storage->multicast  = np->estats.rx_multicast;
-> +
-> +		/* detailed rx_errors */
-> +		storage->rx_length_errors = np->estats.rx_length_error;
-> +		storage->rx_over_errors   = np->estats.rx_over_errors;
-> +		storage->rx_crc_errors    = np->estats.rx_crc_errors;
-> +		storage->rx_frame_errors  = np->estats.rx_frame_align_error;
-> +		storage->rx_fifo_errors   = np->estats.rx_drop_frame;
-> +		storage->rx_missed_errors = np->stats_rx_missed_errors;
-> +
-> +		/* detailed tx_errors */
-> +		storage->tx_carrier_errors = np->estats.tx_carrier_errors;
-> +		storage->tx_fifo_errors    = np->estats.tx_fifo_errors;
-> +	}
-> +
-> +	return storage;
->  }
->  
->  /*
-> @@ -1759,8 +1776,10 @@ static int nv_alloc_rx(struct net_device *dev)
->  				np->put_rx.orig = np->first_rx.orig;
->  			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
->  				np->put_rx_ctx = np->first_rx_ctx;
-> -		} else
-> +		} else {
-> +			np->stats_rx_dropped++;
->  			return 1;
-> +		}
->  	}
->  	return 0;
->  }
-> @@ -1791,8 +1810,10 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
->  				np->put_rx.ex = np->first_rx.ex;
->  			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
->  				np->put_rx_ctx = np->first_rx_ctx;
-> -		} else
-> +		} else {
-> +			np->stats_rx_dropped++;
->  			return 1;
-> +		}
->  	}
->  	return 0;
->  }
-> @@ -1928,7 +1949,7 @@ static void nv_drain_tx(struct net_device *dev)
->  			np->tx_ring.ex[i].buflow = 0;
->  		}
->  		if (nv_release_txskb(np, &np->tx_skb[i]))
-> -			dev->stats.tx_dropped++;
-> +			np->stats_tx_dropped++;
->  		np->tx_skb[i].dma = 0;
->  		np->tx_skb[i].dma_len = 0;
->  		np->tx_skb[i].dma_single = 0;
-> @@ -2651,7 +2672,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
->  					/* the rest are hard errors */
->  					else {
->  						if (flags & NV_RX_MISSEDFRAME)
-> -							dev->stats.rx_missed_errors++;
-> +							np->stats_rx_missed_errors++;
->  						dev_kfree_skb(skb);
->  						goto next_pkt;
->  					}
-> @@ -2694,7 +2715,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
->  		skb_put(skb, len);
->  		skb->protocol = eth_type_trans(skb, dev);
->  		napi_gro_receive(&np->napi, skb);
-> -		dev->stats.rx_packets++;
->  next_pkt:
->  		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
->  			np->get_rx.orig = np->first_rx.orig;
-> @@ -2777,7 +2797,6 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
->  				__vlan_hwaccel_put_tag(skb, vid);
->  			}
->  			napi_gro_receive(&np->napi, skb);
-> -			dev->stats.rx_packets++;
->  		} else {
->  			dev_kfree_skb(skb);
->  		}
-> @@ -5199,7 +5218,7 @@ static int nv_close(struct net_device *dev)
->  static const struct net_device_ops nv_netdev_ops = {
->  	.ndo_open		= nv_open,
->  	.ndo_stop		= nv_close,
-> -	.ndo_get_stats		= nv_get_stats,
-> +	.ndo_get_stats64	= nv_get_stats64,
->  	.ndo_start_xmit		= nv_start_xmit,
->  	.ndo_tx_timeout		= nv_tx_timeout,
->  	.ndo_change_mtu		= nv_change_mtu,
-> @@ -5216,7 +5235,7 @@ static const struct net_device_ops nv_netdev_ops = {
->  static const struct net_device_ops nv_netdev_ops_optimized = {
->  	.ndo_open		= nv_open,
->  	.ndo_stop		= nv_close,
-> -	.ndo_get_stats		= nv_get_stats,
-> +	.ndo_get_stats64	= nv_get_stats64,
->  	.ndo_start_xmit		= nv_start_xmit_optimized,
->  	.ndo_tx_timeout		= nv_tx_timeout,
->  	.ndo_change_mtu		= nv_change_mtu,
+>> 
+>>  >  this is my first bug report upstream. 
+>>  > 
+>>  > I use Ubuntu 11.10, when i insert an SD card in my laptop Toshiba
+>>  > Satellite A200, the card is recognised but not auto mounted. 
+>> 
+>>  the correct link seems to be: https://bugs.launchpad.net/bugs/878594
+>>  > 
+>>  > Lamprakis
+>
 
+
+This may be some sort of conflict between sdhci (which I had not much to
+do with) and tifm, which never supported xx12 chipset properly (I only
+had xx21 to work with back then, which is somewhat different).
+
+I would start from blacklisting the tifm and trying to get sdhci working
+properly, and if it's not working that well, then blacklisting the sdhci
+and playing with tifm.
+
+Either approach may require tweaking the pci config registers, which was
+a usual game with these chipsets some years ago (done with some sysfs
+scripting).
+
+Hope this helps.
 
