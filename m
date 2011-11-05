@@ -1,197 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab1KECVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 22:21:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51865 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab1KECVe (ORCPT
+	id S1753039Ab1KECYu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 22:24:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55782 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1KECYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 22:21:34 -0400
-Date: Fri, 4 Nov 2011 19:21:28 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Nai Xia <nai.xia@gmail.com>
-cc: Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-In-Reply-To: <CAPQyPG5RgPnN-kVc1Oy+78mAa9vevLiZWCwx2pEkeHKY1t6V1A@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1111041856530.22199@sister.anvils>
-References: <20111031171441.GD3466@redhat.com> <1320082040-1190-1-git-send-email-aarcange@redhat.com> <alpine.LSU.2.00.1111032318290.2058@sister.anvils> <CAPQyPG4DNofTw=rqJXPTbo3w4xGMdPF3SYt3qyQCWXYsDLa08A@mail.gmail.com> <alpine.LSU.2.00.1111041158440.1554@sister.anvils>
- <20111104205440.GP18879@redhat.com> <CAPQyPG5RgPnN-kVc1Oy+78mAa9vevLiZWCwx2pEkeHKY1t6V1A@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1790824662-1320459700=:22199"
+	Fri, 4 Nov 2011 22:24:48 -0400
+X-Authority-Analysis: v=2.0 cv=KcRQQHkD c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=WQzZawFPG9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=WqOPNsPxDjS21lt3BVoA:9 a=vmRkNKTJMQQcrIFX8YcA:7 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1320459886.26400.3.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] tracing/latency: Fix header output for latency tracers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Fri, 04 Nov 2011 22:24:46 -0400
+In-Reply-To: <1315922614-6390-1-git-send-email-jolsa@redhat.com>
+References: <1315922614-6390-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.0.3-2 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323584-1790824662-1320459700=:22199
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-
-On Sat, 5 Nov 2011, Nai Xia wrote:
-> On Sat, Nov 5, 2011 at 4:54 AM, Andrea Arcangeli <aarcange@redhat.com> wr=
-ote:
-> > On Fri, Nov 04, 2011 at 12:16:03PM -0700, Hugh Dickins wrote:
-> >> On Fri, 4 Nov 2011, Nai Xia wrote:
-> >> > On Fri, Nov 4, 2011 at 3:31 PM, Hugh Dickins <hughd@google.com> wrot=
-e:
-> >> > > On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
-> >> > >> @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_=
-area_struct **vmap,
-> >> > >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0*/
-> >> > >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 if (vma_start >=3D new_vma->vm_start =
-&&
-> >> > >> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 vma_start < new_vma->vm_end)
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 /*
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* No need to call an=
-on_vma_order_tail() in
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* this case because =
-the same PT lock will
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* serialize the rmap=
-_walk against both src
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0* and dst vmas.
-> >> > >> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0*/
-> >> > >
-> >> > > Really? =A0Please convince me: I just do not see what ensures that
-> >> > > the same pt lock covers both src and dst areas in this case.
-> >> >
-> >> > At the first glance that rmap_walk does travel this merged VMA
-> >> > once...
-> >> > But, Now, Wait...., I am actually really puzzled that this case can =
-really
-> >> > happen at all, you see that vma_merge() does not break the validness
-> >> > between page->index and its VMA. So if this can really happen,
-> >> > a page->index should be valid in both areas in a same VMA.
-> >> > It's strange to imagine that a PTE is copy inside a _same_ VMA
-> >> > and page->index is valid at both old and new places.
-> >>
-> >> Yes, I think you are right, thank you for elucidating it.
-> >>
-> >> That was a real case when we wrote copy_vma(), when rmap was using
-> >> pte_chains; but once anon_vma came in, and imposed vm_pgoff matching
-> >> on anonymous mappings too, it became dead code. =A0With linear vm_pgof=
-f
-> >> matching, you cannot fit a range in two places within the same vma.
-> >> (And even the non-linear case relies upon vm_pgoff defaults.)
-> >>
-> >> So we could simplify the copy_vma() interface a little now (get rid of
-> >> that nasty **vmap): I'm not quite sure whether we ought to do that,
-> >> but certainly Andrea's comment there should be updated (if he also
-> >> agrees with your analysis).
-> >
-> > The vmap should only trigger when the prev vma (prev relative to src
-> > vma) is extended at the end to make space for the dst range. And by
-> > extending it, we filled the hole between the prev vma and "src"
-> > vma. So then the prev vma becomes the "src vma" and also the "dst
-> > vma". So we can't keep working with the old "vma" pointer after that.
-> >
-> > I doubt it can be removed without crashing in the above case.
->=20
-> Yes, this line itself should not be removed. As I explained,
-> pgoff adjustment at the top of the copy_vma() for non-faulted
-> vma will lead to this case.
-
-Ah, thank you, that's what I was asking you to point me to, the place
-I was missing that recalculates pgoff: at the head of copy_vma() itself.
-
-Yes, if that adjustment remains (no reason why not), then we cannot
-remove the *vmap =3D new_vma; but that is the only case that nowadays
-can need the *vmap =3D new_vma (agreed?), which does deserve a comment.
+Sorry for the late reply, I'm still purging through my Inbox from over
+the week in Prague.
 
 
-> But we do not need to worry
-> about the move_page_tables() should after this happens.
-> And so no lines need to be added here. But maybe the
-> documentation should be changed in your original patch
-> to clarify this. Reasoning with PTL locks for this case might
-> be somewhat misleading.
+On Tue, 2011-09-13 at 16:03 +0200, Jiri Olsa wrote:
+> In case the the graph tracer (CONFIG_FUNCTION_GRAPH_TRACER) or even the
+> function tracer (CONFIG_FUNCTION_TRACER) are not set, the latency tracers
+> do not display proper latency header.
+> 
+> The involved/fixed latency tracers are:
+>         wakeup_rt
+>         wakeup
+>         preemptirqsoff
+>         preemptoff
+>         irqsoff
+> 
+> The patch adds proper handling of tracer configuration options for latency
+> tracers, and displaying correct header info accordingly.
+> 
+> * The current output (for wakeup tracer) with both graph and function
+>   tracers disabled is:
+> 
+>   # tracer: wakeup
+>   #
+>      cat-1163    0d..4    1us :   1163:120:R   + [000]     6:  0:R migration/0
+>      cat-1163    0d..4    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1163    0d..3    4us : __schedule <-preempt_schedule
+>      cat-1163    0d..3    4us :   1163:120:R ==> [000]     6:  0:R migration/0
+> 
+> 
+> * The fixed output is:
+> 
+>   # tracer: wakeup
+>   #
+>   # wakeup latency trace v1.1.5 on 3.1.0-rc4-tip+
+>   # --------------------------------------------------------------------
+>   # latency: 91 us, #4/4, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+>   #    -----------------
+>   #    | task: watchdog/0-7 (uid:0 nice:0 policy:1 rt_prio:99)
+>   #    -----------------
+>   #
+>     <idle>-0       0d.h5    1us :      0:120:R   + [000]     7:  0:R watchdog/0
+>     <idle>-0       0d.h5    2us+: ttwu_do_activate.clone.1 <-try_to_wake_up
+>     <idle>-0       0d..3   17us : __schedule <-schedule
+>     <idle>-0       0d..3   17us :      0:120:R ==> [000]     7:  0:R watchdog/0
 
-Right, there are no ptes there yet, so we're cannot miss any.
+Why the above header? Why not just use the latency header for all of
+them?
 
->=20
->  Furthermore, the move_page_tables() call following this case
-> might better be totally avoided for code readability and it's
-> simple to judge with (vma =3D=3D new_vma)
->=20
-> Do you agree? :)
+-- Steve
 
-Well, it's true that looking at pagetables in this case is just
-a waste of time; but personally I'd prefer to add more comment
-than special case handling for this.
+> 
+> 
+> * There's slightly different output (for wakeup_rt tracer) when function
+>   tracer is enabled, currently:
+> 
+>   # tracer: wakeup_rt
+>   #
+>      cat-1168    1d..4    0us :   1168:120:R   + [001]     8:  0:R migration/1
+>      cat-1168    1d..4    1us : ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1168    1d..3    1us : check_preempt_curr <-ttwu_do_wakeup
+>      ...
+> 
+> 
+> * After the fix:
+> 
+>   # tracer: wakeup_rt
+>   #
+>   # wakeup_rt latency trace v1.1.5 on 3.1.0-rc4-tip+
+>   # --------------------------------------------------------------------
+>   # latency: 209 us, #113/113, CPU#0 | (M:preempt VP:0, KP:0, SP:0 HP:0 #P:2)
+>   #    -----------------
+>   #    | task: watchdog/0-7 (uid:0 nice:0 policy:1 rt_prio:99)
+>   #    -----------------
+>   #
+>   #                  _------=> CPU#            
+>   #                 / _-----=> irqs-off        
+>   #                | / _----=> need-resched    
+>   #                || / _---=> hardirq/softirq 
+>   #                ||| / _--=> preempt-depth   
+>   #                |||| /     delay             
+>   #  cmd     pid   ||||| time  |   caller      
+>   #     \   /      |||||  \    |   /           
+>      cat-1168    1d..4    0us :   1168:120:R   + [001]     8:  0:R migration/1
+>      cat-1168    1d..4    1us : ttwu_do_activate.clone.1 <-try_to_wake_up
+>      cat-1168    1d..3    1us : check_preempt_curr <-ttwu_do_wakeup
+>      ...
+> 
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  kernel/trace/trace.c              |   12 ++++++++++++
+>  kernel/trace/trace.h              |    1 +
+>  kernel/trace/trace_irqsoff.c      |   13 ++++++++++++-
+>  kernel/trace/trace_sched_wakeup.c |   13 ++++++++++++-
+>  4 files changed, 37 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index e5df02c..7086345 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2139,6 +2139,18 @@ enum print_line_t print_trace_line(struct trace_iterator *iter)
+>  	return print_trace_fmt(iter);
+>  }
+>  
+> +void trace_latency_header(struct seq_file *m)
+> +{
+> +	struct trace_iterator *iter = m->private;
+> +
+> +	/* print nothing if the buffers are empty */
+> +	if (trace_empty(iter))
+> +		return;
+> +
+> +	if (iter->iter_flags & TRACE_FILE_LAT_FMT)
+> +		print_trace_header(m, iter);
+> +}
+> +
+>  void trace_default_header(struct seq_file *m)
+>  {
+>  	struct trace_iterator *iter = m->private;
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 616846b..db40865 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -370,6 +370,7 @@ void trace_graph_function(struct trace_array *tr,
+>  		    unsigned long ip,
+>  		    unsigned long parent_ip,
+>  		    unsigned long flags, int pc);
+> +void trace_latency_header(struct seq_file *m);
+>  void trace_default_header(struct seq_file *m);
+>  void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
+>  int trace_empty(struct trace_iterator *iter);
+> diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> index 667aa8c..2a0aee6 100644
+> --- a/kernel/trace/trace_irqsoff.c
+> +++ b/kernel/trace/trace_irqsoff.c
+> @@ -280,9 +280,20 @@ static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
+>  }
+>  
+>  static void irqsoff_graph_return(struct ftrace_graph_ret *trace) { }
+> -static void irqsoff_print_header(struct seq_file *s) { }
+>  static void irqsoff_trace_open(struct trace_iterator *iter) { }
+>  static void irqsoff_trace_close(struct trace_iterator *iter) { }
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +static void irqsoff_print_header(struct seq_file *s)
+> +{
+> +	trace_default_header(s);
+> +}
+> +#else
+> +static void irqsoff_print_header(struct seq_file *s)
+> +{
+> +	trace_latency_header(s);
+> +}
+> +#endif /* CONFIG_FUNCTION_TRACER */
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  /*
+> diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+> index e4a70c0..ff791ea 100644
+> --- a/kernel/trace/trace_sched_wakeup.c
+> +++ b/kernel/trace/trace_sched_wakeup.c
+> @@ -280,9 +280,20 @@ static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
+>  }
+>  
+>  static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
+> -static void wakeup_print_header(struct seq_file *s) { }
+>  static void wakeup_trace_open(struct trace_iterator *iter) { }
+>  static void wakeup_trace_close(struct trace_iterator *iter) { }
+> +
+> +#ifdef CONFIG_FUNCTION_TRACER
+> +static void wakeup_print_header(struct seq_file *s)
+> +{
+> +	trace_default_header(s);
+> +}
+> +#else
+> +static void wakeup_print_header(struct seq_file *s)
+> +{
+> +	trace_latency_header(s);
+> +}
+> +#endif /* CONFIG_FUNCTION_TRACER */
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  
+>  /*
 
->=20
-> >
-> > I thought some more about it and what I missed I think is the
-> > anon_vma_merge in vma_adjust. What that anon_vma_merge, rmap_walk will
-> > have to complete before we can start moving the ptes. And so rmap_walk
-> > when starts again from scratch (after anon_vma_merge run in
-> > vma_adjust) will find all ptes even if vma_merge succeeded before.
-> >
-> > In fact this may also work for fork. Fork will take the anon_vma root
-> > lock somehow to queue the child vma in the same_anon_vma. Doing so it
-> > will serialize against any running rmap_walk from all other cpus. The
-> > ordering has never been an issue for fork anyway, but it would have
-> > have been an issue for mremap in case vma_merge succeeded and src_vma
-> > !=3D dst_vma, if vma_merge didn't act as a serialization point against
-> > rmap_walk (which I realized now).
-> >
-> > What makes it safe is again taking both PT locks simultanously. So it
-> > doesn't matter what rmap_walk searches, as long as the anon_vma_chain
-> > list cannot change by the time rmap_walk started.
-> >
-> > What I thought before was rmap_walk checking vma1 and then vma_merge
-> > succeed (where src vma is vma2 and dst vma is vma1, but vma1 is not a
-> > new vma queued at the end of same_anon_vma), move_page_tables moves
-> > the pte from vma2 to vma1, and then rmap_walk checks vma2. But again
-> > vma_merge won't be allowed to complete in the middle of rmap_walk, and
-> > so it cannot trigger and we can safely drop the patch. It wasn't
-> > immediate to think at the locks taken within vma_adjust sorry.
-> >
 
-I found Andrea's "anon_vma_merge" reply very hard to understand; but
-it looks like he now accepts that it was mistaken, or on the wrong
-track at least...
-
->=20
-> Oh, no, sorry. I think I was trying to clarify in the first reply on
-> that thread that
-> we all agree that anon_vma chain is 100% stable when doing rmap_walk().
-> What is important, I think,  is the relative order of these three events:
-> 1.  The time  rmap_walk() scans the src
-> 2.  The time rmap_walk() scans the dst
-> 3.  The time move_page_tables() move PTE from src vma to dst.
-
-=2E.. after you set us straight again with this.
-
->=20
-> rmap_walk() scans dst( taking dst PTL) ---> move_page_tables() with
-> both PTLs ---> rmap_walk() scans src(taking src PTL)
->=20
-> will trigger this bug.  The racing is there even if rmap_walk() scans src=
---->dst
-> but that racing does not harm. I think Mel explained why it's safe for go=
-od
-> ordering in his first reply to my post.
->=20
-> vma_merge() is only guilty for giving a wrong order of VMAs before
-> move_page_tables() and rmap_walk() begin to race, itself does not race
-> with rmap_walk().
->=20
-> You see, it seems this game might be really puzzling. Indeed, maybe it's =
-time
-> to fall back on locks instead of playing with racing. Just like the
-> good old time,
-> our classic OS text book told us that shared variables deserve locks. :-)
-
-That's my preference, yes: this mail thread seems to cry out for that!
-
-Hugh
---8323584-1790824662-1320459700=:22199--
