@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab1KEC1z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 22:27:55 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:35971 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab1KEC1x (ORCPT
+	id S1753281Ab1KEC3d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 22:29:33 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:44320 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180Ab1KEC3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 22:27:53 -0400
-Date: Fri, 04 Nov 2011 22:27:35 -0400 (EDT)
-Message-Id: <20111104.222735.962844978112109030.davem@davemloft.net>
-To: david.decotigny@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ian.campbell@citrix.com, eric.dumazet@gmail.com,
-        jeffrey.t.kirsher@intel.com, jpirko@redhat.com, joe@perches.com,
-        szymon@janc.net.pl
-Subject: Re: [PATCH net v3 0/9] forcedeth: minor fixes for stats, rmmod,
- sparse
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1320457247.git.david.decotigny@google.com>
-References: <cover.1320457247.git.david.decotigny@google.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 04 Nov 2011 19:27:38 -0700 (PDT)
+	Fri, 4 Nov 2011 22:29:32 -0400
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH] ARM: EXYNOS4: Fix the merge conflict
+Date: Sat,  5 Nov 2011 11:08:54 +0900
+Message-Id: <1320458934-8225-1-git-send-email-kgene.kim@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Decotigny <david.decotigny@google.com>
-Date: Fri,  4 Nov 2011 18:53:24 -0700
+The mark of conflict should be removed.
 
-> Changes since v2:
->  - removed "Fix a race during rmmod of forcedeth" from the series
->    (will look at it separately with original author)
->  - added "remove unneeded stats updates" and "64-bit stats"
->  - reordered patches
-> 
-> Changes since v1:
->  - rebased on top of netdev tip
->  - do not repeat name of device in netdev_dbg
->  - do not completely mute TX timeout messages when debug_tx_timeout is
->    not set
->  - make debug_tx_timeout writable in /sys/module
->  Note: I am re-submitting "expose module parameters in /sys/module" as
->        it can be useful in production and I was assured it doesn't add
->        much memory overhead by the sysfs maintainers.
+This happened at the commit fba9569924e06da076cb2ad12474bbd82d69f54d
+("Merge branch 'next' of git://git.infradead.org/users/vkoul/slave-dma")
 
-If you want me to apply any of this now you're going to have to split
-out the pure bug fixes from the feature additions and submit the feature
-bits later when net-next opens back up.
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ arch/arm/mach-exynos4/clock.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-Because things like 64-bit stats and new stat counters are not
-appropriate at this time in the development cycle.
+diff --git a/arch/arm/mach-exynos4/clock.c b/arch/arm/mach-exynos4/clock.c
+index e21952d..a52024e 100644
+--- a/arch/arm/mach-exynos4/clock.c
++++ b/arch/arm/mach-exynos4/clock.c
+@@ -1286,11 +1286,8 @@ void __init exynos4_register_clocks(void)
+ 	s3c_register_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
+ 	s3c_disable_clocks(init_clocks_off, ARRAY_SIZE(init_clocks_off));
+ 
+-<<<<<<< HEAD
+ 	register_syscore_ops(&exynos4_clock_syscore_ops);
+-=======
+ 	s3c24xx_register_clock(&dummy_apb_pclk);
+ 
+->>>>>>> 4598fc2c94b68740e0269db03c98a1e7ad5af773
+ 	s3c_pwmclk_init();
+ }
+-- 
+1.7.1
+
