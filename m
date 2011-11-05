@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab1KEEFI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 00:05:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19367 "EHLO
+	id S1753761Ab1KEEFi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 00:05:38 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55050 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab1KEEFD (ORCPT
+	with ESMTP id S1752385Ab1KEEFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 00:05:03 -0400
+	Sat, 5 Nov 2011 00:05:08 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:in-reply-to:references:organization:x-system-of-record;
-	b=Q8SGhgovaLwWW2afxw3ehZOkyIgRbh8kv/DTI3WOyUUfWpMrhkFV3Z+TiiScL5qrH
-	7g8KcdGpjzUVlufyGIngw==
+	h=from:to:cc:subject:date:message-id:x-mailer:organization:x-system-of-record;
+	b=MRf/tkz0i/Y4vvwSWbKKTccUOj3mznXf/5PTW5y2NbTEmsB/kVor/Cc+lMi32BTgV
+	08NwXG86N0RHWrcX7+kJw==
 From: David Decotigny <david.decotigny@google.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: "David S. Miller" <davem@davemloft.net>,
@@ -19,82 +18,73 @@ Cc: "David S. Miller" <davem@davemloft.net>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
-        Szymon Janc <szymon@janc.net.pl>, Mike Ditto <mditto@google.com>,
+        Szymon Janc <szymon@janc.net.pl>,
         David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net v4 1/4] forcedeth: Acknowledge only interrupts that are being processed
-Date: Fri,  4 Nov 2011 21:04:39 -0700
-Message-Id: <5eeafda710f555e73c9eafdc8bd1ed6dc7f73a18.1320463771.git.david.decotigny@google.com>
+Subject: [PATCH net v4 0/4] forcedeth: minor fixes for stats, rmmod, sparse
+Date: Fri,  4 Nov 2011 21:04:38 -0700
+Message-Id: <cover.1320463771.git.david.decotigny@google.com>
 X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
-References: <cover.1320463771.git.david.decotigny@google.com>
-In-Reply-To: <cover.1320463771.git.david.decotigny@google.com>
-References: <cover.1320463771.git.david.decotigny@google.com>
 Organization: Google, Inc.
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Ditto <mditto@google.com>
+David,
 
-This is to avoid a race, accidentally acknowledging an interrupt that
-we didn't notice and won't immediately process.  This is based solely
-on code inspection; it is not known if there was an actual bug here.
+Thanks for your feedback. Here is v4, with only the (minor) bug fixes
+for net. I am setting the "new features" patches aside for later
+(net-next).
+
+Since I am still very much of a newbie with the way net & net-next
+work, could you please redirect me to some pointer on how/when the
+schedule works?
+
+Regards,
+
+Tested: 16-way x86_64 + forcedeth
+
+Changes since v3:
+ - removed feature additions, this leaves minor sparse and stats
+   fixes. Feature additions shipped previously will go to net-next
+
+Changes since v2:
+ - removed "Fix a race during rmmod of forcedeth" from the series
+   (will look at it separately with original author)
+ - added "remove unneeded stats updates" and "64-bit stats"
+ - reordered patches
+
+Changes since v1:
+ - rebased on top of netdev tip
+ - do not repeat name of device in netdev_dbg
+ - do not completely mute TX timeout messages when debug_tx_timeout is
+   not set
+ - make debug_tx_timeout writable in /sys/module
+ Note: I am re-submitting "expose module parameters in /sys/module" as
+       it can be useful in production and I was assured it doesn't add
+       much memory overhead by the sysfs maintainers.
+
+Tested:
+  16-way x86_64 SMP, dual forcedeth ->
+  RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
 
 
+############################################
+# Patch Set Summary:
 
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+David Decotigny (2):
+  forcedeth: remove unneeded stats updates
+  forcedeth: fix a few sparse warnings (variable shadowing)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 1e37eb9..056986b 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -3398,7 +3398,8 @@ static irqreturn_t nv_nic_irq_tx(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_TX_ALL;
--		writel(NVREG_IRQ_TX_ALL, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "tx irq events: %08x\n", events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3509,7 +3510,8 @@ static irqreturn_t nv_nic_irq_rx(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_RX_ALL;
--		writel(NVREG_IRQ_RX_ALL, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "rx irq events: %08x\n", events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3553,7 +3555,8 @@ static irqreturn_t nv_nic_irq_other(int foo, void *data)
- 
- 	for (i = 0;; i++) {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQ_OTHER;
--		writel(NVREG_IRQ_OTHER, base + NvRegMSIXIrqStatus);
-+		writel(events, base + NvRegMSIXIrqStatus);
-+		netdev_dbg(dev, "irq events: %08x\n", events);
- 		if (!(events & np->irqmask))
- 			break;
- 
-@@ -3617,10 +3620,10 @@ static irqreturn_t nv_nic_irq_test(int foo, void *data)
- 
- 	if (!(np->msi_flags & NV_MSI_X_ENABLED)) {
- 		events = readl(base + NvRegIrqStatus) & NVREG_IRQSTAT_MASK;
--		writel(NVREG_IRQ_TIMER, base + NvRegIrqStatus);
-+		writel(events & NVREG_IRQ_TIMER, base + NvRegIrqStatus);
- 	} else {
- 		events = readl(base + NvRegMSIXIrqStatus) & NVREG_IRQSTAT_MASK;
--		writel(NVREG_IRQ_TIMER, base + NvRegMSIXIrqStatus);
-+		writel(events & NVREG_IRQ_TIMER, base + NvRegMSIXIrqStatus);
- 	}
- 	pci_push(base);
- 	if (!(events & NVREG_IRQ_TIMER))
+Mandeep Baines (1):
+  forcedeth: Improve stats counters
+
+Mike Ditto (1):
+  forcedeth: Acknowledge only interrupts that are being processed
+
+ drivers/net/ethernet/nvidia/forcedeth.c |   86 +++++++++++--------------------
+ 1 files changed, 30 insertions(+), 56 deletions(-)
+
 -- 
 1.7.3.1
 
