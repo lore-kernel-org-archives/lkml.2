@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab1KELss (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 07:48:48 -0400
-Received: from smtp-out1.tiscali.nl ([195.241.79.176]:48167 "EHLO
-	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab1KELsr (ORCPT
+	id S1753395Ab1KEMIa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 08:08:30 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39796 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab1KEMI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 07:48:47 -0400
-Subject: Re: [GIT PULL] UML changes for 3.2
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
-        Peter Foley <pefoley2@verizon.net>, Sam Ravnborg <sam@ravnborg.org>
-In-Reply-To: <4EB3C167.3020508@suse.cz>
-References: <4EB14F51.1050004@nod.at>
-	 <1320348750.14409.249.camel@x61.thuisdomein>
-	 <1320352899.14409.260.camel@x61.thuisdomein>
-	 <1320354072.14409.265.camel@x61.thuisdomein>  <4EB3045A.6050501@nod.at>
-	 <1320355503.14409.269.camel@x61.thuisdomein>  <4EB30994.9050309@nod.at>
-	 <1320357369.14409.276.camel@x61.thuisdomein>
-	 <1320358228.14409.279.camel@x61.thuisdomein>  <4EB3C167.3020508@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Nov 2011 12:48:28 +0100
-Message-ID: <1320493708.14409.336.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Nov 2011 08:08:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20111105045156.GA10668@ericsson.com>
+References: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
+	<20111105045156.GA10668@ericsson.com>
+Date: Sat, 5 Nov 2011 15:08:28 +0300
+Message-ID: <CAA1sL1QW+GYHcsE4A-1Oq3UxvKLzNzGw77bBobt_cTr7-5EKFA@mail.gmail.com>
+Subject: Re: [PATCH] hwmon: (w83627ehf): fix broken driver init
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pA5C8bnp006520
 
-(Added Sam Ravnborg. Dropped Linus Torvalds and Andrew Morton, who by
-now probably prefer not getting this message directly.)
+On 5 November 2011 08:51, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
+> Followup - something like
+> Â  Â  Â  Â  Â  Â  Â  Â const char *label = NULL;
+>
+> Â  Â  Â  Â  Â  Â  Â  Â if (data->temp_label)
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â label = data->temp_label[data->temp_src[i]];
+>
+> Â  Â  Â  Â  Â  Â  Â  Â /* Digital source overrides analog type */
+> Â  Â  Â  Â  Â  Â  Â  Â if (label && strncmp(label, "PECI", 4) == 0)
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â data->temp_type[i] = 6;
+> Â  Â  Â  Â  Â  Â  Â  Â else if (label && strncmp(label, "AMD", 3) == 0)
+> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â data->temp_type[i] = 5;
+> Â  Â  Â  Â  Â  Â  Â  Â else if ((tmp & (0x02 << i)))
+>
+> should do it. I am open to better ideas...
 
-On Fri, 2011-11-04 at 11:41 +0100, Michal Marek wrote:
-> I doub't kxgettext needs $SUBARCH at all, it only cares about the
-> prompts and help texts, it does not evaluate any kconfig symbols.
-
-0) That seems correct. But the fact is that kxgettext calls conf_parse()
-right away, and that somehow triggers
-    menu_add_option()
-        prop_add_env()
-
-and that last function will print this warning. Mucking about in all
-that code to make this warning disappear seems wrong.
-
-1) A straightforward fix could be:
-diff --git a/Makefile b/Makefile
-index 07bc925..2b8ee64 100644
---- a/Makefile
-+++ b/Makefile
-@@ -191,7 +191,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
- # "make" in the configured kernel build directory always uses that.
- # Default value for CROSS_COMPILE is not to prefix executables
- # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
--export KBUILD_BUILDHOST := $(SUBARCH)
-+export SUBARCH
- ARCH           ?= $(SUBARCH)
- CROSS_COMPILE  ?= $(CONFIG_CROSS_COMPILE:"%"=%)
- 
-diff --git a/scripts/Makefile.modpost b/scripts/Makefile.modpost
-index 08dce14..9e178f6 100644
---- a/scripts/Makefile.modpost
-+++ b/scripts/Makefile.modpost
-@@ -66,7 +66,7 @@ modules   := $(patsubst %.o,%.ko, $(wildcard $(__modules:.ko=.o)))
- # Stop after building .o files if NOFINAL is set. Makes compile tests quicker
- _modpost: $(if $(KBUILD_MODPOST_NOFINAL), $(modules:.ko:.o),$(modules))
- 
--ifneq ($(KBUILD_BUILDHOST),$(ARCH))
-+ifneq ($(SUBARCH),$(ARCH))
-         cross_build := 1
- endif
- 
-
-KBUILD_BUILDHOST was introduced in commit 4ce6efed ("kbuild: soften
-modpost checks when doing cross builds"). It's an alias of SUBARCH
-that's used just once. It's not clear to me why SUBARCH can't be used
-directly instead of that alias.
-
-2) Using SUBARCH directly (and dropping KBUILD_BUILDHOST) makes this
-warning go away. Could that break anything?
-
-
-Paul Bolle
-
+Works for me, thanks. You may add my
+Tested-by: Alexander Beregalov <a.beregalov@gmail.com>
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
