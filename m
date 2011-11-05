@@ -1,86 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab1KEOsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 10:48:46 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47989 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab1KEOsp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 10:48:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1320503897.2428.8.camel@discretia>
-References: <1320503897.2428.8.camel@discretia>
-Date: Sat, 5 Nov 2011 15:48:45 +0100
-Message-ID: <CAJdOS78xgf7-a1wGM4tyQVFhLrO3kWH1V4qoG2AT+QCa7nngBA@mail.gmail.com>
-Subject: Re: [PATCH] mm: migrate: One less atomic operation
-From: Jacobo Giralt <jacobo.giralt@gmail.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, mgorman@suse.de, minchan.kim@gmail.com,
-        hughd@google.com, hannes@cmpxchg.org, npiggin@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752566Ab1KEOwA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 10:52:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33903 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab1KEOv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 10:51:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="71356120"
+Subject: Re: [PATCH -v1] acpi: Fix possible recursive locking in hwregs.c
+From: Lin Ming <ming.m.lin@intel.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>
+In-Reply-To: <CADZ9YHiht68YLz5eWc0xc8R3bxLrgdf4sxgLBwODiKoLQLU7FQ@mail.gmail.com>
+References: <1320317323.5711.5.camel@localhost.localdomain>
+	 <1320321770.2813.10.camel@hp6530s>	<4EB2D225.60808@linux.vnet.ibm.com>
+	 <CADZ9YHiht68YLz5eWc0xc8R3bxLrgdf4sxgLBwODiKoLQLU7FQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sat, 05 Nov 2011 22:50:48 +0800
+Message-ID: <1320504648.4941.7.camel@hp6530s>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think I used an old e-mail address for Nick (got it from git blame),
-I'm changing it now, sorry for the noise!
+On Fri, 2011-11-04 at 13:53 +0800, Rakib Mullick wrote:
+> On Thu, Nov 3, 2011 at 11:40 PM, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> > Hi,
+> >
+> > On 11/03/2011 05:32 PM, Lin Ming wrote:
+> >> On Thu, 2011-11-03 at 18:48 +0800, Rakib Mullick wrote:
+> >>> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status,
+> >>
+> >> As I replied at https://lkml.org/lkml/2011/9/22/6, I still don't think
+> >> there is a recursive lock.
+> >>
+> >
+> > At first look, it definitely doesn't look like a recursive lock, as Lin said.
+> > But, quoting Documentation/lockdep-design.txt:
+> >
+> > "Multi-lock dependency rules:
+> > ----------------------------
+> >
+> > The same lock-class must not be acquired twice, because this could lead
+> > to lock recursion deadlocks."
+> >
+> > So, Rakib, do the 2 locks belong to the same lock-class? If yes, then I think
+> > that is the reason for the lockdep splat. Could you show the lockdep warning?
+> >
+> Yes, same lock-class. And as per "Multi-lock dependency rules:", it
+> leads to lock recursion deadlocks.
+> Lockdep warning attached.
+> 
+> > By the way, another way to look at this patch is as an optimization..
+> > i.e., if acpi_gbl_hardware_lock doesn't need to be held to call
+> > acpi_ev_walk_gpe_list(), then we can move from the coarse-grained locking
+> > to finer-grained locking by releasing it earlier, as you did in your patch.
+> > [Note that you will have to update the goto label also, i.e., rename it as
+> > 'exit' or something like that]
+> >
+> I can do it, thanks for suggestions. But, what does Lin thinks? Lin
+> are you okay?
 
-Regards,
-Jacobo Giralt.
+I'm OK.
 
-2011/11/5 Jacobo Giralt <jacobo.giralt@gmail.com>:
-> From 3754c8617ef4377ce2ca2e3b28bdc28f8de1aa0d Mon Sep 17 00:00:00 2001
-> From: Jacobo Giralt <jacobo.giralt@gmail.com>
-> Date: Sat, 5 Nov 2011 13:12:50 +0100
-> Subject: [PATCH] mm: migrate: One less atomic operation
->
-> migrate_page_move_mapping drops a reference from the
-> old page after unfreezing its counter. Both operations
-> can be merged into a single atomic operation by
-> directly unfreezing to one less reference.
->
-> The same applies to migrate_huge_page_move_mapping.
->
-> Signed-off-by: Jacobo Giralt <jacobo.giralt@gmail.com>
-> ---
->  mm/migrate.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
->
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 33358f8..46d04a0 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -269,12 +269,12 @@ static int migrate_page_move_mapping(struct address_space *mapping,
->
->        radix_tree_replace_slot(pslot, newpage);
->
-> -       page_unfreeze_refs(page, expected_count);
->        /*
-> -        * Drop cache reference from old page.
-> +        * Drop cache reference from old page by unfreezing
-> +        * to one less reference.
->         * We know this isn't the last reference.
->         */
-> -       __put_page(page);
-> +       page_unfreeze_refs(page, expected_count - 1);
->
->        /*
->         * If moved to a different zone then also account
-> @@ -334,9 +334,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
->
->        radix_tree_replace_slot(pslot, newpage);
->
-> -       page_unfreeze_refs(page, expected_count);
-> -
-> -       __put_page(page);
-> +       page_unfreeze_refs(page, expected_count - 1);
->
->        spin_unlock_irq(&mapping->tree_lock);
->        return 0;
-> --
-> 1.7.5.4
->
->
->
->
+We need to figure out why the dead lock happens.
+Could you also paste the patch which trigger this dead lock?
+
+Thanks,
+Lin Ming
+
+> 
+> Thanks,
+> Rakib
+
+
