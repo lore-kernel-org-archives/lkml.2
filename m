@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab1KELR7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 07:17:59 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42193 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752835Ab1KELR6 (ORCPT
+	id S1753205Ab1KELVv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 07:21:51 -0400
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:50452 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab1KELVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 07:17:58 -0400
-Message-ID: <4EB51B5A.9020300@linux.vnet.ibm.com>
-Date: Sat, 05 Nov 2011 16:47:46 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH 0/9] BSP or CPU0 online/offline
-References: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
-In-Reply-To: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 5 Nov 2011 07:21:49 -0400
+Subject: [PATCH] kconfig: adapt update-po-config to new UML layout
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Richard Weinberger <richard@nod.at>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Foley <pefoley2@verizon.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Nov 2011 12:21:30 +0100
+Message-ID: <1320492090.14409.321.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
-x-cbid: 11110501-5140-0000-0000-00000029FF01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/05/2011 03:33 AM, Fenghua Yu wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
-> 
-> BSP or CPU0 has been the last obstacle to CPU hotplug on x86. This patch set
-> implements BSP online and offline and removes this obstacle to CPU hotplug.
-> 
-> RAS needs the feature. If socket0 needs to be hotplugged for any reason (any
-> thread on socket0 is bad, shared cache issue, uncore issue, etc), CPU0 is
-> required to be offline or hot replaced to keep the system run.
-> 
-> Fenghua Yu (9):
->   include/linux/cpu.h: Define architecture dependent cpu map update and
->     state check functions
->   kernel/cpu.c: Add arch dependent cpu map update functions
->   x86/i387.c: Thread xstate is initialized only on BSP once
->   x86/common.c: Init BSP data during BSP online
->   x86/mtrr/main.c: Ask the first online CPU to save mtrr
->   kernel/power/suspend.c,hibernate.c: Don't hibernate/suspend if CPU0
->     is offline
->   x86/topology.c: Support functions for BSP online/offline
->   x86/smpboot.c: Don't offline BSP if any irq can not be migrated out
->     of it
->   Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0
->     online/offline feature
-> 
+Commit 5c48b108 ("um: take arch/um/sys-x86 to arch/x86/um") broke the
+make target update-po-config, as its symlink trick (again) fails.
+(Previous breakage was fixed with commit bdc69ca4 ("kconfig: change
+update-po-config to reflect new layout of arch/um").)
 
-The norm usually followed is to update the version number of the patch
-or patchset at each iteration and mention the significant changes between
-the versions in the changelog/cover-letter (and possibly give links to older
-versions). This would make reviewing patches much more easier.
+The new UML layout allows to drop the symlick trick entirely. And if,
+one day, another architecture supports UML too, that should now work
+without again breaking this make target.
 
->  Documentation/cpu-hotplug.txt       |   19 +++++++++++++++
->  Documentation/kernel-parameters.txt |   13 ++++++++++
->  arch/x86/include/asm/processor.h    |    1 +
->  arch/x86/kernel/cpu/common.c        |   13 ++++++++--
->  arch/x86/kernel/cpu/mtrr/main.c     |    9 +++++-
->  arch/x86/kernel/i387.c              |    9 ++++++-
->  arch/x86/kernel/smpboot.c           |   43 ++++++++++++++++++++++++++++-----
->  arch/x86/kernel/topology.c          |   44 +++++++++++++++++++++++++++++-----
->  include/linux/cpu.h                 |    6 ++++
->  kernel/cpu.c                        |   12 +++++++++
->  kernel/power/hibernate.c            |    5 ++++
->  kernel/power/main.c                 |    5 ++++
->  kernel/power/suspend.c              |    4 +++
->  13 files changed, 163 insertions(+), 20 deletions(-)
-> 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) I've decided to only fix the breakage and not also the warning "make
+update-po-config" triggers (see the discussion starting at
+https://lkml.org/lkml/2011/11/3/336 ). That's apparently nothing new and
+fixing it requires some more discussion. At least it's no clear to me
+what the best solution is. And it could even be fixed by changes to the
+main Makefile.
 
-Thanks,
-Srivatsa S. Bhat
+1) A similar proposal (for the previous layout) by Peter Foley was
+https://lkml.org/lkml/2011/10/22/158 . Did it got dropped?
+
+ scripts/kconfig/Makefile |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 82d2eb2..0b0fc70 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -84,8 +84,8 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ 	    --directory=$(srctree) --directory=$(objtree)           \
+ 	    --output $(obj)/config.pot
+ 	$(Q)sed -i s/CHARSET/UTF-8/ $(obj)/config.pot
+-	$(Q)ln -fs Kconfig.x86 arch/um/Kconfig
+-	$(Q)(for i in `ls $(srctree)/arch/*/Kconfig`;    \
++	$(Q)(for i in `ls $(srctree)/arch/*/Kconfig      \
++	    $(srctree)/arch/*/um/Kconfig`;               \
+ 	    do                                           \
+ 		echo "  GEN $$i";                        \
+ 		$(obj)/kxgettext $$i                     \
+@@ -93,7 +93,6 @@ update-po-config: $(obj)/kxgettext $(obj)/gconf.glade.h
+ 	    done )
+ 	$(Q)msguniq --sort-by-file --to-code=UTF-8 $(obj)/config.pot \
+ 	    --output $(obj)/linux.pot
+-	$(Q)rm -f $(srctree)/arch/um/Kconfig
+ 	$(Q)rm -f $(obj)/config.pot
+ 
+ PHONY += allnoconfig allyesconfig allmodconfig alldefconfig randconfig
+-- 
+1.7.4.4
 
