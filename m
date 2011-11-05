@@ -1,137 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751906Ab1KDX7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 19:59:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61616 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751747Ab1KDX7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 19:59:18 -0400
-Date: Sat, 5 Nov 2011 00:56:03 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Nai Xia <nai.xia@gmail.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-Message-ID: <20111104235603.GT18879@redhat.com>
-References: <20111031171441.GD3466@redhat.com>
- <1320082040-1190-1-git-send-email-aarcange@redhat.com>
- <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+	id S1751954Ab1KEAFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 20:05:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57585 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751747Ab1KEAFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 20:05:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] arm-soc features for samsung and pxa
+Date: Sat, 5 Nov 2011 01:05:18 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>, Kukjin Kim <kgene.kim@samsung.com>
+References: <201111050054.33975.arnd@arndb.de>
+In-Reply-To: <201111050054.33975.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111050105.18714.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zz8XrxZTUZCtx3XdtFC/bPgXSzpLQ+KZHtbnIEMik46
+ GHw/GeMTza1VM60KfEpEDbJj7w1BDDt239BoEunrBOZ4GaYwWV
+ rfbHaJ/iuTmDDaQVv+DotU+JIuyeueAQNrzsgCFLY/koVdbs7Y
+ AnY4YHn5SBGRWtWinHJM6LE4mBauuQZt+GMpQUMZWDBVp8PCM3
+ jwiX7AbKm0G9DWIEuHO93CsKAgw+Z7QKsM0aqzEX+BL1JJNn3J
+ K8A1FjkDQkaDPNrIl6yUbhSJtUeUbE7hNGaN2ZvNfT2h1HOxJI
+ Rd40OntaNFfTB1KwMdewfZqRwq6ZAs7vjfeoK/EQ5AucTFPsCL
+ ZvRFmJXJBvqPqy9P9yhI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 12:31:04AM -0700, Hugh Dickins wrote:
-> On Mon, 31 Oct 2011, Andrea Arcangeli wrote:
-> > diff --git a/mm/mmap.c b/mm/mmap.c
-> > index a65efd4..a5858dc 100644
-> > --- a/mm/mmap.c
-> > +++ b/mm/mmap.c
-> > @@ -2339,7 +2339,15 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
-> >  		 */
-> >  		if (vma_start >= new_vma->vm_start &&
-> >  		    vma_start < new_vma->vm_end)
-> > +			/*
-> > +			 * No need to call anon_vma_order_tail() in
-> > +			 * this case because the same PT lock will
-> > +			 * serialize the rmap_walk against both src
-> > +			 * and dst vmas.
-> > +			 */
-> 
-> Really?  Please convince me: I just do not see what ensures that
-> the same pt lock covers both src and dst areas in this case.
+These are patches for new development changes for the samsung and pxa platforms.
+The samsung changes depend on the cleanup branch I just sent (including the
+dma-slave series). The pxa patches were sent to me relatively late, so I
+put them in this branch rather than the first next/devel branch you already
+pulled. There should be no further conflicts if you pull this branch
+after next/cleanup3.
 
-Right, vma being the same for src/dst doesn't mean the PT lock is the
-same, it might be if source pte entry fit in the same pagetable but
-maybe not if the vma is >2M (the max a single pagetable can point to).
+	Arnd
 
-> >  			*vmap = new_vma;
-> > +		else
-> > +			anon_vma_order_tail(new_vma);
-> 
-> And if this puts new_vma in the right position for the normal
-> move_page_tables(), as anon_vma_clone() does in the block below,
-> aren't they both in exactly the wrong position for the abnormal
-> move_page_tables(), called to put ptes back where they were if
-> the original move_page_tables() fails?
+The following changes since commit 8f7e34205f6ff50bfb30908af8aae5fd65a95d5f:
 
-Failure paths. Good point, they'd need to be reversed again in that
-case.
+  Merge branch 'next/cleanup3' into for-next (2011-11-02 03:16:14 +0100)
 
-> It might be possible to argue that move_page_tables() can only
-> fail by failing to allocate memory for pud or pmd, and that (perhaps)
-> could only happen if the task was being OOM-killed and ran out of
-> reserves at this point, and if it's being OOM-killed then we don't
-> mind losing a migration entry for a moment... perhaps.
+are available in the git repository at:
 
-Hmm no it wouldn't be ok, or I wouldn't want to risk that.
+  git://git.linaro.org/people/arnd/arm-soc.git next/devel2
 
-> Certainly I'd agree that it's a very rare case.  But it feels wrong
-> to be attempting to fix the already unlikely issue, while ignoring
-> this aspect, or relying on such unrelated implementation details.
+Arnd Bergmann (4):
+      Merge branch 'samsung/devel' of git+ssh://git.linaro.org/home/arndbergmann/public_git/arm-soc into next/devel2
+      Merge branch 'samsung/devel' into next/devel2
+      Merge branch 'pxa/devel' into next/devel2
 
-Agreed.
+Axel Lin (1):
+      ARM: S3C2443: Remove redundant s3c_register_clocks call for init_clocks
 
-> Perhaps some further anon_vma_ordering could fix it up,
-> but that would look increasingly desperate.
+Heiko St?bner (2):
+      ARM: S3C2443: Move clk_arm and clk_armdiv to common code
+      ARM: S3C2416: Add comment describing the armdiv/armclk
 
-I think what Nai didn't consider in explaining this theoretical race
-that I noticed now is the anon_vma root lock taken by adjust_vma.
+Heiko Stuebner (12):
+      ARM: SAMSUNG: Add adc registers for S3C2443/S3C2416
+      ARM: SAMSUNG: Fix mux bit modification in s3c_adc_select
+      ARM: SAMSUNG: Allow overriding of adc device name for S3C24XX
+      ARM: SAMSUNG: Add support s3c2443-adc for S3C2443
+      ARM: SAMSUNG: Add support s3c2416-adc for S3C2416/S3C2450
+      ARM: S3C2416: Add armdiv_mask constant
+      ARM: S3C24XX: Add infrastructure to transmit armdiv to common code
+      ARM: S3C2443: Add get_rate operation for clk_armdiv
+      ARM: S3C2443: handle unset armdiv values gracefully
+      ARM: S3C2443: Accommodate cpufreq frequency scheme in armdiv
+      ARM: S3C24XX: use clk_get_rate to init fclk in common_setup_clocks
+      ARM: S3C24XX: Add devname for hsmmc1 pclk
 
-If the merge succeeds adjust_vma will take the lock and flush away
-from all others CPUs any sign of rmap_walk before the move_page_tables
-can start.
+Kukjin Kim (1):
+      ARM: EXYNOS4: Remove useless codes on NURI board
 
-So it can't happen that you do rmap_walk, check vma1, mremap moves
-stuff from vma2 to vma1 (wrong order), and then rmap_walk continues
-checking vma2 where the pte won't be there anymore. It can't happen
-because mremap would block in vma_merge waiting the rmap_walk to
-complete. Before proceeding moving any pte. Thanks to the anon_vma
-lock already taken by adjust_vma.
+Leo Yan (3):
+      ARM: mmp: add sram allocator
+      ARM: mmp: register audio sram bank
+      ARM: mmp: register internal sram bank
 
-So the real fix for the real bug is the one already merged in kernel
-v3.1 and we don't need to make any more changes because there is no
-race left.
+Mark Brown (3):
+      ARM: S3C64XX: Enable TCM support
+      ARM: S3C64XX: Fix SoC identification for S3C64xx devices
+      gpio/samsung: Complain loudly if we don't know the SoC
 
-The only bug was the lack of PT lock before checking the pte that
-could read the ptes while move_ptes transferred the pte from src_ptep
-to kernel stack, and before writing it to dst_ptep. That is closed by
-taking the PT lock in migrate before checking if the pte could be a
-migrate pte (so flushing move_ptes away from all other CPUs while
-migrate checks if a migrate-pte is mapped in the pte).
+Peter Korsgaard (2):
+      ARM: S3C2410: fix S3C_GPIO_SPACE #error message to match reality
+      gpio/samsung: only register available gpio banks
 
-I don't think the ordering matters anymore, Nai theory sounded good
-there was just one small detail he missed in the vma_merge internal
-locking that prevents the race to trigger.
+Sachin Kamat (3):
+      ARM: EXYNOS4: Enable regulator support for HDMI on ORIGEN
+      ARM: EXYNOS4: Register power domains on ORIGEN
+      ARM: EXYNOS4: Enable MFC on ORIGEN
 
-> If we were back in the days of the simple anon_vma list, I'd probably
-> share your enthusiasm for the list ordering solution; but now it looks
-> like a fragile and contorted way of avoiding the obvious... we just
-> need to use the anon_vma_lock (but perhaps there are some common and
-> easily tested conditions under which we can skip it e.g. when a single
-> pt lock covers src and dst?).
+Sylwester Nawrocki (1):
+      ARM: EXYNOS4: Add support for M-5MOLS camera on Nuri board
 
-Actually I thought about this one when I didn't notice yet the
-vma_merge internal locking that prevents Nai's remaining race to
-trigger. And my conclusion is that the anon_vma_chains aren't actually
-changing anything with regard to ordering. It become a bit
-multidimensional to think about it so it complicates things
-incredibly, but the ordering issue could have happened before too, and
-the fix would have worked for both.
+Thomas Abraham (1):
+      gpio/samsung: Fix incorrect gpio pull up/down callback for EXYNOS4
 
-Old anon_vma is like three dimensional (vma, anon_vma, page). Now it's
-(vma, chain, anon_vma, page). But if you consider just a single
-process execve'd without any child, it returns three dimensional. And
-the moment you add childs, you can imagine the old "three dimension"
-anon_vma logic to be the one of the parent. And if parent is safe with
-all childs vmas in the same_anon_vma_list, then childs are sure safe
-too to reorder that way. But hey it's not needed so we're faster and
-we don't have to do those list searches during mremap and it's simpler
-too :).
+Tushar Behera (1):
+      gpio/samsung: Move SoC specific codes within macro
+
+ arch/arm/Kconfig                                   |    2 +
+ arch/arm/mach-exynos4/Kconfig                      |   12 ++-
+ arch/arm/mach-exynos4/mach-nuri.c                  |  158 ++++++++++++++++++-
+ arch/arm/mach-exynos4/mach-origen.c                |   21 +++
+ arch/arm/mach-mmp/Makefile                         |    2 +-
+ arch/arm/mach-mmp/brownstone.c                     |   11 ++
+ arch/arm/mach-mmp/include/mach/mmp2.h              |   13 ++
+ arch/arm/mach-mmp/include/mach/sram.h              |   35 ++++
+ arch/arm/mach-mmp/mmp2.c                           |    3 +
+ arch/arm/mach-mmp/sram.c                           |  168 ++++++++++++++++++++
+ arch/arm/mach-s3c2410/include/mach/gpio-nrs.h      |    2 +-
+ .../mach-s3c2410/include/mach/regs-s3c2443-clock.h |    1 +
+ arch/arm/mach-s3c2416/clock.c                      |   21 ++-
+ arch/arm/mach-s3c2416/s3c2416.c                    |    3 +
+ arch/arm/mach-s3c2443/clock.c                      |  105 +------------
+ arch/arm/mach-s3c2443/s3c2443.c                    |    3 +
+ arch/arm/plat-s3c24xx/s3c2443-clock.c              |  135 +++++++++++++++-
+ arch/arm/plat-samsung/adc.c                        |   43 ++++--
+ arch/arm/plat-samsung/include/plat/adc-core.h      |    2 +-
+ arch/arm/plat-samsung/include/plat/cpu.h           |    6 +-
+ arch/arm/plat-samsung/include/plat/regs-adc.h      |    3 +
+ arch/arm/plat-samsung/include/plat/s3c2443.h       |    7 +-
+ drivers/gpio/gpio-samsung.c                        |   48 ++++--
+ 23 files changed, 651 insertions(+), 153 deletions(-)
+ create mode 100644 arch/arm/mach-mmp/include/mach/sram.h
+ create mode 100644 arch/arm/mach-mmp/sram.c
