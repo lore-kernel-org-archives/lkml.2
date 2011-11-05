@@ -1,42 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab1KEQ3b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 12:29:31 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:50857 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1KEQ3a (ORCPT
+	id S1753666Ab1KEQfJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 12:35:09 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36133 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab1KEQfH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 12:29:30 -0400
+	Sat, 5 Nov 2011 12:35:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1320458934-8225-1-git-send-email-kgene.kim@samsung.com>
-References: <1320458934-8225-1-git-send-email-kgene.kim@samsung.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 5 Nov 2011 09:29:08 -0700
-X-Google-Sender-Auth: I8_wyRVsyB8WI_a92hvMCOYVMXM
-Message-ID: <CA+55aFw8mxcwukXWe-DRYYv3tWmM6gRebgAGxAMpDLbqhqK2-Q@mail.gmail.com>
-Subject: Re: [PATCH] ARM: EXYNOS4: Fix the merge conflict
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1320478098.16609.9.camel@edumazet-laptop>
+References: <cover.1320457247.git.david.decotigny@google.com>
+ <4c77142ad7c6019e908884723d3c299163a55e2e.1320457247.git.david.decotigny@google.com>
+ <1320478098.16609.9.camel@edumazet-laptop>
+From: David Decotigny <david.decotigny@google.com>
+Date: Sat, 5 Nov 2011 09:34:44 -0700
+Message-ID: <CAG88wWbCAX5zMn5DTO+r-NrHawng5=1_E5TmQ=8mLcE5XYDyiw@mail.gmail.com>
+Subject: Re: [PATCH net v3 8/9] forcedeth: 64-bit stats
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 4, 2011 at 7:08 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> The mark of conflict should be removed.
+Thanks Eric, I will update this.
+
+Please note that I am deferring 5 of the patches from this "v3"
+patch-set for net-next: this patch is one of them.
+Meanwhile, the most recent version of the remaining 4 patches is the
+"v4" series I sent yesterday; they are limited to minor fixes.
+
+Regards,
+
+--
+David Decotigny
+
+
+
+On Sat, Nov 5, 2011 at 12:28 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le vendredi 04 novembre 2011 à 18:53 -0700, David Decotigny a écrit :
+>> This converts forcedeth stats to be 64-bits. It also improves
+>> accounting for dropped rx frames.
+>>
+>> Tested:
+>>   16-way SMP x86_64 ->
+>>   RX bytes:7244556582 (7.2 GB)  TX bytes:181904254 (181.9 MB)
+>>
+>>
 >
-> This happened at the commit fba9569924e06da076cb2ad12474bbd82d69f54d
-> ("Merge branch 'next' of git://git.infradead.org/users/vkoul/slave-dma")
-
-Grr. I'm a moron. I had fixed the conflict above it, and for some
-reason didn't notice the second conflict.
-
-I *always* do a "git diff" to check my conflict resolution
-after-the-fact before I add it, but obviously I skipped that step this
-time.
-
-Blush.
-
-Thanks,
-
-                Linus
+> This changelog and patch title are misleading.
+>
+> On a 32bit x86, stats are still 32bit wide after your patch.
+>
+> On a 64bit x86_64, stats were already 64bit wide before your patch.
+>
+> So the real thing is about not using the embedded netdevice dev->stats
+> structure, to reduce false sharing.
+>
+>>
+>> Signed-off-by: David Decotigny <david.decotigny@google.com>
+>> ---
+>>  drivers/net/ethernet/nvidia/forcedeth.c |   69 +++++++++++++++++++-----------
+>>  1 files changed, 44 insertions(+), 25 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+>> index 90cdf26..08c512b 100644
+>> --- a/drivers/net/ethernet/nvidia/forcedeth.c
+>> +++ b/drivers/net/ethernet/nvidia/forcedeth.c
+>> @@ -799,6 +799,8 @@ struct fe_priv {
+>>       struct timer_list stats_poll;
+>>       u32 nic_poll_irq;
+>>       int rx_ring_size;
+>> +     unsigned long stats_rx_dropped;
+>> +     unsigned long stats_rx_missed_errors;
+>>
+>>       /* media detection workaround.
+>>        * Locking: Within irq hander or disable_irq+spin_lock(&np->lock);
+>> @@ -821,6 +823,7 @@ struct fe_priv {
+>>       struct nv_skb_map *tx_change_owner;
+>>       struct nv_skb_map *tx_end_flip;
+>>       int tx_stop;
+>> +     unsigned long stats_tx_dropped;
+>>
+>>       /* msi/msi-x fields */
+>>       u32 msi_flags;
+>> @@ -1700,33 +1703,47 @@ static void nv_get_hw_stats(struct net_device *dev)
+>>  }
+>>
+>>  /*
+>> - * nv_get_stats: dev->get_stats function
+>> + * nv_get_stats: dev->ndo_get_stats64 function
+>>   * Get latest stats value from the nic.
+>>   * Called with read_lock(&dev_base_lock) held for read -
+>>   * only synchronized against unregister_netdevice.
+>>   */
+>> -static struct net_device_stats *nv_get_stats(struct net_device *dev)
+>> +static struct rtnl_link_stats64*
+>> +nv_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *storage)
+>>  {
+>>       struct fe_priv *np = netdev_priv(dev);
+>>
+>>       /* If the nic supports hw counters then retrieve latest values */
+>> -     if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
+>> +     if (np->driver_data & (DEV_HAS_STATISTICS_V1
+>> +                            | DEV_HAS_STATISTICS_V2
+>> +                            | DEV_HAS_STATISTICS_V3)) {
+>>               nv_get_hw_stats(dev);
+>>
+>> -             /* copy to net_device stats */
+>> -             dev->stats.tx_packets = np->estats.tx_packets;
+>> -             dev->stats.rx_bytes = np->estats.rx_bytes;
+>> -             dev->stats.tx_bytes = np->estats.tx_bytes;
+>> -             dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+>> -             dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+>> -             dev->stats.rx_crc_errors = np->estats.rx_crc_errors;
+>> -             dev->stats.rx_over_errors = np->estats.rx_over_errors;
+>> -             dev->stats.rx_fifo_errors = np->estats.rx_drop_frame;
+>> -             dev->stats.rx_errors = np->estats.rx_errors_total;
+>> -             dev->stats.tx_errors = np->estats.tx_errors_total;
+>> -     }
+>> -
+>> -     return &dev->stats;
+>> +             /* generic stats */
+>> +             storage->rx_packets = np->estats.rx_packets;
+>> +             storage->tx_packets = np->estats.tx_packets;
+>> +             storage->rx_bytes   = np->estats.rx_bytes;
+>> +             storage->tx_bytes   = np->estats.tx_bytes;
+>> +             storage->rx_errors  = np->estats.rx_errors_total;
+>> +             storage->tx_errors  = np->estats.tx_errors_total;
+>> +             storage->rx_dropped = np->stats_rx_dropped;
+>> +             storage->tx_dropped = np->stats_tx_dropped;
+>> +             storage->multicast  = np->estats.rx_multicast;
+>> +
+>> +             /* detailed rx_errors */
+>> +             storage->rx_length_errors = np->estats.rx_length_error;
+>> +             storage->rx_over_errors   = np->estats.rx_over_errors;
+>> +             storage->rx_crc_errors    = np->estats.rx_crc_errors;
+>> +             storage->rx_frame_errors  = np->estats.rx_frame_align_error;
+>> +             storage->rx_fifo_errors   = np->estats.rx_drop_frame;
+>> +             storage->rx_missed_errors = np->stats_rx_missed_errors;
+>> +
+>> +             /* detailed tx_errors */
+>> +             storage->tx_carrier_errors = np->estats.tx_carrier_errors;
+>> +             storage->tx_fifo_errors    = np->estats.tx_fifo_errors;
+>> +     }
+>> +
+>> +     return storage;
+>>  }
+>>
+>>  /*
+>> @@ -1759,8 +1776,10 @@ static int nv_alloc_rx(struct net_device *dev)
+>>                               np->put_rx.orig = np->first_rx.orig;
+>>                       if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
+>>                               np->put_rx_ctx = np->first_rx_ctx;
+>> -             } else
+>> +             } else {
+>> +                     np->stats_rx_dropped++;
+>>                       return 1;
+>> +             }
+>>       }
+>>       return 0;
+>>  }
+>> @@ -1791,8 +1810,10 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
+>>                               np->put_rx.ex = np->first_rx.ex;
+>>                       if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
+>>                               np->put_rx_ctx = np->first_rx_ctx;
+>> -             } else
+>> +             } else {
+>> +                     np->stats_rx_dropped++;
+>>                       return 1;
+>> +             }
+>>       }
+>>       return 0;
+>>  }
+>> @@ -1928,7 +1949,7 @@ static void nv_drain_tx(struct net_device *dev)
+>>                       np->tx_ring.ex[i].buflow = 0;
+>>               }
+>>               if (nv_release_txskb(np, &np->tx_skb[i]))
+>> -                     dev->stats.tx_dropped++;
+>> +                     np->stats_tx_dropped++;
+>>               np->tx_skb[i].dma = 0;
+>>               np->tx_skb[i].dma_len = 0;
+>>               np->tx_skb[i].dma_single = 0;
+>> @@ -2651,7 +2672,7 @@ static int nv_rx_process(struct net_device *dev, int limit)
+>>                                       /* the rest are hard errors */
+>>                                       else {
+>>                                               if (flags & NV_RX_MISSEDFRAME)
+>> -                                                     dev->stats.rx_missed_errors++;
+>> +                                                     np->stats_rx_missed_errors++;
+>>                                               dev_kfree_skb(skb);
+>>                                               goto next_pkt;
+>>                                       }
+>> @@ -2694,7 +2715,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
+>>               skb_put(skb, len);
+>>               skb->protocol = eth_type_trans(skb, dev);
+>>               napi_gro_receive(&np->napi, skb);
+>> -             dev->stats.rx_packets++;
+>>  next_pkt:
+>>               if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+>>                       np->get_rx.orig = np->first_rx.orig;
+>> @@ -2777,7 +2797,6 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+>>                               __vlan_hwaccel_put_tag(skb, vid);
+>>                       }
+>>                       napi_gro_receive(&np->napi, skb);
+>> -                     dev->stats.rx_packets++;
+>>               } else {
+>>                       dev_kfree_skb(skb);
+>>               }
+>> @@ -5199,7 +5218,7 @@ static int nv_close(struct net_device *dev)
+>>  static const struct net_device_ops nv_netdev_ops = {
+>>       .ndo_open               = nv_open,
+>>       .ndo_stop               = nv_close,
+>> -     .ndo_get_stats          = nv_get_stats,
+>> +     .ndo_get_stats64        = nv_get_stats64,
+>>       .ndo_start_xmit         = nv_start_xmit,
+>>       .ndo_tx_timeout         = nv_tx_timeout,
+>>       .ndo_change_mtu         = nv_change_mtu,
+>> @@ -5216,7 +5235,7 @@ static const struct net_device_ops nv_netdev_ops = {
+>>  static const struct net_device_ops nv_netdev_ops_optimized = {
+>>       .ndo_open               = nv_open,
+>>       .ndo_stop               = nv_close,
+>> -     .ndo_get_stats          = nv_get_stats,
+>> +     .ndo_get_stats64        = nv_get_stats64,
+>>       .ndo_start_xmit         = nv_start_xmit_optimized,
+>>       .ndo_tx_timeout         = nv_tx_timeout,
+>>       .ndo_change_mtu         = nv_change_mtu,
+>
+>
+>
