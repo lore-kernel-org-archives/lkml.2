@@ -1,134 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1KEJgE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 05:36:04 -0400
-Received: from mailout-eu.gmx.com ([213.165.64.43]:55825 "HELO
-	mailout-eu.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752366Ab1KEJgC (ORCPT
+	id S1752764Ab1KEK2l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 06:28:41 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:42218 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab1KEK2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 05:36:02 -0400
-X-Authenticated: #65887224
-X-Provags-ID: V01U2FsdGVkX1+TSNJVquSTcEKrI2g/0JsxBn4afPu2BmB0gOz+Sr
-	8piSCBt3f8Zxvl
-From: Vsevolod Alekseev <vsevolod.alekseev@gmx.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Vsevolod Alekseev <vsevolod.alekseev@gmx.com>
-Subject: [PATCH] trivial: fix misc typos/grammar errors in comments
-Date: Sat,  5 Nov 2011 02:35:28 -0700
-Message-Id: <1320485728-2103-1-git-send-email-vsevolod.alekseev@gmx.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Y-GMX-Trusted: 0
+	Sat, 5 Nov 2011 06:28:39 -0400
+Message-ID: <4EB50FC8.7000608@linux.vnet.ibm.com>
+Date: Sat, 05 Nov 2011 15:58:24 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>,
+        Suresh B Siddha <suresh.b.siddha@intel.com>,
+        Len Brown <len.brown@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 2/9] kernel/cpu.c: Add arch dependent cpu map update functions
+References: <1320444241-834-1-git-send-email-fenghua.yu@intel.com> <1320444241-834-3-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1320444241-834-3-git-send-email-fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11110500-5140-0000-0000-00000029FA23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix various typos/grammar errors in include/linux/security.h comments (no code changes).
+On 11/05/2011 03:33 AM, Fenghua Yu wrote:
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> 
+> Because resume from hibernate and suspend always starts from CPU0 on x86 BIOS,
+> we need to check if CPU0 is online before hibernate or suspend. This causes a
+> race condition on cpu_online_map.
+> 
+> To cope with the race condition, we add arch_cpu_maps_update_begin() and
+> arch_cpu_maps_update_done() during cpu_down() and cpu_up(). The functions are
+> empty on non x86 platforms and are overriden on x86 platforms with real
+> functions to deal with the race condition.
+> 
 
-Signed-off-by: Vsevolod Alekseev <vsevolod.alekseev@gmx.com>
----
- include/linux/security.h |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+The race between CPU Hotplug and suspend/hibernate has been taken care of by
+my patch here (for another usecase): https://lkml.org/lkml/2011/11/2/487
+This is not yet in mainline, but in linux-pm/linux-next.
+Please see if this solves your case too. And please CC linux-pm mailing list
+(linux-pm@vger.kernel.org) on patches related to power management.
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 19d8e04..94c3533 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -186,7 +186,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  * Security module identifier.
-  *
-  * @name:
-- *	A string that acts as a unique identifeir for the LSM with max number
-+ *	A string that acts as a unique identifier for the LSM with max number
-  *	of characters = SECURITY_NAME_MAX.
-  *
-  * Security hooks for program execution operations.
-@@ -275,7 +275,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@copy copied data which will be passed to the security module.
-  *	Returns 0 if the copy was successful.
-  * @sb_remount:
-- *	Extracts security system specifc mount options and verifys no changes
-+ *	Extracts security system specific mount options and verifies no changes
-  *	are being made to those options.
-  *	@sb superblock being remounted
-  *	@data contains the filesystem-specific data.
-@@ -380,15 +380,15 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	Return 0 if permission is granted.
-  * @inode_mkdir:
-  *	Check permissions to create a new directory in the existing directory
-- *	associated with inode strcture @dir.
-- *	@dir containst the inode structure of parent of the directory to be created.
-+ *	associated with inode structure @dir.
-+ *	@dir contains the inode structure of parent of the directory to be created.
-  *	@dentry contains the dentry structure of new directory.
-  *	@mode contains the mode of new directory.
-  *	Return 0 if permission is granted.
-  * @path_mkdir:
-  *	Check permissions to create a new directory in the existing directory
-- *	associated with path strcture @path.
-- *	@dir containst the path structure of parent of the directory
-+ *	associated with path structure @path.
-+ *	@dir contains the path structure of parent of the directory
-  *	to be created.
-  *	@dentry contains the dentry structure of new directory.
-  *	@mode contains the mode of new directory.
-@@ -578,7 +578,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@file contains the file structure.
-  *	@cmd contains the operation to perform.
-  *	@arg contains the operational arguments.
-- *	Check permission for an ioctl operation on @file.  Note that @arg can
-+ *	Check permission for an ioctl operation on @file.  Note that @arg
-  *	sometimes represents a user space pointer; in other cases, it may be a
-  *	simple integer value.  When @arg represents a user space pointer, it
-  *	should never be used by the security module.
-@@ -606,7 +606,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	Return 0 if permission is granted.
-  * @file_fcntl:
-  *	Check permission before allowing the file operation specified by @cmd
-- *	from being performed on the file @file.  Note that @arg can sometimes
-+ *	from being performed on the file @file.  Note that @arg sometimes
-  *	represents a user space pointer; in other cases, it may be a simple
-  *	integer value.  When @arg represents a user space pointer, it should
-  *	never be used by the security module.
-@@ -793,7 +793,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	information can be saved using the eff_cap field of the
-  *	netlink_skb_parms structure.  Also may be used to provide fine
-  *	grained control over message transmission.
-- *	@sk associated sock of task sending the message.,
-+ *	@sk associated sock of task sending the message.
-  *	@skb contains the sk_buff structure for the netlink message.
-  *	Return 0 if the information was successfully saved and message
-  *	is allowed to be transmitted.
-@@ -1080,9 +1080,9 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	should free it.
-  *	@key points to the key to be queried.
-  *	@_buffer points to a pointer that should be set to point to the
-- *	 resulting string (if no label or an error occurs).
-+ *	resulting string (if no label or an error occurs).
-  *	Return the length of the string (including terminating NUL) or -ve if
-- *      an error.
-+ *	an error.
-  *	May also return 0 (and a NULL buffer pointer) if there is no label.
-  *
-  * Security hooks affecting all System V IPC operations.
-@@ -1268,7 +1268,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	credentials.
-  *	@tsk contains the task_struct for the process.
-  *	@cred contains the credentials to use.
-- *      @ns contains the user namespace we want the capability in
-+ *	@ns contains the user namespace we want the capability in
-  *	@cap contains the capability <include/linux/capability.h>.
-  *	@audit: Whether to write an audit message or not
-  *	Return 0 if the capability is granted for @tsk.
-@@ -1370,7 +1370,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  * 	@ctxlen contains the length of @ctx.
-  *
-  * @inode_getsecctx:
-- * 	Returns a string containing all relavent security context information
-+ *	Returns a string containing all relevant security context information
-  *
-  * 	@inode we wish to get the security context of.
-  *	@ctx is a pointer in which to place the allocated security context.
--- 
-1.6.3.3
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> ---
+>  kernel/cpu.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 12b7458..4d80365 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -20,6 +20,14 @@
+>  /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+>  static DEFINE_MUTEX(cpu_add_remove_lock);
+> 
+> +void __weak arch_cpu_maps_update_begin(void)
+> +{
+> +}
+> +
+> +void __weak arch_cpu_maps_update_done(void)
+> +{
+> +}
+> +
+>  /*
+>   * The following two API's must be used when attempting
+>   * to serialize the updates to cpu_online_mask, cpu_present_mask.
+> @@ -274,6 +282,7 @@ int __ref cpu_down(unsigned int cpu)
+>  	int err;
+> 
+>  	cpu_maps_update_begin();
+> +	arch_cpu_maps_update_begin();
+> 
+>  	if (cpu_hotplug_disabled) {
+>  		err = -EBUSY;
+> @@ -284,6 +293,7 @@ int __ref cpu_down(unsigned int cpu)
+> 
+>  out:
+>  	cpu_maps_update_done();
+> +	arch_cpu_maps_update_done();
+>  	return err;
+>  }
+
+See my comments above about whether this is really necessary.
+By the way, the locking/unlocking order here seems rather weird to me.
+Why have you not chosen to do something like:
+
+cpu_maps_update_begin()
+arch_cpu_maps_update_begin()
+...
+arch_cpu_maps_update_done()
+cpu_maps_update_done()
+
+
+>  EXPORT_SYMBOL(cpu_down);
+> @@ -367,6 +377,7 @@ int __cpuinit cpu_up(unsigned int cpu)
+>  #endif
+> 
+>  	cpu_maps_update_begin();
+> +	arch_cpu_maps_update_begin();
+> 
+>  	if (cpu_hotplug_disabled) {
+>  		err = -EBUSY;
+> @@ -377,6 +388,7 @@ int __cpuinit cpu_up(unsigned int cpu)
+> 
+>  out:
+>  	cpu_maps_update_done();
+> +	arch_cpu_maps_update_done();
+>  	return err;
+
+Same here. See my comments above.
+
+Thanks,
+Srivatsa S. Bhat
 
