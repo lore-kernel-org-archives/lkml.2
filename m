@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab1KEXe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 19:34:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52445 "EHLO ogre.sisk.pl"
+	id S1752824Ab1KEXr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 19:47:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53896 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803Ab1KEXe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 19:34:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] More power management updates for 3.2
-Date: Sun, 6 Nov 2011 00:37:02 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111060037.02477.rjw@sisk.pl>
+	id S1750762Ab1KEXrZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 19:47:25 -0400
+Subject: Re: [PATCH] KVM: Add wrapper script around Qemu to test kernels
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=iso-8859-1
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <CAM_iQpVA--TR39AnrjQ6j14W7wYOLr62B52uVj5_RGAUMex8Sg@mail.gmail.com>
+Date: Sat, 5 Nov 2011 16:47:15 -0700
+Cc: Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <42BCCB0A-6ECA-48EE-9C07-B57D0A5DD4AD@suse.de>
+References: <1314137806-5747-1-git-send-email-agraf@suse.de> <CAOJsxLHzFnP0GuUWyg4U91_AkrK8q5=k1ZhN3JikUxqLQNK5tQ@mail.gmail.com> <CAM_iQpWD_uYT18XUGg=1FZDsvZx2kSSUEW+EtSYxgg5+gfHR7Q@mail.gmail.com> <282DEC42-93F6-411E-97C5-C49D258718C2@suse.de> <CAM_iQpVA--TR39AnrjQ6j14W7wYOLr62B52uVj5_RGAUMex8Sg@mail.gmail.com>
+To: =?iso-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull more power management updates (on top of commit
-1583171492eb514e267c7b51e96846b38de0f544) for 3.2 from:
+On 24.08.2011, at 20:44, Américo Wang wrote:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-for-linus
+> On Thu, Aug 25, 2011 at 4:35 AM, Alexander Graf <agraf@suse.de> wrote:
+>> 
+>> On 24.08.2011, at 00:31, Américo Wang wrote:
+>> 
+>>> On Wed, Aug 24, 2011 at 1:19 PM, Pekka Enberg <penberg@kernel.org> wrote:
+>>>> 
+>>>> It's nice to see such an honest attempt at improving QEMU usability, Alexander!
+>>>> 
+>>>> One comment: in my experience, having shell scripts under
+>>>> Documentation reduces the likelihood that people actually discover
+>>>> them so you might want to consider putting it under scripts or tools.
+>>>> 
+>>> 
+>>> I was going to give the same suggestion, +1 for tools/ directory.
+>> 
+>> Well, scripts/ is a flat directory where I can just throw in the script. Tools however is split by tool and creating a full new directory for only a single script sounds a bit like overkill to me. I'll move it to scripts/ for now :)
+> 
+> How about the directory tools/testing/ ?
+> 
+> scripts/ is mainly for the tools/utilities we use to build kernel or
+> do kernel dev,
+> it is not so suitable for your script IMHO.
 
-with top-most commit d6cc76856d353a3a9c43bead33210b9216dce332
-(PM / Freezer: Revert 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake
-TASK_KILLABLE tasks too").
-
-All of them are either bug fixes or simple cleanups that didn't make it to my
-previous pull request.
-
-They include:
-
-* New entry for the ACPI suspend blacklist from Dave Jones.
-
-* Fixes and cleanups related to the interactions between suspend/hibernation
-  and CPU hotplug from Srivatsa Bhat.
-
-* Runtime PM core fix for accounting_timestamp computations (some results
-  were wrong due to using int instead of unsigned long) from Venu Byravarasu.
-
-* OPP build fix from Tony Lindgren.
-
-* PM QoS cleanup from Guennadi Liakhovetski.
-
-* Autosuspend fixes from Alan Stern.
-
-* Freezer fixes from Tejun and Oleg Nesterov.
-
-[No patches from me this time, how weird.]
-
-Thanks!
+Good idea! I talked to Steven about it as well and completely forgot your email pointing me to the same directory. I guess that one does fit it pretty well.
 
 
- Documentation/power/freezing-of-tasks.txt |    8 ++--
- Documentation/power/runtime_pm.txt        |   10 ++++
- drivers/acpi/sleep.c                      |    8 +++
- drivers/base/power/runtime.c              |   23 +++++++--
- drivers/usb/core/driver.c                 |    5 ++
- include/linux/cpu.h                       |    4 --
- include/linux/freezer.h                   |   11 +---
- include/linux/opp.h                       |    4 +-
- kernel/cpu.c                              |   74 +++++++++++++++++++++++++++++
- kernel/freezer.c                          |    2 +-
- kernel/power/qos.c                        |    3 +-
- 11 files changed, 125 insertions(+), 27 deletions(-)
-
----------------
-
-Alan Stern (2):
-      PM / Runtime: Automatically retry failed autosuspends
-      USB: Update last_busy time after autosuspend fails
-
-Dave Jones (1):
-      ACPI / PM: Add Sony VPCEB17FX to nonvs blacklist
-
-Guennadi Liakhovetski (1):
-      PM / QoS: Remove redundant check
-
-Oleg Nesterov (1):
-      PM / Freezer: Reimplement wait_event_freezekillable using freezer_do_not_count/freezer_count
-
-Srivatsa S. Bhat (3):
-      PM / Sleep: Fix race between CPU hotplug and freezer
-      PM / Sleep: Remove unused symbol 'suspend_cpu_hotplug'
-      PM / Sleep: Update freezer documentation
-
-Tejun Heo (1):
-      PM / Freezer: Revert 27920651fe "PM / Freezer: Make fake_signal_wake_up() wake TASK_KILLABLE tasks too"
-
-Tony Lindgren (1):
-      PM / OPP: Fix build when CONFIG_PM_OPP is not set
-
-venu byravarasu (1):
-      PM / Runtime: Fix runtime accounting calculation error
+Alex
 
