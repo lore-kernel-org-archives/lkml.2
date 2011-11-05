@@ -1,77 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1KEOiW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 10:38:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48105 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab1KEOiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 10:38:21 -0400
-Message-ID: <1320503897.2428.8.camel@discretia>
-Subject: [PATCH] mm: migrate: One less atomic operation
-From: Jacobo Giralt <jacobo.giralt@gmail.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, mgorman@suse.de, minchan.kim@gmail.com,
-        hughd@google.com, hannes@cmpxchg.org, npiggin@suse.de
-Date: Sat, 05 Nov 2011 15:38:17 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752371Ab1KEOjZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 10:39:25 -0400
+Received: from imr4.ericy.com ([198.24.6.9]:46192 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab1KEOjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 10:39:24 -0400
+Date: Sat, 5 Nov 2011 07:38:01 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Jean Delvare <khali@linux-fr.org>
+CC: Alexander Beregalov <a.beregalov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH] hwmon: (w83627ehf): fix broken driver init
+Message-ID: <20111105143801.GA14535@ericsson.com>
+References: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
+ <20111105045156.GA10668@ericsson.com>
+ <20111105091351.0d436eb5@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111105091351.0d436eb5@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3754c8617ef4377ce2ca2e3b28bdc28f8de1aa0d Mon Sep 17 00:00:00 2001
-From: Jacobo Giralt <jacobo.giralt@gmail.com>
-Date: Sat, 5 Nov 2011 13:12:50 +0100
-Subject: [PATCH] mm: migrate: One less atomic operation
+On Sat, Nov 05, 2011 at 04:13:51AM -0400, Jean Delvare wrote:
+> Hi Alexander, Guenter,
+> 
+> On Fri, 4 Nov 2011 21:51:56 -0700, Guenter Roeck wrote:
+> > On Fri, Nov 04, 2011 at 08:54:10PM -0400, Alexander Beregalov wrote:
+> > > Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
+> > > sensor types) results in kernel panic if data->temp_label was not
+> > > initialized.
+> > > The problem was found with chip W83627DHG-P.
+> > > 
+> > > backtrace:
+> > > page_fault()
+> > > w83627ehf_probe() 0x8e2
+> > > 
+> > > w83627ehf_init_device:
+> > > 1837:	for (i = 0; i < 3; i++) {
+> > > 		const char *label = data->temp_label[data->temp_src[i]];
+> > > 
+> > > 		/* Digital source overrides analog type */
+> > > 		if (strncmp(label, "PECI", 4) == 0)
+> > > 			data->temp_type[i] = 6;
+> > > 
+> > > 	movzbl	128(%r14), %edx	# data->temp_src, tmp737
+> > > 	movq	144(%r13), %rax	# data_32->temp_label, data_32->temp_label
+> > > 	movq	$.LC18, %rsi	#,
+> > > 	movl	%r14d, %r15d	#, i
+> > > 	subl	%r13d, %r15d	# D.29277, i
+> > > 0x928	movq	(%rax,%rdx,8), %rcx	#* data_32->temp_label, label
+> > > 	movl	$4, %edx	#,
+> > > 	movq	%rcx, %rdi	# label,
+> > > 	movq	%rcx, -96(%rbp)	#,
+> > > 	call	strncmp	#
+> > > 
+> > > page_fault() is called at 0x928 (0x8e2+0x46).
+> 
+> Oops, my bad. I forgot that not all chips have temperature labels,
+> sorry :( Thanks for reporting so quickly!
+> 
+> > > 
+> > > Add check if data->temp->label was set before use.
+> > > 
+> > > Cc: Jean Delvare <khali@linux-fr.org>
+> > > Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+> > > Cc: stable@kernel.org
+> > > Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+> > > ---
+> > >  drivers/hwmon/w83627ehf.c |   17 +++++++++--------
+> > >  1 files changed, 9 insertions(+), 8 deletions(-)
+> > > 
+> > > diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> > > index 483cb26..70f1c73 100644
+> > > --- a/drivers/hwmon/w83627ehf.c
+> > > +++ b/drivers/hwmon/w83627ehf.c
+> > > @@ -1835,14 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
+> > >  		diode = 0x70;
+> > >  	}
+> > >  	for (i = 0; i < 3; i++) {
+> > > -		const char *label = data->temp_label[data->temp_src[i]];
+> > > -
+> > > -		/* Digital source overrides analog type */
+> > > -		if (strncmp(label, "PECI", 4) == 0)
+> > > -			data->temp_type[i] = 6;
+> > > -		else if (strncmp(label, "AMD", 3) == 0)
+> > > -			data->temp_type[i] = 5;
+> > > -		else if ((tmp & (0x02 << i)))
+> > > +		if (data->temp_label) {
+> > > +			const char *label = data->temp_label[data->temp_src[i]];
+> > > +
+> > > +			/* Digital source overrides analog type */
+> > > +			if (strncmp(label, "PECI", 4) == 0)
+> > > +				data->temp_type[i] = 6;
+> > > +			else if (strncmp(label, "AMD", 3) == 0)
+> > > +				data->temp_type[i] = 5;
+> > > +		} else if ((tmp & (0x02 << i)))
+> > 
+> > Followup - something like
+> > 		const char *label = NULL;
+> > 
+> > 		if (data->temp_label)
+> > 			label = data->temp_label[data->temp_src[i]];
+> > 
+> > 		/* Digital source overrides analog type */
+> > 		if (label && strncmp(label, "PECI", 4) == 0)
+> > 			data->temp_type[i] = 6;
+> > 		else if (label && strncmp(label, "AMD", 3) == 0)
+> > 			data->temp_type[i] = 5;
+> > 		else if ((tmp & (0x02 << i)))
+> > 
+> > should do it. I am open to better ideas...
+> 
+> Looks good enough to me, this is one-time initialization code, it
+> doesn't need to be lightning fast. Will you send a formal patch, or do
+> you want me to do it?
+> 
+I'll send one in a minute.
 
-migrate_page_move_mapping drops a reference from the
-old page after unfreezing its counter. Both operations
-can be merged into a single atomic operation by
-directly unfreezing to one less reference.
-
-The same applies to migrate_huge_page_move_mapping.
-
-Signed-off-by: Jacobo Giralt <jacobo.giralt@gmail.com>
----
- mm/migrate.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 33358f8..46d04a0 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -269,12 +269,12 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 
- 	radix_tree_replace_slot(pslot, newpage);
- 
--	page_unfreeze_refs(page, expected_count);
- 	/*
--	 * Drop cache reference from old page.
-+	 * Drop cache reference from old page by unfreezing
-+	 * to one less reference.
- 	 * We know this isn't the last reference.
- 	 */
--	__put_page(page);
-+	page_unfreeze_refs(page, expected_count - 1);
- 
- 	/*
- 	 * If moved to a different zone then also account
-@@ -334,9 +334,7 @@ int migrate_huge_page_move_mapping(struct address_space *mapping,
- 
- 	radix_tree_replace_slot(pslot, newpage);
- 
--	page_unfreeze_refs(page, expected_count);
--
--	__put_page(page);
-+	page_unfreeze_refs(page, expected_count - 1);
- 
- 	spin_unlock_irq(&mapping->tree_lock);
- 	return 0;
--- 
-1.7.5.4
-
-
-
+Guenter
