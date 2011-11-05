@@ -1,89 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab1KEBeB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 21:34:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18696 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413Ab1KEBeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 21:34:00 -0400
-Date: Sat, 5 Nov 2011 02:33:17 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-Message-ID: <20111105013317.GU18879@redhat.com>
-References: <20111031171441.GD3466@redhat.com>
- <1320082040-1190-1-git-send-email-aarcange@redhat.com>
- <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
- <20111104235603.GT18879@redhat.com>
- <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+	id S1752825Ab1KEBwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 21:52:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59544 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751413Ab1KEBwS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 21:52:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+In-Reply-To: <201111042329.45405.rjw@sisk.pl>
+References: <1320392176-3906-1-git-send-email-Barry.Song@csr.com> <201111042329.45405.rjw@sisk.pl>
+From: Barry Song <21cnbao@gmail.com>
+Date: Sat, 5 Nov 2011 09:51:56 +0800
+Message-ID: <CAGsJ_4yx4+nxBC1P0i6QEPce60EKRouy-AhLKhPyik1T+0MtJA@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] PM: HIBERNATION: skip the swap size check if
+ the snapshot image size is anticipative
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Barry Song <Barry.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>,
+        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 05, 2011 at 08:21:03AM +0800, Nai Xia wrote:
-> copy_vma() ---> rmap_walk() scan dst VMA --> move_page_tables() moves src to dst
-> --->  rmap_walk() scan src VMA.  :D
+2011/11/5 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Friday, November 04, 2011, Barry Song wrote:
+>> From: Barry Song <Baohua.Song@csr.com>
+>>
+>> Current swsusp requires swap partitions even larger than real saved pages
+>> due to the worst compress ratio:
+>> but for an embedded system, which has limited storage space, then it might
+>> can't give the big size partition to save snapshot.
+>> In the another way, some embedded systems can definitely know the most size
+>> needed for snapshot since they run some specific application lists.
+>> So this patch provides the possibility for bootloader to tell kernel even
+>> the system has a little snapshot partition, but it is still enough.
+>> For example, if the system need to save 120MB memory, origin swsusp will require
+>> a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+>> compressed image will be less than 30MB), they just make a 30MB partition.
+>>
+>> Signed-off-by: Barry Song <Baohua.Song@csr.com>
+>> Cc: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+>
+> I'm considering this as 3.3 material, so I'll take care of it after the current
+> merge window closes.
+>
 
-Hmm yes. I think I got in the wrong track because I focused too much
-on that line you started talking about, the *vmap = new_vma, you said
-I had to reorder stuff there too, and that didn't make sense.
+ok. thanks. the idea is making swsusp support embedded systems with
+limited resources better.
+we can get into details after the current merge window.
 
-The reason it doesn't make sense is that it can't be ok to reorder
-stuff when *vmap = new_vma (i.e. new_vma = old_vma). So if I didn't
-need to reorder in that case I thought I could extrapolate it was
-always ok.
-
-But the opposite is true: that case can't be solved.
-
-Can it really happen that vma_merge will pack (prev_vma, new_range,
-old_vma) together in a single vma? (i.e. prev_vma extended to
-old_vma->vm_end)
-
-Even if there's no prev_vma in the picture (but that's the extreme
-case) it cannot be safe: i.e. a (new_range, old_vma) or (old_vma,
-new_range).
-
-1 single "vma" for src and dst virtual ranges, means 1 single
-vma->vm_pgoff. But we've two virtual addresses and two ptes. So the
-same page->index can't work for both if the vma->vm_pgoff is the
-same.
-
-So regardless of the ordering here we're dealing with something more
-fundamental.
-
-If rmap_walk runs immediately after vma_merge completes and releases
-the anon_vma_lock, it won't find any pte in the vma anymore. No matter
-the order.
-
-I thought at this before and I didn't mention it but at the light of
-the above issue I start to think this is the only possible correct
-solution to the problem. We should just never call vma_merge before
-move_page_tables. And do the merge by hand later after mremap is
-complete.
-
-The only safe way to do it is to have _two_ different vmas, with two
-different ->vm_pgoff. Then it will work. And by always creating a new
-vma we'll always have it queued at the end, and it'll be safe for the
-same reasons fork is safe.
-
-Always allocate a new vma, and then after the whole vma copy is
-complete, look if we can merge and free some vma. After the fact, so
-it means we can't use vma_merge anymore. vma_merge assumes the
-new_range is "virtual" and no vma is mapped there I think. Anyway
-that's an implementation issue. In some unlikely case we'll allocate 1
-more vma than before, and we'll free it once mremap is finished, but
-that's small problem compared to solving this once and for all.
-
-And that will fix it without ordering games and it'll fix the *vmap=
-new_vma case too. That case really tripped on me as I was assuming
-*that* was correct.
+> Thanks,
+> Rafael
+>
+>
+>> ---
+>>  this is another patch after I provide resumewait/resumedelay kernel params
+>>  to make swsusp support embedded systems better.
+>>  This patch is tested on CSR SiRFprimaII platform.
+>>
+>>  Documentation/kernel-parameters.txt |    7 +++++++
+>>  kernel/power/swap.c                 |   13 +++++++++++++
+>>  2 files changed, 20 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index a0c5c5f..2ad2e9c 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -2277,6 +2277,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>                       in <PAGE_SIZE> units (needed only for swap files).
+>>                       See  Documentation/power/swsusp-and-swap-files.txt
+>>
+>> +     swapenough      [SWSUSP]
+>> +                     Tell kernel the swap partition size is enough and let kernel
+>> +                     skip checking whether the swap partition has enough size to
+>> +                     save snapshot.
+>> +                     It is used for embedded systems, typically using NAND and SD
+>> +                     card, which have not large space.
+>> +
+>>       resumedelay=    [HIBERNATION] Delay (in seconds) to pause before attempting to
+>>                       read the resume files
+>>
+>> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+>> index 11a594c..97c30b5 100644
+>> --- a/kernel/power/swap.c
+>> +++ b/kernel/power/swap.c
+>> @@ -36,6 +36,8 @@
+>>
+>>  #define HIBERNATE_SIG        "S1SUSPEND"
+>>
+>> +static int swapenough;
+>> +
+>>  /*
+>>   *   The swap map is a data structure used for keeping track of each page
+>>   *   written to a swap partition.  It consists of many swap_map_page
+>> @@ -772,6 +774,9 @@ static int enough_swap(unsigned int nr_pages, unsigned int flags)
+>>       unsigned int free_swap = count_swap_pages(root_swap, 1);
+>>       unsigned int required;
+>>
+>> +     if (swapenough)
+>> +             return 1;
+>> +
+>>       pr_debug("PM: Free swap pages: %u\n", free_swap);
+>>
+>>       required = PAGES_FOR_IO + ((flags & SF_NOCOMPRESS_MODE) ?
+>> @@ -1449,3 +1454,11 @@ static int swsusp_header_init(void)
+>>  }
+>>
+>>  core_initcall(swsusp_header_init);
+>> +
+>> +static int __init swapenough_setup(char *str)
+>> +{
+>> +     swapenough = 1;
+>> +     return 1;
+>> +}
+>> +
+>> +__setup("swapenough", swapenough_setup);
+>>
+-barry
