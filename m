@@ -1,92 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab1KEEha (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 00:37:30 -0400
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:63655 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921Ab1KEEh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 00:37:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=KN4+/kiXuoVTiQhIdLef6wOZK65R+rW4
-	1+3tpzn7Wlr0kXn456u9dQ21tiiHe8e7VwgPDJ2CIGO4W1YSM/ndIJuwRfb4NTiU
-	z12U0EBxIEFK6/iZ34uQWbvnzOBttsgq/Qed2RToOUInUPTr4yotFVl9gVYyu4W7
-	2rar5KKuMFA=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: git@vger.kernel.org, Shawn Pearce <spearce@spearce.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Jeff Garzik <jeff@garzik.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
-References: <20111026202235.GA20928@havoc.gtf.org>
- <1319969101.5215.20.camel@dabdike>
- <CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
- <1320049150.8283.19.camel@dabdike>
- <CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
- <7vy5w1ow90.fsf@alter.siamese.dyndns.org>
- <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
- <7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
- <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
- <7vk47jld5s.fsf@alter.siamese.dyndns.org>
- <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
- <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
- <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
- <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
- <CA+55aFzstE-+NzfSAWMEokB7-rYsZOcZe9Ez-LxPNOKnciJ3UQ@mail.gmail.com>
- <7vlirvbq47.fsf@alter.siamese.dyndns.org>
- <7v39e3bn1n.fsf@alter.siamese.dyndns.org>
- <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com>
-Date: Fri, 04 Nov 2011 21:37:25 -0700
-In-Reply-To: <CA+55aFzKPPqwGOe5Ov0FHF1DHbKmNhm=ePvcaY5uqR7cwFhQGQ@mail.gmail.com> (Linus
- Torvalds's message of "Fri, 4 Nov 2011 16:10:59 -0700")
-Message-ID: <7vipmz9oca.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751810Ab1KEExU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 00:53:20 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:35617 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab1KEExT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 00:53:19 -0400
+Date: Fri, 4 Nov 2011 21:51:56 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Alexander Beregalov <a.beregalov@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean Delvare <khali@linux-fr.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH] hwmon: (w83627ehf): fix broken driver init
+Message-ID: <20111105045156.GA10668@ericsson.com>
+References: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: DD2407A0-0767-11E1-B6C1-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+On Fri, Nov 04, 2011 at 08:54:10PM -0400, Alexander Beregalov wrote:
+> Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
+> sensor types) results in kernel panic if data->temp_label was not
+> initialized.
+> The problem was found with chip W83627DHG-P.
+> 
+> backtrace:
+> page_fault()
+> w83627ehf_probe() 0x8e2
+> 
+> w83627ehf_init_device:
+> 1837:	for (i = 0; i < 3; i++) {
+> 		const char *label = data->temp_label[data->temp_src[i]];
+> 
+> 		/* Digital source overrides analog type */
+> 		if (strncmp(label, "PECI", 4) == 0)
+> 			data->temp_type[i] = 6;
+> 
+> 	movzbl	128(%r14), %edx	# data->temp_src, tmp737
+> 	movq	144(%r13), %rax	# data_32->temp_label, data_32->temp_label
+> 	movq	$.LC18, %rsi	#,
+> 	movl	%r14d, %r15d	#, i
+> 	subl	%r13d, %r15d	# D.29277, i
+> 0x928	movq	(%rax,%rdx,8), %rcx	#* data_32->temp_label, label
+> 	movl	$4, %edx	#,
+> 	movq	%rcx, %rdi	# label,
+> 	movq	%rcx, -96(%rbp)	#,
+> 	call	strncmp	#
+> 
+> page_fault() is called at 0x928 (0x8e2+0x46).
+> 
+> Add check if data->temp->label was set before use.
+> 
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+> Cc: stable@kernel.org
+> Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+> ---
+>  drivers/hwmon/w83627ehf.c |   17 +++++++++--------
+>  1 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+> index 483cb26..70f1c73 100644
+> --- a/drivers/hwmon/w83627ehf.c
+> +++ b/drivers/hwmon/w83627ehf.c
+> @@ -1835,14 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
+>  		diode = 0x70;
+>  	}
+>  	for (i = 0; i < 3; i++) {
+> -		const char *label = data->temp_label[data->temp_src[i]];
+> -
+> -		/* Digital source overrides analog type */
+> -		if (strncmp(label, "PECI", 4) == 0)
+> -			data->temp_type[i] = 6;
+> -		else if (strncmp(label, "AMD", 3) == 0)
+> -			data->temp_type[i] = 5;
+> -		else if ((tmp & (0x02 << i)))
+> +		if (data->temp_label) {
+> +			const char *label = data->temp_label[data->temp_src[i]];
+> +
+> +			/* Digital source overrides analog type */
+> +			if (strncmp(label, "PECI", 4) == 0)
+> +				data->temp_type[i] = 6;
+> +			else if (strncmp(label, "AMD", 3) == 0)
+> +				data->temp_type[i] = 5;
+> +		} else if ((tmp & (0x02 << i)))
 
-> However - exactly beause git apparently makes it do that "Merge commit
-> " message, I suspect we've peeled things too early and too much. We've
-> peeled it so early that once again something thinks it's a commit, not
-> a tag.
+Followup - something like
+		const char *label = NULL;
 
-And you are right.
+		if (data->temp_label)
+			label = data->temp_label[data->temp_src[i]];
 
-I am working on a larger series that should sit on top of 89587fa (Split
-GPG interface into its own helper library, 2011-09-07), which is the first
-commit in jc/signed-commit topic.
+		/* Digital source overrides analog type */
+		if (label && strncmp(label, "PECI", 4) == 0)
+			data->temp_type[i] = 6;
+		else if (label && strncmp(label, "AMD", 3) == 0)
+			data->temp_type[i] = 5;
+		else if ((tmp & (0x02 << i)))
 
--- >8 --
-Subject: [PATCH] merge: notice local merging of tags and keep it unwrapped
+should do it. I am open to better ideas...
 
-Signed-off-by: Junio C Hamano <gitster@pobox.com>
----
- builtin/merge.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+Thanks,
+Guenter
 
-diff --git a/builtin/merge.c b/builtin/merge.c
-index f61b367..ce3b4f8 100644
---- a/builtin/merge.c
-+++ b/builtin/merge.c
-@@ -428,6 +428,11 @@ static void merge_name(const char *remote, struct strbuf *msg)
- 				    sha1_to_hex(branch_head), remote);
- 			goto cleanup;
- 		}
-+		if (!prefixcmp(found_ref, "refs/tags/")) {
-+			strbuf_addf(msg, "%s\t\ttag '%s' of .\n",
-+				    sha1_to_hex(branch_head), remote);
-+			goto cleanup;
-+		}
- 		if (!prefixcmp(found_ref, "refs/remotes/")) {
- 			strbuf_addf(msg, "%s\t\tremote-tracking branch '%s' of .\n",
- 				    sha1_to_hex(branch_head), remote);
--- 
-1.7.8.rc0.108.g71b5ec
-
+>  			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
+>  		else
+>  			data->temp_type[i] = 4; /* thermistor */
+> -- 
+> 1.7.7.2
+> 
