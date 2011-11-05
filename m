@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab1KEOXe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 10:23:34 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49467 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129Ab1KEOXd (ORCPT
+	id S1752083Ab1KEO2V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 10:28:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37175 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1KEO2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 10:23:33 -0400
-From: Feng King <kinwin2008@gmail.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Feng King <kinwin2008@gmail.com>
-Subject: [PATCH] tcp: Fix comments for Nagle algorithm
-Date: Sat,  5 Nov 2011 22:23:23 +0800
-Message-Id: <1320503003-5169-1-git-send-email-kinwin2008@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Sat, 5 Nov 2011 10:28:20 -0400
+Message-ID: <4EB54800.2010408@gmail.com>
+Date: Sat, 05 Nov 2011 15:28:16 +0100
+From: Carla Sella <carla.sella@gmail.com>
+Reply-To: carla.sella@gmail.com
+Organization: Carla Sella
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: BUG: re-enabling wireless network on network manager does not work
+ properly
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TCP_NODELAY is weaker than TCP_CORK, when TCP_CORK was set, small
-segments will always pass Nagle test regardless of TCP_NODELAY option.
+Hello,
+I'm reporting upstream a bug I already have reported in launchpad for
+Ubuntu.
+If you disable wireless networking on network manager and then re-enable
+it, wireless networks are not displayed anymore.
+To get them displayed again you have to check enable wireless, uncheck
+enable networking and re-check enable networking, and then you will see
+the wireless networks again.
 
-Signed-off-by: Feng King <kinwin2008@gmail.com>
+This is the bug I opened on launchpad with all the details:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/876822
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 882e0b0..a908f95 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -1377,7 +1377,7 @@ static inline int tcp_minshall_check(const struct tcp_sock *tp)
- /* Return 0, if packet can be sent now without violation Nagle's rules:
-  * 1. It is full sized.
-  * 2. Or it contains FIN. (already checked by caller)
-- * 3. Or TCP_NODELAY was set.
-+ * 3. Or TCP_CORK is not set, and TCP_NODELAY is set.
-  * 4. Or TCP_CORK is not set, and all sent packets are ACKed.
-  *    With Minshall's modification: all sent small packets are ACKed.
-  */
 -- 
-1.7.1
+Carla Sella
+email: carla.sella@gmail.com
+https://launchpad.net/~carla-sella
 
