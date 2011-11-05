@@ -1,87 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752383Ab1KEAoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 20:44:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35654 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751561Ab1KEAoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 20:44:18 -0400
-From: Thomas Renninger <trenn@suse.de>
+	id S1752599Ab1KEAya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 20:54:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53901 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752205Ab1KEAy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 20:54:29 -0400
+From: Alexander Beregalov <a.beregalov@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, linux-acpi@vger.kernel.org,
-        Thomas Renninger <trenn@suse.de>, stable@kernel.org
-Subject: [PATCH] X86: Solve Dell Latitudes do not reboot on x86_64 more generally
-Date: Sat,  5 Nov 2011 01:44:03 +0100
-Message-Id: <1320453843-938-1-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.7.6.1
-In-Reply-To: <4EB39139.3090709@suse.de>
-References: <4EB39139.3090709@suse.de>
+Cc: Alexander Beregalov <a.beregalov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>, stable@kernel.org
+Subject: [PATCH] hwmon: (w83627ehf): fix broken driver init
+Date: Sat,  5 Nov 2011 04:54:10 +0400
+Message-Id: <1320454450-738-1-git-send-email-a.beregalov@gmail.com>
+X-Mailer: git-send-email 1.7.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are quite some reports that those do not reboot:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/833705
-->E6520, E6220
-http://www.linux-club.de/viewtopic.php?f=29&t=114459&start=20
-->E5520
-and some more already are blacklisted
+Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
+sensor types) results in kernel panic if data->temp_label was not
+initialized.
+The problem was found with chip W83627DHG-P.
 
-This patch improves the blacklist for all E6xxx and E5xxx Latitudes.
+backtrace:
+page_fault()
+w83627ehf_probe() 0x8e2
 
-Strange is that on above Ubuntu bug it was mentioned that 32 bit
-reboots just fine, which should use the same mechanism than 64 bit
-by default (ACPI).
+w83627ehf_init_device:
+1837:	for (i = 0; i < 3; i++) {
+		const char *label = data->temp_label[data->temp_src[i]];
 
-While this should solve the problem on short term for quite some users,
-hopefully a more generic way is found sooner or later...
+		/* Digital source overrides analog type */
+		if (strncmp(label, "PECI", 4) == 0)
+			data->temp_type[i] = 6;
 
+	movzbl	128(%r14), %edx	# data->temp_src, tmp737
+	movq	144(%r13), %rax	# data_32->temp_label, data_32->temp_label
+	movq	$.LC18, %rsi	#,
+	movl	%r14d, %r15d	#, i
+	subl	%r13d, %r15d	# D.29277, i
+0x928	movq	(%rax,%rdx,8), %rcx	#* data_32->temp_label, label
+	movl	$4, %edx	#,
+	movq	%rcx, %rdi	# label,
+	movq	%rcx, -96(%rbp)	#,
+	call	strncmp	#
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: stable@kernel.org
+page_fault() is called at 0x928 (0x8e2+0x46).
+
+Add check if data->temp->label was set before use.
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: stable@kernel.org
+Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
 ---
- arch/x86/kernel/reboot.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
+ drivers/hwmon/w83627ehf.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 42f8cd7..7fcb20a 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -419,28 +419,20 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
- 		},
- 	},
--	{	/* Handle problems with rebooting on the Latitude E6320. */
--		.callback = set_pci_reboot,
--		.ident = "Dell Latitude E6320",
--		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6320"),
--		},
--	},
--	{	/* Handle problems with rebooting on the Latitude E5420. */
-+	{
- 		.callback = set_pci_reboot,
--		.ident = "Dell Latitude E5420",
-+		.ident = "Dell Latitude E5xxx",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5420"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E5"),
- 		},
- 	},
--	{	/* Handle problems with rebooting on the Latitude E6420. */
-+	{
- 		.callback = set_pci_reboot,
--		.ident = "Dell Latitude E6420",
-+		.ident = "Dell Latitude E6xxx",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6420"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Latitude E6"),
- 		},
- 	},
- 	{
+diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
+index 483cb26..70f1c73 100644
+--- a/drivers/hwmon/w83627ehf.c
++++ b/drivers/hwmon/w83627ehf.c
+@@ -1835,14 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
+ 		diode = 0x70;
+ 	}
+ 	for (i = 0; i < 3; i++) {
+-		const char *label = data->temp_label[data->temp_src[i]];
+-
+-		/* Digital source overrides analog type */
+-		if (strncmp(label, "PECI", 4) == 0)
+-			data->temp_type[i] = 6;
+-		else if (strncmp(label, "AMD", 3) == 0)
+-			data->temp_type[i] = 5;
+-		else if ((tmp & (0x02 << i)))
++		if (data->temp_label) {
++			const char *label = data->temp_label[data->temp_src[i]];
++
++			/* Digital source overrides analog type */
++			if (strncmp(label, "PECI", 4) == 0)
++				data->temp_type[i] = 6;
++			else if (strncmp(label, "AMD", 3) == 0)
++				data->temp_type[i] = 5;
++		} else if ((tmp & (0x02 << i)))
+ 			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
+ 		else
+ 			data->temp_type[i] = 4; /* thermistor */
 -- 
-1.7.6.1
+1.7.7.2
 
