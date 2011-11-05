@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1KEO5u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 10:57:50 -0400
-Received: from imr4.ericy.com ([198.24.6.9]:49333 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab1KEO5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 10:57:49 -0400
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Alexander Beregalov <a.beregalov@gmail.com>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>, <stable@kernel.org>
-Subject: [PATCH] hwmon: (w83627ehf) fix broken driver init
-Date: Sat, 5 Nov 2011 07:43:43 -0700
-Message-ID: <1320504223-28764-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1752825Ab1KEP2R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 11:28:17 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37481 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab1KEP2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 11:28:15 -0400
+Date: Sat, 5 Nov 2011 11:27:49 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andres Freund <andres@anarazel.de>, Andi Kleen <andi@firstfloor.org>,
+        robertmhaas@gmail.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 1/2] LSEEK: BTRFS: Avoid i_mutex for SEEK_{CUR,SET,END}
+Message-ID: <20111105152749.GA5576@shiny>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	Andres Freund <andres@anarazel.de>,
+	Andi Kleen <andi@firstfloor.org>, robertmhaas@gmail.com,
+	viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+References: <1316128013-21980-1-git-send-email-andi@firstfloor.org>
+ <201110012246.13801.andres@anarazel.de>
+ <201110012249.27834.andres@anarazel.de>
+ <20111102082915.GA28153@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111102082915.GA28153@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4EB555FF.0075,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
-sensor types) results in kernel panic if data->temp_label was not
-initialized.
-The problem was found with chip W83627DHG-P.
+On Wed, Nov 02, 2011 at 04:29:15AM -0400, Christoph Hellwig wrote:
+> Andres, can you check with Chris that the btrfs changes made it to
+> his tree?  The core lseek changes from Andi are in mainline now, but
+> I think these bits are better off going through Chrises btrfs tree.
 
-Add check if data->temp->label was set before use.
+I'm pulling these in, thanks!
 
-Based on incomplete patch by Alexander Beregalov.
+-chris
 
-Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-Tested-by: Alexander Beregalov <a.beregalov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: stable@kernel.org
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
- drivers/hwmon/w83627ehf.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-index 483cb26..93f5fc7 100644
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1835,12 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
- 		diode = 0x70;
- 	}
- 	for (i = 0; i < 3; i++) {
--		const char *label = data->temp_label[data->temp_src[i]];
-+		const char *label = NULL;
-+
-+		if (data->temp_label)
-+			label = data->temp_label[data->temp_src[i]];
- 
- 		/* Digital source overrides analog type */
--		if (strncmp(label, "PECI", 4) == 0)
-+		if (label && strncmp(label, "PECI", 4) == 0)
- 			data->temp_type[i] = 6;
--		else if (strncmp(label, "AMD", 3) == 0)
-+		else if (label && strncmp(label, "AMD", 3) == 0)
- 			data->temp_type[i] = 5;
- 		else if ((tmp & (0x02 << i)))
- 			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
--- 
-1.7.3.1
-
+> 
+> On Sat, Oct 01, 2011 at 10:49:27PM +0200, Andres Freund wrote:
+> > 
+> > Don't need the i_mutex for those cases, only for SEEK_HOLE/DATA.
+> > 
+> > Really-From: Andi Kleen <ak@linux.intel.com>
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > Signed-off-by: Andres Freund <andres@anarazel.de>
+> > ---
+> >  fs/btrfs/file.c |   27 +++++++++++----------------
+> >  1 files changed, 11 insertions(+), 16 deletions(-)
+> > 
+> > diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+> > index 7a13337..5bc7116 100644
+> > --- a/fs/btrfs/file.c
+> > +++ b/fs/btrfs/file.c
+> > @@ -1809,24 +1809,19 @@ static loff_t btrfs_file_llseek(struct file *file, loff_t offset, int origin)
+> >  	struct inode *inode = file->f_mapping->host;
+> >  	int ret;
+> >  
+> > +	if (origin != SEEK_DATA && origin != SEEK_HOLE)
+> > +		return generic_file_llseek(file, offset, origin);
+> > +
+> >  	mutex_lock(&inode->i_mutex);
+> > -	switch (origin) {
+> > -	case SEEK_END:
+> > -	case SEEK_CUR:
+> > -		offset = generic_file_llseek(file, offset, origin);
+> > -		goto out;
+> > -	case SEEK_DATA:
+> > -	case SEEK_HOLE:
+> > -		if (offset >= i_size_read(inode)) {
+> > -			mutex_unlock(&inode->i_mutex);
+> > -			return -ENXIO;
+> > -		}
+> > +	if (offset >= i_size_read(inode)) {
+> > +		mutex_unlock(&inode->i_mutex);
+> > +		return -ENXIO;
+> > +	}
+> >  
+> > -		ret = find_desired_extent(inode, &offset, origin);
+> > -		if (ret) {
+> > -			mutex_unlock(&inode->i_mutex);
+> > -			return ret;
+> > -		}
+> > +	ret = find_desired_extent(inode, &offset, origin);
+> > +	if (ret) {
+> > +		mutex_unlock(&inode->i_mutex);
+> > +		return ret;
+> >  	}
+> >  
+> >  	if (offset < 0 && !(file->f_mode & FMODE_UNSIGNED_OFFSET)) {
+> > -- 
+> > 1.7.6.409.ge7a85.dirty
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> ---end quoted text---
