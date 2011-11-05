@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab1KEBXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Nov 2011 21:23:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60283 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab1KEBXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Nov 2011 21:23:32 -0400
+	id S1752742Ab1KEBeB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Nov 2011 21:34:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751413Ab1KEBeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Nov 2011 21:34:00 -0400
+Date: Sat, 5 Nov 2011 02:33:17 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+Message-ID: <20111105013317.GU18879@redhat.com>
+References: <20111031171441.GD3466@redhat.com>
+ <1320082040-1190-1-git-send-email-aarcange@redhat.com>
+ <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+ <20111104235603.GT18879@redhat.com>
+ <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1320179267.14825.107.camel@deneb.redhat.com>
-References: <1320179267.14825.107.camel@deneb.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 4 Nov 2011 18:23:10 -0700
-X-Google-Sender-Auth: 9ghtJkyY50akcC-Q8T70PG2yqJE
-Message-ID: <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
-Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 1, 2011 at 1:27 PM, Mark Salter <msalter@redhat.com> wrote:
->
-> Please pull this port of Linux to the Texas Instruments C6X architecture.
-> The patches have all been acked and available for some time in linux-net.
+On Sat, Nov 05, 2011 at 08:21:03AM +0800, Nai Xia wrote:
+> copy_vma() ---> rmap_walk() scan dst VMA --> move_page_tables() moves src to dst
+> --->  rmap_walk() scan src VMA.  :D
 
-Ugh. So I finally was about to merge this, but wanted to check the
-non-C6x files before I did.
+Hmm yes. I think I got in the wrong track because I focused too much
+on that line you started talking about, the *vmap = new_vma, you said
+I had to reorder stuff there too, and that didn't make sense.
 
-And that seems broken. If I read that code correctly, your
-ARCH_PFN_OFFSET thing is just insane, and thinking that "pfn_valid()"
-has anything to do with PAGE_OFFSET is crazy.
+The reason it doesn't make sense is that it can't be ok to reorder
+stuff when *vmap = new_vma (i.e. new_vma = old_vma). So if I didn't
+need to reorder in that case I thought I could extrapolate it was
+always ok.
 
-PAGE_OFFSET is about *virtual* addresses. It has absolutely nothing to
-do with pfn's that are the physical page number. virt_to_pfn() already
-corrects for PAGE_OFFSET (that part of your patch looks fine), your
-change to *also* do it in pfn_valid() looks entirely bogus to me.
+But the opposite is true: that case can't be solved.
 
-I'm not pulling new architectures that look like they will break old
-ones, and do odd things to generic files.
+Can it really happen that vma_merge will pack (prev_vma, new_range,
+old_vma) together in a single vma? (i.e. prev_vma extended to
+old_vma->vm_end)
 
-                       Linus
+Even if there's no prev_vma in the picture (but that's the extreme
+case) it cannot be safe: i.e. a (new_range, old_vma) or (old_vma,
+new_range).
+
+1 single "vma" for src and dst virtual ranges, means 1 single
+vma->vm_pgoff. But we've two virtual addresses and two ptes. So the
+same page->index can't work for both if the vma->vm_pgoff is the
+same.
+
+So regardless of the ordering here we're dealing with something more
+fundamental.
+
+If rmap_walk runs immediately after vma_merge completes and releases
+the anon_vma_lock, it won't find any pte in the vma anymore. No matter
+the order.
+
+I thought at this before and I didn't mention it but at the light of
+the above issue I start to think this is the only possible correct
+solution to the problem. We should just never call vma_merge before
+move_page_tables. And do the merge by hand later after mremap is
+complete.
+
+The only safe way to do it is to have _two_ different vmas, with two
+different ->vm_pgoff. Then it will work. And by always creating a new
+vma we'll always have it queued at the end, and it'll be safe for the
+same reasons fork is safe.
+
+Always allocate a new vma, and then after the whole vma copy is
+complete, look if we can merge and free some vma. After the fact, so
+it means we can't use vma_merge anymore. vma_merge assumes the
+new_range is "virtual" and no vma is mapped there I think. Anyway
+that's an implementation issue. In some unlikely case we'll allocate 1
+more vma than before, and we'll free it once mremap is finished, but
+that's small problem compared to solving this once and for all.
+
+And that will fix it without ordering games and it'll fix the *vmap=
+new_vma case too. That case really tripped on me as I was assuming
+*that* was correct.
