@@ -1,77 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab1KFTP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 14:15:26 -0500
+	id S1754548Ab1KFTP2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 14:15:28 -0500
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:39330 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab1KFTPY (ORCPT
+	with ESMTP id S1754496Ab1KFTP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 14:15:24 -0500
+	Sun, 6 Nov 2011 14:15:26 -0500
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 To: intel-gfx <intel-gfx@lists.freedesktop.org>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 00/13] pwrite/pread rework
-Date: Sun,  6 Nov 2011 20:13:47 +0100
-Message-Id: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
+Subject: [PATCH 03/13] drm/i915: rewrite shmem_pread_slow to use copy_to_user
+Date: Sun,  6 Nov 2011 20:13:50 +0100
+Message-Id: <1320606840-21132-4-git-send-email-daniel.vetter@ffwll.ch>
 X-Mailer: git-send-email 1.7.6.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
+References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Like for shmem_pwrite_slow. The only difference is that because we
+read data, we can leave the fetched cachelines in the cpu: In the case
+that the object isn't in the cpu read domain anymore, the clflush for
+the next cpu read domain invalidation will simply drop these
+cachelines.
 
-I've finally managed to clean up my pwrite/pread rework. Major changes since the
-first submission:
-- fixed a bunch of bugs, some of them discovered by the intel-gpu-tools gem test
-  suite
-- extracted the clflush helper into common drm code as suggested by Chris
-  Wilson.
-- extended the prefault helpers in pagemap.h instead of rolling our own. Also
-  add a patch to not prefault for writes (which change the userspace memory)
-  before we're committed to the write. Both address issues raised by Keith
-  Packard.
+slow_shmem_bit17_copy is now ununsed, so kill it.
 
-Why this is cool stuff:
-- fixes the spurious -EFAULTS when handing in a pointer to a gem gtt mappings.
-  See https://bugs.freedesktop.org/show_bug.cgi?id=38115
-- Kills a bunch of code by dropping the practically useless ranged cpu read
-  domain tracking and integrating the slow paths into the fast paths.
-- Fixes pwrite/pread to use snooped cpu access on llc machines, hereby decently
-  speeding up microbenchmarks.
-- Paves the way for further clever tricks to reduce pressure on the mappable gtt
-  area.
+With this patch tests/gem_mmap_gtt now actually works.
 
-Reviews and comments highly welcome.
+v2: add __ to copy_to_user_swizzled as suggested by Chris Wilson.
 
-Yours, Daniel
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=38115
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/i915_gem.c |  172 +++++++++++++--------------------------
+ 1 files changed, 56 insertions(+), 116 deletions(-)
 
-Daniel Vetter (13):
-  drm/i915: fall through pwrite_gtt_slow to the shmem slow path
-  drm/i915: rewrite shmem_pwrite_slow to use copy_from_user
-  drm/i915: rewrite shmem_pread_slow to use copy_to_user
-  drm/i915: merge shmem_pwrite slow&fast-path
-  drm/i915: merge shmem_pread slow&fast-path
-  drm: add helper to clflush a virtual address range
-  drm/i915: move clflushing into shmem_pread
-  drm/i915: kill ranged cpu read domain support
-  drm/i915: don't use gtt_pwrite on LLC cached objects
-  drm/i915: don't call shmem_read_mapping unnecessarily
-  mm: extend prefault helpers to fault in more than PAGE_SIZE
-  drm/i915: drop gtt slowpath
-  drm/i915: don't clobber userspace memory before commiting to the
-    pread
-
- drivers/gpu/drm/drm_cache.c     |   23 ++
- drivers/gpu/drm/i915/i915_drv.h |    7 -
- drivers/gpu/drm/i915/i915_gem.c |  824 +++++++++++----------------------------
- include/drm/drmP.h              |    1 +
- include/linux/pagemap.h         |   28 +-
- 5 files changed, 273 insertions(+), 610 deletions(-)
-
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index f9efebb..be1dd4f 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -277,55 +277,6 @@ slow_shmem_copy(struct page *dst_page,
+ 	kunmap(dst_page);
+ }
+ 
+-static inline void
+-slow_shmem_bit17_copy(struct page *gpu_page,
+-		      int gpu_offset,
+-		      struct page *cpu_page,
+-		      int cpu_offset,
+-		      int length,
+-		      int is_read)
+-{
+-	char *gpu_vaddr, *cpu_vaddr;
+-
+-	/* Use the unswizzled path if this page isn't affected. */
+-	if ((page_to_phys(gpu_page) & (1 << 17)) == 0) {
+-		if (is_read)
+-			return slow_shmem_copy(cpu_page, cpu_offset,
+-					       gpu_page, gpu_offset, length);
+-		else
+-			return slow_shmem_copy(gpu_page, gpu_offset,
+-					       cpu_page, cpu_offset, length);
+-	}
+-
+-	gpu_vaddr = kmap(gpu_page);
+-	cpu_vaddr = kmap(cpu_page);
+-
+-	/* Copy the data, XORing A6 with A17 (1). The user already knows he's
+-	 * XORing with the other bits (A9 for Y, A9 and A10 for X)
+-	 */
+-	while (length > 0) {
+-		int cacheline_end = ALIGN(gpu_offset + 1, 64);
+-		int this_length = min(cacheline_end - gpu_offset, length);
+-		int swizzled_gpu_offset = gpu_offset ^ 64;
+-
+-		if (is_read) {
+-			memcpy(cpu_vaddr + cpu_offset,
+-			       gpu_vaddr + swizzled_gpu_offset,
+-			       this_length);
+-		} else {
+-			memcpy(gpu_vaddr + swizzled_gpu_offset,
+-			       cpu_vaddr + cpu_offset,
+-			       this_length);
+-		}
+-		cpu_offset += this_length;
+-		gpu_offset += this_length;
+-		length -= this_length;
+-	}
+-
+-	kunmap(cpu_page);
+-	kunmap(gpu_page);
+-}
+-
+ /**
+  * This is the fast shmem pread path, which attempts to copy_from_user directly
+  * from the backing pages of the object to the user's address space.  On a
+@@ -387,6 +338,32 @@ i915_gem_shmem_pread_fast(struct drm_device *dev,
+ }
+ 
+ static inline int
++__copy_to_user_swizzled(char __user *cpu_vaddr,
++			const char *gpu_vaddr, int gpu_offset,
++			int length)
++{
++	int ret, cpu_offset = 0;
++
++	while (length > 0) {
++		int cacheline_end = ALIGN(gpu_offset + 1, 64);
++		int this_length = min(cacheline_end - gpu_offset, length);
++		int swizzled_gpu_offset = gpu_offset ^ 64;
++
++		ret = __copy_to_user(cpu_vaddr + cpu_offset,
++				     gpu_vaddr + swizzled_gpu_offset,
++				     this_length);
++		if (ret)
++			return ret + length;
++
++		cpu_offset += this_length;
++		gpu_offset += this_length;
++		length -= this_length;
++	}
++
++	return 0;
++}
++
++static inline int
+ __copy_from_user_swizzled(char __user *gpu_vaddr, int gpu_offset,
+ 			  const char *cpu_vaddr,
+ 			  int length)
+@@ -425,72 +402,34 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+ 			  struct drm_file *file)
+ {
+ 	struct address_space *mapping = obj->base.filp->f_path.dentry->d_inode->i_mapping;
+-	struct mm_struct *mm = current->mm;
+-	struct page **user_pages;
++	char __user *user_data;
+ 	ssize_t remain;
+-	loff_t offset, pinned_pages, i;
+-	loff_t first_data_page, last_data_page, num_pages;
+-	int shmem_page_offset;
+-	int data_page_index, data_page_offset;
+-	int page_length;
+-	int ret;
+-	uint64_t data_ptr = args->data_ptr;
+-	int do_bit17_swizzling;
++	loff_t offset;
++	int shmem_page_offset, page_length, ret;
++	int obj_do_bit17_swizzling, page_do_bit17_swizzling;
+ 
++	user_data = (char __user *) (uintptr_t) args->data_ptr;
+ 	remain = args->size;
+ 
+-	/* Pin the user pages containing the data.  We can't fault while
+-	 * holding the struct mutex, yet we want to hold it while
+-	 * dereferencing the user data.
+-	 */
+-	first_data_page = data_ptr / PAGE_SIZE;
+-	last_data_page = (data_ptr + args->size - 1) / PAGE_SIZE;
+-	num_pages = last_data_page - first_data_page + 1;
++	obj_do_bit17_swizzling = i915_gem_object_needs_bit17_swizzle(obj);
+ 
+-	user_pages = drm_malloc_ab(num_pages, sizeof(struct page *));
+-	if (user_pages == NULL)
+-		return -ENOMEM;
++	offset = args->offset;
+ 
+ 	mutex_unlock(&dev->struct_mutex);
+-	down_read(&mm->mmap_sem);
+-	pinned_pages = get_user_pages(current, mm, (uintptr_t)args->data_ptr,
+-				      num_pages, 1, 0, user_pages, NULL);
+-	up_read(&mm->mmap_sem);
+-	mutex_lock(&dev->struct_mutex);
+-	if (pinned_pages < num_pages) {
+-		ret = -EFAULT;
+-		goto out;
+-	}
+-
+-	ret = i915_gem_object_set_cpu_read_domain_range(obj,
+-							args->offset,
+-							args->size);
+-	if (ret)
+-		goto out;
+-
+-	do_bit17_swizzling = i915_gem_object_needs_bit17_swizzle(obj);
+-
+-	offset = args->offset;
+ 
+ 	while (remain > 0) {
+ 		struct page *page;
++		char *vaddr;
+ 
+ 		/* Operation in this page
+ 		 *
+ 		 * shmem_page_offset = offset within page in shmem file
+-		 * data_page_index = page number in get_user_pages return
+-		 * data_page_offset = offset with data_page_index page.
+ 		 * page_length = bytes to copy for this page
+ 		 */
+ 		shmem_page_offset = offset_in_page(offset);
+-		data_page_index = data_ptr / PAGE_SIZE - first_data_page;
+-		data_page_offset = offset_in_page(data_ptr);
+-
+ 		page_length = remain;
+ 		if ((shmem_page_offset + page_length) > PAGE_SIZE)
+ 			page_length = PAGE_SIZE - shmem_page_offset;
+-		if ((data_page_offset + page_length) > PAGE_SIZE)
+-			page_length = PAGE_SIZE - data_page_offset;
+ 
+ 		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
+ 		if (IS_ERR(page)) {
+@@ -498,36 +437,37 @@ i915_gem_shmem_pread_slow(struct drm_device *dev,
+ 			goto out;
+ 		}
+ 
+-		if (do_bit17_swizzling) {
+-			slow_shmem_bit17_copy(page,
+-					      shmem_page_offset,
+-					      user_pages[data_page_index],
+-					      data_page_offset,
+-					      page_length,
+-					      1);
+-		} else {
+-			slow_shmem_copy(user_pages[data_page_index],
+-					data_page_offset,
+-					page,
+-					shmem_page_offset,
+-					page_length);
+-		}
++		page_do_bit17_swizzling = (page_to_phys(page) & (1 << 17)) == 0;
++
++		vaddr = kmap(page);
++		if (obj_do_bit17_swizzling && page_do_bit17_swizzling)
++			ret = __copy_to_user_swizzled(user_data,
++						      vaddr, shmem_page_offset,
++						      page_length);
++		else
++			ret = __copy_to_user(user_data,
++					     vaddr + shmem_page_offset,
++					     page_length);
++		kunmap(page);
+ 
+ 		mark_page_accessed(page);
+ 		page_cache_release(page);
+ 
++		if (ret) {
++			ret = -EFAULT;
++			goto out;
++		}
++
+ 		remain -= page_length;
+-		data_ptr += page_length;
++		user_data += page_length;
+ 		offset += page_length;
+ 	}
+ 
+ out:
+-	for (i = 0; i < pinned_pages; i++) {
+-		SetPageDirty(user_pages[i]);
+-		mark_page_accessed(user_pages[i]);
+-		page_cache_release(user_pages[i]);
+-	}
+-	drm_free_large(user_pages);
++	mutex_lock(&dev->struct_mutex);
++	/* Fixup: Kill any reinstated backing storage pages */
++	if (obj->madv == __I915_MADV_PURGED)
++		i915_gem_object_truncate(obj);
+ 
+ 	return ret;
+ }
 -- 
 1.7.6.4
 
