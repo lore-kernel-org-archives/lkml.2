@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab1KFRRu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 12:17:50 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:43176
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753187Ab1KFRRt (ORCPT
+	id S1753956Ab1KFR2F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 12:28:05 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:46476 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753033Ab1KFR2D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 12:17:49 -0500
-From: Dirk Hohndel <hohndel@infradead.org>
-To: Joshua V Dillon <jvdillon@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Add support for the Mid 2011 MacBook Air keyboard layout
-User-Agent: Notmuch/0.5-251-g11db5ef (http://notmuchmail.org) Emacs/23.3.1 (x86_64-suse-linux-gnu)
-Date: Sun, 06 Nov 2011 09:16:56 -0800
-Message-ID: <87r51l41dj.fsf@hohndel.org>
+	Sun, 6 Nov 2011 12:28:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hohndel@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
+References: <1320543320-32728-1-git-send-email-agraf@suse.de>
+	<CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com>
+	<4EB65C5B.8070709@redhat.com>
+	<CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
+	<4EB66036.4080102@redhat.com>
+	<1320577728.1428.73.camel@jaguar>
+	<4EB67486.1070105@redhat.com>
+	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>
+	<4EB67D17.7000701@redhat.com>
+	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
+	<4EB680D9.2070706@redhat.com>
+	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
+Date: Sun, 6 Nov 2011 19:28:02 +0200
+X-Google-Sender-Auth: ZKagxNZLALsknwVHNx1JcGUpf9w
+Message-ID: <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+From: Pekka Enberg <penberg@kernel.org>
+To: Alexander Graf <agraf@suse.de>
+Cc: Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Blue Swirl <blauwirbel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 6, 2011 at 7:15 PM, Alexander Graf <agraf@suse.de> wrote:
+>> The difference here is that although I feel Alex's script is a
+>> pointless project, I'm in no way opposed to merging it in the tree if
+>> people use it and it solves their problem. Some people seem to be
+>> violently opposed to merging the KVM tool and I'm having difficult
+>> time understanding why that is.
+>
+> It's a matter of size and scope. Write a shell script that clones, builds and
+> executes KVM Tool and throw it in testing/tools/ and I'll happily ack it!
 
-When adding support for the MacBookAir4,x models in commit
-5d922baa631058c7e37ae33e81c4d3e6437f8d1d Joshua Dillon overlooked
-that they have a slightly different keyboard layout compared to the older
-MacBook Air models. With this patch the function keys all work as
-advertized, including keyboard brightness, etc.
+That's pretty much what git submodule would do, isn't it?
 
-Signed-off-by: Dirk Hohndel <hohndel@infradead.org>
----
- drivers/hid/hid-apple.c |   26 +++++++++++++++++++++++++-
- 1 files changed, 25 insertions(+), 1 deletions(-)
+I really don't see the point in doing that. We want to be part of
+regular kernel history and release cycle. We want people to be able to
+see what's going on in our tree to keep us honest and we want to make
+the barrier of entry as low as possible.
 
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index 8cdb4b4..57489a2 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -82,6 +82,30 @@ static const struct apple_key_translation macbookair_fn_keys[] = {
- 	{ }
- };
- 
-+/* MacBook Air Mid2011 
-+ * (dmidecode identifies as MacBookAir4,1 (11") and 4,2 (13")) */
-+static const struct apple_key_translation macbookair4_x_fn_keys[] = {
-+	{ KEY_BACKSPACE, KEY_DELETE },
-+	{ KEY_ENTER,	KEY_INSERT },
-+	{ KEY_F1,	KEY_BRIGHTNESSDOWN, APPLE_FLAG_FKEY },
-+	{ KEY_F2,	KEY_BRIGHTNESSUP,   APPLE_FLAG_FKEY },
-+	{ KEY_F3,	KEY_SCALE,          APPLE_FLAG_FKEY },
-+	{ KEY_F4,	KEY_DASHBOARD,      APPLE_FLAG_FKEY },
-+	{ KEY_F5,	KEY_KBDILLUMDOWN,   APPLE_FLAG_FKEY },
-+	{ KEY_F6,	KEY_KBDILLUMUP,     APPLE_FLAG_FKEY },
-+	{ KEY_F7,	KEY_PREVIOUSSONG,   APPLE_FLAG_FKEY },
-+	{ KEY_F8,	KEY_PLAYPAUSE,      APPLE_FLAG_FKEY },
-+	{ KEY_F9,	KEY_NEXTSONG,       APPLE_FLAG_FKEY },
-+	{ KEY_F10,	KEY_MUTE,           APPLE_FLAG_FKEY },
-+	{ KEY_F11,	KEY_VOLUMEDOWN,     APPLE_FLAG_FKEY },
-+	{ KEY_F12,	KEY_VOLUMEUP,       APPLE_FLAG_FKEY },
-+	{ KEY_UP,	KEY_PAGEUP },
-+	{ KEY_DOWN,	KEY_PAGEDOWN },
-+	{ KEY_LEFT,	KEY_HOME },
-+	{ KEY_RIGHT,	KEY_END },
-+	{ }
-+};
-+
- static const struct apple_key_translation apple_fn_keys[] = {
- 	{ KEY_BACKSPACE, KEY_DELETE },
- 	{ KEY_ENTER,	KEY_INSERT },
-@@ -185,7 +209,7 @@ static int hidinput_apple_event(struct hid_device *hid, struct input_dev *input,
- 			table = macbookair_fn_keys;
- 		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
- 				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
--			table = macbookair_fn_keys;
-+			table = macbookair4_x_fn_keys;
- 		else if (hid->product < 0x21d || hid->product >= 0x300)
- 			table = powerbook_fn_keys;
- 		else
--- 
-1.7.7
+It's not just about code, it's as much about culture and development process.
 
+                                Pekka
