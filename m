@@ -1,86 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab1KFXUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 18:20:00 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:44734 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753052Ab1KFXT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 18:19:58 -0500
-Date: Sun, 6 Nov 2011 18:19:53 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to
- test kernels
-Message-ID: <20111106231953.GD4500@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Pekka Enberg <penberg@kernel.org>,
-	Anthony Liguori <anthony@codemonkey.ws>,
-	Avi Kivity <avi@redhat.com>,
-	"kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-	qemu-devel Developers <qemu-devel@nongnu.org>,
-	Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-	=?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
- <4EB680D9.2070706@redhat.com>
- <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
- <4EB6AE34.2000907@redhat.com>
- <CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com>
- <4EB6BAED.2030400@redhat.com>
- <4EB6BEFA.6000303@codemonkey.ws>
- <20111106183132.GA4500@thunk.org>
- <CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
- <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
+	id S1754728Ab1KFXUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 18:20:43 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46305 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab1KFXUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 18:20:42 -0500
+Message-ID: <4EB71642.8070502@linux.vnet.ibm.com>
+Date: Mon, 07 Nov 2011 04:50:34 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: NamJae Jeon <linkinjeon@gmail.com>
+CC: tytso@mit.edu, linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix NULL pointer dereference from orig_data in
+ fill_super and remount.
+References: <1320592775-2046-1-git-send-email-linkinjeon@gmail.com> <4EB6EF07.1070102@linux.vnet.ibm.com> <CAKYAXd87ry6D4xsBwkXC4at6kDZgHu=_Qa+0kdhEsN=RSMk1ag@mail.gmail.com>
+In-Reply-To: <CAKYAXd87ry6D4xsBwkXC4at6kDZgHu=_Qa+0kdhEsN=RSMk1ag@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 11110623-9574-0000-0000-000000120B68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 06, 2011 at 08:58:20PM +0200, Pekka Enberg wrote:
-> > Ted, I'm confused. Making backwards incompatible ABI changes has never
-> > been on the table. Why are you bringing it up?
-> 
-> And btw, KVM tool is not a random userspace project - it was designed
-> to live in tools/kvm from the beginning. I've explained the technical
-> rationale for sharing kernel code here:
-> 
-> https://lkml.org/lkml/2011/11/4/150
-> 
-> Please also see Ingo's original rant that started the project:
-> 
-> http://thread.gmane.org/gmane.linux.kernel/962051/focus=962620
+On 11/07/2011 04:43 AM, NamJae Jeon wrote:
+> 2011/11/7 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
+>> On 11/06/2011 08:49 PM, Namjae Jeon wrote:
+>>> Fix NULL pointer dereference from orig_data in fill_super and remount.
+>>>
+>>> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+>>> ---
+>>>  fs/ext4/super.c |   12 ++++++++++--
+>>>  1 files changed, 10 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+>>> index 9953d80..3770d3f 100644
+>>> --- a/fs/ext4/super.c
+>>> +++ b/fs/ext4/super.c
+>>> @@ -3102,7 +3102,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>>>                               __releases(kernel_lock)
+>>>                               __acquires(kernel_lock)
+>>>  {
+>>> -     char *orig_data = kstrdup(data, GFP_KERNEL);
+>>>       struct buffer_head *bh;
+>>>       struct ext4_super_block *es = NULL;
+>>>       struct ext4_sb_info *sbi;
+>>> @@ -3124,6 +3123,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>>>       int err;
+>>>       unsigned int journal_ioprio = DEFAULT_JOURNAL_IOPRIO;
+>>>       ext4_group_t first_not_zeroed;
+>>> +
+>>> +     char *orig_data = kstrdup(data, GFP_KERNEL);
+>>> +     if (!orig_data)
+>>> +             return ret;
+>>>
+>>>       sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+>>>       if (!sbi)
+>>> @@ -4398,6 +4401,10 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>>>       int i;
+>>>  #endif
+>>>       char *orig_data = kstrdup(data, GFP_KERNEL);
+>>> +     if (!orig_data) {
+>>> +             err = -ENOMEM;
+>>> +             goto failed_alloc_orig;
+>>
+>> I didn't quite get why 'failed_alloc_orig' is needed here.
+>> Why can't we just return -ENOMEM? Anyway we haven't yet
+>> clobbered any opts at this point, right?
+>>
+>> See my comments below.
+>>
+>>> +     }
+>>>
+>>>       /* Store the original options */
+>>>       lock_super(sb);
+>>> @@ -4562,6 +4569,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>>>       return 0;
+>>>
+>>>  restore_opts:
+>>> +     kfree(orig_data);
+>>> +failed_alloc_orig:
+>>>       sb->s_flags = old_sb_flags;
+>>>       sbi->s_mount_opt = old_opts.s_mount_opt;
+>>>       sbi->s_mount_opt2 = old_opts.s_mount_opt2;
+>>
+>> This would put garbage values in sb->... and sbi->... when we jump
+>> to 'failed_alloc_orig' upon 'orig_data' allocation failure, because
+>> the old_* variables were still uninitialized at that point.
+>>
+>>> @@ -4580,7 +4589,6 @@ restore_opts:
+>>>       }
+>>>  #endif
+>>>       unlock_super(sb);
+>>> -     kfree(orig_data);
+>>>       return err;
+>>>  }
+>>>
+>>
+>> Thanks,
+>> Srivatsa S. Bhat
+> Hi.
+> Thanks for your review. It's my mistake.
+> I will post patch v2 after modifing again.
 
-Because I don't buy any of these arguments.  We have the same kernel
-developers working on xfs and xfsprogs, ext4 and e2fsprogs, btrfs and
-btrfsprogs, and we don't have those userspace projects in the kernel
-source tree.
+Sure. And please CC linux-ext4@vger.kernel.org for ext4 related patches.
 
-The only excuse I can see is a hope to make random changes to the
-kernel and userspace tools without having to worry about compatibility
-problems, which is an argument I've seen with perf (that you have to
-use the same version of perf as the kernel version, which to me is bad
-software engineering).  And that's why I pointed out that you can't do
-that with KVM, since we have out-of-tree userspace users, namely
-qemu-kvm.
+Thanks,
+Srivatsa S. Bhat
 
-The rest of the arguments are arguments for a new effort, which is
-fine --- but not an excuse for putting in the kernel source tree.
-
-     	     	    	       	       - Ted
