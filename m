@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab1KFWMd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:12:33 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:34950 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752805Ab1KFWMc (ORCPT
+	id S1753952Ab1KFWO4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:14:56 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16867 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab1KFWOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:12:32 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18iU9BiBeUiy4nsPkm61JnVPGLC6pNamJIO/X8YaF
-	xEaH0p4nwzpc50
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH v2] staging/xgifb: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
-Date: Sun,  6 Nov 2011 23:12:28 +0100
-Message-Id: <1320617548-9506-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
-References: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sun, 6 Nov 2011 17:14:55 -0500
+Date: Sun, 6 Nov 2011 23:20:14 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: dm-devel@redhat.com, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+cc: Neil Brown <neilb@suse.de>
+Subject: [PATCH] dm-ioctl: Don't leak memory in target_message() if 'argc'
+ is NULL
+Message-ID: <alpine.LNX.2.00.1111062318090.5763@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts pci_table entries to use the PCI_DEVICE macro,
-if .subvendor and .subdevice are set to PCI_ANY_ID,
-and thus improves readability.
+If 'argc' is NULL we'll jump to the 'out:' label, but this will leak
+the memory that 'dm_split_args()' allocated for 'argv', so we should
+be jumping to the 'out_argv:' label instead to free up that
+memory. This patch does so.
 
-v2:
-Since the driver_data field isn't used anywhere we can also drop the
-assignments for class, class_mask and driver_data.
-(found by Aaro Koskinen)
-
-KernelVersion: Staging-20111106
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/staging/xgifb/XGI_main.h |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ drivers/md/dm-ioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 71aebe3..cf4c188 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -32,14 +32,10 @@
- #endif
+ note: compile tested only.
+
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index 31c2dc2..1ce84ed 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1437,7 +1437,7 @@ static int target_message(struct dm_ioctl *param, size_t param_size)
  
- static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 0},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 1},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 2},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 3},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40)},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42)},
- 	{0}
- };
+ 	if (!argc) {
+ 		DMWARN("Empty message received.");
+-		goto out;
++		goto out_argv;
+ 	}
  
+ 	table = dm_get_live_table(md);
 -- 
-1.7.3.4
+1.7.7.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
