@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1KFVK1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:10:27 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:53474 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab1KFVKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:10:25 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Subject: Re: [PATCH -v2] acpi: Fix possible recursive locking in hwregs.c
-Date: Sun, 6 Nov 2011 22:13:02 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-acpi" <linux-acpi@vger.kernel.org>, akpm@linux-foundation.org,
-        ming Lin <ming.m.lin@intel.com>, len.brown@intel.com,
-        srivatsa.bhat@linux.vnet.ibm.com, Len Brown <lenb@kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-References: <1320592697.7439.3.camel@localhost.localdomain>
-In-Reply-To: <1320592697.7439.3.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111062213.02844.rjw@sisk.pl>
+	id S1751744Ab1KFVMr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:12:47 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:34285 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750789Ab1KFVMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 16:12:46 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/VdXklm4XV6blfnaLHmrxU3J9JhOMosKizprAJVG
+	kAZG7HvzTJuMFT
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH] staging/gma500: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
+Date: Sun,  6 Nov 2011 22:12:44 +0100
+Message-Id: <1320613964-22916-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 06, 2011, Rakib Mullick wrote:
-> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status, acpi_os_acquire_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which tries to hold acpi_gbl_gpe_lock. Both acpi_gbl_hardware_lock and acpi_gbl_gpe_lock are at same lock-class and which might cause lock recursion deadlock. 
-> 
-> Following patch fixes this scenario by just releasing acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list.
-> 
->  Changes since v0(https://lkml.org/lkml/2011/9/21/355):
-> 	- Fix changelog, thanks to Lin Ming.
-> 
->  Changes since v1 (https://lkml.org/lkml/2011/11/3/89):
-> 	- Update changelog and rename goto label, courtesy Srivatsa S. Bhat.
-> 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> Cc: Lin Ming <ming.m.lin@intel.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Len Brown <len.brown@intel.com>
-> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+This patch converts pci_table entries to use the PCI_DEVICE macro,
+if .subvendor and .subdevice are set to PCI_ANY_ID,
+and thus improves readability.
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+And while at it changed the hardcoded 0x8086 to PCI_VENDOR_ID_INTEL
 
-> ---
-> 
-> diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
-> index 55accb7..cc70f3f 100644
-> --- a/drivers/acpi/acpica/hwregs.c
-> +++ b/drivers/acpi/acpica/hwregs.c
-> @@ -269,16 +269,17 @@ acpi_status acpi_hw_clear_acpi_status(void)
->  
->  	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
->  					ACPI_BITMASK_ALL_FIXED_STATUS);
-> -	if (ACPI_FAILURE(status)) {
-> -		goto unlock_and_exit;
-> -	}
-> +
-> +	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +
-> +	if (ACPI_FAILURE(status))
-> +		goto exit;
->  
->  	/* Clear the GPE Bits in all GPE registers in all GPE blocks */
->  
->  	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
->  
-> -      unlock_and_exit:
-> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
-> +exit:
->  	return_ACPI_STATUS(status);
->  }
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+KernelVersion: Staging-20111106
+---
+ drivers/staging/gma500/psb_drv.c |   52 +++++++++++++++++++-------------------
+ 1 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index dc676c2..f5eebcb 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -50,37 +50,37 @@ module_param_named(trap_pagefaults, drm_psb_trap_pagefaults, int, 0600);
+ 
+ 
+ static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
+-	{ 0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &psb_chip_ops },
+-	{ 0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &psb_chip_ops },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8108), 0, 0, (long) &psb_chip_ops },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8109), 0, 0, (long) &psb_chip_ops },
+ #if defined(CONFIG_DRM_PSB_MRST)
+-	{ 0x8086, 0x4100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4101, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4102, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4103, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4104, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4105, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4106, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
+-	{ 0x8086, 0x4107, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4100), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4101), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4102), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4103), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4104), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4105), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4106), 0, 0, (long) &mrst_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4107), 0, 0, (long) &mrst_chip_ops},
+ #endif
+ #if defined(CONFIG_DRM_PSB_MFLD)
+-	{ 0x8086, 0x0130, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0131, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0132, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0133, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0134, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0135, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0136, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
+-	{ 0x8086, 0x0137, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0130), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0131), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0132), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0133), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0134), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0135), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0136), 0, 0, (long) &mdfld_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0137), 0, 0, (long) &mdfld_chip_ops},
+ #endif
+ #if defined(CONFIG_DRM_PSB_CDV)
+-	{ 0x8086, 0x0be0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be3, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be5, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
+-	{ 0x8086, 0x0be7, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be0), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be1), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be2), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be3), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be4), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be5), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be6), 0, 0, (long) &cdv_chip_ops},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be7), 0, 0, (long) &cdv_chip_ops},
+ #endif
+ 	{ 0, 0, 0}
+ };
+-- 
+1.7.3.4
 
