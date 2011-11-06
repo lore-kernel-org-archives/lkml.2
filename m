@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab1KFTQD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 14:16:03 -0500
+	id S1754620Ab1KFTPh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 14:15:37 -0500
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:39330 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754624Ab1KFTPj (ORCPT
+	with ESMTP id S1754566Ab1KFTPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 14:15:39 -0500
+	Sun, 6 Nov 2011 14:15:33 -0500
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 To: intel-gfx <intel-gfx@lists.freedesktop.org>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 12/13] drm/i915: drop gtt slowpath
-Date: Sun,  6 Nov 2011 20:13:59 +0100
-Message-Id: <1320606840-21132-13-git-send-email-daniel.vetter@ffwll.ch>
+Subject: [PATCH 07/13] drm/i915: move clflushing into shmem_pread
+Date: Sun,  6 Nov 2011 20:13:54 +0100
+Message-Id: <1320606840-21132-8-git-send-email-daniel.vetter@ffwll.ch>
 X-Mailer: git-send-email 1.7.6.4
 In-Reply-To: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
 References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
@@ -21,258 +21,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the proper prefault, it's extremely unlikely that we fall back
-to the gtt slowpath.
+This is obviously gonna slow down pread. But for a half-way realistic
+micro-benchmark, it doesn't matter: Non-broken userspace reads back
+data from the gpu once before the gpu again dirties it.
 
-So just kill it and use the shmem_pwrite path as fallback.
+So all this ranged clflush tracking is just a waste of time.
 
-To further clean up the code, move the preparatory gem calls into the
-respective pwrite functions. This way the gtt_fast->shmem fallback
-is much more obvious.
+No pread performance change (neglecting the dumb benchmark of
+constantly reading the same data) measured.
+
+As an added bonus, this avoids clflush on read on coherent objects.
+Which means that partial preads on snb are now roughly 4x as fast.
+This will be usefull for e.g. the libva encoder - when I finally get
+around to fix that up.
+
+v2: Properly sync with the gpu on LLC machines.
 
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 ---
- drivers/gpu/drm/i915/i915_gem.c |  183 +++++++--------------------------------
- 1 files changed, 30 insertions(+), 153 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   26 ++++++++++++++++++++------
+ 1 files changed, 20 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 5b8a7c5..0a374e1 100644
+index 5eec933..0e9cc81 100644
 --- a/drivers/gpu/drm/i915/i915_gem.c
 +++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -523,30 +523,6 @@ fast_user_write(struct io_mapping *mapping,
- 	return unwritten;
- }
- 
--/* Here's the write path which can sleep for
-- * page faults
-- */
--
--static inline void
--slow_kernel_write(struct io_mapping *mapping,
--		  loff_t gtt_base, int gtt_offset,
--		  struct page *user_page, int user_offset,
--		  int length)
--{
--	char __iomem *dst_vaddr;
--	char *src_vaddr;
--
--	dst_vaddr = io_mapping_map_wc(mapping, gtt_base);
--	src_vaddr = kmap(user_page);
--
--	memcpy_toio(dst_vaddr + gtt_offset,
--		    src_vaddr + user_offset,
--		    length);
--
--	kunmap(user_page);
--	io_mapping_unmap(dst_vaddr);
--}
--
- /**
-  * This is the fast pwrite path, where we copy the data directly from the
-  * user into the GTT, uncached.
-@@ -561,7 +537,19 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
- 	ssize_t remain;
- 	loff_t offset, page_base;
- 	char __user *user_data;
--	int page_offset, page_length;
-+	int page_offset, page_length, ret;
-+
-+	ret = i915_gem_object_pin(obj, 0, true);
-+	if (ret)
-+		goto out;
-+
-+	ret = i915_gem_object_set_to_gtt_domain(obj, true);
-+	if (ret)
-+		goto out_unpin;
-+
-+	ret = i915_gem_object_put_fence(obj);
-+	if (ret)
-+		goto out_unpin;
- 
- 	user_data = (char __user *) (uintptr_t) args->data_ptr;
- 	remain = args->size;
-@@ -586,112 +574,19 @@ i915_gem_gtt_pwrite_fast(struct drm_device *dev,
- 		 * retry in the slow path.
- 		 */
- 		if (fast_user_write(dev_priv->mm.gtt_mapping, page_base,
--				    page_offset, user_data, page_length))
--			return -EFAULT;
-+				    page_offset, user_data, page_length)) {
-+			ret = -EFAULT;
-+			goto out_unpin;
-+		}
- 
- 		remain -= page_length;
- 		user_data += page_length;
- 		offset += page_length;
- 	}
- 
--	return 0;
--}
--
--/**
-- * This is the fallback GTT pwrite path, which uses get_user_pages to pin
-- * the memory and maps it using kmap_atomic for copying.
-- *
-- * This code resulted in x11perf -rgb10text consuming about 10% more CPU
-- * than using i915_gem_gtt_pwrite_fast on a G45 (32-bit).
-- */
--static int
--i915_gem_gtt_pwrite_slow(struct drm_device *dev,
--			 struct drm_i915_gem_object *obj,
--			 struct drm_i915_gem_pwrite *args,
--			 struct drm_file *file)
--{
--	drm_i915_private_t *dev_priv = dev->dev_private;
--	ssize_t remain;
--	loff_t gtt_page_base, offset;
--	loff_t first_data_page, last_data_page, num_pages;
--	loff_t pinned_pages, i;
--	struct page **user_pages;
--	struct mm_struct *mm = current->mm;
--	int gtt_page_offset, data_page_offset, data_page_index, page_length;
--	int ret;
--	uint64_t data_ptr = args->data_ptr;
--
--	remain = args->size;
--
--	/* Pin the user pages containing the data.  We can't fault while
--	 * holding the struct mutex, and all of the pwrite implementations
--	 * want to hold it while dereferencing the user data.
--	 */
--	first_data_page = data_ptr / PAGE_SIZE;
--	last_data_page = (data_ptr + args->size - 1) / PAGE_SIZE;
--	num_pages = last_data_page - first_data_page + 1;
--
--	user_pages = drm_malloc_ab(num_pages, sizeof(struct page *));
--	if (user_pages == NULL)
--		return -ENOMEM;
--
--	mutex_unlock(&dev->struct_mutex);
--	down_read(&mm->mmap_sem);
--	pinned_pages = get_user_pages(current, mm, (uintptr_t)args->data_ptr,
--				      num_pages, 0, 0, user_pages, NULL);
--	up_read(&mm->mmap_sem);
--	mutex_lock(&dev->struct_mutex);
--	if (pinned_pages < num_pages) {
--		ret = -EFAULT;
--		goto out_unpin_pages;
--	}
--
--	ret = i915_gem_object_set_to_gtt_domain(obj, true);
--	if (ret)
--		goto out_unpin_pages;
--
--	ret = i915_gem_object_put_fence(obj);
--	if (ret)
--		goto out_unpin_pages;
--
--	offset = obj->gtt_offset + args->offset;
--
--	while (remain > 0) {
--		/* Operation in this page
--		 *
--		 * gtt_page_base = page offset within aperture
--		 * gtt_page_offset = offset within page in aperture
--		 * data_page_index = page number in get_user_pages return
--		 * data_page_offset = offset with data_page_index page.
--		 * page_length = bytes to copy for this page
--		 */
--		gtt_page_base = offset & PAGE_MASK;
--		gtt_page_offset = offset_in_page(offset);
--		data_page_index = data_ptr / PAGE_SIZE - first_data_page;
--		data_page_offset = offset_in_page(data_ptr);
--
--		page_length = remain;
--		if ((gtt_page_offset + page_length) > PAGE_SIZE)
--			page_length = PAGE_SIZE - gtt_page_offset;
--		if ((data_page_offset + page_length) > PAGE_SIZE)
--			page_length = PAGE_SIZE - data_page_offset;
--
--		slow_kernel_write(dev_priv->mm.gtt_mapping,
--				  gtt_page_base, gtt_page_offset,
--				  user_pages[data_page_index],
--				  data_page_offset,
--				  page_length);
--
--		remain -= page_length;
--		offset += page_length;
--		data_ptr += page_length;
--	}
--
--out_unpin_pages:
--	for (i = 0; i < pinned_pages; i++)
--		page_cache_release(user_pages[i]);
--	drm_free_large(user_pages);
--
-+out_unpin:
-+	i915_gem_object_unpin(obj);
-+out:
- 	return ret;
- }
- 
-@@ -710,6 +605,10 @@ i915_gem_shmem_pwrite(struct drm_device *dev,
+@@ -342,12 +342,25 @@ i915_gem_shmem_pread(struct drm_device *dev,
+ 	int shmem_page_offset, page_length, ret;
+ 	int obj_do_bit17_swizzling, page_do_bit17_swizzling;
  	int hit_slowpath = 0;
- 	int release_page;
++	int needs_clflush = 0;
  
-+	ret = i915_gem_object_set_to_cpu_domain(obj, 1);
-+	if (ret)
-+		return ret;
-+
  	user_data = (char __user *) (uintptr_t) args->data_ptr;
  	remain = args->size;
  
-@@ -854,6 +753,7 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
+ 	obj_do_bit17_swizzling = i915_gem_object_needs_bit17_swizzle(obj);
  
- 	trace_i915_gem_object_pwrite(obj, args->offset, args->size);
++	if (!(obj->base.read_domains & I915_GEM_DOMAIN_CPU)) {
++		/* If we're not in the cpu read domain, set ourself into the gtt
++		 * read domain and manually flush cachelines (if required). This
++		 * optimizes for the case when the gpu will dirty the data
++		 * anyway again before the next pread happens. */
++		if (obj->cache_level == I915_CACHE_NONE)
++			needs_clflush = 1;
++		ret = i915_gem_object_set_to_gtt_domain(obj, false);
++		if (ret)
++			return ret;
++	}
++
+ 	offset = args->offset;
  
-+	ret = -EFAULT;
- 	/* We can only do the GTT pwrite on untiled buffers, as otherwise
- 	 * it would end up going through the fenced access, and we'll get
- 	 * different detiling behavior between reading and writing.
-@@ -866,37 +766,14 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
- 	} else if (obj->gtt_space &&
- 		   obj->cache_level == I915_CACHE_NONE &&
- 		   obj->base.write_domain != I915_GEM_DOMAIN_CPU) {
--		ret = i915_gem_object_pin(obj, 0, true);
--		if (ret)
--			goto out;
--
--		ret = i915_gem_object_set_to_gtt_domain(obj, true);
--		if (ret)
--			goto out_unpin;
--
--		ret = i915_gem_object_put_fence(obj);
--		if (ret)
--			goto out_unpin;
--
- 		ret = i915_gem_gtt_pwrite_fast(dev, obj, args, file);
--		if (ret == -EFAULT)
--			ret = i915_gem_gtt_pwrite_slow(dev, obj, args, file);
--
--out_unpin:
--		i915_gem_object_unpin(obj);
--
--		if (ret != -EFAULT)
--			goto out;
--		/* Fall through to the shmfs paths because the gtt paths might
--		 * fail with non-page-backed user pointers (e.g. gtt mappings
--		 * when moving data between textures). */
-+		/* Note that the gtt paths might fail with non-page-backed user
-+		 * pointers (e.g. gtt mappings when moving data between
-+		 * textures). Fallback to the shmem path in that case. */
- 	}
+ 	while (remain > 0) {
+@@ -374,6 +387,9 @@ i915_gem_shmem_pread(struct drm_device *dev,
  
--	ret = i915_gem_object_set_to_cpu_domain(obj, 1);
+ 		if (!obj_do_bit17_swizzling || !page_do_bit17_swizzling) {
+ 			vaddr = kmap_atomic(page);
++			if (needs_clflush)
++				drm_clflush_virt_range(vaddr + shmem_page_offset,
++						       page_length);
+ 			ret = __copy_to_user_inatomic(user_data,
+ 						      vaddr + shmem_page_offset,
+ 						      page_length);
+@@ -387,6 +403,10 @@ i915_gem_shmem_pread(struct drm_device *dev,
+ 		mutex_unlock(&dev->struct_mutex);
+ 
+ 		vaddr = kmap(page);
++		if (needs_clflush)
++			drm_clflush_virt_range(vaddr + shmem_page_offset,
++					       page_length);
++
+ 		if (obj_do_bit17_swizzling && page_do_bit17_swizzling)
+ 			ret = __copy_to_user_swizzled(user_data,
+ 						      vaddr, shmem_page_offset,
+@@ -467,12 +487,6 @@ i915_gem_pread_ioctl(struct drm_device *dev, void *data,
+ 
+ 	trace_i915_gem_object_pread(obj, args->offset, args->size);
+ 
+-	ret = i915_gem_object_set_cpu_read_domain_range(obj,
+-							args->offset,
+-							args->size);
 -	if (ret)
 -		goto out;
 -
--	ret = i915_gem_shmem_pwrite(dev, obj, args, file);
-+	if (ret == -EFAULT)
-+		ret = i915_gem_shmem_pwrite(dev, obj, args, file);
+ 	ret = i915_gem_shmem_pread(dev, obj, args, file);
  
  out:
- 	drm_gem_object_unreference(&obj->base);
 -- 
 1.7.6.4
 
