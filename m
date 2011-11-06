@@ -1,37 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751383Ab1KFHfG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 02:35:06 -0500
-Received: from fep31.mx.upcmail.net ([62.179.121.49]:44691 "EHLO
-	fep31.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab1KFHfF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 02:35:05 -0500
-X-SourceIP: 109.73.65.4
-X-Authenticated-Sender: astorreal@upcmail.sk
-Reply-To: <ogawa1sho@hotmail.my>
-From: "Shoichi Ogawa" <info@mail.com>
-Subject: My Dear Friend,
-Date: Sun, 6 Nov 2011 07:05:41 -0000
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1751506Ab1KFI7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 03:59:54 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:35021 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750855Ab1KFI7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 03:59:53 -0500
+Message-ID: <1320570027.5755.7.camel@Joe-Laptop>
+Subject: [PATCH] checkpatch: Update signature "might be better as" warning
+From: Joe Perches <joe@perches.com>
+To: Julia Lawall <julia.lawall@lip6.fr>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Andy Whitcroft <apw@shadowen.org>
+Date: Sun, 06 Nov 2011 11:00:27 +0200
+In-Reply-To: <alpine.DEB.2.02.1111052254540.1963@hadrien>
+References: <alpine.DEB.2.02.1111052254540.1963@hadrien>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111106070542.VAPS1962.viefep16-int.chello.at@edge03.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=jqrf5qXv5urL2URZ3a9OklEvUdrM81ZtB3GWlHLPCVk= c=1 sm=0 a=Dyoqhi_TatcA:10 a=3sOsTKhoGfwA:10 a=8EU9Q7FnrCoA:10 a=5TsE5cpP3s4A:10 a=Cfj4BQAnxiAA:10 a=4L349zOOD6U3bYiFRWUA:9 a=Ft8UYL4EG9YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Goodday,
+email header lines can look like signatures tags.
+It's valid to have multiple email recipients on a single line
+but not valid to have multiple signatures on a single line.
 
-I am Mr Shoichi Ogawa,I have a business offer for you. Please reply to this message if you are interested in knowing more.
+Validate signatures only when not in the email headers.
 
-Best Regards
+Clear the $in_commit_log flag when the patch filename appears.
 
-Shoichi Ogawa
+Add '-' to the valid chars in a message header for headers
+like "Message-Id:" and "In-Reply-To:".
+
+Reported-by: Julia Lawall <julia.lawall@lip6.fr>
+Signed-off-by: Joe Perches <joe@perches.com>
+
+---
+
+On Sat, 2011-11-05 at 22:57 +0100, Julia Lawall wrote:
+> Checkpatch is giving me, eg: 
+> 'Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,"David S. Miller" 
+> <davem@davemloft.net>,b.a.t.m.a.n@lists.open-mesh.org,netdev@vger.kernel.org,linux-kernel@vger.kernel.org' 
+> might be better as '"Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,\"David S. 
+> Miller" <davem@davemloft.net>,b.a.t.m.a.n@lists.open-mesh.org,netdev@vger.kernel.org,linux-kernel@vger.kernel.org'
+> The problem seems to go away if I get rid of the quotes around "David S. 
+> Miller".  Is it intentional to give a warning in this case?
+
+ scripts/checkpatch.pl |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 5e93342..9bc0e06 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1504,9 +1504,11 @@ sub process {
+ 		if ($line =~ /^diff --git.*?(\S+)$/) {
+ 			$realfile = $1;
+ 			$realfile =~ s@^([^/]*)/@@;
++			$in_commit_log = 0;
+ 		} elsif ($line =~ /^\+\+\+\s+(\S+)/) {
+ 			$realfile = $1;
+ 			$realfile =~ s@^([^/]*)/@@;
++			$in_commit_log = 0;
+ 
+ 			$p1_prefix = $1;
+ 			if (!$file && $tree && $p1_prefix ne '' &&
+@@ -1546,7 +1548,8 @@ sub process {
+ 		}
+ 
+ # Check signature styles
+-		if ($line =~ /^(\s*)($signature_tags)(\s*)(.*)/) {
++		if (!$in_header_lines &&
++		    $line =~ /^(\s*)($signature_tags)(\s*)(.*)/) {
+ 			my $space_before = $1;
+ 			my $sign_off = $2;
+ 			my $space_after = $3;
+@@ -1623,7 +1626,7 @@ sub process {
+ # Check if it's the start of a commit log
+ # (not a header line and we haven't seen the patch filename)
+ 		if ($in_header_lines && $realfile =~ /^$/ &&
+-		    $rawline !~ /^(commit\b|from\b|\w+:).+$/i) {
++		    $rawline !~ /^(commit\b|from\b|[\w-]+:).+$/i) {
+ 			$in_header_lines = 0;
+ 			$in_commit_log = 1;
+ 		}
+-- 
+1.7.6.405.gc1be0
+
