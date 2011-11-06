@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab1KFN1F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 08:27:05 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41038 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752785Ab1KFN1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752780Ab1KFN1B (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 6 Nov 2011 08:27:01 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41016 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752172Ab1KFN05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 08:26:57 -0500
 From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: kernel-janitors@vger.kernel.org, Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] net/dns_resolver/dns_key.c: use kstrtoul, etc
-Date: Sun,  6 Nov 2011 14:26:50 +0100
-Message-Id: <1320586010-21931-6-git-send-email-julia@diku.dk>
+Subject: [PATCH 3/5] net/mac80211/debugfs.c: use kstrtoul, etc
+Date: Sun,  6 Nov 2011 14:26:48 +0100
+Message-Id: <1320586010-21931-4-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1320586010-21931-1-git-send-email-julia@diku.dk>
 References: <1320586010-21931-1-git-send-email-julia@diku.dk>
@@ -41,19 +43,19 @@ expression a,b;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- net/dns_resolver/dns_key.c |    2 +-
+ net/mac80211/debugfs.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
---- a/net/dns_resolver/dns_key.c
-+++ b/net/dns_resolver/dns_key.c
-@@ -118,7 +118,7 @@ dns_resolver_instantiate(struct key *key
- 				if (opt_vlen <= 0)
- 					goto bad_option_value;
+diff -u -p a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
+--- a/net/mac80211/debugfs.c
++++ b/net/mac80211/debugfs.c
+@@ -190,7 +190,7 @@ static ssize_t uapsd_max_sp_len_write(st
+ 		return -EFAULT;
+ 	buf[len] = '\0';
  
--				ret = strict_strtoul(eq, 10, &derrno);
-+				ret = kstrtoul(eq, 10, &derrno);
- 				if (ret < 0)
- 					goto bad_option_value;
+-	ret = strict_strtoul(buf, 0, &val);
++	ret = kstrtoul(buf, 0, &val);
  
+ 	if (ret)
+ 		return -EINVAL;
 
