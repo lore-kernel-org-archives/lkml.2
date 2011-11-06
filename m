@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777Ab1KFVFW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:05:22 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53704 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750939Ab1KFVFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:05:21 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19E3wZK+n5Ej0Tur7++IdwDbIDWf7bxewjECuQZCc
-	wTjURmJp+b8U/9
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Arnaud Patard <apatard@mandriva.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] staging/xgifb: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
-Date: Sun,  6 Nov 2011 22:05:17 +0100
-Message-Id: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-X-Y-GMX-Trusted: 0
+	id S1751923Ab1KFVHf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:07:35 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:53462 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab1KFVHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 16:07:34 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [GIT PULL pm/for-next] pm: freezer updates
+Date: Sun, 6 Nov 2011 22:10:11 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20111103223113.GR4417@google.com> <201111061312.56256.rjw@sisk.pl> <20111106164755.GA13699@google.com>
+In-Reply-To: <20111106164755.GA13699@google.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111062210.11759.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts pci_table entries to use the PCI_DEVICE macro,
-if .subvendor and .subdevice are set to PCI_ANY_ID,
-and thus improves readability.
+On Sunday, November 06, 2011, Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On Sun, Nov 06, 2011 at 01:12:56PM +0100, Rafael J. Wysocki wrote:
+> > On Sunday, November 06, 2011, Rafael J. Wysocki wrote:
+> > > On Thursday, November 03, 2011, Tejun Heo wrote:
+> > > > Hello, Rafael.
+> > > > 
+> > > > This is pull request for the following pending patches[ets].
+> > > > 
+> > > >  [1] freezer: fix various bugs and simplify implementation, take#2
+> > > >  [2] usb_storage: don't use set_freezable_with_signal()
+> > > >  [3] freezer: kill unused set_freezable_with_signal()
+> > > >  [4] freezer: fix wait_event_freezable/__thaw_task races
+> > > > 
+> > > > The patches are available in the git repository at:
+> > > > 
+> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer
+> > > 
+> > > I pulled this to linux-pm/pm-freezer, but there were merge conflicts that
+> > > I'm not 100% have been resolved correctly.  Please double check if the
+> > > resulting branch is OK.
+> > 
+> > I found a mismerge in the meantime, so the linux-pm/pm-freezer branch has
+> > been re-created from scratch.  Please double check if it's correct.
+> > 
+> > I intend to start merging it into linux-next after 3.2-rc1 has been released.
+> 
+> fake_signal_wake_up() merging seems wrong.  It should be calling
+> signal_wake_up() with @resume == 0.  Other than that, everything looks
+> correct to me.
 
-KernelVersion: Staging-20111106
+Do you mean something like this is needed on top of linux-pm/pm-freezer:
+
 ---
- drivers/staging/xgifb/XGI_main.h |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
+ kernel/freezer.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
-index 71aebe3..0c3f421 100644
---- a/drivers/staging/xgifb/XGI_main.h
-+++ b/drivers/staging/xgifb/XGI_main.h
-@@ -32,14 +32,10 @@
- #endif
+Index: linux-pm/kernel/freezer.c
+===================================================================
+--- linux-pm.orig/kernel/freezer.c
++++ linux-pm/kernel/freezer.c
+@@ -90,7 +90,7 @@ static void fake_signal_wake_up(struct t
+ 	unsigned long flags;
  
- static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 0},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 1},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 2},
--	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42, PCI_ANY_ID, PCI_ANY_ID,
--	 0, 0, 3},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20), 0, 0, 0},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27), 0, 0, 1},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40), 0, 0, 2},
-+	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42), 0, 0, 3},
- 	{0}
- };
- 
--- 
-1.7.3.4
-
+ 	if (lock_task_sighand(p, &flags)) {
+-		signal_wake_up(p, 1);
++		signal_wake_up(p, 0);
+ 		unlock_task_sighand(p, &flags);
+ 	}
+ }
