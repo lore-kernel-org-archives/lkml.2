@@ -1,57 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1KFVQN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:16:13 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24132 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab1KFVQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:16:10 -0500
-Message-Id: <e0d58a$24a0r5@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="71631717"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [PATCH 09/13] drm/i915: don't use gtt_pwrite on LLC cached objects
-To: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-In-Reply-To: <1320606840-21132-10-git-send-email-daniel.vetter@ffwll.ch>
-References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch> <1320606840-21132-10-git-send-email-daniel.vetter@ffwll.ch>
-Date: Sun, 06 Nov 2011 21:16:00 +0000
+	id S1752179Ab1KFVQH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:16:07 -0500
+Received: from hapkido.dreamhost.com ([66.33.216.122]:48108 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab1KFVQE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 16:16:04 -0500
+Subject: [RFC PATCH] tmpfs: support user quotas
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Hugh Dickins <hughd@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Sun, 06 Nov 2011 18:15:01 -0300
+Message-ID: <1320614101.3226.5.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  6 Nov 2011 20:13:56 +0100, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> ~120 µs instead fo ~210 µs to write 1mb on my snb. I like this.
-> 
-> Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-> ---
->  drivers/gpu/drm/i915/i915_gem.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-> index 0048917..8fd175c 100644
-> --- a/drivers/gpu/drm/i915/i915_gem.c
-> +++ b/drivers/gpu/drm/i915/i915_gem.c
-> @@ -842,6 +842,7 @@ i915_gem_pwrite_ioctl(struct drm_device *dev, void *data,
->  		ret = i915_gem_phys_pwrite(dev, obj, args, file);
->  		goto out;
->  	} else if (obj->gtt_space &&
-> +		   obj->cache_level == I915_CACHE_NONE &&
->  		   obj->base.write_domain != I915_GEM_DOMAIN_CPU) {
->  		ret = i915_gem_object_pin(obj, 0, true);
->  		if (ret)
+From: Davidlohr Bueso <dave@gnu.org>
 
-I still think you want to include a obj->map_and_fenceable test here.
-When doing 2D benchmarks the stall incurred here to evict an old object
-map the to-be-written object into the mappable GTT causes measureable
-pain (obviously on non-LLC architectures).
+This patch adds a new RLIMIT_TMPFSQUOTA resource limit to restrict an individual user's quota across all mounted tmpfs filesystems.
+It's well known that a user can easily fill up commonly used directories (like /tmp, /dev/shm) causing programs to break through DoS.
 
-The series looks good and I'll look at the impact upon 2D for pnv and
-snb over the next couple of days. With and without the extra check ;-)
--Chris
+By default the soft and hard limits are set the RLIM_INFINITY, thus maintaining the current functionality and allowing the user to populate
+the fs all he wants.
 
+This is one of the features requested in the Plumbers wishlist (http://0pointer.de/blog/projects/plumbers-wishlist-2.html).
+
+CC: Lennart Poettering <lennart@poettering.net>
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+This is my first patch in these waters, so if I'm doing anything terrible wrong here please bare with me.
+
+ fs/proc/base.c                 |    1 +
+ include/asm-generic/resource.h |    4 +++-
+ include/linux/sched.h          |    3 +++
+ mm/shmem.c                     |   14 ++++++++++++--
+ 4 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 2db1bd3..f839edb 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -511,6 +511,7 @@ static const struct limit_names lnames[RLIM_NLIMITS] = {
+ 	[RLIMIT_NICE] = {"Max nice priority", NULL},
+ 	[RLIMIT_RTPRIO] = {"Max realtime priority", NULL},
+ 	[RLIMIT_RTTIME] = {"Max realtime timeout", "us"},
++	[RLIMIT_TMPFSQUOTA] = {"Max tmpfs user quota", "bytes"},
+ };
+ 
+ /* Display limits for a process */
+diff --git a/include/asm-generic/resource.h b/include/asm-generic/resource.h
+index 61fa862..8ba77ad 100644
+--- a/include/asm-generic/resource.h
++++ b/include/asm-generic/resource.h
+@@ -45,7 +45,8 @@
+ 					   0-39 for nice level 19 .. -20 */
+ #define RLIMIT_RTPRIO		14	/* maximum realtime priority */
+ #define RLIMIT_RTTIME		15	/* timeout for RT tasks in us */
+-#define RLIM_NLIMITS		16
++#define RLIMIT_TMPFSQUOTA	16	/* maximum bytes for tmpfs quota */
++#define RLIM_NLIMITS		17
+ 
+ /*
+  * SuS says limits have to be unsigned.
+@@ -87,6 +88,7 @@
+ 	[RLIMIT_NICE]		= { 0, 0 },				\
+ 	[RLIMIT_RTPRIO]		= { 0, 0 },				\
+ 	[RLIMIT_RTTIME]		= {  RLIM_INFINITY,  RLIM_INFINITY },	\
++	[RLIMIT_TMPFSQUOTA]    	= {  RLIM_INFINITY,  RLIM_INFINITY },   \
+ }
+ 
+ #endif	/* __KERNEL__ */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e8acce7..849710f 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -703,6 +703,9 @@ struct user_struct {
+ 	/* protected by mq_lock	*/
+ 	unsigned long mq_bytes;	/* How many bytes can be allocated to mqueue? */
+ #endif
++#ifdef CONFIG_TMPFS
++	atomic_long_t shmem_bytes;
++#endif
+ 	unsigned long locked_shm; /* How many pages of mlocked shm ? */
+ 
+ #ifdef CONFIG_KEYS
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 45b9acb..1b8c638 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1159,7 +1159,12 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
+ 			struct page **pagep, void **fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	struct user_struct *user= current_user();
+ 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
++
++	if (atomic_long_read(&user->shmem_bytes) + len > 
++	    rlimit(RLIMIT_TMPFSQUOTA))
++		return -ENOSPC;
+ 	return shmem_getpage(inode, index, pagep, SGP_WRITE, NULL);
+ }
+ 
+@@ -1169,10 +1174,12 @@ shmem_write_end(struct file *file, struct address_space *mapping,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	struct user_struct *user= current_user();
+ 
+-	if (pos + copied > inode->i_size)
++	if (pos + copied > inode->i_size) {
+ 		i_size_write(inode, pos + copied);
+-
++		atomic_long_add(copied, &user->shmem_bytes);
++	}
+ 	set_page_dirty(page);
+ 	unlock_page(page);
+ 	page_cache_release(page);
+@@ -1535,12 +1542,15 @@ out:
+ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
++	struct user_struct *user = current_user();
+ 
+ 	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
+ 		shmem_free_inode(inode->i_sb);
+ 
+ 	dir->i_size -= BOGO_DIRENT_SIZE;
+ 	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++	atomic_long_sub(inode->i_size, &user->shmem_bytes);
++	
+ 	drop_nlink(inode);
+ 	dput(dentry);	/* Undo the count from "create" - this does all the work */
+ 	return 0;
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.7.4.1
+
+
+
