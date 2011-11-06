@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab1KFWZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:25:58 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56140 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab1KFWZ4 (ORCPT
+	id S1754017Ab1KFW2H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:28:07 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16946 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab1KFW2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:25:56 -0500
-Message-ID: <4EB70920.80905@linux.vnet.ibm.com>
-Date: Mon, 07 Nov 2011 03:54:32 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Sun, 6 Nov 2011 17:28:04 -0500
+Date: Sun, 6 Nov 2011 23:33:24 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] btrfs: Don't leak mem in scrub_fixup().
+Message-ID: <alpine.LNX.2.00.1111062331350.5763@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jesper Juhl <jj@chaosbits.net>
-CC: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Bing Zhao <bzhao@marvell.com>
-Subject: Re: [PATCH] net, wireless, mwifiex: Fix mem leak in mwifiex_update_curr_bss_params()
-References: <alpine.LNX.2.00.1111062255310.5763@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1111062255310.5763@swampdragon.chaosbits.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110612-9264-0000-0000-0000001990A2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 03:28 AM, Jesper Juhl wrote:
-> If kmemdup() fails we leak the memory allocated to bss_desc.
-> This patch fixes the leak.
-> I also removed the pointless default assignment of 'NULL' to 'bss_desc' 
-> while I was there anyway.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+It seems to me that we may leak the memory allocated to 'multi' in
+scrub_fixup() if, for example, 'length' turns out to be less than
+PAGE_SIZE after we call btrfs_map_block(). This patch should take care
+of the leak by always kfree'ing 'multi' before we return in that error
+case.
 
-Looks good to me.
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ fs/btrfs/scrub.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks,
-Srivatsa S. Bhat
+ Compile tested only since I don't have any btrfs filesystems to test on.
 
-> ---
->  drivers/net/wireless/mwifiex/scan.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
->  note: patch is compile tested only since I don't have the hardware.
-> 
-> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-> index dae8dbb..8a3f959 100644
-> --- a/drivers/net/wireless/mwifiex/scan.c
-> +++ b/drivers/net/wireless/mwifiex/scan.c
-> @@ -1469,7 +1469,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv, u8 *bssid,
->  			       s32 rssi, const u8 *ie_buf, size_t ie_len,
->  			       u16 beacon_period, u16 cap_info_bitmap, u8 band)
->  {
-> -	struct mwifiex_bssdescriptor *bss_desc = NULL;
-> +	struct mwifiex_bssdescriptor *bss_desc;
->  	int ret;
->  	unsigned long flags;
->  	u8 *beacon_ie;
-> @@ -1484,6 +1484,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv, u8 *bssid,
-> 
->  	beacon_ie = kmemdup(ie_buf, ie_len, GFP_KERNEL);
->  	if (!beacon_ie) {
-> +		kfree(bss_desc);
->  		dev_err(priv->adapter->dev, " failed to alloc beacon_ie\n");
->  		return -ENOMEM;
->  	}
+diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
+index a8d03d5..b53433e 100644
+--- a/fs/btrfs/scrub.c
++++ b/fs/btrfs/scrub.c
+@@ -271,6 +271,7 @@ static void scrub_fixup(struct scrub_bio *sbio, int ix)
+ 	ret = btrfs_map_block(map_tree, REQ_WRITE, logical, &length,
+ 			      &multi, 0);
+ 	if (ret || !multi || length < PAGE_SIZE) {
++		kfree(multi);
+ 		printk(KERN_ERR
+ 		       "scrub_fixup: btrfs_map_block failed us for %llu\n",
+ 		       (unsigned long long)logical);
+-- 
+1.7.7.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
