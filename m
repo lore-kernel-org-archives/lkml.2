@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753182Ab1KFVpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:45:09 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:50088 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab1KFVpH (ORCPT
+	id S1753199Ab1KFVsg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:48:36 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:62687 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab1KFVsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:45:07 -0500
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Nov 2011 16:45:07 EST
-In-Reply-To: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
-References: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
-Mime-Version: 1.0 (Apple Message framework v753.1)
-Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
-Message-Id: <59D8A47D-7B28-48CA-82D3-BCB50619D683@iki.fi>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Arnaud Patard <apatard@mandriva.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
+	Sun, 6 Nov 2011 16:48:35 -0500
+X-Authority-Analysis: v=2.0 cv=YYg/Fntf c=1 sm=0 a=QETZmXXmyubuBiJjAgCHWw==:17 a=y8ZX_BOJfaUA:10 a=8nJEP1OIZ-IA:10 a=xe8BsctaAAAA:8 a=OqLjXh8zMRUUj2EWYRkA:9 a=wPNLvfGTeEIA:10 a=QETZmXXmyubuBiJjAgCHWw==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 97.103.252.48
+Message-ID: <4EB700B1.3050205@cfl.rr.com>
+Date: Sun, 06 Nov 2011 16:48:33 -0500
+From: Phillip Susi <psusi@cfl.rr.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: write_cache_pages inefficiency
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] staging/xgifb: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
-Date: Sun, 6 Nov 2011 23:37:53 +0200
-To: Peter Huewe <peterhuewe@gmx.de>
-X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-On 6.11.2011, at 23.05, Peter Huewe wrote:
-> This patch converts pci_table entries to use the PCI_DEVICE macro,
-> if .subvendor and .subdevice are set to PCI_ANY_ID,
-> and thus improves readability.
->
-> KernelVersion: Staging-20111106
-> ---
->  drivers/staging/xgifb/XGI_main.h |   12 ++++--------
->  1 files changed, 4 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/ 
-> xgifb/XGI_main.h
-> index 71aebe3..0c3f421 100644
-> --- a/drivers/staging/xgifb/XGI_main.h
-> +++ b/drivers/staging/xgifb/XGI_main.h
-> @@ -32,14 +32,10 @@
->  #endif
->
->  static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
-> -	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20, PCI_ANY_ID, PCI_ANY_ID,
-> -	 0, 0, 0},
-> -	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27, PCI_ANY_ID, PCI_ANY_ID,
-> -	 0, 0, 1},
-> -	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40, PCI_ANY_ID, PCI_ANY_ID,
-> -	 0, 0, 2},
-> -	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42, PCI_ANY_ID, PCI_ANY_ID,
-> -	 0, 0, 3},
-> +	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20), 0, 0, 0},
+I've read over write_cache_pages() in page-writeback.c, and related
+writepages() functions, and it seems to me that it suffers from a
+performance problem whenever an fsync is done on a file and some of
+its pages have already begun writeback.  The comment in the code says:
 
-I think the correct way would be
+ * If a page is already under I/O, write_cache_pages() skips it, even
+ * if it's dirty.  This is desirable behaviour for memory-cleaning
+writeback,
+ * but it is INCORRECT for data-integrity system calls such as
+fsync().  fsync()
+ * and msync() need to guarantee that all the data which was dirty at
+the time
+ * the call was made get new I/O started against them.  If
+wbc->sync_mode is
+ * WB_SYNC_ALL then we were called for data integrity and we must wait for
+ * existing IO to complete.
 
-	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20), .driver_data = 0},
+Based on this, I would expect the function to wait for an existing
+write to complete only if the page is also dirty.  Instead, it waits
+for existing page writes to complete regardless of the dirty bit.
+Additionally, it does each wait serially, so if you are trying to
+fsync 1000 dirty pages, and the first 10 are already being written
+out, the thread will block on each of those 10 pages write completion
+before it begins queuing any new writes.
 
-or
+Instead, shouldn't it go ahead and initiate pagewrite on all pages not
+already being written, and then come back and wait on those that were
+already in flight to complete, then initiate a second write on them if
+they are dirty?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-	{PCI_VDEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20), 0},
-
-But I don't see the driver_data even being used anywhere, so then you  
-could
-just simply say:
-
-	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20)},
-
-A.
-
+iEYEARECAAYFAk63ALEACgkQJ4UciIs+XuL/NgCfXBftM2PRN10u0i3DBG94hny6
+dVoAoKbQp3yiY6ZotjbqHyd+kOEXiLgf
+=dK4Q
+-----END PGP SIGNATURE-----
