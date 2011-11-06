@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923Ab1KFVHf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:07:35 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:53462 "EHLO ogre.sisk.pl"
+	id S1752001Ab1KFVK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:10:27 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:53474 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961Ab1KFVHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:07:34 -0500
+	id S1750876Ab1KFVKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 16:10:25 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [GIT PULL pm/for-next] pm: freezer updates
-Date: Sun, 6 Nov 2011 22:10:11 +0100
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Subject: Re: [PATCH -v2] acpi: Fix possible recursive locking in hwregs.c
+Date: Sun, 6 Nov 2011 22:13:02 +0100
 User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20111103223113.GR4417@google.com> <201111061312.56256.rjw@sisk.pl> <20111106164755.GA13699@google.com>
-In-Reply-To: <20111106164755.GA13699@google.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-acpi" <linux-acpi@vger.kernel.org>, akpm@linux-foundation.org,
+        ming Lin <ming.m.lin@intel.com>, len.brown@intel.com,
+        srivatsa.bhat@linux.vnet.ibm.com, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+References: <1320592697.7439.3.camel@localhost.localdomain>
+In-Reply-To: <1320592697.7439.3.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111062210.11759.rjw@sisk.pl>
+Message-Id: <201111062213.02844.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, November 06, 2011, Tejun Heo wrote:
-> Hello, Rafael.
+On Sunday, November 06, 2011, Rakib Mullick wrote:
+> Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status, acpi_os_acquire_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which tries to hold acpi_gbl_gpe_lock. Both acpi_gbl_hardware_lock and acpi_gbl_gpe_lock are at same lock-class and which might cause lock recursion deadlock. 
 > 
-> On Sun, Nov 06, 2011 at 01:12:56PM +0100, Rafael J. Wysocki wrote:
-> > On Sunday, November 06, 2011, Rafael J. Wysocki wrote:
-> > > On Thursday, November 03, 2011, Tejun Heo wrote:
-> > > > Hello, Rafael.
-> > > > 
-> > > > This is pull request for the following pending patches[ets].
-> > > > 
-> > > >  [1] freezer: fix various bugs and simplify implementation, take#2
-> > > >  [2] usb_storage: don't use set_freezable_with_signal()
-> > > >  [3] freezer: kill unused set_freezable_with_signal()
-> > > >  [4] freezer: fix wait_event_freezable/__thaw_task races
-> > > > 
-> > > > The patches are available in the git repository at:
-> > > > 
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git pm-freezer
-> > > 
-> > > I pulled this to linux-pm/pm-freezer, but there were merge conflicts that
-> > > I'm not 100% have been resolved correctly.  Please double check if the
-> > > resulting branch is OK.
-> > 
-> > I found a mismerge in the meantime, so the linux-pm/pm-freezer branch has
-> > been re-created from scratch.  Please double check if it's correct.
-> > 
-> > I intend to start merging it into linux-next after 3.2-rc1 has been released.
+> Following patch fixes this scenario by just releasing acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list.
 > 
-> fake_signal_wake_up() merging seems wrong.  It should be calling
-> signal_wake_up() with @resume == 0.  Other than that, everything looks
-> correct to me.
+>  Changes since v0(https://lkml.org/lkml/2011/9/21/355):
+> 	- Fix changelog, thanks to Lin Ming.
+> 
+>  Changes since v1 (https://lkml.org/lkml/2011/11/3/89):
+> 	- Update changelog and rename goto label, courtesy Srivatsa S. Bhat.
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> Cc: Lin Ming <ming.m.lin@intel.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Len Brown <len.brown@intel.com>
+> Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-Do you mean something like this is needed on top of linux-pm/pm-freezer:
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 
----
- kernel/freezer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> ---
+> 
+> diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+> index 55accb7..cc70f3f 100644
+> --- a/drivers/acpi/acpica/hwregs.c
+> +++ b/drivers/acpi/acpica/hwregs.c
+> @@ -269,16 +269,17 @@ acpi_status acpi_hw_clear_acpi_status(void)
+>  
+>  	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
+>  					ACPI_BITMASK_ALL_FIXED_STATUS);
+> -	if (ACPI_FAILURE(status)) {
+> -		goto unlock_and_exit;
+> -	}
+> +
+> +	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
+> +
+> +	if (ACPI_FAILURE(status))
+> +		goto exit;
+>  
+>  	/* Clear the GPE Bits in all GPE registers in all GPE blocks */
+>  
+>  	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
+>  
+> -      unlock_and_exit:
+> -	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
+> +exit:
+>  	return_ACPI_STATUS(status);
+>  }
+>  
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
-Index: linux-pm/kernel/freezer.c
-===================================================================
---- linux-pm.orig/kernel/freezer.c
-+++ linux-pm/kernel/freezer.c
-@@ -90,7 +90,7 @@ static void fake_signal_wake_up(struct t
- 	unsigned long flags;
- 
- 	if (lock_task_sighand(p, &flags)) {
--		signal_wake_up(p, 1);
-+		signal_wake_up(p, 0);
- 		unlock_task_sighand(p, &flags);
- 	}
- }
