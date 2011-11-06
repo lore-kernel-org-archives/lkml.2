@@ -1,85 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125Ab1KFPYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 10:24:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	id S1753230Ab1KFPgA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 10:36:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29170 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752616Ab1KFPYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 10:24:18 -0500
-Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
-From: Mark Salter <msalter@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 06 Nov 2011 10:24:16 -0500
-In-Reply-To: <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
-References: <1320179267.14825.107.camel@deneb.redhat.com>
-	 <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
-	 <1320529182.14081.78.camel@deneb.redhat.com>
-	 <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="us-ascii"
+	id S1753033Ab1KFPf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 10:35:58 -0500
+Message-ID: <4EB6A958.9030007@redhat.com>
+Date: Sun, 06 Nov 2011 17:35:52 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Xiao Guangrong <xiao.grong@gmail.com>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 00/11] KVM: x86: optimize for writing guest page
+References: <4E7AF758.7060900@cn.fujitsu.com> <20111006175333.GA3959@amt.cnet> <4E8FCC37.8090409@cn.fujitsu.com> <4E91926D.8060206@redhat.com> <4E91A3AA.1000309@redhat.com> <4E940018.1010908@cn.fujitsu.com> <4EB3AD54.9050605@gmail.com>
+In-Reply-To: <4EB3AD54.9050605@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-ID: <1320593057.14081.107.camel@deneb.redhat.com>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-11-05 at 15:38 -0700, Linus Torvalds wrote:
-> On Sat, Nov 5, 2011 at 2:39 PM, Mark Salter <msalter@redhat.com> wrote:
-> >
-> > Okay, first of all, it doesn't break any old ones. There is one arch
-> > that currently uses asm-generic/page.h (blackfin) and that one uses a
-> > PAGE_OFFSET of 0x0 and has physical RAM starting at 0x0. My patch (wrong
-> > as it may otherwise be) won't break blackfin.
-> 
-> Ok. And I didn't notice that when you added the PFN_OFFSET, you did
-> actually remove the subtraction of PAGE_OFFSET from the
-> virtual->physical translation.
-> 
-> But I don't really understand why you did that. It makes very little sense.
-> 
-> > Are you saying that PAGE_OFFSET should always be zero in the NOMMU case?
-> > Or that ARCH_PFN_OFFSET shouldn't use PAGE_OFFSET (five existing arches
-> > use that same definition)?
-> 
-> So If the memory is mapped at some non-zero offset, what would make
-> *sense* to me is have the old
-> 
->    #define __pa(x) ((unsigned long)(x) -- PAGE_OFFSET)
-> 
-> and that should already make sure that then the PFN is in the right
-> range, and doesn't need any fixups.
-> 
-> That's what the old version of the file did, and that seems to be a
-> sensible model. Why isn't it?
-> 
+On 11/04/2011 11:16 AM, Xiao Guangrong wrote:
+>
+> I have done kernbench tests several times on my desktop, but it shows
+> very well:
+>
+> before patchset:
+> real 212.27
+> real 213.47
+> real 204.99
+> real 200.58
+> real 199.99
+> real 199.94
+> real 201.51
+> real 199.83
+> real 198.19
+> real 205.13
+>
+> after patchset:
+> real 199.90
+> real 201.89
+> real 194.54
+> real 188.71
+> real 185.75
+> real 187.70
+> real 188.99
+> real 188.53
+> real 186.29
+> real 188.25
+>
+> I will test it on our server using kvm-autotest, could you share me
+> your config file please?
 
-I think the best counter argument is that it leads to paddr != vaddr
-in the case of NOMMU with a non-zero memory base. My view is that in
-all NOMMU cases, physical and virtual addresses should be the same.
-Otherwise, you end up breaking drivers which need to pass physical
-addresses to devices.
 
-Additionally, I think it is perfectly reasonable to have a non-zero
-PAGE_OFFSET in the NOMMU case. PAGE_OFFSET is the base of kernel
-virtual memory and in the NOMMU case this would match the physical
-base of RAM which may be non-zero.
+# Copy this file to tests.cfg and edit it.
+#
+# This file contains the test set definitions. Define your test sets here.
 
-As for PFNs, there seems to be a number of places in the kernel where
-the assumption is that PADDR == (PFN << PAGE_SHIFT). For this to hold
-true, PFNs cannot be zero-based if RAM is physically based at a non-zero
-address. Non zero-based PFNs is what ARCH_PFN_OFFSET is all about. Even
-in the MMU case, PFNs are non zero-based for arm, mips, and a few
-others. That's how I ended up with ARCH_PFN_OFFSET in the generic
-definition of pfn_valid().
+include base.cfg
+include subtests.cfg
+include guest-os.cfg
+include cdkeys.cfg
 
-After thinking about it some more, the only thing I'd change in that
-patch would be the default ARCH_PFN_OFFSET definition. It should either
-default to (0), in which case arches would have to define their own, or
-I'd use __pa(PAGE_OFFSET) instead of just PAGE_OFFSET so that it is
-clear that it is dealing with a physical address.
+extra_params += ' -enable-kvm'
+image_name(_.*)? ?<= /images/autotest/
+#cdrom(_.*)? ?<= isos/
 
---Mark
+# Modify/comment the following lines if you wish to modify
+# the paths of the image files, ISO files, step files or qemu binaries.
+#
+# As for the defaults:
+# * qemu and qemu-img are expected to be found under /usr/bin/qemu-kvm and
+#   /usr/bin/qemu-img respectively.
+# * All image files are expected under /tmp/kvm_autotest_root/images/
+# * All iso files are expected under /tmp/kvm_autotest_root/isos/
+# * All step files are expected under /tmp/kvm_autotest_root/steps/
+#image_name.* ?<= images/
+#cdrom.* ?<= isos/
 
+drive_cache = writeback
+# -no-kvm-irqchip
+#timeout_multiplier = 8
+
+#iterations = 30
+
+vga = cirrus
+
+# Here are the test sets variants. The variant 'qemu_kvm_windows_quick' is
+# fully commented, the following ones have comments only on noteworthy
+points
+variants:
+    - @avi:
+        only no_pci_assignable
+        only qcow2
+        only ide
+        #only default
+        only smp2
+        #only up
+        only Fedora.9.32 Fedora.9.64 WinVista.64sp1 WinXP
+        only install setup boot reboot migrate shutdown
+        only rtl8139
+        only smallpages
+        #only default_host   
+
+no migrate.exec
+
+# Uncomment the following lines to enable abort-on-error mode:
+# abort_on_error = yes
+kill_vm.* ?= no
+kill_unresponsive_vms.* ?= no
+
+WinXP.64:
+    no shutdown
+    no reboot
+
+Win2003.64:
+    no shutdown
+    no reboot
+
+# Choose your test list from the testsets defined
+only avi
+
+pci_assignable = no
+
+serial_console = no
+
+
+-- 
+error compiling committee.c: too many arguments to function
 
