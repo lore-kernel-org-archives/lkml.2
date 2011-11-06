@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab1KFTOb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 14:14:31 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53337 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab1KFTO3 (ORCPT
+	id S1754524Ab1KFTP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 14:15:26 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39330 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab1KFTPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 14:14:29 -0500
-Message-ID: <4EB6DC92.6010105@redhat.com>
-Date: Sun, 06 Nov 2011 20:14:26 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Sun, 6 Nov 2011 14:15:24 -0500
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: intel-gfx <intel-gfx@lists.freedesktop.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [PATCH 00/13] pwrite/pread rework
+Date: Sun,  6 Nov 2011 20:13:47 +0100
+Message-Id: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.6.4
 MIME-Version: 1.0
-Newsgroups: gmane.comp.emulators.qemu,gmane.comp.emulators.kvm.devel,gmane.linux.kernel
-To: Pekka Enberg <penberg@kernel.org>
-CC: Alexander Graf <agraf@suse.de>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Blue Swirl <blauwirbel@gmail.com>, Avi Kivity <avi@redhat.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-References: <1320543320-32728-1-git-send-email-agraf@suse.de> <CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com> <4EB66036.4080102@redhat.com> <1320577728.1428.73.camel@jaguar> <4EB67486.1070105@redhat.com> <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com> <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de> <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com> <E0D7D6BB-AB05-43DA-B679-BB2C3CA43E2C@suse.de> <CAOJsxLFCjkAK7Lw4M15G44k11zrcF7tnu9yMbiQYDBNZr+83tg@mail.gmail.com>
-In-Reply-To: <CAOJsxLFCjkAK7Lw4M15G44k11zrcF7tnu9yMbiQYDBNZr+83tg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2011 07:05 PM, Pekka Enberg wrote:
->> I mean, seriously, git makes it so easy to have a separate tree that
->> >  it almost doesn't make sense not to have one. You're constantly
->> >  working in separate trees yourself because every one of your
->> >  branches is separate. Keeping in sync with the kernel release cycles
->> >  (which I don't think makes any sense for you) should be easy enough
->> >  too by merely releasing in sync with the kernel tree...
-> We'd be the only subsystem doing that!
+Hi all,
 
-GStreamer (V4L), RTSAdmin (LIO target), sg3_utils, trousers all are out 
-of tree, and nobody of their authors is even thinking of doing all this 
-brouhaha to get merged into Linus's tree.
+I've finally managed to clean up my pwrite/pread rework. Major changes since the
+first submission:
+- fixed a bunch of bugs, some of them discovered by the intel-gpu-tools gem test
+  suite
+- extracted the clflush helper into common drm code as suggested by Chris
+  Wilson.
+- extended the prefault helpers in pagemap.h instead of rolling our own. Also
+  add a patch to not prefault for writes (which change the userspace memory)
+  before we're committed to the write. Both address issues raised by Keith
+  Packard.
 
-Paolo
+Why this is cool stuff:
+- fixes the spurious -EFAULTS when handing in a pointer to a gem gtt mappings.
+  See https://bugs.freedesktop.org/show_bug.cgi?id=38115
+- Kills a bunch of code by dropping the practically useless ranged cpu read
+  domain tracking and integrating the slow paths into the fast paths.
+- Fixes pwrite/pread to use snooped cpu access on llc machines, hereby decently
+  speeding up microbenchmarks.
+- Paves the way for further clever tricks to reduce pressure on the mappable gtt
+  area.
+
+Reviews and comments highly welcome.
+
+Yours, Daniel
+
+Daniel Vetter (13):
+  drm/i915: fall through pwrite_gtt_slow to the shmem slow path
+  drm/i915: rewrite shmem_pwrite_slow to use copy_from_user
+  drm/i915: rewrite shmem_pread_slow to use copy_to_user
+  drm/i915: merge shmem_pwrite slow&fast-path
+  drm/i915: merge shmem_pread slow&fast-path
+  drm: add helper to clflush a virtual address range
+  drm/i915: move clflushing into shmem_pread
+  drm/i915: kill ranged cpu read domain support
+  drm/i915: don't use gtt_pwrite on LLC cached objects
+  drm/i915: don't call shmem_read_mapping unnecessarily
+  mm: extend prefault helpers to fault in more than PAGE_SIZE
+  drm/i915: drop gtt slowpath
+  drm/i915: don't clobber userspace memory before commiting to the
+    pread
+
+ drivers/gpu/drm/drm_cache.c     |   23 ++
+ drivers/gpu/drm/i915/i915_drv.h |    7 -
+ drivers/gpu/drm/i915/i915_gem.c |  824 +++++++++++----------------------------
+ include/drm/drmP.h              |    1 +
+ include/linux/pagemap.h         |   28 +-
+ 5 files changed, 273 insertions(+), 610 deletions(-)
+
+-- 
+1.7.6.4
+
