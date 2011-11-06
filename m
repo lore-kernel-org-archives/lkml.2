@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754080Ab1KFWfT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:35:19 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42881 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab1KFWfR (ORCPT
+	id S1754123Ab1KFWip (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:38:45 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:39921 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab1KFWio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:35:17 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: John Stoffel <john@stoffel.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-In-Reply-To: Your message of "Fri, 28 Oct 2011 16:52:28 EDT."
-             <20139.5644.583790.903531@quad.stoffel.home>
-From: Valdis.Kletnieks@vt.edu
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <75efb251-7a5e-4aca-91e2-f85627090363@default> <20111027215243.GA31644@infradead.org> <1319785956.3235.7.camel@lappy> <CAOJsxLGOTw7rtFnqeHvzFxifA0QgPVDHZzrEo=-uB2Gkrvp=JQ@mail.gmail.com> <552d2067-474d-4aef-a9a4-89e5fd8ef84f@default> <CAOJsxLEE-qf9me1SAZLFiEVhHVnDh7BDrSx1+abe9R4mfkhD=g@mail.gmail.com> <20111028163053.GC1319@redhat.com> <3982e04f-8607-4f0a-b855-2e7f31aaa6f7@default>
-            <20139.5644.583790.903531@quad.stoffel.home>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1320618774_135101P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Sun, 06 Nov 2011 17:32:54 -0500
-Message-ID: <201529.1320618774@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020206.4EB70B22.006B,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Sun, 6 Nov 2011 17:38:44 -0500
+Date: Mon, 7 Nov 2011 01:39:15 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCH v2] staging/xgifb: Convert pci_table entries to
+ PCI_DEVICE (if PCI_ANY_ID is used)
+Message-ID: <20111106223915.GT4682@mwanda>
+References: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
+ <1320617548-9506-1-git-send-email-peterhuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jZNlLGxhPb4urluq"
+Content-Disposition: inline
+In-Reply-To: <1320617548-9506-1-git-send-email-peterhuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4EB70C65.004F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1320618774_135101P
+
+--jZNlLGxhPb4urluq
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, 28 Oct 2011 16:52:28 EDT, John Stoffel said:
-> Dan> "WHY" this is such a good idea is the same as WHY it is useful to
-> Dan> add RAM to your systems. 
->
-> So why would I use this instead of increasing the physical RAM?
+On Sun, Nov 06, 2011 at 11:12:28PM +0100, Peter Huewe wrote:
+> This patch converts pci_table entries to use the PCI_DEVICE macro,
+> if .subvendor and .subdevice are set to PCI_ANY_ID,
+> and thus improves readability.
+>=20
+> v2:
+> Since the driver_data field isn't used anywhere we can also drop the
+> assignments for class, class_mask and driver_data.
+> (found by Aaro Koskinen)
+>=20
+> KernelVersion: Staging-20111106
 
-You're welcome to buy me a new laptop that has a third DIMM slot. :)
+Don't put that into the permanent changelog.
 
-There's a lot of people running hardware that already has the max amount of
-supported RAM, and who for budget or legacy-support reasons can't easily do a
-forklift upgrade to a new machine.
+Sometimes we ask people what tree they wrote a patch against, but the
+truth is that we don't actually care.
 
-> if I've got a large system which cannot physically use any more
-> memory, then it might be worth my while to use TMEM to get more
-> performance out of this expensive hardware.
+Q: Your patch doesn't apply.  Which tree did you do it against?
+A: Blah blah blah long explanation.
+Q: Oh that's very nice and lovely.  Please redo it against today's
+   -next tree.
 
-It's not always a large system....
+For bug fixes where it could go into either the current kernel or the
+next, then it is nice to say.  Normally people want a [patch -next
+v2] in the subject which will get removed by git am.  Or below the
+--- dashes.
 
---==_Exmh_1320618774_135101P
-Content-Type: application/pgp-signature
+regards,
+dan carpenter
+
+
+--jZNlLGxhPb4urluq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
 
-iD8DBQFOtwsWcC3lWbTT17ARAlvfAKCoKX68t1pDd8M1xDoZuSpVYUljjACfRYID
-7BmJgF1WCyqaQVF50mbeXUg=
-=pNIL
+iQIcBAEBAgAGBQJOtwySAAoJEOnZkXI/YHqRWj0P/iu+GgempIr68ooWHGuGwG6n
+YOsI5QNiRtn1/GDHTptVG4Ssuaw1cqYN9OXfE/dpsO138R4bJgKAR9jAnFjr1opF
+3wR/e1z+o+rGqeGq46+tyH1E6Rk3bixoOKQXz9Q22Ist9lVvZwauAxzYSv68QIxT
+jece8OXRsX8EhjYIoqCKswp5i3RU8B9qg79hSI+ly7fYb/JtytKgl+uUwAfCSNhs
+cZujfH5ywGo58FaX7YzcnfyN+0AiqpkOYisguo00CxHpYAJVMrtm0KkGT677ztz4
+oafKL/7HDPxogm6QtxMry9lXB9XiV4zALvC1Ae0o6gbfiQqGvPJHfQhXYyLGbUnr
+VUIH9Nowr1GKHpOJXxV+P1puksvdBqxP2kp7fZlYSzUq8g4tz3/TLfTWIq6EZMAH
+cZs8EF6ADwYPG2WWamZebA9O5Zz1XfpNSQxnraoV2LFK6+hpFGqIzkqM/9p/gLsc
+koSdT7f196PfugX5+RQupRVcvjhwpKQV5Y6BxjC3mwZckT1pgnH6B3nMuyIWTVl8
+54gcxNYktkrYsI/sZNMFXjqcAwi0ml+QHZGBAFwGBMrDnH/F5pSUTzkUbbo5QvhL
+D0hzx2NQMy6x8zfAllYIIILwJVBKtpWt78Bq4n4MoF6IknsX5ySukksRyIR47bN7
+pKHLDhQV9M4s7Uoou9yx
+=O6Ds
 -----END PGP SIGNATURE-----
 
---==_Exmh_1320618774_135101P--
-
+--jZNlLGxhPb4urluq--
