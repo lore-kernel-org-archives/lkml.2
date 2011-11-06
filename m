@@ -1,73 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879Ab1KFMDH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 07:03:07 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:31875 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab1KFMDG (ORCPT
+	id S1751926Ab1KFMEp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 07:04:45 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56974 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751637Ab1KFMEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 07:03:06 -0500
-Date: Sun, 6 Nov 2011 13:02:52 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Alexander Beregalov <a.beregalov@gmail.com>, <lm-sensors@lm-sensors.org>,
-        <linux-kernel@vger.kernel.org>, <stable@kernel.org>
-Subject: Re: [PATCH] hwmon: (w83627ehf) fix broken driver init
-Message-ID: <20111106130252.35681de6@endymion.delvare>
-In-Reply-To: <1320504223-28764-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1320504223-28764-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sun, 6 Nov 2011 07:04:43 -0500
+Message-ID: <4EB677CB.20608@linux.vnet.ibm.com>
+Date: Sun, 06 Nov 2011 17:34:27 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: rjw@sisk.pl, paul@paulmenage.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, arnd@arndb.de, oleg@redhat.com,
+        matthltc@us.ibm.com, Paul Menage <menage@google.com>
+Subject: Re: [PATCH 05/17] freezer: rename thaw_process() to __thaw_task()
+ and simplify the implementation
+References: <1320087928-32307-1-git-send-email-tj@kernel.org> <1320087928-32307-6-git-send-email-tj@kernel.org>
+In-Reply-To: <1320087928-32307-6-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 11110612-2674-0000-0000-00000117B204
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Nov 2011 07:43:43 -0700, Guenter Roeck wrote:
-> Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
-> sensor types) results in kernel panic if data->temp_label was not
-> initialized.
-> The problem was found with chip W83627DHG-P.
+On 11/01/2011 12:35 AM, Tejun Heo wrote:
+> thaw_process() now has only internal users - system and cgroup
+> freezers.  Remove the unnecessary return value, rename, unexport and
+> collapse __thaw_process() into it.  This will help further updates to
+> the freezer code.
 > 
-> Add check if data->temp->label was set before use.
+> -v2: minor style update as suggested by Matt.
 > 
-> Based on incomplete patch by Alexander Beregalov.
-> 
-> Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-> Tested-by: Alexander Beregalov <a.beregalov@gmail.com>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: stable@kernel.org
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Paul Menage <menage@google.com>
+> Cc: Matt Helsley <matthltc@us.ibm.com>
 > ---
->  drivers/hwmon/w83627ehf.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
+>  include/linux/freezer.h |    3 +--
+>  kernel/cgroup_freezer.c |    7 +++----
+>  kernel/freezer.c        |   31 ++++++++++++-------------------
+>  kernel/power/process.c  |    2 +-
+>  4 files changed, 17 insertions(+), 26 deletions(-)
 > 
-> diff --git a/drivers/hwmon/w83627ehf.c b/drivers/hwmon/w83627ehf.c
-> index 483cb26..93f5fc7 100644
-> --- a/drivers/hwmon/w83627ehf.c
-> +++ b/drivers/hwmon/w83627ehf.c
-> @@ -1835,12 +1835,15 @@ static inline void __devinit w83627ehf_init_device(struct w83627ehf_data *data,
->  		diode = 0x70;
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index 4a73dd2..253bcfe 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -45,7 +45,7 @@ static inline bool should_send_signal(struct task_struct *p)
+>  }
+> 
+>  /* Takes and releases task alloc lock using task_lock() */
+> -extern int thaw_process(struct task_struct *p);
+> +extern void __thaw_task(struct task_struct *t);
+> 
+>  extern bool __refrigerator(bool check_kthr_stop);
+>  extern int freeze_processes(void);
+> @@ -183,7 +183,6 @@ static inline int frozen(struct task_struct *p) { return 0; }
+>  static inline int freezing(struct task_struct *p) { return 0; }
+>  static inline void set_freeze_flag(struct task_struct *p) {}
+>  static inline void clear_freeze_flag(struct task_struct *p) {}
+> -static inline int thaw_process(struct task_struct *p) { return 1; }
+> 
+>  static inline bool __refrigerator(bool check_kthr_stop) { return false; }
+>  static inline int freeze_processes(void) { return -ENOSYS; }
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index e691818..e7fa0ec 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -130,7 +130,7 @@ struct cgroup_subsys freezer_subsys;
+>   *   write_lock css_set_lock (cgroup iterator start)
+>   *    task->alloc_lock
+>   *   read_lock css_set_lock (cgroup iterator start)
+> - *    task->alloc_lock (inside thaw_process(), prevents race with refrigerator())
+> + *    task->alloc_lock (inside __thaw_task(), prevents race with refrigerator())
+                                                                   ^^^^^^^^^
+                                              Shouldn't this be __refrigerator()?
+
+>   *     sighand->siglock
+>   */
+>  static struct cgroup_subsys_state *freezer_create(struct cgroup_subsys *ss,
+> @@ -300,9 +300,8 @@ static void unfreeze_cgroup(struct cgroup *cgroup, struct freezer *freezer)
+>  	struct task_struct *task;
+> 
+>  	cgroup_iter_start(cgroup, &it);
+> -	while ((task = cgroup_iter_next(cgroup, &it))) {
+> -		thaw_process(task);
+> -	}
+> +	while ((task = cgroup_iter_next(cgroup, &it)))
+> +		__thaw_task(task);
+>  	cgroup_iter_end(cgroup, &it);
+> 
+>  	freezer->state = CGROUP_THAWED;
+> diff --git a/kernel/freezer.c b/kernel/freezer.c
+> index 57ba75f..8faa0e0 100644
+> --- a/kernel/freezer.c
+> +++ b/kernel/freezer.c
+> @@ -145,18 +145,8 @@ void cancel_freezing(struct task_struct *p)
 >  	}
->  	for (i = 0; i < 3; i++) {
-> -		const char *label = data->temp_label[data->temp_src[i]];
-> +		const char *label = NULL;
+>  }
+> 
+> -static int __thaw_process(struct task_struct *p)
+> -{
+> -	if (frozen(p)) {
+> -		p->flags &= ~PF_FROZEN;
+> -		return 1;
+> -	}
+> -	clear_freeze_flag(p);
+> -	return 0;
+> -}
+> -
+>  /*
+> - * Wake up a frozen process
+> + * Wake up a frozen task
+>   *
+>   * task_lock() is needed to prevent the race with refrigerator() which may
+                                                     ^^^^^^
+                                                __refrigerator()?
+
+>   * occur if the freezing of tasks fails.  Namely, without the lock, if the
+> @@ -164,15 +154,18 @@ static int __thaw_process(struct task_struct *p)
+>   * refrigerator() could call frozen_process(), in which case the task would be
+>   * frozen and no one would thaw it.
+>   */
+> -int thaw_process(struct task_struct *p)
+> +void __thaw_task(struct task_struct *p)
+>  {
+> +	bool was_frozen;
 > +
-> +		if (data->temp_label)
-> +			label = data->temp_label[data->temp_src[i]];
->  
->  		/* Digital source overrides analog type */
-> -		if (strncmp(label, "PECI", 4) == 0)
-> +		if (label && strncmp(label, "PECI", 4) == 0)
->  			data->temp_type[i] = 6;
-> -		else if (strncmp(label, "AMD", 3) == 0)
-> +		else if (label && strncmp(label, "AMD", 3) == 0)
->  			data->temp_type[i] = 5;
->  		else if ((tmp & (0x02 << i)))
->  			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
+>  	task_lock(p);
+> -	if (__thaw_process(p) == 1) {
+> -		task_unlock(p);
+> -		wake_up_process(p);
+> -		return 1;
+> -	}
+> +	was_frozen = frozen(p);
+> +	if (was_frozen)
+> +		p->flags &= ~PF_FROZEN;
+> +	else
+> +		clear_freeze_flag(p);
+>  	task_unlock(p);
+> -	return 0;
+> +
+> +	if (was_frozen)
+> +		wake_up_process(p);
+>  }
+> -EXPORT_SYMBOL(thaw_process);
+> diff --git a/kernel/power/process.c b/kernel/power/process.c
+> index addbbe5..fe27872 100644
+> --- a/kernel/power/process.c
+> +++ b/kernel/power/process.c
+> @@ -186,7 +186,7 @@ static void thaw_tasks(bool nosig_only)
+>  		if (cgroup_freezing_or_frozen(p))
+>  			continue;
+> 
+> -		thaw_process(p);
+> +		__thaw_task(p);
+>  	} while_each_thread(g, p);
+>  	read_unlock(&tasklist_lock);
+>  }
 
-Applied, thanks.
+Rebasing to latest kernel, we need to do the conversion in mm/oom_kill.c as well,
+(and consequently add __thaw_task() empty function under !CONFIG_FREEZER, in
+include/linux/freezer.h)
 
--- 
-Jean Delvare
+Thanks,
+Srivatsa S. Bhat
+
