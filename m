@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab1KFUbT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 15:31:19 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61731 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1KFUbR (ORCPT
+	id S1754780Ab1KFUdT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 15:33:19 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44855 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754002Ab1KFUdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 15:31:17 -0500
+	Sun, 6 Nov 2011 15:33:18 -0500
+Message-ID: <4EB6EF07.1070102@linux.vnet.ibm.com>
+Date: Mon, 07 Nov 2011 02:03:11 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <4EB6E798.3060000@redhat.com>
-References: <1320543320-32728-1-git-send-email-agraf@suse.de>
-	<CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com>
-	<4EB65C5B.8070709@redhat.com>
-	<CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
-	<4EB66036.4080102@redhat.com>
-	<1320577728.1428.73.camel@jaguar>
-	<4EB67486.1070105@redhat.com>
-	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>
-	<4EB67D17.7000701@redhat.com>
-	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
-	<4EB680D9.2070706@redhat.com>
-	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
-	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
-	<CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
-	<4EB6DBC6.2010404@redhat.com>
-	<CAOJsxLGzMqQDwfm8C-6g8SCapEmGs7uUPq+SuL946yg=anV85g@mail.gmail.com>
-	<4EB6E798.3060000@redhat.com>
-Date: Sun, 6 Nov 2011 22:31:16 +0200
-X-Google-Sender-Auth: YmUU8R4DPUFeizkqv6ldkIpyCyc
-Message-ID: <CAOJsxLEHwUiZYnHhUZ2MD3Us8NcHi_0OiXE5o5+kFCsNBtkU0g@mail.gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-From: Pekka Enberg <penberg@kernel.org>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Alexander Graf <agraf@suse.de>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Blue Swirl <blauwirbel@gmail.com>, Avi Kivity <avi@redhat.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: tytso@mit.edu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: fix NULL pointer dereference from orig_data in
+ fill_super and remount.
+References: <1320592775-2046-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1320592775-2046-1-git-send-email-linkinjeon@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 6, 2011 at 10:01 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> Nothing, but I'm just giving you *strong* hints that a submodule or a merged
-> tool is the wrong solution, and the histories of kernel and tool should be
-> kept separate.
+On 11/06/2011 08:49 PM, Namjae Jeon wrote:
+> Fix NULL pointer dereference from orig_data in fill_super and remount.
+> 
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+> ---
+>  fs/ext4/super.c |   12 ++++++++++--
+>  1 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+> index 9953d80..3770d3f 100644
+> --- a/fs/ext4/super.c
+> +++ b/fs/ext4/super.c
+> @@ -3102,7 +3102,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>  				__releases(kernel_lock)
+>  				__acquires(kernel_lock)
+>  {
+> -	char *orig_data = kstrdup(data, GFP_KERNEL);
+>  	struct buffer_head *bh;
+>  	struct ext4_super_block *es = NULL;
+>  	struct ext4_sb_info *sbi;
+> @@ -3124,6 +3123,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+>  	int err;
+>  	unsigned int journal_ioprio = DEFAULT_JOURNAL_IOPRIO;
+>  	ext4_group_t first_not_zeroed;
+> +
+> +	char *orig_data = kstrdup(data, GFP_KERNEL);
+> +	if (!orig_data)
+> +		return ret;
+> 
+>  	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+>  	if (!sbi)
+> @@ -4398,6 +4401,10 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>  	int i;
+>  #endif
+>  	char *orig_data = kstrdup(data, GFP_KERNEL);
+> +	if (!orig_data) {
+> +		err = -ENOMEM;
+> +		goto failed_alloc_orig;
 
-And btw, I don't really understand what you're trying to accomplish
-with this line of reasoning. We've tried both separate and shared
-repository and the latter is much better from development point of
-view.
+I didn't quite get why 'failed_alloc_orig' is needed here.
+Why can't we just return -ENOMEM? Anyway we haven't yet
+clobbered any opts at this point, right?
 
-This is not some random userspace project that uses the kernel system
-calls. It's a hypervisor that implements virtio drivers, serial
-emulation, and mini-BIOS. It's very close to the kernel which is why
-it's such a good fit with the kernel tree.
+See my comments below.
 
-I'd actually be willing to argue that from purely technical point of
-view, KVM tool makes much more sense to have in the kernel tree than
-perf does.
+> +	}
+> 
+>  	/* Store the original options */
+>  	lock_super(sb);
+> @@ -4562,6 +4569,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+>  	return 0;
+> 
+>  restore_opts:
+> +	kfree(orig_data);
+> +failed_alloc_orig:
+>  	sb->s_flags = old_sb_flags;
+>  	sbi->s_mount_opt = old_opts.s_mount_opt;
+>  	sbi->s_mount_opt2 = old_opts.s_mount_opt2;
 
-                                Pekka
+This would put garbage values in sb->... and sbi->... when we jump
+to 'failed_alloc_orig' upon 'orig_data' allocation failure, because
+the old_* variables were still uninitialized at that point.
+
+> @@ -4580,7 +4589,6 @@ restore_opts:
+>  	}
+>  #endif
+>  	unlock_super(sb);
+> -	kfree(orig_data);
+>  	return err;
+>  }
+> 
+
+Thanks,
+Srivatsa S. Bhat
