@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1KFXNO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 18:13:14 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56630 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab1KFXNN convert rfc822-to-8bit (ORCPT
+	id S1754574Ab1KFXQK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 18:16:10 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17216 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377Ab1KFXQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 18:13:13 -0500
+	Sun, 6 Nov 2011 18:16:08 -0500
+Date: Mon, 7 Nov 2011 00:21:26 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+cc: Andrea Merello <andreamrl@tiscali.it>, Mike McCormack <mikem@ring3k.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org
+Subject: [PATCH] rtl8192e: Don't copy huge struct by value (and make it
+ const).
+Message-ID: <alpine.LNX.2.00.1111070017220.5763@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4EB6EF07.1070102@linux.vnet.ibm.com>
-References: <1320592775-2046-1-git-send-email-linkinjeon@gmail.com>
-	<4EB6EF07.1070102@linux.vnet.ibm.com>
-Date: Mon, 7 Nov 2011 08:13:11 +0900
-Message-ID: <CAKYAXd87ry6D4xsBwkXC4at6kDZgHu=_Qa+0kdhEsN=RSMk1ag@mail.gmail.com>
-Subject: Re: [PATCH] ext4: fix NULL pointer dereference from orig_data in
- fill_super and remount.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tytso@mit.edu, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/7 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
-> On 11/06/2011 08:49 PM, Namjae Jeon wrote:
->> Fix NULL pointer dereference from orig_data in fill_super and remount.
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->> ---
->>  fs/ext4/super.c |   12 ++++++++++--
->>  1 files changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
->> index 9953d80..3770d3f 100644
->> --- a/fs/ext4/super.c
->> +++ b/fs/ext4/super.c
->> @@ -3102,7 +3102,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->>                               __releases(kernel_lock)
->>                               __acquires(kernel_lock)
->>  {
->> -     char *orig_data = kstrdup(data, GFP_KERNEL);
->>       struct buffer_head *bh;
->>       struct ext4_super_block *es = NULL;
->>       struct ext4_sb_info *sbi;
->> @@ -3124,6 +3123,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->>       int err;
->>       unsigned int journal_ioprio = DEFAULT_JOURNAL_IOPRIO;
->>       ext4_group_t first_not_zeroed;
->> +
->> +     char *orig_data = kstrdup(data, GFP_KERNEL);
->> +     if (!orig_data)
->> +             return ret;
->>
->>       sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
->>       if (!sbi)
->> @@ -4398,6 +4401,10 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
->>       int i;
->>  #endif
->>       char *orig_data = kstrdup(data, GFP_KERNEL);
->> +     if (!orig_data) {
->> +             err = -ENOMEM;
->> +             goto failed_alloc_orig;
->
-> I didn't quite get why 'failed_alloc_orig' is needed here.
-> Why can't we just return -ENOMEM? Anyway we haven't yet
-> clobbered any opts at this point, right?
->
-> See my comments below.
->
->> +     }
->>
->>       /* Store the original options */
->>       lock_super(sb);
->> @@ -4562,6 +4569,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
->>       return 0;
->>
->>  restore_opts:
->> +     kfree(orig_data);
->> +failed_alloc_orig:
->>       sb->s_flags = old_sb_flags;
->>       sbi->s_mount_opt = old_opts.s_mount_opt;
->>       sbi->s_mount_opt2 = old_opts.s_mount_opt2;
->
-> This would put garbage values in sb->... and sbi->... when we jump
-> to 'failed_alloc_orig' upon 'orig_data' allocation failure, because
-> the old_* variables were still uninitialized at that point.
->
->> @@ -4580,7 +4589,6 @@ restore_opts:
->>       }
->>  #endif
->>       unlock_super(sb);
->> -     kfree(orig_data);
->>       return err;
->>  }
->>
->
-> Thanks,
-> Srivatsa S. Bhat
-Hi.
-Thanks for your review. It's my mistake.
-I will post patch v2 after modifing again.
->
->
+rtllib_is_shortslot() takes one argument - a struct that's more than a
+kilobyte large. It should take a pointer instead of copying such a
+huge struct - and the argument might as well be declared 'const' now
+that we are at it, since it is not modified. This patch makes these
+changes.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/rtl8192e/rtllib.h         |    2 +-
+ drivers/staging/rtl8192e/rtllib_softmac.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
+index de25975..3a52120 100644
+--- a/drivers/staging/rtl8192e/rtllib.h
++++ b/drivers/staging/rtl8192e/rtllib.h
+@@ -2804,7 +2804,7 @@ extern int rtllib_wx_set_gen_ie(struct rtllib_device *ieee, u8 *ie, size_t len);
+ 
+ /* rtllib_softmac.c */
+ extern short rtllib_is_54g(struct rtllib_network *net);
+-extern short rtllib_is_shortslot(struct rtllib_network net);
++extern short rtllib_is_shortslot(const struct rtllib_network *net);
+ extern int rtllib_rx_frame_softmac(struct rtllib_device *ieee,
+ 				   struct sk_buff *skb,
+ 				   struct rtllib_rx_stats *rx_stats, u16 type,
+diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+index b508685..fa774cf 100644
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c
+@@ -28,9 +28,9 @@ short rtllib_is_54g(struct rtllib_network *net)
+ 	return (net->rates_ex_len > 0) || (net->rates_len > 4);
+ }
+ 
+-short rtllib_is_shortslot(struct rtllib_network net)
++short rtllib_is_shortslot(const struct rtllib_network *net)
+ {
+-	return net.capability & WLAN_CAPABILITY_SHORT_SLOT_TIME;
++	return net->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME;
+ }
+ 
+ /* returns the total length needed for pleacing the RATE MFIE
+-- 
+1.7.7.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
