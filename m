@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab1KFUKw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 15:10:52 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:47843 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1KFUKv (ORCPT
+	id S1754585Ab1KFUNM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 15:13:12 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55076 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab1KFUNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 15:10:51 -0500
-Subject: Re: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <CAO+b5-r51b_scUC4bGf_ZGADpLf0W7R1eBXdLW_hxcKApPni1g@mail.gmail.com>
-References: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-pOi_+Y+jcExxEzParHOdU6YB4WaB-onH_PLXugzLKjzg@mail.gmail.com>
-	 <1320516243.5859.184.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-rjKdZtBjZ=qyRnavDubtHWSGihROHEUok6o+bCNc3TpA@mail.gmail.com>
-	 <1320574170.5859.370.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-p0gLueksp7a8RVm9A1Qe_9xc-fNSNX0NY0W7CNtGnSYw@mail.gmail.com>
-	 <CAO+b5-r51b_scUC4bGf_ZGADpLf0W7R1eBXdLW_hxcKApPni1g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Nov 2011 12:10:45 -0800
-Message-ID: <1320610245.10690.10.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Nov 2011 15:13:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <87r51l41dj.fsf@hohndel.org>
+References: <87r51l41dj.fsf@hohndel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 6 Nov 2011 12:12:49 -0800
+X-Google-Sender-Auth: Qjh0Kxvdp2Da93zfE98--n16Yoc
+Message-ID: <CA+55aFw22MKWqwUaWpj-=gquEmUjdTWmk_ibe3bxYPySq_mCSA@mail.gmail.com>
+Subject: Re: [PATCH] Add support for the Mid 2011 MacBook Air keyboard layout
+To: Dirk Hohndel <hohndel@infradead.org>
+Cc: Joshua V Dillon <jvdillon@gmail.com>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-06 at 18:42 +0100, Bart Van Assche wrote:
-> On Sun, Nov 6, 2011 at 2:20 PM, Bart Van Assche <bvanassche@acm.org> wrote:
-> > On Sun, Nov 6, 2011 at 11:09 AM, Nicholas A. Bellinger
-> > <nab@linux-iscsi.org> wrote:
-> >> We have also discussed srpt_service_guid a bit before, which you
-> >> indicated needed to stay in current code as global scope, and presumably
-> >> should not change value after loading.  Looking at the actual usage, one
-> >> post merge improvement we can consider is seeing if it's possible to
-> >> move ib_cm_listen() out of srpt_add_one() and have it driven instead by
-> >> configfs context in order to optionally set srpt_service_guid on a per
-> >> target endpoint basis to get us some more flexibility.
-> >
-> > ib_sprt defines a single I/O controller profile and hence there should
-> > be exactly one GUID associated with it.
-> 
-> (replying to my own e-mail)
-> 
-> Note: I'm not sure anyone is using the srpt_service_guid kernel module
-> parameter. One possible approach is to leave out that kernel module
-> parameter for the initial merge. If later on anyone asks for restoring
-> that functionality we can evaluate at that time what would be the best
-> way to restore it.
-> 
+On Sun, Nov 6, 2011 at 9:16 AM, Dirk Hohndel <hohndel@infradead.org> wrote:
+>
+> When adding support for the MacBookAir4,x models in commit
+> 5d922baa631058c7e37ae33e81c4d3e6437f8d1d Joshua Dillon overlooked
+> that they have a slightly different keyboard layout compared to the older
+> MacBook Air models. With this patch the function keys all work as
+> advertized, including keyboard brightness, etc.
+>
+> Signed-off-by: Dirk Hohndel <hohndel@infradead.org>
 
-Well, when this was discussed this before we concluded (via your input)
-that this should stay in place for the initial merge.
+Hmm. I think this is wrong.
 
-So it's a bit late to drop this now, as the PULL request has gone out to
-Linus, and has been acked by Roland.  But if you think it should
-removed, I'm happy to drop it in the first set of post-merge
-target-pending rc-fixes.
+Why?
 
-Thanks,
+Because it works unmodified for me on my MacBook Air.
 
---nab
+Now, I have the 11" one which apparently has a different keyboard ID,
+but the *reason* it works for me is that my keyboard ID is apparently
+0x0249, which is USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI.
 
+And because that one isn't known by the broken quirks at all, it falls
+back on the standard apple_fn_keys[] translation.
+
+Which is the *right* translation for me, and judging by your patch,
+it's the right translation for you too.
+
+So I suspect that the *right* thing to do is to just remove the broken
+WELLSPRING6 cases. Exactly the same way that da617c7cb915 ("HID:
+consolidate MacbookAir 4,1 mappings") did for the WELLSPRING6A ones.
+
+So I suspect the only case that should use the "macbookair_fn_keys"
+thing is the *old* macbook air ("WELLSPRING4"). They were added in
+commit 5d922baa6310, and that commit implies that it was never tested
+all that much ("reportedly unchanged from the 3,2 predecessor and
+seems to work well.")
+
+So I think the right patch is just this one:
+
+     drivers/hid/hid-apple.c |    3 ---
+     1 files changed, 0 insertions(+), 3 deletions(-)
+
+    diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+    index 8cdb4b45b30a..299d23871122 100644
+    --- a/drivers/hid/hid-apple.c
+    +++ b/drivers/hid/hid-apple.c
+    @@ -183,9 +183,6 @@ static int hidinput_apple_event(struct
+hid_device *hid, struct input_dev *input,
+     		if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI &&
+     				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS)
+     			table = macbookair_fn_keys;
+    -		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
+    -				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
+    -			table = macbookair_fn_keys;
+     		else if (hid->product < 0x21d || hid->product >= 0x300)
+     			table = powerbook_fn_keys;
+     		else
+
+instead. Hmm? Does that work for you?
+
+               Linus
