@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751319Ab1KFH3G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 02:29:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22899 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab1KFH3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 02:29:04 -0500
-Date: Sun, 6 Nov 2011 09:30:07 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111106073007.GA7146@redhat.com>
-References: <1320259767.22582.2.camel@lappy>
- <8762j2t19l.fsf@rustcorp.com.au>
- <1320309203.29407.1.camel@lappy>
- <87lirwrzlg.fsf@rustcorp.com.au>
- <20111104114033.GA21308@redhat.com>
- <1320409939.3334.6.camel@lappy>
- <20111104135113.GA24452@redhat.com>
- <1320414804.3334.13.camel@lappy>
- <20111104142338.GB24452@redhat.com>
- <1320418385.3334.25.camel@lappy>
+	id S1751254Ab1KFHeY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 02:34:24 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55908 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804Ab1KFHeW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 02:34:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320418385.3334.25.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320516243.5859.184.camel@haakon2.linux-iscsi.org>
+References: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
+	<CAO+b5-pOi_+Y+jcExxEzParHOdU6YB4WaB-onH_PLXugzLKjzg@mail.gmail.com>
+	<1320516243.5859.184.camel@haakon2.linux-iscsi.org>
+Date: Sun, 6 Nov 2011 08:34:20 +0100
+X-Google-Sender-Auth: k57Qq44xs1Rb_7NzB6bztSNXY3E
+Message-ID: <CAO+b5-rjKdZtBjZ=qyRnavDubtHWSGihROHEUok6o+bCNc3TpA@mail.gmail.com>
+Subject: Re: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
+From: Bart Van Assche <bvanassche@acm.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-rdma <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 04:53:05PM +0200, Sasha Levin wrote:
-> > > > > As you said, the PCI cap list was introduced both to save space (which
-> > > > > is not the motivation here), and because it's a very efficient
-> > > > 
-> > > > It's actually pretty inefficient - there's an overhead of 3 bytes for
-> > > > each vendor specific option.
-> > > 
-> > > It's efficient because while you pay a small price for each optional
-> > > option it also means that that option is optional and won't clutter the
-> > > config space if it's not really in use.
-> > 
-> > I guess my assumption is that most options will be in use,
-> > not discarded dead-ends.
-> 
-> I don't know about that. 64 bit features would be pretty rare for now -
-> and I don't think that setting the alignment will be also enabled by
-> default.
+On Sat, Nov 5, 2011 at 7:04 PM, Nicholas A. Bellinger
+<nab@linux-iscsi.org> wrote:
+> On Sat, 2011-11-05 at 08:37 +0100, Bart Van Assche wrote:
+>> On Fri, Nov 4, 2011 at 9:10 PM, Nicholas A. Bellinger
+>> <nab@linux-iscsi.org> wrote:
+>> > This is the PULL request for an initial merge of the ib_srpt driver
+>> > using mainline target infrastructure into v3.2-rc1.
+>>
+>> In case anyone is interested, the most important unaddressed comments
+>> for this version of ib_srpt are:
+>> - There are still too many module parameters. This makes ib_srpt
+>> harder to use than necessary because several of these parameters can
+>> only be set at module load time.
+>
+> Can you be more specific here..?  I went through the module parameters
+> and made the ones that where used in a per-port specific context into
+> configfs attributes as Roland recommended, but it seems like you are
+> saying that more should be made into attributes.  Which ones..?
 
-Setting the alignment might not be *used* by default but
-I think it must be enabled by default to allow bios access.
+Several read-only kernel module parameters remain. That's fine in
+out-of-tree code since it will be compiled as a kernel module only.
+But anyone who tries to build with CONFIG_INFINIBAND_SRPT=y will
+notice that it's impossible to change the value of these read-only
+kernel module parameters.
 
-> I think that we're looking at it differently because I assume that any
-> feature we add at this point would be optional and used only in specific
-> scenarios, while you think that everything added will be used most of
-> the time.
+>> - The last WQE event can arrive before the queue pair is reset,
+>> resulting in a hanging session and blocking future logins
+>> (http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg09678.html).
+>
+> Yep, was going to get this resolved post merge along with my patch now
+> in lio-core.git to address active I/O shutdown with ib_srpt.
 
-Options must often be present even if not used. For example, as device
-has no way to know whether a guest will want to program alignment, it
-has to make that option available.
+Your "active I/O shutdown" patch does not address the "last WQE" issue.
 
--- 
-MST
+>> - The "ib_srpt: Convert srp_max_rdma_size into per port configfs
+>> attribute" contradicts the I/O controller concept. This is a bug.
+>> (http://www.mail-archive.com/linux-rdma@vger.kernel.org/msg09677.html).
+>
+> As mentioned in the thread, I deferred to Roland's input on that one.
+> So you're saying this should be made back into a module parameter now,
+> or what..?
+
+I see two possible ways forward:
+- Convert the per-port max_rdma_size configfs variable into a
+per-module configfs variable.
+- Remove the max_rdma_size variable from configfs entirely and compute
+the max_rdma_size from the HCA properties in struct ib_device_attr.
+
+Bart.
