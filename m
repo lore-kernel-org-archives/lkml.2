@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab1KFN06 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 08:26:58 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41010 "EHLO mgw2.diku.dk"
+	id S1752981Ab1KFN2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 08:28:37 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41024 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab1KFN05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752239Ab1KFN05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Nov 2011 08:26:57 -0500
 From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] use kstrtoul, etc
-Date: Sun,  6 Nov 2011 14:26:45 +0100
-Message-Id: <1320586010-21931-1-git-send-email-julia@diku.dk>
+Subject: [PATCH 4/5] net/rfkill/core.c: use kstrtoul, etc
+Date: Sun,  6 Nov 2011 14:26:49 +0100
+Message-Id: <1320586010-21931-5-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1320586010-21931-1-git-send-email-julia@diku.dk>
+References: <1320586010-21931-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches replace calls to strict_strtoul, etc by the corresponding
-calls to kstrtoul.  The complete semantic patch that makes these changes is
-as follows.  This semantic patch checks that the types are as expected,
-which was always the case for these files.
+From: Julia Lawall <julia@diku.dk>
+
+Use kstrtoul, etc instead of the now deprecated strict_strtoul, etc.
+
+A semantic patch rule for the kstrtoul case is as follows:
+(http://coccinelle.lip6.fr/)
 
 // <smpl>
 @@
@@ -29,66 +36,36 @@ expression a,b;
 {int,long} *c;
 @@
 
--strict_strtol
-+kstrtol
- (a,b,c)
-
-@@
-expression a,b;
-long long *c;
-@@
-
--strict_strtoll
-+kstrtoll
- (a,b,c)
-
-@@
-typedef ulong;
-expression a,b;
-{ulong,unsigned long,unsigned int,size_t} *c;
-@@
-
 -strict_strtoul
 +kstrtoul
  (a,b,c)
-
-@@
-expression a,b;
-unsigned long long *c;
-@@
-
--strict_strtoull
-+kstrtoull
- (a,b,c)
-
-@@
-expression a,b;
-u64 *c;
-@@
-
--strict_strtoull
-+kstrtou64
- (a,b,c)
-
-@@
-@@
-
-(
-+BAD(
-  strict_strtoull(...)
-+)
-|
-+BAD(
-  strict_strtoul(...)
-+)
-|
-+BAD(
-  strict_strtol(...)
-+)
-|
-+BAD(
-  strict_strtoll(...)
-+)
-)
 // </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ net/rfkill/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -u -p a/net/rfkill/core.c b/net/rfkill/core.c
+--- a/net/rfkill/core.c
++++ b/net/rfkill/core.c
+@@ -644,7 +644,7 @@ static ssize_t rfkill_soft_store(struct
+ 	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+-	err = strict_strtoul(buf, 0, &state);
++	err = kstrtoul(buf, 0, &state);
+ 	if (err)
+ 		return err;
+ 
+@@ -688,7 +688,7 @@ static ssize_t rfkill_state_store(struct
+ 	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+ 
+-	err = strict_strtoul(buf, 0, &state);
++	err = kstrtoul(buf, 0, &state);
+ 	if (err)
+ 		return err;
+ 
 
