@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab1KFWuY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:50:24 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:59606 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752479Ab1KFWuY (ORCPT
+	id S1754205Ab1KFWyh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:54:37 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45543 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab1KFWyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:50:24 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18Nu1xiZasNJ5dmfnwo3adnEcaozR71HUnMM8p9bH
-	emOEmxUNVJJ1Kf
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH v2] staging/gma500: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
-Date: Sun,  6 Nov 2011 23:50:21 +0100
-Message-Id: <1320619821-27221-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1320613964-22916-1-git-send-email-peterhuewe@gmx.de>
-References: <1320613964-22916-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sun, 6 Nov 2011 17:54:36 -0500
+Date: Mon, 7 Nov 2011 09:54:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failing to fetch the acpi tree
+Message-Id: <20111107095429.28cb33a8ec512a2bd7690dba@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts pci_table entries to use the PCI_DEVICE macro,
-if .subvendor and .subdevice are set to PCI_ANY_ID,
-and thus improves readability.
+--Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-And while at it changed the hardcoded 0x8086 to PCI_VENDOR_ID_INTEL
+Hi Len,
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-v2:
-Moved
-KernelVersion: Staging-20111106
-below the dashes.
+Fetching the acpi tree, produces this error:
 
- drivers/staging/gma500/psb_drv.c |   52 +++++++++++++++++++-------------------
- 1 files changed, 26 insertions(+), 26 deletions(-)
+fatal: Couldn't find remote ref refs/heads/acpi
 
-diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index dc676c2..f5eebcb 100644
---- a/drivers/staging/gma500/psb_drv.c
-+++ b/drivers/staging/gma500/psb_drv.c
-@@ -50,37 +50,37 @@ module_param_named(trap_pagefaults, drm_psb_trap_pagefaults, int, 0600);
- 
- 
- static DEFINE_PCI_DEVICE_TABLE(pciidlist) = {
--	{ 0x8086, 0x8108, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &psb_chip_ops },
--	{ 0x8086, 0x8109, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &psb_chip_ops },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8108), 0, 0, (long) &psb_chip_ops },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x8109), 0, 0, (long) &psb_chip_ops },
- #if defined(CONFIG_DRM_PSB_MRST)
--	{ 0x8086, 0x4100, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4101, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4102, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4103, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4104, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4105, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4106, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
--	{ 0x8086, 0x4107, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4100), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4101), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4102), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4103), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4104), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4105), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4106), 0, 0, (long) &mrst_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x4107), 0, 0, (long) &mrst_chip_ops},
- #endif
- #if defined(CONFIG_DRM_PSB_MFLD)
--	{ 0x8086, 0x0130, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0131, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0132, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0133, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0134, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0135, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0136, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
--	{ 0x8086, 0x0137, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0130), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0131), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0132), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0133), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0134), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0135), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0136), 0, 0, (long) &mdfld_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0137), 0, 0, (long) &mdfld_chip_ops},
- #endif
- #if defined(CONFIG_DRM_PSB_CDV)
--	{ 0x8086, 0x0be0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be3, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be4, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be5, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
--	{ 0x8086, 0x0be7, PCI_ANY_ID, PCI_ANY_ID, 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be0), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be1), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be2), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be3), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be4), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be5), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be6), 0, 0, (long) &cdv_chip_ops},
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0be7), 0, 0, (long) &cdv_chip_ops},
- #endif
- 	{ 0, 0, 0}
- };
--- 
-1.7.3.4
+I am still fetching from git://github.com/lenb/linux.git#acpi, is that
+correct?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOtxAlAAoJEECxmPOUX5FEQksP/ipOxQT+6e/6oKnLNfCxBDBQ
+0Lnp66h4pt8dfQIOoNJ9TFa8EqMjoRLPPf6KY4kNKHopADLhgk2B8tX86n3pHUgq
+fR865k9vvRRMFKltJMVGvg3W7+SQeZUDrjNGrJbMycmbGZq3Jqr0VdQTb/c5ZX+7
+slIGJRJx9aFxRyBI+NEPJYV5g1MKUD3yzv0qNOtUWtaB58i1hebNN9crWixxiAfd
+1ISFSmE6R4Cz7E+Raa46zFY+CDIV/69GuimTN01s4NU/oxhkiOQwUaP8flkLPUuM
+e6k7G6ESudUpCvgTalqJ7zxJqnfGJxc8Br+5pXYI9kMkidgQjGydATsHm40QdiUi
+m8svtgY4gjI91GJ6DRHHXWuwTdrjES7E8rg3avH/mHiXBnpeVh4vHCkZC5MjMkiy
+O31oD50CuOYz36OiIgbiMh5hN2VQYSWnAZnGYlpmPMgzzIWn0M8tAFENqia+h5xG
+E2jBGyUuvEyNyhkN73RIDTf6kGc4PjgUtxyYqlmnSwDkKlhaayINPXfqcGt3qBP0
+6cSzegAFQlvy58WUVOrCQh/1++oMhVyF5aO43h/uukxcXZSs/uD4/JlElcIMLTHb
+S3v8TYz/kBRuMAgtMvZ/XMEB65H1Sk6LEDfC+WAcWv02kRFTy/8xzG14I5+pQypg
+HH8zCyOM61VTd/olUskM
+=i/sQ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt--
