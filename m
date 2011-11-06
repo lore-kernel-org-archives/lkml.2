@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1KFWyh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:54:37 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:45543 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab1KFWyg (ORCPT
+	id S1754348Ab1KFWyn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:54:43 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35605 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754223Ab1KFWyl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:54:36 -0500
-Date: Mon, 7 Nov 2011 09:54:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: failing to fetch the acpi tree
-Message-Id: <20111107095429.28cb33a8ec512a2bd7690dba@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt"
+	Sun, 6 Nov 2011 17:54:41 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110920161743.GA32737@kroah.com>
+References: <20110920161743.GA32737@kroah.com>
+Date: Sun, 6 Nov 2011 23:54:39 +0100
+Message-ID: <CAHR064gzgKtLSNQ-NuoKWW9-Nv_S0myOusQT+-CxVVeyO5fMKA@mail.gmail.com>
+Subject: Re: [patch 0/8] Samsung Laptop driver patches - resend
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, greg@kroah.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Sep 20, 2011 at 6:17 PM, Greg KH <gregkh@suse.de> wrote:
+> Hi Matthew,
+>
+> Here is a resend of the samsung-laptop patches, with the correct
+> authorship info in it.  Sorry about the last batch, 'quilt mail' strips
+> them off when sending them out, despite the information being in the
+> original patch.
+>
+> The patches are against Linus's current tree, but should apply just fine
+> to linux-next as well.
+>
+> If there are any problems with them, please let me know.
+>
+> Oh, and if anyone wants to take over maintainership of this driver,
+> please let me know.  I no longer have the hardware to be able to test
+> any changes for it, which is why this took so long to get pushed out to
+> you.
+>
+> thanks,
+>
+> greg k-h
 
-Hi Len,
+Hi Greg,
 
-Fetching the acpi tree, produces this error:
+Just got a 90X3A from Intel and I'll try to take a look at samsung-laptop
+since some features are missing (keyboard backlight for example).
 
-fatal: Couldn't find remote ref refs/heads/acpi
+Do you have any doc on the vendor "interface" (other than just reading
+the code :) ) ?
 
-I am still fetching from git://github.com/lenb/linux.git#acpi, is that
-correct?
+Thanks,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOtxAlAAoJEECxmPOUX5FEQksP/ipOxQT+6e/6oKnLNfCxBDBQ
-0Lnp66h4pt8dfQIOoNJ9TFa8EqMjoRLPPf6KY4kNKHopADLhgk2B8tX86n3pHUgq
-fR865k9vvRRMFKltJMVGvg3W7+SQeZUDrjNGrJbMycmbGZq3Jqr0VdQTb/c5ZX+7
-slIGJRJx9aFxRyBI+NEPJYV5g1MKUD3yzv0qNOtUWtaB58i1hebNN9crWixxiAfd
-1ISFSmE6R4Cz7E+Raa46zFY+CDIV/69GuimTN01s4NU/oxhkiOQwUaP8flkLPUuM
-e6k7G6ESudUpCvgTalqJ7zxJqnfGJxc8Br+5pXYI9kMkidgQjGydATsHm40QdiUi
-m8svtgY4gjI91GJ6DRHHXWuwTdrjES7E8rg3avH/mHiXBnpeVh4vHCkZC5MjMkiy
-O31oD50CuOYz36OiIgbiMh5hN2VQYSWnAZnGYlpmPMgzzIWn0M8tAFENqia+h5xG
-E2jBGyUuvEyNyhkN73RIDTf6kGc4PjgUtxyYqlmnSwDkKlhaayINPXfqcGt3qBP0
-6cSzegAFQlvy58WUVOrCQh/1++oMhVyF5aO43h/uukxcXZSs/uD4/JlElcIMLTHb
-S3v8TYz/kBRuMAgtMvZ/XMEB65H1Sk6LEDfC+WAcWv02kRFTy/8xzG14I5+pQypg
-HH8zCyOM61VTd/olUskM
-=i/sQ
------END PGP SIGNATURE-----
-
---Signature=_Mon__7_Nov_2011_09_54_29_+1100_K3wVe8X26uMMqDmt--
+-- 
+Corentin Chary
+http://xf.iksaif.net
