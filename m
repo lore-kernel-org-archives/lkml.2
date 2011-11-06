@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab1KFUEk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 15:04:40 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:33520 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1KFUEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 15:04:39 -0500
-Subject: Re: [GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-rdma <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Roland Dreier <roland@purestorage.com>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <CAO+b5-p0gLueksp7a8RVm9A1Qe_9xc-fNSNX0NY0W7CNtGnSYw@mail.gmail.com>
-References: <1320437452.5859.96.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-pOi_+Y+jcExxEzParHOdU6YB4WaB-onH_PLXugzLKjzg@mail.gmail.com>
-	 <1320516243.5859.184.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-rjKdZtBjZ=qyRnavDubtHWSGihROHEUok6o+bCNc3TpA@mail.gmail.com>
-	 <1320574170.5859.370.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-p0gLueksp7a8RVm9A1Qe_9xc-fNSNX0NY0W7CNtGnSYw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Nov 2011 12:04:30 -0800
-Message-ID: <1320609870.10690.5.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754496Ab1KFUFe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 15:05:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753457Ab1KFUFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 15:05:33 -0500
+Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
+From: Mark Salter <msalter@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Date: Sun, 06 Nov 2011 15:05:27 -0500
+In-Reply-To: <CA+55aFwodK9Z7cUu4bdhmOcR2L3R_fBYdTyJv6iQKcYFrH2Xew@mail.gmail.com>
+References: <1320179267.14825.107.camel@deneb.redhat.com>
+	 <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
+	 <1320529182.14081.78.camel@deneb.redhat.com>
+	 <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
+	 <1320593057.14081.107.camel@deneb.redhat.com>
+	 <CA+55aFwodK9Z7cUu4bdhmOcR2L3R_fBYdTyJv6iQKcYFrH2Xew@mail.gmail.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <1320609928.2382.12.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-06 at 14:20 +0100, Bart Van Assche wrote:
-> On Sun, Nov 6, 2011 at 11:09 AM, Nicholas A. Bellinger
-> <nab@linux-iscsi.org> wrote:
-> > We have also discussed srpt_service_guid a bit before, which you
-> > indicated needed to stay in current code as global scope, and presumably
-> > should not change value after loading.  Looking at the actual usage, one
-> > post merge improvement we can consider is seeing if it's possible to
-> > move ib_cm_listen() out of srpt_add_one() and have it driven instead by
-> > configfs context in order to optionally set srpt_service_guid on a per
-> > target endpoint basis to get us some more flexibility.
+On Sun, 2011-11-06 at 11:07 -0800, Linus Torvalds wrote:
+> >
+> > I think the best counter argument is that it leads to paddr != vaddr
+> > in the case of NOMMU with a non-zero memory base. My view is that in
+> > all NOMMU cases, physical and virtual addresses should be the same.
+> > Otherwise, you end up breaking drivers which need to pass physical
+> > addresses to devices.
 > 
-> ib_sprt defines a single I/O controller profile and hence there should
-> be exactly one GUID associated with it.
+> That's a totally insane argument.
 
-Ok, so if it exists, it needs to stay global scope.
+Not *totally* insane. Forget the last sentence. You're right that its a
+driver problem. Creating a physical address space separate from the
+"virtual" space on a NOMMU arch where the hw uses a one-to-one mapping
+seems a long way to go. My point here is that the simplest NOMMU case is
+paddr == vaddr. Right now, the generic headers are broken in that regard
+for hardware that maps RAM at a non-zero address.
 
-> 
-> > For the "last WQE" you've mentioned, I'm happy to accept a patch to
-> > address this as you know the code better than me.  Otherwise, I'll be
-> > digging this out of your out-of-tree code as a seperate item and
-> > figuring out how to reproduce and test this special case.
-> 
-> I'll post a patch to address last WQE handling.
-> 
+So, okay. Let's have some more discussion among more people. There is
+certainly more than one approach to fix the currently broken bits and I
+sure don't claim to have the one true way. I just want to do what needs
+to be done to make the port acceptable for upstream inclusion.
 
-Thank you for handling this one.  I've merged your patch into lio-core
-and will get this included into target-pending with next set of
-post-merge rc-fixes.
-
-Thanks Bart!
-
---nab
+--Mark
 
 
