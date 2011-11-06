@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab1KFBdP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Nov 2011 21:33:15 -0400
-Received: from linux-sh.org ([111.68.239.195]:51864 "EHLO linux-sh.org"
+	id S1753603Ab1KFCN4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Nov 2011 22:13:56 -0400
+Received: from que21.charter.net ([209.225.8.22]:61724 "EHLO que21.charter.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab1KFBdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Nov 2011 21:33:14 -0400
-Date: Sun, 6 Nov 2011 10:33:02 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] rmobile updates for 3.2
-Message-ID: <20111106013302.GF29825@linux-sh.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	id S1753039Ab1KFCNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Nov 2011 22:13:54 -0400
+X-Authority-Analysis: v=1.1 cv=3kn4snR/2TdwuYXvh+wm0CPnSGzQFWY7ukd303aPFv0=
+ c=1 sm=1 a=gjzqeYHFQAwA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=D19gQVrFAAAA:8 a=L2xoN_Hgfg_jovWM_lQA:9 a=ktXrGBrjdUS4r1ek-0AA:7
+ a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Gregory.Dietsche@cuw.edu
+To: julia@diku.dk, mmarek@suse.cz
+Cc: rdunlap@xenotime.net, Gilles.Muller@lip6.fr, npalix.work@gmail.com,
+        cocci@diku.dk, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [RESEND 0/2] coccicheck: Add M= option
+Date: Sat,  5 Nov 2011 20:59:42 -0500
+Message-Id: <1320544784-24576-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.6.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from:
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 
-	git://github.com/pmundt/linux-sh.git rmobile-latest
+This is a re-post of the patches found here: https://lkml.org/lkml/2011/6/7/714
 
-Which contains:
+Could I get the appropriate aks/naks to get these into the kernel? Also, I've added Michal Marek to the CC list since it is my understanding that he's the one that will eventually commit these. Thanks!!
 
-Bastian Hecht (1):
-      ARM: sh7372 ap4evb NOR Flash USB boot fix
+---
 
-Guennadi Liakhovetski (1):
-      ARM: mach-shmobile: ag5evm needs CONFIG_I2C
+This patch set adds support for M= to coccicheck. This makes 
+using Coccinelle easier for those wishing to check specific
+drivers or sub systems with Coccinelle.
 
-Magnus Damm (19):
-      ARM: mach-shmobile: sh73a0 PFC pull-up support for SDHI0+2
-      ARM: mach-shmobile: Kota2 SCIFA2 and SMSC911X support
-      ARM: mach-shmobile: Kota2 KEYSC support
-      ARM: mach-shmobile: Kota2 GPIO Keys support
-      ARM: mach-shmobile: Kota2 GPIO LEDs support
-      ARM: mach-shmobile: Kota2 MMCIF support
-      ARM: mach-shmobile: Kota2 SCIFA4 and SCIFB support
-      ARM: mach-shmobile: Kota2 SDHI0 and SDHI1 support
-      ARM: mach-shmobile: Break out INTC IRQ code
-      sh: intc: Allow triggering on both edges for ARM SoCs
-      ARM: mach-shmobile: sh7372 Mackerel NOR Flash USB boot fix
-      ARM: mach-shmobile: sh73a0 GPIO IRQ support
-      ARM: mach-shmobile: Use common INTC IRQ code on sh7367
-      ARM: mach-shmobile: Use common INTC IRQ code on sh7377
-      ARM: mach-shmobile: Use common INTC IRQ code on sh7372
-      ARM: mach-shmobile: Use common INTC IRQ code on sh73a0
-      ARM: mach-shmobile: SDHI0 GPIO hotplug for AG5EVM
-      ARM: mach-shmobile: Add support for PINT though INTC macros
-      ARM: mach-shmobile: sh73a0 and AG5EVM PINT support
+Greg Dietsche (2):
+  coccicheck: add M= option to control which dir is processed
+  coccinelle.txt: update documentation to include M= option
 
- arch/arm/mach-shmobile/Kconfig               |    8 +
- arch/arm/mach-shmobile/Makefile              |    1 +
- arch/arm/mach-shmobile/board-ag5evm.c        |   36 ++-
- arch/arm/mach-shmobile/board-ap4evb.c        |    4 +-
- arch/arm/mach-shmobile/board-kota2.c         |  447 ++++++++++++++++++++++++++
- arch/arm/mach-shmobile/board-mackerel.c      |    4 +-
- arch/arm/mach-shmobile/include/mach/intc.h   |  246 ++++++++++++++
- arch/arm/mach-shmobile/include/mach/sh73a0.h |   17 +
- arch/arm/mach-shmobile/intc-sh7367.c         |   40 +--
- arch/arm/mach-shmobile/intc-sh7372.c         |   72 +----
- arch/arm/mach-shmobile/intc-sh7377.c         |   67 +----
- arch/arm/mach-shmobile/intc-sh73a0.c         |  187 +++++++++++
- arch/arm/mach-shmobile/pfc-sh73a0.c          |  120 ++++++-
- arch/arm/mach-shmobile/platsmp.c             |   10 +-
- drivers/sh/intc/chip.c                       |    2 +-
- 15 files changed, 1063 insertions(+), 198 deletions(-)
- create mode 100644 arch/arm/mach-shmobile/board-kota2.c
- create mode 100644 arch/arm/mach-shmobile/include/mach/intc.h
+ Documentation/coccinelle.txt |   10 ++++++++--
+ scripts/coccicheck           |   19 ++++++++++++++-----
+ 2 files changed, 22 insertions(+), 7 deletions(-)
+
+-- 
+1.7.6.4
+
