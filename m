@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab1KFXQK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 18:16:10 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17216 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab1KFXQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 18:16:08 -0500
-Date: Mon, 7 Nov 2011 00:21:26 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-cc: Andrea Merello <andreamrl@tiscali.it>, Mike McCormack <mikem@ring3k.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, netdev@vger.kernel.org
-Subject: [PATCH] rtl8192e: Don't copy huge struct by value (and make it
- const).
-Message-ID: <alpine.LNX.2.00.1111070017220.5763@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754592Ab1KFXUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 18:20:00 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:44734 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753052Ab1KFXT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 18:19:58 -0500
+Date: Sun, 6 Nov 2011 18:19:53 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to
+ test kernels
+Message-ID: <20111106231953.GD4500@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Pekka Enberg <penberg@kernel.org>,
+	Anthony Liguori <anthony@codemonkey.ws>,
+	Avi Kivity <avi@redhat.com>,
+	"kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+	qemu-devel Developers <qemu-devel@nongnu.org>,
+	Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+	=?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
+ <4EB680D9.2070706@redhat.com>
+ <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+ <4EB6AE34.2000907@redhat.com>
+ <CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com>
+ <4EB6BAED.2030400@redhat.com>
+ <4EB6BEFA.6000303@codemonkey.ws>
+ <20111106183132.GA4500@thunk.org>
+ <CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
+ <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtllib_is_shortslot() takes one argument - a struct that's more than a
-kilobyte large. It should take a pointer instead of copying such a
-huge struct - and the argument might as well be declared 'const' now
-that we are at it, since it is not modified. This patch makes these
-changes.
+On Sun, Nov 06, 2011 at 08:58:20PM +0200, Pekka Enberg wrote:
+> > Ted, I'm confused. Making backwards incompatible ABI changes has never
+> > been on the table. Why are you bringing it up?
+> 
+> And btw, KVM tool is not a random userspace project - it was designed
+> to live in tools/kvm from the beginning. I've explained the technical
+> rationale for sharing kernel code here:
+> 
+> https://lkml.org/lkml/2011/11/4/150
+> 
+> Please also see Ingo's original rant that started the project:
+> 
+> http://thread.gmane.org/gmane.linux.kernel/962051/focus=962620
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/rtl8192e/rtllib.h         |    2 +-
- drivers/staging/rtl8192e/rtllib_softmac.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Because I don't buy any of these arguments.  We have the same kernel
+developers working on xfs and xfsprogs, ext4 and e2fsprogs, btrfs and
+btrfsprogs, and we don't have those userspace projects in the kernel
+source tree.
 
-diff --git a/drivers/staging/rtl8192e/rtllib.h b/drivers/staging/rtl8192e/rtllib.h
-index de25975..3a52120 100644
---- a/drivers/staging/rtl8192e/rtllib.h
-+++ b/drivers/staging/rtl8192e/rtllib.h
-@@ -2804,7 +2804,7 @@ extern int rtllib_wx_set_gen_ie(struct rtllib_device *ieee, u8 *ie, size_t len);
- 
- /* rtllib_softmac.c */
- extern short rtllib_is_54g(struct rtllib_network *net);
--extern short rtllib_is_shortslot(struct rtllib_network net);
-+extern short rtllib_is_shortslot(const struct rtllib_network *net);
- extern int rtllib_rx_frame_softmac(struct rtllib_device *ieee,
- 				   struct sk_buff *skb,
- 				   struct rtllib_rx_stats *rx_stats, u16 type,
-diff --git a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
-index b508685..fa774cf 100644
---- a/drivers/staging/rtl8192e/rtllib_softmac.c
-+++ b/drivers/staging/rtl8192e/rtllib_softmac.c
-@@ -28,9 +28,9 @@ short rtllib_is_54g(struct rtllib_network *net)
- 	return (net->rates_ex_len > 0) || (net->rates_len > 4);
- }
- 
--short rtllib_is_shortslot(struct rtllib_network net)
-+short rtllib_is_shortslot(const struct rtllib_network *net)
- {
--	return net.capability & WLAN_CAPABILITY_SHORT_SLOT_TIME;
-+	return net->capability & WLAN_CAPABILITY_SHORT_SLOT_TIME;
- }
- 
- /* returns the total length needed for pleacing the RATE MFIE
--- 
-1.7.7.2
+The only excuse I can see is a hope to make random changes to the
+kernel and userspace tools without having to worry about compatibility
+problems, which is an argument I've seen with perf (that you have to
+use the same version of perf as the kernel version, which to me is bad
+software engineering).  And that's why I pointed out that you can't do
+that with KVM, since we have out-of-tree userspace users, namely
+qemu-kvm.
 
+The rest of the arguments are arguments for a new effort, which is
+fine --- but not an excuse for putting in the kernel source tree.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+     	     	    	       	       - Ted
