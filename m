@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1KFVxO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:53:14 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16767 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab1KFVxM (ORCPT
+	id S1753228Ab1KFV55 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:57:57 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35139 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751097Ab1KFV54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:53:12 -0500
-Date: Sun, 6 Nov 2011 22:58:31 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-cc: "John W. Linville" <linville@tuxdriver.com>, Bing Zhao <bzhao@marvell.com>
-Subject: [PATCH] net, wireless, mwifiex: Fix mem leak in
- mwifiex_update_curr_bss_params()
-Message-ID: <alpine.LNX.2.00.1111062255310.5763@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 6 Nov 2011 16:57:56 -0500
+X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Nov 2011 16:57:56 EST
+Message-ID: <4EB70100.8030703@kernel.org>
+Date: Sun, 06 Nov 2011 21:49:52 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jesper Juhl <jj@chaosbits.net>
+CC: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH] [staging] iio, adc: Do not leak memory in ad7280_event_handler()
+References: <alpine.LNX.2.00.1111062246580.5763@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1111062246580.5763@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kmemdup() fails we leak the memory allocated to bss_desc.
-This patch fixes the leak.
-I also removed the pointless default assignment of 'NULL' to 'bss_desc' 
-while I was there anyway.
+On 11/06/2011 09:49 PM, Jesper Juhl wrote:
+> If ad7280_read_all_channels() returns <0 then we'll leak the memory
+> allocated to 'channels' when we return and that variable goes out of
+> scope.
+> This patch fixes the leak.
+> 
+Looks right to me - good spot. Only choice is whether a single exit
+point makes sense rather than undwinding it here? Michael?
+I'm happy with either solution, hence the ack.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/net/wireless/mwifiex/scan.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
- note: patch is compile tested only since I don't have the hardware.
-
-diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-index dae8dbb..8a3f959 100644
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1469,7 +1469,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv, u8 *bssid,
- 			       s32 rssi, const u8 *ie_buf, size_t ie_len,
- 			       u16 beacon_period, u16 cap_info_bitmap, u8 band)
- {
--	struct mwifiex_bssdescriptor *bss_desc = NULL;
-+	struct mwifiex_bssdescriptor *bss_desc;
- 	int ret;
- 	unsigned long flags;
- 	u8 *beacon_ie;
-@@ -1484,6 +1484,7 @@ mwifiex_update_curr_bss_params(struct mwifiex_private *priv, u8 *bssid,
- 
- 	beacon_ie = kmemdup(ie_buf, ie_len, GFP_KERNEL);
- 	if (!beacon_ie) {
-+		kfree(bss_desc);
- 		dev_err(priv->adapter->dev, " failed to alloc beacon_ie\n");
- 		return -ENOMEM;
- 	}
--- 
-1.7.7.2
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/staging/iio/adc/ad7280a.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+>  note: I don't have the hardware, so patch is compile tested only.
+> 
+> diff --git a/drivers/staging/iio/adc/ad7280a.c b/drivers/staging/iio/adc/ad7280a.c
+> index 372d059..dddc03c 100644
+> --- a/drivers/staging/iio/adc/ad7280a.c
+> +++ b/drivers/staging/iio/adc/ad7280a.c
+> @@ -687,8 +687,10 @@ static irqreturn_t ad7280_event_handler(int irq, void *private)
+>  		return IRQ_HANDLED;
+>  
+>  	ret = ad7280_read_all_channels(st, st->scan_cnt, channels);
+> -	if (ret < 0)
+> +	if (ret < 0) {
+> +		kfree(channels);
+>  		return IRQ_HANDLED;
+> +	}
+>  
+>  	for (i = 0; i < st->scan_cnt; i++) {
+>  		if (((channels[i] >> 23) & 0xF) <= AD7280A_CELL_VOLTAGE_6) {
 
