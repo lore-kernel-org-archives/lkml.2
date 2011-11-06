@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab1KFWKk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 17:10:40 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:35190 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab1KFWKj (ORCPT
+	id S1753831Ab1KFWMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 17:12:33 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:34950 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752805Ab1KFWMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 17:10:39 -0500
-Date: Sun, 6 Nov 2011 23:10:38 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-Message-ID: <20111106221038.GB11672@tango.0pointer.de>
-References: <1320614101.3226.5.camel@offbook>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320614101.3226.5.camel@offbook>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Sun, 6 Nov 2011 17:12:32 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18iU9BiBeUiy4nsPkm61JnVPGLC6pNamJIO/X8YaF
+	xEaH0p4nwzpc50
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v2] staging/xgifb: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
+Date: Sun,  6 Nov 2011 23:12:28 +0100
+Message-Id: <1320617548-9506-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
+References: <1320613517-3086-1-git-send-email-peterhuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 06.11.11 18:15, Davidlohr Bueso (dave@gnu.org) wrote:
+This patch converts pci_table entries to use the PCI_DEVICE macro,
+if .subvendor and .subdevice are set to PCI_ANY_ID,
+and thus improves readability.
 
-> From: Davidlohr Bueso <dave@gnu.org>
-> 
-> This patch adds a new RLIMIT_TMPFSQUOTA resource limit to restrict an individual user's quota across all mounted tmpfs filesystems.
-> It's well known that a user can easily fill up commonly used directories (like /tmp, /dev/shm) causing programs to break through DoS.
+v2:
+Since the driver_data field isn't used anywhere we can also drop the
+assignments for class, class_mask and driver_data.
+(found by Aaro Koskinen)
 
-Thanks a lot for this work! One comment without looking at the patch in detail:
+KernelVersion: Staging-20111106
 
-> +	if (atomic_long_read(&user->shmem_bytes) + len > 
-> +	    rlimit(RLIMIT_TMPFSQUOTA))
-> +		return -ENOSPC;
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/staging/xgifb/XGI_main.h |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
-This should be EDQUOT "Disk quota exceeded", not ENOSPC "No space left
-on device".
-
-Lennart
-
+diff --git a/drivers/staging/xgifb/XGI_main.h b/drivers/staging/xgifb/XGI_main.h
+index 71aebe3..cf4c188 100644
+--- a/drivers/staging/xgifb/XGI_main.h
++++ b/drivers/staging/xgifb/XGI_main.h
+@@ -32,14 +32,10 @@
+ #endif
+ 
+ static DEFINE_PCI_DEVICE_TABLE(xgifb_pci_table) = {
+-	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20, PCI_ANY_ID, PCI_ANY_ID,
+-	 0, 0, 0},
+-	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27, PCI_ANY_ID, PCI_ANY_ID,
+-	 0, 0, 1},
+-	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40, PCI_ANY_ID, PCI_ANY_ID,
+-	 0, 0, 2},
+-	{PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42, PCI_ANY_ID, PCI_ANY_ID,
+-	 0, 0, 3},
++	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_20)},
++	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_27)},
++	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_40)},
++	{PCI_DEVICE(PCI_VENDOR_ID_XG, PCI_DEVICE_ID_XG_42)},
+ 	{0}
+ };
+ 
 -- 
-Lennart Poettering - Red Hat, Inc.
+1.7.3.4
+
