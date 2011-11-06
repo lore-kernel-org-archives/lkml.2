@@ -1,46 +1,499 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752599Ab1KFNkl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 08:40:41 -0500
-Received: from mail.anarazel.de ([217.115.131.40]:52485 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183Ab1KFNkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 08:40:40 -0500
-From: Andres Freund <andres@anarazel.de>
-To: Gleb Natapov <gleb@redhat.com>
-Subject: Re: 3.1: NULL pointer dereference after perf usage
-Date: Sun, 6 Nov 2011 14:40:30 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-andres-dirty; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <201111060358.59430.andres@anarazel.de> <20111106091229.GB3225@redhat.com>
-In-Reply-To: <20111106091229.GB3225@redhat.com>
+	id S1752691Ab1KFOCu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 09:02:50 -0500
+Received: from fmmailgate01.web.de ([217.72.192.221]:35121 "EHLO
+	fmmailgate01.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1KFOCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 09:02:48 -0500
+Message-ID: <4EB6917F.3000507@web.de>
+Date: Sun, 06 Nov 2011 14:54:07 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111061440.31714.andres@anarazel.de>
+To: Alexander Graf <agraf@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+References: <1314221904-28266-1-git-send-email-agraf@suse.de>
+In-Reply-To: <1314221904-28266-1-git-send-email-agraf@suse.de>
+X-Enigmail-Version: 1.3.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigA790D7B16B915DC8380610DC"
+X-Provags-ID: V02:K0:T9ou3T4C18l8zCZXw01AI8vWOy2NTaYPnuHC8YzNm0D
+ 0EQ9qzuqS/S2RBAHdPopVWIkgBm5436et0XJoVUVBs3C30OXpu
+ ju9PFc4OBP1D0ZLSVvqBKjtz8lHJ4HXkx5GOn1N51vx6yuFNnp
+ 3lkx1y44iSCjj+BkEJf20EbPwikN87jVKrHVe/1XvxyPTsqwO0
+ 423Idq2dRcxWDmOwhBy3w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigA790D7B16B915DC8380610DC
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-On Sunday, November 06, 2011 10:12:29 AM Gleb Natapov wrote:
-> On Sun, Nov 06, 2011 at 03:58:59AM +0100, Andres Freund wrote:
-> > Somewhere in the 3.1 cycle - haven't yet bisected - I started to get
-> > somewhat reprodcable crashes after using perf.
-> > There is no direct correlation with a concrete action via perf I can
-> > see so far but without having used perf the system runs stable.
-> 
-> Can you try those patches please?
-> https://lkml.org/lkml/2011/10/23/163
-> https://lkml.org/lkml/2011/10/18/390
-After applying those the system runs smoothly - while using perf obviously - 
-for over an hour.
+On 2011-08-24 23:38, Alexander Graf wrote:
+> On LinuxCon I had a nice chat with Linus on what he thinks kvm-tool
+> would be doing and what he expects from it. Basically he wants a
+> small and simple tool he and other developers can run to try out and
+> see if the kernel they just built actually works.
+>=20
+> Fortunately, QEMU can do that today already! The only piece that was
+> missing was the "simple" piece of the equation, so here is a script
+> that wraps around QEMU and executes a kernel you just built.
+>=20
+> If you do have KVM around and are not cross-compiling, it will use
+> KVM. But if you don't, you can still fall back to emulation mode and
+> at least check if your kernel still does what you expect. I only
+> implemented support for s390x and ppc there, but it's easily extensible=
 
-Thanks,
+> to more platforms, as QEMU can emulate (and virtualize) pretty much
+> any platform out there.
+>=20
+> If you don't have qemu installed, please do so before using this script=
+=2E Your
+> distro should provide a package for it (might even call it "kvm"). If n=
+ot,
+> just compile it from source - it's not hard!
+>=20
+> To quickly get going, just execute the following as user:
+>=20
+>     $ ./Documentation/run-qemu.sh -r / -a init=3D/bin/bash
+>=20
+> This will drop you into a shell on your rootfs.
+>=20
+> Happy hacking!
+>=20
+> Signed-off-by: Alexander Graf <agraf@suse.de>
+>=20
+> ---
+>=20
+> v1 -> v2:
+>=20
+>   - fix naming of QEMU
+>   - use grep -q for has_config
+>   - support multiple -a args
+>   - spawn gdb on execution
+>   - pass through qemu options
+>   - dont use qemu-system-x86_64 on i386
+>   - add funny sentence to startup text
+>   - more helpful error messages
+> ---
+>  scripts/run-qemu.sh |  334 +++++++++++++++++++++++++++++++++++++++++++=
+++++++++
+>  1 files changed, 334 insertions(+), 0 deletions(-)
+>  create mode 100755 scripts/run-qemu.sh
+>=20
+> diff --git a/scripts/run-qemu.sh b/scripts/run-qemu.sh
+> new file mode 100755
+> index 0000000..5d4e185
+> --- /dev/null
+> +++ b/scripts/run-qemu.sh
+> @@ -0,0 +1,334 @@
+> +#!/bin/bash
+> +#
+> +# QEMU Launcher
+> +#
+> +# This script enables simple use of the KVM and QEMU tool stack for
+> +# easy kernel testing. It allows to pass either a host directory to
+> +# the guest or a disk image. Example usage:
+> +#
+> +# Run the host root fs inside a VM:
+> +#
+> +# $ ./scripts/run-qemu.sh -r /
+> +#
+> +# Run the same with SDL:
+> +#
+> +# $ ./scripts/run-qemu.sh -r / --sdl
+> +#=20
+> +# Or with a PPC build:
+> +#
+> +# $ ARCH=3Dppc ./scripts/run-qemu.sh -r /
+> +#=20
+> +# PPC with a mac99 model by passing options to QEMU:
+> +#
+> +# $ ARCH=3Dppc ./scripts/run-qemu.sh -r / -- -M mac99
+> +#
+> +
+> +USE_SDL=3D
+> +USE_VNC=3D
+> +USE_GDB=3D1
+> +KERNEL_BIN=3Darch/x86/boot/bzImage
+> +MON_STDIO=3D
+> +KERNEL_APPEND2=3D
+> +SERIAL=3DttyS0
+> +SERIAL_KCONFIG=3DSERIAL_8250
+> +BASENAME=3D$(basename "$0")
+> +
+> +function usage() {
+> +	echo "
+> +$BASENAME allows you to execute a virtual machine with the Linux kerne=
+l
+> +that you just built. To only execute a simple VM, you can just run it
+> +on your root fs with \"-r / -a init=3D/bin/bash\"
+> +
+> +	-a, --append parameters
+> +		Append the given parameters to the kernel command line.
+> +
+> +	-d, --disk image
+> +		Add the image file as disk into the VM.
+> +
+> +	-D, --no-gdb
+> +		Don't run an xterm with gdb attached to the guest.
+> +
+> +	-r, --root directory
+> +		Use the specified directory as root directory inside the guest.
+> +
+> +	-s, --sdl
+> +		Enable SDL graphical output.
+> +
+> +	-S, --smp cpus
+> +		Set number of virtual CPUs.
+> +
+> +	-v, --vnc
+> +		Enable VNC graphical output.
+> +
+> +Examples:
+> +
+> +	Run the host root fs inside a VM:
+> +	$ ./scripts/run-qemu.sh -r /
+> +
+> +	Run the same with SDL:
+> +	$ ./scripts/run-qemu.sh -r / --sdl
+> +=09
+> +	Or with a PPC build:
+> +	$ ARCH=3Dppc ./scripts/run-qemu.sh -r /
+> +=09
+> +	PPC with a mac99 model by passing options to QEMU:
+> +	$ ARCH=3Dppc ./scripts/run-qemu.sh -r / -- -M mac99
+> +"
+> +}
+> +
+> +function require_config() {
+> +	if [ "$(grep CONFIG_$1=3Dy .config)" ]; then
+> +		return
+> +	fi
+> +
+> +	echo "You need to enable CONFIG_$1 for run-qemu to work properly"
+> +	exit 1
+> +}
+> +
+> +function has_config() {
+> +	grep -q "CONFIG_$1=3Dy" .config
+> +}
+> +
+> +function drive_if() {
+> +	if has_config VIRTIO_BLK; then
+> +		echo virtio
+> +	elif has_config ATA_PIIX; then
+> +		echo ide
 
-Andres
++ require_config "BLK_DEV_SD"
+
+Maybe there should also be a warning if no standard FS (ext[34], btrfs,
+xfs etc.) is build into the kernel.
+
+Another thing, but that's just a recommendation for initrd-free mode:
+DEVTMPFS_MOUNT
+
+> +	else
+> +		echo "\
+> +Your kernel must have either VIRTIO_BLK or ATA_PIIX
+> +enabled for block device assignment" >&2
+> +		exit 1
+> +	fi
+> +}
+> +
+> +GETOPT=3D`getopt -o a:d:Dhr:sS:v --long append,disk:,no-gdb,help,root:=
+,sdl,smp:,vnc \
+> +	-n "$(basename \"$0\")" -- "$@"`
+> +
+> +if [ $? !=3D 0 ]; then
+> +	echo "Terminating..." >&2
+> +	exit 1
+> +fi
+> +
+> +eval set -- "$GETOPT"
+> +
+> +while true; do
+> +	case "$1" in
+> +	-a|--append)
+> +		KERNEL_APPEND2=3D"$KERNEL_APPEND2 $KERNEL_APPEND2"
+
+That should be
+
+KERNEL_APPEND2=3D"$KERNEL_APPEND2 $2"
+
+> +		shift
+> +		;;
+> +	-d|--disk)
+> +		QEMU_OPTIONS=3D"$QEMU_OPTIONS -drive \
+> +			file=3D$2,if=3D$(drive_if),cache=3Dunsafe"
+
+		if [ $? !=3D 0 ]; then
+			exit $?
+		fi
+
+> +		USE_DISK=3D1
+> +		shift
+> +		;;
+> +	-D|--no-gdb)
+> +		USE_GDB=3D
+> +		;;
+> +	-h|--help)
+> +		usage
+> +		exit 0
+> +		;;
+> +	-r|--root)
+> +		ROOTFS=3D"$2"
+> +		shift
+> +		;;
+> +	-s|--sdl)
+> +		USE_SDL=3D1
+> +		;;
+> +	-S|--smp)
+> +		SMP=3D"$2"
+> +		shift
+> +		;;
+> +	-v|--vnc)
+> +		USE_VNC=3D1
+> +		;;
+> +	--)
+> +		shift
+> +		break
+> +		;;
+> +	*)
+> +		echo "Could not parse option: $1" >&2
+> +		exit 1
+> +		;;
+> +	esac
+> +	shift
+> +done
+> +
+> +if [ ! "$ROOTFS" -a ! "$USE_DISK" ]; then
+> +	echo "\
+> +Error: Please specify at least -r or -d with a target \
+> +FS to run off of" >&2
+> +	exit 1
+> +fi
+> +
+> +# Try to find the KVM accelerated QEMU binary
+> +
+> +[ "$ARCH" ] || ARCH=3D$(uname -m)
+> +case $ARCH in
+> +x86_64)
+> +	KERNEL_BIN=3Darch/x86/boot/bzImage
+> +	# SUSE and Red Hat call the binary qemu-kvm
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu-kvm 2>/dev/null)
+> +
+> +	# Debian and Gentoo call it kvm
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which kvm 2>/dev/null)
+> +
+> +	# QEMU's own build system calls it qemu-system-x86_64
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu-system-x86_64 2>/dev/null)=
+
+> +	;;
+> +i*86)
+> +	KERNEL_BIN=3Darch/x86/boot/bzImage
+> +	# SUSE and Red Hat call the binary qemu-kvm
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu-kvm 2>/dev/null)
+> +
+> +	# Debian and Gentoo call it kvm
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which kvm 2>/dev/null)
+> +
+> +	KERNEL_BIN=3Darch/x86/boot/bzImage
+> +	# i386 version of QEMU
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu 2>/dev/null)
+> +	;;
+> +s390*)
+> +	KERNEL_BIN=3Darch/s390/boot/image
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu-system-s390x 2>/dev/null)
+> +	;;
+> +ppc*)
+> +	KERNEL_BIN=3Dvmlinux
+> +
+> +	IS_64BIT=3D
+> +	has_config PPC64 && IS_64BIT=3D64
+> +	if has_config PPC_85xx; then
+> +		QEMU_OPTIONS=3D"$QEMU_OPTIONS -M mpc8544ds"
+> +	elif has_config PPC_PSERIES; then
+> +		QEMU_OPTIONS=3D"$QEMU_OPTIONS -M pseries"
+> +		SERIAL=3Dhvc0
+> +		SERIAL_KCONFIG=3DHVC_CONSOLE
+> +	elif has_config PPC_PMAC; then
+> +		has_config SERIAL_PMACZILOG_TTYS || SERIAL=3DttyPZ0
+> +		SERIAL_KCONFIG=3DSERIAL_PMACZILOG
+> +	else
+> +		echo "Unknown PPC board" >&2
+> +		exit 1
+> +	fi
+> +
+> +	[ "$QEMU_BIN" ] || QEMU_BIN=3D$(which qemu-system-ppc${IS_64BIT} 2>/d=
+ev/null)
+> +	;;
+> +esac
+> +
+> +if [ ! -e "$QEMU_BIN" ]; then
+> +	echo "\
+> +Could not find a usable QEMU binary. Please install one from \
+> +your distro or from source code using:
+> +
+> +  $ git clone git://git.qemu.org/qemu.git
+> +  $ cd qemu
+> +  $ ./configure
+> +  $ make -j
+> +  $ sudo make install
+> +" >&2
+> +	exit 1
+> +fi
+> +
+> +# The binaries without kvm in their name can be too old to support KVM=
+, so
+> +# check for that before the user gets confused
+> +if [ ! "$(echo $QEMU_BIN | grep kvm)" -a \
+> +     ! "$($QEMU_BIN --help | egrep '^-machine')" ]; then
+> +	echo "Your QEMU binary is too old, please update to at least 0.15." >=
+&2
+> +	exit 1
+> +fi
+> +QEMU_OPTIONS=3D"$QEMU_OPTIONS -machine accel=3Dkvm:tcg"
+> +
+> +# We need to check some .config variables to make sure we actually wor=
+k
+> +# on the respective kernel.
+> +if [ ! -e .config ]; then
+> +	echo "\
+> +Please run this script on a fully compiled and configured
+> +Linux kernel build directory" >&2
+> +	exit 1
+> +fi
+> +
+> +if [ ! -e "$KERNEL_BIN" ]; then
+> +	echo "Could not find kernel binary: $KERNEL_BIN" >&2
+> +	exit 1
+> +fi
+> +
+> +QEMU_OPTIONS=3D"$QEMU_OPTIONS -kernel $KERNEL_BIN"
+> +
+> +if [ "$USE_SDL" ]; then
+> +	# SDL is the default, so nothing to do
+> +	:
+> +elif [ "$USE_VNC" ]; then
+> +	QEMU_OPTIONS=3D"$QEMU_OPTIONS -vnc :5"
+> +else
+> +	# When emulating a serial console, tell the kernel to use it as well
+> +	QEMU_OPTIONS=3D"$QEMU_OPTIONS -nographic"
+> +	KERNEL_APPEND=3D"$KERNEL_APPEND console=3D$SERIAL earlyprintk=3Dseria=
+l"
+> +	MON_STDIO=3D1
+> +	require_config "$SERIAL_KCONFIG"
+> +fi
+> +
+> +if [ "$ROOTFS" ]; then
+> +	# Using rootfs with 9p
+> +	require_config "NET_9P_VIRTIO"
+
++ require_config "9P_FS"
+
+> +	KERNEL_APPEND=3D"$KERNEL_APPEND \
+> +root=3D/dev/root rootflags=3Drw,trans=3Dvirtio,version=3D9p2000.L root=
+fstype=3D9p"
+> +
+> +#Usage: -virtfs fstype,path=3D/share_path/,security_model=3D[mapped|pa=
+ssthrough|none],mount_tag=3Dtag.
+> +
+> +
+> +	QEMU_OPTIONS=3D"$QEMU_OPTIONS \
+> +-virtfs local,id=3Droot,path=3D$ROOTFS,mount_tag=3Droot,security_model=
+=3Dpassthrough \
+> +-device virtio-9p-pci,fsdev=3Droot,mount_tag=3D/dev/root"
+> +fi
+> +
+> +[ "$SMP" ] || SMP=3D1
+> +
+> +# User append args come last
+> +KERNEL_APPEND=3D"$KERNEL_APPEND $KERNEL_APPEND2"
+> +
+> +############### Execution #################
+> +
+> +QEMU_OPTIONS=3D"$QEMU_OPTIONS -smp $SMP"
+> +
+> +echo "
+> +	################# Linux QEMU launcher #################
+> +
+> +This script executes your currently built Linux kernel using QEMU. If =
+KVM is
+> +available, it will also use KVM for fast virtualization of your guest.=
+
+> +
+> +The intent is to make it very easy to run your kernel. If you need to =
+do more
+> +advanced things, such as passing through real devices, please use QEMU=
+ command
+> +line options and add them to the $BASENAME command line using --.
+> +
+> +This tool is for simplicity, not world dominating functionality covera=
+ge.
+> +(just a hobby, won't be big and professional like libvirt)
+> +
+> +"
+> +
+> +if [ "$MON_STDIO" ]; then
+> +	echo "\
+> +### Your guest is bound to the current foreground shell. To quit the g=
+uest, ###
+> +### please use Ctrl-A x                                               =
+      ###
+> +"
+> +fi
+> +
+> +echo "  Executing: $QEMU_BIN $QEMU_OPTIONS -append \"$KERNEL_APPEND\""=
+
+> +echo
+> +
+> +GDB_PID=3D
+> +if [ "$USE_GDB" -a "$DISPLAY" -a -x "$(which xterm)" -a -e "$(which gd=
+b)" ]; then
+> +	# Run a gdb console in parallel to the kernel
+> +
+> +	# XXX find out if port is in use
+> +	PORT=3D$$
+> +	xterm -T "$BASENAME" -e "sleep 2; gdb vmlinux -ex 'target remote loca=
+lhost:$PORT' -ex c" &
+> +	GDB_PID=3D$!
+> +	QEMU_OPTIONS=3D"$QEMU_OPTIONS -gdb tcp::$PORT"
+> +fi
+> +
+> +$QEMU_BIN $QEMU_OPTIONS -append "$KERNEL_APPEND" "$@"
+> +wait $GDB_PID &>/dev/null
+> +
+
+Nice that it forks off a gdb session. I will contribute my gdb helper
+script soon (module symbol loading, dmesg, per-cpu variable lookup etc.)
+so that it can be loaded automatically.
+
+Jan
+
+
+--------------enigA790D7B16B915DC8380610DC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAk62kYUACgkQitSsb3rl5xTnkQCfQAdPijdElE98DhAvPB9LDwof
+Qg8An1kp/liQEepqBjYGVqtnYisZ5g+Z
+=cNfi
+-----END PGP SIGNATURE-----
+
+--------------enigA790D7B16B915DC8380610DC--
