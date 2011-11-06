@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab1KFPA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 10:00:27 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54130 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957Ab1KFPA0 (ORCPT
+	id S1753046Ab1KFPSm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 10:18:42 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:58621 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1KFPSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 10:00:26 -0500
-From: Jonas Gorski <jonas.gorski@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Mark Einon <mark.einon@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: et131x: fix build failure with PM_SLEEP disabled
-Date: Sun,  6 Nov 2011 15:59:22 +0100
-Message-Id: <1320591562-11839-1-git-send-email-jonas.gorski@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
+	Sun, 6 Nov 2011 10:18:40 -0500
+Subject: [PATCH -v2] acpi: Fix possible recursive locking in hwregs.c
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-acpi <linux-acpi@vger.kernel.org>
+Cc: akpm@linux-foundation.org, ming Lin <ming.m.lin@intel.com>,
+        len.brown@intel.com, srivatsa.bhat@linux.vnet.ibm.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Nov 2011 21:18:17 +0600
+Message-ID: <1320592697.7439.3.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The #ifdef CONFIG_PM_SLEEP for et131x_{suspend,resume} was also including
-all functions below it, resulting in the following build failure when
-PM_SLEEP is not enabled:
+Calling pm-suspend might trigger a recursive lock in it's code path. In function acpi_hw_clear_acpi_status, acpi_os_acquire_lock holds the lock acpi_gbl_hardware_lock before calling acpi_hw_register_write(), then without releasing acpi_gbl_hardware_lock, this function calls acpi_ev_walk_gpe_list, which tries to hold acpi_gbl_gpe_lock. Both acpi_gbl_hardware_lock and acpi_gbl_gpe_lock are at same lock-class and which might cause lock recursion deadlock. 
 
-  CC [M]  drivers/staging/et131x/et131x.o
-drivers/staging/et131x/et131x.c:5489:12: error: 'et131x_pci_setup' undeclared here (not in a function)
-drivers/staging/et131x/et131x.c:4022:12: warning: 'et131x_pci_init' defined but not used
-drivers/staging/et131x/et131x.c:4307:12: warning: 'et131x_mii_probe' defined but not used
-drivers/staging/et131x/et131x.c:4355:31: warning: 'et131x_adapter_init' defined but not used
-make[8]: *** [drivers/staging/et131x/et131x.o] Error 1
+Following patch fixes this scenario by just releasing acpi_gbl_hardware_lock before calling acpi_ev_walk_gpe_list.
 
-Fix this by moving et131x_{suspend,resume} to the ET131X_PM_OPS definition.
+ Changes since v0(https://lkml.org/lkml/2011/9/21/355):
+	- Fix changelog, thanks to Lin Ming.
 
-Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
+ Changes since v1 (https://lkml.org/lkml/2011/11/3/89):
+	- Update changelog and rename goto label, courtesy Srivatsa S. Bhat.
+
+Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
-This patch is based on next-20111104 (which is identical to staging-next in
-regard to et131x.c).
 
- drivers/staging/et131x/et131x.c |   58 +++++++++++++++++++-------------------
- 1 files changed, 29 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index f5f44a0..857588e 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -4440,35 +4440,6 @@ void et131x_down(struct net_device *netdev)
- 	et131x_disable_txrx(netdev);
+diff --git a/drivers/acpi/acpica/hwregs.c b/drivers/acpi/acpica/hwregs.c
+index 55accb7..cc70f3f 100644
+--- a/drivers/acpi/acpica/hwregs.c
++++ b/drivers/acpi/acpica/hwregs.c
+@@ -269,16 +269,17 @@ acpi_status acpi_hw_clear_acpi_status(void)
+ 
+ 	status = acpi_hw_register_write(ACPI_REGISTER_PM1_STATUS,
+ 					ACPI_BITMASK_ALL_FIXED_STATUS);
+-	if (ACPI_FAILURE(status)) {
+-		goto unlock_and_exit;
+-	}
++
++	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
++
++	if (ACPI_FAILURE(status))
++		goto exit;
+ 
+ 	/* Clear the GPE Bits in all GPE registers in all GPE blocks */
+ 
+ 	status = acpi_ev_walk_gpe_list(acpi_hw_clear_gpe_block, NULL);
+ 
+-      unlock_and_exit:
+-	acpi_os_release_lock(acpi_gbl_hardware_lock, lock_flags);
++exit:
+ 	return_ACPI_STATUS(status);
  }
  
--#ifdef CONFIG_PM_SLEEP
--static int et131x_suspend(struct device *dev)
--{
--	struct pci_dev *pdev = to_pci_dev(dev);
--	struct net_device *netdev = pci_get_drvdata(pdev);
--
--	if (netif_running(netdev)) {
--		netif_device_detach(netdev);
--		et131x_down(netdev);
--		pci_save_state(pdev);
--	}
--
--	return 0;
--}
--
--static int et131x_resume(struct device *dev)
--{
--	struct pci_dev *pdev = to_pci_dev(dev);
--	struct net_device *netdev = pci_get_drvdata(pdev);
--
--	if (netif_running(netdev)) {
--		pci_restore_state(pdev);
--		et131x_up(netdev);
--		netif_device_attach(netdev);
--	}
--
--	return 0;
--}
--
- /* ISR functions */
- 
- /**
-@@ -5470,6 +5441,35 @@ err_out:
- 	return result;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int et131x_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct net_device *netdev = pci_get_drvdata(pdev);
-+
-+	if (netif_running(netdev)) {
-+		netif_device_detach(netdev);
-+		et131x_down(netdev);
-+		pci_save_state(pdev);
-+	}
-+
-+	return 0;
-+}
-+
-+static int et131x_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct net_device *netdev = pci_get_drvdata(pdev);
-+
-+	if (netif_running(netdev)) {
-+		pci_restore_state(pdev);
-+		et131x_up(netdev);
-+		netif_device_attach(netdev);
-+	}
-+
-+	return 0;
-+}
-+
- static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
- #define ET131X_PM_OPS (&et131x_pm_ops)
- #else
--- 
-1.7.2.5
+
 
