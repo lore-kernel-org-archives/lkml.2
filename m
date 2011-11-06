@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754190Ab1KFSXk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 13:23:40 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:54495 "EHLO
+	id S1754116Ab1KFS1H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 13:27:07 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:54972 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753792Ab1KFSXj (ORCPT
+	by vger.kernel.org with ESMTP id S1751670Ab1KFS1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 13:23:39 -0500
+	Sun, 6 Nov 2011 13:27:05 -0500
 X-IronPort-AV: E=Sophos;i="4.69,465,1315173600"; 
-   d="scan'208";a="128733724"
-Date: Sun, 6 Nov 2011 19:20:26 +0100 (CET)
+   d="scan'208";a="128733405"
+Date: Sun, 6 Nov 2011 19:17:05 +0100 (CET)
 From: Julia Lawall <julia.lawall@lip6.fr>
 X-X-Sender: jll@hadrien
 To: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-cc: julia@diku.dk, Gilles.Muller@lip6.fr, npalix.work@gmail.com,
-        mmarek@suse.cz, rdunlap@xenotime.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cocci@diku.dk
-Subject: Re: [RESEND 3/3] coccicheck: add parallel execution
-In-Reply-To: <1320545653-28249-4-git-send-email-Gregory.Dietsche@cuw.edu>
-Message-ID: <alpine.DEB.2.02.1111061920060.1873@hadrien>
-References: <1320545653-28249-1-git-send-email-Gregory.Dietsche@cuw.edu> <1320545653-28249-4-git-send-email-Gregory.Dietsche@cuw.edu>
+cc: julia@diku.dk, mmarek@suse.cz, rdunlap@xenotime.net, Gilles.Muller@lip6.fr,
+        npalix.work@gmail.com, cocci@diku.dk, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND 1/2] coccicheck: add M= option to control which dir is
+ processed
+In-Reply-To: <1320544784-24576-2-git-send-email-Gregory.Dietsche@cuw.edu>
+Message-ID: <alpine.DEB.2.02.1111061916370.1873@hadrien>
+References: <1320544784-24576-1-git-send-email-Gregory.Dietsche@cuw.edu> <1320544784-24576-2-git-send-email-Gregory.Dietsche@cuw.edu>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
@@ -31,65 +32,59 @@ On Sat, 5 Nov 2011, Gregory.Dietsche@cuw.edu wrote:
 
 > From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
 >
-> For example to process 6 SmPL patches at the same time:
-> 	make coccicheck PARALLEL=6
+> Examples:
+> 	make coccicheck M=drivers/net/wireless/
+> 	make coccicheck SUBDIRS=drivers/net/wireless/
 >
-> Results are held in /tmp until the scripts finish. By doing this the
-> script is able to collate the results from each SmPL patch instead of
-> interleaving them in the output.
+> Version 2:
+> 	fix patch file names when using M=
+> 	tell coccinelle where the include files are
 >
-> Version 2: change pkill -P $$ to pkill -s 0
+> Version 3:
+> 	Add second include option to support out of tree development
+> 	Fix error message
 >
 > Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-> Acked-by: Nicolas Palix <npalix.work@gmail.com>
 
 Acked-by: Julia Lawall <julia.lawall@lip6.fr>
 
 > ---
-> scripts/coccicheck |   27 ++++++++++++++++++++++++++-
-> 1 files changed, 26 insertions(+), 1 deletions(-)
+> scripts/coccicheck |   19 ++++++++++++++-----
+> 1 files changed, 14 insertions(+), 5 deletions(-)
 >
 > diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index 1bb1a1b..c2a04c2 100755
+> index 1bb1a1b..3c27764 100755
 > --- a/scripts/coccicheck
 > +++ b/scripts/coccicheck
-> @@ -97,10 +97,35 @@ coccinelle () {
+> @@ -9,14 +9,23 @@ if [ "$C" = "1" -o "$C" = "2" ]; then
+> #    FLAGS="-ignore_unknown_options -very_quiet"
+> #    OPTIONS=$*
 >
-> }
->
-> +parallel_cleanup () {
-> +	pkill -s 0 > /dev/null
-> +	rm /tmp/cocci_parallel_$$_* 2>/dev/null
-> +	exit
-> +}
-> +
-> +trap parallel_cleanup SIGINT
-> +PARALLEL_ID=0
-> +
-> if [ "$COCCI" = "" ] ; then
->     for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
-> -	coccinelle $f
-> +	if [ "$PARALLEL" -eq "$PARALLEL" 2>/dev/null ] ; then
-> +		if [ "$ONLINE" = "0" ] ; then
-> +			echo Processing: `basename $f`
-> +		fi
-> +		coccinelle $f>/tmp/cocci_parallel_$$_$PARALLEL_ID 2>&1 &
-> +		PARALLEL_ID=$(($PARALLEL_ID + 1))
-> +		while [ "`jobs -p | wc -l`" -ge "$PARALLEL" ] ; do
-> +			sleep 3
-> +		done
-> +	else
-> +		coccinelle $f
-> +	fi
->     done
-> +    wait
-> +    if [ "$PARALLEL_ID" -ge "0" ] ; then
-> +	cat /tmp/cocci_parallel_$$_*
-> +	parallel_cleanup
+> -# Workaround for Coccinelle < 0.2.3
+> -    FLAGS="-I $srctree/include -very_quiet"
+> -    shift $(( $# - 1 ))
+> -    OPTIONS=$1
+> +    if [ "$KBUILD_EXTMOD" = "" ] ; then
+> +        # Workaround for Coccinelle < 0.2.3
+> +        FLAGS="-I $srctree/include -very_quiet"
+> +        shift $(( $# - 1 ))
+> +        OPTIONS=$1
+> +    else
+> +	echo M= is not currently supported when C=1 or C=2
+> +	exit 1
 > +    fi
 > else
->     coccinelle $COCCI
+>     ONLINE=0
+>     FLAGS="-very_quiet"
+> -    OPTIONS="-dir $srctree"
+> +    if [ "$KBUILD_EXTMOD" = "" ] ; then
+> +        OPTIONS="-dir $srctree"
+> +    else
+> +        OPTIONS="-dir $KBUILD_EXTMOD -patch $srctree -I $srctree/include -I $KBUILD_EXTMOD/include"
+> +    fi
 > fi
+>
+> if [ ! -x "$SPATCH" ]; then
 > -- 
 > 1.7.6.4
 >
