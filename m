@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab1KFOrH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 09:47:07 -0500
-Received: from apfelkorn.psychaos.be ([195.144.77.38]:42100 "EHLO
-	apfelkorn.psychaos.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab1KFOrF (ORCPT
+	id S1753015Ab1KFPA1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 10:00:27 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54130 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab1KFPA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 09:47:05 -0500
-From: Peter De Schrijver <p2@psychaos.be>
-To: p2@psychaos.be
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jeff Verheyen <jeff.verheyen@ampersant.be>
-Subject: [PATCH] bt8xx: add support for PCI device ID 0x36c
-Date: Sun,  6 Nov 2011 16:47:58 +0200
-Message-Id: <1320590878-9612-1-git-send-email-p2@psychaos.be>
+	Sun, 6 Nov 2011 10:00:26 -0500
+From: Jonas Gorski <jonas.gorski@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Mark Einon <mark.einon@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: et131x: fix build failure with PM_SLEEP disabled
+Date: Sun,  6 Nov 2011 15:59:22 +0100
+Message-Id: <1320591562-11839-1-git-send-email-jonas.gorski@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add support for conexant PCI device 0x36c. Seems to be fully compatible with
-the currently supported chips, yet the chip has different PCI ID.
+The #ifdef CONFIG_PM_SLEEP for et131x_{suspend,resume} was also including
+all functions below it, resulting in the following build failure when
+PM_SLEEP is not enabled:
 
-Signed-off-by: Peter De Schrijver <p2@psychaos.be>
+  CC [M]  drivers/staging/et131x/et131x.o
+drivers/staging/et131x/et131x.c:5489:12: error: 'et131x_pci_setup' undeclared here (not in a function)
+drivers/staging/et131x/et131x.c:4022:12: warning: 'et131x_pci_init' defined but not used
+drivers/staging/et131x/et131x.c:4307:12: warning: 'et131x_mii_probe' defined but not used
+drivers/staging/et131x/et131x.c:4355:31: warning: 'et131x_adapter_init' defined but not used
+make[8]: *** [drivers/staging/et131x/et131x.o] Error 1
+
+Fix this by moving et131x_{suspend,resume} to the ET131X_PM_OPS definition.
+
+Signed-off-by: Jonas Gorski <jonas.gorski@gmail.com>
 ---
- drivers/media/video/bt8xx/bt848.h       |    5 ++++-
- drivers/media/video/bt8xx/bttv-driver.c |    1 +
- 2 files changed, 5 insertions(+), 1 deletions(-)
+This patch is based on next-20111104 (which is identical to staging-next in
+regard to et131x.c).
 
-diff --git a/drivers/media/video/bt8xx/bt848.h b/drivers/media/video/bt8xx/bt848.h
-index 0bcd953..c37e6ac 100644
---- a/drivers/media/video/bt8xx/bt848.h
-+++ b/drivers/media/video/bt8xx/bt848.h
-@@ -30,6 +30,10 @@
- #ifndef PCI_DEVICE_ID_BT849
- #define PCI_DEVICE_ID_BT849     0x351
- #endif
-+#ifndef PCI_DEVICE_ID_FUSION879
-+#define PCI_DEVICE_ID_FUSION879	0x36c
-+#endif
-+
- #ifndef PCI_DEVICE_ID_BT878
- #define PCI_DEVICE_ID_BT878     0x36e
- #endif
-@@ -37,7 +41,6 @@
- #define PCI_DEVICE_ID_BT879     0x36f
- #endif
+ drivers/staging/et131x/et131x.c |   58 +++++++++++++++++++-------------------
+ 1 files changed, 29 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
+index f5f44a0..857588e 100644
+--- a/drivers/staging/et131x/et131x.c
++++ b/drivers/staging/et131x/et131x.c
+@@ -4440,35 +4440,6 @@ void et131x_down(struct net_device *netdev)
+ 	et131x_disable_txrx(netdev);
+ }
  
+-#ifdef CONFIG_PM_SLEEP
+-static int et131x_suspend(struct device *dev)
+-{
+-	struct pci_dev *pdev = to_pci_dev(dev);
+-	struct net_device *netdev = pci_get_drvdata(pdev);
 -
- /* Brooktree 848 registers */
+-	if (netif_running(netdev)) {
+-		netif_device_detach(netdev);
+-		et131x_down(netdev);
+-		pci_save_state(pdev);
+-	}
+-
+-	return 0;
+-}
+-
+-static int et131x_resume(struct device *dev)
+-{
+-	struct pci_dev *pdev = to_pci_dev(dev);
+-	struct net_device *netdev = pci_get_drvdata(pdev);
+-
+-	if (netif_running(netdev)) {
+-		pci_restore_state(pdev);
+-		et131x_up(netdev);
+-		netif_device_attach(netdev);
+-	}
+-
+-	return 0;
+-}
+-
+ /* ISR functions */
  
- #define BT848_DSTATUS          0x000
-diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
-index 3dd0660..76c301f 100644
---- a/drivers/media/video/bt8xx/bttv-driver.c
-+++ b/drivers/media/video/bt8xx/bttv-driver.c
-@@ -4572,6 +4572,7 @@ static struct pci_device_id bttv_pci_tbl[] = {
- 	{PCI_VDEVICE(BROOKTREE, PCI_DEVICE_ID_BT849), 0},
- 	{PCI_VDEVICE(BROOKTREE, PCI_DEVICE_ID_BT878), 0},
- 	{PCI_VDEVICE(BROOKTREE, PCI_DEVICE_ID_BT879), 0},
-+	{PCI_VDEVICE(BROOKTREE, PCI_DEVICE_ID_FUSION879), 0},
- 	{0,}
- };
+ /**
+@@ -5470,6 +5441,35 @@ err_out:
+ 	return result;
+ }
  
++#ifdef CONFIG_PM_SLEEP
++static int et131x_suspend(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct net_device *netdev = pci_get_drvdata(pdev);
++
++	if (netif_running(netdev)) {
++		netif_device_detach(netdev);
++		et131x_down(netdev);
++		pci_save_state(pdev);
++	}
++
++	return 0;
++}
++
++static int et131x_resume(struct device *dev)
++{
++	struct pci_dev *pdev = to_pci_dev(dev);
++	struct net_device *netdev = pci_get_drvdata(pdev);
++
++	if (netif_running(netdev)) {
++		pci_restore_state(pdev);
++		et131x_up(netdev);
++		netif_device_attach(netdev);
++	}
++
++	return 0;
++}
++
+ static SIMPLE_DEV_PM_OPS(et131x_pm_ops, et131x_suspend, et131x_resume);
+ #define ET131X_PM_OPS (&et131x_pm_ops)
+ #else
 -- 
-1.7.4.1
+1.7.2.5
 
