@@ -1,72 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab1KFKYj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 05:24:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15347 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab1KFKYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 05:24:37 -0500
-Message-ID: <4EB66036.4080102@redhat.com>
-Date: Sun, 06 Nov 2011 12:23:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1751574Ab1KFK1W (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 05:27:22 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33655 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064Ab1KFK1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 05:27:20 -0500
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Alexander Graf <agraf@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Blue Swirl <blauwirbel@gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-References: <1320543320-32728-1-git-send-email-agraf@suse.de> <CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
-In-Reply-To: <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Sun, 6 Nov 2011 11:27:20 +0100
+X-Google-Sender-Auth: 6M6Nqwfa6K0Skws9lY5kpqWCGb0
+Message-ID: <CAB1b2sjW94L3wm5KPRQDacu9dxoD+1LCoX+4m8O2OSNWp-+n0w@mail.gmail.com>
+Subject: ttyS0 stuck in tty_wait_until_sent when sending break (opened with O_NONBLOCK)
+From: Domen Puncer <domen@cba.si>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/06/2011 12:12 PM, Pekka Enberg wrote:
-> On Sun, Nov 6, 2011 at 12:07 PM, Avi Kivity <avi@redhat.com> wrote:
-> >> I'm happy to see some real competition for the KVM tool in usability. ;-)
-> >>
-> >> That said, while the script looks really useful for developers,
-> >> wouldn't it make more sense to put it in QEMU to make sure it's kept
-> >> up-to-date and distributions can pick it up too? (And yes, I realize
-> >> the irony here.)
-> >
-> > Why would distributions want it?  It's only useful for kernel developers.
->
-> It's useful for kernel testers too.
+Hello!
 
-Well, they usually have a kernel with them.
+I'm not able to create a simple program, that would reproduce this
+problem, but calling OW_init()
+from libowcapi and with nothing plugged into serial seems to always do
+the trick.
 
-> If this is a serious attempt in making QEMU command line suck less on
-> Linux, I think it makes sense to do this properly instead of adding a
-> niche script to the kernel tree that's simply going to bit rot over
-> time.
+$ cat /proc/`pidof test`/wchan; echo
+tty_wait_until_sent
 
-You misunderstand.  This is an attempt to address the requirements of a
-niche population, kernel developers and testers, not to improve the qemu
-command line.  For the majority of qemu installations, this script is
-useless.
+$ uname -a
+Linux river 3.0-ARCH #1 SMP PREEMPT Wed Oct 19 10:27:51 CEST 2011
+x86_64 Intel(R) Core(TM)2 Duo CPU E6750 @ 2.66GHz GenuineIntel
+GNU/Linux
+But I've also seen this on an older mips kernel.
 
-In most installations, qemu is driven by other programs, so any changes
-to the command line would be invisible, except insofar as they break things.
+Is there any way I can assist hunting this down?
+I'll try harder to make a simple test program, if the strace output
+doesn't produce any ideas.
 
-For the occasional direct user of qemu, something like 'qemu-kvm -m 1G
-/images/blah.img' is enough to boot an image.  This script doesn't help
-in any way.
 
-This script is for kernel developers who don't want to bother with
-setting up a disk image (which, btw, many are still required to do - I'm
-guessing most kernel developers who use qemu are cross-arch).  It has
-limited scope and works mostly by hiding qemu features.  As such it
-doesn't belong in qemu.
+strace output:
 
--- 
-error compiling committee.c: too many arguments to function
-
+open("/dev/ttyS0", O_RDWR|O_NOCTTY|O_NONBLOCK) = 3
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B115200 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B115200 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+ioctl(3, TCSBRK, 0)                     = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999995})
+write(3, "\301", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 4000000}, 0x7fff2d209ba0) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "q", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\17", 1)                      = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\305", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 400000000}, 0x7fff2d209ba0) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999997})
+write(3, "q", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\17", 1)                      = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\305", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 4000000}, 0x7fff2d209ba0) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999997})
+write(3, "E", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+close(3)                                = 0
+open("/dev/ttyS0", O_RDWR|O_NOCTTY|O_NONBLOCK) = 3
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+ioctl(3, TCSBRK, 0)                     = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999996})
+write(3, "\301", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 4000000}, 0x7fff2d209ba0) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "q", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\17", 1)                      = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\305", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 400000000}, 0x7fff2d209ba0) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999997})
+write(3, "q", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+nanosleep({0, 5000000}, 0x7fff2d209b20) = 0
+select(4, [3], NULL, NULL, {0, 1000})   = 0 (Timeout)
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999998})
+write(3, "\17", 1)                      = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999997})
+write(3, "\305", 1)                     = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+nanosleep({0, 4000000}, 0x7fff2d209ba0) = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999995})
+write(3, "E", 1)                        = 1
+ioctl(3, TCSBRK, 0x1)                   = 0
+select(4, [3], NULL, NULL, {5, 0})      = 0 (Timeout)
+ioctl(3, TCSBRK, 0x1)                   = 0
+close(3)                                = 0
+open("/dev/ttyS0", O_RDWR|O_NOCTTY|O_NONBLOCK) = 3
+ioctl(3, SNDCTL_TMR_TIMEBASE or SNDRV_TIMER_IOCTL_NEXT_DEVICE or
+TCGETS, {B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, SNDCTL_TMR_CONTINUE or SNDRV_TIMER_IOCTL_GPARAMS or TCSETSF,
+{B9600 -opost -isig -icanon -echo ...}) = 0
+ioctl(3, TCFLSH, 0x2)                   = 0
+ioctl(3, TCSBRK, 0)                     = 0
+select(4, NULL, [3], NULL, {5, 0})      = 1 (out [3], left {4, 999997})
+write(3, "\301", 1)                     = 1
+ioctl(3, TCSBRK <unfinished ...>
