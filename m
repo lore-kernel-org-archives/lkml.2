@@ -1,216 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab1KFPhs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 10:37:48 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:59006 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab1KFPhq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 10:37:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] arm-soc: mach-exynos code reorganization
-Date: Sun, 6 Nov 2011 16:37:14 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        "'Russell King'" <rmk+kernel@arm.linux.org.uk>, ben-linux@fluff.org,
-        linux-kernel@vger.kernel.org
+	id S1753301Ab1KFP4x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 10:56:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52480 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752092Ab1KFP4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 10:56:51 -0500
+Message-ID: <4EB6AE34.2000907@redhat.com>
+Date: Sun, 06 Nov 2011 17:56:36 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Pekka Enberg <penberg@kernel.org>
+CC: Alexander Graf <agraf@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Blue Swirl <blauwirbel@gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+References: <1320543320-32728-1-git-send-email-agraf@suse.de> <CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com> <4EB66036.4080102@redhat.com> <1320577728.1428.73.camel@jaguar> <4EB67486.1070105@redhat.com> <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+In-Reply-To: <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111061637.15412.arnd@arndb.de>
-X-Provags-ID: V02:K0:Oo0o8Kj8QlQhnVL/I/xvaVxh6JPSwpG8hf7HSg2YnDL
- r1NUSUe+rPN3My4b49YalSMfM5ynx2+Fy9d+PrNKRf8gB3H4ZW
- SwKPXenbh5nDcY8Cv0GkIkoPADIkZ8AlYZbuoTvJ9HSyM2skG9
- hnml8DaIJBTGfscSkMflUMznocbSfbiz0fx96+3NQV2YN6/6YO
- 7yKguWuc+ki/tSLyyjLHnUYnBx4nvTlsbgwaKWgNo1TLSWgbgo
- dX9soJ8pSQ2XJessrWwdHOSY9FsSBYMk6Prenk1EH1o3zWGbK/
- xqBTctMkxP8g/SEzToC0G9sz2DG2vH1LwI3goFQjK4wQADaB9r
- 51KW+qCITr7w66La/oHU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 11/06/2011 03:06 PM, Pekka Enberg wrote:
+> On Sun, Nov 6, 2011 at 2:43 PM, Avi Kivity <avi@redhat.com> wrote:
+> > You say that kvm-tool's scope is broader than Alex's script, therefore
+> > the latter is pointless.
+>
+> I'm saying that Alex's script is pointless because it's not attempting
+> to fix the real issues. For example, we're trying to make make it as
+> easy as possible to setup a guest and to be able to access guest data
+> from the host.
 
-Thanks for pulling the two previous sets of samsung patches, I've just seen
-them show up and Kukjin Kim has already provided a patch on top of that
-to do the move I mentioned in the previous pull request.
+Have you tried virt-install/virt-manager?
 
-This moves all files from mach-exynos4 to mach-exynos in preparation for
-future exynos socs. The branch also contains three bug fixes that have
-shown up during the merge window.
+> Alex's script is essentially just a simplified QEMU
+> "front end" for kernel developers.
 
-	Arnd
+AFAIR it was based off a random Linus remark.
 
-The following changes since commit c861cd3e92d92ae946e19099f198018fcb4fd887:
+> That's why I feel it's a pointless thing to do.
+>
+> On Sun, Nov 6, 2011 at 2:43 PM, Avi Kivity <avi@redhat.com> wrote:
+> > You accept that qemu's scope is broader than kvm-tool (and is a
+> > superset).  That is why many people think kvm-tool is pointless.
+>
+> Sure. I think it's mostly people that are interested in non-Linux
+> virtualization that think the KVM tool is a pointless project.
+> However, some people (including myself) think the KVM tool is a more
+> usable and hackable tool than QEMU for Linux virtualization.
 
-  Merge branch 'next/devel2' of git://git.linaro.org/people/arnd/arm-soc (2011-11-05 18:21:21 -0700)
+More hackable, certainly, as any 20kloc project will be compared to a
+700+kloc project with a long history.  More usable, I really doubt
+this.  You take it for granted that people want to run their /boot
+kernels in a guest, but in fact only kernel developers (and testers)
+want this.  The majority want the real guest kernel.
 
-are available in the git repository at:
+> The difference here is that although I feel Alex's script is a
+> pointless project, I'm in no way opposed to merging it in the tree if
+> people use it and it solves their problem. Some people seem to be
+> violently opposed to merging the KVM tool and I'm having difficult
+> time understanding why that is.
 
-  git://git.linaro.org/people/arnd/arm-soc.git next/move
+One of the reasons is that if it is merge, anyone with a #include
+<linux/foo.h> will line up for the next merge window, wanting in.  The
+other is that anything in the Linux source tree might gain an unfair
+advantage over out-of-tree projects (at least that's how I read Jan's
+comment).
 
-Jonghwan Choi (1):
-      ARM: SAMSUNG: Fix compile error due to kfree
+-- 
+error compiling committee.c: too many arguments to function
 
-Joonyoung Shim (1):
-      ARM: SAMSUNG: Add clk enable/disable of pwm
-
-Kukjin Kim (1):
-      ARM: EXYNOS: Add ARCH_EXYNOS and reorganize arch/arm/mach-exynos
-
-Marc Zyngier (1):
-      ARM: EXYNOS4: convert MCT to percpu interrupt API
-
- arch/arm/Kconfig                                   |    8 +-
- arch/arm/Makefile                                  |    2 +-
- arch/arm/configs/exynos4_defconfig                 |    9 +--
- arch/arm/{mach-exynos4 => mach-exynos}/Kconfig     |   42 +++++++++---
- arch/arm/{mach-exynos4 => mach-exynos}/Makefile    |   11 ++--
- .../{mach-exynos4 => mach-exynos}/Makefile.boot    |    0
- .../clock-exynos4210.c                             |    0
- .../clock-exynos4212.c                             |    0
- arch/arm/{mach-exynos4 => mach-exynos}/clock.c     |    0
- arch/arm/{mach-exynos4 => mach-exynos}/cpu.c       |   69 +++++++++++---------
- arch/arm/{mach-exynos4 => mach-exynos}/cpuidle.c   |    0
- arch/arm/{mach-exynos4 => mach-exynos}/dev-ahci.c  |    0
- arch/arm/{mach-exynos4 => mach-exynos}/dev-audio.c |    0
- arch/arm/{mach-exynos4 => mach-exynos}/dev-dwmci.c |    0
- arch/arm/{mach-exynos4 => mach-exynos}/dev-pd.c    |    0
- .../arm/{mach-exynos4 => mach-exynos}/dev-sysmmu.c |    0
- arch/arm/{mach-exynos4 => mach-exynos}/dma.c       |    0
- arch/arm/{mach-exynos4 => mach-exynos}/headsmp.S   |    0
- arch/arm/{mach-exynos4 => mach-exynos}/hotplug.c   |    0
- .../include/mach/debug-macro.S                     |    0
- .../include/mach/dma.h                             |    0
- .../include/mach/dwmci.h                           |    0
- .../include/mach/entry-macro.S                     |    0
- .../include/mach/exynos4-clock.h                   |    0
- .../include/mach/gpio.h                            |    0
- .../include/mach/hardware.h                        |    0
- .../include/mach/io.h                              |    0
- .../include/mach/irqs.h                            |    0
- .../include/mach/map.h                             |   32 ++++++----
- .../include/mach/memory.h                          |    0
- .../include/mach/pm-core.h                         |    0
- .../include/mach/pmu.h                             |    0
- .../include/mach/regs-audss.h                      |    0
- .../include/mach/regs-clock.h                      |    0
- .../include/mach/regs-gpio.h                       |    0
- .../include/mach/regs-irq.h                        |    0
- .../include/mach/regs-mct.h                        |    0
- .../include/mach/regs-mem.h                        |    0
- .../include/mach/regs-pmu.h                        |    0
- .../include/mach/regs-sysmmu.h                     |    0
- .../include/mach/regs-usb-phy.h                    |    0
- .../include/mach/sysmmu.h                          |    0
- .../include/mach/system.h                          |    0
- .../include/mach/timex.h                           |    0
- .../include/mach/uncompress.h                      |    0
- .../include/mach/vmalloc.h                         |    0
- arch/arm/{mach-exynos4 => mach-exynos}/init.c      |    0
- .../{mach-exynos4 => mach-exynos}/irq-combiner.c   |    0
- arch/arm/{mach-exynos4 => mach-exynos}/irq-eint.c  |    0
- .../mach-armlex4210.c                              |    0
- arch/arm/{mach-exynos4 => mach-exynos}/mach-nuri.c |    0
- .../{mach-exynos4 => mach-exynos}/mach-origen.c    |    0
- .../{mach-exynos4 => mach-exynos}/mach-smdk4x12.c  |    0
- .../{mach-exynos4 => mach-exynos}/mach-smdkv310.c  |    0
- .../mach-universal_c210.c                          |    0
- arch/arm/{mach-exynos4 => mach-exynos}/mct.c       |   40 ++++++++----
- arch/arm/{mach-exynos4 => mach-exynos}/platsmp.c   |    0
- arch/arm/{mach-exynos4 => mach-exynos}/pm.c        |    0
- arch/arm/{mach-exynos4 => mach-exynos}/pmu.c       |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-fimc.c |    0
- .../{mach-exynos4 => mach-exynos}/setup-fimd0.c    |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c0.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c1.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c2.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c3.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c4.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c5.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c6.c |    0
- .../arm/{mach-exynos4 => mach-exynos}/setup-i2c7.c |    0
- .../{mach-exynos4 => mach-exynos}/setup-keypad.c   |    0
- .../setup-sdhci-gpio.c                             |    0
- .../{mach-exynos4 => mach-exynos}/setup-sdhci.c    |    0
- .../{mach-exynos4 => mach-exynos}/setup-usb-phy.c  |    0
- arch/arm/plat-s5p/Kconfig                          |    2 +-
- arch/arm/plat-s5p/cpu.c                            |    6 +-
- arch/arm/plat-samsung/dev-backlight.c              |    1 +
- arch/arm/plat-samsung/include/plat/exynos4.h       |    6 +-
- arch/arm/plat-samsung/pwm.c                        |    7 ++
- 78 files changed, 141 insertions(+), 94 deletions(-)
- rename arch/arm/{mach-exynos4 => mach-exynos}/Kconfig (92%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/Makefile (90%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/Makefile.boot (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/clock-exynos4210.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/clock-exynos4212.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/clock.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/cpu.c (91%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/cpuidle.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dev-ahci.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dev-audio.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dev-dwmci.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dev-pd.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dev-sysmmu.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/dma.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/headsmp.S (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/hotplug.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/debug-macro.S (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/dma.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/dwmci.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/entry-macro.S (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/exynos4-clock.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/gpio.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/hardware.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/io.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/irqs.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/map.h (93%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/memory.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/pm-core.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/pmu.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-audss.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-clock.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-gpio.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-irq.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-mct.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-mem.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-pmu.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-sysmmu.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/regs-usb-phy.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/sysmmu.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/system.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/timex.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/uncompress.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/include/mach/vmalloc.h (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/init.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/irq-combiner.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/irq-eint.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-armlex4210.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-nuri.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-origen.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-smdk4x12.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-smdkv310.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mach-universal_c210.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/mct.c (91%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/platsmp.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/pm.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/pmu.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-fimc.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-fimd0.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c0.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c1.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c2.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c3.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c4.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c5.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c6.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-i2c7.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-keypad.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-sdhci-gpio.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-sdhci.c (100%)
- rename arch/arm/{mach-exynos4 => mach-exynos}/setup-usb-phy.c (100%)
