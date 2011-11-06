@@ -1,213 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1KFTRg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 14:17:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59204 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab1KFTP2 (ORCPT
+	id S1754726Ab1KFTRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 14:17:52 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40147 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754412Ab1KFTRt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 14:15:28 -0500
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: intel-gfx <intel-gfx@lists.freedesktop.org>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [PATCH 04/13] drm/i915: merge shmem_pwrite slow&fast-path
-Date: Sun,  6 Nov 2011 20:13:51 +0100
-Message-Id: <1320606840-21132-5-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.6.4
-In-Reply-To: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1320606840-21132-1-git-send-email-daniel.vetter@ffwll.ch>
+	Sun, 6 Nov 2011 14:17:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EB6DBC6.2010404@redhat.com>
+References: <1320543320-32728-1-git-send-email-agraf@suse.de>
+	<CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com>
+	<4EB65C5B.8070709@redhat.com>
+	<CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
+	<4EB66036.4080102@redhat.com>
+	<1320577728.1428.73.camel@jaguar>
+	<4EB67486.1070105@redhat.com>
+	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>
+	<4EB67D17.7000701@redhat.com>
+	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
+	<4EB680D9.2070706@redhat.com>
+	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
+	<CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
+	<4EB6DBC6.2010404@redhat.com>
+Date: Sun, 6 Nov 2011 21:17:48 +0200
+X-Google-Sender-Auth: 1ZZNsTtKtYEjehzCnrKsG0HsnVM
+Message-ID: <CAOJsxLGzMqQDwfm8C-6g8SCapEmGs7uUPq+SuL946yg=anV85g@mail.gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+From: Pekka Enberg <penberg@kernel.org>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Alexander Graf <agraf@suse.de>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Blue Swirl <blauwirbel@gmail.com>, Avi Kivity <avi@redhat.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the previous rewrite, they've become essential identical.
+On Sun, Nov 6, 2011 at 9:11 PM, Paolo Bonzini <pbonzini@redhat.com> wrote:
+>> I really don't see the point in doing that. We want to be part of
+>> regular kernel history and release cycle.
+>
+> But I'm pretty certain that, when testing 3.2 with KVM tool in a couple of
+> years, I want all the shining new features you added in this time; I don't
+> want the old end-2011 code.  Same if I'm bisecting kernels, I don't want to
+> build KVM tool once per bisection cycle, do I?
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/i915_gem.c |  126 ++++++++++----------------------------
- 1 files changed, 33 insertions(+), 93 deletions(-)
+If you're bisecting breakage that can be in the guest kernel or the
+KVM tool, you'd want to build both.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index be1dd4f..52fc0b5 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -728,84 +728,11 @@ out_unpin_pages:
- 	return ret;
- }
- 
--/**
-- * This is the fast shmem pwrite path, which attempts to directly
-- * copy_from_user into the kmapped pages backing the object.
-- */
--static int
--i915_gem_shmem_pwrite_fast(struct drm_device *dev,
--			   struct drm_i915_gem_object *obj,
--			   struct drm_i915_gem_pwrite *args,
--			   struct drm_file *file)
--{
--	struct address_space *mapping = obj->base.filp->f_path.dentry->d_inode->i_mapping;
--	ssize_t remain;
--	loff_t offset;
--	char __user *user_data;
--	int page_offset, page_length;
--
--	user_data = (char __user *) (uintptr_t) args->data_ptr;
--	remain = args->size;
--
--	offset = args->offset;
--	obj->dirty = 1;
--
--	while (remain > 0) {
--		struct page *page;
--		char *vaddr;
--		int ret;
--
--		/* Operation in this page
--		 *
--		 * page_offset = offset within page
--		 * page_length = bytes to copy for this page
--		 */
--		page_offset = offset_in_page(offset);
--		page_length = remain;
--		if ((page_offset + remain) > PAGE_SIZE)
--			page_length = PAGE_SIZE - page_offset;
--
--		page = shmem_read_mapping_page(mapping, offset >> PAGE_SHIFT);
--		if (IS_ERR(page))
--			return PTR_ERR(page);
--
--		vaddr = kmap_atomic(page);
--		ret = __copy_from_user_inatomic(vaddr + page_offset,
--						user_data,
--						page_length);
--		kunmap_atomic(vaddr);
--
--		set_page_dirty(page);
--		mark_page_accessed(page);
--		page_cache_release(page);
--
--		/* If we get a fault while copying data, then (presumably) our
--		 * source page isn't available.  Return the error and we'll
--		 * retry in the slow path.
--		 */
--		if (ret)
--			return -EFAULT;
--
--		remain -= page_length;
--		user_data += page_length;
--		offset += page_length;
--	}
--
--	return 0;
--}
--
--/**
-- * This is the fallback shmem pwrite path, which uses get_user_pages to pin
-- * the memory and maps it using kmap_atomic for copying.
-- *
-- * This avoids taking mmap_sem for faulting on the user's address while the
-- * struct_mutex is held.
-- */
- static int
--i915_gem_shmem_pwrite_slow(struct drm_device *dev,
--			   struct drm_i915_gem_object *obj,
--			   struct drm_i915_gem_pwrite *args,
--			   struct drm_file *file)
-+i915_gem_shmem_pwrite(struct drm_device *dev,
-+		      struct drm_i915_gem_object *obj,
-+		      struct drm_i915_gem_pwrite *args,
-+		      struct drm_file *file)
- {
- 	struct address_space *mapping = obj->base.filp->f_path.dentry->d_inode->i_mapping;
- 	ssize_t remain;
-@@ -813,6 +740,7 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
- 	char __user *user_data;
- 	int shmem_page_offset, page_length, ret;
- 	int obj_do_bit17_swizzling, page_do_bit17_swizzling;
-+	int hit_slowpath = 0;
- 
- 	user_data = (char __user *) (uintptr_t) args->data_ptr;
- 	remain = args->size;
-@@ -822,8 +750,6 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
- 	offset = args->offset;
- 	obj->dirty = 1;
- 
--	mutex_unlock(&dev->struct_mutex);
--
- 	while (remain > 0) {
- 		struct page *page;
- 		char *vaddr;
-@@ -847,6 +773,21 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
- 
- 		page_do_bit17_swizzling = (page_to_phys(page) & (1 << 17)) == 0;
- 
-+		if (!obj_do_bit17_swizzling || !page_do_bit17_swizzling) {
-+			vaddr = kmap_atomic(page);
-+			ret = __copy_from_user_inatomic(vaddr + shmem_page_offset,
-+							user_data,
-+							page_length);
-+			kunmap_atomic(vaddr);
-+
-+			if (ret == 0) 
-+				goto next_page;
-+		}
-+
-+		hit_slowpath = 1;
-+
-+		mutex_unlock(&dev->struct_mutex);
-+
- 		vaddr = kmap(page);
- 		if (obj_do_bit17_swizzling && page_do_bit17_swizzling)
- 			ret = __copy_from_user_swizzled(vaddr, shmem_page_offset,
-@@ -858,6 +799,8 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
- 					       page_length);
- 		kunmap(page);
- 
-+		mutex_lock(&dev->struct_mutex);
-+next_page:
- 		set_page_dirty(page);
- 		mark_page_accessed(page);
- 		page_cache_release(page);
-@@ -873,15 +816,16 @@ i915_gem_shmem_pwrite_slow(struct drm_device *dev,
- 	}
- 
- out:
--	mutex_lock(&dev->struct_mutex);
--	/* Fixup: Kill any reinstated backing storage pages */
--	if (obj->madv == __I915_MADV_PURGED)
--		i915_gem_object_truncate(obj);
--	/* and flush dirty cachelines in case the object isn't in the cpu write
--	 * domain anymore. */
--	if (obj->base.write_domain != I915_GEM_DOMAIN_CPU) {
--		i915_gem_clflush_object(obj);
--		intel_gtt_chipset_flush();
-+	if (hit_slowpath) {
-+		/* Fixup: Kill any reinstated backing storage pages */
-+		if (obj->madv == __I915_MADV_PURGED)
-+			i915_gem_object_truncate(obj);
-+		/* and flush dirty cachelines in case the object isn't in the cpu write
-+		 * domain anymore. */
-+		if (obj->base.write_domain != I915_GEM_DOMAIN_CPU) {
-+			i915_gem_clflush_object(obj);
-+			intel_gtt_chipset_flush();
-+		}
- 	}
- 
- 	return ret;
-@@ -973,11 +917,7 @@ out_unpin:
- 	if (ret)
- 		goto out;
- 
--	ret = -EFAULT;
--	if (!i915_gem_object_needs_bit17_swizzle(obj))
--		ret = i915_gem_shmem_pwrite_fast(dev, obj, args, file);
--	if (ret == -EFAULT)
--		ret = i915_gem_shmem_pwrite_slow(dev, obj, args, file);
-+	ret = i915_gem_shmem_pwrite(dev, obj, args, file);
- 
- out:
- 	drm_gem_object_unreference(&obj->base);
--- 
-1.7.6.4
-
+What would prevent you from using a newer KVM tool with an older kernel?
