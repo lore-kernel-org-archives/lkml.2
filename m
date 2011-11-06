@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab1KFVhl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 16:37:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24525 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789Ab1KFVhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 16:37:40 -0500
-Date: Sun, 6 Nov 2011 23:38:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111106213849.GA14292@redhat.com>
-References: <1320309203.29407.1.camel@lappy>
- <87lirwrzlg.fsf@rustcorp.com.au>
- <20111104114033.GA21308@redhat.com>
- <1320409939.3334.6.camel@lappy>
- <20111104135113.GA24452@redhat.com>
- <1320414804.3334.13.camel@lappy>
- <20111104142338.GB24452@redhat.com>
- <1320418385.3334.25.camel@lappy>
- <20111106073007.GA7146@redhat.com>
- <1320611097.3299.10.camel@lappy>
+	id S1753016Ab1KFVoG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 16:44:06 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:16712 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1KFVoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 16:44:04 -0500
+Date: Sun, 6 Nov 2011 22:49:22 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: [PATCH] [staging] iio, adc: Do not leak memory in
+ ad7280_event_handler()
+Message-ID: <alpine.LNX.2.00.1111062246580.5763@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320611097.3299.10.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 06, 2011 at 10:24:57PM +0200, Sasha Levin wrote:
-> On Sun, 2011-11-06 at 09:30 +0200, Michael S. Tsirkin wrote:
-> > On Fri, Nov 04, 2011 at 04:53:05PM +0200, Sasha Levin wrote:
-> > > > > > > As you said, the PCI cap list was introduced both to save space (which
-> > > > > > > is not the motivation here), and because it's a very efficient
-> > > > > > 
-> > > > > > It's actually pretty inefficient - there's an overhead of 3 bytes for
-> > > > > > each vendor specific option.
-> > > > > 
-> > > > > It's efficient because while you pay a small price for each optional
-> > > > > option it also means that that option is optional and won't clutter the
-> > > > > config space if it's not really in use.
-> > > > 
-> > > > I guess my assumption is that most options will be in use,
-> > > > not discarded dead-ends.
-> > > 
-> > > I don't know about that. 64 bit features would be pretty rare for now -
-> > > and I don't think that setting the alignment will be also enabled by
-> > > default.
-> > 
-> > Setting the alignment might not be *used* by default but
-> > I think it must be enabled by default to allow bios access.
-> > 
-> > > I think that we're looking at it differently because I assume that any
-> > > feature we add at this point would be optional and used only in specific
-> > > scenarios, while you think that everything added will be used most of
-> > > the time.
-> > 
-> > Options must often be present even if not used. For example, as device
-> > has no way to know whether a guest will want to program alignment, it
-> > has to make that option available.
-> 
-> They should be enabled, but heres the difference between the two
-> approaches is that if it's cap it simply won't be there,
+If ad7280_read_all_channels() returns <0 then we'll leak the memory
+allocated to 'channels' when we return and that variable goes out of
+scope.
+This patch fixes the leak.
 
-How can it not be there? They layout is specified by host,
-not by guest.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/staging/iio/adc/ad7280a.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-> while in the
-> other case it would just remain empty at some random offset of the
-> struct.
-> 
-> -- 
-> 
-> Sasha.
+ note: I don't have the hardware, so patch is compile tested only.
+
+diff --git a/drivers/staging/iio/adc/ad7280a.c b/drivers/staging/iio/adc/ad7280a.c
+index 372d059..dddc03c 100644
+--- a/drivers/staging/iio/adc/ad7280a.c
++++ b/drivers/staging/iio/adc/ad7280a.c
+@@ -687,8 +687,10 @@ static irqreturn_t ad7280_event_handler(int irq, void *private)
+ 		return IRQ_HANDLED;
+ 
+ 	ret = ad7280_read_all_channels(st, st->scan_cnt, channels);
+-	if (ret < 0)
++	if (ret < 0) {
++		kfree(channels);
+ 		return IRQ_HANDLED;
++	}
+ 
+ 	for (i = 0; i < st->scan_cnt; i++) {
+ 		if (((channels[i] >> 23) & 0xF) <= AD7280A_CELL_VOLTAGE_6) {
+-- 
+1.7.7.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
