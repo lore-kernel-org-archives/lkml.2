@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab1KFN1A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 08:27:00 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41011 "EHLO mgw2.diku.dk"
+	id S1752634Ab1KFN14 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 08:27:56 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41032 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab1KFN05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 08:26:57 -0500
+	id S1751850Ab1KFN06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 08:26:58 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Marek Lindner <lindner_marek@yahoo.de>
-Cc: kernel-janitors@vger.kernel.org,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        "David S. Miller" <davem@davemloft.net>,
-        b.a.t.m.a.n@lists.open-mesh.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] net/batman-adv: use kstrtoul, etc
-Date: Sun,  6 Nov 2011 14:26:46 +0100
-Message-Id: <1320586010-21931-2-git-send-email-julia@diku.dk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] net/sunrpc: use kstrtoul, etc
+Date: Sun,  6 Nov 2011 14:26:47 +0100
+Message-Id: <1320586010-21931-3-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1320586010-21931-1-git-send-email-julia@diku.dk>
 References: <1320586010-21931-1-git-send-email-julia@diku.dk>
@@ -44,50 +43,63 @@ expression a,b;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- net/batman-adv/bat_sysfs.c      |    4 ++--
- net/batman-adv/gateway_common.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ net/sunrpc/addr.c     |    6 +++---
+ net/sunrpc/auth.c     |    2 +-
+ net/sunrpc/xprtsock.c |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-diff -u -p a/net/batman-adv/bat_sysfs.c b/net/batman-adv/bat_sysfs.c
---- a/net/batman-adv/bat_sysfs.c
-+++ b/net/batman-adv/bat_sysfs.c
-@@ -174,7 +174,7 @@ static int store_uint_attr(const char *b
- 	unsigned long uint_val;
- 	int ret;
+diff -u -p a/net/sunrpc/addr.c b/net/sunrpc/addr.c
+--- a/net/sunrpc/addr.c
++++ b/net/sunrpc/addr.c
+@@ -182,7 +182,7 @@ static int rpc_parse_scope_id(const char
+ 			scope_id = dev->ifindex;
+ 			dev_put(dev);
+ 		} else {
+-			if (strict_strtoul(p, 10, &scope_id) == 0) {
++			if (kstrtoul(p, 10, &scope_id) == 0) {
+ 				kfree(p);
+ 				return 0;
+ 			}
+@@ -322,7 +322,7 @@ size_t rpc_uaddr2sockaddr(const char *ua
+ 	c = strrchr(buf, '.');
+ 	if (unlikely(c == NULL))
+ 		return 0;
+-	if (unlikely(strict_strtoul(c + 1, 10, &portlo) != 0))
++	if (unlikely(kstrtoul(c + 1, 10, &portlo) != 0))
+ 		return 0;
+ 	if (unlikely(portlo > 255))
+ 		return 0;
+@@ -331,7 +331,7 @@ size_t rpc_uaddr2sockaddr(const char *ua
+ 	c = strrchr(buf, '.');
+ 	if (unlikely(c == NULL))
+ 		return 0;
+-	if (unlikely(strict_strtoul(c + 1, 10, &porthi) != 0))
++	if (unlikely(kstrtoul(c + 1, 10, &porthi) != 0))
+ 		return 0;
+ 	if (unlikely(porthi > 255))
+ 		return 0;
+diff -u -p a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+--- a/net/sunrpc/auth.c
++++ b/net/sunrpc/auth.c
+@@ -47,7 +47,7 @@ static int param_set_hashtbl_sz(const ch
  
--	ret = strict_strtoul(buff, 10, &uint_val);
-+	ret = kstrtoul(buff, 10, &uint_val);
- 	if (ret) {
- 		bat_info(net_dev,
- 			 "%s: Invalid parameter received: %s\n",
-@@ -239,7 +239,7 @@ static ssize_t store_vis_mode(struct kob
- 	unsigned long val;
- 	int ret, vis_mode_tmp = -1;
+ 	if (!val)
+ 		goto out_inval;
+-	ret = strict_strtoul(val, 0, &num);
++	ret = kstrtoul(val, 0, &num);
+ 	if (ret == -EINVAL)
+ 		goto out_inval;
+ 	nbits = fls(num);
+diff -u -p a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -2925,7 +2925,7 @@ static int param_set_uint_minmax(const c
  
--	ret = strict_strtoul(buff, 10, &val);
-+	ret = kstrtoul(buff, 10, &val);
- 
- 	if (((count == 2) && (!ret) && (val == VIS_TYPE_CLIENT_UPDATE)) ||
- 	    (strncmp(buff, "client", 6) == 0) ||
-diff -u -p a/net/batman-adv/gateway_common.c b/net/batman-adv/gateway_common.c
---- a/net/batman-adv/gateway_common.c
-+++ b/net/batman-adv/gateway_common.c
-@@ -97,7 +97,7 @@ static bool parse_gw_bandwidth(struct ne
- 			*tmp_ptr = '\0';
- 	}
- 
--	ret = strict_strtol(buff, 10, &ldown);
-+	ret = kstrtol(buff, 10, &ldown);
- 	if (ret) {
- 		bat_err(net_dev,
- 			"Download speed of gateway mode invalid: %s\n",
-@@ -122,7 +122,7 @@ static bool parse_gw_bandwidth(struct ne
- 				*tmp_ptr = '\0';
- 		}
- 
--		ret = strict_strtol(slash_ptr + 1, 10, &lup);
-+		ret = kstrtol(slash_ptr + 1, 10, &lup);
- 		if (ret) {
- 			bat_err(net_dev,
- 				"Upload speed of gateway mode invalid: "
+ 	if (!val)
+ 		return -EINVAL;
+-	ret = strict_strtoul(val, 0, &num);
++	ret = kstrtoul(val, 0, &num);
+ 	if (ret == -EINVAL || num < min || num > max)
+ 		return -EINVAL;
+ 	*((unsigned int *)kp->arg) = num;
 
