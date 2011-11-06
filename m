@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab1KFXFV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 18:05:21 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:45508 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754221Ab1KFXFU (ORCPT
+	id S1754459Ab1KFXMM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 18:12:12 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:40962 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1KFXMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 18:05:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=newdream.net; h=date:from:to:cc
-	:subject:message-id:mime-version:content-type; q=dns; s=
-	newdream.net; b=r6dcjafriI/ThygOhJaPgPQSfSJwJzqBjmZF5wEwtny4tWaK
-	AByds+H78b/qKAISdOHXh13ITvZ9WLxtFyQo4pXqhhwRZgcjEZm1Dje+g3ELcUo7
-	IwkBzuTTdg9GO/uEuBEdqM3KHLoSOUFkdA8Vla4eFj3c7v6RDx/Y3n7WpFY=
-Date: Sun, 6 Nov 2011 15:05:19 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates part 2
-Message-ID: <Pine.LNX.4.64.1111061502001.22861@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 6 Nov 2011 18:12:10 -0500
+Date: Mon, 7 Nov 2011 10:12:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: build failure after merge of the origin tree
+Message-Id: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Nov_2011_10_12_02_+1100_Bu3e=1AuJqKkLT07"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__7_Nov_2011_10_12_02_+1100_Bu3e=1AuJqKkLT07
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
 Hi Linus,
 
-Please pull this second set of Ceph updates from
+Starting with the origin tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function 'ixgbe_set_inter=
+rupt_capability':
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:4724:3: error: implicit decla=
+ration of function 'ixgbe_disable_sriov'
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c: In function 'ixgbe_remove':
+drivers/net/ethernet/intel/ixgbe/ixgbe_main.c:7773:3: error: implicit decla=
+ration of function 'ixgbe_check_vf_assignment'
 
-There are two sparse cleanup patches I missed before, and a second set of 
-patches that reenable some of Ceph usage of the dcache that build on the 
-d_prune dentry_operation that was merged this week.
+Caused by commit 9487dc844054 ("ixgbe: Fix compiler warnings") which hid
+the declarations of ixgbe_disable_sriov() and ixgbe_check_vf_assignment()
+when CONFIG_PCI_IOV is not defined.
 
-I also finally got the tree back on kernel.org.  (You'll find the same 
-commits on github, where most of the development work will remain.)
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Thanks!
-sage
+--Signature=_Mon__7_Nov_2011_10_12_02_+1100_Bu3e=1AuJqKkLT07
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-H Hartley Sweeten (2):
-      ceph/mds_client.c: quiet sparse noise
-      ceph/super.c: quiet sparse noise
+iQIcBAEBCAAGBQJOtxRCAAoJEECxmPOUX5FE0YoP/3K3tJkPzrzI4G5HUuC9r7hu
+leD55/bXhI87iuHiluFLZHFhTGagbjIGQkWF3fXY/lNz3R/qU+E5Z+RmkP9pJ3p+
+wTI52FK76l9LwTUqfj4Yjyt7DWV+5fCMKBJ0WhBwSy7BQzXnq+CccwWbrod7bxKa
+jwKTRdFOMH+C9FtTGhavL06rqfrFbupIGe2dK9hfsjrnHW2JrorClHly0/gVvcqt
+5Q2XfVAX+NkVcbwCAZ34XKS5R3eBU1hpb6N5JfX28x555GwjPzVIcANWRh6RtFSn
+A+TvQ42Lt/pvrIsPWrwvUouBMuXbOOLz38iU1OLM9HFLhLMd7z83Ux/sEJ0c+Z8l
+YZePi6yQdG3gAU5sstd99PKqpGH1dauiweyTEWOSWOGGpjhbhAclifnwpovuUwgZ
+7Rh+kh29dHkNll23XaDiQc3npSyplMVPCH5Eb1FUfbFoysvKTsc7NqqUKxnlzHZJ
+Jxjxmif/ker3ULNV3bhVvOAVJ3s5Ewc6SYO/xvAjpaxSLy5cdcPy9eB8SyzYTWds
+qE7vdLL6ttyXGHes/oT590qfB76pEgkHKA5lF5GAkhfCp1jPiBFXH0V3F7F3tdw8
+xh5XPI3TJPOLmfyjgBp45X4BJOFC5OlkdbR4tPynFjfh1rkubcD9R+UGZV78qQvJ
+KjzmXbyuopzLQw27tJnB
+=kUQX
+-----END PGP SIGNATURE-----
 
-Sage Weil (2):
-      ceph: clear parent D_COMPLETE flag when on dentry prune
-      ceph: use new D_COMPLETE dentry flag
-
- fs/ceph/caps.c       |    8 ++---
- fs/ceph/dir.c        |   87 ++++++++++++++++++++++++++++++++++++++++++++-----
- fs/ceph/inode.c      |    8 ++--
- fs/ceph/mds_client.c |   10 +++---
- fs/ceph/super.c      |    4 +-
- fs/ceph/super.h      |   23 ++++++++++++-
- 6 files changed, 113 insertions(+), 27 deletions(-)
+--Signature=_Mon__7_Nov_2011_10_12_02_+1100_Bu3e=1AuJqKkLT07--
