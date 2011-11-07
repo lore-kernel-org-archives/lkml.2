@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1KGOUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:20:40 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19630 "EHLO
+	id S1753820Ab1KGOUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:20:45 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:19645 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab1KGOUi (ORCPT
+	with ESMTP id S1752617Ab1KGOUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:20:38 -0500
+	Mon, 7 Nov 2011 09:20:41 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Mon, 07 Nov 2011 06:20:23 -0800
+	by hqnvupgp08.nvidia.com on Mon, 07 Nov 2011 06:20:33 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>
-Subject: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Date: Mon, 7 Nov 2011 16:20:07 +0200
-Message-ID: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v3 7/8] arm/tegra: implement support for tegra30
+Date: Mon, 7 Nov 2011 16:20:14 +0200
+Message-ID: <1320675617-20751-8-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -26,71 +28,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds support for the tegra30 SoC and the cardhu development
-board.
+Add support for tegra30 SoC. This includes a device tree compatible type for
+this SoC ("nvidia,tegra30") and adds L2 cache initialization for this new SoC.
+The clock framework is still missing, which prevents most drivers from working.
 
-Pathset is on top of Will Deacon's ARM reset work.
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/Kconfig    |   18 +++++++++++++-----
+ arch/arm/mach-tegra/board-dt.c |    1 +
+ arch/arm/mach-tegra/board.h    |    1 +
+ arch/arm/mach-tegra/common.c   |    6 ++++++
+ 4 files changed, 21 insertions(+), 5 deletions(-)
 
-Most important changes in v3:
-
-* align with ARM restart rework. might need a bit of rework to merge with the
-  latest version of this.
-* minor cleanups and reformats
-
-Most important changes in v2:
-
-* account for arch_reset cleanup
-* seperate patch for renaming pinmux-t2.h and pinmux-t2-tables.c
-* fixed bug in common cache initialization
-* fixed compatibility with non DT boards (boottested on harmony)
-* improved commit messages
-
-
-Peter De Schrijver (8):
-  arm/tegra: initial device tree for tegra30
-  arm/tegra: prepare early init for multiple tegra variants
-  arm/tegra: rename tegra20 pinmux files
-  arm/tegra: prepare pinmux code for multiple tegra variants
-  arm/tegra: add new fields to struct tegra_pingroup_desc
-  arm/tegra: pinmux tables and definitions for tegra30
-  arm/tegra: implement support for tegra30
-  arm/tegra: add support for tegra30 based board cardhu
-
- arch/arm/boot/dts/tegra-cardhu.dts                |   36 ++
- arch/arm/boot/dts/tegra30.dtsi                    |  127 +++++++
- arch/arm/mach-tegra/Kconfig                       |   25 ++-
- arch/arm/mach-tegra/Makefile                      |    3 +-
- arch/arm/mach-tegra/Makefile.boot                 |    1 +
- arch/arm/mach-tegra/board-dt.c                    |   21 ++
- arch/arm/mach-tegra/board-harmony-pcie.c          |    1 +
- arch/arm/mach-tegra/board-harmony-pinmux.c        |    1 +
- arch/arm/mach-tegra/board-harmony.c               |    2 +-
- arch/arm/mach-tegra/board-paz00-pinmux.c          |    1 +
- arch/arm/mach-tegra/board-paz00.c                 |    2 +-
- arch/arm/mach-tegra/board-seaboard-pinmux.c       |    2 +-
- arch/arm/mach-tegra/board-seaboard.c              |    6 +-
- arch/arm/mach-tegra/board-trimslice-pinmux.c      |    1 +
- arch/arm/mach-tegra/board-trimslice.c             |    2 +-
- arch/arm/mach-tegra/board.h                       |    5 +-
- arch/arm/mach-tegra/common.c                      |   45 ++-
- arch/arm/mach-tegra/include/mach/pinmux-t2.h      |  184 ----------
- arch/arm/mach-tegra/include/mach/pinmux-tegra20.h |  184 ++++++++++
- arch/arm/mach-tegra/include/mach/pinmux-tegra30.h |  320 ++++++++++++++++++
- arch/arm/mach-tegra/include/mach/pinmux.h         |   88 ++++-
- arch/arm/mach-tegra/pinmux-t2-tables.c            |  228 -------------
- arch/arm/mach-tegra/pinmux-tegra20-tables.c       |  244 +++++++++++++
- arch/arm/mach-tegra/pinmux-tegra30-tables.c       |  376 +++++++++++++++++++++
- arch/arm/mach-tegra/pinmux.c                      |  153 ++++++---
- 25 files changed, 1556 insertions(+), 502 deletions(-)
- create mode 100644 arch/arm/boot/dts/tegra-cardhu.dts
- create mode 100644 arch/arm/boot/dts/tegra30.dtsi
- delete mode 100644 arch/arm/mach-tegra/include/mach/pinmux-t2.h
- create mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra20.h
- create mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
- delete mode 100644 arch/arm/mach-tegra/pinmux-t2-tables.c
- create mode 100644 arch/arm/mach-tegra/pinmux-tegra20-tables.c
- create mode 100644 arch/arm/mach-tegra/pinmux-tegra30-tables.c
-
+diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
+index 91aff7c..f2eb6d1 100644
+--- a/arch/arm/mach-tegra/Kconfig
++++ b/arch/arm/mach-tegra/Kconfig
+@@ -2,11 +2,8 @@ if ARCH_TEGRA
+ 
+ comment "NVIDIA Tegra options"
+ 
+-choice
+-	prompt "Select Tegra processor family for target system"
+-
+ config ARCH_TEGRA_2x_SOC
+-	bool "Tegra 2 family"
++	bool "Enable support for Tegra20 family"
+ 	select CPU_V7
+ 	select ARM_GIC
+ 	select ARCH_REQUIRE_GPIOLIB
+@@ -17,7 +14,18 @@ config ARCH_TEGRA_2x_SOC
+ 	  Support for NVIDIA Tegra AP20 and T20 processors, based on the
+ 	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
+ 
+-endchoice
++config ARCH_TEGRA_3x_SOC
++	bool "Enable support for Tegra30 family"
++	select CPU_V7
++	select ARM_GIC
++	select ARCH_REQUIRE_GPIOLIB
++	select USB_ARCH_HAS_EHCI if USB_SUPPORT
++	select USB_ULPI if USB_SUPPORT
++	select USB_ULPI_VIEWPORT if USB_SUPPORT
++	select USE_OF
++	help
++	  Support for NVIDIA Tegra T30 processor family, based on the
++	  ARM CortexA9MP CPU and the ARM PL310 L2 cache controller
+ 
+ config TEGRA_PCI
+ 	bool "PCI Express support"
+diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
+index a7bae50..1680e96 100644
+--- a/arch/arm/mach-tegra/board-dt.c
++++ b/arch/arm/mach-tegra/board-dt.c
+@@ -123,6 +123,7 @@ static struct {
+ 	void (*init)(void);
+ } early_init[] __initdata = {
+ 	{ "nvidia,tegra20", tegra20_init_early },
++	{ "nvidia,tegra30", tegra30_init_early },
+ };
+ 
+ static void __init tegra_init_early(void)
+diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+index b86cdab..708b330a 100644
+--- a/arch/arm/mach-tegra/board.h
++++ b/arch/arm/mach-tegra/board.h
+@@ -24,6 +24,7 @@
+ #include <linux/types.h>
+ 
+ void __init tegra20_init_early(void);
++void __init tegra30_init_early(void);
+ void __init tegra_map_common_io(void);
+ void __init tegra_init_irq(void);
+ void __init tegra_init_clock(void);
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 35cf81a..0257d6d 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -94,3 +94,9 @@ void __init tegra20_init_early(void)
+ 	tegra_init_cache(0x331, 0x441);
+ 	tegra_common_init();
+ }
++
++void __init tegra30_init_early(void)
++{
++	tegra_init_cache(0x441, 0x551);
++	tegra_setup_system_reset();
++}
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
