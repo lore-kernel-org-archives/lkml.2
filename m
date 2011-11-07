@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab1KGEMQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 23:12:16 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46653 "EHLO
+	id S1755302Ab1KGEWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 23:22:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:56737 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755225Ab1KGEMP (ORCPT
+	with ESMTP id S1755226Ab1KGEWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 23:12:15 -0500
+	Sun, 6 Nov 2011 23:22:07 -0500
+From: Nai Xia <nai.xia@gmail.com>
+Reply-To: nai.xia@gmail.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH] mremap: skip page table lookup for non-faulted anonymous VMAs
+Date: Mon, 7 Nov 2011 12:21:35 +0800
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic-pae; KDE/4.6.5; i686; ; )
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <010f01cc9d02$6858fea0$390afbe0$%park@samsung.com>
-References: <1319780504-23816-1-git-send-email-chanho61.park@samsung.com>
-	<CAJuYYwRLoT2Xf8PcBPx_Nr1dYvki-aKVmkmsMy2r5z1wKu9r7Q@mail.gmail.com>
-	<010f01cc9d02$6858fea0$390afbe0$%park@samsung.com>
-Date: Mon, 7 Nov 2011 09:42:14 +0530
-Message-ID: <CAJuYYwSEYQuTEWa5Xn2a2Zx3Ew1ppkG7EZcD_HAs8MmPC7y8ag@mail.gmail.com>
-Subject: Re: [PATCHv2] drivers: pinctrl: add a pin_base for sparse gpio-ranges
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Chanho Park <chanho61.park@samsung.com>
-Cc: linus.walleij@linaro.org, swarren@nvidia.com, Barry.Song@csr.com,
-        Rongjun.Ying@csr.com, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Deepak Saxena <deepak.saxena@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <201111071221.35403.nai.xia@gmail.com>
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanho Park,
+If an anonymous vma has not yet been faulted, move_page_tables() in move_vma()
+is not necessary for it.
 
-On 7 November 2011 09:34, Chanho Park <chanho61.park@samsung.com> wrote:
->> Just wanted to check with you if you have started the implementation
->> of pinctrl driver for Samsung platforms or do plan to start on it?
->>
->> Thanks,
->> Thomas.
->>
->> [...]
->
-> Hi, Thomas
-> I have no plan to implement it for Samsung platforms(s3c/s5p/exynos).
-> Thanks.
+Signed-off-by: Nai Xia <nai.xia@gmail.com>
+---
+diff --git a/mm/mremap.c b/mm/mremap.c
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -200,6 +200,10 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 	if (!new_vma)
+ 		return -ENOMEM;
+ 
++	/* An anonymous vma has not been faulted, no pagetables lookup. */
++	if (!vma->vm_file && !vma->anon_vma)
++		goto page_tables_ok;
++
+ 	moved_len = move_page_tables(vma, old_addr, new_vma, new_addr, old_len);
+ 	if (moved_len < old_len) {
+ 		/*
+@@ -213,6 +217,7 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		old_addr = new_addr;
+ 		new_addr = -ENOMEM;
+ 	}
++page_tables_ok:
+ 
+ 	/* Conceal VM_ACCOUNT so old reservation is not undone */
+ 	if (vm_flags & VM_ACCOUNT) {
 
-Thanks for the confirmation.
-
-Regards,
-Thomas.
-
->
->
