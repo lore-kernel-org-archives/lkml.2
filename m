@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753884Ab1KGWlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:41:46 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34736 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751838Ab1KGWlo (ORCPT
+	id S1753948Ab1KGWmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:42:33 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58161 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786Ab1KGWmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:41:44 -0500
-Date: Mon, 7 Nov 2011 22:41:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
-Message-ID: <20111107224129.GJ15294@n2100.arm.linux.org.uk>
-References: <1320688617-4543-1-git-send-email-balbi@ti.com> <20111107183208.GG15294@n2100.arm.linux.org.uk> <20111107193908.GA5059@legolas.emea.dhcp.ti.com> <20111107212707.GH15294@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 7 Nov 2011 17:42:32 -0500
+Date: Mon, 7 Nov 2011 22:43:10 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] x86, efi: Calling __pa() with an ioremap'd address
+ is invalid
+Message-ID: <20111107224310.65aa8a4a@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111107212328.GA29090@srcf.ucam.org>
+References: <20111107202324.GA27515@srcf.ucam.org>
+	<4EB8413D.6030500@zytor.com>
+	<20111107203752.GA27875@srcf.ucam.org>
+	<4EB8436B.20603@zytor.com>
+	<20111107204839.GA28261@srcf.ucam.org>
+	<4EB84644.8060102@zytor.com>
+	<20111107205859.GA28681@srcf.ucam.org>
+	<4EB84734.3070006@zytor.com>
+	<20111107210702.GA28781@srcf.ucam.org>
+	<4EB84BAD.6030707@zytor.com>
+	<20111107212328.GA29090@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 02:29:35PM -0700, Paul Walmsley wrote:
-> On Mon, 7 Nov 2011, Russell King - ARM Linux wrote:
-> 
-> > Again, can never have been tested on OMAP3.
-> > 
-> > Does anyone apart from me bother doing any testing what so ever on OMAP3
-> > platforms?  Am I the only one?
-> 
-> This was fixed by 
-> 
-> http://www.spinics.net/lists/arm-kernel/msg143549.html
-> 
-> which didn't go upstream as part of the v3.2 merge window.
+> I know. But we also have to handle being called after 
+> ExitBootServices(). There are going to be people who don't want to deal 
+> with signing their kernel builds.
 
-Ah, that patch.
+So they can keep their system in setup mode, or we can add signing to the
+distro install script so your make install still gets it right.
 
-Which version of the patch does Tony have?  The one you point at which
-uses IS_ERR_VALUE() and I complained about, or the version that has that
-fixed?
+Alan
