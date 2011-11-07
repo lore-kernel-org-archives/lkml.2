@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab1KGR6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:58:39 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:50609 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab1KGR6i (ORCPT
+	id S1755972Ab1KGSBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 13:01:22 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59035 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab1KGSBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:58:38 -0500
+	Mon, 7 Nov 2011 13:01:20 -0500
 MIME-Version: 1.0
-In-Reply-To: <4EB81B3B.5080006@kernel.org>
-References: <4EB81B3B.5080006@kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1111071323450.8485@skynet.skynet.ie>
+References: <alpine.DEB.2.00.1111071323450.8485@skynet.skynet.ie>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 7 Nov 2011 09:58:15 -0800
-X-Google-Sender-Auth: udD-sVZkhqP0984zMjHTenArGes
-Message-ID: <CA+55aFxRsvLGaLt2SEYV9sNRqdRGVRi5ntwConFbc9c0G14KRQ@mail.gmail.com>
-Subject: Re: [GIT pull] ACPI & cpuidle power management patches for Linux 3.2-merge
-To: Len Brown <lenb@kernel.org>
-Cc: linux-acpi <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
+Date: Mon, 7 Nov 2011 10:00:58 -0800
+X-Google-Sender-Auth: n86CIK45cSga3Gfvu-3bi-ra6bY
+Message-ID: <CA+55aFy7unJdfb6gz-m-=_5eQH3iFdjK0MKgRoeD5px=CmVQGQ@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Dave Airlie <airlied@linux.ie>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 9:54 AM, Len Brown <lenb@kernel.org> wrote:
+On Mon, Nov 7, 2011 at 5:27 AM, Dave Airlie <airlied@linux.ie> wrote:
 >
-> please pull from:
+> are available in the git repository at:
 >
-> git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+>  ssh://people.freedesktop.org/~/linux drm-fixes
 
-Are you sure that path is right? I'm not seeing anything there.
+No they are *not* available there.
 
-             Linus
+Fix your pull script already! I mentioned this once earlier, your pull
+requests are wrong, and point to things that just don't *exist* for
+anybody but you.
+
+I don't have ssh access to that server, and even if I did, that "~"
+would be wrong.
+
+                           Linus
