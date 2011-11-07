@@ -1,118 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab1KGBaf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 20:30:35 -0500
-Received: from ozlabs.org ([203.10.76.45]:55832 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755010Ab1KGBad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 20:30:33 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [PATCH] module: Fix performance regression on modules with large symbol tables
-In-Reply-To: <467be983bed865e1b772136ed488f9ff@localhost>
-References: <467be983bed865e1b772136ed488f9ff@localhost>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 07 Nov 2011 11:59:54 +1030
-Message-ID: <874nygu3cd.fsf@rustcorp.com.au>
+	id S1755097Ab1KGBbe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 20:31:34 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43203 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010Ab1KGBbd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 20:31:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <CAGsJ_4xU28APFEcALAzuB2jAACa8FbOR6iSvOaEeGZa=JyjNeA@mail.gmail.com>
+References: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
+ <20111105182244.GB6772@elf.ucw.cz> <CAGsJ_4xU28APFEcALAzuB2jAACa8FbOR6iSvOaEeGZa=JyjNeA@mail.gmail.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Mon, 7 Nov 2011 09:31:10 +0800
+Message-ID: <CAGsJ_4xm05N4UZ94kvUtUGLGkcDnxesojV0fL9hQQnZBOFvohg@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH] PM: HIBERNATION: skip the swap size check if
+ the snapshot image size is anticipative
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Barry Song <Barry.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>,
+        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org,
+        linux-arm-kernel@lists.infradead.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Nov 2011 17:48:58 -0700, Kevin Cernekee <cernekee@gmail.com> wrote:
-> Commit 554bdfe5acf3715e87c8d5e25a4f9a896ac9f014 (module: reduce string
-> table for loaded modules) introduced an optimization to shrink the size of
-> the resident string table.  Part of this involves calling bitmap_weight()
-> on the strmap bitmap once for each core symbol.  strmap contains one bit
-> for each byte of the module's strtab.
-> 
-> For kernel modules with a large number of symbols, the addition of the
-> bitmap_weight() operation to each iteration of the add_kallsyms() loop
-> resulted in a significant "insmod" performance regression from 2.6.31
-> to 2.6.32.  bitmap_weight() is expensive when the bitmap is large.
-> 
-> The proposed alternative optimizes the common case in this loop
-> (is_core_symbol() == true, and the symbol name is not a duplicate), while
-> penalizing the exceptional case of a duplicate symbol.
+2011/11/6 Barry Song <21cnbao@gmail.com>:
+> 2011/11/6 Pavel Machek <pavel@ucw.cz>:
+>> Hi!
+>>
+>>> From: Barry Song <Baohua.Song@csr.com>
+>>>
+>>> Current swsusp requires swap partitions even larger than real saved pages
+>>> due to the worst compress ratio:
+>>> but for an embedded system, which has limited storage space, then it might
+>>> can't give the big size partition to save snapshot.
+>>> In the another way, some embedded systems can definitely know the most size
+>>> needed for snapshot since they run some specific application lists.
+>>> So this patch provides the possibility for bootloader to tell kernel even
+>>> the system has a little snapshot partition, but it is still enough.
+>>> For example, if the system need to save 120MB memory, origin swsusp will require
+>>> a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+>>> compressed image will be less than 30MB), they just make a 30MB
+>>> partition.
+>>
+>> Would it be better to have /sys/power/... entry which would allow
+>> configuring expected compression ratio at runtime?
+>
+> i think it is better to have a sys node than add another kernel param.
+> but the point is i only care about the final image size but not
+> compression ratio. i don't care how well lzo will do for me since i
+> only have limited disk space and know how many pages want to be saved.
+> there has been a image_size node, will we have a expected_image_size node?
 
-I see you honored Jan's original patch by leaving it mysterious and
-undocumented.  I was totally confused by your patch.
+or will we have just a node named /sys/power/check_size, if
+1(default), check, otherwise(0 set by users), skip checking?
 
-I finally figured out that you pack the compacted strtab in symtab
-order, and override the strmap bit to detect duplicates.  Clever.
+>>                                                                Pavel
 
-But I don't think it quite works in general.  gcc is allowed to compact
-the strtab itself, eg with two names "foobar" and "bar", it can reuse
-the tail of the first strtab entry.  It may not yet, but it could.
-
-This makes your job a bit harder, but not too bad.  See below...
-
-I've started a separate patch to add comments to all this.
-
-Cheers,
-Rusty.
-
-module: fix overlapping entries in symtab case.
-
-The prior patch didn't handle the (theoretical?) case where strings in
-the strtab are partially shared by two symtab entries.  This detects
-that correctly, and does an exhaustive search for that case.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-diff --git a/kernel/module.c b/kernel/module.c
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2221,7 +2221,7 @@ static void layout_symtab(struct module 
- 
- static void add_kallsyms(struct module *mod, const struct load_info *info)
- {
--	unsigned int i, j, stridx = 1, ndst;
-+	unsigned int i, ndst;
- 	const Elf_Sym *src;
- 	Elf_Sym *dst;
- 	char *s;
-@@ -2242,23 +2242,26 @@ static void add_kallsyms(struct module *
- 	*dst = *src;
- 	*s++ = 0;
- 	for (ndst = i = 1; i < mod->num_symtab; ++i, ++src) {
-+		const char *name;
- 		if (!is_core_symbol(src, info->sechdrs, info->hdr->e_shnum))
- 			continue;
- 		dst[ndst] = *src;
-+
-+		name = &mod->strtab[src->st_name];
- 		if (unlikely(!test_bit(src->st_name, info->strmap))) {
--			dst[ndst].st_name = 0;
--			for (j = 1; j < ndst; j++)
--				if (!strcmp(&mod->strtab[src->st_name],
--					    &mod->core_strtab[dst[j].st_name]))
--					dst[ndst].st_name = dst[j].st_name;
-+			char *dup;
-+
-+			for (dup = mod->core_strtab; strcmp(dup, name); dup++)
-+				BUG_ON(dup > s);
-+
-+			dst[ndst].st_name = dup - mod->core_strtab;
- 		} else {
--			dst[ndst].st_name = stridx;
--			j = src->st_name;
--			clear_bit(j, info->strmap);
--			do {
--				*s = mod->strtab[j++];
--				stridx++;
--			} while (*s++);
-+			unsigned len = strlen(name) + 1;
-+
-+			dst[ndst].st_name = s - mod->core_strtab;
-+			memcpy(s, name, len);
-+			s += len;
-+			bitmap_clear(info->strmap, src->st_name, len);
- 		}
- 		++ndst;
- 	}
-
-
+-barry
