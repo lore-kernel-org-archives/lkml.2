@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab1KGCTV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:19:21 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44746
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754257Ab1KGCTU (ORCPT
+	id S932246Ab1KGCay (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 21:30:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45451 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab1KGCax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:19:20 -0500
-From: Dirk Hohndel <hohndel@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joshua V Dillon <jvdillon@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Jiri Kosina <jkosina@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Add support for the Mid 2011 MacBook Air keyboard layout
-In-Reply-To: <CA+55aFw22MKWqwUaWpj-=gquEmUjdTWmk_ibe3bxYPySq_mCSA@mail.gmail.com>
-References: <87r51l41dj.fsf@hohndel.org> <CA+55aFw22MKWqwUaWpj-=gquEmUjdTWmk_ibe3bxYPySq_mCSA@mail.gmail.com>
-User-Agent: Notmuch/0.5-251-g11db5ef (http://notmuchmail.org) Emacs/23.3.1 (x86_64-suse-linux-gnu)
-Date: Sun, 06 Nov 2011 15:22:40 -0800
-Message-ID: <87fwi0j0ov.fsf@hohndel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hohndel@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 6 Nov 2011 21:30:53 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 7 Nov 2011 11:29:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <jweiner@redhat.com>
+Cc: Konstantin Khlebnikov <khlebnikov@parallels.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Gene Heskett <gene.heskett@gmail.com>
+Subject: Re: [rfc 1/3] mm: vmscan: never swap under low memory pressure
+Message-Id: <20111107112941.0dfa07cb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111102163141.GH19965@redhat.com>
+References: <20110808110658.31053.55013.stgit@localhost6>
+	<CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
+	<4E3FD403.6000400@parallels.com>
+	<20111102163056.GG19965@redhat.com>
+	<20111102163141.GH19965@redhat.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Nov 2011 12:12:49 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> Now, I have the 11" one which apparently has a different keyboard ID,
-> but the *reason* it works for me is that my keyboard ID is apparently
-> 0x0249, which is USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI.
-> 
-> And because that one isn't known by the broken quirks at all, it falls
-> back on the standard apple_fn_keys[] translation.
-> 
-> Which is the *right* translation for me, and judging by your patch,
-> it's the right translation for you too.
+On Wed, 2 Nov 2011 17:31:41 +0100
+Johannes Weiner <jweiner@redhat.com> wrote:
 
-Correct. 
- 
-> So I suspect that the *right* thing to do is to just remove the broken
-> WELLSPRING6 cases. Exactly the same way that da617c7cb915 ("HID:
-> consolidate MacbookAir 4,1 mappings") did for the WELLSPRING6A ones.
+> We want to prevent floods of used-once file cache pushing us to swap
+> out anonymous pages.  Never swap under a certain priority level.  The
+> availability of used-once cache pages should prevent us from reaching
+> that threshold.
 > 
-> So I suspect the only case that should use the "macbookair_fn_keys"
-> thing is the *old* macbook air ("WELLSPRING4"). They were added in
-> commit 5d922baa6310, and that commit implies that it was never tested
-> all that much ("reportedly unchanged from the 3,2 predecessor and
-> seems to work well.")
+> This is needed because subsequent patches will revert some of the
+> mechanisms that tried to prefer file over anon, and this should not
+> result in more eager swapping again.
 > 
-> So I think the right patch is just this one:
+> It might also be better to keep the aging machinery going and just not
+> swap, rather than staying away from anonymous pages in the first place
+> and having less useful age information at the time of swapout.
 > 
->      drivers/hid/hid-apple.c |    3 ---
->      1 files changed, 0 insertions(+), 3 deletions(-)
+> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+> ---
+>  mm/vmscan.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
->     diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
->     index 8cdb4b45b30a..299d23871122 100644
->     --- a/drivers/hid/hid-apple.c
->     +++ b/drivers/hid/hid-apple.c
->     @@ -183,9 +183,6 @@ static int hidinput_apple_event(struct
-> hid_device *hid, struct input_dev *input,
->      		if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI &&
->      				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS)
->      			table = macbookair_fn_keys;
->     -		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
->     -				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
->     -			table = macbookair_fn_keys;
->      		else if (hid->product < 0x21d || hid->product >= 0x300)
->      			table = powerbook_fn_keys;
->      		else
-> 
-> instead. Hmm? Does that work for you?
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a90c603..39d3da3 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -831,6 +831,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  		 * Try to allocate it some swap space here.
+>  		 */
+>  		if (PageAnon(page) && !PageSwapCache(page)) {
+> +			if (priority >= DEF_PRIORITY - 2)
+> +				goto keep_locked;
+>  			if (!(sc->gfp_mask & __GFP_IO))
+>  				goto keep_locked;
+>  			if (!add_to_swap(page))
 
-Tested-by: Dirk Hohndel <hohndel@infradead.org>
+Hm, how about not scanning LRU_ANON rather than checking here ?
+Add some bias to get_scan_count() or some..
+If you think to need rotation of LRU, only kswapd should do that..
 
-/D
+Thanks,
+-Kame
+
