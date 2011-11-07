@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab1KGCrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:47:16 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50299 "EHLO
+	id S1755188Ab1KGCtV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 21:49:21 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:49488 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab1KGCrO (ORCPT
+	with ESMTP id S1755107Ab1KGCtT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:47:14 -0500
-Date: Mon, 7 Nov 2011 13:47:06 +1100
+	Sun, 6 Nov 2011 21:49:19 -0500
+Date: Mon, 7 Nov 2011 13:49:12 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregory.v.rose@intel.com,
-        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the origin tree
-Message-Id: <20111107134706.3e7fc633f913b5e155153127@canb.auug.org.au>
-In-Reply-To: <20111106.205259.1237400984015921904.davem@davemloft.net>
-References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
-	<20111106.205259.1237400984015921904.davem@davemloft.net>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, linux-mips@linux-mips.org
+Subject: Re: [PATCH 12/49] MIPS: irq: Remove IRQF_DISABLED
+Message-Id: <20111107134912.0878664493f1110ceefb98a6@canb.auug.org.au>
+In-Reply-To: <20111107021048.GA3027@zhy>
+References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
+	<1319277421-9203-13-git-send-email-yong.zhang0@gmail.com>
+	<20111104122106.GA7581@linux-mips.org>
+	<20111107021048.GA3027@zhy>
 X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru"
+ boundary="Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru
+--Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Hi Yong,
 
-On Sun, 06 Nov 2011 20:52:59 -0500 (EST) David Miller <davem@davemloft.net>=
- wrote:
+On Mon, 7 Nov 2011 10:10:48 +0800 Yong Zhang <yong.zhang0@gmail.com> wrote:
 >
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 7 Nov 2011 10:12:02 +1100
+> On Fri, Nov 04, 2011 at 12:21:06PM +0000, Ralf Baechle wrote:
+> > Thanks, queued for 3.3.  I resolved a conflict in dbdma.c and remove
+> > one IRQF_DISABLED which had been missed in arch/mips/kernel/perf_event.=
+c.
 >=20
-> > Starting with the origin tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
->  ...
-> > Caused by commit 9487dc844054 ("ixgbe: Fix compiler warnings") which hid
-> > the declarations of ixgbe_disable_sriov() and ixgbe_check_vf_assignment=
-()
-> > when CONFIG_PCI_IOV is not defined.
-> >=20
-> > I have reverted that commit for today.
->=20
-> It should be fixed in net.git, can you please check that the build
-> succeeds after you pull it into -next?
+> And FYI, my patch is based on next-20111014 when I made it.
 
-I reverted the commit above ...
-
-> If you just revert the commit in origin from -next, then you will get
-> conflicts with you pull the net.git tree in.
-
-I got no conflicts when I merged in the net tree and can see no fix for
-this problem in the net tree.  My current head of the net tree is 1a6422f
-"etherh: Add MAINTAINERS entry for etherh".
+You should never base anything on top of a linux-next tree.  You should
+use the tree you are fixing (Linus' or the Mips tree or ...) as the base.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru
+--Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJOt0aqAAoJEECxmPOUX5FEBlsP/jEbk8bU/lU+EnyVjk/gpI0M
-xnFO0HqG/oGDEgBAq0Oi6I9OrWf5bPhu2brhdwHoQNcQGAxGc2KpJjLWBiVgJIha
-j8meYwGDt1qDosjEU7bRszh3U9jyv7lyh7qXqL3hMwn8JhxLLCXyPARQmElpt1An
-83y7h0xClyED7/TpxMm41gGfHJ+EYfNmZkASCr5AgItiUs6I3YedM+3UQV6gyXTu
-Q/FXhTEKkc9DzaEAXjGNyBglGF5yH/Cf1c0Lo7GOKVNFShcKPfrpzVC2vSHyPboh
-MKHpmQO4cNJ8cLGEvBL9uGvNT1zJnVkaoN/OtZResJrO7291MtgXbB6nWXIXDRoB
-i46AtKoueuZN+Ata5P2oC7OSOauFvgs7wqu2S2FrUm0rzqwekaYCZXq1ndJPPFAr
-hLXhfM7D6KP4g4eVWeMI8h9m1YlqZqEsOc8CuOkXv700Expjd2yU/VT9wkN2rJ+c
-0li7P6Jxrvh/W17mqZtOm/Pay6KqzIimB9YNd7826q2f059EDQtmDuxdWiZ+sYVC
-aEBhXeSmC4KCdT9iO6D4orTHELL6yhO4HAuNajfYmbzAlZE1B5qSbUxQIk+Y/Bzi
-X7N//fkt1eB0mA/Jg885OcTZfOw0cAMtVcYKgwMAGsK4/l2uli5P7N36G3pvM29J
-j0iK4Z+T8jrSrKjRtUUI
-=Gtzj
+iQIcBAEBCAAGBQJOt0coAAoJEECxmPOUX5FEHDIP/00zpvtv1S/Up9demv3hM++9
+Lne7Imn48Hgy6qceQWEZk43RCo1Umn3VCgJrMHN24yZ793UaJoiapPcr/RPNa1Kq
+2uQdZJlKHCCSDysCGiRh1VaHPI3q98n2zVqvxKQeSzX0BA0pHQ8TGgR0IJdIe+Br
+bopPE7e999LJno13I9EXx97JAdSNcj021CxmpBgNqUSLPjiV1PMBgwGqaNhMjwQs
+RMjR/BzKgtEYpRyPSMXCzwPirDb/mT736HW13QOT8FS2+EYYZ9B/rwkOOIab4pPS
+uF1MRpNM3ERtM58+0id8q4MmQgEoA6EwD4i8fIYUFEVYWb7YXg7lPTX92sMQaAi6
+p6zlKSknX6+5DXIdt9ynZ0Xg/DcXbf3diQK4QAYQYshft13JHozx1SDvcx2tvnIl
+MiAC9xQHFBHaQMFMwKeQRKVbLWMTZiIw8nQr5klOL9HxeaqqUAORjbQnAQwLoOTB
+blHCUTvXinoomIF0CNdie76rWz7otk4o3bqhhaIDw3fSn8DW8Oi4fdW4Z/7flKe8
+1lUgCIeODmS8/OM2B0+Go6WzU9UBgfuWh5Wd88iUjCD+pduF0GAuQMWRYJ/TFTIg
+PdUp6KrvA2jZA4q0jEcTVbxQryNWf6RI16IaAeRInm+ihbN0ZSoB/4Wk8GIXFCka
+HbWGaoSLujjjOOH3RTiX
+=xVUF
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru--
+--Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r--
