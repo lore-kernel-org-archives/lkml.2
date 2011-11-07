@@ -1,45 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab1KGKYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 05:24:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab1KGKYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 05:24:02 -0500
-Message-ID: <4EB7B1A9.9000409@redhat.com>
-Date: Mon, 07 Nov 2011 11:23:37 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Alexander Graf <agraf@suse.de>, Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Blue Swirl <blauwirbel@gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-References: <1320543320-32728-1-git-send-email-agraf@suse.de>	<CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com>	<4EB65C5B.8070709@redhat.com>	<CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>	<4EB66036.4080102@redhat.com>	<1320577728.1428.73.camel@jaguar>	<4EB67486.1070105@redhat.com>	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>	<4EB67D17.7000701@redhat.com>	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>	<4EB680D9.2070706@redhat.com>	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de> <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
-In-Reply-To: <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754073Ab1KGKYd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 05:24:33 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47894 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752938Ab1KGKX5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 05:23:57 -0500
+Date: Mon, 7 Nov 2011 10:24:44 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Ilya Zykov <ilya@ilyx.ru>
+Cc: Paul Fulghum <paulkf@microgate.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: PROBLEM: n_hdlc not atomic use tty->flags.
+Message-ID: <20111107102444.495f3436@lxorguk.ukuu.org.uk>
+In-Reply-To: <4EB7899E.5090006@ilyx.ru>
+References: <4EB7899E.5090006@ilyx.ru>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Mon, 07 Nov 2011 11:32:46 +0400
+Ilya Zykov <ilya@ilyx.ru> wrote:
 
-> It's not just about code, it's as much about culture and development process.
+> N_HDLC can spoil tty->flags because use not atomic operations on tty->flags.
+> I use n_hdlc line discipline and it happens.
 
-Indeed.  The BSDs have both kernel and the base system in a single
-repository.  There are probably good reasons for (and against) it.
-
-In Linux we don't have that culture.  No tool (except perf) lives in the
-kernel repo.  I fail to see why kvm-tool is that much different from
-udev, util-linux, iproute, filesystem tools, that it should be included.
-
-cheers,
-  Gerd
+Acked-by: Alan Cox <alan@linux.intel.com>
