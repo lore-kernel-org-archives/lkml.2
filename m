@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab1KGMfx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:35:53 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:57061 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab1KGMfw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755478Ab1KGMgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:36:04 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:33357 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755374Ab1KGMfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Nov 2011 07:35:52 -0500
-Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Date: Mon, 07 Nov 2011 13:34:39 +0100
-In-Reply-To: <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
-References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
-	 <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320669279.18053.29.camel@twins>
-Mime-Version: 1.0
+Message-ID: <4EB7D0A4.405@ilyx.ru>
+Date: Mon, 07 Nov 2011 16:35:48 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
+MIME-Version: 1.0
+To: Alan Cox <alan@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Ilya Zykov <ilya@ilyx.ru>
+Subject: Re: PROBLEM: Race condition in tty buffer's function flush_to_ldisc().
+References: <4EB7BD9A.7070600@ilyx.ru> <20111107115802.23201d45@bob.linux.org.uk>
+In-Reply-To: <20111107115802.23201d45@bob.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-04 at 17:26 +0800, Yong Zhang wrote:
-> Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
-> lockdep_init_map() will clear all the struct. But it will break
-> lock_set_class()/lock_set_subclass(). A typical race condition
-> is like below:
+Alan Cox wrote:
 
-This is a horridly ugly patch, why not simply revert that memset commit?
-I really can't see the point of that, and keeping the name/key pointers
-around (which can only be over-written with the same values, right?)
-would also cure the problem.
+> On Mon, 07 Nov 2011 15:14:34 +0400
+> Ilya Zykov <ilya@ilyx.ru> wrote:
+> 
+>> Function flush_to_ldisc() call disc->ops->receive_buf(),
+>> without tty->buf.lock and with TTY_FLUSHING bit set.
+> 
+> flush_to_ldisc is single threaded for a given tty. If you fail to
+> ensure that is the case everything breaks.
 
-Sadly the changelog is completely devoid of useful information (which is
-my own damn fault, I should never have accepted the patch in that form),
-so I can't actually comment on what it was supposed to fix.
 
-Arguably kmemcheck is on crack or so since both name and key pointers
-should be in .data so there cannot be a leak by copying the thing over.
+Why we need: "if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {"
+if flush_to_ldisc is single threaded?
+we can: set_bit(TTY_FLUSHING, &tty->flags)
+without if() at all.
+
+> 
+> What cases does this occur ?
+> 
+> Also for the other patches do you have benchmarks yet ?
+> 
+> Alan
+> 
+
+
