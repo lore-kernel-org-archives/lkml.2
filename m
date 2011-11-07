@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab1KGQX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:23:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:48190 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab1KGQX2 convert rfc822-to-8bit (ORCPT
+	id S932928Ab1KGQY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:24:58 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55110 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932653Ab1KGQY4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:23:28 -0500
-Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
- guests
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Avi Kivity <avi@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net,
-        hpa <hpa@zytor.com>
-Date: Mon, 07 Nov 2011 17:22:21 +0100
-In-Reply-To: <4EB7F852.9010606@redhat.com>
-References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
-	 <1320323618-10375-3-git-send-email-gleb@redhat.com>
-	 <1320676467.18053.43.camel@twins> <4EB7EF4F.3090907@redhat.com>
-	 <1320677949.18053.54.camel@twins> <4EB7F58D.6080102@redhat.com>
-	 <20111107151944.GE8670@redhat.com> <4EB7F852.9010606@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 7 Nov 2011 11:24:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <22879.1320652337@turing-police.cc.vt.edu>
+References: <7vwrbjlj5r.fsf@alter.siamese.dyndns.org> <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+ <7vk47jld5s.fsf@alter.siamese.dyndns.org> <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+ <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+ <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+ <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
+ <7v62j1gitn.fsf@alter.siamese.dyndns.org> <7vvcr1f38j.fsf@alter.siamese.dyndns.org>
+ <CA+55aFyRawm9CoJMiEXDFCX4YTidPOiV4oqSS2d7nNv7Ecw8BQ@mail.gmail.com>
+ <20111104145908.GA3903@thunk.org> <CA+55aFw6JJDkkSJnp=X4cQuibXMHVBgbQ99iPqEbd7p_7J=VfQ@mail.gmail.com>
+ <22879.1320652337@turing-police.cc.vt.edu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 7 Nov 2011 08:24:34 -0800
+X-Google-Sender-Auth: aEx0HHDuTR746Nu9BZVzrtQ1eOw
+Message-ID: <CA+55aFyKocxDUD2YhhBhfDzp+WHOddOZ_3mfqwADri86aUOUFQ@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+To: Valdis.Kletnieks@vt.edu
+Cc: "Ted Ts'o" <tytso@mit.edu>, Junio C Hamano <gitster@pobox.com>,
+        Shawn Pearce <spearce@spearce.org>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320682941.17809.18.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-07 at 17:25 +0200, Avi Kivity wrote:
-> On 11/07/2011 05:19 PM, Gleb Natapov wrote:
-> > > 
-> > > note, this needs a fairly huge PMI skew to happen.
-> > > 
-> > No, it need not. It is enough to get exit reason as hlt instead of nmi
-> > for a vcpu to go to blocking state instead of reentering guest mode.
-> > Note that we do not check request flags in kvm_arch_vcpu_runnable().
-> 
-> Right.
-> 
-> If we had a guarantee about the maximum skew, we could add a check for
-> KVM_REQ_PMI in kvm_vcpu_block().
+On Sun, Nov 6, 2011 at 11:52 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+>
+> OK.. I'll bite.  How do you disambiguate a '42deadbeef' in the changelog part
+> of a commit as being a commit ID, as opposed to being an address in a traceback
+> or something similar? Yes, I know you only change the ones that actually map to
+> a commit ID, but I'd not be surprised if by now we've got enough commits and
+> stack tracebacks in the git history that we'll birthday-paradox ourselves into
+> a false-positive in an automatic replacement.
 
-Right, it shouldn't be more than a few instructions since its NMIs we're
-talking about, but I'm not sure there's any really hard guarantees on,
-hardware folks would be able to say more.
+I don't think we are quite there yet. And (sadly) most of the commit
+ID's in the history are 7 hex characters, because that used to be the
+default git abbreviation. So there is unlikely to be any real
+conflicts.
 
-Typically you can assert NMIs at instruction boundaries, but things like
-instruction fusing and a few 'special' insn can delay NMI delivery. then
-again, I'm clueless as to the actual implementation details of any of
-this stuff.
+If we do miss one or two, that will be sad and embarrassing, but is
+not a real problem in practice.
 
-Also I'm not sure if there's any non-deterministic delays in the PMU
-event -> PMU overflow -> PMI raise path that could push you out into
-silly land.
+We probably could add various heuristics (the SHA1 values are *often*
+preceded by the string "commit"), and a really good import would also
+have somebody at least visually inspecting ones that other heuristics
+say might be debatable (for example - because they have 8 hex digits
+and there are other numbers around them that were *not* converted),
+but in the end perfection is the enemy of good. It's not really worth
+the headache to worry about *all* the cases, if you can cheaply and
+simply get 99+% right.
 
-So yeah, I think the proposed code is fine, although I think the comment
-can be improved by mentioning the vcpu hlt case.
+And I think the 99% is almost trivial. While the last 1% may or may
+not be worth worrying about.
 
-
+               Linus
