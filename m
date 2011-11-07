@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab1KGNMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 08:12:31 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65379 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab1KGNM3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 08:12:29 -0500
+	id S1755547Ab1KGNOV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 08:14:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38914 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394Ab1KGNOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 08:14:19 -0500
+Date: Mon, 7 Nov 2011 13:14:13 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Nai Xia <nai.xia@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Pawel Sikora <pluto@agmk.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
+ vma_merge succeeding in copy_vma
+Message-ID: <20111107131413.GA18279@suse.de>
+References: <20111031171441.GD3466@redhat.com>
+ <1320082040-1190-1-git-send-email-aarcange@redhat.com>
+ <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
+ <20111104235603.GT18879@redhat.com>
+ <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
+ <20111105013317.GU18879@redhat.com>
+ <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20111107124757.GC24685@thunk.org>
-References: <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
-	<4EB680D9.2070706@redhat.com>
-	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
-	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
-	<CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
-	<4EB7B1A9.9000409@redhat.com>
-	<alpine.LFD.2.02.1111071333350.2815@tux.localdomain>
-	<4EB7CA52.5050409@redhat.com>
-	<20111107122902.GA24685@thunk.org>
-	<CAOJsxLGuRtWHbOugqHoxCNDmCrtiLFh7xMo8BVGNprG3GoanOQ@mail.gmail.com>
-	<20111107124757.GC24685@thunk.org>
-Date: Mon, 7 Nov 2011 15:12:28 +0200
-X-Google-Sender-Auth: nZcwRMgAvmVrAWBJ8Xkl5YjfceA
-Message-ID: <CAOJsxLGeyvv93YT244nMy59wKS8hkR1_NE6+6zEvzJiR0r2zRQ@mail.gmail.com>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-From: Pekka Enberg <penberg@kernel.org>
-To: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
-        Gerd Hoffmann <kraxel@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Alexander Graf <agraf@suse.de>,
-        Avi Kivity <avi@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Blue Swirl <blauwirbel@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 2:47 PM, Ted Ts'o <tytso@mit.edu> wrote:
-> I don't think perf should be used as a precendent that now argues that
-> any new kernel utility should be moved into the kernel sources.  Does
-> it make sense to move all of mount, fsck, login, etc., into the kernel
-> sources?  There are far more kernel tools outside of the kernel
-> sources than inside the kernel sources.
+On Sat, Nov 05, 2011 at 10:00:52AM +0800, Nai Xia wrote:
+> > <SNIP>
+> > The only safe way to do it is to have _two_ different vmas, with two
+> > different ->vm_pgoff. Then it will work. And by always creating a new
+> > vma we'll always have it queued at the end, and it'll be safe for the
+> > same reasons fork is safe.
+> >
+> > Always allocate a new vma, and then after the whole vma copy is
+> > complete, look if we can merge and free some vma. After the fact, so
+> > it means we can't use vma_merge anymore. vma_merge assumes the
+> > new_range is "virtual" and no vma is mapped there I think. Anyway
+> > that's an implementation issue. In some unlikely case we'll allocate 1
+> > more vma than before, and we'll free it once mremap is finished, but
+> > that's small problem compared to solving this once and for all.
+> >
+> > And that will fix it without ordering games and it'll fix the *vmap=
+> > new_vma case too. That case really tripped on me as I was assuming
+> > *that* was correct.
+> 
+> Yes. "Allocating a new vma, copy first and merge later " seems
+> another solution without the tricky reordering. But you know,
+> I now share some of Hugh's feeling that maybe we are too
+> desperate using racing in places where locks are simpler
+> and guaranteed to be safe.
+> 
 
-You seem to think that the KVM tool was developed in isolation and we
-simply copied the code to tools/kvm for the pull request. That's simply
-not true. We've done a lot of work to make the code feel like kernel code
-from locking primitive APIs to serial console emulation register names.
-We really consider KVM tool to be a new Linux subsystem. It's the long
-lost cousin or bastard child of KVM, depending on who you ask.
+I'm tending to agree. The number of cases that must be kept in mind
+is getting too tricky. Taking the anon_vma lock may be slower but at
+the risk of sounding chicken, it's easier to understand.
 
-I don't know if it makes sense to merge the tools you've mentioned above.
-My gut feeling is that it's probably not reasonable - there's already a
-community working on it with their own development process and coding
-style. I don't think there's a simple answer to this but I don't agree with
-your rather extreme position that all userspace tools should be kept out
-of the kernel tree.
+> But I think Mel indicated that anon_vma_locking might be
+> harmful to JVM SMP performance.
+> How severe you expect this to be, Mel ?
+> 
 
-                        Pekka
+I would only expect it to be a problem during garbage collection when
+there is a greater likelihood that mremap is heavily used. While it
+would have been nice to avoid additional overhead in mremap, I don't
+think the JVM GC case on its own is sufficient justification to avoid
+taking the anon_vma lock.
+
+-- 
+Mel Gorman
+SUSE Labs
