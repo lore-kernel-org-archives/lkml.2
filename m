@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab1KGFud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 00:50:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:45423 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab1KGFuc (ORCPT
+	id S1753013Ab1KGFvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 00:51:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43374 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483Ab1KGFvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 00:50:32 -0500
-Date: Mon, 7 Nov 2011 08:51:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Ian Abbott <abbotti@mev.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] staging/comedi/jr3: Convert pci_table entries to
- PCI_DEVICE (if PCI_ANY_ID is used)
-Message-ID: <20111107055100.GV4682@mwanda>
-References: <1320623647-5108-1-git-send-email-peterhuewe@gmx.de>
+	Mon, 7 Nov 2011 00:51:16 -0500
+Date: Sun, 6 Nov 2011 21:51:09 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "joe@perches.com" <joe@perches.com>,
+        "jkosina@suse.cz" <jkosina@suse.cz>
+Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Message-ID: <20111107055109.GA21095@core.coreip.homeip.net>
+References: <1319841316-29136-1-git-send-email-kys@microsoft.com>
+ <20111105064739.GA31111@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA68580@TK5EX14MBXC128.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/LSm8UPTCLHL4o89"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320623647-5108-1-git-send-email-peterhuewe@gmx.de>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0481AA68580@TK5EX14MBXC128.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4EB77199.005B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi K. Y,
 
---/LSm8UPTCLHL4o89
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Nov 07, 2011 at 01:04:53AM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > Sent: Saturday, November 05, 2011 2:48 AM
+> > To: KY Srinivasan
+> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> > joe@perches.com; jkosina@suse.cz
+> > Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+> > 
+> > Hi KY,
+> 
+> Dimitry,
+> 
+> Let me begin by thanking you for taking the time to review. I have incorporated
+> pretty much all your suggestions.
 
-On Mon, Nov 07, 2011 at 12:53:59AM +0100, Peter Huewe wrote:
-> This patch converts pci_table entries to use the PCI_DEVICE macro,
-> if .subvendor and .subdevice are set to PCI_ANY_ID,
-> and thus improves readablity.
->=20
-> Since the driver_data field isn't used anywhere we can also drop the
-> assignments for class, class_mask and driver_data.
->=20
+Thank you very much for considering my suggestions.
 
-The other reason we can remove them is that C will initialize them
-to zero by default in this case.  So the new code is just shorter to
-write and doesn't change anything.
+> > 
+> > Instead of potentially ever-increasing buffer that you also allocate
+> > (and it looks like leaking on every callback invocation) can you just
+> > repeat the read if you know that there are more data and use single
+> > pre-allocated buffer?
+> 
+> The ring-buffer protocol is such that we need to consume the full message.
+> Also, why do you say we are leaking memory?
 
-regards,
-dan carpenter
+Ah, OK, I see, we keep reading until read returns 0-sized reply and then
+we free the buffer... Never mind then.
 
+> > > +
+> > > +	hid_dev->ll_driver = &mousevsc_ll_driver;
+> > > +	hid_dev->driver = &mousevsc_hid_driver;
+> > 
+> > You are not really hid driver; you are more of a "provider" so why do
+> > you need to set hid_dev->driver in addition to hid_dev->ll_driver?
+> > 
+> True, but hid_parse_report() expects that the driver field be set; so I
+> need to fake this.
 
---/LSm8UPTCLHL4o89
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+If you supply .parse() method for your mousevsc_ll_driver structure and
+call hid_parse_report() from it then HID core will set the default
+driver and call parse at appropriate time.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>  
+> > > +	hid_dev->bus = BUS_VIRTUAL;
+> > > +	hid_dev->vendor = input_dev->hid_dev_info.vendor;
+> > > +	hid_dev->product = input_dev->hid_dev_info.product;
+> > > +	hid_dev->version = input_dev->hid_dev_info.version;
+> > > +	input_dev->hid_device = hid_dev;
+> > > +
+> > > +	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
+> > 
+> > strlcpy?
+> > 
+> > > +
+> > > +	ret = hid_parse_report(hid_dev, input_dev->report_desc,
+> > > +				input_dev->report_desc_size);
+> > > +
+> > > +	if (ret) {
+> > > +		hid_err(hid_dev, "parse failed\n");
+> > > +		goto probe_err1;
+> > > +	}
+> > > +
+> > > +	ret = hid_hw_start(hid_dev, HID_CONNECT_HIDINPUT |
+> > HID_CONNECT_HIDDEV);
+> > 
+> > Why do you need to call hid_hw_start instead of letting HID core figure
+> > it out for you?
+> 
+> I am not a hid expert; but all  hid low level drivers appear to do this.
+> Initially, I was directly invoking hid_connect() directly and based on your
+> Input, I chose to use hid_hw_start() which all other drivers are using.
 
-iQIcBAEBAgAGBQJOt3HEAAoJEOnZkXI/YHqRXTEP/jgJrGKuimMzsLYZgRY/ODmD
-a1AzPmURFrHFiTeUsKZBewELDhOqGjUPAx3ZWRxkU6s4nVSLk5E7EezuA1RR+LC+
-dkOO+mkmOM8Qu6y2JJy8NdUy6MAFzf+9IZtltcyVfUNG9yps9EflAH5B4GeRoBQe
-h1j52PG9l+JN8Fi/DoKr/u1u6Ltd/XhOq7Qe9qCKlVyTBZ63QD7e62EZGYopVJS4
-4jaEmMxCQ5wsIQDqm4NxCZzOJQq7I0ssvtay4fmoxNs4XZa5jQpXahsd/HOLSHGi
-zz/NedJ3Ce+yqX7qSk79gAXd0kGqXdpiOlKMtagICQNSN1kB2Mku1y/r0XVBugzl
-lVxsGtA4oW0Q0uPtEdab2vRw8git9hVG03D1QLzl1wvrgl4NdB4A3PXv1qF/u/5/
-jnwqRUqOqavOABiVP7yDrtZXMk+oFuUEIcL0uPlSAx2WlsftM7qwua4ZQlGx7pdY
-ragQAZhe1HesY4XfOCgwKPKdFMAC1gz74WpcZtrqi1wmC6IdbD+R9jSnrTkpAkOu
-Ao0Doby0+iUrVSx9oa4R2uiPTl9kuhsW0CeQQjOTZDbYZQOy2Q5/PyPoCxsvrG4J
-MFdNRf4DqsN1BMhM6W0JnAPtywKEuu3Kl7oL3vLVrw0XRhxk5kyxQBSBQEsw0qPJ
-7RM14Dfjy4eotZ/MoOfv
-=/3Im
------END PGP SIGNATURE-----
+Note that the users of hid_hw_start() actually are not low level
+drivers, such as usbhid or bluetooth hidp, but higher-level drivers,
+such as hid-wacom, hid-a4tech, etc. Since your driver is a low-level
+driver (a provider so to speak) it should not call hid_hw_start() on its
+own but rather wait for the hid code to do it.
 
---/LSm8UPTCLHL4o89--
+Still, I am not a HID expert either so I'll defer to Jiri here.
+
+Thanks.
+
+-- 
+Dmitry
