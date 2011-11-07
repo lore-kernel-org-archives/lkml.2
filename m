@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab1KGCtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:49:21 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:49488 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab1KGCtT (ORCPT
+	id S1755198Ab1KGCxS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 21:53:18 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:64444 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755103Ab1KGCxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:49:19 -0500
-Date: Mon, 7 Nov 2011 13:49:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linux-mips@linux-mips.org
-Subject: Re: [PATCH 12/49] MIPS: irq: Remove IRQF_DISABLED
-Message-Id: <20111107134912.0878664493f1110ceefb98a6@canb.auug.org.au>
-In-Reply-To: <20111107021048.GA3027@zhy>
-References: <1319277421-9203-1-git-send-email-yong.zhang0@gmail.com>
-	<1319277421-9203-13-git-send-email-yong.zhang0@gmail.com>
-	<20111104122106.GA7581@linux-mips.org>
-	<20111107021048.GA3027@zhy>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r"
+	Sun, 6 Nov 2011 21:53:16 -0500
+Date: Mon, 07 Nov 2011 02:53:02 +0000
+From: Qianhuibin <qianhuibin@huawei.com>
+Subject: kernel panic occurred when I do some operation about vlan.
+In-reply-to: <FF4D6E6C1D10244088EA772C65CB346E015159AF@szxeml528-mbs.china.huawei.com>
+X-Originating-IP: [10.166.82.152]
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-id: <FF4D6E6C1D10244088EA772C65CB346E01516A22@szxeml528-mbs.china.huawei.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=gb2312
+Content-language: zh-CN
+Accept-Language: zh-CN, en-US
+Thread-topic: kernel panic occurred when I do some operation about vlan.
+Thread-index: Acyc97s4dyNSuTp0SeW7krROgbnwzgAAJfKh
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-CFilter-Loop: Reflected
+References: <FF4D6E6C1D10244088EA772C65CB346E015159AF@szxeml528-mbs.china.huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pA72rPSB011926
 
---Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi, all
+A kernel panic occurred when I do some operation about vlan.
 
-Hi Yong,
+The operation is as below:
+ifconfig eth2 up
+modprobe bonding
+modprobe 8021q
+ifconfig bond0 up
+ifenslave bond0 eth2
+vconfig add eth2 3300
+vconfig add bond0 33
+vconfig rem eth2.3300
 
-On Mon, 7 Nov 2011 10:10:48 +0800 Yong Zhang <yong.zhang0@gmail.com> wrote:
->
-> On Fri, Nov 04, 2011 at 12:21:06PM +0000, Ralf Baechle wrote:
-> > Thanks, queued for 3.3.  I resolved a conflict in dbdma.c and remove
-> > one IRQF_DISABLED which had been missed in arch/mips/kernel/perf_event.=
-c.
->=20
-> And FYI, my patch is based on next-20111014 when I made it.
+the panic stack is as below:
+[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
+[<ffffffff80378917>] notifier_call_chain+0x37/0x70
+[<ffffffff80372122>] panic+0xa2/0x195
+[<ffffffff80376ed8>] oops_end+0xd8/0x140
+[<ffffffff8001bea7>] no_context+0xf7/0x280
+[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
+[<ffffffff80376318>] page_fault+0x28/0x30
+[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
+[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
+[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
+[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
+[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
+[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
+[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
+[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
+[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
+[<00007f108a2b8bd7>] 0x7f108a2b8bd7
 
-You should never base anything on top of a linux-next tree.  You should
-use the tree you are fixing (Linus' or the Mips tree or ...) as the base.
+And the nic is as below:
+[root@localhost ~]# ethtool -i eth2
+driver: igb
+version: 3.0.6-k2
+firmware-version: 1.2-1
+bus-info: 0000:04:00.0
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+kernel version£∫
+2.6.32.12-0.7 also happen in 2.6.32-131
 
---Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r
-Content-Type: application/pgp-signature
+I had tried the same operation on other nics, like tg3,bnx2. But they haven°Øt panic.
+So I find the reason is that igb have two more netdev_ops (ndo_vlan_rx_add_vid and ndo_vlan_rx_kill_vid) than tg3 and bnx2.
+I think the reason of panic is that when ndo_vlan_rx_kill_vid has been called, the vlgrp haven°Øt been correctly find. And it should be find in parameter like what have been done in ndo_vlan_rx_register.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Finally, I kown that it°Øs not a correct operation to creat a vlan interface on eth2 when it have been slaved by bond0, but it would cause a panic, so I think maybe some improve in ndo_vlan_rx_add_vid£®add a vlgrp parameter in netdevice.h£© like ndo_vlan_rx_register would be better.
 
-iQIcBAEBCAAGBQJOt0coAAoJEECxmPOUX5FEHDIP/00zpvtv1S/Up9demv3hM++9
-Lne7Imn48Hgy6qceQWEZk43RCo1Umn3VCgJrMHN24yZ793UaJoiapPcr/RPNa1Kq
-2uQdZJlKHCCSDysCGiRh1VaHPI3q98n2zVqvxKQeSzX0BA0pHQ8TGgR0IJdIe+Br
-bopPE7e999LJno13I9EXx97JAdSNcj021CxmpBgNqUSLPjiV1PMBgwGqaNhMjwQs
-RMjR/BzKgtEYpRyPSMXCzwPirDb/mT736HW13QOT8FS2+EYYZ9B/rwkOOIab4pPS
-uF1MRpNM3ERtM58+0id8q4MmQgEoA6EwD4i8fIYUFEVYWb7YXg7lPTX92sMQaAi6
-p6zlKSknX6+5DXIdt9ynZ0Xg/DcXbf3diQK4QAYQYshft13JHozx1SDvcx2tvnIl
-MiAC9xQHFBHaQMFMwKeQRKVbLWMTZiIw8nQr5klOL9HxeaqqUAORjbQnAQwLoOTB
-blHCUTvXinoomIF0CNdie76rWz7otk4o3bqhhaIDw3fSn8DW8Oi4fdW4Z/7flKe8
-1lUgCIeODmS8/OM2B0+Go6WzU9UBgfuWh5Wd88iUjCD+pduF0GAuQMWRYJ/TFTIg
-PdUp6KrvA2jZA4q0jEcTVbxQryNWf6RI16IaAeRInm+ihbN0ZSoB/4Wk8GIXFCka
-HbWGaoSLujjjOOH3RTiX
-=xVUF
------END PGP SIGNATURE-----
-
---Signature=_Mon__7_Nov_2011_13_49_12_+1100_jrHQyWU8AZ.BtL_r--
+Qin Chuanyu
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
