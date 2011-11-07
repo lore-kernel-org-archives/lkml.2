@@ -1,119 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab1KGMXd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:23:33 -0500
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:35356 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab1KGMXc (ORCPT
+	id S932312Ab1KGMXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:23:43 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52325 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932262Ab1KGMXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:23:32 -0500
-Date: Mon, 7 Nov 2011 13:23:27 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Hannes Reinecke <hare@suse.de>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
-        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
-        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
-        gmuelas@de.ibm.com
-Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
- resources at blk_release_queue())
-Message-ID: <20111107122327.GA2699@osiris.boeblingen.de.ibm.com>
-References: <4E9D7FA8.9000000@ce.jp.nec.com>
- <20111018154542.GB3869@osiris.boeblingen.de.ibm.com>
- <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com>
- <20111031100557.GA2621@osiris.boeblingen.de.ibm.com>
- <1320057746.2964.1.camel@dabdike>
- <4EAE8A7E.8000504@ce.jp.nec.com>
- <20111031130004.GB4768@osiris.boeblingen.de.ibm.com>
- <20111103182548.GA12131@redhat.com>
- <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
- <20111104133052.GA17643@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111104133052.GA17643@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Nov 2011 07:23:41 -0500
+From: Michal Simek <monstr@monstr.eu>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: grant.likely@secretlab.ca, john.williams@petalogix.com,
+        linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>
+Subject: [PATCH] of: gpio: Add support for dual xilinx GPIO
+Date: Mon,  7 Nov 2011 13:23:36 +0100
+Message-Id: <1320668616-12225-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 09:30:52AM -0400, Mike Snitzer wrote:
-> > FWIW, yet another use-after-free crash, this time however in multipath_end_io:
-> > 
-> > [96875.870593] Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
-> > [96875.870602] Oops: 0038 [#1]
-> > [96875.870674] PREEMPT SMP DEBUG_PAGEALLOC
-> > [96875.870683] Modules linked in: dm_round_robin sunrpc ipv6 qeth_l2 binfmt_misc dm_multipath scsi_dh dm_mod qeth ccwgroup [la\
-> > st unloaded: scsi_wait_scan]
-> > [96875.870722] CPU: 2 Tainted: G        W   3.0.7-50.x.20111024-s390xdefault #1
-> > [96875.870728] Process udevd (pid: 36697, task: 0000000072c8a3a8, ksp: 0000000057c43868)
-> > [96875.870732] Krnl PSW : 0704200180000000 000003e001347138 (multipath_end_io+0x50/0x140 [dm_multipath])
-> > [96875.870746]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
-> > [96875.870751] Krnl GPRS: 0000000000000000 000003e000000000 6b6b6b6b6b6b6b6b 00000000717ab940
-> > [96875.870755]            0000000000000000 00000000717abab0 0000000000000002 0700000000000008
-> > [96875.870759]            0000000000000002 0000000000000000 0000000058dd37a8 000000006f845478
-> > [96875.870764]            000003e0012e1000 000000005613d1f0 000000007a737bf0 000000007a737ba0
-> > [96875.870768] Krnl Code: 000003e00134712a: b90200dd            ltgr %r13,%r13
-> > [96875.870793]            000003e00134712e: a7840017            brc 8,3e00134715c
-> > [96875.870800]            000003e001347132: e320d0100004        lg %r2,16(%r13)
-> > [96875.870809]           >000003e001347138: e31020180004        lg %r1,24(%r2)
-> > [96875.870818]            000003e00134713e: e31010580004        lg %r1,88(%r1)
-> > [96875.870827]            000003e001347144: b9020011            ltgr %r1,%r1
-> > [96875.870835]            000003e001347148: a784000a            brc 8,3e00134715c
-> > [96875.870841]            000003e00134714c: 41202018            la %r2,24(%r2)
-> > [96875.870889] Call Trace:
-> > [96875.870892] ([<0700000000000008>] 0x700000000000008)
-> > [96875.870897]  [<000003e0012e3662>] dm_softirq_done+0x9a/0x140 [dm_mod]
-> > [96875.870915]  [<000000000040d29c>] blk_done_softirq+0xd4/0xf0
-> > [96875.870925]  [<00000000001587c2>] __do_softirq+0xda/0x398
-> > [96875.870932]  [<000000000010f47e>] do_softirq+0xe2/0xe8
-> > [96875.870940]  [<0000000000158e2c>] irq_exit+0xc8/0xcc
-> > [96875.870945]  [<00000000004ceb48>] do_IRQ+0x910/0x1bfc
-> > [96875.870953]  [<000000000061a164>] io_return+0x0/0x16
-> > [96875.870961]  [<000000000019c84e>] lock_acquire+0xd2/0x204
-> > [96875.870969] ([<000000000019c836>] lock_acquire+0xba/0x204)
-> > [96875.870974]  [<0000000000615f8e>] mutex_lock_killable_nested+0x92/0x520
-> > [96875.870983]  [<0000000000292796>] vfs_readdir+0x8a/0xe4
-> > [96875.870992]  [<00000000002928e0>] SyS_getdents+0x60/0xe8
-> > [96875.870999]  [<0000000000619af2>] sysc_noemu+0x16/0x1c
-> > [96875.871024]  [<000003fffd1ec83e>] 0x3fffd1ec83e
-> > [96875.871028] INFO: lockdep is turned off.
-> > [96875.871031] Last Breaking-Event-Address:
-> > [96875.871037]  [<000003e0012e3660>] dm_softirq_done+0x98/0x140 [dm_mod]
+Register new gpiochip for the second channel.
 
-[...]
+The first channel name is: /plb@0/gpio@81420000
+The second channel name is: /plb@0/gpio@81420008
 
-> OK, thanks for the backstory.
-> 
-> That is the same type of testing we've been doing with some partners
-> for RHEL6.2 with the qla2xxx driver.  They have seen the same crash that
-> you originally reported here: https://lkml.org/lkml/2011/10/31/64
-> 
-> The really interesting observation that was made is that the qla2xxx
-> driver was made lockless in RHEL6.2.  We've found that reverting the
-> qla2xxx lockless changes eliminates the problems seen with it and I/O
-> stress testing with multipath path failures.
-> 
-> The zfcp driver was also made lockless upstream, via this commit:
-> e55f875 [SCSI] zfcp: Issue FCP command without holding SCSI host_lock
-> 
-> It would be great if you could try reverting e55f875 and see how your
-> testing goes.
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ drivers/gpio/xilinx_gpio.c |   84 +++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 76 insertions(+), 8 deletions(-)
 
-Ok, we did that, and of course it sometimes runs into deadlocks (since
-the commit fixed a deadlock), however we still see the same crash in
-multipath_end_io() from above.
+diff --git a/drivers/gpio/xilinx_gpio.c b/drivers/gpio/xilinx_gpio.c
+index 846fbd5..a92f9f6 100644
+--- a/drivers/gpio/xilinx_gpio.c
++++ b/drivers/gpio/xilinx_gpio.c
+@@ -25,10 +25,13 @@
+ #define XGPIO_DATA_OFFSET   (0x0)	/* Data register  */
+ #define XGPIO_TRI_OFFSET    (0x4)	/* I/O direction register  */
+ 
++#define XGPIO_CHANNEL_OFFSET	0x8
++
+ struct xgpio_instance {
+ 	struct of_mm_gpio_chip mmchip;
+ 	u32 gpio_state;		/* GPIO state shadow register */
+ 	u32 gpio_dir;		/* GPIO direction shadow register */
++	u32 offset;
+ 	spinlock_t gpio_lock;	/* Lock used for synchronization */
+ };
+ 
+@@ -43,8 +46,11 @@ struct xgpio_instance {
+ static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
+ {
+ 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
++	struct xgpio_instance *chip =
++	    container_of(mm_gc, struct xgpio_instance, mmchip);
+ 
+-	return (in_be32(mm_gc->regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
++	return (in_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET)
++								>> gpio) & 1;
+ }
+ 
+ /**
+@@ -70,7 +76,8 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
+ 		chip->gpio_state |= 1 << gpio;
+ 	else
+ 		chip->gpio_state &= ~(1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
++							chip->gpio_state);
+ 
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+ }
+@@ -95,7 +102,7 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
+ 
+ 	/* Set the GPIO bit in shadow register and set direction as input */
+ 	chip->gpio_dir |= (1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+ 
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+ 
+@@ -126,11 +133,12 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
+ 		chip->gpio_state |= 1 << gpio;
+ 	else
+ 		chip->gpio_state &= ~(1 << gpio);
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
++							chip->gpio_state);
+ 
+ 	/* Clear the GPIO bit in shadow register and set direction as output */
+ 	chip->gpio_dir &= (~(1 << gpio));
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+ 
+ 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
+ 
+@@ -146,8 +154,9 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
+ 	struct xgpio_instance *chip =
+ 	    container_of(mm_gc, struct xgpio_instance, mmchip);
+ 
+-	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
+-	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
++							chip->gpio_state);
++	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
+ }
+ 
+ /**
+@@ -205,7 +214,66 @@ static int __devinit xgpio_of_probe(struct device_node *np)
+ 		       np->full_name, status);
+ 		return status;
+ 	}
+-	pr_info("XGpio: %s: registered\n", np->full_name);
++
++	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
++							chip->mmchip.gc.base);
++
++	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
++	if (tree_info && be32_to_cpup(tree_info)) {
++		/* Distinguish dual gpio chip */
++		/* NOTE baseaddr ends with zero address XGPIO_CHANNEL_OFFSET */
++		np->full_name[strlen(np->full_name) - 1] = '8';
++
++		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++		if (!chip)
++			return -ENOMEM;
++
++		/* Add dual channel offset */
++		chip->offset = XGPIO_CHANNEL_OFFSET;
++
++		/* Update GPIO state shadow register with default value */
++		tree_info = of_get_property(np, "xlnx,dout-default-2", NULL);
++		if (tree_info)
++			chip->gpio_state = be32_to_cpup(tree_info);
++
++		/* Update GPIO direction shadow register with default value */
++		/* By default, all pins are inputs */
++		chip->gpio_dir = 0xFFFFFFFF;
++		tree_info = of_get_property(np, "xlnx,tri-default-2", NULL);
++		if (tree_info)
++			chip->gpio_dir = be32_to_cpup(tree_info);
++
++		/* Check device node and parent device node for device width */
++		/* By default assume full GPIO controller */
++		chip->mmchip.gc.ngpio = 32;
++		tree_info = of_get_property(np, "xlnx,gpio2-width", NULL);
++		if (!tree_info)
++			tree_info = of_get_property(np->parent,
++						"xlnx,gpio2-width", NULL);
++		if (tree_info)
++			chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
++
++		spin_lock_init(&chip->gpio_lock);
++
++		chip->mmchip.gc.direction_input = xgpio_dir_in;
++		chip->mmchip.gc.direction_output = xgpio_dir_out;
++		chip->mmchip.gc.get = xgpio_get;
++		chip->mmchip.gc.set = xgpio_set;
++
++		chip->mmchip.save_regs = xgpio_save_regs;
++
++		/* Call the OF gpio helper to setup and register the GPIO dev */
++		status = of_mm_gpiochip_add(np, &chip->mmchip);
++		if (status) {
++			kfree(chip);
++			pr_err("%s: error in probe function with status %d\n",
++			np->full_name, status);
++			return status;
++		}
++		pr_info("XGpio: %s: dual channel registered, base is %d\n",
++					np->full_name, chip->mmchip.gc.base);
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.5.4
 
-> If doing so resolves the crashes for you then the post mortem on why
-> these lockless SCSI driver changes are causing such odd multipath
-> completion failures is going to be "fun" ;)
-
-Must be something different then...
