@@ -1,113 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab1KGKh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 05:37:57 -0500
-Received: from exprod5og102.obsmtp.com ([64.18.0.143]:34395 "EHLO
-	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754138Ab1KGKh4 (ORCPT
+	id S1753716Ab1KGLB4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:01:56 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49965 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753244Ab1KGLBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 05:37:56 -0500
-Message-ID: <4EB7B4FF.7060806@ge.com>
-Date: Mon, 07 Nov 2011 10:37:51 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Mon, 7 Nov 2011 06:01:55 -0500
+Date: Mon, 7 Nov 2011 12:01:49 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: robert.richter@amd.com, peterz@infradead.org, mingo@elte.hu,
+        ming.m.lin@intel.com, ak@linux.intel.com
+Subject: [PATCH] perf_events: fix and improve x86 event scheduling
+Message-ID: <20111107110149.GA5177@quad>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Paul Bolle <pebolle@tiscali.nl>, Grant Likely <grant.likely@secretlab.ca>,
-        devel@driverdev.osuosl.org, manohar.vanga@cern.ch, cota@braap.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Driver for GE PIO2 VME Card
-References: <20111104173126.30940.28135.stgit@ES-BJ21R4J> <1320436514.14409.309.camel@x61.thuisdomein> <20111104200057.GB400@suse.de>
-In-Reply-To: <20111104200057.GB400@suse.de>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Nov 2011 10:37:54.0124 (UTC) FILETIME=[4E6B18C0:01CC9D39]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/11 20:00, Greg KH wrote:
-> On Fri, Nov 04, 2011 at 08:55:14PM +0100, Paul Bolle wrote:
->> A few random remarks follow. Ie, things that came up while quickly
->> scanning this.
->>
->> On Fri, 2011-11-04 at 17:33 +0000, Martyn Welch wrote:
->>> diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
->>> index ca5ba89..99f5414 100644
->>> --- a/drivers/staging/vme/devices/Kconfig
->>> +++ b/drivers/staging/vme/devices/Kconfig
->>> @@ -6,3 +6,13 @@ config VME_USER
->>>  	  If you say Y here you want to be able to access a limited number of
->>>  	  VME windows in a manner at least semi-compatible with the interface
->>>  	  provided with the original driver at http://vmelinux.org/.
->>
->> Blank line here.
->>
->>> +config VME_PIO2
->>> +	tristate "GE PIO2 VME"
->>> +	help
->>> +	  If you say Y here you have a GE PIO2. The PIO2 is a 6U VME Card,
->>
->> Maybe something like: "Say Y here if you have a GE PIO2."?
->>
->>> +	  implementing 32 solid-state relay switched IO lines, in 4 groups of 8.
->>> +	  The IO lines are provided as input, output or both as a build time
->>> +	  option.
->>
->> What option would that be?
->>
->>> +	  Otherwise it is safe to say N here.
->>> +
->>
->> A lot of modules have the "if you say M here the module will be called"
->> boilerplate here (which actually doesn't match the line I just made up).
->>
->>> +/* These are required for each board */
->>> +MODULE_PARM_DESC(bus, "Enumeration of VMEbus to which the board is connected");
->>> +module_param_array(bus, int, &bus_num, 0);
->>> +
->>> +MODULE_PARM_DESC(base, "Base VME address for PIO2 Registers");
->>> +module_param_array(base, long, &base_num, 0);
->>> +
->>> +MODULE_PARM_DESC(vector, "VME IRQ Vector (Lower 4 bits masked)");
->>> +module_param_array(vector, int, &vector_num, 0);
->>> +
->>> +MODULE_PARM_DESC(level, "VME IRQ Level");
->>> +module_param_array(level, int, &level_num, 0);
->>> +
->>> +MODULE_PARM_DESC(variant, "Last 4 characters of PIO2 board variant");
->>> +module_param_array(variant, charp, &variant_num, 0);
->>> +
->>> +/* This is for debugging */
->>> +MODULE_PARM_DESC(loopback, "Enable loopback mode on all cards");
->>> +module_param(loopback, bool, 0);
->>
->> All module parameters have a sysfs visibility (or permission) of zero.
->> Why is that? (This might very well be a naive question. But I often
->> wonder why a certain parameter's permission isn't at least 400, just to
->> allow a quick check of that parameter.) Are arrays tricky in sysfs?
-> 
-> Yes, arrays are tricky, and in the end, all of these need to be "real"
-> sysfs files, not module parameters, but for now, it's ok to leave it as
-> is until the code is cleaned up.
-> 
 
-Hi Greg,
+Major rewrite of the x86 event scheduling routine.
+The routine is shared between AMD and Intel.
 
-Am I right in thinking we wouldn't then be able to pass the parameters in the
-boot args?
+The existing code had an issue with certain combinations
+of constraints. As Robert Richter @ AMD demonstrated on
+AMD Bulldozer:
 
-Martyn
+e0 [3,0]
+e1 [2:0]
+e2 [2:0]
+e3 [2:0]
 
-> thanks,
-> 
-> greg k-h
+With this list of events, the existing scheduling algorithm
+would never schedule e3. That's because it would always choose
+counter 0 for e0:
+  e0 -> 0
+  e1 -> 1
+  e2 -> 2
+  e3 -> X
 
+Robert Richter proposed a fix to the algorithm which was based
+on tagging constraints that overlap. He was using rollbacks to
+simulate recursion.
 
--- 
-Martyn Welch (Principal Software Engineer) | Registered in England and
-GE Intelligent Platforms                   | Wales (3828642) at 100
-T +44(0)1327322748                         | Barbirolli Square, Manchester,
-E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
+We propose an alternate solution which is simpler, faster. This
+is a small modification to the existing algorithm. It adds some
+smart in how a counter is chosen for a given event. The first
+available counter is not systemtically selected. Instead, the
+algorithm checks how the constraints between the events overlap.
+For each counter, it assigns a weight which is the number of events
+which it can count for the event set. For each event, the algorithm
+assigns the counter with the smallest weight first.
+
+In the example above, the new algoritm assigns:
+  e0 -> 3
+  e1 -> 0
+  e2 -> 1
+  e3 -> 2
+
+Because:
+  counter 0, weight = 4
+  counter 1, weight = 3
+  counter 2, weight = 3
+  counter 3, weight = 1
+
+We maximize PMU usage and ensure all events are measured.
+
+The patch also restructures the code to separate scheduling of
+constrained vs. unconstrained events. An unconstrained event is
+one that can be programmed into any of the generic counters. For
+those, we now use the simplest algorihtm possible: use next free
+counter. There is now a fast path which is beneficial on
+processors such as AMD64 Fam10h.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6408910..95cca3c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -488,60 +488,37 @@ static inline int is_x86_event(struct perf_event *event)
+ 	return event->pmu == &pmu;
+ }
+ 
+-int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
++static int
++x86_sched_constrained(struct perf_event **c_events, int num_c,
++		  struct event_constraint **constraints,
++		  int n,
++		  unsigned long *used_mask,
++		  int *assign)
+ {
+-	struct event_constraint *c, *constraints[X86_PMC_IDX_MAX];
+-	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+-	int i, j, w, wmax, num = 0;
+-	struct hw_perf_event *hwc;
+-
+-	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+-
+-	for (i = 0; i < n; i++) {
+-		c = x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
+-		constraints[i] = c;
+-	}
++	struct event_constraint *c;
++	struct perf_event **e;
++	int wcnt[X86_PMC_IDX_MAX];
++	int i, j, w, wmax, num;
++	int map_idx;
++	int min_wcnt, wcnt_idx;
+ 
++	memset(wcnt, 0, sizeof(wcnt));
+ 	/*
+-	 * fastpath, try to reuse previous register
++	 * compute counter weight: given a set of event constraints, the weight
++	 * represents the number of events which can be programmed on a counter
+ 	 */
+ 	for (i = 0; i < n; i++) {
+-		hwc = &cpuc->event_list[i]->hw;
+ 		c = constraints[i];
+-
+-		/* never assigned */
+-		if (hwc->idx == -1)
+-			break;
+-
+-		/* constraint still honored */
+-		if (!test_bit(hwc->idx, c->idxmsk))
+-			break;
+-
+-		/* not already used */
+-		if (test_bit(hwc->idx, used_mask))
+-			break;
+-
+-		__set_bit(hwc->idx, used_mask);
+-		if (assign)
+-			assign[i] = hwc->idx;
++		for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
++			wcnt[j]++;
++		}
+ 	}
+-	if (i == n)
+-		goto done;
+ 
+ 	/*
+-	 * begin slow path
+-	 */
+-
+-	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+-
+-	/*
+-	 * weight = number of possible counters
++	 * constraint weight = number of possible counters for an event
+ 	 *
+ 	 * 1    = most constrained, only works on one counter
+ 	 * wmax = least constrained, works on any counter
+-	 *
+-	 * assign events to counters starting with most
+-	 * constrained events.
+ 	 */
+ 	wmax = x86_pmu.num_counters;
+ 
+@@ -553,42 +530,179 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ 	if (x86_pmu.num_counters_fixed)
+ 		wmax++;
+ 
+-	for (w = 1, num = n; num && w <= wmax; w++) {
+-		/* for each event */
+-		for (i = 0; num && i < n; i++) {
+-			c = constraints[i];
+-			hwc = &cpuc->event_list[i]->hw;
++	/*
++	 * assign from most constrained to least constrained
++	 */
++	for (w = 1, num = num_c; num && w <= wmax; w++) {
++		/* for each constrained event */
++		for (i = 0, e = c_events; i < num_c; i++, e++) {
++
++			map_idx = (*e)->hw.map_idx;
++			c = constraints[map_idx];
+ 
+ 			if (c->weight != w)
+ 				continue;
+ 
++			min_wcnt = INT_MAX;
++			wcnt_idx = -1;
++			/*
++			 * scan all possible counters for this event
++			 * but use the one with the smallest counter weight,
++			 * i.e., give a chance to other less constrained events
++			 */
+ 			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
+-				if (!test_bit(j, used_mask))
+-					break;
+-			}
+ 
+-			if (j == X86_PMC_IDX_MAX)
++				if (test_bit(j, used_mask))
++					continue;
++
++				if (wcnt[j] < min_wcnt) {
++					min_wcnt = wcnt[j];
++					wcnt_idx = j;
++				}
++			}
++			if (wcnt_idx == -1)
+ 				break;
+ 
+-			__set_bit(j, used_mask);
++			__set_bit(wcnt_idx, used_mask);
+ 
+ 			if (assign)
+-				assign[i] = j;
+-			num--;
++				assign[map_idx] = wcnt_idx;
++
++			/* marked used */
++			wcnt[wcnt_idx] = INT_MAX;
++
++			if (--num == 0)
++				break;
++		}
++	}
++	return num;
++}
++
++static int x86_sched_unconstrained(struct perf_event **events,
++				   int num_u,
++				   int n,
++				   unsigned long *used_mask,
++				   int *assign)
++{
++	unsigned long free_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++	struct perf_event **e = events + n - num_u;
++	int i;
++
++	/*
++	 * it is faster to stick with X86_PMC_IDX_MAX which is a
++	 * power of 2 rather than trying to limit complement to
++	 * actual number of counters
++	 */
++	bitmap_complement(free_mask, used_mask, X86_PMC_IDX_MAX);
++
++	/*
++	 * faster to use X86_PMC_IDX_MAX rather than the actual
++	 * number of counters. We bail out once all events have
++	 * been assigned anyway.
++	 */
++	for_each_set_bit(i, free_mask, X86_PMC_IDX_MAX) {
++		if (i >= x86_pmu.num_counters)
++			break;
++		if (assign)
++			assign[(*e)->hw.map_idx] = i;
++		if (--num_u == 0)
++			break;
++		e++;
++	}
++	return num_u;
++}
++
++
++int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
++{
++	struct event_constraint **c;
++	struct event_constraint *constraints[X86_PMC_IDX_MAX];
++	struct perf_event *events[X86_PMC_IDX_MAX];
++	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
++	int i;
++	int num_c = 0, num_u = 0;
++	struct hw_perf_event *hwc;
++
++	/*
++	 * collect event constraints
++	 * separate constrained vs. unconstrained events
++	 *
++	 * map_idx = actual index in event_list and assign arrays
++	 *
++	 * we add constrained events from index 0 to n
++	 * we add unconstrained events from index n - 1 to 0
++	 * that way we save stack memory by not defining two arrays
++	 */
++	for (i = 0; i < n; i++) {
++		constraints[i] =
++		    x86_pmu.get_event_constraints(cpuc, cpuc->event_list[i]);
++		if (constraints[i] != &unconstrained) {
++			events[num_c] = cpuc->event_list[i];
++			events[num_c]->hw.map_idx = i;
++			num_c++;
++		} else {
++			events[n - num_u - 1] = cpuc->event_list[i];
++			events[n - num_u - 1]->hw.map_idx = i;
++			num_u++;
+ 		}
+ 	}
++	/*
++	 * fastpath: try to reuse previous assignments
++	 */
++	for (i = 0, c = constraints; i < n; i++, c++) {
++		hwc = &cpuc->event_list[i]->hw;
++
++		/* never assigned, must go to slow path */
++		if (hwc->idx == -1)
++			break;
++
++		/* constraint still honored */
++		if (!test_bit(hwc->idx, (*c)->idxmsk))
++			break;
++
++		/* counter not already used */
++		if (test_bit(hwc->idx, used_mask))
++			break;
++
++		__set_bit(hwc->idx, used_mask);
++		if (assign)
++			assign[i] = hwc->idx;
++	}
++	/* was able to reuse every counter, we're done */
++	if (i == n) {
++		num_u = num_c = 0;
++		goto done;
++	}
++
++	/*
++	 * begin slow path
++	 */
++	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
++
++	/* schedule constrained events */
++	if (num_c)
++		num_c = x86_sched_constrained(events,
++					      num_c,
++					      constraints,
++					      n, used_mask, assign);
++
++	/* schedule unconstrained events */
++	if (num_u)
++		num_u = x86_sched_unconstrained(events,
++						num_u,
++						n, used_mask, assign);
+ done:
+ 	/*
+ 	 * scheduling failed or is just a simulation,
+ 	 * free resources if necessary
+ 	 */
+-	if (!assign || num) {
++	if (!assign || num_u || num_c) {
+ 		for (i = 0; i < n; i++) {
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, cpuc->event_list[i]);
+ 		}
+ 	}
+-	return num ? -ENOSPC : 0;
++	return num_c || num_u ? -ENOSPC : 0;
+ }
+ 
+ /*
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1e9ebe5..2605244 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -564,6 +564,7 @@ struct hw_perf_event {
+ 			int		idx;
+ 			int		last_cpu;
+ 			struct hw_perf_event_extra extra_reg;
++			int		map_idx;
+ 		};
+ 		struct { /* software */
+ 			struct hrtimer	hrtimer;
