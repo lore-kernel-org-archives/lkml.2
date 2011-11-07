@@ -1,277 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab1KGQU6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:20:58 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49685 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932714Ab1KGQRS (ORCPT
+	id S932764Ab1KGQWI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:22:08 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52857 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932651Ab1KGQWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:17:18 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 04/16] ARM: LPAE: Move the FSR definitions to separate files
-Date: Mon,  7 Nov 2011 16:16:46 +0000
-Message-Id: <1320682618-1182-5-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.4.2.g597a6
-In-Reply-To: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Nov 2011 16:17:11.0076 (UTC) FILETIME=[B41B7640:01CC9D68]
-X-MC-Unique: 111110716171601701
-Content-Type: text/plain; charset=WINDOWS-1252
+	Mon, 7 Nov 2011 11:22:06 -0500
+Date: Mon, 7 Nov 2011 08:21:59 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
+        casteyde.christian@free.fr
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+Message-ID: <20111107162159.GC13699@google.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+ <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+ <1320669279.18053.29.camel@twins>
+ <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+ <1320682230.17809.11.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320682230.17809.11.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pA7GLQ86015344
 
-The FSR structure is different with LPAE and this patch moves the
-classic MMU specific definition to a separate fsr-2level.c file that is
-included in fault.c. It also moves the fsr_fs and FSR bits to the
-fault.h file.
+Hello,
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/mm/fault.c      |   96 ++--------------------------------------------
- arch/arm/mm/fault.h      |   19 +++++++++-
- arch/arm/mm/fsr-2level.c |   78 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 100 insertions(+), 93 deletions(-)
- create mode 100644 arch/arm/mm/fsr-2level.c
+On Mon, Nov 07, 2011 at 05:10:29PM +0100, Peter Zijlstra wrote:
+> We could move the key and name pointer to the start of the structure and
+> memset everything after that, however wouldn't that leave kmemcheck with
+> the same problem? It wouldn't know those two pointers would be
+> initialized properly.
 
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index aa33949..2a02716 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -27,19 +27,6 @@
- 
- #include "fault.h"
- 
--/*
-- * Fault status register encodings.  We steal bit 31 for our own purposes.
-- */
--#define FSR_LNX_PF		(1 << 31)
--#define FSR_WRITE		(1 << 11)
--#define FSR_FS4			(1 << 10)
--#define FSR_FS3_0		(15)
--
--static inline int fsr_fs(unsigned int fsr)
--{
--	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
--}
--
- #ifdef CONFIG_MMU
- 
- #ifdef CONFIG_KPROBES
-@@ -489,55 +476,16 @@ do_bad(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	return 1;
- }
- 
--static struct fsr_info {
-+struct fsr_info {
- 	int	(*fn)(unsigned long addr, unsigned int fsr, struct pt_regs *regs);
- 	int	sig;
- 	int	code;
- 	const char *name;
--} fsr_info[] = {
--	/*
--	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
--	 * defines these to be "precise" aborts.
--	 */
--	{ do_bad,		SIGSEGV, 0,		"vector exception"		   },
--	{ do_bad,		SIGBUS,	 BUS_ADRALN,	"alignment exception"		   },
--	{ do_bad,		SIGKILL, 0,		"terminal exception"		   },
--	{ do_bad,		SIGBUS,	 BUS_ADRALN,	"alignment exception"		   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
--	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation fault"	   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
--	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section domain fault"		   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page domain fault"		   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
--	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"section permission fault"	   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
--	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"page permission fault"		   },
--	/*
--	 * The following are "imprecise" aborts, which are signalled by bit
--	 * 10 of the FSR, and may not be recoverable.  These are only
--	 * supported if the CPU abort handler supports bit 10.
--	 */
--	{ do_bad,		SIGBUS,  0,		"unknown 16"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 17"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 18"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 19"			   },
--	{ do_bad,		SIGBUS,  0,		"lock abort"			   }, /* xscale */
--	{ do_bad,		SIGBUS,  0,		"unknown 21"			   },
--	{ do_bad,		SIGBUS,  BUS_OBJERR,	"imprecise external abort"	   }, /* xscale */
--	{ do_bad,		SIGBUS,  0,		"unknown 23"			   },
--	{ do_bad,		SIGBUS,  0,		"dcache parity error"		   }, /* xscale */
--	{ do_bad,		SIGBUS,  0,		"unknown 25"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 26"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 27"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 28"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
- };
- 
-+/* FSR definition */
-+#include "fsr-2level.c"
-+
- void __init
- hook_fault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
- 		int sig, int code, const char *name)
-@@ -573,42 +521,6 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
- 	arm_notify_die("", regs, &info, fsr, 0);
- }
- 
--
--static struct fsr_info ifsr_info[] = {
--	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
--	{ do_bad,		SIGBUS,  0,		"debug event"			   },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section access flag fault"	   },
--	{ do_bad,		SIGBUS,  0,		"unknown 4"			   },
--	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation fault"	   },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page access flag fault"	   },
--	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section domain fault"		   },
--	{ do_bad,		SIGBUS,  0,		"unknown 10"			   },
--	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page domain fault"		   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
--	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"section permission fault"	   },
--	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
--	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"page permission fault"		   },
--	{ do_bad,		SIGBUS,  0,		"unknown 16"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 17"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 18"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 19"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 20"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 21"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 22"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 23"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 24"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 25"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 26"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 27"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 28"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
--	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
--};
--
- void __init
- hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
- 		 int sig, int code, const char *name)
-diff --git a/arch/arm/mm/fault.h b/arch/arm/mm/fault.h
-index 49e9e38..25b45c1 100644
---- a/arch/arm/mm/fault.h
-+++ b/arch/arm/mm/fault.h
-@@ -1,3 +1,20 @@
--void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs);
-+#ifndef __ARCH_ARM_FAULT_H
-+#define __ARCH_ARM_FAULT_H
-+
-+/*
-+ * Fault status register encodings.  We steal bit 31 for our own purposes.
-+ */
-+#define FSR_LNX_PF		(1 << 31)
-+#define FSR_WRITE		(1 << 11)
-+#define FSR_FS4			(1 << 10)
-+#define FSR_FS3_0		(15)
-+
-+static inline int fsr_fs(unsigned int fsr)
-+{
-+	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
-+}
- 
-+void do_bad_area(unsigned long addr, unsigned int fsr, struct pt_regs *regs);
- unsigned long search_exception_table(unsigned long addr);
-+
-+#endif	/* __ARCH_ARM_FAULT_H */
-diff --git a/arch/arm/mm/fsr-2level.c b/arch/arm/mm/fsr-2level.c
-new file mode 100644
-index 0000000..9260894
---- /dev/null
-+++ b/arch/arm/mm/fsr-2level.c
-@@ -0,0 +1,78 @@
-+static struct fsr_info fsr_info[] = {
-+	/*
-+	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
-+	 * defines these to be "precise" aborts.
-+	 */
-+	{ do_bad,		SIGSEGV, 0,		"vector exception"		   },
-+	{ do_bad,		SIGBUS,	 BUS_ADRALN,	"alignment exception"		   },
-+	{ do_bad,		SIGKILL, 0,		"terminal exception"		   },
-+	{ do_bad,		SIGBUS,	 BUS_ADRALN,	"alignment exception"		   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation fault"	   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on linefetch"	   },
-+	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section domain fault"		   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page domain fault"		   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
-+	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"section permission fault"	   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"page permission fault"		   },
-+	/*
-+	 * The following are "imprecise" aborts, which are signalled by bit
-+	 * 10 of the FSR, and may not be recoverable.  These are only
-+	 * supported if the CPU abort handler supports bit 10.
-+	 */
-+	{ do_bad,		SIGBUS,  0,		"unknown 16"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 17"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 18"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 19"			   },
-+	{ do_bad,		SIGBUS,  0,		"lock abort"			   }, /* xscale */
-+	{ do_bad,		SIGBUS,  0,		"unknown 21"			   },
-+	{ do_bad,		SIGBUS,  BUS_OBJERR,	"imprecise external abort"	   }, /* xscale */
-+	{ do_bad,		SIGBUS,  0,		"unknown 23"			   },
-+	{ do_bad,		SIGBUS,  0,		"dcache parity error"		   }, /* xscale */
-+	{ do_bad,		SIGBUS,  0,		"unknown 25"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 26"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 27"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 28"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
-+};
-+
-+static struct fsr_info ifsr_info[] = {
-+	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
-+	{ do_bad,		SIGBUS,  0,		"debug event"			   },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section access flag fault"	   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 4"			   },
-+	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"section translation fault"	   },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page access flag fault"	   },
-+	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"page translation fault"	   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on non-linefetch"  },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"section domain fault"		   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 10"			   },
-+	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"page domain fault"		   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
-+	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"section permission fault"	   },
-+	{ do_bad,		SIGBUS,	 0,		"external abort on translation"	   },
-+	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"page permission fault"		   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 16"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 17"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 18"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 19"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 20"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 21"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 22"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 23"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 24"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 25"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 26"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 27"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 28"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
-+	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
-+};
+At that point, lockdep_map is guaranteed to have passed through
+lockdep_init_map(), so I think it should be fine.
 
+> @@ -148,9 +148,9 @@ void clear_lock_stats(struct lock_class *class);
+>   * This is embedded into specific lock instances:
+>   */
+>  struct lockdep_map {
+> +	const char			*name;
+>  	struct lock_class_key		*key;
+>  	struct lock_class		*class_cache[NR_LOCKDEP_CACHING_CLASSES];
+> -	const char			*name;
+>  #ifdef CONFIG_LOCK_STAT
+>  	int				cpu;
+>  	unsigned long			ip;
+
+Probably fat comment explaining the ordering requirement here w/
+
+#define LOCKDEP_MAP_INIT_OFFSET		offsetof(struct lockdep_map, class_cache)
+
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index e69434b..81855cf 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2948,7 +2948,8 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+>  void lockdep_init_map(struct lockdep_map *lock, const char *name,
+>  		      struct lock_class_key *key, int subclass)
+>  {
+> -	memset(lock, 0, sizeof(*lock));
+> +	kmemcheck_mark_initialized(lock, 2*sizeof(void *));
+> +	memset(&lock->class_cache[0], 0, sizeof(*lock)-2*sizeof(void *));
+
+And something like the following?
+
+	memset((void *)lock + LOCKDEP_MAP_INIT_OFFSET, 0,
+		sizeof(*lock) - LOCKDEP_MAP_INIT_OFFSET);
+
+Thanks.
+
+-- 
+tejun
