@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab1KGFUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 00:20:40 -0500
-Received: from ozlabs.org ([203.10.76.45]:36253 "EHLO ozlabs.org"
+	id S1751767Ab1KGF3k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 00:29:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32398 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750771Ab1KGFUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 00:20:39 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-In-Reply-To: <20111106213849.GA14292@redhat.com>
-References: <1320309203.29407.1.camel@lappy> <87lirwrzlg.fsf@rustcorp.com.au> <20111104114033.GA21308@redhat.com> <1320409939.3334.6.camel@lappy> <20111104135113.GA24452@redhat.com> <1320414804.3334.13.camel@lappy> <20111104142338.GB24452@redhat.com> <1320418385.3334.25.camel@lappy> <20111106073007.GA7146@redhat.com> <1320611097.3299.10.camel@lappy> <20111106213849.GA14292@redhat.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Mon, 07 Nov 2011 15:46:23 +1030
-Message-ID: <871utktsuw.fsf@rustcorp.com.au>
+	id S1750771Ab1KGF3i convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 00:29:38 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="71715472"
+From: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+To: David Miller <davem@davemloft.net>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Sun, 6 Nov 2011 21:29:36 -0800
+Subject: Re: linux-next: build failure after merge of the origin tree
+Thread-Topic: linux-next: build failure after merge of the origin tree
+Thread-Index: AcydDjzzNn/sMOVzTpeMq++Cpu1Xow==
+Message-ID: <EAE7BD3E-8965-47A4-B3CA-01686E2602C2@intel.com>
+References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
+ <20111106.205259.1237400984015921904.davem@davemloft.net>
+ <20111107134706.3e7fc633f913b5e155153127@canb.auug.org.au>
+ <20111106.223619.1348742215191441592.davem@davemloft.net>
+In-Reply-To: <20111106.223619.1348742215191441592.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Nov 2011 23:38:49 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Sun, Nov 06, 2011 at 10:24:57PM +0200, Sasha Levin wrote:
-> > On Sun, 2011-11-06 at 09:30 +0200, Michael S. Tsirkin wrote:
-> > > On Fri, Nov 04, 2011 at 04:53:05PM +0200, Sasha Levin wrote:
-> > > > > I guess my assumption is that most options will be in use,
-> > > > > not discarded dead-ends.
-> > > > 
-> > > > I don't know about that. 64 bit features would be pretty rare for now -
-> > > > and I don't think that setting the alignment will be also enabled by
-> > > > default.
 
-The truth is somewhere between.  New features tend to be used, and
-importantly, they have to be offered.
 
-Anyway, the *per-device* config part will be contiguous.  So we're
-talking about pci-specific features.
+Cheers,
+Jeff
 
-So far, the only three things make sense to have in a capability list:
-MSI-X, the upper 32 feature bits, and the per-device config.
+On Nov 6, 2011, at 19:38, "David Miller" <davem@davemloft.net> wrote:
 
-Thanks,
-Rusty.
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 7 Nov 2011 13:47:06 +1100
+> 
+>>> If you just revert the commit in origin from -next, then you will get
+>>> conflicts with you pull the net.git tree in.
+>> 
+>> I got no conflicts when I merged in the net tree and can see no fix for
+>> this problem in the net tree.  My current head of the net tree is 1a6422f
+>> "etherh: Add MAINTAINERS entry for etherh".
+> 
+> Ok, Jeff please take a look at this and send me a fix soon.
+> 
+> Thanks.
+
+Ok Dave, at this point, I am puttying together a patch to revert this fix since it appears that more trouble comes with this fix.  I will take a look at it quickly before sending out a patch to fix the issue.
