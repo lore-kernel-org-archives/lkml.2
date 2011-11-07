@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967Ab1KGT5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:57:40 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22297 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348Ab1KGT5j convert rfc822-to-8bit (ORCPT
+	id S1754094Ab1KGT6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:58:12 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65228 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab1KGT6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:57:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="71956030"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>
-Date: Mon, 7 Nov 2011 11:57:37 -0800
-Subject: RE: [PATCH 7/9] x86/topology.c: Support functions for BSP
- online/offline
-Thread-Topic: [PATCH 7/9] x86/topology.c: Support functions for BSP
- online/offline
-Thread-Index: Acyb/9LsOrTbarqIT/CTAK3HpRGCygBhs9XA
-Message-ID: <493994B35A117E4F832F97C4719C4C040194B7C59B@orsmsx505.amr.corp.intel.com>
-References: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
- <1320444241-834-8-git-send-email-fenghua.yu@intel.com>
- <4EB5A705.4030008@linux.vnet.ibm.com>
-In-Reply-To: <4EB5A705.4030008@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Nov 2011 14:58:10 -0500
 MIME-Version: 1.0
+In-Reply-To: <874nygu3cd.fsf@rustcorp.com.au>
+References: <467be983bed865e1b772136ed488f9ff@localhost>
+	<874nygu3cd.fsf@rustcorp.com.au>
+Date: Mon, 7 Nov 2011 11:58:08 -0800
+Message-ID: <CAJiQ=7D4SSzzkPpPMGnaTq-wZXUGmXCRfKhYdPFg7APDu+VTwA@mail.gmail.com>
+Subject: Re: [PATCH] module: Fix performance regression on modules with large
+ symbol tables
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+        Jan Beulich <JBeulich@novell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static int bsp_hotpluggable;
-> > +
-> > +static int __init enable_bsp_hotplug(char *str)
-> > +{
-> > +	bsp_hotpluggable = 1;
-> > +	return 0;
-> 
-> Any reason why you return 0 here? Most code I have seen similar to this,
-> return 1. I understand that anything declared using early_param() would
-> generate a warning if it returns non-zero, but I am not exactly sure
-> about how it behaves with __setup(). Kindly give this some thought.
+On Sun, Nov 6, 2011 at 5:29 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> I see you honored Jan's original patch by leaving it mysterious and
+> undocumented.  I was totally confused by your patch.
 
-You're right. This function should return 1 here. The parameter setup function returns 1 for success and 0 for failure. The return value is checked in obsolete_checksetup():
-                        } else if (p->setup_func(line + n))
-                                return 1;
+Sorry - was just trying to mimic the existing level of verbosity.
 
-I will change this return value to 1 in the next version of the patch set.
+> But I don't think it quite works in general.  gcc is allowed to
+> compact the strtab itself, eg with two names "foobar" and "bar", it
+> can reuse the tail of the first strtab entry.  It may not yet, but it
+> could.
 
-BTW, some places in the current upstream do return 0 for success and return an error number for failure. Maybe we need to clean up them.
+Well, sure enough, libbfd's elf-strtab.c is advertised as:
+
+/* ELF strtab with GC and suffix merging support. */
+
+The function that performs the suffix merging is
+_bfd_elf_strtab_finalize().  For some reason this only seems to get
+called for .shstrtab (or .dynstr), not for the larger .strtab .  And I'm
+not sure why this would be useful for .shstrtab, since the section names
+usually start with '.'.  I guess it might save a few dozen bytes for
+cases like .init.data or .exit.text .
+
+But as you said, there is nothing keeping the binutils maintainers from
+extending this to .strtab in the future.
+
+One thing I noticed when making a test case was that the earliest entry
+in the section table doesn't necessarily pick the longest substring:
+
+  [ 1] .text             PROGBITS         0000000000000000  00000040
+       0000000000000006  0000000000000000  AX       0     0     4
+  [ 2] .data             PROGBITS         0000000000000000  00000048
+       0000000000000000  0000000000000000  WA       0     0     4
+  [ 3] .bss              NOBITS           0000000000000000  00000048
+       0000000000000000  0000000000000000  WA       0     0     4
+  [ 4] a_                PROGBITS         0000000000000000  00000048
+       0000000000000006  0000000000000000  AX       0     0     1
+  [ 5] fedcba_           PROGBITS         0000000000000000  0000004e
+       0000000000000006  0000000000000000  AX       0     0     1
+  [ 6] cba_              PROGBITS         0000000000000000  00000054
+       0000000000000006  0000000000000000  AX       0     0     1
+
+Hex dump of section '.shstrtab':
+  0x00000000 002e7379 6d746162 002e7374 72746162 ..symtab..strtab
+  0x00000010 002e7368 73747274 6162002e 74657874 ..shstrtab..text
+  0x00000020 002e6461 7461002e 62737300 67666564 ..data..bss.gfed
+  0x00000030 6362615f 002e636f 6d6d656e 74002e6e cba_..comment..n
+  0x00000040 6f74652e 474e552d 73746163 6b002e72 ote.GNU-stack..r
+  0x00000050 656c612e 65685f66 72616d65 00       ela.eh_frame.
+
+So, the first entry referencing "gfedcba_" has sh_name 0x32 ("a_").
+
+The second entry referencing "gfedcba_" has sh_name 0x2d ("fedcba_").
+
+The third entry referencing "gfedcba_" has sh_name 0x30 ("cba_").
+
+If the same holds true for .symtab, this means we probably need to
+change the logic to "backtrack" to the beginning of the string before
+copying it into core_strtab, because a subsequent symtab entry could
+reference a larger chunk of the string.
+
+We will also want to check the strmap bits, since it's possible that
+"cba_" was a core symbol but "edcba_" is not.  In which case we did not
+allocate room for the "ed" part, back in layout_symtab().
+
+> I've started a separate patch to add comments to all this.
+
+Not sure how you want to handle combining these changes?
+
+I'll just send a V2 that rolls in all of the desired modifications, if
+there are no objections...
 
 Thanks.
-
--Fenghua
-
