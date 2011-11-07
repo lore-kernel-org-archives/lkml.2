@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab1KGXGq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:06:46 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56849 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab1KGXGo convert rfc822-to-8bit (ORCPT
+	id S1754518Ab1KGXHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:07:14 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:52736 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab1KGXHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:06:44 -0500
+	Mon, 7 Nov 2011 18:07:13 -0500
+Date: Tue, 8 Nov 2011 00:07:12 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+Message-ID: <20111107230712.GA25769@tango.0pointer.de>
+References: <1320614101.3226.5.camel@offbook>
+ <20111107112952.GB25130@tango.0pointer.de>
+ <1320675607.2330.0.camel@offworld>
+ <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
+ <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
+ <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20111107151939.GA24234@thunk.org>
-References: <1320674511-1980-1-git-send-email-linkinjeon@gmail.com>
-	<20111107151939.GA24234@thunk.org>
-Date: Tue, 8 Nov 2011 08:06:43 +0900
-Message-ID: <CAKYAXd_u813Q0k1iMMnfwORxXYDEBtpaKMig1FGBOKpNW3s3rg@mail.gmail.com>
-Subject: Re: [PATCH v2] ext4: fix NULL pointer dereference from orig_data in
- fill_super and remount.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/8 Ted Ts'o <tytso@mit.edu>:
-> On Mon, Nov 07, 2011 at 11:01:51PM +0900, Namjae Jeon wrote:
->> Fix NULL pointer dereference from orig_data in fill_super and remount.
->>
->> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
->
-> Um, did you even try to test this patch before submitting it?
->
-> #1:   kstrdup() return NULL if data is NULL
->
-> #2:  The kernel's printk and sprintf functions will translate
->     sprintf(buf, "%s", NULL) by filling in the string "NULL"
->
-> #3:  The only use of orig_data is a cosmetic one, of printing out
->     the mount options which are passed in.
->
-> #4:  If the user doesn't specify any mount options, data is NULL, and
->     your patch would cause those mounts to fail with ENOMEM.
->
-> In summary, there is no problem here; a pendant might complain that
-> it's possible for data to be non-NULL, and for orig_data to be null of
-> the kstrdup failed, but in that case, other memory allocations done
-> later in ext4_fill_super() will almost have certainly failed, so in
-> practice won't get as far as the printk.
-Hi. Ted.
-Sorry, I will make a patch next time after testing. Thanks for your review.
-And I checked how to handle this case in other filesystem.
+On Mon, 07.11.11 22:53, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
 
-btrfs try to handle like this.
-------------------------------------------------------------------------------
-	if (!options)
-		goto out;
+> Per user would be quota, per process would be rlimit. Quite simple
+> really, nice standard interfaces we've had for years. Various systems
 
-	/*
-	 * strsep changes the string, duplicate it because parse_options
-	 * gets called twice
-	 */
-	opts = kstrdup(options, GFP_KERNEL);
-	if (!opts)
-		return -ENOMEM;
--------------------------------------------------------------------------------
+Uh, have you ever really looked at resource limits? Some of them are
+per-user, not per-process, i.e. RLIMIT_NPROC. And this would just be
+another one.
 
-So I suggest that ext4 try to handle like this.
--------------------------------------------------------------------------------
-        if(data) {
-                orig_data = kstrdup(data, GFP_KERNEL);
-                if(!orig_data)
-                        return ret;
-        }
--------------------------------------------------------------------------------
-I want to know your opinion.
-Thanks.
->
->                                        - Ted
->
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
