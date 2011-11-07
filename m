@@ -1,126 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab1KGQrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:47:17 -0500
-Received: from imr-da04.mx.aol.com ([205.188.105.146]:37467 "EHLO
-	imr-da04.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932668Ab1KGQrQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:47:16 -0500
-X-Greylist: delayed 493 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Nov 2011 11:47:16 EST
-Message-Id: <201111071638.pA7Gc3gK017141@imr-da04.mx.aol.com>
-Reply-To: <abubakara65@skymail.mn>
-From: "Abu Bakara" <fcybnormal@aol.com>
-Subject: Payment Alert
-Date: Mon, 7 Nov 2011 15:36:17 -0800
+	id S932807Ab1KGQvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:51:23 -0500
+Received: from imr4.ericy.com ([198.24.6.9]:44912 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755625Ab1KGQvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:51:21 -0500
+Subject: Re: [PATCH] hwmon: lm63: Add support for the NatSemi LM96163.
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
+References: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Mon, 7 Nov 2011 08:49:26 -0800
+Message-ID: <1320684566.2309.115.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0049_01C2A9A6.14A21B8C"
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-AOL-VSS-INFO: 5400.1158/75920
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:261432272:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-global-disposition: G
-X-AOL-VSS-INFO: 5400.1158/75920
-X-AOL-VSS-CODE: clean
-X-AOL-SCOLL-SCORE: 0:2:296448896:93952408  
-X-AOL-SCOLL-URL_COUNT: 0  
-x-aol-sid: 3039ac1d33854eb8097163a9
-To: unlisted-recipients:; (no To-header on input)
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi,
 
-------=_NextPart_000_0049_01C2A9A6.14A21B8C
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
+On Mon, 2011-11-07 at 05:20 -0500, Thierry Reding wrote:
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  drivers/hwmon/lm63.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
+> index 508cb29..94e373c 100644
+> --- a/drivers/hwmon/lm63.c
+> +++ b/drivers/hwmon/lm63.c
+> @@ -483,7 +483,7 @@ static int lm63_detect(struct i2c_client *new_client,
+>  		return -ENODEV;
+>  	}
+>  
+> -	if (chip_id == 0x41 && address == 0x4c)
+> +	if ((chip_id == 0x41 || chip_id == 0x49) && address == 0x4c)
+>  		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
+>  	else if (chip_id == 0x51 && (address == 0x18 || address == 0x4e))
+>  		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
 
-Attn:
+Minor - the new chip should be mentioned in drivers/hwmon/Kconfig and in
+Documentation/hwmon/lm63.
 
-Read through the message attached and promptly reply
+My main concern is that LM96163 supports a high resolution PWM mode.
+Since that mode is much more convenient than the LM63-compatible mode, I
+think it is likely to be enabled in designs using LM96163, and it should
+be supported by the driver if we add support for LM96163.
 
-------=_NextPart_000_0049_01C2A9A6.14A21B8C
-Content-Type: application/octet-stream;
-	name="message from bakara.rtf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
-	filename="message from bakara.rtf"
+Thanks,
+Guenter
 
-e1xydGYxXGFuc2lcYW5zaWNwZzEyNTJcZGVmZjBcZGVmbGFuZzEwMzN7XGZv
-bnR0Ymx7XGYwXGZzd2lzc1xmY2hhcnNldDAgQXJpYWw7fX0NCntcKlxnZW5l
-cmF0b3IgTXNmdGVkaXQgNS40MS4yMS4yNTA5O31cdmlld2tpbmQ0XHVjMVxw
-YXJkXGYwXGZzMjAgRlJPTSBUSEUgREVTSyBPRjogTVIgQUJVIEJBS0FSQVxw
-YXINCkNISUVGIEFDQ09VTlRBTlQgT0ZGSUNFUlxwYXINCkZFREVSQUwgTUlO
-SVNUUlkgT0YgUEVUUk9MVUVNIFJFU09VUkNFUyhGLk0uUC5SKVxwYXINCkxB
-R09TIE5JR0VSSUEuXHBhcg0KXHBhcg0KQVRUTjogU0lSL01BREFNLFxwYXIN
-CiBccGFyDQogICAgICAgICAgICAgICAgICAgICAgICAgWU9VUiBVUkdFTlQg
-QVNTSVNUQU5UXHBhcg0KIFxwYXINCkkgYW0gTVIgQUJVIEJBS0FSQSwgQ2hp
-ZWYgYWNjb3VudGFudCBPZmZpY2VyIEZlZGVyYWwgTWluaXN0cnkgb2YgcGV0
-cm9sZXVtIFJlc291cmNlcyAoTVBSKSBhbmQgYSBtZW1iZXIgb2YgYSB0aHJl
-ZS1tYW4gVGVuZGVyIEJvYXJkIGluIGNoYXJnZSBvZiBjb250cmFjdCByZXZp
-ZXcgYW5kIHBheW1lbnQgYXBwcm92YWxzIG9mIGFsbCBjb250cmFjdCBhd2Fy
-ZGVkIGJ5IHRoZSBOaWdlcmlhIE5hdGlvbmFsIFBldHJvbGV1bSBDby1vcGVy
-YXRpb24uXHBhcg0KXHBhcg0KRHVyaW5nIG9uZSBvZiB0aGUgc2l0dGluZywg
-aSBNciBBYnUgQmFrYXJhIGRpc2NvdmVyZWQgdGhhdCwgYSBjb250cmFjdCB3
-aGljaCB3YXMgYXdhcmRlZCB0byBvbmUgb2YgQW1lcmljYSBGaXJtIHdhcyBv
-dmVyIGludm9pY2VkIHRvIHRoZSBzdW0gb2YgVVMkMTguNk0gQW1lcmljYSBE
-b2xsYXJzIGFuZCBpdCBoYXZlIGJlZW4gZGVsaWJlcmF0ZWx5IGFwcHJvdmVk
-IGZvciBwYXltZW50IGJ5IHRoZSBjb21taXR0ZWUgd2hpY2ggYW0gdGhlIGhl
-YWQuXHBhcg0KXHBhcg0KQ29uc2VxdWVudGx5LCBteSBjb2xsZWFndWVzIGFu
-ZCBJIGFyZSB3aWxsaW5nIHRvIHRyYW5zZmVyIHRoZSB0b3RhbCBhbW91bnQg
-dG8geW91ciBhY2NvdW50IGZvciBzdWJzZXF1ZW50IGRpc2J1cnNlbWVudCBz
-aW5jZSB3ZSBhcmUgQ2l2aWwgU2VydmFudCBhbmQgYXJlIHByb2hpYml0ZWQg
-YnkgdGhlIENvZGUgb2YgQ29uZHVjdCBCdXJlYXUgKENpdmlsIFNlcnZhbnQg
-TGF3cykgZnJvbSBvcGVuaW5nL29wZXJhdGluZyBmb3JlaWduIGFjY291bnQg
-aW4gb3VyIG5hbWVzLiBOZWVkbGVzcyB0byBzYXksIHRoZSB0cnVzdCBwb3Nl
-ZCBvbiB5b3UgYXQgdGhpcyBqdW5jdHVyZSBpcyBlbm9ybW91cy5ccGFyDQpc
-cGFyDQpJbiB2aWV3IG9mIHRoaXMsIHdlIHVyZ2VudGx5IHJlcXVpcmVkIHlv
-dSB0byBraW5kbHkgYXNzaXN0IHVzIGJ5IHByb3ZpZGluZyB0aGUgZm9sbG93
-aW5nIHRvIGhlbHAgdXMgZmFjaWxpdGF0ZSB0aGUgc21vb3RoIHRyYW5zZmVy
-IG9mIHRoaXMgZnVuZCB0byB5b3VyIHBlcnNvbmFsL2NvbXBhbnkgYWNjb3Vu
-dC5ccGFyDQpccGFyDQpUaGUgaW5mb3JtYXRpb24gcmVxdWlyZWQgYXJlIGFz
-IGZvbGxvd3M6XHBhcg0KXHBhcg0KWU9VUiBGVUxMLCBZT1VSIENPTlRBQ1Qg
-QUREUkVTUywgWU9VUiBURUxFUEhPTkUgTlVNQkVSIEFORCBBIENPUFkgT0Yg
-WU9VUiBJREVOVElGSUNBVElPTi5ccGFyDQpccGFyDQpXaXRoIHRoZXNlLCB3
-ZSB3aWxsIHNlY3VyZSBhbGwgbmVjZXNzYXJ5IGRvY3VtZW50cyBhbmQgcHVy
-cG9ydCB5b3UgYXMgdGhlIG9yaWdpbmFsIG93bmVyIG9mIHRoZSBmdW5kLCBu
-b3RlIHRoYXQgdGhlIHBheW1lbnQgd2lsbCBiZSB0aHJvdWdoIE5pZ2VyaWEg
-TmF0aW9uYWwgUGV0cm9sZXVtIENvLW9wZXJhdGlvbiAoTk5QQykgb2ZmIHNo
-b3JlIGFjY291bnQgaW4gb25lIG9mIHRoZSBjb21tZXJjaWFsIGJhbmsgaW4g
-VU5JVEVEIEtJTkdET00gKFVLKS4gICBccGFyDQpccGFyDQpJbiByZXR1cm4s
-IHdlIGhhdmUgYWdyZWVkIHRvIG9mZmVyIHlvdSAzMCUgb2YgdGhlIHRyYW5z
-ZmVycmVkIHN1bSB3aGlsZSAxMCUgc2hhbGwgYmUgc2V0IGFzaWRlIGZvciBh
-Y2NpZGVudGFsIGV4cGVuc2VzIChJbnRlcm5hbCAmIEV4dGVybmFsKSBiZXR3
-ZWVuIHRoZSBwYXJ0aWVzIGluIHRoZSBjb3Vyc2Ugb2YgdGhlIHRyYW5zZmVy
-LiBXZSB3aWxsIG1hbmRhdGUgeW91IHRvIGRyYXcgdXAgYW4gaW52ZXN0bWVu
-dCBwbGFuIGZvciB1cyBvZiB3aGljaCB5b3Ugd2lsbCBjb250cm9sIHNpbmNl
-IHdlIGNhbm5vdCBicmluZyBvdXIgc2hhcmVzIGJhY2sgdG8gTmlnZXJpYS4g
-V2UgYXJlIHZlcnkgaW50ZXJlc3RlZCBpbiBpbnZlc3RpbmcgaW4gcmVhbCBl
-c3RhdGUgT1IgYW55IG90aGVyIGJ1c2luZXNzIHdoaWNoIGZhc3QgbW92aW5n
-IGluIHlvdXIgY291bnRyeS4gWW91IG11c3QgaG93ZXZlciBub3RlIHRoYXQg
-dGhpcyB0cmFuc2FjdGlvbiBpcyBzdWJqZWN0ZWQgdG8gdGhlIGZvbGxvd2lu
-ZyB0ZXJtcyBhbmQgY29uZGl0aW9uczpccGFyDQpccGFyDQoxLiBPdXIgY29u
-dmljdGlvbiBvZiB5b3VyIHRyYW5zcGFyZW50IGhvbmVzdHkgYW5kIGRpbGln
-ZW5jZS5ccGFyDQogXHBhcg0KMi4gVGhhdCB5b3Ugd2lsbCB0cmVhdCB0aGlz
-IHRyYW5zYWN0aW9uIHdpdGggdXRtb3N0IHNlY3JlY3kgYW5kIGNvbmZpZGVu
-dGlhbGl0eSBiZWNhdXNlIG9mIHRoZSBjaXJjdW1zdGFuY2VzIHdlIG5vdyBm
-aW5kIG91cnNlbHZlc1xwYXINClxwYXINCk91ciBhc3N1cmFuY2UgaXMgdGhh
-dCB5b3VyIHJvbGUgaXMgMTAwJSByaXNrIGZyZWUuIFRvIGFjY29yZCB0aGlz
-IHRyYW5zYWN0aW9uLCB0aGUgbGVnYWxpdHkgaXQgZGVzZXJ2ZXMgYW5kIGZv
-ciBtdXR1YWwgc2VjdXJpdHkgb2YgdGhlIHBhcnRpZXMgaW52b2x2ZWQgYW5k
-IHRoZSBmdW5kcywgdGhlIHdob2xlIGFwcHJvdmFsIHByb2NlZHVyZXMgd2ls
-bCBiZSBvZmZpY2lhbGx5IGFuZCBsZWdhbGx5IHByb2Nlc3NlZCB3aXRoIHlv
-dXIgbmFtZSBvciB0aGUgbmFtZSBvZiB5b3VyIGNvbXBhbnkgeW91IG1heSBu
-b21pbmF0ZSBhcyB0aGUgQm9uYWZpZGUgYmVuZWZpY2lhcnkuXHBhcg0KXHBh
-cg0KUGxlYXNlLCBjb250YWN0IG1lIGFzIHNvb24gYXMgcG9zc2libGUuXHBh
-cg0KIFxwYXINCkJlc3QgcmVnYXJkcyxccGFyDQogXHBhcg0KTVIgQUJVIEJB
-S0FSQVxwYXINCn0NCgA=
 
-------=_NextPart_000_0049_01C2A9A6.14A21B8C--
