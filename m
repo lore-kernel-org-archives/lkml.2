@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab1KGN1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 08:27:40 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:48587 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754377Ab1KGN1j (ORCPT
+	id S932488Ab1KGN22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 08:28:28 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:47112 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab1KGN20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 08:27:39 -0500
-Date: Mon, 7 Nov 2011 21:26:02 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH 4/4] lockdep: fix race condition in
- __lock_set_class()
-Message-ID: <20111107132602.GA2783@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
- <1320398790-21663-5-git-send-email-yong.zhang0@gmail.com>
- <1320669054.18053.25.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1320669054.18053.25.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 7 Nov 2011 08:28:26 -0500
+Subject: [PATCH] [TRIVIAL] Documentation: 53c700: drop never defined
+ (Kconfig) macros
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Nov 2011 14:28:22 +0100
+Message-ID: <1320672502.14409.352.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 01:30:54PM +0100, Peter Zijlstra wrote:
-> On Fri, 2011-11-04 at 17:26 +0800, Yong Zhang wrote:
-> > When someone call lock_set_class() with valid key, nothing
-> > protect the initializing of 'lockdep_map'; thus could lead
-> > to flase positive warning from lockdep (such as "key not in
-> > .data!"). This patch cure that potential issue.
-> 
-> How? that warning is triggered of the lock_class_key * passed into
-> lockdep_init_map and is unrelated to the actual content of the
-> lockdep_map.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ Documentation/scsi/53c700.txt |   21 +--------------------
+ 1 files changed, 1 insertions(+), 20 deletions(-)
 
-Oh, my fault, the false positive warning could be "non-static key".
+diff --git a/Documentation/scsi/53c700.txt b/Documentation/scsi/53c700.txt
+index 0da681d..e31aceb 100644
+--- a/Documentation/scsi/53c700.txt
++++ b/Documentation/scsi/53c700.txt
+@@ -16,32 +16,13 @@ fill in to get the driver working.
+ Compile Time Flags
+ ==================
+ 
+-The driver may be either io mapped or memory mapped.  This is
+-selectable by configuration flags:
+-
+-CONFIG_53C700_MEM_MAPPED
+-
+-define if the driver is memory mapped.
+-
+-CONFIG_53C700_IO_MAPPED
+-
+-define if the driver is to be io mapped.
+-
+-One or other of the above flags *must* be defined.
+-
+-Other flags are:
++A compile time flag is:
+ 
+ CONFIG_53C700_LE_ON_BE
+ 
+ define if the chipset must be supported in little endian mode on a big
+ endian architecture (used for the 700 on parisc).
+ 
+-CONFIG_53C700_USE_CONSISTENT
+-
+-allocate consistent memory (should only be used if your architecture
+-has a mixture of consistent and inconsistent memory).  Fully
+-consistent or fully inconsistent architectures should not define this.
+-
+ 
+ Using the Chip Core Driver
+ ==========================
+-- 
+1.7.4.4
 
-But seems we should find the right direction for this bug :)
-Some comments in replies to patch#1.
 
-Thanks,
-Yong
+
