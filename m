@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab1KGUtM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:49:12 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47390 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab1KGUtK (ORCPT
+	id S1753176Ab1KGUwy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:52:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45748 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1KGUww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:49:10 -0500
-Date: Mon, 7 Nov 2011 20:48:39 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matt Fleming <matt@console-pimps.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Huang Ying <huang.ying.caritas@gmail.com>,
+	Mon, 7 Nov 2011 15:52:52 -0500
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] x86, efi: Calling __pa() with an ioremap'd address
- is invalid
-Message-ID: <20111107204839.GA28261@srcf.ucam.org>
-References: <1320680088-2584-1-git-send-email-matt@console-pimps.org>
- <20111107202324.GA27515@srcf.ucam.org>
- <4EB8413D.6030500@zytor.com>
- <20111107203752.GA27875@srcf.ucam.org>
- <4EB8436B.20603@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB8436B.20603@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Subject: [PATCH v2 0/7] Additional ALPS touchpad protocol support
+Date: Mon,  7 Nov 2011 14:52:33 -0600
+Message-Id: <1320699160-28492-1-git-send-email-seth.forshee@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 12:45:31PM -0800, H. Peter Anvin wrote:
-> On 11/07/2011 12:37 PM, Matthew Garrett wrote:
-> > On Mon, Nov 07, 2011 at 12:36:13PM -0800, H. Peter Anvin wrote:
-> > 
-> >> Yes, I think it makes a lot of sense.  If we need to introduce new
-> >> meta-types to deal with the fact that there are EFI types that don't map
-> >> to E820, then so be it... and this is *exactly* why we want the EFI
-> >> setup stub to be part of the kernel image and not off in a separate
-> >> bootloader, requiring a stable interface...
-> > 
-> > I don't disagree, it's just going to be an absolute pain to manage that 
-> > in a secure boot world.
-> 
-> Could you clarify, please?
+Minor updates to previous patches to address review comments and to
+rebase onto ALPS driver changes in 3.2.
 
-If the kernel is able to call boot services then the kernel needs to be 
-signed. If it's all handled by the bootloader then the bootloader can be 
-signed and the kernel doesn't have to be. Depends which one people 
-update more, I guess.
+Changes since v1:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+ - Changed to use stack-allocated buffer instead of kmalloced buffer in
+   alps_poll.
+ - Rebased onto alps.c changes merged in 3.2 merge window, changing all
+   debug and error messages to use psmouse_* print statements.
+
+Seth Forshee (7):
+      Input: ALPS - Move protocol information to Documentation
+      Input: psmouse - Add PSMOUSE_CMD_RESET_WRAP
+      Input: ALPS - Add protocol version field in alps_model_info
+      Input: ALPS - Remove assumptions about packet size
+      Input: ALPS - Add support for protocol versions 3 and 4
+      Input: ALPS - Add semi-MT support for v3 protocol
+      Input: ALPS - Add documentation for protocol versions 3 and 4
+
+ Documentation/input/alps.txt  |  188 ++++++++
+ drivers/input/mouse/alps.c    | 1036 +++++++++++++++++++++++++++++++++++++----
+ drivers/input/mouse/alps.h    |   19 +
+ drivers/input/mouse/psmouse.h |    1 +
+ 4 files changed, 1163 insertions(+), 81 deletions(-)
+ create mode 100644 Documentation/input/alps.txt
