@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab1KGJzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 04:55:54 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46432 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab1KGJzw (ORCPT
+	id S1753395Ab1KGJ4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 04:56:08 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48775 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab1KGJ4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 04:55:52 -0500
-Subject: [RFC PATCH v4 04/10] fadump: Initialize elfcore header and add
-	PT_LOAD program headers.
+	Mon, 7 Nov 2011 04:56:04 -0500
+Subject: [RFC PATCH v4 05/10] fadump: Convert firmware-assisted cpu state dump
+	data into elf notes.
 To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -17,431 +17,547 @@ Cc: Amerigo Wang <amwang@redhat.com>, Ananth Narayan <ananth@in.ibm.com>,
         Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
         Anton Blanchard <anton@samba.org>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 07 Nov 2011 15:25:44 +0530
-Message-ID: <20111107095544.1997.56126.stgit@mars.in.ibm.com>
+Date: Mon, 07 Nov 2011 15:25:53 +0530
+Message-ID: <20111107095553.1997.68645.stgit@mars.in.ibm.com>
 In-Reply-To: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
 References: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
 User-Agent: StGit/0.15-1-ged5e-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 11110623-5140-0000-0000-0000002C76BF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-Build the crash memory range list by traversing through system memory during
-the first kernel before we register for firmware-assisted dump. After the
-successful dump registration, initialize the elfcore header and populate
-PT_LOAD program headers with crash memory ranges. The elfcore header is
-saved in the scratch area within the reserved memory. The scratch area starts
-at the end of the memory reserved for saving RMR region contents. The
-scratch area contains fadump crash info structure that contains magic number
-for fadump validation and physical address where the eflcore header can be
-found. This structure will also be used to pass some important crash info
-data to the second kernel which will help second kernel to populate ELF core
-header with correct data before it gets exported through /proc/vmcore. Since
-the firmware preserves the entire partition memory at the time of crash the
-contents of the scratch area will be preserved till second kernel boot.
-
-NOTE: The current design implementation does not address a possibility of
-introducing additional fields (in future) to this structure without affecting
-compatibility. It's on TODO list to come up with better approach to
-address this.
-
-Reserved dump area start => +-------------------------------------+
-                            |  CPU state dump data                |
-                            +-------------------------------------+
-                            |  HPTE region data                   |
-                            +-------------------------------------+
-                            |  RMR region data                    |
-Scratch area start       => +-------------------------------------+
-                            |  fadump crash info structure {      |
-                            |     magic nummber                   |
-                     +------|---- elfcorehdr_addr                 |
-                     |      |  }                                  |
-                     +----> +-------------------------------------+
-                            |  ELF core header                    |
-Reserved dump area end   => +-------------------------------------+
+When registered for firmware assisted dump on powerpc, firmware preserves
+the registers for the active CPUs during a system crash. This patch reads
+the cpu register data stored in Firmware-assisted dump format (except for
+crashing cpu) and converts it into elf notes and updates the PT_NOTE program
+header accordingly. The exact register state for crashing cpu is saved to
+fadump crash info structure in scratch area during crash_fadump() and read
+during second kernel boot.
 
 Change in v4:
-- Move the init_elfcore_header() function and 'memblock_num_regions' macro
-  from generic code to power specific code as these are used only by
-  firmware assisted dump implementation which is power specific feature.
+- Fixes a issue where memblock_free() is invoked from build_cpu_notes()
+  function during error_out path. Invoke cpu_notes_buf_free() in error_out
+  path instead of memblock_free().
+
+Change in v2:
+- Moved the crash_fadump() invocation from generic code to panic notifier.
+- Introduced cpu_notes_buf_alloc() function to allocate cpu notes buffer
+  using get_free_pages(). The reason is, with the use of subsys_initcall
+  the setup_fadump() is now called after mem_init(). Hence use of
+  get_free_pages() to allocate memory is more approriate then using
+  memblock_alloc().
 
 Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 ---
- arch/powerpc/include/asm/fadump.h |   43 +++++++
- arch/powerpc/kernel/fadump.c      |  235 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 276 insertions(+), 2 deletions(-)
+ arch/powerpc/include/asm/fadump.h  |   43 +++++
+ arch/powerpc/kernel/fadump.c       |  312 ++++++++++++++++++++++++++++++++++++
+ arch/powerpc/kernel/setup-common.c |    8 +
+ arch/powerpc/kernel/traps.c        |    5 +
+ 4 files changed, 366 insertions(+), 2 deletions(-)
 
 diff --git a/arch/powerpc/include/asm/fadump.h b/arch/powerpc/include/asm/fadump.h
-index 3b2f8cc..ced923a 100644
+index ced923a..0c14097 100644
 --- a/arch/powerpc/include/asm/fadump.h
 +++ b/arch/powerpc/include/asm/fadump.h
-@@ -37,6 +37,12 @@
-  */
- #define MIN_BOOT_MEM	((RMR_END < (0x1UL << 28)) ? (0x1UL << 28) : RMR_END)
+@@ -59,6 +59,18 @@
+ /* Dump status flag */
+ #define FADUMP_ERROR_FLAG	0x2000
  
-+#define memblock_num_regions(memblock_type)	(memblock.memblock_type.cnt)
++#define FADUMP_CPU_ID_MASK	((1UL << 32) - 1)
 +
-+#ifndef ELF_CORE_EFLAGS
-+#define ELF_CORE_EFLAGS 0
-+#endif
++#define CPU_UNKNOWN		(~((u32)0))
 +
- /* Firmware provided dump sections */
- #define FADUMP_CPU_STATE_DATA	0x0001
- #define FADUMP_HPTE_REGION	0x0002
-@@ -50,6 +56,9 @@
- #define FADUMP_UNREGISTER	2
- #define FADUMP_INVALIDATE	3
- 
-+/* Dump status flag */
-+#define FADUMP_ERROR_FLAG	0x2000
++/* Utility macros */
++#define SKIP_TO_NEXT_CPU(reg_entry)			\
++({							\
++	while (reg_entry->reg_id != REG_ID("CPUEND"))	\
++		reg_entry++;				\
++	reg_entry++;					\
++})
 +
  /* Kernel Dump section info */
  struct fadump_section {
  	u32	request_flag;
-@@ -103,6 +112,7 @@ struct fw_dump {
- 	/* cmd line option during boot */
+@@ -113,6 +125,9 @@ struct fw_dump {
  	unsigned long	reserve_bootvar;
  
-+	unsigned long	fadumphdr_addr;
+ 	unsigned long	fadumphdr_addr;
++	unsigned long	cpu_notes_buf;
++	unsigned long	cpu_notes_buf_size;
++
  	int		ibm_configure_kernel_dump;
  
  	unsigned long	fadump_enabled:1;
-@@ -111,6 +121,39 @@ struct fw_dump {
- 	unsigned long	dump_registered:1;
+@@ -137,13 +152,40 @@ static inline u64 str_to_u64(const char *str)
+ 	return val;
+ }
+ #define STR_TO_HEX(x)	str_to_u64(x)
++#define REG_ID(x)	str_to_u64(x)
+ 
+ #define FADUMP_CRASH_INFO_MAGIC		STR_TO_HEX("FADMPINF")
++#define REGSAVE_AREA_MAGIC		STR_TO_HEX("REGSAVE")
++
++/* The firmware-assisted dump format.
++ *
++ * The register save area is an area in the partition's memory used to preserve
++ * the register contents (CPU state data) for the active CPUs during a firmware
++ * assisted dump. The dump format contains register save area header followed
++ * by register entries. Each list of registers for a CPU starts with
++ * "CPUSTRT" and ends with "CPUEND".
++ */
++
++/* Register save area header. */
++struct fadump_reg_save_area_header {
++	u64		magic_number;
++	u32		version;
++	u32		num_cpu_offset;
++};
++
++/* Register entry. */
++struct fadump_reg_entry {
++	u64		reg_id;
++	u64		reg_value;
++};
+ 
+ /* fadump crash info structure */
+ struct fadump_crash_info_header {
+ 	u64		magic_number;
+ 	u64		elfcorehdr_addr;
++	u32		crashing_cpu;
++	struct pt_regs	regs;
++	struct cpumask	cpu_online_mask;
  };
  
-+/*
-+ * Copy the ascii values for first 8 characters from a string into u64
-+ * variable at their respective indexes.
-+ * e.g.
-+ *  The string "FADMPINF" will be converted into 0x4641444d50494e46
-+ */
-+static inline u64 str_to_u64(const char *str)
-+{
-+	u64 val = 0;
-+	int i;
-+
-+	for (i = 0; i < sizeof(val); i++)
-+		val = (*str) ? (val << 8) | *str++ : val << 8;
-+	return val;
-+}
-+#define STR_TO_HEX(x)	str_to_u64(x)
-+
-+#define FADUMP_CRASH_INFO_MAGIC		STR_TO_HEX("FADMPINF")
-+
-+/* fadump crash info structure */
-+struct fadump_crash_info_header {
-+	u64		magic_number;
-+	u64		elfcorehdr_addr;
-+};
-+
-+/* Crash memory ranges */
-+#define INIT_CRASHMEM_RANGES	(INIT_MEMBLOCK_REGIONS + 2)
-+
-+struct fad_crash_memory_ranges {
-+	unsigned long long	base;
-+	unsigned long long	size;
-+};
-+
- extern int early_init_dt_scan_fw_dump(unsigned long node,
- 		const char *uname, int depth, void *data);
+ /* Crash memory ranges */
+@@ -159,6 +201,7 @@ extern int early_init_dt_scan_fw_dump(unsigned long node,
  extern int fadump_reserve_mem(void);
+ extern int setup_fadump(void);
+ extern int is_fadump_active(void);
++extern void crash_fadump(struct pt_regs *, const char *);
+ #else	/* CONFIG_FA_DUMP */
+ static inline int is_fadump_active(void) { return 0; }
+ #endif
 diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
-index ed38f86..bbbda82 100644
+index bbbda82..70d6287 100644
 --- a/arch/powerpc/kernel/fadump.c
 +++ b/arch/powerpc/kernel/fadump.c
-@@ -32,6 +32,7 @@
- #include <linux/delay.h>
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-+#include <linux/crash_dump.h>
- 
- #include <asm/page.h>
- #include <asm/prom.h>
-@@ -53,6 +54,8 @@ static struct fadump_mem_struct fdm;
- static const struct fadump_mem_struct *fdm_active;
- 
- static DEFINE_MUTEX(fadump_mutex);
-+struct fad_crash_memory_ranges crash_memory_ranges[INIT_CRASHMEM_RANGES];
-+int crash_mem_ranges;
- 
- /* Scan the Firmware Assisted dump configuration details. */
- int __init early_init_dt_scan_fw_dump(unsigned long node,
-@@ -239,6 +242,10 @@ static unsigned long get_dump_area_size(void)
- 	size += fw_dump.cpu_state_data_size;
- 	size += fw_dump.hpte_region_size;
+@@ -244,6 +244,7 @@ static unsigned long get_dump_area_size(void)
  	size += fw_dump.boot_memory_size;
-+	size += sizeof(struct fadump_crash_info_header);
-+	size += sizeof(struct elfhdr); /* ELF core header.*/
-+	/* Program headers for crash memory regions. */
-+	size += sizeof(struct elf_phdr) * (memblock_num_regions(memory) + 2);
+ 	size += sizeof(struct fadump_crash_info_header);
+ 	size += sizeof(struct elfhdr); /* ELF core header.*/
++	size += sizeof(struct elf_phdr); /* place holder for cpu notes */
+ 	/* Program headers for crash memory regions. */
+ 	size += sizeof(struct elf_phdr) * (memblock_num_regions(memory) + 2);
  
- 	size = PAGE_ALIGN(size);
- 	return size;
-@@ -304,6 +311,12 @@ int __init fadump_reserve_mem(void)
- 				"for saving crash dump\n",
- 				(unsigned long)(size >> 20),
- 				(unsigned long)(base >> 20));
-+
-+		fw_dump.fadumphdr_addr =
-+				fdm_active->rmr_region.destination_address +
-+				fdm_active->rmr_region.source_len;
-+		pr_debug("fadumphdr_addr = %p\n",
-+				(void *) fw_dump.fadumphdr_addr);
- 	} else {
- 		/* Reserve the memory at the top of memory. */
- 		size = get_dump_area_size();
-@@ -384,8 +397,210 @@ static void register_fw_dump(struct fadump_mem_struct *fdm)
+@@ -397,6 +398,283 @@ static void register_fw_dump(struct fadump_mem_struct *fdm)
  	}
  }
  
-+/*
-+ * Validate and process the dump data stored by firmware before exporting
-+ * it through '/proc/vmcore'.
-+ */
-+static int __init process_fadump(const struct fadump_mem_struct *fdm_active)
++void crash_fadump(struct pt_regs *regs, const char *str)
 +{
-+	struct fadump_crash_info_header *fdh;
++	struct fadump_crash_info_header *fdh = NULL;
 +
-+	if (!fdm_active || !fw_dump.fadumphdr_addr)
-+		return -EINVAL;
-+
-+	/* Check if the dump data is valid. */
-+	if ((fdm_active->header.dump_status_flag == FADUMP_ERROR_FLAG) ||
-+			(fdm_active->rmr_region.error_flags != 0)) {
-+		printk(KERN_ERR "Dump taken by platform is not valid\n");
-+		return -EINVAL;
-+	}
-+	if (fdm_active->rmr_region.bytes_dumped !=
-+			fdm_active->rmr_region.source_len) {
-+		printk(KERN_ERR "Dump taken by platform is incomplete\n");
-+		return -EINVAL;
-+	}
-+
-+	/* Validate the fadump crash info header */
-+	fdh = __va(fw_dump.fadumphdr_addr);
-+	if (fdh->magic_number != FADUMP_CRASH_INFO_MAGIC) {
-+		printk(KERN_ERR "Crash info header is not valid.\n");
-+		return -EINVAL;
-+	}
-+
-+	/*
-+	 * We are done validating dump info and elfcore header is now ready
-+	 * to be exported. set elfcorehdr_addr so that vmcore module will
-+	 * export the elfcore header through '/proc/vmcore'.
-+	 */
-+	elfcorehdr_addr = fdh->elfcorehdr_addr;
-+
-+	return 0;
-+}
-+
-+static inline void add_crash_memory(unsigned long long base,
-+					unsigned long long end)
-+{
-+	if (base == end)
++	if (!fw_dump.dump_registered || !fw_dump.fadumphdr_addr)
 +		return;
 +
-+	pr_debug("crash_memory_range[%d] [%#016llx-%#016llx], %#llx bytes\n",
-+		crash_mem_ranges, base, end - 1, (end - base));
-+	crash_memory_ranges[crash_mem_ranges].base = base;
-+	crash_memory_ranges[crash_mem_ranges].size = end - base;
-+	crash_mem_ranges++;
++	fdh = __va(fw_dump.fadumphdr_addr);
++	crashing_cpu = smp_processor_id();
++	fdh->crashing_cpu = crashing_cpu;
++	crash_save_vmcoreinfo();
++
++	if (regs)
++		fdh->regs = *regs;
++	else
++		ppc_save_regs(&fdh->regs);
++
++	fdh->cpu_online_mask = *cpu_online_mask;
++
++	/* Call ibm,os-term rtas call to trigger firmware assisted dump */
++	rtas_os_term((char *)str);
 +}
 +
-+static void exclude_reserved_area(unsigned long long start,
-+					unsigned long long end)
++#define GPR_MASK	0xffffff0000000000
++static inline int gpr_index(u64 id)
 +{
-+	unsigned long long ra_start, ra_end;
++	int i = -1;
++	char str[3];
 +
-+	ra_start = fw_dump.reserve_dump_area_start;
-+	ra_end = ra_start + fw_dump.reserve_dump_area_size;
-+
-+	if ((ra_start < end) && (ra_end > start)) {
-+		if ((start < ra_start) && (end > ra_end)) {
-+			add_crash_memory(start, ra_start);
-+			add_crash_memory(ra_end, end);
-+		} else if (start < ra_start) {
-+			add_crash_memory(start, ra_start);
-+		} else if (ra_end < end) {
-+			add_crash_memory(ra_end, end);
-+		}
-+	} else
-+		add_crash_memory(start, end);
-+}
-+
-+static int init_elfcore_header(char *bufp)
-+{
-+	struct elfhdr *elf;
-+
-+	elf = (struct elfhdr *) bufp;
-+	bufp += sizeof(struct elfhdr);
-+	memcpy(elf->e_ident, ELFMAG, SELFMAG);
-+	elf->e_ident[EI_CLASS] = ELF_CLASS;
-+	elf->e_ident[EI_DATA] = ELF_DATA;
-+	elf->e_ident[EI_VERSION] = EV_CURRENT;
-+	elf->e_ident[EI_OSABI] = ELF_OSABI;
-+	memset(elf->e_ident+EI_PAD, 0, EI_NIDENT-EI_PAD);
-+	elf->e_type = ET_CORE;
-+	elf->e_machine = ELF_ARCH;
-+	elf->e_version = EV_CURRENT;
-+	elf->e_entry = 0;
-+	elf->e_phoff = sizeof(struct elfhdr);
-+	elf->e_shoff = 0;
-+	elf->e_flags = ELF_CORE_EFLAGS;
-+	elf->e_ehsize = sizeof(struct elfhdr);
-+	elf->e_phentsize = sizeof(struct elf_phdr);
-+	elf->e_phnum = 0;
-+	elf->e_shentsize = 0;
-+	elf->e_shnum = 0;
-+	elf->e_shstrndx = 0;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Traverse through memblock structure and setup crash memory ranges. These
-+ * ranges will be used create PT_LOAD program headers in elfcore header.
-+ */
-+static void setup_crash_memory_ranges(void)
-+{
-+	struct memblock_region *reg;
-+	unsigned long long start, end;
-+
-+	pr_debug("Setup crash memory ranges.\n");
-+	crash_mem_ranges = 0;
-+	/*
-+	 * add the first memory chunk (RMR_START through boot_memory_size) as
-+	 * a separate memory chunk. The reason is, at the time crash firmware
-+	 * will move the content of this memory chunk to different location
-+	 * specified during fadump registration. We need to create a separate
-+	 * program header for this chunk with the correct offset.
-+	 */
-+	add_crash_memory(RMR_START, fw_dump.boot_memory_size);
-+
-+	for_each_memblock(memory, reg) {
-+		start = (unsigned long long)reg->base;
-+		end = start + (unsigned long long)reg->size;
-+		if (start == RMR_START && end >= fw_dump.boot_memory_size)
-+			start = fw_dump.boot_memory_size;
-+
-+		/* add this range excluding the reserved dump area. */
-+		exclude_reserved_area(start, end);
++	if ((id & GPR_MASK) == REG_ID("GPR")) {
++		/* get the digits at the end */
++		id &= ~GPR_MASK;
++		id >>= 24;
++		str[2] = '\0';
++		str[1] = id & 0xff;
++		str[0] = (id >> 8) & 0xff;
++		sscanf(str, "%d", &i);
++		if (i > 31)
++			i = -1;
 +	}
++	return i;
 +}
 +
-+static int create_elfcore_headers(char *bufp)
++static inline void set_regval(struct pt_regs *regs, u64 reg_id, u64 reg_val)
++{
++	int i;
++
++	i = gpr_index(reg_id);
++	if (i >= 0)
++		regs->gpr[i] = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("NIA"))
++		regs->nip = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("MSR"))
++		regs->msr = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("CTR"))
++		regs->ctr = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("LR"))
++		regs->link = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("XER"))
++		regs->xer = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("CR"))
++		regs->ccr = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("DAR"))
++		regs->dar = (unsigned long)reg_val;
++	else if (reg_id == REG_ID("DSISR"))
++		regs->dsisr = (unsigned long)reg_val;
++}
++
++static struct fadump_reg_entry*
++read_registers(struct fadump_reg_entry *reg_entry, struct pt_regs *regs)
++{
++	memset(regs, 0, sizeof(struct pt_regs));
++
++	while (reg_entry->reg_id != REG_ID("CPUEND")) {
++		set_regval(regs, reg_entry->reg_id, reg_entry->reg_value);
++		reg_entry++;
++	}
++	reg_entry++;
++	return reg_entry;
++}
++
++static u32 *append_elf_note(u32 *buf, char *name, unsigned type, void *data,
++			    size_t data_len)
++{
++	struct elf_note note;
++
++	note.n_namesz = strlen(name) + 1;
++	note.n_descsz = data_len;
++	note.n_type   = type;
++	memcpy(buf, &note, sizeof(note));
++	buf += (sizeof(note) + 3)/4;
++	memcpy(buf, name, note.n_namesz);
++	buf += (note.n_namesz + 3)/4;
++	memcpy(buf, data, note.n_descsz);
++	buf += (note.n_descsz + 3)/4;
++
++	return buf;
++}
++
++static void final_note(u32 *buf)
++{
++	struct elf_note note;
++
++	note.n_namesz = 0;
++	note.n_descsz = 0;
++	note.n_type   = 0;
++	memcpy(buf, &note, sizeof(note));
++}
++
++static u32 *regs_to_elf_notes(u32 *buf, struct pt_regs *regs)
++{
++	struct elf_prstatus prstatus;
++
++	memset(&prstatus, 0, sizeof(prstatus));
++	/*
++	 * FIXME: How do i get PID? Do I really need it?
++	 * prstatus.pr_pid = ????
++	 */
++	elf_core_copy_kernel_regs(&prstatus.pr_reg, regs);
++	buf = append_elf_note(buf, KEXEC_CORE_NOTE_NAME, NT_PRSTATUS,
++				&prstatus, sizeof(prstatus));
++	return buf;
++}
++
++static void update_elfcore_header(char *bufp)
 +{
 +	struct elfhdr *elf;
 +	struct elf_phdr *phdr;
-+	int i;
 +
-+	init_elfcore_header(bufp);
 +	elf = (struct elfhdr *)bufp;
 +	bufp += sizeof(struct elfhdr);
 +
-+	/* setup PT_LOAD sections. */
++	/* First note is a place holder for cpu notes info. */
++	phdr = (struct elf_phdr *)bufp;
 +
-+	for (i = 0; i < crash_mem_ranges; i++) {
-+		unsigned long long mbase, msize;
-+		mbase = crash_memory_ranges[i].base;
-+		msize = crash_memory_ranges[i].size;
-+
-+		if (!msize)
-+			continue;
-+
-+		phdr = (struct elf_phdr *)bufp;
-+		bufp += sizeof(struct elf_phdr);
-+		phdr->p_type	= PT_LOAD;
-+		phdr->p_flags	= PF_R|PF_W|PF_X;
-+		phdr->p_offset	= mbase;
-+
-+		if (mbase == RMR_START) {
-+			/*
-+			 * The entire RMR region will be moved by firmware
-+			 * to the specified destination_address. Hence set
-+			 * the correct offset.
-+			 */
-+			phdr->p_offset = fdm.rmr_region.destination_address;
-+		}
-+
-+		phdr->p_paddr = mbase;
-+		phdr->p_vaddr = (unsigned long)__va(mbase);
-+		phdr->p_filesz = msize;
-+		phdr->p_memsz = msize;
-+		phdr->p_align = 0;
-+
-+		/* Increment number of program headers. */
-+		(elf->e_phnum)++;
++	if (phdr->p_type == PT_NOTE) {
++		phdr->p_paddr = fw_dump.cpu_notes_buf;
++		phdr->p_offset	= phdr->p_paddr;
++		phdr->p_filesz	= fw_dump.cpu_notes_buf_size;
++		phdr->p_memsz = fw_dump.cpu_notes_buf_size;
 +	}
-+	return 0;
++	return;
 +}
 +
-+static unsigned long init_fadump_header(unsigned long addr)
++static void *cpu_notes_buf_alloc(unsigned long size)
 +{
-+	struct fadump_crash_info_header *fdh;
++	void *vaddr;
++	struct page *page;
++	unsigned long order, count, i;
 +
-+	if (!addr)
-+		return 0;
++	order = get_order(size);
++	vaddr = (void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO, order);
++	if (!vaddr)
++		return NULL;
 +
-+	fw_dump.fadumphdr_addr = addr;
-+	fdh = __va(addr);
-+	addr += sizeof(struct fadump_crash_info_header);
-+
-+	memset(fdh, 0, sizeof(struct fadump_crash_info_header));
-+	fdh->magic_number = FADUMP_CRASH_INFO_MAGIC;
-+	fdh->elfcorehdr_addr = addr;
-+
-+	return addr;
++	count = 1 << order;
++	page = virt_to_page(vaddr);
++	for (i = 0; i < count; i++)
++		SetPageReserved(page + i);
++	return vaddr;
 +}
 +
- static void register_fadump(void)
- {
-+	unsigned long addr;
++static void cpu_notes_buf_free(unsigned long vaddr, unsigned long size)
++{
++	struct page *page;
++	unsigned long order, count, i;
++
++	order = get_order(size);
++	count = 1 << order;
++	page = virt_to_page(vaddr);
++	for (i = 0; i < count; i++)
++		ClearPageReserved(page + i);
++	__free_pages(page, order);
++}
++
++/*
++ * Read CPU state dump data and convert it into ELF notes.
++ * The CPU dump starts with magic number "REGSAVE". NumCpusOffset should be
++ * used to access the data to allow for additional fields to be added without
++ * affecting compatibility. Each list of registers for a CPU starts with
++ * "CPUSTRT" and ends with "CPUEND". Each register entry is of 16 bytes,
++ * 8 Byte ASCII identifier and 8 Byte register value. The register entry
++ * with identifier "CPUSTRT" and "CPUEND" contains 4 byte cpu id as part
++ * of register value. For more details refer to PAPR document.
++ *
++ * Only for the crashing cpu we ignore the CPU dump data and get exact
++ * state from fadump crash info structure populated by first kernel at the
++ * time of crash.
++ */
++static int __init build_cpu_notes(const struct fadump_mem_struct *fdm)
++{
++	struct fadump_reg_save_area_header *reg_header;
++	struct fadump_reg_entry *reg_entry;
++	struct fadump_crash_info_header *fdh = NULL;
 +	void *vaddr;
++	unsigned long addr;
++	u32 num_cpus, *note_buf;
++	struct pt_regs regs;
++	int i, rc = 0, cpu = 0;
 +
- 	/*
- 	 * If no memory is reserved then we can not register for firmware-
- 	 * assisted dump.
-@@ -393,6 +608,16 @@ static void register_fadump(void)
- 	if (!fw_dump.reserve_dump_area_size)
- 		return;
- 
-+	setup_crash_memory_ranges();
++	if (!fdm->cpu_state_data.bytes_dumped)
++		return -EINVAL;
 +
-+	addr = fdm.rmr_region.destination_address + fdm.rmr_region.source_len;
-+	/* Initialize fadump crash info header. */
-+	addr = init_fadump_header(addr);
++	addr = fdm->cpu_state_data.destination_address;
 +	vaddr = __va(addr);
 +
-+	pr_debug("Creating ELF core headers at %#016lx\n", addr);
-+	create_elfcore_headers(vaddr);
++	reg_header = vaddr;
++	if (reg_header->magic_number != REGSAVE_AREA_MAGIC) {
++		printk(KERN_ERR "Unable to read register save area.\n");
++		return -ENOENT;
++	}
++	pr_debug("--------CPU State Data------------\n");
++	pr_debug("Magic Number: %llx\n", reg_header->magic_number);
++	pr_debug("NumCpuOffset: %x\n", reg_header->num_cpu_offset);
 +
- 	/* register the future kernel dump with firmware. */
- 	register_fw_dump(&fdm);
- }
-@@ -586,11 +811,17 @@ int __init setup_fadump(void)
++	vaddr += reg_header->num_cpu_offset;
++	num_cpus = *((u32 *)(vaddr));
++	pr_debug("NumCpus     : %u\n", num_cpus);
++	vaddr += sizeof(u32);
++	reg_entry = (struct fadump_reg_entry *)vaddr;
++
++	/* Allocate buffer to hold cpu crash notes. */
++	fw_dump.cpu_notes_buf_size = num_cpus * sizeof(note_buf_t);
++	fw_dump.cpu_notes_buf_size = PAGE_ALIGN(fw_dump.cpu_notes_buf_size);
++	note_buf = cpu_notes_buf_alloc(fw_dump.cpu_notes_buf_size);
++	if (!note_buf) {
++		printk(KERN_ERR "Failed to allocate 0x%lx bytes for "
++			"cpu notes buffer\n", fw_dump.cpu_notes_buf_size);
++		return -ENOMEM;
++	}
++	fw_dump.cpu_notes_buf = __pa(note_buf);
++
++	pr_debug("Allocated buffer for cpu notes of size %ld at %p\n",
++			(num_cpus * sizeof(note_buf_t)), note_buf);
++
++	if (fw_dump.fadumphdr_addr)
++		fdh = __va(fw_dump.fadumphdr_addr);
++
++	for (i = 0; i < num_cpus; i++) {
++		if (reg_entry->reg_id != REG_ID("CPUSTRT")) {
++			printk(KERN_ERR "Unable to read CPU state data\n");
++			rc = -ENOENT;
++			goto error_out;
++		}
++		/* Lower 4 bytes of reg_value contains logical cpu id */
++		cpu = reg_entry->reg_value & FADUMP_CPU_ID_MASK;
++		if (!cpumask_test_cpu(cpu, &fdh->cpu_online_mask)) {
++			SKIP_TO_NEXT_CPU(reg_entry);
++			continue;
++		}
++		pr_debug("Reading register data for cpu %d...\n", cpu);
++		if (fdh && fdh->crashing_cpu == cpu) {
++			regs = fdh->regs;
++			note_buf = regs_to_elf_notes(note_buf, &regs);
++			SKIP_TO_NEXT_CPU(reg_entry);
++		} else {
++			reg_entry++;
++			reg_entry = read_registers(reg_entry, &regs);
++			note_buf = regs_to_elf_notes(note_buf, &regs);
++		}
++	}
++	final_note(note_buf);
++
++	pr_debug("Updating elfcore header (%llx) with cpu notes\n",
++							fdh->elfcorehdr_addr);
++	update_elfcore_header((char *)__va(fdh->elfcorehdr_addr));
++	return 0;
++
++error_out:
++	cpu_notes_buf_free((unsigned long)__va(fw_dump.cpu_notes_buf),
++					fw_dump.cpu_notes_buf_size);
++	fw_dump.cpu_notes_buf = 0;
++	fw_dump.cpu_notes_buf_size = 0;
++	return rc;
++
++}
++
+ /*
+  * Validate and process the dump data stored by firmware before exporting
+  * it through '/proc/vmcore'.
+@@ -404,18 +682,21 @@ static void register_fw_dump(struct fadump_mem_struct *fdm)
+ static int __init process_fadump(const struct fadump_mem_struct *fdm_active)
+ {
+ 	struct fadump_crash_info_header *fdh;
++	int rc = 0;
+ 
+ 	if (!fdm_active || !fw_dump.fadumphdr_addr)
+ 		return -EINVAL;
+ 
+ 	/* Check if the dump data is valid. */
+ 	if ((fdm_active->header.dump_status_flag == FADUMP_ERROR_FLAG) ||
++			(fdm_active->cpu_state_data.error_flags != 0) ||
+ 			(fdm_active->rmr_region.error_flags != 0)) {
+ 		printk(KERN_ERR "Dump taken by platform is not valid\n");
+ 		return -EINVAL;
+ 	}
+-	if (fdm_active->rmr_region.bytes_dumped !=
+-			fdm_active->rmr_region.source_len) {
++	if ((fdm_active->rmr_region.bytes_dumped !=
++			fdm_active->rmr_region.source_len) ||
++			!fdm_active->cpu_state_data.bytes_dumped) {
+ 		printk(KERN_ERR "Dump taken by platform is incomplete\n");
+ 		return -EINVAL;
+ 	}
+@@ -427,6 +708,10 @@ static int __init process_fadump(const struct fadump_mem_struct *fdm_active)
+ 		return -EINVAL;
  	}
  
- 	fadump_show_config();
-+	/*
-+	 * If dump data is available then see if it is valid and prepare for
-+	 * saving it to the disk.
-+	 */
-+	if (fw_dump.dump_active)
-+		process_fadump(fdm_active);
- 	/* Initialize the kernel dump memory structure for FAD registration. */
--	if (fw_dump.reserve_dump_area_size)
-+	else if (fw_dump.reserve_dump_area_size)
- 		init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
--	fadump_init_files();
++	rc = build_cpu_notes(fdm_active);
++	if (rc)
++		return rc;
++
+ 	/*
+ 	 * We are done validating dump info and elfcore header is now ready
+ 	 * to be exported. set elfcorehdr_addr so that vmcore module will
+@@ -541,6 +826,27 @@ static int create_elfcore_headers(char *bufp)
+ 	elf = (struct elfhdr *)bufp;
+ 	bufp += sizeof(struct elfhdr);
  
-+	fadump_init_files();
- 	return 1;
++	/*
++	 * setup ELF PT_NOTE, place holder for cpu notes info. The notes info
++	 * will be populated during second kernel boot after crash. Hence
++	 * this PT_NOTE will always be the first elf note.
++	 *
++	 * NOTE: Any new ELF note addition should be placed after this note.
++	 */
++	phdr = (struct elf_phdr *)bufp;
++	bufp += sizeof(struct elf_phdr);
++	phdr->p_type = PT_NOTE;
++	phdr->p_flags = 0;
++	phdr->p_vaddr = 0;
++	phdr->p_align = 0;
++
++	phdr->p_offset = 0;
++	phdr->p_paddr = 0;
++	phdr->p_filesz = 0;
++	phdr->p_memsz = 0;
++
++	(elf->e_phnum)++;
++
+ 	/* setup PT_LOAD sections. */
+ 
+ 	for (i = 0; i < crash_mem_ranges; i++) {
+@@ -592,6 +898,8 @@ static unsigned long init_fadump_header(unsigned long addr)
+ 	memset(fdh, 0, sizeof(struct fadump_crash_info_header));
+ 	fdh->magic_number = FADUMP_CRASH_INFO_MAGIC;
+ 	fdh->elfcorehdr_addr = addr;
++	/* We will set the crashing cpu id in crash_fadump() during crash. */
++	fdh->crashing_cpu = CPU_UNKNOWN;
+ 
+ 	return addr;
  }
- subsys_initcall(setup_fadump);
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index b1d738d..ce35aaf 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -61,6 +61,7 @@
+ #include <asm/xmon.h>
+ #include <asm/cputhreads.h>
+ #include <mm/mmu_decl.h>
++#include <asm/fadump.h>
+ 
+ #include "setup.h"
+ 
+@@ -639,6 +640,13 @@ EXPORT_SYMBOL(check_legacy_ioport);
+ static int ppc_panic_event(struct notifier_block *this,
+                              unsigned long event, void *ptr)
+ {
++#ifdef CONFIG_FA_DUMP
++	/*
++	 * If firmware-assisted dump has been registered then trigger
++	 * firmware-assisted dump and let firmware handle everything else.
++	 */
++	crash_fadump(NULL, ptr);
++#endif
+ 	ppc_md.panic(ptr);  /* May not return */
+ 	return NOTIFY_DONE;
+ }
+diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+index f19d977..1508532 100644
+--- a/arch/powerpc/kernel/traps.c
++++ b/arch/powerpc/kernel/traps.c
+@@ -57,6 +57,7 @@
+ #include <asm/kexec.h>
+ #include <asm/ppc-opcode.h>
+ #include <asm/rio.h>
++#include <asm/fadump.h>
+ 
+ #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)
+ int (*__debugger)(struct pt_regs *regs) __read_mostly;
+@@ -160,6 +161,10 @@ int die(const char *str, struct pt_regs *regs, long err)
+ 	add_taint(TAINT_DIE);
+ 	raw_spin_unlock_irqrestore(&die.lock, flags);
+ 
++#ifdef CONFIG_FA_DUMP
++	crash_fadump(regs, str);
++#endif
++
+ 	if (kexec_should_crash(current) ||
+ 		kexec_sr_activated(smp_processor_id()))
+ 		crash_kexec(regs);
 
