@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab1KGXXo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:23:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41553 "EHLO mx1.redhat.com"
+	id S1755101Ab1KGXXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:23:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22326 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab1KGXXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:23:42 -0500
+	id S1755044Ab1KGXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:23:48 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 2/4] ACPI: Export interfaces for ioremapping/iounmapping
-	ACPI registers
+Subject: [PATCH -v2 3/4] ACPI APEI: Convert atomicio routines
 To: lenb@kernel.org
 Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, ying.huang@intel.com,
         bhelgaas@google.com, trenn@suse.de, linux-kernel@vger.kernel.org
-Date: Mon, 07 Nov 2011 16:23:34 -0700
-Message-ID: <20111107232334.13472.6680.stgit@amt.stowe>
+Date: Mon, 07 Nov 2011 16:23:41 -0700
+Message-ID: <20111107232341.13472.19933.stgit@amt.stowe>
 In-Reply-To: <20111107232321.13472.52069.stgit@amt.stowe>
 References: <20111107232321.13472.52069.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -26,70 +25,284 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Myron Stowe <mstowe@redhat.com>
 
-Export remapping and unmapping interfaces - acpi_os_map_generic_address()
-and acpi_os_unmap_generic_address() - for ACPI generic registers that are
-backed by memory mapped I/O (MMIO).
+APEI needs memory access in interrupt context.  The obvious choice is
+acpi_read(), but originally it couldn't be used in interrupt context
+because it makes temporary mappings with ioremap().  Therefore, we added
+drivers/acpi/atomicio.c, which provides:
+    acpi_pre_map_gar()     -- ioremap in process context
+	acpi_atomic_read()     -- memory access in interrupt context
+	acpi_post_unmap_gar()  -- iounmap
 
-The acpi_os_map_generic_address() and acpi_os_unmap_generic_address()
-declarations may more properly belong in include/acpi/acpiosxf.h next to
-acpi_os_read_memory() but I believe that would require the ACPI CA making
-them an official part of the ACPI CA - OS interface.
+Later we added acpi_os_map_generic_address() (2971852) and enhanced
+acpi_read() so it works in interrupt context as long as the address has
+been previously mapped (620242a).  Now this sequence:
+    acpi_os_map_generic_address()    -- ioremap in process context
+    acpi_read()/apei_read()          -- now OK in interrupt context
+    acpi_os_unmap_generic_address()
+is equivalent to what atomicio.c provides.
 
-ACPI Generic Address Structure (GAS) reference (ACPI's fixed/generic
-hardware registers use the GAS format):
-  ACPI Specification, Revision 4.0, Section 5.2.3.1, "Generic Address
-  Structure"
+This patch introduces apei_read() and apei_write(), which currently are
+functional equivalents of acpi_read() and acpi_write().  This is mainly
+proactive, to prevent APEI breakages if acpi_read() and acpi_write()
+are ever augmented to support the 'bit_offset' field of GAS, as APEI's
+__apei_exec_write_register() precludes splitting up functionality
+related to 'bit_offset' and APEI's 'mask' (see its
+APEI_EXEC_PRESERVE_REGISTER block).
+
+With apei_read() and apei_write() in place, usages of atomicio routines
+are converted to apei_read()/apei_write() and existing calls within
+osl.c and the CA, based on the re-factoring that was done in an earlier
+patch series - http://marc.info/?l=linux-acpi&m=128769263327206&w=2:
+    acpi_pre_map_gar()     -->  acpi_os_map_generic_address()
+    acpi_post_unmap_gar()  -->  acpi_os_unmap_generic_address()
+    acpi_atomic_read()     -->  apei_read()
+    acpi_atomic_write()    -->  apei_write()
+
+
+Note that acpi_read() and acpi_write() currently use 'bit_width'
+for accessing GARs which seems incorrect.  'bit_width' is the size of
+the register, while 'access_width' is the size of the access the
+processor must generate on the bus.  The 'access_width' may be larger,
+for example, if the hardware only supports 32-bit or 64-bit reads.  I
+wanted to minimize any possible impacts with this patch series so I
+did *not* change this behavior.
+
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
 
- drivers/acpi/osl.c      |    6 ++++--
- include/linux/acpi_io.h |    3 +++
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/acpi/apei/apei-base.c     |  102 +++++++++++++++++++++++++++++++++++--
+ drivers/acpi/apei/apei-internal.h |    3 +
+ drivers/acpi/apei/ghes.c          |   10 ++--
+ 3 files changed, 104 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 2e285cd..b11f267 100644
---- a/drivers/acpi/osl.c
-+++ b/drivers/acpi/osl.c
-@@ -431,7 +431,7 @@ void __init early_acpi_os_unmap_memory(void __iomem *virt, acpi_size size)
- 		__acpi_unmap_table(virt, size);
- }
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index 6154036..f54550a 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -34,13 +34,13 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
++#include <linux/acpi_io.h>
+ #include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
+ #include <linux/debugfs.h>
+-#include <acpi/atomicio.h>
  
--static int acpi_os_map_generic_address(struct acpi_generic_address *gas)
-+int acpi_os_map_generic_address(struct acpi_generic_address *gas)
+ #include "apei-internal.h"
+ 
+@@ -70,7 +70,7 @@ int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val)
  {
- 	u64 addr;
- 	void __iomem *virt;
-@@ -450,8 +450,9 @@ static int acpi_os_map_generic_address(struct acpi_generic_address *gas)
+ 	int rc;
+ 
+-	rc = acpi_atomic_read(val, &entry->register_region);
++	rc = apei_read(val, &entry->register_region);
+ 	if (rc)
+ 		return rc;
+ 	*val >>= entry->register_region.bit_offset;
+@@ -116,13 +116,13 @@ int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val)
+ 	val <<= entry->register_region.bit_offset;
+ 	if (entry->flags & APEI_EXEC_PRESERVE_REGISTER) {
+ 		u64 valr = 0;
+-		rc = acpi_atomic_read(&valr, &entry->register_region);
++		rc = apei_read(&valr, &entry->register_region);
+ 		if (rc)
+ 			return rc;
+ 		valr &= ~(entry->mask << entry->register_region.bit_offset);
+ 		val |= valr;
+ 	}
+-	rc = acpi_atomic_write(val, &entry->register_region);
++	rc = apei_write(val, &entry->register_region);
+ 
+ 	return rc;
+ }
+@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct apei_exec_context *ctx,
+ 	u8 ins = entry->instruction;
+ 
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		return acpi_pre_map_gar(&entry->register_region);
++		return acpi_os_map_generic_address(&entry->register_region);
  
  	return 0;
  }
-+EXPORT_SYMBOL(acpi_os_map_generic_address);
+@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struct apei_exec_context *ctx,
+ 	u8 ins = entry->instruction;
  
--static void acpi_os_unmap_generic_address(struct acpi_generic_address *gas)
-+void acpi_os_unmap_generic_address(struct acpi_generic_address *gas)
- {
- 	u64 addr;
- 	struct acpi_ioremap *map;
-@@ -475,6 +476,7 @@ static void acpi_os_unmap_generic_address(struct acpi_generic_address *gas)
+ 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
+-		acpi_post_unmap_gar(&entry->register_region);
++		acpi_os_unmap_generic_address(&entry->register_region);
  
- 	acpi_os_map_cleanup(map);
+ 	return 0;
  }
-+EXPORT_SYMBOL(acpi_os_unmap_generic_address);
+@@ -553,6 +553,96 @@ static int apei_check_gar(struct acpi_generic_address *reg, u64 *paddr)
+ 	return 0;
+ }
  
- #ifdef ACPI_FUTURE_USAGE
- acpi_status
-diff --git a/include/linux/acpi_io.h b/include/linux/acpi_io.h
-index 4afd710..b0ffa21 100644
---- a/include/linux/acpi_io.h
-+++ b/include/linux/acpi_io.h
-@@ -12,4 +12,7 @@ static inline void __iomem *acpi_os_ioremap(acpi_physical_address phys,
- 
- void __iomem *acpi_os_get_iomem(acpi_physical_address phys, unsigned int size);
- 
-+int acpi_os_map_generic_address(struct acpi_generic_address *addr);
-+void acpi_os_unmap_generic_address(struct acpi_generic_address *addr);
++/* read GAR in interrupt (including NMI) or process context */
++int apei_read(u64 *val, struct acpi_generic_address *reg)
++{
++	int rc;
++	u64 address;
++	u32 tmp, width = reg->bit_width;
++	acpi_status status;
 +
- #endif
++	rc = apei_check_gar(reg, &address);
++	if (rc)
++		return rc;
++
++	if (width == 64)
++		width = 32;	/* Break into two 32-bit transfers */
++
++	*val = 0;
++	switch(reg->space_id) {
++	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
++		status = acpi_os_read_memory((acpi_physical_address)
++					     address, &tmp, width);
++		if (ACPI_FAILURE(status))
++			return -EIO;
++		*val = tmp;
++
++		if (reg->bit_width == 64) {
++			/* Read the top 32 bits */
++			status = acpi_os_read_memory((acpi_physical_address)
++						     (address + 4), &tmp, 32);
++			if (ACPI_FAILURE(status))
++				return -EIO;
++			*val |= ((u64)tmp << 32);
++		}
++		break;
++	case ACPI_ADR_SPACE_SYSTEM_IO:
++		status = acpi_os_read_port(address, (u32 *)val, reg->bit_width);
++		if (ACPI_FAILURE(status))
++			return -EIO;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_read);
++
++/* write GAR in interrupt (including NMI) or process context */
++int apei_write(u64 val, struct acpi_generic_address *reg)
++{
++	int rc;
++	u64 address;
++	u32 width = reg->bit_width;
++	acpi_status status;
++
++	rc = apei_check_gar(reg, &address);
++	if (rc)
++		return rc;
++
++	if (width == 64)
++		width = 32;	/* Break into two 32-bit transfers */
++
++	switch (reg->space_id) {
++	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
++		status = acpi_os_write_memory((acpi_physical_address)
++					      address, ACPI_LODWORD(val),
++					      width);
++		if (ACPI_FAILURE(status))
++			return -EIO;
++
++		if (reg->bit_width == 64) {
++			status = acpi_os_write_memory((acpi_physical_address)
++						      (address + 4),
++						      ACPI_HIDWORD(val), 32);
++			if (ACPI_FAILURE(status))
++				return -EIO;
++		}
++		break;
++	case ACPI_ADR_SPACE_SYSTEM_IO:
++		status = acpi_os_write_port(address, val, reg->bit_width);
++		if (ACPI_FAILURE(status))
++			return -EIO;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_write);
++
+ static int collect_res_callback(struct apei_exec_context *ctx,
+ 				struct acpi_whea_header *entry,
+ 				void *data)
+diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
+index f57050e..617fb10 100644
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -68,6 +68,9 @@ static inline int apei_exec_run_optional(struct apei_exec_context *ctx, u8 actio
+ /* IP has been set in instruction function */
+ #define APEI_EXEC_SET_IP	1
+ 
++int apei_read(u64 *val, struct acpi_generic_address *reg);
++int apei_write(u64 val, struct acpi_generic_address *reg);
++
+ int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val);
+ int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val);
+ int apei_exec_read_register(struct apei_exec_context *ctx,
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index b8e08cb..9d75fbc 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -33,6 +33,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
++#include <linux/acpi_io.h>
+ #include <linux/io.h>
+ #include <linux/interrupt.h>
+ #include <linux/timer.h>
+@@ -46,7 +47,6 @@
+ #include <linux/llist.h>
+ #include <linux/genalloc.h>
+ #include <acpi/apei.h>
+-#include <acpi/atomicio.h>
+ #include <acpi/hed.h>
+ #include <asm/mce.h>
+ #include <asm/tlbflush.h>
+@@ -299,7 +299,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
+ 	if (!ghes)
+ 		return ERR_PTR(-ENOMEM);
+ 	ghes->generic = generic;
+-	rc = acpi_pre_map_gar(&generic->error_status_address);
++	rc = acpi_os_map_generic_address(&generic->error_status_address);
+ 	if (rc)
+ 		goto err_free;
+ 	error_block_length = generic->error_block_length;
+@@ -319,7 +319,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
+ 	return ghes;
+ 
+ err_unmap:
+-	acpi_post_unmap_gar(&generic->error_status_address);
++	acpi_os_unmap_generic_address(&generic->error_status_address);
+ err_free:
+ 	kfree(ghes);
+ 	return ERR_PTR(rc);
+@@ -328,7 +328,7 @@ err_free:
+ static void ghes_fini(struct ghes *ghes)
+ {
+ 	kfree(ghes->estatus);
+-	acpi_post_unmap_gar(&ghes->generic->error_status_address);
++	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
+ }
+ 
+ enum {
+@@ -399,7 +399,7 @@ static int ghes_read_estatus(struct ghes *ghes, int silent)
+ 	u32 len;
+ 	int rc;
+ 
+-	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
++	rc = apei_read(&buf_paddr, &g->error_status_address);
+ 	if (rc) {
+ 		if (!silent && printk_ratelimit())
+ 			pr_warning(FW_WARN GHES_PFX
 
