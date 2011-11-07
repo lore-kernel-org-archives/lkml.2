@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab1KGOrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:47:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49266 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932626Ab1KGOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:47:14 -0500
-Message-ID: <4EB7EF4F.3090907@redhat.com>
-Date: Mon, 07 Nov 2011 16:46:39 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S932668Ab1KGOsD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:48:03 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65011 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab1KGOsB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 09:48:01 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
-Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
- guests
-References: <1320323618-10375-1-git-send-email-gleb@redhat.com>  <1320323618-10375-3-git-send-email-gleb@redhat.com> <1320676467.18053.43.camel@twins>
-In-Reply-To: <1320676467.18053.43.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <e3566bd4-bf52-4e75-87bd-d42debcc07b6@default>
+References: <20111104164532.GO18879@redhat.com>
+	<CAOJsxLFXy7-u+G_MLUnD3+kYqxsbns4dQV2WEpBu2oCJ4PtT7A@mail.gmail.com>
+	<e3566bd4-bf52-4e75-87bd-d42debcc07b6@default>
+Date: Mon, 7 Nov 2011 16:48:00 +0200
+X-Google-Sender-Auth: v2ugeevao4Oqbz-2cGjX-n9Qc2M
+Message-ID: <CAOJsxLG2t9YAuG067JjggYo+GBmv40Z4eVww7hcapC_W5Mo0bQ@mail.gmail.com>
+Subject: Re: [GIT PULL] mm: frontswap (SUMMARY)
+From: Pekka Enberg <penberg@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Neo Jia <cyclonusj@gmail.com>,
+        levinsasha928@gmail.com, JeremyFitzhardinge <jeremy@goop.org>,
+        linux-mm@kvack.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Jonathan Corbet <corbet@lwn.net>, Chris Mason <chris.mason@oracle.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, ngupta@vflare.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 04:34 PM, Peter Zijlstra wrote:
-> On Thu, 2011-11-03 at 14:33 +0200, Gleb Natapov wrote:
-> > +static void kvm_perf_overflow_intr(struct perf_event *perf_event,
-> > +               struct perf_sample_data *data, struct pt_regs *regs)
-> > +{
-> > +       struct kvm_pmc *pmc = perf_event->overflow_handler_context;
-> > +       struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
-> > +       if (!test_and_set_bit(pmc->idx, (unsigned long *)&pmu->reprogram_pmi)) {
-> > +               kvm_perf_overflow(perf_event, data, regs);
-> > +               kvm_make_request(KVM_REQ_PMU, pmc->vcpu);
-> > +               /*
-> > +                * Inject PMI. If vcpu was in a guest mode during NMI PMI
-> > +                * can be ejected on a guest mode re-entry. Otherwise we can't
-> > +                * be sure that vcpu is not halted, so we should kick it, but
-> > +                * this is impossible from NMI context. Do it from irq work
-> > +                * instead.
-> > +                */
-> > +               if (!kvm_is_in_guest())
-> > +                       irq_work_queue(&pmc->vcpu->arch.pmu.irq_work);
-> > +               else
-> > +                       kvm_make_request(KVM_REQ_PMI, pmc->vcpu);
-> > +       }
-> > +} 
->
-> I'm not sure I get this, since the counters are vcpu task bound and only
-> count while the guest is running as per (144d31e6f19) how can we get an
-> NMI outside of guest context with the vcpu not halted?
+On Mon, Nov 7, 2011 at 4:35 PM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+> No, I haven't stopped, though I may be pausing to lick
+> my wounds.  No it's not dead yet.  Yes, the cleancache
+> hooks are still useful, so narrow-minded anti-Xen
+> vultures can go circle elsewhere.
 
-PMI skew.  Do we know how bad it can get?
+Whatever.
 
--- 
-error compiling committee.c: too many arguments to function
+It was a honest question but somehow you managed to turn it into
+something else. It's
+funny that you don't see that it's _you_ that's the biggest obstacle
+in getting frontswap
+merged. You managed to completely alienate me, for example, with your
+style of arguing.
 
+If you had bothered to check your facts before accusing me of being
+part of the "KVM
+mafia", you'd know that if such mafia existed, it would probably hate
+me as much as they
+hate you. Furthermore, Sasha Levin who worked on KVM tmem happens to work
+on the same project as I do so I was naturally interested in frontswap
+until you showed
+up.
+
+                        Pekka
