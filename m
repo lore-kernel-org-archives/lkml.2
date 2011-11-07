@@ -1,199 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933058Ab1KGR25 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:28:57 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:46909 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751320Ab1KGR2z convert rfc822-to-8bit (ORCPT
+	id S933080Ab1KGRfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:35:55 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:42189 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932701Ab1KGRfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:28:55 -0500
-From: Glauber Costa <glommer@parallels.com>
-To: Glauber Costa <glommer@parallels.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "paul@paulmenage.org" <paul@paulmenage.org>,
-        "lizf@cn.fujitsu.com" <lizf@cn.fujitsu.com>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "gthelen@google.com" <gthelen@google.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kirill@shutemov.name" <kirill@shutemov.name>,
-        Andrey Vagin <avagin@parallels.com>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        Glauber Costa <glommer@parallels.com>,
-        "kamezawa.hiroyu@jp.fujtisu.com" <kamezawa.hiroyu@jp.fujtisu.com>
-Subject: RE: [PATCH v5 04/10] per-cgroup tcp buffers control
-Thread-Topic: [PATCH v5 04/10] per-cgroup tcp buffers control
-Thread-Index: AcydcraKg0L6nSzDiUqrkSQQPi4EDg==
-Date: Mon, 7 Nov 2011 17:28:50 +0000
-Message-ID: <D1C30CD88081EA42BD6A1AA039A44650705B78@US-EXCH1.sw.swsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [195.124.9.51]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Nov 2011 12:35:53 -0500
+Message-ID: <4EB816BA.3030406@xenotime.net>
+Date: Mon, 07 Nov 2011 09:34:50 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
+        x86 maintainers <x86@kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: linux-next: Tree for Nov 3 (KVMTOOL_TEST_ENABLE)
+References: <20111103172036.0795ce9559ab2dbfd5740a26@canb.auug.org.au>	<4EB33525.808@xenotime.net>	<4EB419F5.6070308@xenotime.net> <CAOJsxLGnUk9NaV2dNZH3rOMaRcCvn7Hb6w=Gn_fq9eEv2NXQnA@mail.gmail.com>
+In-Reply-To: <CAOJsxLGnUk9NaV2dNZH3rOMaRcCvn7Hb6w=Gn_fq9eEv2NXQnA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, I forgot to change the temporary name I was using for the jump label. Shame on me :)
+On 11/04/2011 01:03 PM, Pekka Enberg wrote:
+> On Fri, Nov 4, 2011 at 6:59 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On 11/03/2011 05:43 PM, Randy Dunlap wrote:
+>>> On 11/02/2011 11:20 PM, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>
+>>>
+>>> When KVMTOOL_TEST_ENABLE is enabled but CONFIG_BLOCK is not enabled, there are
+>>> MANY build errors.  This one (case) is probably fixed by adding "select BLOCK", but it's
+>>> all rather ugly.
+>>
+>> kconfig even tells us:
+>>
+>> warning: (KVMTOOL_TEST_ENABLE) selects KGDB which has unmet direct dependencies (HAVE_ARCH_KGDB && DEBUG_KERNEL && EXPERIMENTAL)
+>> warning: (KVMTOOL_TEST_ENABLE) selects BLK_DEV which has unmet direct dependencies (BLOCK)
+> 
+> Sasha, I guess your patch fixes this? Can you send me a version that
+> doesn't add the oldconfig magic that Ingo objected to?
 
---- Mensagem Original ---
 
-De: Glauber Costa <glommer@parallels.com>
-Enviado: 7 de novembro de 2011 07/11/11
-Para: linux-kernel@vger.kernel.org
-Cc: paul@paulmenage.org, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com, ebiederm@xmission.com, davem@davemloft.net, gthelen@google.com, netdev@vger.kernel.org, linux-mm@kvack.org, kirill@shutemov.name, Andrey Vagin <avagin@parallels.com>, devel@openvz.org, eric.dumazet@gmail.com, Glauber Costa <glommer@parallels.com>, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-Assunto: [PATCH v5 04/10] per-cgroup tcp buffers control
+Here is more of the twisty maze (from linux-next 2011-1107):
 
-With all the infrastructure in place, this patch implements
-per-cgroup control for tcp memory pressure handling.
+warning: (KVMTOOL_TEST_ENABLE && AMD_IOMMU) selects PCI_MSI which has unmet direct dependencies (PCI && ARCH_SUPPORTS_MSI)
+warning: (KVMTOOL_TEST_ENABLE) selects KGDB which has unmet direct dependencies (HAVE_ARCH_KGDB && DEBUG_KERNEL && EXPERIMENTAL)
 
-A resource conter is used to control allocated memory, except
-for the root cgroup, that will keep using global counters.
 
-This patch is the one that actually enables/disables the
-jump labels controlling cgroup. To this point, they were always
-disabled.
-
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: Eric W. Biederman <ebiederm@xmission.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
----
- include/net/tcp.h       |   18 +++++++
- include/net/transp_v6.h |    1 +
- mm/memcontrol.c         |  125 ++++++++++++++++++++++++++++++++++++++++++++++-
- net/core/sock.c         |   46 +++++++++++++++--
- net/ipv4/af_inet.c      |    3 +
- net/ipv4/tcp_ipv4.c     |   12 +++++
- net/ipv6/af_inet6.c     |    3 +
- net/ipv6/tcp_ipv6.c     |   10 ++++
- 8 files changed, 211 insertions(+), 7 deletions(-)
-
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index ccaa3b6..7301ca8 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -253,6 +253,22 @@ extern int sysctl_tcp_cookie_size;
- extern int sysctl_tcp_thin_linear_timeouts;
- extern int sysctl_tcp_thin_dupack;
- 
-+struct tcp_memcontrol {
-+	/* per-cgroup tcp memory pressure knobs */
-+	struct res_counter tcp_memory_allocated;
-+	struct percpu_counter tcp_sockets_allocated;
-+	/* those two are read-mostly, leave them at the end */
-+	long tcp_prot_mem[3];
-+	int tcp_memory_pressure;
-+};
-+
-+long *sysctl_mem_tcp(struct mem_cgroup *memcg);
-+struct percpu_counter *sockets_allocated_tcp(struct mem_cgroup *memcg);
-+int *memory_pressure_tcp(struct mem_cgroup *memcg);
-+struct res_counter *memory_allocated_tcp(struct mem_cgroup *memcg);
-+int tcp_init_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-+void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss);
-+
- extern atomic_long_t tcp_memory_allocated;
- extern struct percpu_counter tcp_sockets_allocated;
- extern int tcp_memory_pressure;
-@@ -305,6 +321,7 @@ static inline int tcp_synq_no_recent_overflow(const struct sock *sk)
- }
- 
- extern struct proto tcp_prot;
-+extern struct cg_proto tcp_cg_prot;
- 
- #define TCP_INC_STATS(net, field)	SNMP_INC_STATS((net)->mib.tcp_statistics, field)
- #define TCP_INC_STATS_BH(net, field)	SNMP_INC_STATS_BH((net)->mib.tcp_statistics, field)
-@@ -1022,6 +1039,7 @@ static inline void tcp_openreq_init(struct request_sock *req,
- 	ireq->loc_port = tcp_hdr(skb)->dest;
- }
- 
-+extern void tcp_enter_memory_pressure_cg(struct sock *sk);
- extern void tcp_enter_memory_pressure(struct sock *sk);
- 
- static inline int keepalive_intvl_when(const struct tcp_sock *tp)
-diff --git a/include/net/transp_v6.h b/include/net/transp_v6.h
-index 498433d..1e18849 100644
---- a/include/net/transp_v6.h
-+++ b/include/net/transp_v6.h
-@@ -11,6 +11,7 @@ extern struct proto rawv6_prot;
- extern struct proto udpv6_prot;
- extern struct proto udplitev6_prot;
- extern struct proto tcpv6_prot;
-+extern struct cg_proto tcpv6_cg_prot;
- 
- struct flowi6;
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7d684d0..f14d7d2 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -49,6 +49,9 @@
- #include <linux/cpu.h>
- #include <linux/oom.h>
- #include "internal.h"
-+#ifdef CONFIG_INET
-+#include <net/tcp.h>
-+#endif
- 
- #include <asm/uaccess.h>
- 
-@@ -294,6 +297,10 @@ struct mem_cgroup {
- 	 */
- 	struct mem_cgroup_stat_cpu nocpu_base;
- 	spinlock_t pcp_counter_lock;
-+
-+#ifdef CONFIG_INET
-+	struct tcp_memcontrol tcp;
-+#endif
- };
- 
- /* Stuffs for move charges at task migration. */
-@@ -377,7 +384,7 @@ enum mem_type {
- #define MEM_CGROUP_RECLAIM_SOFT		(1 << MEM_CGROUP_RECLAIM_SOFT_BIT)
- 
- static struct mem_cgroup *parent_mem_cgroup(struct mem_cgroup *memcg);
--
-+static struct mem_cgroup *mem_cgroup_from_cont(struct cgroup *cont);
- static inline bool mem_cgroup_is_root(struct mem_cgroup *mem)
- {
- 	return (mem == root_mem_cgroup);
-@@ -387,6 +394,7 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *mem)
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_KMEM
- #ifdef CONFIG_INET
- #include <net/sock.h>
-+#include <net/ip.h>
- 
- void sock_update_memcg(struct sock *sk)
- {
-@@ -451,6 +459,93 @@ u64 memcg_memory_allocated_read(struct mem_cgroup *memcg, struct cg_proto *prot)
- 				    RES_USAGE) >> PAGE_SHIFT ;
- }
- EXPORT_SYMBOL(memcg_memory_allocated_read);
-+/*
-+ * Pressure flag: try to collapse.
-+ * Technical note: it is used by multiple contexts non atomically.
-+ * All the __sk_mem_schedule() is of this nature: accounting
-+ * is strict, actions are advisory and have some latency.
-+ */
-+void tcp_enter_memory_pressure_cg(struct sock *sk)
-+{
-+	struct mem_cgroup *memcg = sk->sk_cgrp;
-+	if (!memcg->tcp.tcp_memory_pressure) {
-+		NET_INC_STATS(sock_net(sk), LINUX_MIB_TCPMEMORYPRESSURES);
-+		memcg->tcp.tcp_memory_pressure = 1;
-+	}
-+}
-+EXPORT_SYMBOL(tcp_enter_memory_pressure_cg);
-+
-+long *sysctl_mem_tcp(struct mem_cgroup *memcg)
-+{
-+	return memcg
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
