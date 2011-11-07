@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab1KGOrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:47:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48447 "EHLO mx2.suse.de"
+	id S932661Ab1KGOrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:47:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49266 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932220Ab1KGOrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:47:13 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Daniel Kurtz <djkurtz@chromium.org>
-Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
-Date: Mon, 7 Nov 2011 15:48:04 +0100
-User-Agent: KMail/1.13.5 (Linux/3.1.0-rc9-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
-        olofj@chromium.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-References: <1320139547-7921-1-git-send-email-djkurtz@chromium.org> <1320139547-7921-4-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1320139547-7921-4-git-send-email-djkurtz@chromium.org>
+	id S932626Ab1KGOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 09:47:14 -0500
+Message-ID: <4EB7EF4F.3090907@redhat.com>
+Date: Mon, 07 Nov 2011 16:46:39 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
+Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
+ guests
+References: <1320323618-10375-1-git-send-email-gleb@redhat.com>  <1320323618-10375-3-git-send-email-gleb@redhat.com> <1320676467.18053.43.camel@twins>
+In-Reply-To: <1320676467.18053.43.camel@twins>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111071548.04483.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 1. November 2011, 10:25:47 schrieb Daniel Kurtz:
-> Defer LED setting action to a workqueue.
-> This is more likely to perform all LED change events in a single URB.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/hid/hid-input.c       |   42 ++++++++++++++++++++++++++++++++++++++++
->  drivers/hid/usbhid/hid-core.c |   43 +++++++++++++++++++++++++++++++---------
->  drivers/hid/usbhid/usbhid.h   |    2 +
->  include/linux/hid.h           |    2 +
+On 11/07/2011 04:34 PM, Peter Zijlstra wrote:
+> On Thu, 2011-11-03 at 14:33 +0200, Gleb Natapov wrote:
+> > +static void kvm_perf_overflow_intr(struct perf_event *perf_event,
+> > +               struct perf_sample_data *data, struct pt_regs *regs)
+> > +{
+> > +       struct kvm_pmc *pmc = perf_event->overflow_handler_context;
+> > +       struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
+> > +       if (!test_and_set_bit(pmc->idx, (unsigned long *)&pmu->reprogram_pmi)) {
+> > +               kvm_perf_overflow(perf_event, data, regs);
+> > +               kvm_make_request(KVM_REQ_PMU, pmc->vcpu);
+> > +               /*
+> > +                * Inject PMI. If vcpu was in a guest mode during NMI PMI
+> > +                * can be ejected on a guest mode re-entry. Otherwise we can't
+> > +                * be sure that vcpu is not halted, so we should kick it, but
+> > +                * this is impossible from NMI context. Do it from irq work
+> > +                * instead.
+> > +                */
+> > +               if (!kvm_is_in_guest())
+> > +                       irq_work_queue(&pmc->vcpu->arch.pmu.irq_work);
+> > +               else
+> > +                       kvm_make_request(KVM_REQ_PMI, pmc->vcpu);
+> > +       }
+> > +} 
+>
+> I'm not sure I get this, since the counters are vcpu task bound and only
+> count while the guest is running as per (144d31e6f19) how can we get an
+> NMI outside of guest context with the vcpu not halted?
 
-> @@ -1292,6 +1314,7 @@ static void hid_cancel_delayed_stuff(struct usbhid_device *usbhid)
->  {
->  	del_timer_sync(&usbhid->io_retry);
->  	cancel_work_sync(&usbhid->reset_work);
-> +	cancel_work_sync(&usbhid->led_work);
->  }
+PMI skew.  Do we know how bad it can get?
 
-Hi,
+-- 
+error compiling committee.c: too many arguments to function
 
-this seems to introduce a race in usbhid_stop() which might fail to kill the urb
-used to change the LEDs.
-
-	Regards
-		Oliver
