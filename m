@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab1KGMto (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:49:44 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35022 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386Ab1KGMtn (ORCPT
+	id S1755509Ab1KGMuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:50:04 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:60048 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab1KGMuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:49:43 -0500
+	Mon, 7 Nov 2011 07:50:02 -0500
+Message-ID: <4EB7D3C0.9070706@atmel.com>
+Date: Mon, 07 Nov 2011 13:49:04 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111031 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20111107154936.7c60be38@natsu>
-References: <20111106183851.GA4339@shiny> <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
- <4EB7A6CC.5030502@gmx.net> <20111107154936.7c60be38@natsu>
-From: Andrea Gelmini <andrea.gelmini@gmail.com>
-Date: Mon, 7 Nov 2011 13:49:21 +0100
-Message-ID: <CAK-xaQbT+hrO-DOoiTDrU_4KfQuc+xvc4D_F0JFnWNHdGOTkQA@mail.gmail.com>
-Subject: Re: [GIT PULL] Btrfs pull request
-To: Roman Mamedov <rm@romanrm.ru>
-Cc: Arne Jansen <sensille@gmx.net>, Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jean Delvare <khali@linux-fr.org>, "Voss, Nikolaus" <N.Voss@weinmann.de>,
+        balbi@ti.com
+CC: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [PATCH V2] drivers/i2c/busses/i2c-at91.c: fix brokeness
+References: <alpine.DEB.2.00.1111071019560.21431@gatekeeper.vosshq.de> <20111107094701.GF4265@legolas.emea.dhcp.ti.com> <EF2E73589CA71846A15D0B2CDF79505D087B38B21C@wm021.weinmann.com> <20111107100446.GG4265@legolas.emea.dhcp.ti.com> <EF2E73589CA71846A15D0B2CDF79505D087B38B2AB@wm021.weinmann.com> <20111107130432.3309ffd6@endymion.delvare>
+In-Reply-To: <20111107130432.3309ffd6@endymion.delvare>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/7 Roman Mamedov <rm@romanrm.ru>:
-> If so, shouldn't there also be a corresponding dmesg warning about "Unable to allocate....", which would confirm or rule this out?
-> So before following the "did you try turning it off and on again" advice (and throwing away useful debug info), I'd suggest checking/saving dmesg first.
+On 11/07/2011 01:04 PM, Jean Delvare :
+> On Mon, 7 Nov 2011 12:06:52 +0100, Voss, Nikolaus wrote:
+>>>>> IMHO, you should split this patch into three or more smaller patches.
+>>>>> You're doing lots of different things in one commit and it'll be a
+>>>>> pain to bisect should this cause any issues to anyone.
+>>>>
+>>>> I didn't split the patch because it is virtually a complete rewrite.
+>>>> Due to the severe limitations of the old driver, I think it should
+>>>> replace the old driver.
+>>>
+>>> The final decision is up to Ben and/or Jean but I think we should always have
+>>> incremental patches, not sure if we should allow big patches for the reasons
+>>> above.
+> 
+> The final call is obviously to Ben, not me, as this driver falls under
+> his jurisdiction. But for what it's worth, I consider the small-steps
+> rule void when it comes to fixing a plain broken driver by almost fully
+> rewriting it. The reviewer should really review the resulting code
+> rather than the patch. If it makes everybody happier, then killing the
+> old code completely first is certainly an option.
 
-Hi Roman,
-   and thanks a lot for your reply.
-   I did check dmesg and /var/log also, but I didn't find complain about it.
+I agree with this.
 
-   So, I tried with a loopback device and it works well.
-   Maybe the problem is about my device stack?
-   Bottom up my home is on a: md + luks + lvm + md + btrfs.
-
-Thanks a lot for your time,
-Andrea
+-- 
+Nicolas Ferre
