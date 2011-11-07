@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab1KGW6E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:58:04 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58689 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab1KGW6B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:58:01 -0500
+	id S1754290Ab1KGW6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:58:13 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:51550 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754187Ab1KGW6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 17:58:11 -0500
+Message-ID: <4EB8625C.8020109@parallels.com>
+Date: Mon, 7 Nov 2011 20:57:32 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-In-Reply-To: <20111107181209.GB5474@suse.de>
-References: <20110920161743.GA32737@kroah.com>
-	<CAHR064gzgKtLSNQ-NuoKWW9-Nv_S0myOusQT+-CxVVeyO5fMKA@mail.gmail.com>
-	<20111107181209.GB5474@suse.de>
-Date: Mon, 7 Nov 2011 23:57:58 +0100
-Message-ID: <CAHR064jx4jWdLHRaKECEz-1Wauhm1xR+pGNLXsPPn7jYKJ81Uw@mail.gmail.com>
-Subject: Re: [patch 0/8] Samsung Laptop driver patches - resend
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, greg@kroah.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de> <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk> <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com> <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 7:12 PM, Greg KH <gregkh@suse.de> wrote:
-> On Sun, Nov 06, 2011 at 11:54:39PM +0100, Corentin Chary wrote:
->> Just got a 90X3A from Intel and I'll try to take a look at samsung-laptop
->> since some features are missing (keyboard backlight for example).
+On 11/07/2011 08:53 PM, Alan Cox wrote:
+>> What part of the message did you read? This is about _per_user_
+>> limits, not global limits!
 >
-> Try adding your device to this driver.  Or, watch out, as newer Samsung
-> devices support backlight control "properly" through acpi, which is
-> good, and this driver is not needed by them at all.
+> What part of 'we support lots of mounts' don't you understand. Or perhaps
+> you could go use a control group for it ?
 
-I'm speaking about *keyboard* backlight here, not screen backlight
-(which is already available using both the acpi driver and the intel
-graphic driver). There is also a setting to enable USB power while
-sleeping without having to change it in the BIOS, and it's probably
-possible to control the sound and wlan led.
+We are trying to implement an indirect limit on slab objects in the 
+memory controller.
+Our specific use case is to control the number of dentries currently 
+pinned in some given physical filesystem. If you can't allocate a dentry 
+from the dentry cache, you can also not DoS a system - in our case, a 
+container.
 
->> Do you have any doc on the vendor "interface" (other than just reading
->> the code :) ) ?
+Maybe this will also solve your problems?
+
+>> Any untrusted user can fill /dev/shm today and DOS many services that
+>> way on any machine out there. Same for /tmp when it's a tmpfs, or
+>> /run/user. This is an absolutely unacceptable state and needs fixing.
 >
-> I do not have any documentation for the interface, sorry.  The code
-> should be self-explanatory.
+> Actually if you've mounted it with limits they can be a nuisance but
+> little more, and if you are running with memory overcommit disabled then
+> its accounted for in that. If you are running with memory over commit
+> allowed (as eg Red Hat and Fedora do) you are peeing into the wind at this
+> point anyway so wasting time.
+>
+>> I don't care about which interface it is, if someting else fits
+>> better, let's discuss that, but it has surely absolutely noting to do
+>> with size/nr_blocks/nr_inodes.
+>
+> Per user would be quota, per process would be rlimit. Quite simple
+> really, nice standard interfaces we've had for years. Various systems
+> have been quotaing /tmp/ for a long time. Smart secure ones of course
+> mount a per user /tmp via PAM or similar to avoid /tmp attacks and in that
+> case the mount options I pointed out already do the job.
+>
+> Quota isn't entirely trivial because you want your quota db initialised
+> at mount so you'd need to pass a quota file pointer to the mount command
+> ideally. All doable however and makes the management easy and means you
+> get all the application expected behaviour when you exceed your limits
+> (that is for properly written stuff - lots of crappy badly written desktop
+> programs randomly crash or worse as we already know)
+>
+> This is why I'm confused - you are wittering about all sorts of security
+> stuff but you are not addressing the more serious matters first - the
+> ones that go beyond a DoS.
+>
+> Alan
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
-Arg... I can understand the code, I can easilly write ACPI and WMI
-drivers, but the "SABI" thing will be harder to reverse engineer :).
-
-Thanks,
-
--- 
-Corentin Chary
-http://xf.iksaif.net
