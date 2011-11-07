@@ -1,70 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab1KGL3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 06:29:55 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:36496 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab1KGL3y (ORCPT
+	id S1754542Ab1KGLaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:30:35 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41517 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab1KGLad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 06:29:54 -0500
-Date: Mon, 7 Nov 2011 12:29:52 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Davidlohr Bueso <dave@gnu.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-Message-ID: <20111107112952.GB25130@tango.0pointer.de>
-References: <1320614101.3226.5.camel@offbook>
- <20111107073127.GA7410@infradead.org>
+	Mon, 7 Nov 2011 06:30:33 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EB7C14E.1070503@jp.fujitsu.com>
+Date: Mon, 07 Nov 2011 20:30:22 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107073127.GA7410@infradead.org>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai.lu@oracle.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: [PATCH] pciehp: Retrieve link speed after link is trained
+References: <4E9147DE.3050006@oracle.com> <20111102140522.411ef343@jbarnes-desktop> <4EB23DBC.8050805@jp.fujitsu.com>
+In-Reply-To: <4EB23DBC.8050805@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07.11.11 02:31, Christoph Hellwig (hch@infradead.org) wrote:
-
+(2011/11/03 16:07), Kenji Kaneshige wrote:
+> (2011/11/03 6:05), Jesse Barnes wrote:
+>> On Sun, 09 Oct 2011 00:06:06 -0700
+>> Yinghai Lu<yinghai.lu@oracle.com> wrote:
+>>
+>>>
+>>> During hot plug, board_added will call pciehp_power_on_slot().
+>>> But link speed is updated in pciehp_power_on_slot().
+>>>
+>>> We should not update link speed there, because that is too early.
+>>>
+>>> Move updating to pciehp_check_link_status() after making sure link is trained.
+>>>
+>>> Signed-off-by: Yinghai Lu<yinghai.lu@oracle.com>
+>>>
+>>> ---
+>>> drivers/pci/hotplug/pciehp_hpc.c | 10 ++--------
+>>> 1 file changed, 2 insertions(+), 8 deletions(-)
+>>>
+>>> Index: linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/drivers/pci/hotplug/pciehp_hpc.c
+>>> +++ linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
+>>> @@ -294,6 +294,8 @@ int pciehp_check_link_status(struct cont
+>>> return retval;
+>>> }
+>>>
+>>> + pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+>>> +
+>>> return retval;
+>>> }
+>>>
+>>> @@ -516,14 +518,6 @@ int pciehp_power_on_slot(struct slot * s
+>>> ctrl_dbg(ctrl, "%s: SLOTCTRL %x write cmd %x\n", __func__,
+>>> pci_pcie_cap(ctrl->pcie->port) + PCI_EXP_SLTCTL, slot_cmd);
+>>>
+>>> - retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA,&lnk_status);
+>>> - if (retval) {
+>>> - ctrl_err(ctrl, "%s: Cannot read LNKSTA register\n",
+>>> - __func__);
+>>> - return retval;
+>>> - }
+>>> - pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
+>>> -
+>>> return retval;
+>>> }
+>>
+>> Kenji-san or Hidetoshi-san, would it be possible to get tested-bys and
+>> reviewed-bys from you on this patch?
+>>
+>> Thanks,
 >
-> On Sun, Nov 06, 2011 at 06:15:01PM -0300, Davidlohr Bueso wrote:
-> > From: Davidlohr Bueso <dave@gnu.org>
-> >
-> > This patch adds a new RLIMIT_TMPFSQUOTA resource limit to restrict an individual user's quota across all mounted tmpfs filesystems.
-> > It's well known that a user can easily fill up commonly used directories (like /tmp, /dev/shm) causing programs to break through DoS.
+> Looks good to me.
+> Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 >
-> Please jyst implement the normal user/group quota interfaces we use for other
-> filesystem.
+> Unfortunately, I don't have test environment right now. Maybe
+> I will be able to test it early next week.
+>
 
-Please don't.
+I got the following warning messages on kernel compile. I'm using 3.1.
+Yinghai, please fix this.
 
-tmpfs by its very nature is volatile, which means that we'd have to
-upload the quota data explicitly each time we mount a tmpfs, which means
-we'd have to add quite some userspace infrastructure to make tmpfs work
-with quota. Either every time a tmpfs is mounted we'd have to apply a
-quota for every configured user and every future user to it (which is
-simply not realistic) or on every user logging in we'd have to go
-through all tmpfs mount points and apply a user-specific quota setting
-to it -- which isn't much less ugly and complex. Just using a
-user-specific RLIMIT is much much simpler and beautiful there, and
-requires almost no changes to userspace.
+   CC      drivers/pci/hotplug/pciehp_hpc.o
+drivers/pci/hotplug/pciehp_hpc.c: In function 'pciehp_power_on_slot':
+drivers/pci/hotplug/pciehp_hpc.c:489: warning: unused variable 'lnk_status'
 
-On top of that I think a global quota over all tmpfs is actually
-preferable than a per-tmpfs quota, because what you want to enforce is
-that clients cannot drain the pool that tmpfs is backed from but how
-they distribute their share of that pool on the various tmpfs mounted
-doesn't really matter in order to avoid DoS vulnerabilities.
+Looks good to me, other than this.
 
-In short: a resource limit for tmpfs quota looks like the best solution
-here, which does exactly what userspace wants.
+Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-Lennart
+Regards,
+Kenji Kaneshige
 
---
-Lennart Poettering - Red Hat, Inc.
+
+
+
