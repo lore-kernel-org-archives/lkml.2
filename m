@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab1KGGsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 01:48:23 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60417 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab1KGGsV (ORCPT
+	id S1752244Ab1KGGwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 01:52:08 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:52072 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab1KGGwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 01:48:21 -0500
-Subject: Re: [GIT PULL] target: Updates for v3.2-rc1 (round two)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@purestorage.com>,
-        Bart Van Assche <bvanassche@acm.org>
-In-Reply-To: <1320634778.18988.10.camel@haakon2.linux-iscsi.org>
-References: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
-	 <1320634778.18988.10.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Nov 2011 22:47:54 -0800
-Message-ID: <1320648474.28530.18.camel@haakon2.linux-iscsi.org>
+	Mon, 7 Nov 2011 01:52:06 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: [PATCH][RESEND] fix typo in crypto/Kconfig
+From: Valdis.Kletnieks@vt.edu
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Date: Mon, 07 Nov 2011 01:51:51 -0500
+Message-ID: <21323.1320648711@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4EB7800B.0016,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-11-06 at 18:59 -0800, Nicholas A. Bellinger wrote:
-> Hi Linus,
-> 
-> This is just a friendly reminder to please pull the two remaining
-> target-pending branches (for-next and for-next-merge) for -rc1.
-> 
+(Sent this a while back, I don't see it in next-20111104, so resending)
 
-Thanks for pulling the target core changes from target-pending/for-next.
+Fix a typo in the Kconfig file help text.
 
-Please also consider pulling the new ib_srpt driver in for-next-merge
-here:
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next-merge
+--- linux-next/crypto/Kconfig.dist	2011-10-25 06:57:29.413596040 -0400
++++ linux-next/crypto/Kconfig	2011-10-25 07:01:51.518647308 -0400
+@@ -104,7 +104,7 @@
+ 	tristate "Userspace cryptographic algorithm configuration"
+ 	select CRYPTO_MANAGER
+ 	help
+-	  Userapace configuration for cryptographic instantiations such as
++	  Userspace configuration for cryptographic instantiations such as
+ 	  cbc(aes).
+ 
+ config CRYPTO_MANAGER_DISABLE_TESTS
 
-We are making forward progress on the remaining items to be included in
-the next rc-fixes pull, but please consider the last GIT PULL request
-below for an initial merge with what we have collectively agreed upon
-for the userspace API in /sys/kernel/config/target/srpt for v3.2.
 
-[GIT PULL] ib_srpt: Initial SRP Target merge for v3.2-rc1
-http://marc.info/?l=linux-rdma&m=132043748907782&w=2
+--==_Exmh_1319540838_3131P
+Content-Type: application/pgp-signature
 
-Thank you,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
---nab
+iD8DBQFOpphmcC3lWbTT17ARAiojAJ9xGtiMJrsIB06pLHHi8YgK7+wNBgCgzNfy
+BRiflJemi1Lf4zz0nkzLuNU=
+=z8QE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1319540838_3131P--
+
+
 
 
 
