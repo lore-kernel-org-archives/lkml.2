@@ -1,152 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1KGPTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 10:19:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:55127 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab1KGPTU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 10:19:20 -0500
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
-From: Peter Zijlstra <peterz@infradead.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: paulmck@linux.vnet.ibm.com, Ingo Molnar <mingo@elte.hu>,
-        eric.dumazet@gmail.com, shaohua.li@intel.com, ak@linux.intel.com,
-        mhocko@suse.cz, alex.shi@intel.com, efault@gmx.de,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Stephane Eranian <eranian@google.com>
-Date: Mon, 07 Nov 2011 16:15:02 +0100
-In-Reply-To: <4EAF5B68.8090005@cn.fujitsu.com>
-References: <20111003161335.GA2403@linux.vnet.ibm.com>
-	 <20111004074637.GA14061@elte.hu>
-	 <20111024100501.GA24913@linux.vnet.ibm.com>
-	 <20111024114806.GA3340@linux.vnet.ibm.com> <20111026203020.GA10285@elte.hu>
-	 <20111027075901.GB2313@linux.vnet.ibm.com> <20111027080016.GA16885@elte.hu>
-	 <4EAA14A1.5060204@cn.fujitsu.com>
-	 <20111029182710.GG6160@linux.vnet.ibm.com>
-	 <4EAE57AF.1060706@cn.fujitsu.com>
-	 <20111031093256.GI6160@linux.vnet.ibm.com>
-	 <4EAF5B68.8090005@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320678902.18053.63.camel@twins>
-Mime-Version: 1.0
+	id S1753036Ab1KGPTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 10:19:44 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:38290 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751342Ab1KGPTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 10:19:43 -0500
+Date: Mon, 7 Nov 2011 10:19:39 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH v2] ext4: fix NULL pointer dereference from orig_data
+ in fill_super and remount.
+Message-ID: <20111107151939.GA24234@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Namjae Jeon <linkinjeon@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
+References: <1320674511-1980-1-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320674511-1980-1-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far nobody seems to have stated if this is an actual problem or just
-shutting up lockdep-prove-rcu? I very much suspect the latter, in which
-case I really utterly hate the patch because it adds instructions to
-fast-paths just to kill a debug warning.
-
-On Tue, 2011-11-01 at 10:37 +0800, Li Zefan wrote:
+On Mon, Nov 07, 2011 at 11:01:51PM +0900, Namjae Jeon wrote:
+> Fix NULL pointer dereference from orig_data in fill_super and remount.
 > 
-> With the following patch, we should see no rcu warning from perf, but as I
-> don't know the internel of perf, I guess we have to defer to Peter and
-> Stephane. ;)
-> 
-> I have two doubts:
-> 
-> - in perf_cgroup_sched_out/in(), we retrieve the task's cgroup twice in the function
-> and it's callee perf_cgroup_switch(), but the task can move to another cgroup between
-> two calls, so they might return two different cgroup pointers. Does it matter?
-> 
-> - in perf_cgroup_switch():
-> 
->          cpuctx->cgrp = perf_cgroup_from_task(task);
-> 
-> but seems the cgroup is not pinned, so cpuctx->cgrp can be invalid in later use.
-> 
-> ---
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d1a1bee..f5e05ce 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -302,7 +302,10 @@ static inline void update_cgrp_time_from_event(struct perf_event *event)
->         if (!is_cgroup_event(event))
->                 return;
->  
-> +       rcu_read_lock();
->         cgrp = perf_cgroup_from_task(current);
-> +       rcu_read_unlock();
-> +
->         /*
->          * Do not update time when cgroup is not active
->          */
+> Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
 
-This looks like shutting things up, because what protects the use of
-cgrp after rcu_read_unlock() ?
+Um, did you even try to test this patch before submitting it?
 
-Similar to the below, this is a stupid patch to shut things up, no
-actual problem there, just making a hot path slow.
+#1:   kstrdup() return NULL if data is NULL
 
-> @@ -325,9 +328,11 @@ perf_cgroup_set_timestamp(struct task_struct *task,
->         if (!task || !ctx->nr_cgroups)
->                 return;
->  
-> +       rcu_read_lock();
->         cgrp = perf_cgroup_from_task(task);
->         info = this_cpu_ptr(cgrp->info);
->         info->timestamp = ctx->timestamp;
-> +       rcu_read_unlock();
->  }
+#2:  The kernel's printk and sprintf functions will translate
+     sprintf(buf, "%s", NULL) by filling in the string "NULL"
 
-This seems to actually protect the cgrp usage, but is that needed?
+#3:  The only use of orig_data is a cosmetic one, of printing out
+     the mount options which are passed in.
 
-It looks to be superfluous, since
-perf_cgroup_attach_task()->__perf_cgroup_move()->perf_cgroup_switch()
-will hold ctx->lock when it switches a task from one cgroup to another
-and perf_cgroup_set_timestamp() should only ever be called while holding
-the ctx->lock since that is what is used to serialize the timestamps.
+#4:  If the user doesn't specify any mount options, data is NULL, and
+     your patch would cause those mounts to fail with ENOMEM.
 
->  #define PERF_CGROUP_SWOUT      0x1 /* cgroup switch out every event */
-> @@ -406,6 +411,8 @@ static inline void perf_cgroup_sched_out(struct task_struct *task,
->         struct perf_cgroup *cgrp1;
->         struct perf_cgroup *cgrp2 = NULL;
->  
-> +       rcu_read_lock();
-> +
->         /*
->          * we come here when we know perf_cgroup_events > 0
->          */
-> @@ -418,6 +425,8 @@ static inline void perf_cgroup_sched_out(struct task_struct *task,
->         if (next)
->                 cgrp2 = perf_cgroup_from_task(next);
->  
-> +       rcu_read_unlock();
-> +
->         /*
->          * only schedule out current cgroup events if we know
->          * that we are switching to a different cgroup. Otherwise,
+In summary, there is no problem here; a pendant might complain that
+it's possible for data to be non-NULL, and for orig_data to be null of
+the kstrdup failed, but in that case, other memory allocations done
+later in ext4_fill_super() will almost have certainly failed, so in
+practice won't get as far as the printk.
 
-This only hides a warning and leaves a race.
-
-> @@ -433,6 +442,8 @@ static inline void perf_cgroup_sched_in(struct task_struct *prev,
->         struct perf_cgroup *cgrp1;
->         struct perf_cgroup *cgrp2 = NULL;
->  
-> +       rcu_read_lock();
-> +
->         /*
->          * we come here when we know perf_cgroup_events > 0
->          */
-> @@ -441,6 +452,8 @@ static inline void perf_cgroup_sched_in(struct task_struct *prev,
->         /* prev can never be NULL */
->         cgrp2 = perf_cgroup_from_task(prev);
->  
-> +       rcu_read_unlock();
-> +
->         /*
->          * only need to schedule in cgroup events if we are changing
->          * cgroup during ctxsw. Cgroup events were not scheduled
-> 
-
-idem.
-
-So no, this patch utterly sucks, it adds code to hot paths just to quiet
-debug warnings in two cases and the remaining two cases annotates a
-warning away while leaving an actual problem unfixed.
-
-
+					- Ted
