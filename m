@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab1KGCq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:46:27 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59405 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754394Ab1KGCq0 (ORCPT
+	id S1755178Ab1KGCrQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 21:47:16 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:50299 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755107Ab1KGCrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:46:26 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 7 Nov 2011 11:45:20 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Konstantin Khlebnikov <khlebnikov@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Gene Heskett <gene.heskett@gmail.com>
-Subject: Re: [rfc 3/3] mm: vmscan: revert file list boost on lru addition
-Message-Id: <20111107114520.33050d75.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111102163247.GJ19965@redhat.com>
-References: <20110808110658.31053.55013.stgit@localhost6>
-	<CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
-	<4E3FD403.6000400@parallels.com>
-	<20111102163056.GG19965@redhat.com>
-	<20111102163247.GJ19965@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Sun, 6 Nov 2011 21:47:14 -0500
+Date: Mon, 7 Nov 2011 13:47:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gregory.v.rose@intel.com,
+        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the origin tree
+Message-Id: <20111107134706.3e7fc633f913b5e155153127@canb.auug.org.au>
+In-Reply-To: <20111106.205259.1237400984015921904.davem@davemloft.net>
+References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
+	<20111106.205259.1237400984015921904.davem@davemloft.net>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Nov 2011 17:32:47 +0100
-Johannes Weiner <jweiner@redhat.com> wrote:
+--Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The idea in 9ff473b 'vmscan: evict streaming IO first' was to steer
-> reclaim focus onto file pages with every new file page that hits the
-> lru list, so that an influx of used-once file pages does not lead to
-> swapping of anonymous pages.
-> 
-> The problem is that nobody is fixing up the balance if the pages in
-> fact become part of the resident set.
-> 
-> Anonymous page creation is neutral to the inter-lru balance, so even a
-> comparably tiny number of heavily used file pages tip the balance in
-> favor of the file list.
-> 
-> In addition, there is no refault detection, and every refault will
-> bias the balance even more.  A thrashing file working set will be
-> mistaken for a very lucrative source of reclaimable pages.
-> 
-> As anonymous pages are no longer swapped above a certain priority
-> level, this mechanism is no longer needed.  Used-once file pages
-> should get reclaimed before the VM even considers swapping.
-> 
-> Signed-off-by: Johannes Weiner <jweiner@redhat.com>
+Hi Dave,
 
-Do you have some results ?
+On Sun, 06 Nov 2011 20:52:59 -0500 (EST) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 7 Nov 2011 10:12:02 +1100
+>=20
+> > Starting with the origin tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+>  ...
+> > Caused by commit 9487dc844054 ("ixgbe: Fix compiler warnings") which hid
+> > the declarations of ixgbe_disable_sriov() and ixgbe_check_vf_assignment=
+()
+> > when CONFIG_PCI_IOV is not defined.
+> >=20
+> > I have reverted that commit for today.
+>=20
+> It should be fixed in net.git, can you please check that the build
+> succeeds after you pull it into -next?
 
-Thanks,
--Kame
+I reverted the commit above ...
 
+> If you just revert the commit in origin from -next, then you will get
+> conflicts with you pull the net.git tree in.
+
+I got no conflicts when I merged in the net tree and can see no fix for
+this problem in the net tree.  My current head of the net tree is 1a6422f
+"etherh: Add MAINTAINERS entry for etherh".
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOt0aqAAoJEECxmPOUX5FEBlsP/jEbk8bU/lU+EnyVjk/gpI0M
+xnFO0HqG/oGDEgBAq0Oi6I9OrWf5bPhu2brhdwHoQNcQGAxGc2KpJjLWBiVgJIha
+j8meYwGDt1qDosjEU7bRszh3U9jyv7lyh7qXqL3hMwn8JhxLLCXyPARQmElpt1An
+83y7h0xClyED7/TpxMm41gGfHJ+EYfNmZkASCr5AgItiUs6I3YedM+3UQV6gyXTu
+Q/FXhTEKkc9DzaEAXjGNyBglGF5yH/Cf1c0Lo7GOKVNFShcKPfrpzVC2vSHyPboh
+MKHpmQO4cNJ8cLGEvBL9uGvNT1zJnVkaoN/OtZResJrO7291MtgXbB6nWXIXDRoB
+i46AtKoueuZN+Ata5P2oC7OSOauFvgs7wqu2S2FrUm0rzqwekaYCZXq1ndJPPFAr
+hLXhfM7D6KP4g4eVWeMI8h9m1YlqZqEsOc8CuOkXv700Expjd2yU/VT9wkN2rJ+c
+0li7P6Jxrvh/W17mqZtOm/Pay6KqzIimB9YNd7826q2f059EDQtmDuxdWiZ+sYVC
+aEBhXeSmC4KCdT9iO6D4orTHELL6yhO4HAuNajfYmbzAlZE1B5qSbUxQIk+Y/Bzi
+X7N//fkt1eB0mA/Jg885OcTZfOw0cAMtVcYKgwMAGsK4/l2uli5P7N36G3pvM29J
+j0iK4Z+T8jrSrKjRtUUI
+=Gtzj
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_Nov_2011_13_47_06_+1100_nTP_ql/QxCghs0ru--
