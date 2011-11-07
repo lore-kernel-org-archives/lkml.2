@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab1KGXHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:07:36 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12911 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753617Ab1KGXHe (ORCPT
+	id S1754905Ab1KGXIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:08:09 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61071 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab1KGXIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:07:34 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/GronTEjG8ihVX3RfMENzh
-Date: Mon, 7 Nov 2011 15:07:28 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
-Message-ID: <20111107230728.GC31337@atomide.com>
-References: <1320688617-4543-1-git-send-email-balbi@ti.com>
- <20111107183208.GG15294@n2100.arm.linux.org.uk>
- <20111107193908.GA5059@legolas.emea.dhcp.ti.com>
- <20111107212707.GH15294@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com>
- <20111107224129.GJ15294@n2100.arm.linux.org.uk>
- <20111107225157.GB31337@atomide.com>
- <20111107225529.GK15294@n2100.arm.linux.org.uk>
+	Mon, 7 Nov 2011 18:08:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107225529.GK15294@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EB84F05.1000704@zytor.com>
+References: <20111107174522.GA2317@albatros> <9718.1320689192@turing-police.cc.vt.edu>
+ <20111107190112.GA3732@albatros> <4EB82F08.8060209@zytor.com>
+ <20111107192915.GA4690@albatros> <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
+ <4EB83674.3040207@zytor.com> <20111107201120.GA5775@albatros>
+ <4EB843FF.5080201@zytor.com> <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
+ <4EB84F05.1000704@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 7 Nov 2011 15:07:42 -0800
+X-Google-Sender-Auth: Wx_gWFHgT9TzKBR3XKhc8-viG08
+Message-ID: <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
+Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to /proc/interrupts
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Eric Paris <eparis@parisplace.org>,
+        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [111107 14:20]:
-> On Mon, Nov 07, 2011 at 02:51:57PM -0800, Tony Lindgren wrote:
-> > Here's what I got. Looks like the removal of the sr[12]_hwmod
-> > part is no longer needed, so only the r value check part is needed.
-> 
-> Err.  So do you have anything in your git tree which you're pushing out
-> this evening which removes the sr[12]_hwmod from the omap_3xxx_hwmod
-> list?
-> 
-> If not, how does that bug get fixed in mainline?
+On Mon, Nov 7, 2011 at 1:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> I was going to say "let's just have the login manager add a group to the
+> desktop user's permission set" but then I realized that this would be
+> really bad because of setgid files.
+>
+> Which exposes a real problem with chgrp and setgid files overall.
 
-Ah sorry, there's also the following commit there that deals
-with other related issues:
+No, the problem is more fundamental, and this is simply not something
+you should try to solve with traditional unix permissions.
 
-From: Abhilash K V <abhilash.kv@ti.com>
-Date: Fri, 7 Oct 2011 03:08:56 -0600
-Subject: [PATCH] ARM: OMAP: AM35x: remove hwmods that aren't generic
+Why? Because the problem really isn't about opening the file. The
+problem is about any access: once you've opened the file, you *still*
+must not be able to read the data from it if you have logged out and
+somebody else has logged in. Think opening the microphone (which you
+*should* be able to do) and just keeping it open until the next user
+logs in.
 
-Removing modules iva, sr1_hwmod, sr2_hwmod, mailbox from
-the base omap3xxx_hwmods list, so that they can be excluded
-for am35x.  This removes quite a few warnings on boot for AM35x.
+Or do the same with /proc/interrupts.
 
-Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-[paul@pwsan.com: dropped 'mailbox class' comments; updated changelog]
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Your "oops, you can get your group permissions back with a setgrp
+binary" example case is just a trivial case of the much bigger
+picture: access has to be actively *revoked*.
 
---- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-@@ -3132,7 +3132,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_mmc2_hwmod,
- 	&omap3xxx_mmc3_hwmod,
- 	&omap3xxx_mpu_hwmod,
--	&omap3xxx_iva_hwmod,
- 
- 	&omap3xxx_timer1_hwmod,
- 	&omap3xxx_timer2_hwmod,
-@@ -3161,8 +3160,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_i2c1_hwmod,
- 	&omap3xxx_i2c2_hwmod,
- 	&omap3xxx_i2c3_hwmod,
--	&omap34xx_sr1_hwmod,
--	&omap34xx_sr2_hwmod,
- 
- 	/* gpio class */
- 	&omap3xxx_gpio1_hwmod,
-@@ -3184,8 +3181,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 	&omap3xxx_mcbsp2_sidetone_hwmod,
- 	&omap3xxx_mcbsp3_sidetone_hwmod,
- 
--	/* mailbox class */
--	&omap3xxx_mailbox_hwmod,
- 
- 	/* mcspi class */
- 	&omap34xx_mcspi1,
-@@ -3198,31 +3193,39 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
- 
- /* 3430ES1-only hwmods */
- static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3430es1_dss_core_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
- /* 3430ES2+-only hwmods */
- static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3xxx_dss_core_hwmod,
- 	&omap3xxx_usbhsotg_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
- /* 34xx-only hwmods (all ES revisions) */
- static __initdata struct omap_hwmod *omap34xx_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap34xx_sr1_hwmod,
- 	&omap34xx_sr2_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
- /* 36xx-only hwmods (all ES revisions) */
- static __initdata struct omap_hwmod *omap36xx_hwmods[] = {
-+	&omap3xxx_iva_hwmod,
- 	&omap3xxx_uart4_hwmod,
- 	&omap3xxx_dss_core_hwmod,
- 	&omap36xx_sr1_hwmod,
- 	&omap36xx_sr2_hwmod,
- 	&omap3xxx_usbhsotg_hwmod,
-+	&omap3xxx_mailbox_hwmod,
- 	NULL
- };
- 
+Sure, you can still do it in user space, but it gets really hacky
+really quickly. You need to do some magic random permission logic,
+*and* you need to add revoke support for every single file that ends
+up being affected.
+
+It's just a broken model.
+
+So I really think it would be much better to just have a per-user flag
+that says "this user has access to the physical machine", and that
+flag gets tested not only on open but on reads etc of the appropriate
+/proc files. It really is a kind of "temporary admin privileges",
+where "admin" is much weaker than root, but does mean that you have
+access to whatever directly attached devices
+(sound/video/keyboard/whatever), and that you can examine machine
+state (ie a lot of the "sensitive" /proc stuff, like slabinfo and
+interrupts and /proc/status etc).
+
+Trying to fake it with groups is wrong. It's much *better* to fake it
+with POSIX ACL's (which don't have the setgrp issue you mention), but
+that still ends up being problematic wrt revoke etc.
+
+Faking it with posix acl's is what the /dev/audio stuff tends to do.
+It's better than nothing, but it really isn't wonderful - because it's
+really not just about audio. And revoke doesn't work universally.
+
+Practically speaking, I suspect we are going to be at the mercy of
+distros getting things like this right, with these kinds of user-level
+hacks. But I think it's sad.
+
+               Linus
