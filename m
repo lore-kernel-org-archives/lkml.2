@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab1KGOqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:46:34 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:56895 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754691Ab1KGOqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:46:33 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>
-Cc: Linaro Dev <linaro-dev@lists.linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: hide subsystem from the populace
-Date: Mon, 7 Nov 2011 15:15:04 +0100
-Message-ID: <1320675304-1857-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1755724Ab1KGOrP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:47:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48447 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932220Ab1KGOrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 09:47:13 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [PATCH 3/3] HID: usbhid: defer LED setting to a workqueue
+Date: Mon, 7 Nov 2011 15:48:04 +0100
+User-Agent: KMail/1.13.5 (Linux/3.1.0-rc9-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: jkosina@suse.cz, bleung@chromium.org, stern@rowland.harvard.edu,
+        olofj@chromium.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <1320139547-7921-1-git-send-email-djkurtz@chromium.org> <1320139547-7921-4-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1320139547-7921-4-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111071548.04483.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+Am Dienstag, 1. November 2011, 10:25:47 schrieb Daniel Kurtz:
+> Defer LED setting action to a workqueue.
+> This is more likely to perform all LED change events in a single URB.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/hid/hid-input.c       |   42 ++++++++++++++++++++++++++++++++++++++++
+>  drivers/hid/usbhid/hid-core.c |   43 +++++++++++++++++++++++++++++++---------
+>  drivers/hid/usbhid/usbhid.h   |    2 +
+>  include/linux/hid.h           |    2 +
 
-Machines that have embedded pin controllers need to select them
-explicitly, so why broadcast their config options to menuconfig.
-We provide a helpful submenu for those machines that do select
-it, making it possible to enable debugging for example.
+> @@ -1292,6 +1314,7 @@ static void hid_cancel_delayed_stuff(struct usbhid_device *usbhid)
+>  {
+>  	del_timer_sync(&usbhid->io_retry);
+>  	cancel_work_sync(&usbhid->reset_work);
+> +	cancel_work_sync(&usbhid->led_work);
+>  }
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/pinctrl/Kconfig |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+Hi,
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index ef56644..e816f60 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -2,18 +2,15 @@
- # PINCTRL infrastructure and drivers
- #
- 
--menuconfig PINCTRL
--	bool "PINCTRL Support"
-+config PINCTRL
-+	bool
- 	depends on EXPERIMENTAL
--	help
--	  This enables the PINCTRL subsystem for controlling pins
--	  on chip packages, for example multiplexing pins on primarily
--	  PGA and BGA packages for systems on chip.
--
--	  If unsure, say N.
- 
- if PINCTRL
- 
-+menu "Pin controllers"
-+	depends on PINCTRL
-+
- config PINMUX
- 	bool "Support pinmux controllers"
- 	help
-@@ -40,4 +37,6 @@ config PINMUX_U300
- 	help
- 	  Say Y here to enable the U300 pinmux driver
- 
-+endmenu
-+
- endif
--- 
-1.7.3.2
+this seems to introduce a race in usbhid_stop() which might fail to kill the urb
+used to change the LEDs.
 
+	Regards
+		Oliver
