@@ -1,71 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1KGWwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:52:32 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58234 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752309Ab1KGWwa (ORCPT
+	id S1754051Ab1KGWzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:55:45 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56948 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab1KGWzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:52:30 -0500
-Date: Mon, 7 Nov 2011 22:53:14 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Davidlohr Bueso <dave@gnu.org>, Lennart Poettering <mzxreary@0pointer.de>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-Message-ID: <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
-References: <1320614101.3226.5.camel@offbook>
-	<20111107112952.GB25130@tango.0pointer.de>
-	<1320675607.2330.0.camel@offworld>
-	<20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
-	<CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Nov 2011 17:55:44 -0500
+Date: Mon, 7 Nov 2011 22:55:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
+Message-ID: <20111107225529.GK15294@n2100.arm.linux.org.uk>
+References: <1320688617-4543-1-git-send-email-balbi@ti.com> <20111107183208.GG15294@n2100.arm.linux.org.uk> <20111107193908.GA5059@legolas.emea.dhcp.ti.com> <20111107212707.GH15294@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com> <20111107224129.GJ15294@n2100.arm.linux.org.uk> <20111107225157.GB31337@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111107225157.GB31337@atomide.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What part of the message did you read? This is about _per_user_
-> limits, not global limits!
+On Mon, Nov 07, 2011 at 02:51:57PM -0800, Tony Lindgren wrote:
+> Here's what I got. Looks like the removal of the sr[12]_hwmod
+> part is no longer needed, so only the r value check part is needed.
 
-What part of 'we support lots of mounts' don't you understand. Or perhaps
-you could go use a control group for it ?
+Err.  So do you have anything in your git tree which you're pushing out
+this evening which removes the sr[12]_hwmod from the omap_3xxx_hwmod
+list?
 
-> Any untrusted user can fill /dev/shm today and DOS many services that
-> way on any machine out there. Same for /tmp when it's a tmpfs, or
-> /run/user. This is an absolutely unacceptable state and needs fixing.
-
-Actually if you've mounted it with limits they can be a nuisance but
-little more, and if you are running with memory overcommit disabled then
-its accounted for in that. If you are running with memory over commit
-allowed (as eg Red Hat and Fedora do) you are peeing into the wind at this
-point anyway so wasting time.
-
-> I don't care about which interface it is, if someting else fits
-> better, let's discuss that, but it has surely absolutely noting to do
-> with size/nr_blocks/nr_inodes.
-
-Per user would be quota, per process would be rlimit. Quite simple
-really, nice standard interfaces we've had for years. Various systems
-have been quotaing /tmp/ for a long time. Smart secure ones of course
-mount a per user /tmp via PAM or similar to avoid /tmp attacks and in that
-case the mount options I pointed out already do the job.
-
-Quota isn't entirely trivial because you want your quota db initialised
-at mount so you'd need to pass a quota file pointer to the mount command
-ideally. All doable however and makes the management easy and means you
-get all the application expected behaviour when you exceed your limits
-(that is for properly written stuff - lots of crappy badly written desktop
-programs randomly crash or worse as we already know)
-
-This is why I'm confused - you are wittering about all sorts of security
-stuff but you are not addressing the more serious matters first - the
-ones that go beyond a DoS.
-
-Alan
+If not, how does that bug get fixed in mainline?
