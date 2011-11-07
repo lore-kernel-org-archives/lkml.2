@@ -1,81 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998Ab1KGQ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:28:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55483 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676Ab1KGQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:28:14 -0500
-Date: Mon, 7 Nov 2011 16:28:08 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Nai Xia <nai.xia@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: enforce rmap src/dst vma ordering in case of
- vma_merge succeeding in copy_vma
-Message-ID: <20111107162808.GA3083@suse.de>
-References: <20111031171441.GD3466@redhat.com>
- <1320082040-1190-1-git-send-email-aarcange@redhat.com>
- <alpine.LSU.2.00.1111032318290.2058@sister.anvils>
- <20111104235603.GT18879@redhat.com>
- <CAPQyPG5i87VcnwU5UoKiT6_=tzqO_NOPXFvyEooA1Orbe_ztGQ@mail.gmail.com>
- <20111105013317.GU18879@redhat.com>
- <CAPQyPG5Y1e2dac38OLwZAinWb6xpPMWCya2vTaWLPi9+vp1JXQ@mail.gmail.com>
- <20111107131413.GA18279@suse.de>
- <20111107154235.GE3249@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20111107154235.GE3249@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933008Ab1KGQ3p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:29:45 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55099 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab1KGQ3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:29:44 -0500
+Message-ID: <1320683377.10093.3.camel@localhost>
+Subject: Re: suspicious RCU usage in security/selinux/netport.c:127
+From: Eric Paris <eparis@parisplace.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>
+Date: Mon, 07 Nov 2011 11:29:37 -0500
+In-Reply-To: <20111107162531.GA28795@redhat.com>
+References: <20111107162531.GA28795@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 04:42:35PM +0100, Andrea Arcangeli wrote:
-> On Mon, Nov 07, 2011 at 01:14:13PM +0000, Mel Gorman wrote:
-> > I'm tending to agree. The number of cases that must be kept in mind
-> > is getting too tricky. Taking the anon_vma lock may be slower but at
-> > the risk of sounding chicken, it's easier to understand.
-> > 
-> > > But I think Mel indicated that anon_vma_locking might be
-> > > harmful to JVM SMP performance.
-> > > How severe you expect this to be, Mel ?
-> > > 
-> > 
-> > I would only expect it to be a problem during garbage collection when
-> > there is a greater likelihood that mremap is heavily used. While it
-> > would have been nice to avoid additional overhead in mremap, I don't
-> > think the JVM GC case on its own is sufficient justification to avoid
-> > taking the anon_vma lock.
-> 
-> Adding one liner in the error path and a bugcheck in the *vmap case,
-> doesn't seem the end of the world compared to my previous fix that you
-> acked.
+On Mon, 2011-11-07 at 11:25 -0500, Dave Jones wrote:
+> I think I reported this a while ago. Turns out it's still a problem.
+> This patch I think made the warning go away, but it might be a bit too 'big hammer' ?
 
-Note that I didn't suddenly turn that ack into a nack although
+http://patchwork.ozlabs.org/patch/117821/
 
-  1) A small comment on why we need to call anon_vma_moveto_tail in the
-     error path would be nice
+I thought it was already picked up.  I'll take care of it today.
 
-  2) It is unfortunate that we need the faulted_in_anon_vma just
-     for a VM_BUG_ON check that only exists for CONFIG_DEBUG_VM
-     but not earth shatting
+-Eric
 
-What I said was taking the anon_vma lock may be slower but it was
-generally easier to understand. I'm happy with the new patch too
-particularly as it keeps the "ordering game" consistent for fork
-and mremap but I previously missed move_page_tables in the error
-path so was worried if there was something else I managed to miss
-particularly in light of the "Allocating a new vma, copy first and
-merge later" direction.
-
-I'm also prefectly happy with my human meat brain and do not expect
-to replace it with an aliens.
-
--- 
-Mel Gorman
-SUSE Labs
