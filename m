@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab1KGX2E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:28:04 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56364 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751137Ab1KGX2B (ORCPT
+	id S1754950Ab1KGXbc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:31:32 -0500
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:42542
+	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751150Ab1KGXbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:28:01 -0500
-X-Sasl-enc: dkC4X6dfUcadnR6J7SolQtnq0KXCLjpJS+9obXr1sVod 1320708480
-Date: Mon, 7 Nov 2011 15:27:50 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Eric Paris <eparis@parisplace.org>,
-        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111107232750.GA4854@kroah.com>
-References: <4EB82F08.8060209@zytor.com>
- <20111107192915.GA4690@albatros>
- <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
- <4EB83674.3040207@zytor.com>
- <20111107201120.GA5775@albatros>
- <4EB843FF.5080201@zytor.com>
- <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
- <4EB84F05.1000704@zytor.com>
- <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
- <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Nov 2011 18:31:31 -0500
+From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: [PATCH] powerpc: Remove buggy 9-year-old test for binutils < 2.12.1
+Date: Mon,  7 Nov 2011 18:30:43 -0500
+Message-Id: <1320708643-32631-1-git-send-email-Kyle.D.Moffett@boeing.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 11:21:32PM +0000, Alan Cox wrote:
-> > It's better than nothing, but it really isn't wonderful - because it's
-> > really not just about audio. And revoke doesn't work universally.
-> 
-> BSD invented revoke but never implemented it universally. It turns out
-> that this isn't a big problem. Right now we basically only have revoke
-> for tty devices but we don't need it for that much more. Revoke on disk
-> files and the like has simply never happened because its not a matter of
-> revoke being universal so much as universal revoke being universally
-> pointless.
+Recent binutils refuses to assemble AltiVec opcodes when in e500/SPE
+mode, as some of those opcodes alias the "SPE" instructions.  This
+triggers an ancient binutils version check even when building a kernel
+with CONFIG_ALTIVEC disabled.
 
-I looked into implementing revoke() a while ago, and looked at how BSD
-did it.  They really only implemented it for a very narrow range of
-devices (tty only I think), which is not what we really want.
+In theory, the check could be conditionalized on CONFIG_ALTIVEC, but in
+practice it has long outlived its utility.  It is virtually impossible
+to find binutils older than 2.12.1 (released 2002) in the wild anymore.
+Even ancient RedHat Enterprise Linux 4 has binutils-2.14.
 
-I thought people wanted it for all char and block devices, if this isn't
-so, then it might be easier to implement than I thought.
+To fix the kernel build when done natively on e500 systems with this new
+binutils, the test is simply removed.
 
-So, what do we really need revoke() for these days?
+Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+---
+ arch/powerpc/Makefile |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-But that's getting away from the original topic here, sorry...
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 57af16e..70ba0c0 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -255,12 +255,6 @@ checkbin:
+ 		echo 'disable kernel modules' ; \
+ 		false ; \
+ 	fi
+-	@if ! /bin/echo dssall | $(AS) -many -o $(TOUT) >/dev/null 2>&1 ; then \
+-		echo -n '*** ${VERSION}.${PATCHLEVEL} kernels no longer build ' ; \
+-		echo 'correctly with old versions of binutils.' ; \
+-		echo '*** Please upgrade your binutils to 2.12.1 or newer' ; \
+-		false ; \
+-	fi
+ 
+ CLEAN_FILES += $(TOUT)
+ 
+-- 
+1.7.2.5
 
-greg k-h
