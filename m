@@ -1,35 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab1KGS0h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 13:26:37 -0500
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:49181 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab1KGS0g (ORCPT
+	id S1751674Ab1KGS1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 13:27:54 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:43766 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab1KGS1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 13:26:36 -0500
-Subject: Re: [PATCH v2] Driver for GE PIO2 VME Card
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, cota@braap.org, manohar.vanga@cern.ch
-In-Reply-To: <20111107172452.9068.26746.stgit@ES-BJ21R4J>
-References: <20111107172452.9068.26746.stgit@ES-BJ21R4J>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Nov 2011 19:26:26 +0100
-Message-ID: <1320690386.14409.373.camel@x61.thuisdomein>
+	Mon, 7 Nov 2011 13:27:53 -0500
+Date: Mon, 07 Nov 2011 13:27:44 -0500 (EST)
+Message-Id: <20111107.132744.1678311240740246318.davem@davemloft.net>
+To: richard@nod.at
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] wanrouter: Remove kernel_lock annotations
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1320654261-4473-1-git-send-email-richard@nod.at>
+References: <1320654261-4473-1-git-send-email-richard@nod.at>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 07 Nov 2011 10:27:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-07 at 17:27 +0000, Martyn Welch wrote:
-> +	  If you say Y here you have a GE PIO2. The PIO2 is a 6U VME Card,
+From: Richard Weinberger <richard@nod.at>
+Date: Mon,  7 Nov 2011 09:24:21 +0100
 
-I've tried that about a dozen times and I still don't have a GE PIO2.
-But perhaps its very small, than I might have simply overlooked it...
+> The BKL is gone, these annotations are useless.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-
-Paul Bolle
-
+Applied, thanks Richard.
