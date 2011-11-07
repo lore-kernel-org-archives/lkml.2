@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab1KGT4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:56:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62545 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab1KGT4c (ORCPT
+	id S1753967Ab1KGT5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:57:40 -0500
+Received: from mga02.intel.com ([134.134.136.20]:22297 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab1KGT5j convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:56:32 -0500
-Date: Mon, 7 Nov 2011 23:54:28 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+	Mon, 7 Nov 2011 14:57:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="71956030"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111107195428.GA5362@albatros>
-References: <20111107174522.GA2317@albatros>
- <9718.1320689192@turing-police.cc.vt.edu>
- <20111107190112.GA3732@albatros>
- <4EB82F08.8060209@zytor.com>
- <20111107192915.GA4690@albatros>
- <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
+        "Luck, Tony" <tony.luck@intel.com>,
+        "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Date: Mon, 7 Nov 2011 11:57:37 -0800
+Subject: RE: [PATCH 7/9] x86/topology.c: Support functions for BSP
+ online/offline
+Thread-Topic: [PATCH 7/9] x86/topology.c: Support functions for BSP
+ online/offline
+Thread-Index: Acyb/9LsOrTbarqIT/CTAK3HpRGCygBhs9XA
+Message-ID: <493994B35A117E4F832F97C4719C4C040194B7C59B@orsmsx505.amr.corp.intel.com>
+References: <1320444241-834-1-git-send-email-fenghua.yu@intel.com>
+ <1320444241-834-8-git-send-email-fenghua.yu@intel.com>
+ <4EB5A705.4030008@linux.vnet.ibm.com>
+In-Reply-To: <4EB5A705.4030008@linux.vnet.ibm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 14:48 -0500, Eric Paris wrote:
-> On Mon, Nov 7, 2011 at 2:29 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > On Mon, Nov 07, 2011 at 11:18 -0800, H. Peter Anvin wrote:
+> > +static int bsp_hotpluggable;
+> > +
+> > +static int __init enable_bsp_hotplug(char *str)
+> > +{
+> > +	bsp_hotpluggable = 1;
+> > +	return 0;
 > 
-> > As to procfs, I see no real need of adding mode/group mount option for
-> > global procfs files (/proc/interrupts, /proc/stat, etc.) - it can be
-> > done by distro specific init scripts (chown+chmod).  I don't mind
-> > against such an option for the convenience, though.
-> 
-> While possible, the chmod+chown 'solutions' just aren't as simple as
-> you pretend.  Every time one creates a chroot environment and mounts
-> /proc it has be manually fixed there as well.  Same thing with a
-> container.
+> Any reason why you return 0 here? Most code I have seen similar to this,
+> return 1. I understand that anything declared using early_param() would
+> generate a warning if it returns non-zero, but I am not exactly sure
+> about how it behaves with __setup(). Kindly give this some thought.
 
-I admit I don't fully realize all possible containers' uses, but doesn't
-procfs is mounted inside of containers for only restricted full-featured
-Linux distros usermods with the whole init and init scripts set?  I
-didn't see any consistent usages of procfs for other things, do they
-exist?
+You're right. This function should return 1 here. The parameter setup function returns 1 for success and 0 for failure. The return value is checked in obsolete_checksetup():
+                        } else if (p->setup_func(line + n))
+                                return 1;
 
-Creating separate namespaces is very useful for additional daemon
-restrictions like vsftpd does it, but procfs inside of such namespace is
-obviously denied by design ;)
+I will change this return value to 1 in the next version of the patch set.
 
+BTW, some places in the current upstream do return 0 for success and return an error number for failure. Maybe we need to clean up them.
 
-And as procfs is a one instance per pid namespace, it has the same
-permissions in all mount points, so I see no problem with chroot
-(however, I find chroot not very useful with procfs inside).
+Thanks.
 
-Thanks,
+-Fenghua
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
