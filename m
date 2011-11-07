@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab1KGSz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 13:55:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352Ab1KGSz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 13:55:57 -0500
-Date: Mon, 7 Nov 2011 13:09:50 -0500
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        gregkh@suse.de
-Subject: Re: BAD APICID ?
-Message-ID: <20111107180950.GA6411@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@amd64.org>, x86@kernel.org,
-	Linux Kernel <linux-kernel@vger.kernel.org>, gregkh@suse.de
-References: <20111107173948.GA1344@redhat.com>
- <20111107175402.GA3384@gere.osrc.amd.com>
+	id S1752598Ab1KGS7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 13:59:19 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57521 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab1KGS7R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 13:59:17 -0500
+Message-ID: <4EB82A77.3080804@linaro.org>
+Date: Mon, 07 Nov 2011 19:59:03 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107175402.GA3384@gere.osrc.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: len.brown@intel.com, Arjan van de Ven <arjan@linux.intel.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        Robert Lee <rob.lee@linaro.org>, hpa@linux.intel.com,
+        amit.kucheria@linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH] pm: remove useless array definition in cpuidle_structure
+References: <1320356693-18982-1-git-send-email-rob.lee@linaro.org> <4EB3D8BE.7050600@linux.vnet.ibm.com> <201111042328.43358.rjw@sisk.pl>
+In-Reply-To: <201111042328.43358.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 06:54:02PM +0100, Borislav Petkov wrote:
- > On Mon, Nov 07, 2011 at 12:39:48PM -0500, Dave Jones wrote:
- > > We got a report from a Fedora user hitting a WARN_ON in the apic setup code.
- > > 
- > > Here..
- > > 
- > > 1230 #ifdef CONFIG_X86_32
- > > 1231         /*
- > > 1232          * APIC LDR is initialized.  If logical_apicid mapping was
- > > 1233          * initialized during get_smp_config(), make sure it matches the
- > > 1234          * actual value.
- > > 1235          */
- > > 1236         i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
- > > 1237         WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
- > > 1238         /* always use the value from LDR */
- > > 1239         early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
- > > 1240                 logical_smp_processor_id();
- > > 
- > > The full report is at https://bugzilla.redhat.com/show_bug.cgi?id=743930
- > > 
- > > Report is against our 3.0 builds, but that code look unchanged in 3.1 too,
- > > and even in current Linus head.
- > > 
- > > Any thoughts on what could cause this ?
- > 
- > Already fixed upstream: 838312be46f3abfbdc175f81c3e54a857994476d
- > 
- > Here's the whole thread: http://lkml.org/lkml/2011/10/14/231
- > 
- > HTH.
+On 11/04/2011 11:28 PM, Rafael J. Wysocki wrote:
+> Len, Arjan,
+>
+> On Friday, November 04, 2011, Deepthi Dharwar wrote:
+>> On Friday 04 November 2011 03:14 AM, Robert Lee wrote:
+>>> From: Daniel Lezcano<daniel.lezcano@linaro.org>
+>>>
+>>> All the modules name are ro-data, it is never copied to the array.
+>>>
+>>> eg.
+>>>
+>>> static struct cpuidle_driver intel_idle_driver = {
+>>>          .name = "intel_idle",
+>>>          .owner = THIS_MODULE,
+>>> };
+>>>
+>>> It safe to assign the pointer of this ro-data to a const char *.
+>>> By this way we save 12 bytes.
+>>>
+>>> Signed-off-by: Daniel Lezcano<daniel.lezcano@linaro.org>
+>>> Signed-off-by: Robert Lee<rob.lee@linaro.org>
+>>> ---
+>>>   include/linux/cpuidle.h |    4 ++--
+>>>   1 files changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+>>> index b51629e..16f9dce 100644
+>>> --- a/include/linux/cpuidle.h
+>>> +++ b/include/linux/cpuidle.h
+>>> @@ -117,8 +117,8 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
+>>>    ****************************/
+>>>
+>>>   struct cpuidle_driver {
+>>> -	char			name[CPUIDLE_NAME_LEN];
+>>> -	struct module 		*owner;
+>>> +	const char    *name;
+>>> +	struct module *owner;
+>>>   };
+>>>
+>>>   #ifdef CONFIG_CPU_IDLE
+>>
+>> This looks good, and makes it fool-proof by  not allowing one to tamper the name of the driver.
+>> Tested OK on x86 (both Intel idle and ACPI)
+>>
+>> Tested-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com>
+>> Reviewed-by: Deepthi Dharwar<deepthi@linux.vnet.ibm.com>
+>
+> This is simple enough for me to push it for 3.2, but I woulnd't like to
+> step on anyone's toes.  Please let me know what you think.
+>
+> Rafael
 
-ah, excellent, thanks.
-That seems to have not hit stable, even though it was cc'd. Greg ?
 
-	Dave
+Hi Len,
+
+are you willing to take this patch for 3.2 ?
+
+Thanks
+
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
