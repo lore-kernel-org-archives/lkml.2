@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab1KGVtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 16:49:39 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:35644 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751801Ab1KGVth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 16:49:37 -0500
-X-Sasl-enc: uK8zmow3iY7caT4i3ALHLBjHMNTUKY0+MXXIvYYTIae0 1320702576
-Date: Mon, 7 Nov 2011 13:49:09 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Tim Vlaar <Tvlaar@ptgrey.com>,
-        Markus Rechberger <mrechberger@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-Message-ID: <20111107214909.GA13023@kroah.com>
-References: <20111107201812.GA12822@xanatos>
- <Pine.LNX.4.44L0.1111071537170.2004-100000@iolanthe.rowland.org>
+	id S1753154Ab1KGVyU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 16:54:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40972 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab1KGVyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 16:54:19 -0500
+Message-ID: <4EB85387.2050008@redhat.com>
+Date: Mon, 07 Nov 2011 19:54:15 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1111071537170.2004-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Boyer <jwboyer@redhat.com>
+CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix sb_edac compilation with 32 bits kernels
+References: <20111103140716.GF19809@zod.bos.redhat.com> <4EB84DC9.8010106@redhat.com> <20111107213730.GD14216@zod.bos.redhat.com>
+In-Reply-To: <20111107213730.GD14216@zod.bos.redhat.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 03:53:59PM -0500, Alan Stern wrote:
-> On Mon, 7 Nov 2011, Sarah Sharp wrote:
+Em 07-11-2011 19:37, Josh Boyer escreveu:
+> On Mon, Nov 07, 2011 at 07:29:45PM -0200, Mauro Carvalho Chehab wrote:
+>> @@ -670,6 +671,7 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
+>>  	u32 reg;
+>>  	u64 limit, prv = 0;
+>>  	u64 tmp_mb;
+>> +	u32 mb, kb;
+>>  	u32 rir_way;
+>>  
+>>  	/*
+>> @@ -682,8 +684,9 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
+>>  	pvt->tolm = GET_TOLM(reg);
+>>  	tmp_mb = (1 + pvt->tolm) >> 20;
+>>  
+>> -	debugf0("TOLM: %Lu.%03Lu GB (0x%016Lx)\n",
+>> -		tmp_mb / 1000, tmp_mb % 1000, (u64)pvt->tolm);
+>> +	mb = div_u64_rem(tmp_mb, 1000, &kb);
+>> +	debugf0("TOLM: %u.%03u GB (0x%016Lx)\n",
+>> +		mb, kb, (u64)pvt->tolm);
 > 
-> > > > Alan, won't this global limit on the usbfs URB buffer size effect
-> > > > userspace drivers that are currently allocating large amounts of
-> > > > buffers, but still respecting individual buffer limit of 16KB?  It seems
-> > > > like the patch has the potential to break userspace drivers.
-> > > 
-> > > It might indeed.  A further enhancement would replace that 16-MB global
-> > > constant with a sysfs attribute (a writable module parameter for
-> > > usbcore).  Do you have any better suggestions?
-> > 
-> > No, I don't have any better suggestions, except take out the limit. ;)
-> > 
-> > I do understand why we don't want userspace to DoS the system by using
-> > up too much DMA'able memory.  However, as I understand it, the usbfs
-> > files are created by udev with root access only by default, and distros
-> > may choose to install rules that have more permissive privileges.  A
-> > device vendor may not be ensured that a udev rule with permissive access
-> > will be present for their device, so I think they're likely to write
-> > programs that require root access.  Or require root privileges to
-> > install said udev rule.
-> > 
-> > At that point, the same userspace program that has root privileges in
-> > order to access usbfs or create the udev rule can just load and unload
-> > the usbcore module with an arbitrarily large global limit, and the
-> > global limit doesn't really add any security.  So why add the extra
-> > barrier?
+> So I realize you said that EDAC_DEBUG should (for now) always be enabled
+> when this driver is built, but you just added a bunch of 64-bit divides
+> outside of the debugfX stuff.  Doesn't that mean you'll be doing those
+> divides in the non-debug case as well, and then most likely getting an
+> unused varible warning when you turn EDAC_DEBUG off?
+
+You're right. Some additional logic is needed to remove the warnings and
+unneeded calculus when debug is disabled. I may eventually work on it when
+I have time.  In any case, we gave a fix already for kernel 3.2, and this
+patch is an alternative for those brave enough to test this driver with a 32 bits PAE
+kernel.
+
 > 
-> This is a question of kernel policy, and I don't know what is the
-> generally accepted approach to this sort of thing.  Maybe Greg or Alan
-> Cox can comment.
+>> @@ -858,7 +868,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>>  	 * range (e. g. VGA addresses). It is unlikely, however, that the
+>>  	 * memory controller would generate an error on that range.
+>>  	 */
+>> -	if ((addr > (u64) pvt->tolm) && (addr < (1L << 32))) {
+>> +	if ((addr > (u64) pvt->tolm) && (addr < (1LL << 32))) {
+>>  		sprintf(msg, "Error at TOLM area, on addr 0x%08Lx", addr);
+>>  		edac_mc_handle_ce_no_info(mci, msg);
+>>  		return -EINVAL;
+>> @@ -1053,7 +1063,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
+>>  	ch_addr = addr & 0x7f;
+>>  	/* Remove socket wayness and remove 6 bits */
+>>  	addr >>= 6;
+>> -	addr /= sck_xch;
+>> +	addr = div_u64(addr, sck_xch);
+>>  #if 0
+>>  	/* Divide by channel way */
+>>  	addr = addr / ch_way;
+> 
+> Those two parts look ok.
+> 
+> josh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-You have to set the limit to something, otherwise a non-root user can
-kill the box quite easily.  If the admin wants to set the system up so
-that any user can use up all of the memory, they are free to do that,
-but we can't have it be the default.
-
-thanks,
-
-greg k-h
