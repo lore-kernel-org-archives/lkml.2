@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab1KGXEL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:04:11 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13234 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab1KGXEJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:04:09 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 07 Nov 2011 15:03:56 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Mon, 7 Nov 2011 15:03:55 -0800
-Subject: RE: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Thread-Topic: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Thread-Index: AcydWGNKXFXijC73Tn6w/d5NU1b3XgASF4dg
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A525A@HQMAIL01.nvidia.com>
-References: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754188Ab1KGXGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:06:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48924 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab1KGXGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:06:13 -0500
+Date: Mon, 7 Nov 2011 15:05:51 -0800
+From: Greg KH <gregkh@suse.de>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Paul Bolle <pebolle@tiscali.nl>, Grant Likely <grant.likely@secretlab.ca>,
+        devel@driverdev.osuosl.org, manohar.vanga@cern.ch, cota@braap.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Driver for GE PIO2 VME Card
+Message-ID: <20111107230551.GA2695@suse.de>
+References: <20111104173126.30940.28135.stgit@ES-BJ21R4J>
+ <1320436514.14409.309.camel@x61.thuisdomein>
+ <20111104200057.GB400@suse.de>
+ <4EB7B4FF.7060806@ge.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB7B4FF.7060806@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Monday, November 07, 2011 7:20 AM:
-> This patchset adds support for the tegra30 SoC and the cardhu development
-> board.
+On Mon, Nov 07, 2011 at 10:37:51AM +0000, Martyn Welch wrote:
+> On 04/11/11 20:00, Greg KH wrote:
+> > On Fri, Nov 04, 2011 at 08:55:14PM +0100, Paul Bolle wrote:
+> >> A few random remarks follow. Ie, things that came up while quickly
+> >> scanning this.
+> >>
+> >> On Fri, 2011-11-04 at 17:33 +0000, Martyn Welch wrote:
+> >>> diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
+> >>> index ca5ba89..99f5414 100644
+> >>> --- a/drivers/staging/vme/devices/Kconfig
+> >>> +++ b/drivers/staging/vme/devices/Kconfig
+> >>> @@ -6,3 +6,13 @@ config VME_USER
+> >>>  	  If you say Y here you want to be able to access a limited number of
+> >>>  	  VME windows in a manner at least semi-compatible with the interface
+> >>>  	  provided with the original driver at http://vmelinux.org/.
+> >>
+> >> Blank line here.
+> >>
+> >>> +config VME_PIO2
+> >>> +	tristate "GE PIO2 VME"
+> >>> +	help
+> >>> +	  If you say Y here you have a GE PIO2. The PIO2 is a 6U VME Card,
+> >>
+> >> Maybe something like: "Say Y here if you have a GE PIO2."?
+> >>
+> >>> +	  implementing 32 solid-state relay switched IO lines, in 4 groups of 8.
+> >>> +	  The IO lines are provided as input, output or both as a build time
+> >>> +	  option.
+> >>
+> >> What option would that be?
+> >>
+> >>> +	  Otherwise it is safe to say N here.
+> >>> +
+> >>
+> >> A lot of modules have the "if you say M here the module will be called"
+> >> boilerplate here (which actually doesn't match the line I just made up).
+> >>
+> >>> +/* These are required for each board */
+> >>> +MODULE_PARM_DESC(bus, "Enumeration of VMEbus to which the board is connected");
+> >>> +module_param_array(bus, int, &bus_num, 0);
+> >>> +
+> >>> +MODULE_PARM_DESC(base, "Base VME address for PIO2 Registers");
+> >>> +module_param_array(base, long, &base_num, 0);
+> >>> +
+> >>> +MODULE_PARM_DESC(vector, "VME IRQ Vector (Lower 4 bits masked)");
+> >>> +module_param_array(vector, int, &vector_num, 0);
+> >>> +
+> >>> +MODULE_PARM_DESC(level, "VME IRQ Level");
+> >>> +module_param_array(level, int, &level_num, 0);
+> >>> +
+> >>> +MODULE_PARM_DESC(variant, "Last 4 characters of PIO2 board variant");
+> >>> +module_param_array(variant, charp, &variant_num, 0);
+> >>> +
+> >>> +/* This is for debugging */
+> >>> +MODULE_PARM_DESC(loopback, "Enable loopback mode on all cards");
+> >>> +module_param(loopback, bool, 0);
+> >>
+> >> All module parameters have a sysfs visibility (or permission) of zero.
+> >> Why is that? (This might very well be a naive question. But I often
+> >> wonder why a certain parameter's permission isn't at least 400, just to
+> >> allow a quick check of that parameter.) Are arrays tricky in sysfs?
+> > 
+> > Yes, arrays are tricky, and in the end, all of these need to be "real"
+> > sysfs files, not module parameters, but for now, it's ok to leave it as
+> > is until the code is cleaned up.
+> > 
 > 
-> Pathset is on top of Will Deacon's ARM reset work.
+> Hi Greg,
+> 
+> Am I right in thinking we wouldn't then be able to pass the parameters in the
+> boot args?
 
-Peter, how did you test this on Tegra30/Cardhu?
+If they are sysfs files and not module paramaters, then, no, you wouldn't.
 
-I took the branch you send me containing all your patches and built it. I
-tried booting this using both our internal Tegra30 U-boot, and using
-fastboot from an internal Android Honeycomb image. In both cases, as soon
-as the kernel started, it spewed a line or two of binary garbage on the
-serial port, then nothing. Can you fill me in on details like:
-
-a) What .config you used
-b) What kernel command-line you used
-c) Do you have an A01 or A02 CPU on your Cardhu, and how much RAM?
-d) What bootloader you used (exact git commit ID of U-Boot, or the 
-Android build ID)
-e) Do you have any local changes applied that may help boot work but aren't
-in your patchset, or the branch you sent me?
-
-Perhaps we should work on this off-list and report back once I've got it
-working.
-
-Thanks.
-
--- 
-nvpublic
-
+greg k-h
