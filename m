@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab1KGUsW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:48:22 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45283 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1KGUsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:48:21 -0500
-Message-ID: <4EB843FF.5080201@zytor.com>
-Date: Mon, 07 Nov 2011 12:47:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1753017Ab1KGUtM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:49:12 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:47390 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab1KGUtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 15:49:10 -0500
+Date: Mon, 7 Nov 2011 20:48:39 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Matt Fleming <matt@console-pimps.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] x86, efi: Calling __pa() with an ioremap'd address
+ is invalid
+Message-ID: <20111107204839.GA28261@srcf.ucam.org>
+References: <1320680088-2584-1-git-send-email-matt@console-pimps.org>
+ <20111107202324.GA27515@srcf.ucam.org>
+ <4EB8413D.6030500@zytor.com>
+ <20111107203752.GA27875@srcf.ucam.org>
+ <4EB8436B.20603@zytor.com>
 MIME-Version: 1.0
-To: Vasiliy Kulikov <segoon@openwall.com>
-CC: Eric Paris <eparis@parisplace.org>, kernel-hardening@lists.openwall.com,
-        Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to /proc/interrupts
-References: <20111107174522.GA2317@albatros> <9718.1320689192@turing-police.cc.vt.edu> <20111107190112.GA3732@albatros> <4EB82F08.8060209@zytor.com> <20111107192915.GA4690@albatros> <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com> <4EB83674.3040207@zytor.com> <20111107201120.GA5775@albatros>
-In-Reply-To: <20111107201120.GA5775@albatros>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB8436B.20603@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 12:11 PM, Vasiliy Kulikov wrote:
+On Mon, Nov 07, 2011 at 12:45:31PM -0800, H. Peter Anvin wrote:
+> On 11/07/2011 12:37 PM, Matthew Garrett wrote:
+> > On Mon, Nov 07, 2011 at 12:36:13PM -0800, H. Peter Anvin wrote:
+> > 
+> >> Yes, I think it makes a lot of sense.  If we need to introduce new
+> >> meta-types to deal with the fact that there are EFI types that don't map
+> >> to E820, then so be it... and this is *exactly* why we want the EFI
+> >> setup stub to be part of the kernel image and not off in a separate
+> >> bootloader, requiring a stable interface...
+> > 
+> > I don't disagree, it's just going to be an absolute pain to manage that 
+> > in a secure boot world.
 > 
-> My statement was about static files - /proc/{interrupts,meminfo,stat,cpuinfo}.
-> They don't change during the system life.  /proc/$PID/* files are indeed
-> dymanic and the first link in my quoted email was about addition of such
-> mount options.
-> 
+> Could you clarify, please?
 
-You didn't really get my point.  There are global nodes which are
-dynamic, and more importantly the *set* changes across the system life.
- A global policy option is a lot easier to deal with for the vast
-majority of users who don't need fine grain control.
+If the kernel is able to call boot services then the kernel needs to be 
+signed. If it's all handled by the bootloader then the bootloader can be 
+signed and the kernel doesn't have to be. Depends which one people 
+update more, I guess.
 
-	-hpa
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
