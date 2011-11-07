@@ -1,414 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab1KGUg5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:36:57 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:63847 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1KGUg4 (ORCPT
+	id S1754606Ab1KGUh6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:37:58 -0500
+Received: from mga14.intel.com ([143.182.124.37]:27506 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab1KGUh5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:36:56 -0500
-Date: Mon, 7 Nov 2011 15:36:13 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Vrabel <david.vrabel@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [Xen-devel] Re: [Revert] Re: [PATCH] mm: sync vmalloc address
- space page tables in alloc_vm_area()
-Message-ID: <20111107203613.GA6546@phenom.dumpdata.com>
-References: <1314877863-21977-1-git-send-email-david.vrabel@citrix.com>
- <20110901161134.GA8979@dumpdata.com>
- <4E5FED1A.1000300@goop.org>
- <20110901141754.76cef93b.akpm@linux-foundation.org>
- <4E60C067.4010600@citrix.com>
- <20110902153204.59a928c1.akpm@linux-foundation.org>
- <20110906163553.GA28971@dumpdata.com>
- <20111105133846.GA4415@phenom.dumpdata.com>
+	Mon, 7 Nov 2011 15:37:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,471,1315206000"; 
+   d="scan'208";a="34183413"
+From: "Brink, Peter" <peter.brink@intel.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+CC: Tim Vlaar <Tvlaar@ptgrey.com>, Greg KH <greg@kroah.com>,
+        Markus Rechberger <mrechberger@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 7 Nov 2011 13:37:52 -0700
+Subject: RE: [Patch] Increase USBFS Bulk Transfer size
+Thread-Topic: [Patch] Increase USBFS Bulk Transfer size
+Thread-Index: AcydioEgY8c61owRQ96iE3+Bf6nXgwAAeZGw
+Message-ID: <86810401A1B22346A09CBA649BE561E9017190B043@azsmsx505.amr.corp.intel.com>
+References: <20111107185255.GA9005@xanatos>
+ <Pine.LNX.4.44L0.1111071403290.2004-100000@iolanthe.rowland.org>
+ <20111107201812.GA12822@xanatos>
+In-Reply-To: <20111107201812.GA12822@xanatos>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="45Z9DzgjV8m4Oswq"
-Content-Disposition: inline
-In-Reply-To: <20111105133846.GA4415@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4EB8414C.00A8,ss=1,re=-2.300,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Beyond hardware, I cannot tell you if there is a limitation, but both the SATA and SAS protocol layers have a command buffering system called NCQ (Native Command Queuing) for SATA or CQ (Command Queuing) for SAS.  Each of these is related specifically to the drive itself, and, from my observation, the file system tracks to the number of commands that the drive will support.
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+There are also queues for each set of commands that will direct to different drives, but in practice, even in high stress environments, the file system was hard pressed to keep up with the command-processing of the individual drives, depending, of course, on the size of the reads. This was true on both Windows and Linux and across RAIDed systems.
 
+Pete
+
+-----Original Message-----
+From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Sarah Sharp
+Sent: Monday, November 07, 2011 1:18 PM
+To: Alan Stern
+Cc: Tim Vlaar; Greg KH; Markus Rechberger; Alan Cox; USB list; LKML
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+
+On Mon, Nov 07, 2011 at 02:12:16PM -0500, Alan Stern wrote:
+> On Mon, 7 Nov 2011, Sarah Sharp wrote:
+> 
+> > On Fri, Oct 14, 2011 at 08:33:29AM -0600, Greg KH wrote:
+> > > On Fri, Oct 14, 2011 at 10:05:41AM -0400, Alan Stern wrote:
+> > > > No, a much better approach is to remove all limits on individual
+> > > > transfer sizes and instead have a global limit on the total amount of
+> > > > all usbfs buffers in use at any time.  Maybe something like 16 MB; at 
+> > > > SuperSpeed, that's about about 30 ms worth of data.
 > > > 
-> > > oookay, I queued this for 3.1 and tagged it for a 3.0.x backport.  I
-> > > *think* that's the outcome of this discussion, for the short-term?
+> > > That sounds quite reasonable.
 > > 
-> > <nods> Yup. Thanks!
+> > Alan, won't this global limit on the usbfs URB buffer size effect
+> > userspace drivers that are currently allocating large amounts of
+> > buffers, but still respecting individual buffer limit of 16KB?  It seems
+> > like the patch has the potential to break userspace drivers.
 > 
-> Hey Andrew,
-> 
-> The long term outcome is the patchset that David worked on. I've sent
-> a GIT PULL to Linus to pick up the Xen related patches that switch over
-> the users of the right API:
-> 
->  (xen) stable/vmalloc-3.2 for Linux 3.2-rc0
-> 
-> (https://lkml.org/lkml/2011/10/29/82)
+> It might indeed.  A further enhancement would replace that 16-MB global
+> constant with a sysfs attribute (a writable module parameter for
+> usbcore).  Do you have any better suggestions?
 
-And Linus picked it up.
-.. snip..
+No, I don't have any better suggestions, except take out the limit. ;)
+
+I do understand why we don't want userspace to DoS the system by using
+up too much DMA'able memory.  However, as I understand it, the usbfs
+files are created by udev with root access only by default, and distros
+may choose to install rules that have more permissive privileges.  A
+device vendor may not be ensured that a udev rule with permissive access
+will be present for their device, so I think they're likely to write
+programs that require root access.  Or require root privileges to
+install said udev rule.
+
+At that point, the same userspace program that has root privileges in
+order to access usbfs or create the udev rule can just load and unload
+the usbcore module with an arbitrarily large global limit, and the
+global limit doesn't really add any security.  So why add the extra
+barrier?
+
+> > I think that Point Grey's USB 3.0 webcam will be attempting to queue a
+> > series of bulk URBs that will be bigger than your 16MB global limit.
 > 
-> Also, not sure what you thought of this patch below?
+> For SuperSpeed, 16 MB is rather on the low side.  For high speed it
+> amounts to about 1/3-second worth of data, which arguably is also a bit
+> low.  Increasing the default is easy enough, but the best choice isn't
+> obvious.
 
-Patch included as attachment for easier review..
-> 
-> From b9acd3abc12972be0d938d7bc2466d899023e757 Mon Sep 17 00:00:00 2001
-> From: David Vrabel <david.vrabel@citrix.com>
-> Date: Thu, 29 Sep 2011 16:53:32 +0100
-> Subject: [PATCH] xen: map foreign pages for shared rings by updating the PTEs
->  directly
-> 
-> When mapping a foreign page with xenbus_map_ring_valloc() with the
-> GNTTABOP_map_grant_ref hypercall, set the GNTMAP_contains_pte flag and
-> pass a pointer to the PTE (in init_mm).
-> 
-> After the page is mapped, the usual fault mechanism can be used to
-> update additional MMs.  This allows the vmalloc_sync_all() to be
-> removed from alloc_vm_area().
-> 
-> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/xen/grant-table.c         |    2 +-
->  drivers/xen/xenbus/xenbus_client.c |   11 ++++++++---
->  include/linux/vmalloc.h            |    2 +-
->  mm/vmalloc.c                       |   27 +++++++++++++--------------
->  4 files changed, 23 insertions(+), 19 deletions(-)
-> 
-> diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-> index 6bbfd7a..5a40d24 100644
-> --- a/arch/x86/xen/grant-table.c
-> +++ b/arch/x86/xen/grant-table.c
-> @@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
->  
->  	if (shared == NULL) {
->  		struct vm_struct *area =
-> -			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-> +			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
->  		BUG_ON(area == NULL);
->  		shared = area->addr;
->  		*__shared = shared;
-> diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-> index 229d3ad..52bc57f 100644
-> --- a/drivers/xen/xenbus/xenbus_client.c
-> +++ b/drivers/xen/xenbus/xenbus_client.c
-> @@ -34,6 +34,7 @@
->  #include <linux/types.h>
->  #include <linux/vmalloc.h>
->  #include <asm/xen/hypervisor.h>
-> +#include <asm/xen/page.h>
->  #include <xen/interface/xen.h>
->  #include <xen/interface/event_channel.h>
->  #include <xen/events.h>
-> @@ -435,19 +436,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
->  int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
->  {
->  	struct gnttab_map_grant_ref op = {
-> -		.flags = GNTMAP_host_map,
-> +		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
->  		.ref   = gnt_ref,
->  		.dom   = dev->otherend_id,
->  	};
->  	struct vm_struct *area;
-> +	pte_t *pte;
->  
->  	*vaddr = NULL;
->  
-> -	area = alloc_vm_area(PAGE_SIZE);
-> +	area = alloc_vm_area(PAGE_SIZE, &pte);
->  	if (!area)
->  		return -ENOMEM;
->  
-> -	op.host_addr = (unsigned long)area->addr;
-> +	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
->  
->  	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
->  		BUG();
-> @@ -526,6 +528,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
->  	struct gnttab_unmap_grant_ref op = {
->  		.host_addr = (unsigned long)vaddr,
->  	};
-> +	unsigned int level;
->  
->  	/* It'd be nice if linux/vmalloc.h provided a find_vm_area(void *addr)
->  	 * method so that we don't have to muck with vmalloc internals here.
-> @@ -547,6 +550,8 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
->  	}
->  
->  	op.handle = (grant_handle_t)area->phys_addr;
-> +	op.host_addr = arbitrary_virt_to_machine(
-> +		lookup_address((unsigned long)vaddr, &level)).maddr;
->  
->  	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
->  		BUG();
-> diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-> index 9332e52..1a77252 100644
-> --- a/include/linux/vmalloc.h
-> +++ b/include/linux/vmalloc.h
-> @@ -118,7 +118,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
->  #endif
->  
->  /* Allocate/destroy a 'vmalloc' VM area. */
-> -extern struct vm_struct *alloc_vm_area(size_t size);
-> +extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
->  extern void free_vm_area(struct vm_struct *area);
->  
->  /* for /dev/kmem */
-> diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-> index 5016f19..b5deec6 100644
-> --- a/mm/vmalloc.c
-> +++ b/mm/vmalloc.c
-> @@ -2105,23 +2105,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
->  
->  static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
->  {
-> -	/* apply_to_page_range() does all the hard work. */
-> +	pte_t ***p = data;
-> +
-> +	if (p) {
-> +		*(*p) = pte;
-> +		(*p)++;
-> +	}
->  	return 0;
->  }
->  
->  /**
->   *	alloc_vm_area - allocate a range of kernel address space
->   *	@size:		size of the area
-> + *	@ptes:		returns the PTEs for the address space
->   *
->   *	Returns:	NULL on failure, vm_struct on success
->   *
->   *	This function reserves a range of kernel address space, and
->   *	allocates pagetables to map that range.  No actual mappings
-> - *	are created.  If the kernel address space is not shared
-> - *	between processes, it syncs the pagetable across all
-> - *	processes.
-> + *	are created.
-> + *
-> + *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
-> + *	allocated for the VM area are returned.
->   */
-> -struct vm_struct *alloc_vm_area(size_t size)
-> +struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
->  {
->  	struct vm_struct *area;
->  
-> @@ -2135,19 +2142,11 @@ struct vm_struct *alloc_vm_area(size_t size)
->  	 * of kernel virtual address space and mapped into init_mm.
->  	 */
->  	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
-> -				area->size, f, NULL)) {
-> +				size, f, ptes ? &ptes : NULL)) {
->  		free_vm_area(area);
->  		return NULL;
->  	}
->  
-> -	/*
-> -	 * If the allocated address space is passed to a hypercall
-> -	 * before being used then we cannot rely on a page fault to
-> -	 * trigger an update of the page tables.  So sync all the page
-> -	 * tables here.
-> -	 */
-> -	vmalloc_sync_all();
-> -
->  	return area;
->  }
->  EXPORT_SYMBOL_GPL(alloc_vm_area);
-> -- 
-> 1.7.7.1
-> 
+Yeah, the choice is not obvious and we're probably going to get it
+wrong, but as Tim said, he does need ~600MB in flight at once, so I knew
+16MB was too small.  I guess the question really should be not "What is
+the smallest limit we need?" but "When will the system start breaking
+down due to memory pressure?" and set the limit somewhere pretty close
+to there.
 
---45Z9DzgjV8m4Oswq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-xen-map-foreign-pages-for-shared-rings-by-updating-t.patch"
+Do other subsystems have these issues as well?  Does the layer SCSI ever
+limit the number of outstanding READ requests (aside from hardware
+limitations)?  Or does the networking layer have a limit to the buffers
+it keeps pending transfers for userspace to read?
 
->From 21396dbbb3f976c8b4deb9f696994458dbe00db0 Mon Sep 17 00:00:00 2001
-From: David Vrabel <david.vrabel@citrix.com>
-Date: Thu, 29 Sep 2011 16:53:32 +0100
-Subject: [PATCH] xen: map foreign pages for shared rings by updating the PTEs
- directly
-
-When mapping a foreign page with xenbus_map_ring_valloc() with the
-GNTTABOP_map_grant_ref hypercall, set the GNTMAP_contains_pte flag and
-pass a pointer to the PTE (in init_mm).
-
-After the page is mapped, the usual fault mechanism can be used to
-update additional MMs.  This allows the vmalloc_sync_all() to be
-removed from alloc_vm_area().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/grant-table.c         |    2 +-
- drivers/xen/xenbus/xenbus_client.c |   11 ++++++++---
- include/linux/vmalloc.h            |    2 +-
- mm/vmalloc.c                       |   27 +++++++++++++--------------
- 4 files changed, 23 insertions(+), 19 deletions(-)
-
-diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
-index 6bbfd7a..5a40d24 100644
---- a/arch/x86/xen/grant-table.c
-+++ b/arch/x86/xen/grant-table.c
-@@ -71,7 +71,7 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
- 
- 	if (shared == NULL) {
- 		struct vm_struct *area =
--			alloc_vm_area(PAGE_SIZE * max_nr_gframes);
-+			alloc_vm_area(PAGE_SIZE * max_nr_gframes, NULL);
- 		BUG_ON(area == NULL);
- 		shared = area->addr;
- 		*__shared = shared;
-diff --git a/drivers/xen/xenbus/xenbus_client.c b/drivers/xen/xenbus/xenbus_client.c
-index 81c3ce6..1906125 100644
---- a/drivers/xen/xenbus/xenbus_client.c
-+++ b/drivers/xen/xenbus/xenbus_client.c
-@@ -35,6 +35,7 @@
- #include <linux/vmalloc.h>
- #include <linux/export.h>
- #include <asm/xen/hypervisor.h>
-+#include <asm/xen/page.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/event_channel.h>
- #include <xen/events.h>
-@@ -436,19 +437,20 @@ EXPORT_SYMBOL_GPL(xenbus_free_evtchn);
- int xenbus_map_ring_valloc(struct xenbus_device *dev, int gnt_ref, void **vaddr)
- {
- 	struct gnttab_map_grant_ref op = {
--		.flags = GNTMAP_host_map,
-+		.flags = GNTMAP_host_map | GNTMAP_contains_pte,
- 		.ref   = gnt_ref,
- 		.dom   = dev->otherend_id,
- 	};
- 	struct vm_struct *area;
-+	pte_t *pte;
- 
- 	*vaddr = NULL;
- 
--	area = alloc_vm_area(PAGE_SIZE);
-+	area = alloc_vm_area(PAGE_SIZE, &pte);
- 	if (!area)
- 		return -ENOMEM;
- 
--	op.host_addr = (unsigned long)area->addr;
-+	op.host_addr = arbitrary_virt_to_machine(pte).maddr;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &op, 1))
- 		BUG();
-@@ -527,6 +529,7 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	struct gnttab_unmap_grant_ref op = {
- 		.host_addr = (unsigned long)vaddr,
- 	};
-+	unsigned int level;
- 
- 	/* It'd be nice if linux/vmalloc.h provided a find_vm_area(void *addr)
- 	 * method so that we don't have to muck with vmalloc internals here.
-@@ -548,6 +551,8 @@ int xenbus_unmap_ring_vfree(struct xenbus_device *dev, void *vaddr)
- 	}
- 
- 	op.handle = (grant_handle_t)area->phys_addr;
-+	op.host_addr = arbitrary_virt_to_machine(
-+		lookup_address((unsigned long)vaddr, &level)).maddr;
- 
- 	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &op, 1))
- 		BUG();
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 687fb11..4bde182 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -119,7 +119,7 @@ unmap_kernel_range(unsigned long addr, unsigned long size)
- #endif
- 
- /* Allocate/destroy a 'vmalloc' VM area. */
--extern struct vm_struct *alloc_vm_area(size_t size);
-+extern struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes);
- extern void free_vm_area(struct vm_struct *area);
- 
- /* for /dev/kmem */
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index b669aa6..3231bf3 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2141,23 +2141,30 @@ void  __attribute__((weak)) vmalloc_sync_all(void)
- 
- static int f(pte_t *pte, pgtable_t table, unsigned long addr, void *data)
- {
--	/* apply_to_page_range() does all the hard work. */
-+	pte_t ***p = data;
-+
-+	if (p) {
-+		*(*p) = pte;
-+		(*p)++;
-+	}
- 	return 0;
- }
- 
- /**
-  *	alloc_vm_area - allocate a range of kernel address space
-  *	@size:		size of the area
-+ *	@ptes:		returns the PTEs for the address space
-  *
-  *	Returns:	NULL on failure, vm_struct on success
-  *
-  *	This function reserves a range of kernel address space, and
-  *	allocates pagetables to map that range.  No actual mappings
-- *	are created.  If the kernel address space is not shared
-- *	between processes, it syncs the pagetable across all
-- *	processes.
-+ *	are created.
-+ *
-+ *	If @ptes is non-NULL, pointers to the PTEs (in init_mm)
-+ *	allocated for the VM area are returned.
-  */
--struct vm_struct *alloc_vm_area(size_t size)
-+struct vm_struct *alloc_vm_area(size_t size, pte_t **ptes)
- {
- 	struct vm_struct *area;
- 
-@@ -2171,19 +2178,11 @@ struct vm_struct *alloc_vm_area(size_t size)
- 	 * of kernel virtual address space and mapped into init_mm.
- 	 */
- 	if (apply_to_page_range(&init_mm, (unsigned long)area->addr,
--				area->size, f, NULL)) {
-+				size, f, ptes ? &ptes : NULL)) {
- 		free_vm_area(area);
- 		return NULL;
- 	}
- 
--	/*
--	 * If the allocated address space is passed to a hypercall
--	 * before being used then we cannot rely on a page fault to
--	 * trigger an update of the page tables.  So sync all the page
--	 * tables here.
--	 */
--	vmalloc_sync_all();
--
- 	return area;
- }
- EXPORT_SYMBOL_GPL(alloc_vm_area);
--- 
-1.7.7.1
-
-
---45Z9DzgjV8m4Oswq--
+Sarah Sharp
+--
+To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
