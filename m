@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab1KGHcx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 02:32:53 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:33346 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab1KGHcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 02:32:52 -0500
-Message-ID: <4EB7899E.5090006@ilyx.ru>
-Date: Mon, 07 Nov 2011 11:32:46 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
+	id S1753399Ab1KGHdt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 02:33:49 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43537 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab1KGHdr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 02:33:47 -0500
 MIME-Version: 1.0
-To: Paul Fulghum <paulkf@microgate.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@linux.intel.com>, Ilya Zykov <ilya@ilyx.ru>
-Subject: PROBLEM: n_hdlc not atomic use tty->flags.
+In-Reply-To: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
+References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
+Date: Mon, 7 Nov 2011 08:33:46 +0100
+X-Google-Sender-Auth: zP7WubeVMtAU7tCm9iK-rsPez1E
+Message-ID: <CAO+b5-paS698V61BA8e4ZYstdqR4AKda2EKx4DHqv4gtR2ocPA@mail.gmail.com>
+Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
+From: Bart Van Assche <bvanassche@acm.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-scsi@vger.kernel.org, Anton Blanchard <anton@samba.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-N_HDLC can spoil tty->flags because use not atomic operations on tty->flags.
-I use n_hdlc line discipline and it happens.
+On Mon, Nov 7, 2011 at 7:24 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> I get lots more of these.  The obvious commit to point the finger at
+> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
+> commands") but the root cause may be something different.
 
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-diff -uprN -X ../../dontdiff a/drivers/tty/n_hdlc.c b/drivers/tty/n_hdlc.c
---- a/drivers/tty/n_hdlc.c	2011-05-19 08:06:34.000000000 +0400
-+++ b/drivers/tty/n_hdlc.c	2011-11-06 16:30:13.000000000 +0400
-@@ -417,7 +417,7 @@ static void n_hdlc_send_frames(struct n_
- 				__FILE__,__LINE__,tbuf,tbuf->count);
- 			
- 		/* Send the next block of data to device */
--		tty->flags |= (1 << TTY_DO_WRITE_WAKEUP);
-+		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
- 		actual = tty->ops->write(tty, tbuf->buf, tbuf->count);
- 
- 		/* rollback was possible and has been done */
-@@ -459,7 +459,7 @@ static void n_hdlc_send_frames(struct n_
- 	}
- 	
- 	if (!tbuf)
--		tty->flags  &= ~(1 << TTY_DO_WRITE_WAKEUP);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
- 	
- 	/* Clear the re-entry flag */
- 	spin_lock_irqsave(&n_hdlc->tx_buf_list.spinlock, flags);
-@@ -491,7 +491,7 @@ static void n_hdlc_tty_wakeup(struct tty
- 		return;
- 
- 	if (tty != n_hdlc->tty) {
--		tty->flags &= ~(1 << TTY_DO_WRITE_WAKEUP);
-+		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
- 		return;
- 	}
+It's probably the combination of commit 3308511c93e6 and patch
+http://marc.info/?l=linux-scsi&m=132027101521282 that's triggering
+that warning: the first commit changed scsi_free_queue() such that it
+expects that its callers reset the queuedata pointer but the second
+patch introduced a new scsi_free_queue() call that doesn't reset the
+queuedata pointer first.
+
+Bart.
