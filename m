@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab1KGTMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:12:10 -0500
-Received: from mail.windriver.com ([147.11.1.11]:46806 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab1KGTMI (ORCPT
+	id S1753319Ab1KGTMT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:12:19 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55187 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753212Ab1KGTMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:12:08 -0500
-Date: Mon, 7 Nov 2011 14:12:00 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Left overs from the module.h split merge
-Message-ID: <20111107191200.GH30282@windriver.com>
-References: <20111107173318.12d4a5ce67a522b000d4a78c@canb.auug.org.au>
+	Mon, 7 Nov 2011 14:12:17 -0500
+Date: Mon, 7 Nov 2011 14:12:16 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Tim Vlaar <Tvlaar@ptgrey.com>, Greg KH <greg@kroah.com>,
+        Markus Rechberger <mrechberger@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Increase USBFS Bulk Transfer size
+In-Reply-To: <20111107185255.GA9005@xanatos>
+Message-ID: <Pine.LNX.4.44L0.1111071403290.2004-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20111107173318.12d4a5ce67a522b000d4a78c@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Left overs from the module.h slpit merge] On 07/11/2011 (Mon 17:33) Stephen Rothwell wrote:
+On Mon, 7 Nov 2011, Sarah Sharp wrote:
 
-> Hi Linus,
+> On Fri, Oct 14, 2011 at 08:33:29AM -0600, Greg KH wrote:
+> > On Fri, Oct 14, 2011 at 10:05:41AM -0400, Alan Stern wrote:
+> > > No, a much better approach is to remove all limits on individual
+> > > transfer sizes and instead have a global limit on the total amount of
+> > > all usbfs buffers in use at any time.  Maybe something like 16 MB; at 
+> > > SuperSpeed, that's about about 30 ms worth of data.
+> > 
+> > That sounds quite reasonable.
 > 
-> Now that you have merged th module.h split, there are a few patches that
-> are needed.  They are caused by interactions with other trees that you
-> have now merged in the past couple of days.  Paul has all these patches
-> (as *patches*) in a git tree at
-> git://openlinux.windriver.com/people/paulg/modsplit-post-merge .  You
+> Alan, won't this global limit on the usbfs URB buffer size effect
+> userspace drivers that are currently allocating large amounts of
+> buffers, but still respecting individual buffer limit of 16KB?  It seems
+> like the patch has the potential to break userspace drivers.
 
-I'm assuming an actual pull makes life easier for you, so here it is.
+It might indeed.  A further enhancement would replace that 16-MB global
+constant with a sysfs attribute (a writable module parameter for
+usbcore).  Do you have any better suggestions?
 
-> could just fetch them form there and apply them to your tree.  They are
-> reasonably urgent as there are some build failures in your tree at the
-> moment that these fix.
-> 
-> [PATCH] arm: Add export.h to recently added files for EXPORT_SYMBOL
-> [PATCH] device-mapper: dm-bufio.c needs to include module.h
-> [PATCH] device-mapper: using EXPORT_SYBOL in dm-space-map-checker.c needs export.h
-> [PATCH] drivers/md: change module.h -> export.h in persistent-data/dm-*
-> [PATCH] powerpc/powernv: include export.h in hvc_opal.h for THIS_MODULE
+> I think that Point Grey's USB 3.0 webcam will be attempting to queue a
+> series of bulk URBs that will be bigger than your 16MB global limit.
 
-The hvc_opal one I see you already grabbed independently.  The other
-four are below, along with the mtd/mfd ones that just appeared overnight.
+For SuperSpeed, 16 MB is rather on the low side.  For high speed it
+amounts to about 1/3-second worth of data, which arguably is also a bit
+low.  Increasing the default is easy enough, but the best choice isn't
+obvious.
 
-Thanks,
-Paul.
+Alan Stern
 
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
-
-
-The following changes since commit 31555213f03bca37d2c02e10946296052f4ecfcd:
-
-  Revert "hvc_console: display printk messages on console." (2011-11-06 22:22:16 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git for-linus
-
-Jonas Gorski (1):
-      MTD: MAPS: bcm963xx-flash.c: explicitly include module.h
-
-Paul Gortmaker (3):
-      drivers/md: change module.h -> export.h in persistent-data/dm-*
-      arm: Add export.h to recently added files for EXPORT_SYMBOL
-      mfd: fix build failures in recently added ab5500 code
-
-Stephen Rothwell (2):
-      device-mapper: dm-bufio.c needs to include module.h
-      device-mapper: using EXPORT_SYMBOL in dm-space-map-checker.c needs export.h
-
- arch/arm/plat-omap/omap_device.c                   |    1 +
- arch/arm/plat-samsung/dma-ops.c                    |    1 +
- arch/arm/plat-samsung/s3c-dma-ops.c                |    1 +
- drivers/md/dm-bufio.c                              |    1 +
- drivers/md/persistent-data/dm-btree-remove.c       |    2 +-
- drivers/md/persistent-data/dm-btree.c              |    2 +-
- drivers/md/persistent-data/dm-space-map-checker.c  |    1 +
- drivers/md/persistent-data/dm-space-map-disk.c     |    2 +-
- .../md/persistent-data/dm-transaction-manager.c    |    2 +-
- drivers/mfd/ab5500-core.c                          |    1 +
- drivers/mfd/ab5500-debugfs.c                       |    1 +
- drivers/mtd/maps/bcm963xx-flash.c                  |    1 +
- 12 files changed, 12 insertions(+), 4 deletions(-)
