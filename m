@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178Ab1KGIpg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 03:45:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53402 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487Ab1KGIpf (ORCPT
+	id S1752233Ab1KGIqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 03:46:13 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46120 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1KGIqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 03:45:35 -0500
-Date: Mon, 7 Nov 2011 10:45:22 +0200 (EET)
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-X-X-Sender: penberg@tux.localdomain
-To: Paolo Bonzini <pbonzini@redhat.com>
-cc: Pekka Enberg <penberg@kernel.org>, Alexander Graf <agraf@suse.de>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Blue Swirl <blauwirbel@gmail.com>, Avi Kivity <avi@redhat.com>,
-        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
-In-Reply-To: <4EB794E1.5060201@redhat.com>
-Message-ID: <alpine.LFD.2.02.1111071038250.6486@tux.localdomain>
-References: <1320543320-32728-1-git-send-email-agraf@suse.de> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com> <4EB66036.4080102@redhat.com> <1320577728.1428.73.camel@jaguar> <4EB67486.1070105@redhat.com>
- <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
- <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de> <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com> <4EB6DBC6.2010404@redhat.com> <CAOJsxLGzMqQDwfm8C-6g8SCapEmGs7uUPq+SuL946yg=anV85g@mail.gmail.com> <4EB6E798.3060000@redhat.com>
- <CAOJsxLF6bOPJk+atASGr_Ra3BfwbkGPfGb2iRCOrfpFODBc-jA@mail.gmail.com> <4EB79000.5040308@redhat.com> <CAOJsxLHhfD7WoY8AgwcpQdOFn71N8ta+fNxsg_49cCNXG9GPrw@mail.gmail.com> <4EB794E1.5060201@redhat.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 7 Nov 2011 03:46:12 -0500
+Date: Mon, 7 Nov 2011 11:43:16 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, David Rientjes <rientjes@google.com>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: WARNING: at kernel/lockdep.c:690 __lock_acquire+0x168/0x164b()
+Message-ID: <20111107084316.GA3106@swordfish.waw.cen>
+References: <20111020230040.GC3586@swordfish.minsk.epam.com>
+ <alpine.DEB.2.00.1110210212130.12963@chino.kir.corp.google.com>
+ <20111021094520.GA9884@zhy>
+ <20111103071735.GA3228@swordfish.minsk.epam.com>
+ <20111103072705.GA15871@zhy>
+ <20111103074506.GB3228@swordfish.minsk.epam.com>
+ <20111103075354.GA16666@zhy>
+ <20111104092520.GA16897@gere.osrc.amd.com>
+ <20111104093123.GA2957@swordfish>
+ <20111107045456.GB3893@zhy>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2082177677-1320655531=:6486"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111107045456.GB3893@zhy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On (11/07/11 12:54), Yong Zhang wrote:
+> > > > Understood. If someone can come up with a simple patch which could
+> > > > cover the case I mentioned before, that would be great.
+> > > > /me goes to poke at it.
+> > > 
+> > > I dunno whether this is related but I get the following on 3.1:
+> > >
+> > 
+> > I think this is different problem. Failed check that lockdep key is marked as `static'.
+> 
+> Actually the lockdep_init_map() in __lock_set_class could lead to
+> more problem, such as: certain rq->lock could have different 'key'
+> with what we give them in sched_init() because rq is defined staticly.
+> 
+> Given that, we could have another typical race:
+> 
+>           CPU A                                   CPU B
+>     lock_set_subclass(lockA);
+>       lock_set_class(lockA);
+>                                             /* lockA->class_cache[] is not set */
+>                                             register_lock_class(lockA);
+>                                               look_up_lock_class(lockA); /* retrun NULL */
+>         lockdep_init_map(lockA);
+>           /* lockA->name is cleared */
+>           memset(lockA);
+>    						if (!static_obj(lock->key))
+> 						  /* we get warning here */
+>           lock->name = name;
+>     
+> 
+> So memset() in lockdep_init_map() is still the culprit IMHO.
+>
 
---8323328-2082177677-1320655531=:6486
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+Hm, agreed, that still could be the reason.
+I guess a little more information may be helpful in some cases.
 
-On 11/07/2011 09:09 AM, Pekka Enberg wrote:
->> We are obviously also using specifications but as you damn well should
->> know, specifications don't matter nearly as much as working code.
+---
+Print key address when attempt to register non-static lock key detected.
 
-On Mon, 7 Nov 2011, Paolo Bonzini wrote:
-> Specifications matter much more than working code.  Quirks are a fact of life 
-> but should always come second.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-To quote Linus:
+---
 
-   And I have seen _lots_ of total crap work that was based on specs. It's
-   _the_ single worst way to write software, because it by definition means
-   that the software was written to match theory, not reality.
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index e69434b..de8a996 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -729,7 +729,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
+  	 */
+ 	if (!static_obj(lock->key)) {
+ 		debug_locks_off();
+-		printk("INFO: trying to register non-static key.\n");
++		printk("INFO: trying to register non-static key at address %p.\n", lock->key);
+ 		printk("the code is fine but needs lockdep annotation.\n");
+ 		printk("turning off the locking correctness validator.\n");
+ 		dump_stack();
 
-[ http://kerneltrap.org/node/5725 ]
-
-So no, I don't agree with you at all.
-
- 			Pekka
---8323328-2082177677-1320655531=:6486--
