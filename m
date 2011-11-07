@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab1KGBzM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 20:55:12 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:51275 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078Ab1KGBzK (ORCPT
+	id S932197Ab1KGB6t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 20:58:49 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52162 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab1KGB6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 20:55:10 -0500
-Date: Sun, 06 Nov 2011 20:52:59 -0500 (EST)
-Message-Id: <20111106.205259.1237400984015921904.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: torvalds@linux-foundation.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gregory.v.rose@intel.com,
-        jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the origin tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
-References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 6 Nov 2011 20:58:47 -0500
+Message-ID: <4EB73B54.5090606@kernel.org>
+Date: Sun, 06 Nov 2011 20:58:44 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
+MIME-Version: 1.0
+To: Bart Van Assche <bvanassche@acm.org>
+CC: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH, RESEND] ACPI: Fix CONFIG_ACPI_DOCK=n compiler warning
+References: <201109231958.55067.bvanassche@acm.org> <201111022016.05979.bvanassche@acm.org>
+In-Reply-To: <201111022016.05979.bvanassche@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 06 Nov 2011 17:53:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 7 Nov 2011 10:12:02 +1100
+Applied.
 
-> Starting with the origin tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
- ...
-> Caused by commit 9487dc844054 ("ixgbe: Fix compiler warnings") which hid
-> the declarations of ixgbe_disable_sriov() and ixgbe_check_vf_assignment()
-> when CONFIG_PCI_IOV is not defined.
-> 
-> I have reverted that commit for today.
-
-It should be fixed in net.git, can you please check that the build
-succeeds after you pull it into -next?
-
-If you just revert the commit in origin from -next, then you will get
-conflicts with you pull the net.git tree in.
+thanks,
+Len Brown, Intel Open Source Technology Center
