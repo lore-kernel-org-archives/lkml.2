@@ -1,64 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab1KGBbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 20:31:34 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43203 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab1KGBbd convert rfc822-to-8bit (ORCPT
+	id S1755115Ab1KGBgN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 20:36:13 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57255 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755014Ab1KGBgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 20:31:33 -0500
+	Sun, 6 Nov 2011 20:36:12 -0500
+Message-ID: <4EB73609.5000000@kernel.org>
+Date: Sun, 06 Nov 2011 20:36:09 -0500
+From: Len Brown <lenb@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.22) Gecko/20110906 Fedora/3.1.14-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.14
 MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4xU28APFEcALAzuB2jAACa8FbOR6iSvOaEeGZa=JyjNeA@mail.gmail.com>
-References: <1320392176-3906-1-git-send-email-Barry.Song@csr.com>
- <20111105182244.GB6772@elf.ucw.cz> <CAGsJ_4xU28APFEcALAzuB2jAACa8FbOR6iSvOaEeGZa=JyjNeA@mail.gmail.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Mon, 7 Nov 2011 09:31:10 +0800
-Message-ID: <CAGsJ_4xm05N4UZ94kvUtUGLGkcDnxesojV0fL9hQQnZBOFvohg@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH] PM: HIBERNATION: skip the swap size check if
- the snapshot image size is anticipative
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Barry Song <Barry.Song@csr.com>, Xiangzhen Ye <Xiangzhen.Ye@csr.com>,
-        linux-kernel@vger.kernel.org, Barry Song <Baohua.Song@csr.com>,
-        linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel@lists.infradead.org,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Resend 2x] ACPI: Drop ACPI_NO_HARDWARE_INIT
+References: <201111061420.43158.rjw@sisk.pl>
+In-Reply-To: <201111061420.43158.rjw@sisk.pl>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/6 Barry Song <21cnbao@gmail.com>:
-> 2011/11/6 Pavel Machek <pavel@ucw.cz>:
->> Hi!
->>
->>> From: Barry Song <Baohua.Song@csr.com>
->>>
->>> Current swsusp requires swap partitions even larger than real saved pages
->>> due to the worst compress ratio:
->>> but for an embedded system, which has limited storage space, then it might
->>> can't give the big size partition to save snapshot.
->>> In the another way, some embedded systems can definitely know the most size
->>> needed for snapshot since they run some specific application lists.
->>> So this patch provides the possibility for bootloader to tell kernel even
->>> the system has a little snapshot partition, but it is still enough.
->>> For example, if the system need to save 120MB memory, origin swsusp will require
->>> a 130MB partition to save snapshot. but if users know 30MB is enough for them(
->>> compressed image will be less than 30MB), they just make a 30MB
->>> partition.
->>
->> Would it be better to have /sys/power/... entry which would allow
->> configuring expected compression ratio at runtime?
->
-> i think it is better to have a sys node than add another kernel param.
-> but the point is i only care about the final image size but not
-> compression ratio. i don't care how well lzo will do for me since i
-> only have limited disk space and know how many pages want to be saved.
-> there has been a image_size node, will we have a expected_image_size node?
+Applied.
 
-or will we have just a node named /sys/power/check_size, if
-1(default), check, otherwise(0 set by users), skip checking?
+thanks,
+Len Brown, Intel Open Source Technology Center
 
->>                                                                Pavel
-
--barry
