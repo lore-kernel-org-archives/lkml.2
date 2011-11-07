@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab1KGRFK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:05:10 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:46921 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab1KGRFI (ORCPT
+	id S1755867Ab1KGRIG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:08:06 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60789 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1KGRIE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:05:08 -0500
-Date: Mon, 7 Nov 2011 17:04:58 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: hagar <hagar@iinet.net.au>
-Cc: lkml <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Joel Schopp <jschopp@austin.ibm.com>, Ashok Raj <ashok.raj@intel.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: Fwd: Kernel Power management ?? turning off used devices that
- are in use.
-Message-ID: <20111107170458.GA23257@srcf.ucam.org>
-References: <4EB38A44.5030606@iinet.net.au>
- <4EB38C99.10809@iinet.net.au>
+	Mon, 7 Nov 2011 12:08:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB38C99.10809@iinet.net.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CANudz+soE9ax7668gh2TRxfnvPoAapKunwsXCc-T3ff0GAL6zg@mail.gmail.com>
+References: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
+	<20111101082653.4fa844e4@bike.lwn.net>
+	<CANudz+soE9ax7668gh2TRxfnvPoAapKunwsXCc-T3ff0GAL6zg@mail.gmail.com>
+Date: Mon, 7 Nov 2011 09:08:03 -0800
+Message-ID: <CABi1daFSV6ByHQ59zwbPjEeg5Mood9XUw=N4LeSD+bFGU4+_4Q@mail.gmail.com>
+Subject: Re: some questions about block and scatterlist
+From: Dave Hylands <dhylands@gmail.com>
+To: loody <miloody@gmail.com>
+Cc: Jonathan Corbet <corbet@lwn.net>, LKML <linux-kernel@vger.kernel.org>,
+        kernelnewbies@kernelnewbies.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 02:56:25PM +0800, hagar wrote:
-> 
-> I have traced this behaviour to the cpu hotplug code.
-> 
-> I need to be able to either switch off cpu hotpluging - or at least
-> prevent hotplugging certain cpu's
+Hi loody,
 
-The kernel doesn't automatically hotplug CPUs on idle. Something in your 
-userspace is doing so. I think that Ubuntu's powernap will do so under 
-certain circumstances - try disabling that if you have it.
+On Mon, Nov 7, 2011 at 5:16 AM, loody <miloody@gmail.com> wrote:
+...snip...
+>>> 1. Are all struct page 32-bit aligned?
+>>
+>> Certainly, I would expect any structures found in the system memory map to
+>> be so aligned, yes.  If you've created an arbitrary one elsewhere I'm only
+>> 99% sure it would be.
+>>
+>>> If so, where is this part of code for handleing struct page be 32-bits aligned?
+>>
+>> Note that the size of struct page is carefully considered, and that they
+>> are packed as densely as possible, both externally and internally.  No
+>> lesser alignment would make sense.
+> I found kernel stealing LSB of page_link to put additional
+> information, such as sg_is_chain and sg_is_last.
+>
+> That means the address of all pages have to be at least 4byte alignment.
+> But I didn't see any additional attribute added at the end of struct
+> or any precaution to take care this.
 
-(Which doesn't alter the fact that there appears to be a bug here)
+This is done automatically by the compiler.
+http://en.wikipedia.org/wiki/Data_structure_alignment
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Dave Hylands
+Shuswap, BC, Canada
+http://www.davehylands.com
