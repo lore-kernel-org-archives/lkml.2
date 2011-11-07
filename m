@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab1KGJ4R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 04:56:17 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:48818 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339Ab1KGJ4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 04:56:12 -0500
-Subject: [RFC PATCH v4 06/10] fadump: Add PT_NOTE program header for vmcoreinfo
-To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: Amerigo Wang <amwang@redhat.com>, Ananth Narayan <ananth@in.ibm.com>,
-        Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 07 Nov 2011 15:26:04 +0530
-Message-ID: <20111107095603.1997.39898.stgit@mars.in.ibm.com>
-In-Reply-To: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
-References: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
-User-Agent: StGit/0.15-1-ged5e-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110623-5140-0000-0000-0000002C76E4
+	id S1753477Ab1KGJ43 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 04:56:29 -0500
+Received: from nyu.romanrm.ru ([91.206.142.121]:56171 "EHLO nyu.romanrm.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752339Ab1KGJ40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 04:56:26 -0500
+X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Nov 2011 04:56:26 EST
+Date: Mon, 7 Nov 2011 15:49:36 +0600
+From: Roman Mamedov <rm@romanrm.ru>
+To: Arne Jansen <sensille@gmx.net>
+Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs pull request
+Message-ID: <20111107154936.7c60be38@natsu>
+In-Reply-To: <4EB7A6CC.5030502@gmx.net>
+References: <20111106183851.GA4339@shiny>
+	<CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
+	<4EB7A6CC.5030502@gmx.net>
+Organization: http://version6.ru/
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/qny5ElJ8_RS1iDUlV+0T7IK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+--Sig_/qny5ElJ8_RS1iDUlV+0T7IK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Introduce a PT_NOTE program header that points to physical address of
-vmcoreinfo_note buffer declared in kernel/kexec.c. The vmcoreinfo
-note buffer is populated during crash_fadump() at the time of system
-crash.
+On Mon, 07 Nov 2011 10:37:16 +0100
+Arne Jansen <sensille@gmx.net> wrote:
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/fadump.c |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+> >    I've got this:
+> >=20
+> > root@Q45:/home/gelma/dev/prg/btrfs# ./btrfs scrub start -Br /dev/md126
+> > ERROR: scrubbing /dev/md126 failed for device id 1 (Cannot allocate mem=
+ory)
+> > scrub canceled for 11827b37-1ba0-4b3e-883d-2746987724ca
+> > 	scrub started at Sun Nov  6 20:23:46 2011 and was aborted after 0 seco=
+nds
+> > 	total bytes scrubbed: 0.00 with 0 errors
+> > root@Q45:/home/gelma/dev/prg/btrfs# ./btrfs scrub start -Br /home/
+> > ERROR: scrubbing /home/ failed for device id 1 (Cannot allocate memory)
+> > scrub canceled for 11827b37-1ba0-4b3e-883d-2746987724ca
+> > 	scrub started at Sun Nov  6 20:25:01 2011 and was aborted after 0 seco=
+nds
+> > 	total bytes scrubbed: 0.00 with 0 errors
+>=20
+> On what platform are you running this? Can you please try this after
+> a fresh boot? Maybe there's an allocation that can't be served with
+> a badly fragmented memory.
 
-diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
-index 70d6287..e68ee3a 100644
---- a/arch/powerpc/kernel/fadump.c
-+++ b/arch/powerpc/kernel/fadump.c
-@@ -816,6 +816,19 @@ static void setup_crash_memory_ranges(void)
- 	}
- }
- 
-+/*
-+ * If the given physical address falls within the boot memory region then
-+ * return the relocated address that points to the dump region reserved
-+ * for saving initial boot memory contents.
-+ */
-+static inline unsigned long relocate(unsigned long paddr)
-+{
-+	if (paddr > RMR_START && paddr < fw_dump.boot_memory_size)
-+		return fdm.rmr_region.destination_address + paddr;
-+	else
-+		return paddr;
-+}
-+
- static int create_elfcore_headers(char *bufp)
- {
- 	struct elfhdr *elf;
-@@ -847,6 +860,22 @@ static int create_elfcore_headers(char *bufp)
- 
- 	(elf->e_phnum)++;
- 
-+	/* setup ELF PT_NOTE for vmcoreinfo */
-+	phdr = (struct elf_phdr *)bufp;
-+	bufp += sizeof(struct elf_phdr);
-+	phdr->p_type	= PT_NOTE;
-+	phdr->p_flags	= 0;
-+	phdr->p_vaddr	= 0;
-+	phdr->p_align	= 0;
-+
-+	phdr->p_paddr	= relocate(paddr_vmcoreinfo_note());
-+	phdr->p_offset	= phdr->p_paddr;
-+	phdr->p_memsz	= vmcoreinfo_max_size;
-+	phdr->p_filesz	= vmcoreinfo_max_size;
-+
-+	/* Increment number of program headers. */
-+	(elf->e_phnum)++;
-+
- 	/* setup PT_LOAD sections. */
- 
- 	for (i = 0; i < crash_mem_ranges; i++) {
+If so, shouldn't there also be a corresponding dmesg warning about "Unable =
+to allocate....", which would confirm or rule this out?
+So before following the "did you try turning it off and on again" advice (a=
+nd throwing away useful debug info), I'd suggest checking/saving dmesg firs=
+t.
 
+--=20
+With respect,
+Roman
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+"Stallman had a printer,
+with code he could not see.
+So he began to tinker,
+and set the software free."
+
+--Sig_/qny5ElJ8_RS1iDUlV+0T7IK
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk63qbAACgkQTLKSvz+PZwjl2gCfWCKNKJ4mNUz3BDNL3qSDIM9M
+Od8AnA6wg8G4aNE/bD+ERsp9mVZHhXY3
+=ljW8
+-----END PGP SIGNATURE-----
+
+--Sig_/qny5ElJ8_RS1iDUlV+0T7IK--
