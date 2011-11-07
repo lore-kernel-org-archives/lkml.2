@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab1KGQ1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:27:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752932Ab1KGQ1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:27:15 -0500
-Date: Mon, 7 Nov 2011 18:26:54 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net,
-        hpa <hpa@zytor.com>
-Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
- guests
-Message-ID: <20111107162654.GL8670@redhat.com>
-References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
- <1320323618-10375-3-git-send-email-gleb@redhat.com>
- <1320676467.18053.43.camel@twins>
- <4EB7EF4F.3090907@redhat.com>
- <1320677949.18053.54.camel@twins>
- <4EB7F58D.6080102@redhat.com>
- <20111107151944.GE8670@redhat.com>
- <4EB7F852.9010606@redhat.com>
- <1320682941.17809.18.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320682941.17809.18.camel@twins>
+	id S932983Ab1KGQ11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:27:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56558 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab1KGQ1Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:27:25 -0500
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, David Rientjes <rientjes@google.com>,
+        casteyde.christian@free.fr
+Date: Mon, 07 Nov 2011 17:26:19 +0100
+In-Reply-To: <20111107162159.GC13699@google.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+	 <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+	 <1320669279.18053.29.camel@twins>
+	 <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+	 <1320682230.17809.11.camel@twins> <20111107162159.GC13699@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320683179.17809.22.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 05:22:21PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-11-07 at 17:25 +0200, Avi Kivity wrote:
-> > On 11/07/2011 05:19 PM, Gleb Natapov wrote:
-> > > > 
-> > > > note, this needs a fairly huge PMI skew to happen.
-> > > > 
-> > > No, it need not. It is enough to get exit reason as hlt instead of nmi
-> > > for a vcpu to go to blocking state instead of reentering guest mode.
-> > > Note that we do not check request flags in kvm_arch_vcpu_runnable().
-> > 
-> > Right.
-> > 
-> > If we had a guarantee about the maximum skew, we could add a check for
-> > KVM_REQ_PMI in kvm_vcpu_block().
-> 
-> Right, it shouldn't be more than a few instructions since its NMIs we're
-> talking about, but I'm not sure there's any really hard guarantees on,
-> hardware folks would be able to say more.
-> 
-> Typically you can assert NMIs at instruction boundaries, but things like
-> instruction fusing and a few 'special' insn can delay NMI delivery. then
-> again, I'm clueless as to the actual implementation details of any of
-> this stuff.
-> 
-> Also I'm not sure if there's any non-deterministic delays in the PMU
-> event -> PMU overflow -> PMI raise path that could push you out into
-> silly land.
-> 
-> So yeah, I think the proposed code is fine, although I think the comment
-> can be improved by mentioning the vcpu hlt case.
-> 
-Will do.
+On Mon, 2011-11-07 at 08:21 -0800, Tejun Heo wrote:
 
---
-			Gleb.
+> > @@ -148,9 +148,9 @@ void clear_lock_stats(struct lock_class *class);
+> >   * This is embedded into specific lock instances:
+> >   */
+> >  struct lockdep_map {
+> > +	const char			*name;
+> >  	struct lock_class_key		*key;
+> >  	struct lock_class		*class_cache[NR_LOCKDEP_CACHING_CLASSES];
+> > -	const char			*name;
+> >  #ifdef CONFIG_LOCK_STAT
+> >  	int				cpu;
+> >  	unsigned long			ip;
+> 
+> Probably fat comment explaining the ordering requirement here w/
+
+yes.
+
+> #define LOCKDEP_MAP_INIT_OFFSET		offsetof(struct lockdep_map, class_cache)
+> 
+> > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> > index e69434b..81855cf 100644
+> > --- a/kernel/lockdep.c
+> > +++ b/kernel/lockdep.c
+> > @@ -2948,7 +2948,8 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+> >  void lockdep_init_map(struct lockdep_map *lock, const char *name,
+> >  		      struct lock_class_key *key, int subclass)
+> >  {
+> > -	memset(lock, 0, sizeof(*lock));
+> > +	kmemcheck_mark_initialized(lock, 2*sizeof(void *));
+> > +	memset(&lock->class_cache[0], 0, sizeof(*lock)-2*sizeof(void *));
+> 
+> And something like the following?
+> 
+> 	memset((void *)lock + LOCKDEP_MAP_INIT_OFFSET, 0,
+> 		sizeof(*lock) - LOCKDEP_MAP_INIT_OFFSET);
+
+Much better indeed!
