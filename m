@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab1KGNow (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 08:44:52 -0500
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:41408 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab1KGNou (ORCPT
+	id S1755610Ab1KGNwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 08:52:51 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:65255 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754394Ab1KGNwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 08:44:50 -0500
-Subject: [PATCH] [TRIVIAL] 8250_hp300: Fix warning typo 'CONFIG_8250'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-m68k@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Nov 2011 14:44:36 +0100
-Message-ID: <1320673476.14409.367.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Nov 2011 08:52:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1320667833.18053.24.camel@twins>
+References: <20111107110149.GA5177@quad>
+	<1320667833.18053.24.camel@twins>
+Date: Mon, 7 Nov 2011 13:52:49 +0000
+Message-ID: <CABPqkBREaQJk2gK7_Q5zUQhvV=EoxE1__ADw5VsiF-YPQNzeKw@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, robert.richter@amd.com, mingo@elte.hu,
+        ming.m.lin@intel.com, ak@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) This patch is untested: I have neither the hardware nor the toolchain
-needed. It should be correct (though it makes an already too long line
-even longer). Nevertheless I think a proper solution is a patch that
-drops this warning entirely. I've CC'd the m68k people for further
-feedback.
+On Mon, Nov 7, 2011 at 12:10 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2011-11-07 at 12:01 +0100, Stephane Eranian wrote:
+>> +                       /*
+>> +                        * scan all possible counters for this event
+>> +                        * but use the one with the smallest counter weight,
+>> +                        * i.e., give a chance to other less constrained events
+>> +                        */
+>>                         for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
+>>
+>> +                               if (test_bit(j, used_mask))
+>> +                                       continue;
+>> +
+>> +                               if (wcnt[j] < min_wcnt) {
+>> +                                       min_wcnt = wcnt[j];
+>> +                                       wcnt_idx = j;
+>> +                               }
+>> +                       }
+>
+> The problem with this is that it will typically hit the worst case for
+> Intel fixed-purpose events since the fixed purpose counters have the
+> highest counter index and their constraint masks are the heaviest in the
+> system ensuring we hit the max loop count on the top loop.
+>
+Yes, but to avoid this you'd need some form of sorting.
+We could also cut down on top loop iterations by caching the weight list
+of the events and examining only the weights we do have.
 
-1) If SERIAL_8250_HP300 is set but neither HPDCA nor HPAPCI are set we
-end up with an elaborate nop, don't we? Initialization should always
-fail in that case. So effectively SERIAL_8250_HP300 depends on HPDCA
-and/or HPAPCI. Was there perhaps some problem in translating that
-dependency into a Kconfig dependency?
+As for the complexity, I think it is mostly bound to the number of
+counters rather
+than event.
 
-2) Related question: is it useful to have both HPDCA and HPAPCI set?
+The top loop is about event weights, that's bound by the number of counters.
+The middle loop is about the number of events.
+The inner loop is about the number of counters.
 
- drivers/tty/serial/8250_hp300.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+So I'd expect the complexity to be O(c^2*n)
+where c is the number of counters, n the number of events.
+But given we limit the number of events to that of counters,
+we do have O(c^3).
 
-diff --git a/drivers/tty/serial/8250_hp300.c b/drivers/tty/serial/8250_hp300.c
-index c13438c..dc41fbb 100644
---- a/drivers/tty/serial/8250_hp300.c
-+++ b/drivers/tty/serial/8250_hp300.c
-@@ -21,7 +21,7 @@
- #include "8250.h"
- 
- #if !defined(CONFIG_HPDCA) && !defined(CONFIG_HPAPCI)
--#warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
-+#warning CONFIG_SERIAL_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
- #endif
- 
- #ifdef CONFIG_HPAPCI
--- 
-1.7.4.4
+As for the map_idx, it's there to track the position of each event in the
+initial event list. We shuffle events between constrained and unconstrained.
+By stashing the map_idx in the hw_perf_event struct we avoid having to
+pass around yet another array.
 
+> Then again, with Robert's approach we have to mark all fixed purpose
+> thingies as redo and we might hit some weird cases there as well, can't
+> seem to get me brain straight on that case though.
+>
+>
+>
