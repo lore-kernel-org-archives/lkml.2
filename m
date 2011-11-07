@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1KGTxc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:53:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42837 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab1KGTxa convert rfc822-to-8bit (ORCPT
+	id S1753945Ab1KGTze (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:55:34 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55210 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751348Ab1KGTzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:53:30 -0500
+	Mon, 7 Nov 2011 14:55:33 -0500
+Date: Mon, 7 Nov 2011 14:55:32 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tim Vlaar <Tvlaar@ptgrey.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <greg@kroah.com>,
+        Markus Rechberger <mrechberger@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [Patch] Increase USBFS Bulk Transfer size
+In-Reply-To: <BADF286A08026E4DAFA9622608E3D8DB063CE25890@rosser.pointgrey.local>
+Message-ID: <Pine.LNX.4.44L0.1111071451330.2004-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
-References: <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
-	<4EB680D9.2070706@redhat.com>
-	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
-	<4EB6AE34.2000907@redhat.com>
-	<CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com>
-	<4EB6BAED.2030400@redhat.com>
-	<4EB6BEFA.6000303@codemonkey.ws>
-	<20111106183132.GA4500@thunk.org>
-	<CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
-	<CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
-	<20111106231953.GD4500@thunk.org>
-	<alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
-	<alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
-Date: Mon, 7 Nov 2011 21:53:28 +0200
-X-Google-Sender-Auth: luQ7rn21r3j8eyTtA5xEavKAtvM
-Message-ID: <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>
-Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test kernels
-From: Pekka Enberg <penberg@kernel.org>
-To: Vince Weaver <vince@deater.net>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Nov 2011, Pekka Enberg wrote:
->> I've never heard ABI incompatibility used as an argument for perf. Ingo?
+On Mon, 7 Nov 2011, Tim Vlaar wrote:
 
-On Mon, Nov 7, 2011 at 7:03 PM, Vince Weaver <vince@deater.net> wrote:
-> Never overtly.  They're too clever for that.
+> Hi Sarah,
+> 
+> One of our cameras can produce 60MB images.  We usually queue up 10
+> images.  In Windows we have had customers queue up 100s of images at
+> 2-3MB/image, but not at 60MB at a time ... yet.  That could easily
+> amount to 60x10 = 600MB of in flight data or more.  Should there be a
+> limit as long as there is memory available?
 
-If you want me to take you seriously, spare me from the conspiracy theories, OK?
+This is debatable.  There are limits on how much memory a single 
+process can allocate, but those limits don't apply to usbfs.  Even the 
+patch Sarah referred to doesn't impose a per-process limit, but rather 
+an overall global limit.
 
-I'm sure perf developers break the ABI sometimes - that happens
-elsewhere in the kernel as well. However, Ted claimed that perf
-developers use tools/perf as an excuse to break the ABI _on purpose_
-which is something I have hard time believing.
+If we make the usbfs limit adjustable, one of the settings could be "no 
+limit".  Then nothing would prevent you from using up more and more 
+memory for your USB transfers until the machine runs out.  :-)
 
-Your snarky remarks doesn't really help this discussion either. It's
-apparent from the LKML discussions that you're more interested in
-arguing with the perf developers rather than helping them.
+Alan Stern
 
-                        Pekka
