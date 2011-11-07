@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab1KFXz4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 18:55:56 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45949 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754752Ab1KFXyQ (ORCPT
+	id S1754906Ab1KGAET (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 19:04:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:52403 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754812Ab1KGAER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 18:54:16 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+sIR8Fch2sAY95l051Aqj7F5XdAcbiz0vE59Riso
-	zhPyCLPFyQO3Zv
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>,
-        Mori Hess <fmhess@users.sourceforge.net>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH 4/9] staging/comedi/amplc: Convert pci_table entries to PCI_DEVICE (if PCI_ANY_ID is used)
-Date: Mon,  7 Nov 2011 00:54:02 +0100
-Message-Id: <1320623647-5108-4-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1320623647-5108-1-git-send-email-peterhuewe@gmx.de>
-References: <1320623647-5108-1-git-send-email-peterhuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	Sun, 6 Nov 2011 19:04:17 -0500
+Date: Mon, 7 Nov 2011 11:04:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Subject: linux-next: manual merge of the mips tree with Linus' tree
+Message-Id: <20111107110416.59490dfd73e3faeb2021da78@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__7_Nov_2011_11_04_16_+1100_ezNaBrlVRXJ0lg4a"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts pci_table entries to use the PCI_DEVICE macro,
-if .subvendor and .subdevice are set to PCI_ANY_ID,
-and thus improves readablity.
+--Signature=_Mon__7_Nov_2011_11_04_16_+1100_ezNaBrlVRXJ0lg4a
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since the driver_data field isn't used anywhere we can also drop the
-assignments for class, class_mask and driver_data.
+Hi Ralf,
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/comedi/drivers/amplc_dio200.c |    9 +++------
- drivers/staging/comedi/drivers/amplc_pc236.c  |    6 ++----
- drivers/staging/comedi/drivers/amplc_pc263.c  |    6 ++----
- drivers/staging/comedi/drivers/amplc_pci224.c |    9 +++------
- drivers/staging/comedi/drivers/amplc_pci230.c |    9 +++------
- 5 files changed, 13 insertions(+), 26 deletions(-)
+Today's linux-next merge of the mips tree got a conflict in
+arch/mips/alchemy/common/dbdma.c between commit f2e442fd2ff4 ("MIPS:
+Alchemy: clean DMA code of CONFIG_SOC_AU1??? defines") from Linus' tree
+and commit 6e8722f887b2 ("MIPS: irq: Remove IRQF_DISABLED") from the mips
+tree.
 
-diff --git a/drivers/staging/comedi/drivers/amplc_dio200.c b/drivers/staging/comedi/drivers/amplc_dio200.c
-index 93bbe4e..566cc44 100644
---- a/drivers/staging/comedi/drivers/amplc_dio200.c
-+++ b/drivers/staging/comedi/drivers/amplc_dio200.c
-@@ -421,12 +421,9 @@ static const struct dio200_layout_struct dio200_layouts[] = {
- 
- #ifdef CONFIG_COMEDI_PCI
- static DEFINE_PCI_DEVICE_TABLE(dio200_pci_table) = {
--	{
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI215,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI272,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	0}
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI215) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI272) },
-+	{0}
- };
- 
- MODULE_DEVICE_TABLE(pci, dio200_pci_table);
-diff --git a/drivers/staging/comedi/drivers/amplc_pc236.c b/drivers/staging/comedi/drivers/amplc_pc236.c
-index 48246cd..7972cad 100644
---- a/drivers/staging/comedi/drivers/amplc_pc236.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc236.c
-@@ -134,10 +134,8 @@ static const struct pc236_board pc236_boards[] = {
- 
- #ifdef CONFIG_COMEDI_PCI
- static DEFINE_PCI_DEVICE_TABLE(pc236_pci_table) = {
--	{
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI236,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	0}
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI236) },
-+	{0}
- };
- 
- MODULE_DEVICE_TABLE(pci, pc236_pci_table);
-diff --git a/drivers/staging/comedi/drivers/amplc_pc263.c b/drivers/staging/comedi/drivers/amplc_pc263.c
-index 8a33880..191ac0d 100644
---- a/drivers/staging/comedi/drivers/amplc_pc263.c
-+++ b/drivers/staging/comedi/drivers/amplc_pc263.c
-@@ -101,10 +101,8 @@ static const struct pc263_board pc263_boards[] = {
- 
- #ifdef CONFIG_COMEDI_PCI
- static DEFINE_PCI_DEVICE_TABLE(pc263_pci_table) = {
--	{
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI263,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	0}
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI263) },
-+	{0}
- };
- 
- MODULE_DEVICE_TABLE(pci, pc263_pci_table);
-diff --git a/drivers/staging/comedi/drivers/amplc_pci224.c b/drivers/staging/comedi/drivers/amplc_pci224.c
-index 1b5ba1c..b278917 100644
---- a/drivers/staging/comedi/drivers/amplc_pci224.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci224.c
-@@ -384,12 +384,9 @@ static const struct pci224_board pci224_boards[] = {
-  */
- 
- static DEFINE_PCI_DEVICE_TABLE(pci224_pci_table) = {
--	{
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234,
--		    PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0}, {
--	0}
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI224) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_AMPLICON_PCI234) },
-+	{0}
- };
- 
- MODULE_DEVICE_TABLE(pci, pci224_pci_table);
-diff --git a/drivers/staging/comedi/drivers/amplc_pci230.c b/drivers/staging/comedi/drivers/amplc_pci230.c
-index 7edeb11..5389795 100644
---- a/drivers/staging/comedi/drivers/amplc_pci230.c
-+++ b/drivers/staging/comedi/drivers/amplc_pci230.c
-@@ -501,12 +501,9 @@ static const struct pci230_board pci230_boards[] = {
- };
- 
- static DEFINE_PCI_DEVICE_TABLE(pci230_pci_table) = {
--	{
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_PCI230, PCI_ANY_ID,
--		    PCI_ANY_ID, 0, 0, 0}, {
--	PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_PCI260, PCI_ANY_ID,
--		    PCI_ANY_ID, 0, 0, 0}, {
--	0}
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_PCI230) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMPLICON, PCI_DEVICE_ID_PCI260) },
-+	{0}
- };
- 
- MODULE_DEVICE_TABLE(pci, pci230_pci_table);
--- 
-1.7.3.4
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/mips/alchemy/common/dbdma.c
+index 0e63ee4,4025d77..0000000
+--- a/arch/mips/alchemy/common/dbdma.c
++++ b/arch/mips/alchemy/common/dbdma.c
+@@@ -1019,8 -1037,19 +1019,7 @@@ static int __init dbdma_setup(unsigned=20
+  	dbdma_gptr->ddma_inten =3D 0xffff;
+  	au_sync();
+ =20
+- 	ret =3D request_irq(irq, dbdma_interrupt, IRQF_DISABLED, "dbdma",
+- 			  (void *)dbdma_gptr);
+ -	switch (alchemy_get_cputype()) {
+ -	case ALCHEMY_CPU_AU1550:
+ -		irq_nr =3D AU1550_DDMA_INT;
+ -		break;
+ -	case ALCHEMY_CPU_AU1200:
+ -		irq_nr =3D AU1200_DDMA_INT;
+ -		break;
+ -	default:
+ -		return -ENODEV;
+ -	}
+ -
+ -	ret =3D request_irq(irq_nr, dbdma_interrupt, 0,
+ -			"Au1xxx dbdma", (void *)dbdma_gptr);
+++	ret =3D request_irq(irq, dbdma_interrupt, 0, "dbdma", (void *)dbdma_gptr=
+);
+  	if (ret)
+  		printk(KERN_ERR "Cannot grab DBDMA interrupt!\n");
+  	else {
+
+--Signature=_Mon__7_Nov_2011_11_04_16_+1100_ezNaBrlVRXJ0lg4a
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJOtyCAAAoJEECxmPOUX5FEr98P/iS2e+rsaNZZrXsJlWTdcCQ8
+DBjrJpoSyWj0SQb898htEZ1r23+WDgpxLM8E0eMKn7tDmHxk0SR6D9zsYO5kP4V+
+N5jZ6gKX9COSzFZKj9IqWsX5pQ0grmz2Y4Jd8yqn+/aOkGAU5au/k4cxmERBvrly
+yGmElzX1nFqmE47rfax62gavNRkg6NAb+ZXiVIEy34jjL3mHVXYHzLZj/o4xv3yD
+v6NNGdjEqnhhRCzDR8x3XG60FSk7bQeATPtNtP5x/P7Mt/zx+ml5jzTDA/jnz1vS
+qFm+0C3GrL7DBRxo2I4PIeWrg7IiOgLkleCIEF1b41wvRIl86CoIap0qGWLg15Bs
+KoPN3zTJAtTQxRcDXZhjGwm4G8wFFD1++195OAKlOTcTh1J+C9S2sfpQbH9zNgOR
+XE0OBCfJK5P3bcOg3VYbZz15WpirQfLZz0NCRTFOPK8ZUgXM8dyt0kBoo9juStdy
+wEK4WdqD1cY6gY9L+50vQZjG4fdHbsbLCHqT3xIfaOsXtR0/rbpu98pcFyNqc97d
+RqA7Oblg5/c9oTy9crBPau/GG8VGP4x8HcwZfaLBaQvjD57DqXTAP5y5yQTDT2wp
+yVSeNdtrmRdYyUslBkzsOw+L4uPBBLkazxc3r9cjT4sLW70z7KRE30hgacnNYmIo
+JNbJCeK3GJFY8i/AvlnW
+=BkpZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__7_Nov_2011_11_04_16_+1100_ezNaBrlVRXJ0lg4a--
