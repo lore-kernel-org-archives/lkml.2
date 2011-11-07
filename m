@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932514Ab1KGN73 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 08:59:29 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:41577 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab1KGN71 (ORCPT
+	id S932537Ab1KGOCJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:02:09 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48780 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578Ab1KGOCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 08:59:27 -0500
-Date: Mon, 7 Nov 2011 13:59:24 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH] X86: Solve Dell Latitudes do not reboot on x86_64 more
- generally
-Message-ID: <20111107135923.GA17060@srcf.ucam.org>
-References: <4EB39139.3090709@suse.de>
- <1320453843-938-1-git-send-email-trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320453843-938-1-git-send-email-trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 7 Nov 2011 09:02:08 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: [PATCH v2] ext4: fix NULL pointer dereference from orig_data in fill_super and remount.
+Date: Mon,  7 Nov 2011 23:01:51 +0900
+Message-Id: <1320674511-1980-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 05, 2011 at 01:44:03AM +0100, Thomas Renninger wrote:
-> There are quite some reports that those do not reboot:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/833705
-> ->E6520, E6220
-> http://www.linux-club.de/viewtopic.php?f=29&t=114459&start=20
-> ->E5520
-> and some more already are blacklisted
+Fix NULL pointer dereference from orig_data in fill_super and remount.
 
-It's a bug in the SMM code on these machines, and it goes away if you 
-disable VT-D. Let's try to actually fix it rather than adding to the 
-blacklist, otherwise we'll just end up with another batch of broken 
-Dells later on.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+---
+ fs/ext4/super.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 9953d80..717b3e8 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3102,7 +3102,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 				__releases(kernel_lock)
+ 				__acquires(kernel_lock)
+ {
+-	char *orig_data = kstrdup(data, GFP_KERNEL);
+ 	struct buffer_head *bh;
+ 	struct ext4_super_block *es = NULL;
+ 	struct ext4_sb_info *sbi;
+@@ -3125,6 +3124,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	unsigned int journal_ioprio = DEFAULT_JOURNAL_IOPRIO;
+ 	ext4_group_t first_not_zeroed;
+ 
++	char *orig_data = kstrdup(data, GFP_KERNEL);
++	if (!orig_data)
++		return ret;
++
+ 	sbi = kzalloc(sizeof(*sbi), GFP_KERNEL);
+ 	if (!sbi)
+ 		goto out_free_orig;
+@@ -4398,6 +4401,8 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
+ 	int i;
+ #endif
+ 	char *orig_data = kstrdup(data, GFP_KERNEL);
++	if (!orig_data)
++		return -ENOMEM;
+ 
+ 	/* Store the original options */
+ 	lock_super(sb);
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.4.4
+
