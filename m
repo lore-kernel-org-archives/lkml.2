@@ -1,203 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab1KGRzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:55:21 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:38732 "EHLO imr4.ericy.com"
+	id S933177Ab1KGRzx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:55:53 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:45625 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933071Ab1KGRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:55:19 -0500
-Subject: Re: [PATCH] IIO:hwmon interface client driver.
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jonathan Cameron <jic23@kernel.org>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zdevai@gmail.com" <zdevai@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-In-Reply-To: <1320687781-15306-1-git-send-email-jic23@kernel.org>
-References: <4EB817C6.5070503@kernel.org>
-	 <1320687781-15306-1-git-send-email-jic23@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 7 Nov 2011 09:52:59 -0800
-Message-ID: <1320688379.2309.121.camel@groeck-laptop>
+	id S932732Ab1KGRzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 12:55:52 -0500
+Date: Mon, 7 Nov 2011 09:55:23 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com,
+        shaohua.li@intel.com, ak@linux.intel.com, mhocko@suse.cz,
+        alex.shi@intel.com, efault@gmx.de, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
+Message-ID: <20111107175523.GK2332@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4EAA14A1.5060204@cn.fujitsu.com>
+ <20111029182710.GG6160@linux.vnet.ibm.com>
+ <4EAE57AF.1060706@cn.fujitsu.com>
+ <20111031093256.GI6160@linux.vnet.ibm.com>
+ <4EAF5B68.8090005@cn.fujitsu.com>
+ <1320678902.18053.63.camel@twins>
+ <CABPqkBTbWE6wVkg_sFnoVL0r4_yi6gCwCoUXzC97kxcxC47zYQ@mail.gmail.com>
+ <1320683756.17809.28.camel@twins>
+ <20111107165603.GD2332@linux.vnet.ibm.com>
+ <1320685789.17809.30.camel@twins>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320685789.17809.30.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11110717-8974-0000-0000-0000018B39CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+On Mon, Nov 07, 2011 at 06:09:49PM +0100, Peter Zijlstra wrote:
+> On Mon, 2011-11-07 at 08:56 -0800, Paul E. McKenney wrote:
+> > 
+> > If this really is a false positive, what should be used to get rid of
+> > the splats? 
+> 
+> 
+> Probably something slightly less horrid than the below.. ;-)
 
-I know I must be getting annoying, but somehow it seems I just keep
-finding something whenever I look at the code again.
+Hmmm...  Could the "1" below be replaced by the task's reference count?
+Probabilistic, but should eventually catch it.
 
-On Mon, 2011-11-07 at 12:43 -0500, Jonathan Cameron wrote:
-> From: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> Should move to drivers/hwmon once people are happy with it.
-> 
-> Minimal support of simple in, curr and temp attributes
-> so far.
-> 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
+							Thanx, Paul
+
 > ---
-> Fixed up the missing free Guenter spotted.
-> Thanks!
->  drivers/iio/Kconfig     |    8 ++
->  drivers/iio/Makefile    |    1 +
->  drivers/iio/iio_hwmon.c |  228 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 237 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/iio/iio_hwmon.c
 > 
-> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-> index 308bc97..c2f0970 100644
-> --- a/drivers/iio/Kconfig
-> +++ b/drivers/iio/Kconfig
-> @@ -11,6 +11,14 @@ menuconfig IIO
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index d1a1bee..8f05201 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -229,7 +229,7 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
+>  static inline struct perf_cgroup *
+>  perf_cgroup_from_task(struct task_struct *task)
+>  {
+> -	return container_of(task_subsys_state(task, perf_subsys_id),
+> +	return container_of(task_subsys_state_check(task, perf_subsys_id, 1),
+>  			struct perf_cgroup, css);
+>  }
 >  
->  if IIO
->  
-> +config IIO_HWMON
-> +       tristate "Hwmon driver that uses channels specified via iio maps"
-> +       depends on HWMON
-> +       help
-> +	  This is a platform driver that in combination with a suitable
-> +	  map allows IIO devices to provide  basic hwmon functionality
-> +	  for those channels specified in the map.
-> +
->  source "drivers/iio/adc/Kconfig"
->  source "drivers/iio/imu/Kconfig"
->  source "drivers/iio/light/Kconfig"
-> diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-> index cfb588a..5f9c01a 100644
-> --- a/drivers/iio/Makefile
-> +++ b/drivers/iio/Makefile
-> @@ -6,6 +6,7 @@ obj-y = inkern.o
->  obj-$(CONFIG_IIO) += iio.o
->  industrialio-y := core.o
->  
-> +obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
->  obj-y += adc/
->  obj-y += imu/
->  obj-y += light/
-> diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
-> new file mode 100644
-> index 0000000..880ce6d
-> --- /dev/null
-> +++ b/drivers/iio/iio_hwmon.c
-> @@ -0,0 +1,228 @@
-> +/* Hwmon client for industrial I/O devices
-> + *
-> + * Copyright (c) 2011 Jonathan Cameron
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * Limited functionality currently supported.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/iio/inkern.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +
-> +/**
-> + * struct iio_hwmon_state - device instance state
-> + * @channels:		filled with null terminated array of channels from iio
-> + * @num_channels:	number of channels in channels (saves counting twice)
-> + * @hwmon_dev:		associated hwmon device
-> + * @attr_group:	the group of attributes
-> + * @attrs:		null terminated array of attribute pointers.
-> + */
-> +struct iio_hwmon_state {
-> +	struct iio_channel **channels;
-> +	int num_channels;
-> +	struct device *hwmon_dev;
-> +	struct attribute_group attr_group;
-> +	struct attribute **attrs;
-> +};
-> +
-> +/*
-> + * Assumes that IIO and hwmon operate in the same base units.
-> + * This is supposed to be true, but needs verification for
-> + * new channel types.
-> + */
-> +static ssize_t iio_hwmon_read_val(struct device *dev,
-> +				  struct device_attribute *attr,
-> +				  char *buf)
-> +{
-> +	long result;
-> +	int val, ret, scaleint, scalepart;
-> +	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
-> +	struct iio_hwmon_state *state = dev_get_drvdata(dev);
-> +
-> +	/*
-> +	 * No locking between this pair, so theoretically possible
-> +	 * the scale has changed.
-> +	 */
-> +	ret = iio_read_channel_raw(state->channels[sattr->index],
-> +				   &val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = iio_read_channel_scale(state->channels[sattr->index],
-> +				     &scaleint, &scalepart);
-> +	if (ret < 0)
-> +		return ret;
-> +	switch (ret) {
-> +	case IIO_VAL_INT:
-> +		result = val * scaleint;
-> +		break;
-> +	case IIO_VAL_INT_PLUS_MICRO:
-> +		result = (long)val * (long)scaleint +
-> +			div_s64((s64)val * (s64)scalepart, 1000000LL);
-> +		break;
-> +	case IIO_VAL_INT_PLUS_NANO:
-> +		result = (long)val * (long)scaleint +
-> +			div_s64((s64)val * (s64)scalepart, 1000000000LL);
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return sprintf(buf, "%ld\n", result);
-> +}
-> +
-> +static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
-> +{
-> +	int i;
-> +	struct sensor_device_attribute *a;
-> +	for (i = 0; i < st->num_channels; i++)
-> +		if (st->attrs[i]) {
-> +			a = to_sensor_dev_attr(
-> +				container_of(st->attrs[i],
-> +					     struct device_attribute,
-> +					     attr));
-
-I finally looked into kasprintf ... which as it turns out allocates
-memory. Yet, there is no kfree(a->dev_attr.attr.name).
-
-Thanks,
-Guenter
-
-
+> 
 
