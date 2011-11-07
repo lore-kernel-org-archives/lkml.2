@@ -1,62 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab1KGQvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:51:23 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:44912 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755625Ab1KGQvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:51:21 -0500
-Subject: Re: [PATCH] hwmon: lm63: Add support for the NatSemi LM96163.
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 7 Nov 2011 08:49:26 -0800
-Message-ID: <1320684566.2309.115.camel@groeck-laptop>
+	id S1755847Ab1KGQzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:55:52 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51006 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1KGQzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:55:50 -0500
+Message-ID: <4EB80D92.8050507@lwfinger.net>
+Date: Mon, 07 Nov 2011 10:55:46 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+To: Jesper Juhl <jj@chaosbits.net>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Andrea Merello <andreamrl@tiscali.it>,
+        Mike McCormack <mikem@ring3k.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] rtl8192e: Don't copy huge struct by value (and make it
+ const).
+References: <alpine.LNX.2.00.1111070017220.5763@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1111070017220.5763@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/06/2011 05:21 PM, Jesper Juhl wrote:
+> rtllib_is_shortslot() takes one argument - a struct that's more than a
+> kilobyte large. It should take a pointer instead of copying such a
+> huge struct - and the argument might as well be declared 'const' now
+> that we are at it, since it is not modified. This patch makes these
+> changes.
+>
+> Signed-off-by: Jesper Juhl<jj@chaosbits.net>
 
-On Mon, 2011-11-07 at 05:20 -0500, Thierry Reding wrote:
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
->  drivers/hwmon/lm63.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-> index 508cb29..94e373c 100644
-> --- a/drivers/hwmon/lm63.c
-> +++ b/drivers/hwmon/lm63.c
-> @@ -483,7 +483,7 @@ static int lm63_detect(struct i2c_client *new_client,
->  		return -ENODEV;
->  	}
->  
-> -	if (chip_id == 0x41 && address == 0x4c)
-> +	if ((chip_id == 0x41 || chip_id == 0x49) && address == 0x4c)
->  		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
->  	else if (chip_id == 0x51 && (address == 0x18 || address == 0x4e))
->  		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
-
-Minor - the new chip should be mentioned in drivers/hwmon/Kconfig and in
-Documentation/hwmon/lm63.
-
-My main concern is that LM96163 supports a high resolution PWM mode.
-Since that mode is much more convenient than the LM63-compatible mode, I
-think it is likely to be enabled in designs using LM96163, and it should
-be supported by the driver if we add support for LM96163.
-
-Thanks,
-Guenter
-
-
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
