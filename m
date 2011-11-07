@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753449Ab1KGTfZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:35:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24059 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752774Ab1KGTfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:35:23 -0500
-Message-ID: <1320694510.10093.23.camel@localhost>
-Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
-From: Eric Paris <eparis@redhat.com>
-To: Serge Hallyn <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
-        ebiederm@xmission.com, dhowells@redhat.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Date: Mon, 07 Nov 2011 14:35:10 -0500
-In-Reply-To: <1320445482-8459-7-git-send-email-serge@hallyn.com>
-References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
-	 <1320445482-8459-7-git-send-email-serge@hallyn.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753490Ab1KGTgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:36:41 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:35526 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab1KGTgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 14:36:40 -0500
+Message-ID: <4EB83341.9080600@linux.vnet.ibm.com>
+Date: Tue, 08 Nov 2011 01:06:33 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, john stultz <johnstul@us.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [patch] x86, tsc: skip TSC synchronization checks for tsc=reliable
+References: <1320446537.15071.14.camel@sbsiddha-desk.sc.intel.com>
+In-Reply-To: <1320446537.15071.14.camel@sbsiddha-desk.sc.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-11-04 at 22:24 +0000, Serge Hallyn wrote:
-> From: Serge E. Hallyn <serge.hallyn@canonical.com>
+Hi,
+
+On 11/05/2011 04:12 AM, Suresh Siddha wrote:
+> tsc=reliable boot parameter is supposed to skip all the TSC stablility
+> checks during boot time.
 > 
-> cap_netlink_recv() was granting privilege if a capability is in
-> current_cap(), regardless of the user namespace.  Fix that by
-> targeting the capability check against the user namespace which
-> owns the skb.
+> On a 8-socket system where we want to run an experiment with the
+> "tsc=reliable" boot option, TSC synchronization checks are not
+> getting skipped and marking the TSC as not stable.
+>
+
+I was facing this same problem some time back with some of my machines.
+
+> Check for tsc_clocksource_reliable (which is set via tsc=reliable or
+> for platforms supporting synthetic TSC_RELIABLE feature bit etc)
+> and when set, skip the TSC synchronization tests during boot.
 > 
-> Caller passes the user ns down because sock_net is static inline defined in
-> net/sock.h, which we'd rather not #include at the cap_netlink_recv function.
 
-This is wrong at least in relation to audit.  I don't know the other
-code well enough to know if I think it's ok there.  Lets say I have
-(CAP_SYS_ADMIN | CAP_SETUID | CAP_SETGID) and I create a new task with
-CLONE_NEWNAME.  This task then immediately does the needful to remove
-all audit rules (which supposedly requires CAP_AUDIT_CONTROL).  That's
-going to succeed because the task is init in it's namespace, aka:
+This patch fixes the issue. Thanks for the fix!
 
-        /* The creator of the user namespace has all caps. */
-        if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
-                return 0;
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-But it just screwed with a global resource.  aka audit.  I don't know
-the meaning of these others, but it seems to me probably most or all of
-them should be against the init_user_ns, not the namespace the skb came
-from....
+Tested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-What am I missing?
-
--Eric
+Thanks,
+Srivatsa S. Bhat
 
