@@ -1,333 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab1KGQeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:34:14 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:44087 "EHLO imr4.ericy.com"
+	id S1755797Ab1KGQf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:35:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755744Ab1KGQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:34:13 -0500
-Subject: Re: [PATCH 4/5] IIO:hwmon interface client driver.
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jonathan Cameron <jic23@kernel.org>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "khali@linux-fr.org" <khali@linux-fr.org>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "thomas.petazzoni@free-electrons.com" 
-	<thomas.petazzoni@free-electrons.com>,
-        "zdevai@gmail.com" <zdevai@gmail.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>
-In-Reply-To: <1320680681-5635-5-git-send-email-jic23@kernel.org>
-References: <1320680681-5635-1-git-send-email-jic23@kernel.org>
-	 <1320680681-5635-5-git-send-email-jic23@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 7 Nov 2011 08:29:52 -0800
-Message-ID: <1320683392.2309.109.camel@groeck-laptop>
+	id S1751560Ab1KGQfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:35:55 -0500
+Date: Mon, 7 Nov 2011 18:37:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Cc: stable@kernel.org
+Subject: [PATCH] virtio-pci: fix use after free
+Message-ID: <20111107163703.GA10358@redhat.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+Commit 31a3ddda166cda86d2b5111e09ba4bda5239fae6 introduced
+a use after free in virtio-pci. The main issue is
+that the release method signals removal of the virtio device,
+while remove signals removal of the pci device.
 
-On Mon, 2011-11-07 at 10:44 -0500, Jonathan Cameron wrote:
-> From: Jonathan Cameron <jic23@cam.ac.uk>
-> 
-> Should move to drivers/hwmon once people are happy with it.
-> 
-> Minimal support of simple in, curr and temp attributes
-> so far.
-> 
-> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  drivers/iio/Kconfig     |    8 ++
->  drivers/iio/Makefile    |    1 +
->  drivers/iio/iio_hwmon.c |  227 +++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 236 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-> index 308bc97..c2f0970 100644
-> --- a/drivers/iio/Kconfig
-> +++ b/drivers/iio/Kconfig
-> @@ -11,6 +11,14 @@ menuconfig IIO
->  
->  if IIO
->  
-> +config IIO_HWMON
-> +       tristate "Hwmon driver that uses channels specified via iio maps"
-> +       depends on HWMON
-> +       help
-> +	  This is a platform driver that in combination with a suitable
-> +	  map allows IIO devices to provide  basic hwmon functionality
-> +	  for those channels specified in the map.
-> +
->  source "drivers/iio/adc/Kconfig"
->  source "drivers/iio/imu/Kconfig"
->  source "drivers/iio/light/Kconfig"
-> diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-> index cfb588a..5f9c01a 100644
-> --- a/drivers/iio/Makefile
-> +++ b/drivers/iio/Makefile
-> @@ -6,6 +6,7 @@ obj-y = inkern.o
->  obj-$(CONFIG_IIO) += iio.o
->  industrialio-y := core.o
->  
-> +obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
->  obj-y += adc/
->  obj-y += imu/
->  obj-y += light/
-> diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
-> new file mode 100644
-> index 0000000..4bd7651
-> --- /dev/null
-> +++ b/drivers/iio/iio_hwmon.c
-> @@ -0,0 +1,227 @@
-> +/* Hwmon client for industrial I/O devices
-> + *
-> + * Copyright (c) 2011 Jonathan Cameron
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * Limited functionality currently supported.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/iio/inkern.h>
-> +#include <linux/hwmon.h>
-> +#include <linux/hwmon-sysfs.h>
-> +
-> +/**
-> + * struct iio_hwmon_state - device instance state
-> + * @channels:		filled with null terminated array of channels from iio
-> + * @num_channels:	number of channels in channels (saves counting twice)
-> + * @hwmon_dev:		associated hwmon device
-> + * @attr_group:	the group of attributes
-> + * @attrs:		null terminated array of attribute pointers.
-> + */
-> +struct iio_hwmon_state {
-> +	struct iio_channel **channels;
-> +	int num_channels;
-> +	struct device *hwmon_dev;
-> +	struct attribute_group attr_group;
-> +	struct attribute **attrs;
-> +};
-> +
-> +/*
-> + * Assumes that IIO and hwmon operate in the same base units.
-> + * This is supposed to be true, but needs verification for
-> + * new channel types.
-> + */
-> +static ssize_t iio_hwmon_read_val(struct device *dev,
-> +				  struct device_attribute *attr,
-> +				  char *buf)
-> +{
-> +	long result;
-> +	int val, ret, scaleint, scalepart;
-> +	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
-> +	struct iio_hwmon_state *state = dev_get_drvdata(dev);
-> +
-> +	/*
-> +	 * No locking between this pair, so theoretically possible
-> +	 * the scale has changed.
-> +	 */
-> +	ret = iio_read_channel_raw(state->channels[sattr->index],
-> +				   &val);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = iio_read_channel_scale(state->channels[sattr->index],
-> +				     &scaleint, &scalepart);
-> +	if (ret < 0)
-> +		return ret;
-> +	switch (ret) {
-> +	case IIO_VAL_INT:
-> +		result = val * scaleint;
-> +		break;
-> +	case IIO_VAL_INT_PLUS_MICRO:
-> +		result = (long)val * (long)scaleint +
-> +			div_s64((s64)val * (s64)scalepart, 1000000LL);
-> +		break;
-> +	case IIO_VAL_INT_PLUS_NANO:
-> +		result = (long)val * (long)scaleint +
-> +			div_s64((s64)val * (s64)scalepart, 1000000000LL);
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +	return sprintf(buf, "%ld\n", result);
-> +}
-> +
-> +static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
-> +{
-> +	int i;
-> +	struct sensor_device_attribute *a;
-> +	for (i = 0; i < st->num_channels; i++)
-> +		if (st->attrs[i]) {
-> +			a = to_sensor_dev_attr(
-> +				container_of(st->attrs[i],
-> +					     struct device_attribute,
-> +					     attr));
-> +			kfree(a);
-> +		}
-> +}
-> +
-> +static int __devinit iio_hwmon_probe(struct platform_device *pdev)
-> +{
-> +	struct iio_hwmon_state *st;
-> +	struct sensor_device_attribute *a;
-> +	int ret, i;
-> +	int in_i = 1, temp_i = 1, curr_i = 1;
-> +
-> +	st = kzalloc(sizeof(*st), GFP_KERNEL);
-> +	if (st == NULL) {
-> +		ret = -ENOMEM;
-> +		goto error_ret;
-> +	}
-> +
-> +	st->channels = iio_channel_get_all(&pdev->dev, NULL);
-> +	if (IS_ERR(st->channels)) {
-> +		ret = PTR_ERR(st->channels);
-> +		goto error_free_state;
-> +	}
-> +
-> +	/* count how many attributes we have */
-> +	while (st->channels[st->num_channels])
-> +		st->num_channels++;
-> +
-> +	st->attrs = kzalloc(sizeof(st->attrs) * (st->num_channels + 1),
-> +			    GFP_KERNEL);
-> +	if (st->attrs == NULL) {
-> +		ret = -ENOMEM;
-> +		goto error_release_channels;
-> +	}
-> +	for (i = 0; i < st->num_channels; i++) {
-> +		a = kzalloc(sizeof(*a), GFP_KERNEL);
-> +		if (a == NULL) {
-> +			ret = -ENOMEM;
-> +			goto error_free_attrs;
-> +		}
-> +
-> +		sysfs_attr_init(&a->dev_attr.attr);
-> +		switch (iio_get_channel_type(st->channels[i])) {
-> +		case IIO_VOLTAGE:
-> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-> +							  "in%d_input",
-> +							  in_i++);
-> +			break;
-> +		case IIO_TEMP:
-> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-> +							  "temp%d_input",
-> +							  temp_i++);
-> +			break;
-> +		case IIO_CURRENT:
-> +			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-> +							  "curr%d_input",
-> +							  curr_i++);
-> +			break;
-> +		default:
-> +			ret = -EINVAL;
-> +			kfree(a);
-> +			goto error_free_attrs;
-> +		}
-> +		if (a->dev_attr.attr.name == NULL) {
-> +			kfree(a);
-> +			ret = -ENOMEM;
-> +			goto error_free_attrs;
-> +		}
-> +		a->dev_attr.show = iio_hwmon_read_val;
-> +		a->dev_attr.attr.mode = S_IRUGO;
-> +		a->index = i;
-> +		st->attrs[i] = &a->dev_attr.attr;
-> +	}
-> +
-> +	st->attr_group.attrs = st->attrs;
-> +	platform_set_drvdata(pdev, st);
-> +	ret = sysfs_create_group(&pdev->dev.kobj, &st->attr_group);
-> +	if (ret < 0)
-> +		goto error_free_attrs;
-> +
-> +	st->hwmon_dev = hwmon_device_register(&pdev->dev);
-> +	if (IS_ERR(st->hwmon_dev)) {
-> +		ret = PTR_ERR(st->hwmon_dev);
-> +		goto error_remove_group;
-> +	}
-> +	return 0;
-> +
-> +error_remove_group:
-> +	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-> +error_free_attrs:
-> +	iio_hwmon_free_attrs(st);
-> +	kfree(st->attrs);
-> +error_release_channels:
-> +	iio_channel_release_all(st->channels);
-> +error_free_state:
-> +	kfree(st);
-> +error_ret:
-> +	return ret;
-> +}
-> +
-> +static int __devexit iio_hwmon_remove(struct platform_device *pdev)
-> +{
-> +	struct iio_hwmon_state *st = platform_get_drvdata(pdev);
-> +
-> +	hwmon_device_unregister(st->hwmon_dev);
-> +	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-> +	iio_hwmon_free_attrs(st);
-> +	kfree(st->attrs);
-> +	iio_channel_release_all(st->channels);
-> +
+For example, on driver removal or hot-unplug,
+virtio_pci_release_dev is called before virtio_pci_remove.
+We then might get a crash as virtio_pci_remove tries to use the
+device freed by virtio_pci_release_dev.
 
-Either I missed it before, or I am missing something now ... should
-there be kfree(st) here ?
+We allocate/free all resources together with the
+pci device, so we can leave the release method empty.
 
-Thanks,
-Guenter
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/virtio/virtio_pci.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver __refdata iio_hwmon_driver = {
-> +	.driver = {
-> +		.name = "iio_hwmon",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = iio_hwmon_probe,
-> +	.remove = __devexit_p(iio_hwmon_remove),
-> +};
-> +
-> +static int iio_inkern_init(void)
-> +{
-> +	return platform_driver_register(&iio_hwmon_driver);
-> +}
-> +module_init(iio_inkern_init);
-> +
-> +static void iio_inkern_exit(void)
-> +{
-> +	platform_driver_unregister(&iio_hwmon_driver);
-> +}
-> +module_exit(iio_inkern_exit);
-> +
-> +MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
-> +MODULE_DESCRIPTION("IIO to hwmon driver");
-> +MODULE_LICENSE("GPL v2");
-
-
+diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
+index d4ed130..a989b41 100644
+--- a/drivers/virtio/virtio_pci.c
++++ b/drivers/virtio/virtio_pci.c
+@@ -730,11 +730,11 @@ static struct virtio_config_ops virtio_pci_config_ops = {
+ 
+ static void virtio_pci_release_dev(struct device *_d)
+ {
+-	struct virtio_device *dev = container_of(_d, struct virtio_device,
+-						 dev);
+-	struct virtio_pci_device *vp_dev = to_vp_device(dev);
+-
+-	kfree(vp_dev);
++	/*
++	 * No need for a release method as we allocate/free
++	 * all devices together with the pci devices.
++	 * Provide an empty one to avoid getting a warning from core.
++	 */
+ }
+ 
+ /* the PCI probing function */
+@@ -822,6 +822,7 @@ static void __devexit virtio_pci_remove(struct pci_dev *pci_dev)
+ 	virtio_pci_iounmap(vp_dev);
+ 	pci_release_regions(pci_dev);
+ 	pci_disable_device(pci_dev);
++	kfree(vp_dev);
+ }
+ 
+ #ifdef CONFIG_PM
+-- 
+1.7.5.53.gc233e
