@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154Ab1KGVyU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 16:54:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40972 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab1KGVyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 16:54:19 -0500
-Message-ID: <4EB85387.2050008@redhat.com>
-Date: Mon, 07 Nov 2011 19:54:15 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753457Ab1KGVyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 16:54:43 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41741 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab1KGVym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 16:54:42 -0500
+Date: Mon, 7 Nov 2011 13:54:38 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] oom: do not kill tasks with oom_score_adj
+ OOM_SCORE_ADJ_MIN
+In-Reply-To: <20111104143145.0F93B8B45E@mx2.suse.de>
+Message-ID: <alpine.DEB.2.00.1111071353140.27419@chino.kir.corp.google.com>
+References: <20111104143145.0F93B8B45E@mx2.suse.de>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@redhat.com>
-CC: linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix sb_edac compilation with 32 bits kernels
-References: <20111103140716.GF19809@zod.bos.redhat.com> <4EB84DC9.8010106@redhat.com> <20111107213730.GD14216@zod.bos.redhat.com>
-In-Reply-To: <20111107213730.GD14216@zod.bos.redhat.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 07-11-2011 19:37, Josh Boyer escreveu:
-> On Mon, Nov 07, 2011 at 07:29:45PM -0200, Mauro Carvalho Chehab wrote:
->> @@ -670,6 +671,7 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
->>  	u32 reg;
->>  	u64 limit, prv = 0;
->>  	u64 tmp_mb;
->> +	u32 mb, kb;
->>  	u32 rir_way;
->>  
->>  	/*
->> @@ -682,8 +684,9 @@ static void get_memory_layout(const struct mem_ctl_info *mci)
->>  	pvt->tolm = GET_TOLM(reg);
->>  	tmp_mb = (1 + pvt->tolm) >> 20;
->>  
->> -	debugf0("TOLM: %Lu.%03Lu GB (0x%016Lx)\n",
->> -		tmp_mb / 1000, tmp_mb % 1000, (u64)pvt->tolm);
->> +	mb = div_u64_rem(tmp_mb, 1000, &kb);
->> +	debugf0("TOLM: %u.%03u GB (0x%016Lx)\n",
->> +		mb, kb, (u64)pvt->tolm);
-> 
-> So I realize you said that EDAC_DEBUG should (for now) always be enabled
-> when this driver is built, but you just added a bunch of 64-bit divides
-> outside of the debugfX stuff.  Doesn't that mean you'll be doing those
-> divides in the non-debug case as well, and then most likely getting an
-> unused varible warning when you turn EDAC_DEBUG off?
+On Fri, 4 Nov 2011, Michal Hocko wrote:
 
-You're right. Some additional logic is needed to remove the warnings and
-unneeded calculus when debug is disabled. I may eventually work on it when
-I have time.  In any case, we gave a fix already for kernel 3.2, and this
-patch is an alternative for those brave enough to test this driver with a 32 bits PAE
-kernel.
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index e916168..4883514 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -185,6 +185,9 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+>  	if (!p)
+>  		return 0;
+>  
+> +	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> +		return 0;
+> +
+>  	/*
+>  	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+>  	 * by zero, if necessary.
 
-> 
->> @@ -858,7 +868,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
->>  	 * range (e. g. VGA addresses). It is unlikely, however, that the
->>  	 * memory controller would generate an error on that range.
->>  	 */
->> -	if ((addr > (u64) pvt->tolm) && (addr < (1L << 32))) {
->> +	if ((addr > (u64) pvt->tolm) && (addr < (1LL << 32))) {
->>  		sprintf(msg, "Error at TOLM area, on addr 0x%08Lx", addr);
->>  		edac_mc_handle_ce_no_info(mci, msg);
->>  		return -EINVAL;
->> @@ -1053,7 +1063,7 @@ static int get_memory_error_data(struct mem_ctl_info *mci,
->>  	ch_addr = addr & 0x7f;
->>  	/* Remove socket wayness and remove 6 bits */
->>  	addr >>= 6;
->> -	addr /= sck_xch;
->> +	addr = div_u64(addr, sck_xch);
->>  #if 0
->>  	/* Divide by channel way */
->>  	addr = addr / ch_way;
-> 
-> Those two parts look ok.
-> 
-> josh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-edac" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+This leaves p locked, you need to do task_unlock(p) first.
 
+Once that's fixed, please add my
+
+	Acked-by: David Rientjes <rientjes@google.com>
+
+and resubmit to Andrew for the 3.2 rc series.  Thanks!
