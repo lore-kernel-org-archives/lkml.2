@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab1KGIWW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 03:22:22 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:54752 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab1KGIWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 03:22:21 -0500
-From: Richard Weinberger <richard@nod.at>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH 3/3] wanrouter: Remove kernel_lock annotations
-Date: Mon,  7 Nov 2011 09:24:21 +0100
-Message-Id: <1320654261-4473-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7
+	id S1751970Ab1KGIcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 03:32:04 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33142 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751487Ab1KGIcC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 03:32:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <1320636009.10415.2.camel@phoenix>
+References: <1320635954.10415.1.camel@phoenix>
+	<1320636009.10415.2.camel@phoenix>
+Date: Mon, 7 Nov 2011 09:32:01 +0100
+Message-ID: <CACRpkdb9-k7u4d48UwAjxS-61Hk5gmStcjeHOWOFJzK3pJGZ5w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mfd: include linux/module.h for ab5500-debugfs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BKL is gone, these annotations are useless.
+On Mon, Nov 7, 2011 at 4:20 AM, Axel Lin <axel.lin@gmail.com> wrote:
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- net/wanrouter/wanproc.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+> Include linux/module.h to fix below build error:
 
-diff --git a/net/wanrouter/wanproc.c b/net/wanrouter/wanproc.c
-index f346395..c43612e 100644
---- a/net/wanrouter/wanproc.c
-+++ b/net/wanrouter/wanproc.c
-@@ -81,7 +81,6 @@ static struct proc_dir_entry *proc_router;
-  *	Iterator
-  */
- static void *r_start(struct seq_file *m, loff_t *pos)
--	__acquires(kernel_lock)
- {
- 	struct wan_device *wandev;
- 	loff_t l = *pos;
-@@ -103,7 +102,6 @@ static void *r_next(struct seq_file *m, void *v, loff_t *pos)
- }
- 
- static void r_stop(struct seq_file *m, void *v)
--	__releases(kernel_lock)
- {
- 	mutex_unlock(&config_mutex);
- }
--- 
-1.7.7
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Thanks Axel!
+Linus Walleij
