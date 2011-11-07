@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab1KGOUv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:20:51 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18026 "EHLO
+	id S932573Ab1KGOVF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:21:05 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18042 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab1KGOUr (ORCPT
+	with ESMTP id S1751582Ab1KGOVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:20:47 -0500
+	Mon, 7 Nov 2011 09:21:01 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Mon, 07 Nov 2011 06:20:29 -0800
+	by hqnvupgp07.nvidia.com on Mon, 07 Nov 2011 06:20:32 -0800
 From: Peter De Schrijver <pdeschrijver@nvidia.com>
 To: Peter De Schrijver <pdeschrijver@nvidia.com>
 CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
         Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>
-Subject: [PATCH v3 4/8] arm/tegra: prepare pinmux code for multiple tegra variants
-Date: Mon, 7 Nov 2011 16:20:11 +0200
-Message-ID: <1320675617-20751-5-git-send-email-pdeschrijver@nvidia.com>
+Subject: [PATCH v3 6/8] arm/tegra: pinmux tables and definitions for tegra30
+Date: Mon, 7 Nov 2011 16:20:13 +0200
+Message-ID: <1320675617-20751-7-git-send-email-pdeschrijver@nvidia.com>
 X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
 In-Reply-To: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
 References: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
@@ -28,161 +28,821 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the pinmux code to be useable for multiple tegra variants.
-Some tegra20 specific constants will be replaced by variables which will be
-initialized to the appropriate value at runtime.
+Define the pinmuxing and pindrive tables for tegra30. The pinmux table defines
+the available functions for each pinmux group. The pindrive table defines the
+default pullup or pulldowns for each group.
+
+Derived from code by Scott Williams (scwilliams@nvidia.com)
 
 Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
 ---
- arch/arm/mach-tegra/board-harmony-pcie.c     |    1 +
- arch/arm/mach-tegra/board-harmony-pinmux.c   |    1 +
- arch/arm/mach-tegra/board-paz00-pinmux.c     |    1 +
- arch/arm/mach-tegra/board-trimslice-pinmux.c |    1 +
- arch/arm/mach-tegra/include/mach/pinmux.h    |   25 +++----
- arch/arm/mach-tegra/pinmux-tegra20-tables.c  |   15 +++-
- arch/arm/mach-tegra/pinmux.c                 |  105 ++++++++++++++-----------
- 7 files changed, 86 insertions(+), 63 deletions(-)
+ arch/arm/mach-tegra/Makefile                      |    1 +
+ arch/arm/mach-tegra/include/mach/pinmux-tegra30.h |  320 ++++++++++++++++++
+ arch/arm/mach-tegra/include/mach/pinmux.h         |   53 +++
+ arch/arm/mach-tegra/pinmux-tegra30-tables.c       |  376 +++++++++++++++++++++
+ arch/arm/mach-tegra/pinmux.c                      |   48 +++
+ 5 files changed, 798 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
+ create mode 100644 arch/arm/mach-tegra/pinmux-tegra30-tables.c
 
-diff --git a/arch/arm/mach-tegra/board-harmony-pcie.c b/arch/arm/mach-tegra/board-harmony-pcie.c
-index 6db7d69..bd402d0 100644
---- a/arch/arm/mach-tegra/board-harmony-pcie.c
-+++ b/arch/arm/mach-tegra/board-harmony-pcie.c
-@@ -23,6 +23,7 @@
- #include <asm/mach-types.h>
- 
- #include <mach/pinmux.h>
-+#include <mach/pinmux-tegra20.h>
- #include "board.h"
- #include "board-harmony.h"
- 
-diff --git a/arch/arm/mach-tegra/board-harmony-pinmux.c b/arch/arm/mach-tegra/board-harmony-pinmux.c
-index e99b456..286253f 100644
---- a/arch/arm/mach-tegra/board-harmony-pinmux.c
-+++ b/arch/arm/mach-tegra/board-harmony-pinmux.c
-@@ -17,6 +17,7 @@
- #include <linux/kernel.h>
- #include <linux/gpio.h>
- #include <mach/pinmux.h>
-+#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
- #include "board-harmony.h"
-diff --git a/arch/arm/mach-tegra/board-paz00-pinmux.c b/arch/arm/mach-tegra/board-paz00-pinmux.c
-index fb20894..484dbd6 100644
---- a/arch/arm/mach-tegra/board-paz00-pinmux.c
-+++ b/arch/arm/mach-tegra/board-paz00-pinmux.c
-@@ -17,6 +17,7 @@
- #include <linux/kernel.h>
- #include <linux/gpio.h>
- #include <mach/pinmux.h>
-+#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
- #include "board-paz00.h"
-diff --git a/arch/arm/mach-tegra/board-trimslice-pinmux.c b/arch/arm/mach-tegra/board-trimslice-pinmux.c
-index 4969dd2..cc9d4f4 100644
---- a/arch/arm/mach-tegra/board-trimslice-pinmux.c
-+++ b/arch/arm/mach-tegra/board-trimslice-pinmux.c
-@@ -18,6 +18,7 @@
- #include <linux/init.h>
- 
- #include <mach/pinmux.h>
-+#include <mach/pinmux-tegra20.h>
- 
- #include "gpio-names.h"
- #include "board-trimslice.h"
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index ee86ec9..66a0352 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += clock.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= pinmux-tegra20-tables.o
++obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= pinmux-tegra30-tables.o
+ obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
+ obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+= dma.o
+diff --git a/arch/arm/mach-tegra/include/mach/pinmux-tegra30.h b/arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
+new file mode 100644
+index 0000000..c1aee3e
+--- /dev/null
++++ b/arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
+@@ -0,0 +1,320 @@
++/*
++ * linux/arch/arm/mach-tegra/include/mach/pinmux-tegra30.h
++ *
++ * Copyright (C) 2010 Google, Inc.
++ * Copyright (C) 2010,2011 Nvidia, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __MACH_TEGRA_PINMUX_TEGRA30_H
++#define __MACH_TEGRA_PINMUX_TEGRA30_H
++
++enum tegra_pingroup {
++	TEGRA_PINGROUP_ULPI_DATA0 = 0,
++	TEGRA_PINGROUP_ULPI_DATA1,
++	TEGRA_PINGROUP_ULPI_DATA2,
++	TEGRA_PINGROUP_ULPI_DATA3,
++	TEGRA_PINGROUP_ULPI_DATA4,
++	TEGRA_PINGROUP_ULPI_DATA5,
++	TEGRA_PINGROUP_ULPI_DATA6,
++	TEGRA_PINGROUP_ULPI_DATA7,
++	TEGRA_PINGROUP_ULPI_CLK,
++	TEGRA_PINGROUP_ULPI_DIR,
++	TEGRA_PINGROUP_ULPI_NXT,
++	TEGRA_PINGROUP_ULPI_STP,
++	TEGRA_PINGROUP_DAP3_FS,
++	TEGRA_PINGROUP_DAP3_DIN,
++	TEGRA_PINGROUP_DAP3_DOUT,
++	TEGRA_PINGROUP_DAP3_SCLK,
++	TEGRA_PINGROUP_GPIO_PV0,
++	TEGRA_PINGROUP_GPIO_PV1,
++	TEGRA_PINGROUP_SDMMC1_CLK,
++	TEGRA_PINGROUP_SDMMC1_CMD,
++	TEGRA_PINGROUP_SDMMC1_DAT3,
++	TEGRA_PINGROUP_SDMMC1_DAT2,
++	TEGRA_PINGROUP_SDMMC1_DAT1,
++	TEGRA_PINGROUP_SDMMC1_DAT0,
++	TEGRA_PINGROUP_GPIO_PV2,
++	TEGRA_PINGROUP_GPIO_PV3,
++	TEGRA_PINGROUP_CLK2_OUT,
++	TEGRA_PINGROUP_CLK2_REQ,
++	TEGRA_PINGROUP_LCD_PWR1,
++	TEGRA_PINGROUP_LCD_PWR2,
++	TEGRA_PINGROUP_LCD_SDIN,
++	TEGRA_PINGROUP_LCD_SDOUT,
++	TEGRA_PINGROUP_LCD_WR_N,
++	TEGRA_PINGROUP_LCD_CS0_N,
++	TEGRA_PINGROUP_LCD_DC0,
++	TEGRA_PINGROUP_LCD_SCK,
++	TEGRA_PINGROUP_LCD_PWR0,
++	TEGRA_PINGROUP_LCD_PCLK,
++	TEGRA_PINGROUP_LCD_DE,
++	TEGRA_PINGROUP_LCD_HSYNC,
++	TEGRA_PINGROUP_LCD_VSYNC,
++	TEGRA_PINGROUP_LCD_D0,
++	TEGRA_PINGROUP_LCD_D1,
++	TEGRA_PINGROUP_LCD_D2,
++	TEGRA_PINGROUP_LCD_D3,
++	TEGRA_PINGROUP_LCD_D4,
++	TEGRA_PINGROUP_LCD_D5,
++	TEGRA_PINGROUP_LCD_D6,
++	TEGRA_PINGROUP_LCD_D7,
++	TEGRA_PINGROUP_LCD_D8,
++	TEGRA_PINGROUP_LCD_D9,
++	TEGRA_PINGROUP_LCD_D10,
++	TEGRA_PINGROUP_LCD_D11,
++	TEGRA_PINGROUP_LCD_D12,
++	TEGRA_PINGROUP_LCD_D13,
++	TEGRA_PINGROUP_LCD_D14,
++	TEGRA_PINGROUP_LCD_D15,
++	TEGRA_PINGROUP_LCD_D16,
++	TEGRA_PINGROUP_LCD_D17,
++	TEGRA_PINGROUP_LCD_D18,
++	TEGRA_PINGROUP_LCD_D19,
++	TEGRA_PINGROUP_LCD_D20,
++	TEGRA_PINGROUP_LCD_D21,
++	TEGRA_PINGROUP_LCD_D22,
++	TEGRA_PINGROUP_LCD_D23,
++	TEGRA_PINGROUP_LCD_CS1_N,
++	TEGRA_PINGROUP_LCD_M1,
++	TEGRA_PINGROUP_LCD_DC1,
++	TEGRA_PINGROUP_HDMI_INT,
++	TEGRA_PINGROUP_DDC_SCL,
++	TEGRA_PINGROUP_DDC_SDA,
++	TEGRA_PINGROUP_CRT_HSYNC,
++	TEGRA_PINGROUP_CRT_VSYNC,
++	TEGRA_PINGROUP_VI_D0,
++	TEGRA_PINGROUP_VI_D1,
++	TEGRA_PINGROUP_VI_D2,
++	TEGRA_PINGROUP_VI_D3,
++	TEGRA_PINGROUP_VI_D4,
++	TEGRA_PINGROUP_VI_D5,
++	TEGRA_PINGROUP_VI_D6,
++	TEGRA_PINGROUP_VI_D7,
++	TEGRA_PINGROUP_VI_D8,
++	TEGRA_PINGROUP_VI_D9,
++	TEGRA_PINGROUP_VI_D10,
++	TEGRA_PINGROUP_VI_D11,
++	TEGRA_PINGROUP_VI_PCLK,
++	TEGRA_PINGROUP_VI_MCLK,
++	TEGRA_PINGROUP_VI_VSYNC,
++	TEGRA_PINGROUP_VI_HSYNC,
++	TEGRA_PINGROUP_UART2_RXD,
++	TEGRA_PINGROUP_UART2_TXD,
++	TEGRA_PINGROUP_UART2_RTS_N,
++	TEGRA_PINGROUP_UART2_CTS_N,
++	TEGRA_PINGROUP_UART3_TXD,
++	TEGRA_PINGROUP_UART3_RXD,
++	TEGRA_PINGROUP_UART3_CTS_N,
++	TEGRA_PINGROUP_UART3_RTS_N,
++	TEGRA_PINGROUP_GPIO_PU0,
++	TEGRA_PINGROUP_GPIO_PU1,
++	TEGRA_PINGROUP_GPIO_PU2,
++	TEGRA_PINGROUP_GPIO_PU3,
++	TEGRA_PINGROUP_GPIO_PU4,
++	TEGRA_PINGROUP_GPIO_PU5,
++	TEGRA_PINGROUP_GPIO_PU6,
++	TEGRA_PINGROUP_GEN1_I2C_SDA,
++	TEGRA_PINGROUP_GEN1_I2C_SCL,
++	TEGRA_PINGROUP_DAP4_FS,
++	TEGRA_PINGROUP_DAP4_DIN,
++	TEGRA_PINGROUP_DAP4_DOUT,
++	TEGRA_PINGROUP_DAP4_SCLK,
++	TEGRA_PINGROUP_CLK3_OUT,
++	TEGRA_PINGROUP_CLK3_REQ,
++	TEGRA_PINGROUP_GMI_WP_N,
++	TEGRA_PINGROUP_GMI_IORDY,
++	TEGRA_PINGROUP_GMI_WAIT,
++	TEGRA_PINGROUP_GMI_ADV_N,
++	TEGRA_PINGROUP_GMI_CLK,
++	TEGRA_PINGROUP_GMI_CS0_N,
++	TEGRA_PINGROUP_GMI_CS1_N,
++	TEGRA_PINGROUP_GMI_CS2_N,
++	TEGRA_PINGROUP_GMI_CS3_N,
++	TEGRA_PINGROUP_GMI_CS4_N,
++	TEGRA_PINGROUP_GMI_CS6_N,
++	TEGRA_PINGROUP_GMI_CS7_N,
++	TEGRA_PINGROUP_GMI_AD0,
++	TEGRA_PINGROUP_GMI_AD1,
++	TEGRA_PINGROUP_GMI_AD2,
++	TEGRA_PINGROUP_GMI_AD3,
++	TEGRA_PINGROUP_GMI_AD4,
++	TEGRA_PINGROUP_GMI_AD5,
++	TEGRA_PINGROUP_GMI_AD6,
++	TEGRA_PINGROUP_GMI_AD7,
++	TEGRA_PINGROUP_GMI_AD8,
++	TEGRA_PINGROUP_GMI_AD9,
++	TEGRA_PINGROUP_GMI_AD10,
++	TEGRA_PINGROUP_GMI_AD11,
++	TEGRA_PINGROUP_GMI_AD12,
++	TEGRA_PINGROUP_GMI_AD13,
++	TEGRA_PINGROUP_GMI_AD14,
++	TEGRA_PINGROUP_GMI_AD15,
++	TEGRA_PINGROUP_GMI_A16,
++	TEGRA_PINGROUP_GMI_A17,
++	TEGRA_PINGROUP_GMI_A18,
++	TEGRA_PINGROUP_GMI_A19,
++	TEGRA_PINGROUP_GMI_WR_N,
++	TEGRA_PINGROUP_GMI_OE_N,
++	TEGRA_PINGROUP_GMI_DQS,
++	TEGRA_PINGROUP_GMI_RST_N,
++	TEGRA_PINGROUP_GEN2_I2C_SCL,
++	TEGRA_PINGROUP_GEN2_I2C_SDA,
++	TEGRA_PINGROUP_SDMMC4_CLK,
++	TEGRA_PINGROUP_SDMMC4_CMD,
++	TEGRA_PINGROUP_SDMMC4_DAT0,
++	TEGRA_PINGROUP_SDMMC4_DAT1,
++	TEGRA_PINGROUP_SDMMC4_DAT2,
++	TEGRA_PINGROUP_SDMMC4_DAT3,
++	TEGRA_PINGROUP_SDMMC4_DAT4,
++	TEGRA_PINGROUP_SDMMC4_DAT5,
++	TEGRA_PINGROUP_SDMMC4_DAT6,
++	TEGRA_PINGROUP_SDMMC4_DAT7,
++	TEGRA_PINGROUP_SDMMC4_RST_N,
++	TEGRA_PINGROUP_CAM_MCLK,
++	TEGRA_PINGROUP_GPIO_PCC1,
++	TEGRA_PINGROUP_GPIO_PBB0,
++	TEGRA_PINGROUP_CAM_I2C_SCL,
++	TEGRA_PINGROUP_CAM_I2C_SDA,
++	TEGRA_PINGROUP_GPIO_PBB3,
++	TEGRA_PINGROUP_GPIO_PBB4,
++	TEGRA_PINGROUP_GPIO_PBB5,
++	TEGRA_PINGROUP_GPIO_PBB6,
++	TEGRA_PINGROUP_GPIO_PBB7,
++	TEGRA_PINGROUP_GPIO_PCC2,
++	TEGRA_PINGROUP_JTAG_RTCK,
++	TEGRA_PINGROUP_PWR_I2C_SCL,
++	TEGRA_PINGROUP_PWR_I2C_SDA,
++	TEGRA_PINGROUP_KB_ROW0,
++	TEGRA_PINGROUP_KB_ROW1,
++	TEGRA_PINGROUP_KB_ROW2,
++	TEGRA_PINGROUP_KB_ROW3,
++	TEGRA_PINGROUP_KB_ROW4,
++	TEGRA_PINGROUP_KB_ROW5,
++	TEGRA_PINGROUP_KB_ROW6,
++	TEGRA_PINGROUP_KB_ROW7,
++	TEGRA_PINGROUP_KB_ROW8,
++	TEGRA_PINGROUP_KB_ROW9,
++	TEGRA_PINGROUP_KB_ROW10,
++	TEGRA_PINGROUP_KB_ROW11,
++	TEGRA_PINGROUP_KB_ROW12,
++	TEGRA_PINGROUP_KB_ROW13,
++	TEGRA_PINGROUP_KB_ROW14,
++	TEGRA_PINGROUP_KB_ROW15,
++	TEGRA_PINGROUP_KB_COL0,
++	TEGRA_PINGROUP_KB_COL1,
++	TEGRA_PINGROUP_KB_COL2,
++	TEGRA_PINGROUP_KB_COL3,
++	TEGRA_PINGROUP_KB_COL4,
++	TEGRA_PINGROUP_KB_COL5,
++	TEGRA_PINGROUP_KB_COL6,
++	TEGRA_PINGROUP_KB_COL7,
++	TEGRA_PINGROUP_CLK_32K_OUT,
++	TEGRA_PINGROUP_SYS_CLK_REQ,
++	TEGRA_PINGROUP_CORE_PWR_REQ,
++	TEGRA_PINGROUP_CPU_PWR_REQ,
++	TEGRA_PINGROUP_PWR_INT_N,
++	TEGRA_PINGROUP_CLK_32K_IN,
++	TEGRA_PINGROUP_OWR,
++	TEGRA_PINGROUP_DAP1_FS,
++	TEGRA_PINGROUP_DAP1_DIN,
++	TEGRA_PINGROUP_DAP1_DOUT,
++	TEGRA_PINGROUP_DAP1_SCLK,
++	TEGRA_PINGROUP_CLK1_REQ,
++	TEGRA_PINGROUP_CLK1_OUT,
++	TEGRA_PINGROUP_SPDIF_IN,
++	TEGRA_PINGROUP_SPDIF_OUT,
++	TEGRA_PINGROUP_DAP2_FS,
++	TEGRA_PINGROUP_DAP2_DIN,
++	TEGRA_PINGROUP_DAP2_DOUT,
++	TEGRA_PINGROUP_DAP2_SCLK,
++	TEGRA_PINGROUP_SPI2_MOSI,
++	TEGRA_PINGROUP_SPI2_MISO,
++	TEGRA_PINGROUP_SPI2_CS0_N,
++	TEGRA_PINGROUP_SPI2_SCK,
++	TEGRA_PINGROUP_SPI1_MOSI,
++	TEGRA_PINGROUP_SPI1_SCK,
++	TEGRA_PINGROUP_SPI1_CS0_N,
++	TEGRA_PINGROUP_SPI1_MISO,
++	TEGRA_PINGROUP_SPI2_CS1_N,
++	TEGRA_PINGROUP_SPI2_CS2_N,
++	TEGRA_PINGROUP_SDMMC3_CLK,
++	TEGRA_PINGROUP_SDMMC3_CMD,
++	TEGRA_PINGROUP_SDMMC3_DAT0,
++	TEGRA_PINGROUP_SDMMC3_DAT1,
++	TEGRA_PINGROUP_SDMMC3_DAT2,
++	TEGRA_PINGROUP_SDMMC3_DAT3,
++	TEGRA_PINGROUP_SDMMC3_DAT4,
++	TEGRA_PINGROUP_SDMMC3_DAT5,
++	TEGRA_PINGROUP_SDMMC3_DAT6,
++	TEGRA_PINGROUP_SDMMC3_DAT7,
++	TEGRA_PINGROUP_PEX_L0_PRSNT_N,
++	TEGRA_PINGROUP_PEX_L0_RST_N,
++	TEGRA_PINGROUP_PEX_L0_CLKREQ_N,
++	TEGRA_PINGROUP_PEX_WAKE_N,
++	TEGRA_PINGROUP_PEX_L1_PRSNT_N,
++	TEGRA_PINGROUP_PEX_L1_RST_N,
++	TEGRA_PINGROUP_PEX_L1_CLKREQ_N,
++	TEGRA_PINGROUP_PEX_L2_PRSNT_N,
++	TEGRA_PINGROUP_PEX_L2_RST_N,
++	TEGRA_PINGROUP_PEX_L2_CLKREQ_N,
++	TEGRA_PINGROUP_HDMI_CEC,
++	TEGRA_MAX_PINGROUP,
++};
++
++enum tegra_drive_pingroup {
++	TEGRA_DRIVE_PINGROUP_AO1 = 0,
++	TEGRA_DRIVE_PINGROUP_AO2,
++	TEGRA_DRIVE_PINGROUP_AT1,
++	TEGRA_DRIVE_PINGROUP_AT2,
++	TEGRA_DRIVE_PINGROUP_AT3,
++	TEGRA_DRIVE_PINGROUP_AT4,
++	TEGRA_DRIVE_PINGROUP_AT5,
++	TEGRA_DRIVE_PINGROUP_CDEV1,
++	TEGRA_DRIVE_PINGROUP_CDEV2,
++	TEGRA_DRIVE_PINGROUP_CSUS,
++	TEGRA_DRIVE_PINGROUP_DAP1,
++	TEGRA_DRIVE_PINGROUP_DAP2,
++	TEGRA_DRIVE_PINGROUP_DAP3,
++	TEGRA_DRIVE_PINGROUP_DAP4,
++	TEGRA_DRIVE_PINGROUP_DBG,
++	TEGRA_DRIVE_PINGROUP_LCD1,
++	TEGRA_DRIVE_PINGROUP_LCD2,
++	TEGRA_DRIVE_PINGROUP_SDIO2,
++	TEGRA_DRIVE_PINGROUP_SDIO3,
++	TEGRA_DRIVE_PINGROUP_SPI,
++	TEGRA_DRIVE_PINGROUP_UAA,
++	TEGRA_DRIVE_PINGROUP_UAB,
++	TEGRA_DRIVE_PINGROUP_UART2,
++	TEGRA_DRIVE_PINGROUP_UART3,
++	TEGRA_DRIVE_PINGROUP_VI1,
++	TEGRA_DRIVE_PINGROUP_SDIO1,
++	TEGRA_DRIVE_PINGROUP_CRT,
++	TEGRA_DRIVE_PINGROUP_DDC,
++	TEGRA_DRIVE_PINGROUP_GMA,
++	TEGRA_DRIVE_PINGROUP_GMB,
++	TEGRA_DRIVE_PINGROUP_GMC,
++	TEGRA_DRIVE_PINGROUP_GMD,
++	TEGRA_DRIVE_PINGROUP_GME,
++	TEGRA_DRIVE_PINGROUP_GMF,
++	TEGRA_DRIVE_PINGROUP_GMG,
++	TEGRA_DRIVE_PINGROUP_GMH,
++	TEGRA_DRIVE_PINGROUP_OWR,
++	TEGRA_DRIVE_PINGROUP_UAD,
++	TEGRA_DRIVE_PINGROUP_GPV,
++	TEGRA_DRIVE_PINGROUP_DEV3,
++	TEGRA_DRIVE_PINGROUP_CEC,
++	TEGRA_MAX_DRIVE_PINGROUP,
++};
++
++#endif
++
 diff --git a/arch/arm/mach-tegra/include/mach/pinmux.h b/arch/arm/mach-tegra/include/mach/pinmux.h
-index b93df9e..35999ce 100644
+index 988c6c5..055f179 100644
 --- a/arch/arm/mach-tegra/include/mach/pinmux.h
 +++ b/arch/arm/mach-tegra/include/mach/pinmux.h
-@@ -17,12 +17,6 @@
- #ifndef __MACH_TEGRA_PINMUX_H
- #define __MACH_TEGRA_PINMUX_H
- 
--#if defined(CONFIG_ARCH_TEGRA_2x_SOC)
--#include "pinmux-tegra20.h"
--#else
--#error "Undefined Tegra architecture"
--#endif
--
- enum tegra_mux_func {
- 	TEGRA_MUX_RSVD = 0x8000,
- 	TEGRA_MUX_RSVD1 = 0x8000,
-@@ -118,7 +112,7 @@ enum tegra_vddio {
+@@ -24,6 +24,7 @@ enum tegra_mux_func {
+ 	TEGRA_MUX_RSVD2 = 0x8001,
+ 	TEGRA_MUX_RSVD3 = 0x8002,
+ 	TEGRA_MUX_RSVD4 = 0x8003,
++	TEGRA_MUX_INVALID = 0x4000,
+ 	TEGRA_MUX_NONE = -1,
+ 	TEGRA_MUX_AHB_CLK,
+ 	TEGRA_MUX_APB_CLK,
+@@ -85,6 +86,49 @@ enum tegra_mux_func {
+ 	TEGRA_MUX_VI,
+ 	TEGRA_MUX_VI_SENSOR_CLK,
+ 	TEGRA_MUX_XIO,
++	TEGRA_MUX_BLINK,
++	TEGRA_MUX_CEC,
++	TEGRA_MUX_CLK12,
++	TEGRA_MUX_DAP,
++	TEGRA_MUX_DAPSDMMC2,
++	TEGRA_MUX_DDR,
++	TEGRA_MUX_DEV3,
++	TEGRA_MUX_DTV,
++	TEGRA_MUX_VI_ALT1,
++	TEGRA_MUX_VI_ALT2,
++	TEGRA_MUX_VI_ALT3,
++	TEGRA_MUX_EMC_DLL,
++	TEGRA_MUX_EXTPERIPH1,
++	TEGRA_MUX_EXTPERIPH2,
++	TEGRA_MUX_EXTPERIPH3,
++	TEGRA_MUX_GMI_ALT,
++	TEGRA_MUX_HDA,
++	TEGRA_MUX_HSI,
++	TEGRA_MUX_I2C4,
++	TEGRA_MUX_I2C5,
++	TEGRA_MUX_I2CPWR,
++	TEGRA_MUX_I2S0,
++	TEGRA_MUX_I2S1,
++	TEGRA_MUX_I2S2,
++	TEGRA_MUX_I2S3,
++	TEGRA_MUX_I2S4,
++	TEGRA_MUX_NAND_ALT,
++	TEGRA_MUX_POPSDIO4,
++	TEGRA_MUX_POPSDMMC4,
++	TEGRA_MUX_PWM0,
++	TEGRA_MUX_PWM1,
++	TEGRA_MUX_PWM2,
++	TEGRA_MUX_PWM3,
++	TEGRA_MUX_SATA,
++	TEGRA_MUX_SPI5,
++	TEGRA_MUX_SPI6,
++	TEGRA_MUX_SYSCLK,
++	TEGRA_MUX_VGP1,
++	TEGRA_MUX_VGP2,
++	TEGRA_MUX_VGP3,
++	TEGRA_MUX_VGP4,
++	TEGRA_MUX_VGP5,
++	TEGRA_MUX_VGP6,
+ 	TEGRA_MUX_SAFE,
+ 	TEGRA_MAX_MUX,
+ };
+@@ -115,6 +159,12 @@ enum tegra_vddio {
+ 	TEGRA_VDDIO_SYS,
+ 	TEGRA_VDDIO_AUDIO,
+ 	TEGRA_VDDIO_SD,
++	TEGRA_VDDIO_CAM,
++	TEGRA_VDDIO_GMI,
++	TEGRA_VDDIO_PEXCTL,
++	TEGRA_VDDIO_SDMMC1,
++	TEGRA_VDDIO_SDMMC3,
++	TEGRA_VDDIO_SDMMC4,
  };
  
  struct tegra_pingroup_config {
--	enum tegra_pingroup	pingroup;
-+	int pingroup;
- 	enum tegra_mux_func	func;
- 	enum tegra_pullupdown	pupd;
- 	enum tegra_tristate	tristate;
-@@ -187,7 +181,7 @@ enum tegra_schmitt {
- };
+@@ -230,6 +280,9 @@ typedef void (*pinmux_init) (const struct tegra_pingroup_desc **pg,
+ void tegra20_pinmux_init(const struct tegra_pingroup_desc **pg, int *pg_max,
+ 	const struct tegra_drive_pingroup_desc **pgdrive, int *pgdrive_max);
  
- struct tegra_drive_pingroup_config {
--	enum tegra_drive_pingroup pingroup;
-+	int pingroup;
- 	enum tegra_hsm hsm;
- 	enum tegra_schmitt schmitt;
- 	enum tegra_drive drive;
-@@ -219,13 +213,15 @@ struct tegra_pingroup_desc {
- 	s8 pupd_bit;	/* offset into the PULL_UPDOWN_REG_* register bit */
- };
- 
--extern const struct tegra_pingroup_desc tegra_soc_pingroups[];
--extern const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[];
-+typedef void (*pinmux_init) (const struct tegra_pingroup_desc **pg,
-+	int *pg_max, const struct tegra_drive_pingroup_desc **pgdrive,
-+	int *pgdrive_max);
- 
--int tegra_pinmux_set_tristate(enum tegra_pingroup pg,
--	enum tegra_tristate tristate);
--int tegra_pinmux_set_pullupdown(enum tegra_pingroup pg,
--	enum tegra_pullupdown pupd);
-+void tegra20_pinmux_init(const struct tegra_pingroup_desc **pg, int *pg_max,
++void tegra30_pinmux_init(const struct tegra_pingroup_desc **pg, int *pg_max,
 +	const struct tegra_drive_pingroup_desc **pgdrive, int *pgdrive_max);
 +
-+int tegra_pinmux_set_tristate(int pg, enum tegra_tristate tristate);
-+int tegra_pinmux_set_pullupdown(int pg, enum tegra_pullupdown pupd);
+ int tegra_pinmux_set_tristate(int pg, enum tegra_tristate tristate);
+ int tegra_pinmux_set_pullupdown(int pg, enum tegra_pullupdown pupd);
  
- void tegra_pinmux_config_table(const struct tegra_pingroup_config *config,
- 	int len);
-@@ -241,4 +237,3 @@ void tegra_pinmux_config_tristate_table(const struct tegra_pingroup_config *conf
- void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *config,
- 	int len, enum tegra_pullupdown pupd);
- #endif
--
-diff --git a/arch/arm/mach-tegra/pinmux-tegra20-tables.c b/arch/arm/mach-tegra/pinmux-tegra20-tables.c
-index 88642a5..de9d0df 100644
---- a/arch/arm/mach-tegra/pinmux-tegra20-tables.c
-+++ b/arch/arm/mach-tegra/pinmux-tegra20-tables.c
-@@ -44,7 +44,7 @@
- 		.reg = ((r) - PINGROUP_REG_A)			\
- 	}
- 
--const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE_PINGROUP] = {
-+static const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE_PINGROUP] = {
- 	DRIVE_PINGROUP(AO1,		0x868),
- 	DRIVE_PINGROUP(AO2,		0x86c),
- 	DRIVE_PINGROUP(AT1,		0x870),
-@@ -108,7 +108,7 @@ const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE
- 		.pupd_bit = pupd_b,				\
- 	}
- 
--const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
-+static const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
- 	PINGROUP(ATA,   NAND,  IDE,       NAND,      GMI,       RSVD,          IDE,       0x14, 0,  0x80, 24, 0xA0, 0),
- 	PINGROUP(ATB,   NAND,  IDE,       NAND,      GMI,       SDIO4,         IDE,       0x14, 1,  0x80, 16, 0xA0, 2),
- 	PINGROUP(ATC,   NAND,  IDE,       NAND,      GMI,       SDIO4,         IDE,       0x14, 2,  0x80, 22, 0xA0, 4),
-@@ -227,3 +227,14 @@ const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
- 	PINGROUP(XM2C,  DDR,   RSVD,      RSVD,      RSVD,      RSVD,          RSVD,      -1,   -1, -1,   -1, 0xA8, 30),
- 	PINGROUP(XM2D,  DDR,   RSVD,      RSVD,      RSVD,      RSVD,          RSVD,      -1,   -1, -1,   -1, 0xA8, 28),
- };
+diff --git a/arch/arm/mach-tegra/pinmux-tegra30-tables.c b/arch/arm/mach-tegra/pinmux-tegra30-tables.c
+new file mode 100644
+index 0000000..8b6db9a
+--- /dev/null
++++ b/arch/arm/mach-tegra/pinmux-tegra30-tables.c
+@@ -0,0 +1,376 @@
++/*
++ * linux/arch/arm/mach-tegra/pinmux-tegra30-tables.c
++ *
++ * Common pinmux configurations for Tegra30 SoCs
++ *
++ * Copyright (C) 2010,2011 NVIDIA Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
 +
-+void __init tegra20_pinmux_init(const struct tegra_pingroup_desc **pg,
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/init.h>
++#include <linux/string.h>
++
++#include <mach/iomap.h>
++#include <mach/pinmux.h>
++#include <mach/pinmux-tegra30.h>
++#include <mach/suspend.h>
++
++#define PINGROUP_REG_A	0x868
++#define MUXCTL_REG_A	0x3000
++
++#define DRIVE_PINGROUP(pg_name, r)		\
++	[TEGRA_DRIVE_PINGROUP_ ## pg_name] = {	\
++		.name = #pg_name,		\
++		.reg_bank = 0,			\
++		.reg = ((r) - PINGROUP_REG_A)	\
++	}
++
++static const struct tegra_drive_pingroup_desc tegra_soc_drive_pingroups[TEGRA_MAX_DRIVE_PINGROUP] = {
++	DRIVE_PINGROUP(AO1,		0x868),
++	DRIVE_PINGROUP(AO2,		0x86c),
++	DRIVE_PINGROUP(AT1,		0x870),
++	DRIVE_PINGROUP(AT2,		0x874),
++	DRIVE_PINGROUP(AT3,		0x878),
++	DRIVE_PINGROUP(AT4,		0x87c),
++	DRIVE_PINGROUP(AT5,		0x880),
++	DRIVE_PINGROUP(CDEV1,		0x884),
++	DRIVE_PINGROUP(CDEV2,		0x888),
++	DRIVE_PINGROUP(CSUS,		0x88c),
++	DRIVE_PINGROUP(DAP1,		0x890),
++	DRIVE_PINGROUP(DAP2,		0x894),
++	DRIVE_PINGROUP(DAP3,		0x898),
++	DRIVE_PINGROUP(DAP4,		0x89c),
++	DRIVE_PINGROUP(DBG,		0x8a0),
++	DRIVE_PINGROUP(LCD1,		0x8a4),
++	DRIVE_PINGROUP(LCD2,		0x8a8),
++	DRIVE_PINGROUP(SDIO2,		0x8ac),
++	DRIVE_PINGROUP(SDIO3,		0x8b0),
++	DRIVE_PINGROUP(SPI,		0x8b4),
++	DRIVE_PINGROUP(UAA,		0x8b8),
++	DRIVE_PINGROUP(UAB,		0x8bc),
++	DRIVE_PINGROUP(UART2,		0x8c0),
++	DRIVE_PINGROUP(UART3,		0x8c4),
++	DRIVE_PINGROUP(VI1,		0x8c8),
++	DRIVE_PINGROUP(SDIO1,		0x8ec),
++	DRIVE_PINGROUP(CRT,		0x8f8),
++	DRIVE_PINGROUP(DDC,		0x8fc),
++	DRIVE_PINGROUP(GMA,		0x900),
++	DRIVE_PINGROUP(GMB,		0x904),
++	DRIVE_PINGROUP(GMC,		0x908),
++	DRIVE_PINGROUP(GMD,		0x90c),
++	DRIVE_PINGROUP(GME,		0x910),
++	DRIVE_PINGROUP(GMF,		0x914),
++	DRIVE_PINGROUP(GMG,		0x918),
++	DRIVE_PINGROUP(GMH,		0x91c),
++	DRIVE_PINGROUP(OWR,		0x920),
++	DRIVE_PINGROUP(UAD,		0x924),
++	DRIVE_PINGROUP(GPV,		0x928),
++	DRIVE_PINGROUP(DEV3,		0x92c),
++	DRIVE_PINGROUP(CEC,		0x938),
++};
++
++#define PINGROUP(pg_name, vdd, f0, f1, f2, f3, fs, iod, reg)	\
++	[TEGRA_PINGROUP_ ## pg_name] = {			\
++		.name = #pg_name,				\
++		.vddio = TEGRA_VDDIO_ ## vdd,			\
++		.funcs = {					\
++			TEGRA_MUX_ ## f0,			\
++			TEGRA_MUX_ ## f1,			\
++			TEGRA_MUX_ ## f2,			\
++			TEGRA_MUX_ ## f3,			\
++		},						\
++		.func_safe = TEGRA_MUX_ ## fs,			\
++		.tri_bank = 1,					\
++		.tri_reg = ((reg) - MUXCTL_REG_A),		\
++		.tri_bit = 4,					\
++		.mux_bank = 1,					\
++		.mux_reg = ((reg) - MUXCTL_REG_A),		\
++		.mux_bit = 0,					\
++		.pupd_bank = 1,					\
++		.pupd_reg = ((reg) - MUXCTL_REG_A),		\
++		.pupd_bit = 2,					\
++		.io_default = TEGRA_PIN_ ## iod,		\
++		.od_bit = 6,					\
++		.lock_bit = 7,					\
++		.ioreset_bit = 8,				\
++	}
++
++static const struct tegra_pingroup_desc tegra_soc_pingroups[TEGRA_MAX_PINGROUP] = {
++	/*       NAME		  VDD	    f0		f1          f2          f3          fSafe       io	reg */
++	PINGROUP(ULPI_DATA0,	  BB,	    SPI3,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3000),
++	PINGROUP(ULPI_DATA1,	  BB,	    SPI3,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3004),
++	PINGROUP(ULPI_DATA2,	  BB,	    SPI3,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3008),
++	PINGROUP(ULPI_DATA3,	  BB,	    SPI3,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x300c),
++	PINGROUP(ULPI_DATA4,	  BB,	    SPI2,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3010),
++	PINGROUP(ULPI_DATA5,	  BB,	    SPI2,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3014),
++	PINGROUP(ULPI_DATA6,	  BB,	    SPI2,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x3018),
++	PINGROUP(ULPI_DATA7,	  BB,	    SPI2,	HSI,	    UARTA,	ULPI,	    RSVD,	INPUT,	0x301c),
++	PINGROUP(ULPI_CLK,	  BB,	    SPI1,	RSVD,	    UARTD,	ULPI,	    RSVD,	INPUT,	0x3020),
++	PINGROUP(ULPI_DIR,	  BB,	    SPI1,	RSVD,	    UARTD,	ULPI,	    RSVD,	INPUT,	0x3024),
++	PINGROUP(ULPI_NXT,	  BB,	    SPI1,	RSVD,	    UARTD,	ULPI,	    RSVD,	INPUT,	0x3028),
++	PINGROUP(ULPI_STP,	  BB,	    SPI1,	RSVD,	    UARTD,	ULPI,	    RSVD,	INPUT,	0x302c),
++	PINGROUP(DAP3_FS,	  BB,	    I2S2,	RSVD1,	    DISPLAYA,	DISPLAYB,   RSVD,	INPUT,	0x3030),
++	PINGROUP(DAP3_DIN,	  BB,	    I2S2,	RSVD1,	    DISPLAYA,	DISPLAYB,   RSVD,	INPUT,	0x3034),
++	PINGROUP(DAP3_DOUT,	  BB,	    I2S2,	RSVD1,	    DISPLAYA,	DISPLAYB,   RSVD,	INPUT,	0x3038),
++	PINGROUP(DAP3_SCLK,	  BB,	    I2S2,	RSVD1,	    DISPLAYA,	DISPLAYB,   RSVD,	INPUT,	0x303c),
++	PINGROUP(GPIO_PV0,	  BB,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3040),
++	PINGROUP(GPIO_PV1,	  BB,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3044),
++	PINGROUP(SDMMC1_CLK,	  SDMMC1,   SDIO1,	RSVD1,	    RSVD2,	INVALID,    RSVD,	INPUT,	0x3048),
++	PINGROUP(SDMMC1_CMD,	  SDMMC1,   SDIO1,	RSVD1,	    RSVD2,	INVALID,    RSVD,	INPUT,	0x304c),
++	PINGROUP(SDMMC1_DAT3,	  SDMMC1,   SDIO1,	RSVD1,	    UARTE,	INVALID,    RSVD,	INPUT,	0x3050),
++	PINGROUP(SDMMC1_DAT2,	  SDMMC1,   SDIO1,	RSVD1,	    UARTE,	INVALID,    RSVD,	INPUT,	0x3054),
++	PINGROUP(SDMMC1_DAT1,	  SDMMC1,   SDIO1,	RSVD1,	    UARTE,	INVALID,    RSVD,	INPUT,	0x3058),
++	PINGROUP(SDMMC1_DAT0,	  SDMMC1,   SDIO1,	RSVD1,	    UARTE,	INVALID,    RSVD,	INPUT,	0x305c),
++	PINGROUP(GPIO_PV2,	  SDMMC1,   OWR,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3060),
++	PINGROUP(GPIO_PV3,	  SDMMC1,   INVALID,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3064),
++	PINGROUP(CLK2_OUT,	  SDMMC1,   EXTPERIPH2,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3068),
++	PINGROUP(CLK2_REQ,	  SDMMC1,   DAP,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x306c),
++	PINGROUP(LCD_PWR1,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3070),
++	PINGROUP(LCD_PWR2,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	INVALID,    RSVD,	OUTPUT,	0x3074),
++	PINGROUP(LCD_SDIN,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	RSVD,	    RSVD,	OUTPUT,	0x3078),
++	PINGROUP(LCD_SDOUT,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	INVALID,    RSVD,	OUTPUT,	0x307c),
++	PINGROUP(LCD_WR_N,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	INVALID,    RSVD,	OUTPUT,	0x3080),
++	PINGROUP(LCD_CS0_N,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	RSVD,	    RSVD,	OUTPUT,	0x3084),
++	PINGROUP(LCD_DC0,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3088),
++	PINGROUP(LCD_SCK,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	INVALID,    RSVD,	OUTPUT,	0x308c),
++	PINGROUP(LCD_PWR0,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	INVALID,    RSVD,	OUTPUT,	0x3090),
++	PINGROUP(LCD_PCLK,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3094),
++	PINGROUP(LCD_DE,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3098),
++	PINGROUP(LCD_HSYNC,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x309c),
++	PINGROUP(LCD_VSYNC,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30a0),
++	PINGROUP(LCD_D0,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30a4),
++	PINGROUP(LCD_D1,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30a8),
++	PINGROUP(LCD_D2,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30ac),
++	PINGROUP(LCD_D3,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30b0),
++	PINGROUP(LCD_D4,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30b4),
++	PINGROUP(LCD_D5,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30b8),
++	PINGROUP(LCD_D6,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30bc),
++	PINGROUP(LCD_D7,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30c0),
++	PINGROUP(LCD_D8,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30c4),
++	PINGROUP(LCD_D9,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30c8),
++	PINGROUP(LCD_D10,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30cc),
++	PINGROUP(LCD_D11,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30d0),
++	PINGROUP(LCD_D12,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30d4),
++	PINGROUP(LCD_D13,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30d8),
++	PINGROUP(LCD_D14,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30dc),
++	PINGROUP(LCD_D15,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30e0),
++	PINGROUP(LCD_D16,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30e4),
++	PINGROUP(LCD_D17,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30e8),
++	PINGROUP(LCD_D18,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30ec),
++	PINGROUP(LCD_D19,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30f0),
++	PINGROUP(LCD_D20,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30f4),
++	PINGROUP(LCD_D21,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30f8),
++	PINGROUP(LCD_D22,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x30fc),
++	PINGROUP(LCD_D23,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3100),
++	PINGROUP(LCD_CS1_N,	  LCD,	    DISPLAYA,	DISPLAYB,   SPI5,	RSVD2,	    RSVD,	OUTPUT,	0x3104),
++	PINGROUP(LCD_M1,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x3108),
++	PINGROUP(LCD_DC1,	  LCD,	    DISPLAYA,	DISPLAYB,   RSVD1,	RSVD2,	    RSVD,	OUTPUT,	0x310c),
++	PINGROUP(HDMI_INT,	  LCD,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3110),
++	PINGROUP(DDC_SCL,	  LCD,	    I2C4,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3114),
++	PINGROUP(DDC_SDA,	  LCD,	    I2C4,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3118),
++	PINGROUP(CRT_HSYNC,	  LCD,	    CRT,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x311c),
++	PINGROUP(CRT_VSYNC,	  LCD,	    CRT,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3120),
++	PINGROUP(VI_D0,		  VI,	    INVALID,	RSVD1,	    VI,		RSVD2,	    RSVD,	INPUT,	0x3124),
++	PINGROUP(VI_D1,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3128),
++	PINGROUP(VI_D2,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x312c),
++	PINGROUP(VI_D3,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3130),
++	PINGROUP(VI_D4,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3134),
++	PINGROUP(VI_D5,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3138),
++	PINGROUP(VI_D6,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x313c),
++	PINGROUP(VI_D7,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3140),
++	PINGROUP(VI_D8,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3144),
++	PINGROUP(VI_D9,		  VI,	    INVALID,	SDIO2,	    VI,		RSVD1,	    RSVD,	INPUT,	0x3148),
++	PINGROUP(VI_D10,	  VI,	    INVALID,	RSVD1,	    VI,		RSVD2,	    RSVD,	INPUT,	0x314c),
++	PINGROUP(VI_D11,	  VI,	    INVALID,	RSVD1,	    VI,		RSVD2,	    RSVD,	INPUT,	0x3150),
++	PINGROUP(VI_PCLK,	  VI,	    RSVD1,	SDIO2,	    VI,		RSVD2,	    RSVD,	INPUT,	0x3154),
++	PINGROUP(VI_MCLK,	  VI,	    VI,		INVALID,    INVALID,	INVALID,    RSVD,	INPUT,	0x3158),
++	PINGROUP(VI_VSYNC,	  VI,	    INVALID,	RSVD1,	    VI,		RSVD2,	    RSVD,	INPUT,	0x315c),
++	PINGROUP(VI_HSYNC,	  VI,	    INVALID,	RSVD1,	    VI,		RSVD2,	    RSVD,	INPUT,	0x3160),
++	PINGROUP(UART2_RXD,	  UART,	    IRDA,	SPDIF,	    UARTA,	SPI4,	    RSVD,	INPUT,	0x3164),
++	PINGROUP(UART2_TXD,	  UART,	    IRDA,	SPDIF,	    UARTA,	SPI4,	    RSVD,	INPUT,	0x3168),
++	PINGROUP(UART2_RTS_N,	  UART,	    UARTA,	UARTB,	    GMI,	SPI4,	    RSVD,	INPUT,	0x316c),
++	PINGROUP(UART2_CTS_N,	  UART,	    UARTA,	UARTB,	    GMI,	SPI4,	    RSVD,	INPUT,	0x3170),
++	PINGROUP(UART3_TXD,	  UART,	    UARTC,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3174),
++	PINGROUP(UART3_RXD,	  UART,	    UARTC,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3178),
++	PINGROUP(UART3_CTS_N,	  UART,	    UARTC,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x317c),
++	PINGROUP(UART3_RTS_N,	  UART,	    UARTC,	PWM0,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3180),
++	PINGROUP(GPIO_PU0,	  UART,	    OWR,	UARTA,	    GMI,	RSVD1,	    RSVD,	INPUT,	0x3184),
++	PINGROUP(GPIO_PU1,	  UART,	    RSVD1,	UARTA,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3188),
++	PINGROUP(GPIO_PU2,	  UART,	    RSVD1,	UARTA,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x318c),
++	PINGROUP(GPIO_PU3,	  UART,	    PWM0,	UARTA,	    GMI,	RSVD1,	    RSVD,	INPUT,	0x3190),
++	PINGROUP(GPIO_PU4,	  UART,	    PWM1,	UARTA,	    GMI,	RSVD1,	    RSVD,	INPUT,	0x3194),
++	PINGROUP(GPIO_PU5,	  UART,	    PWM2,	UARTA,	    GMI,	RSVD1,	    RSVD,	INPUT,	0x3198),
++	PINGROUP(GPIO_PU6,	  UART,	    PWM3,	UARTA,	    GMI,	RSVD1,	    RSVD,	INPUT,	0x319c),
++	PINGROUP(GEN1_I2C_SDA,	  UART,	    I2C,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x31a0),
++	PINGROUP(GEN1_I2C_SCL,	  UART,	    I2C,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x31a4),
++	PINGROUP(DAP4_FS,	  UART,	    I2S3,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31a8),
++	PINGROUP(DAP4_DIN,	  UART,	    I2S3,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31ac),
++	PINGROUP(DAP4_DOUT,	  UART,	    I2S3,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31b0),
++	PINGROUP(DAP4_SCLK,	  UART,	    I2S3,	RSVD1,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31b4),
++	PINGROUP(CLK3_OUT,	  UART,	    EXTPERIPH3,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x31b8),
++	PINGROUP(CLK3_REQ,	  UART,	    DEV3,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x31bc),
++	PINGROUP(GMI_WP_N,	  GMI,	    RSVD1,	NAND,	    GMI,	GMI_ALT,    RSVD,	INPUT,	0x31c0),
++	PINGROUP(GMI_IORDY,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31c4),
++	PINGROUP(GMI_WAIT,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31c8),
++	PINGROUP(GMI_ADV_N,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31cc),
++	PINGROUP(GMI_CLK,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31d0),
++	PINGROUP(GMI_CS0_N,	  GMI,	    RSVD1,	NAND,	    GMI,	INVALID,    RSVD,	INPUT,	0x31d4),
++	PINGROUP(GMI_CS1_N,	  GMI,	    RSVD1,	NAND,	    GMI,	DTV,	    RSVD,	INPUT,	0x31d8),
++	PINGROUP(GMI_CS2_N,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31dc),
++	PINGROUP(GMI_CS3_N,	  GMI,	    RSVD1,	NAND,	    GMI,	GMI_ALT,    RSVD,	INPUT,	0x31e0),
++	PINGROUP(GMI_CS4_N,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31e4),
++	PINGROUP(GMI_CS6_N,	  GMI,	    NAND,	NAND_ALT,   GMI,	SATA,	    RSVD,	INPUT,	0x31e8),
++	PINGROUP(GMI_CS7_N,	  GMI,	    NAND,	NAND_ALT,   GMI,	GMI_ALT,    RSVD,	INPUT,	0x31ec),
++	PINGROUP(GMI_AD0,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31f0),
++	PINGROUP(GMI_AD1,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31f4),
++	PINGROUP(GMI_AD2,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31f8),
++	PINGROUP(GMI_AD3,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x31fc),
++	PINGROUP(GMI_AD4,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3200),
++	PINGROUP(GMI_AD5,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3204),
++	PINGROUP(GMI_AD6,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3208),
++	PINGROUP(GMI_AD7,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x320c),
++	PINGROUP(GMI_AD8,	  GMI,	    PWM0,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3210),
++	PINGROUP(GMI_AD9,	  GMI,	    PWM1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3214),
++	PINGROUP(GMI_AD10,	  GMI,	    PWM2,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3218),
++	PINGROUP(GMI_AD11,	  GMI,	    PWM3,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x321c),
++	PINGROUP(GMI_AD12,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3220),
++	PINGROUP(GMI_AD13,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3224),
++	PINGROUP(GMI_AD14,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x3228),
++	PINGROUP(GMI_AD15,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD2,	    RSVD,	INPUT,	0x322c),
++	PINGROUP(GMI_A16,	  GMI,	    UARTD,	SPI4,	    GMI,	GMI_ALT,    RSVD,	INPUT,	0x3230),
++	PINGROUP(GMI_A17,	  GMI,	    UARTD,	SPI4,	    GMI,	INVALID,    RSVD,	INPUT,	0x3234),
++	PINGROUP(GMI_A18,	  GMI,	    UARTD,	SPI4,	    GMI,	INVALID,    RSVD,	INPUT,	0x3238),
++	PINGROUP(GMI_A19,	  GMI,	    UARTD,	SPI4,	    GMI,	RSVD3,	    RSVD,	INPUT,	0x323c),
++	PINGROUP(GMI_WR_N,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD3,	    RSVD,	INPUT,	0x3240),
++	PINGROUP(GMI_OE_N,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD3,	    RSVD,	INPUT,	0x3244),
++	PINGROUP(GMI_DQS,	  GMI,	    RSVD1,	NAND,	    GMI,	RSVD3,	    RSVD,	INPUT,	0x3248),
++	PINGROUP(GMI_RST_N,	  GMI,	    NAND,	NAND_ALT,   GMI,	RSVD3,	    RSVD,	INPUT,	0x324c),
++	PINGROUP(GEN2_I2C_SCL,	  GMI,	    I2C2,	INVALID,    GMI,	RSVD3,	    RSVD,	INPUT,	0x3250),
++	PINGROUP(GEN2_I2C_SDA,	  GMI,	    I2C2,	INVALID,    GMI,	RSVD3,	    RSVD,	INPUT,	0x3254),
++	PINGROUP(SDMMC4_CLK,	  SDMMC4,   INVALID,	NAND,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3258),
++	PINGROUP(SDMMC4_CMD,	  SDMMC4,   I2C3,	NAND,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x325c),
++	PINGROUP(SDMMC4_DAT0,	  SDMMC4,   UARTE,	SPI3,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3260),
++	PINGROUP(SDMMC4_DAT1,	  SDMMC4,   UARTE,	SPI3,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3264),
++	PINGROUP(SDMMC4_DAT2,	  SDMMC4,   UARTE,	SPI3,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3268),
++	PINGROUP(SDMMC4_DAT3,	  SDMMC4,   UARTE,	SPI3,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x326c),
++	PINGROUP(SDMMC4_DAT4,	  SDMMC4,   I2C3,	I2S4,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3270),
++	PINGROUP(SDMMC4_DAT5,	  SDMMC4,   VGP3,	I2S4,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3274),
++	PINGROUP(SDMMC4_DAT6,	  SDMMC4,   VGP4,	I2S4,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x3278),
++	PINGROUP(SDMMC4_DAT7,	  SDMMC4,   VGP5,	I2S4,	    GMI,	SDIO4,	    RSVD,	INPUT,	0x327c),
++	PINGROUP(SDMMC4_RST_N,	  SDMMC4,   VGP6,	RSVD1,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x3280),
++	PINGROUP(CAM_MCLK,	  CAM,	    VI,		INVALID,    VI_ALT2,	POPSDMMC4,  RSVD,	INPUT,	0x3284),
++	PINGROUP(GPIO_PCC1,	  CAM,	    I2S4,	RSVD1,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x3288),
++	PINGROUP(GPIO_PBB0,	  CAM,	    I2S4,	RSVD1,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x328c),
++	PINGROUP(CAM_I2C_SCL,	  CAM,	    INVALID,	I2C3,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x3290),
++	PINGROUP(CAM_I2C_SDA,	  CAM,	    INVALID,	I2C3,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x3294),
++	PINGROUP(GPIO_PBB3,	  CAM,	    VGP3,	DISPLAYA,   DISPLAYB,	POPSDMMC4,  RSVD,	INPUT,	0x3298),
++	PINGROUP(GPIO_PBB4,	  CAM,	    VGP4,	DISPLAYA,   DISPLAYB,	POPSDMMC4,  RSVD,	INPUT,	0x329c),
++	PINGROUP(GPIO_PBB5,	  CAM,	    VGP5,	DISPLAYA,   DISPLAYB,	POPSDMMC4,  RSVD,	INPUT,	0x32a0),
++	PINGROUP(GPIO_PBB6,	  CAM,	    VGP6,	DISPLAYA,   DISPLAYB,	POPSDMMC4,  RSVD,	INPUT,	0x32a4),
++	PINGROUP(GPIO_PBB7,	  CAM,	    I2S4,	RSVD1,	    RSVD2,	POPSDMMC4,  RSVD,	INPUT,	0x32a8),
++	PINGROUP(GPIO_PCC2,	  CAM,	    I2S4,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32ac),
++	PINGROUP(JTAG_RTCK,	  SYS,	    RTCK,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32b0),
++	PINGROUP(PWR_I2C_SCL,	  SYS,	    I2CPWR,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32b4),
++	PINGROUP(PWR_I2C_SDA,	  SYS,	    I2CPWR,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32b8),
++	PINGROUP(KB_ROW0,	  SYS,	    KBC,	INVALID,    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32bc),
++	PINGROUP(KB_ROW1,	  SYS,	    KBC,	INVALID,    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32c0),
++	PINGROUP(KB_ROW2,	  SYS,	    KBC,	INVALID,    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x32c4),
++	PINGROUP(KB_ROW3,	  SYS,	    KBC,	INVALID,    RSVD2,	INVALID,    RSVD,	INPUT,	0x32c8),
++	PINGROUP(KB_ROW4,	  SYS,	    KBC,	INVALID,    TRACE,	RSVD3,	    RSVD,	INPUT,	0x32cc),
++	PINGROUP(KB_ROW5,	  SYS,	    KBC,	INVALID,    TRACE,	OWR,	    RSVD,	INPUT,	0x32d0),
++	PINGROUP(KB_ROW6,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32d4),
++	PINGROUP(KB_ROW7,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32d8),
++	PINGROUP(KB_ROW8,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32dc),
++	PINGROUP(KB_ROW9,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32e0),
++	PINGROUP(KB_ROW10,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32e4),
++	PINGROUP(KB_ROW11,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32e8),
++	PINGROUP(KB_ROW12,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32ec),
++	PINGROUP(KB_ROW13,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32f0),
++	PINGROUP(KB_ROW14,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32f4),
++	PINGROUP(KB_ROW15,	  SYS,	    KBC,	INVALID,    SDIO2,	INVALID,    RSVD,	INPUT,	0x32f8),
++	PINGROUP(KB_COL0,	  SYS,	    KBC,	INVALID,    TRACE,	INVALID,    RSVD,	INPUT,	0x32fc),
++	PINGROUP(KB_COL1,	  SYS,	    KBC,	INVALID,    TRACE,	INVALID,    RSVD,	INPUT,	0x3300),
++	PINGROUP(KB_COL2,	  SYS,	    KBC,	INVALID,    TRACE,	RSVD,	    RSVD,	INPUT,	0x3304),
++	PINGROUP(KB_COL3,	  SYS,	    KBC,	INVALID,    TRACE,	RSVD,	    RSVD,	INPUT,	0x3308),
++	PINGROUP(KB_COL4,	  SYS,	    KBC,	INVALID,    TRACE,	RSVD,	    RSVD,	INPUT,	0x330c),
++	PINGROUP(KB_COL5,	  SYS,	    KBC,	INVALID,    TRACE,	RSVD,	    RSVD,	INPUT,	0x3310),
++	PINGROUP(KB_COL6,	  SYS,	    KBC,	INVALID,    TRACE,	INVALID,    RSVD,	INPUT,	0x3314),
++	PINGROUP(KB_COL7,	  SYS,	    KBC,	INVALID,    TRACE,	INVALID,    RSVD,	INPUT,	0x3318),
++	PINGROUP(CLK_32K_OUT,	  SYS,	    BLINK,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x331c),
++	PINGROUP(SYS_CLK_REQ,	  SYS,	    SYSCLK,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3320),
++	PINGROUP(CORE_PWR_REQ,	  SYS,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3324),
++	PINGROUP(CPU_PWR_REQ,	  SYS,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3328),
++	PINGROUP(PWR_INT_N,	  SYS,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x332c),
++	PINGROUP(CLK_32K_IN,	  SYS,	    RSVD,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3330),
++	PINGROUP(OWR,		  SYS,	    OWR,	RSVD,	    RSVD,	RSVD,	    RSVD,	INPUT,	0x3334),
++	PINGROUP(DAP1_FS,	  AUDIO,    I2S0,	HDA,	    GMI,	SDIO2,	    RSVD,	INPUT,	0x3338),
++	PINGROUP(DAP1_DIN,	  AUDIO,    I2S0,	HDA,	    GMI,	SDIO2,	    RSVD,	INPUT,	0x333c),
++	PINGROUP(DAP1_DOUT,	  AUDIO,    I2S0,	HDA,	    GMI,	SDIO2,	    RSVD,	INPUT,	0x3340),
++	PINGROUP(DAP1_SCLK,	  AUDIO,    I2S0,	HDA,	    GMI,	SDIO2,	    RSVD,	INPUT,	0x3344),
++	PINGROUP(CLK1_REQ,	  AUDIO,    DAP,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x3348),
++	PINGROUP(CLK1_OUT,	  AUDIO,    EXTPERIPH1,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x334c),
++	PINGROUP(SPDIF_IN,	  AUDIO,    SPDIF,	HDA,	    INVALID,	DAPSDMMC2,  RSVD,	INPUT,	0x3350),
++	PINGROUP(SPDIF_OUT,	  AUDIO,    SPDIF,	RSVD1,	    INVALID,	DAPSDMMC2,  RSVD,	INPUT,	0x3354),
++	PINGROUP(DAP2_FS,	  AUDIO,    I2S1,	HDA,	    RSVD2,	GMI,	    RSVD,	INPUT,	0x3358),
++	PINGROUP(DAP2_DIN,	  AUDIO,    I2S1,	HDA,	    RSVD2,	GMI,	    RSVD,	INPUT,	0x335c),
++	PINGROUP(DAP2_DOUT,	  AUDIO,    I2S1,	HDA,	    RSVD2,	GMI,	    RSVD,	INPUT,	0x3360),
++	PINGROUP(DAP2_SCLK,	  AUDIO,    I2S1,	HDA,	    RSVD2,	GMI,	    RSVD,	INPUT,	0x3364),
++	PINGROUP(SPI2_MOSI,	  AUDIO,    SPI6,	SPI2,	    INVALID,	GMI,	    RSVD,	INPUT,	0x3368),
++	PINGROUP(SPI2_MISO,	  AUDIO,    SPI6,	SPI2,	    INVALID,	GMI,	    RSVD,	INPUT,	0x336c),
++	PINGROUP(SPI2_CS0_N,	  AUDIO,    SPI6,	SPI2,	    INVALID,	GMI,	    RSVD,	INPUT,	0x3370),
++	PINGROUP(SPI2_SCK,	  AUDIO,    SPI6,	SPI2,	    INVALID,	GMI,	    RSVD,	INPUT,	0x3374),
++	PINGROUP(SPI1_MOSI,	  AUDIO,    SPI2,	SPI1,	    INVALID,	GMI,	    RSVD,	INPUT,	0x3378),
++	PINGROUP(SPI1_SCK,	  AUDIO,    SPI2,	SPI1,	    INVALID,	GMI,	    RSVD,	INPUT,	0x337c),
++	PINGROUP(SPI1_CS0_N,	  AUDIO,    SPI2,	SPI1,	    INVALID,	GMI,	    RSVD,	INPUT,	0x3380),
++	PINGROUP(SPI1_MISO,	  AUDIO,    INVALID,	SPI1,	    INVALID,	RSVD3,	    RSVD,	INPUT,	0x3384),
++	PINGROUP(SPI2_CS1_N,	  AUDIO,    INVALID,	SPI2,	    INVALID,	INVALID,    RSVD,	INPUT,	0x3388),
++	PINGROUP(SPI2_CS2_N,	  AUDIO,    INVALID,	SPI2,	    INVALID,	INVALID,    RSVD,	INPUT,	0x338c),
++	PINGROUP(SDMMC3_CLK,	  SDMMC3,   UARTA,	PWM2,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x3390),
++	PINGROUP(SDMMC3_CMD,	  SDMMC3,   UARTA,	PWM3,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x3394),
++	PINGROUP(SDMMC3_DAT0,	  SDMMC3,   RSVD,	RSVD1,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x3398),
++	PINGROUP(SDMMC3_DAT1,	  SDMMC3,   RSVD,	RSVD1,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x339c),
++	PINGROUP(SDMMC3_DAT2,	  SDMMC3,   RSVD,	PWM1,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x33a0),
++	PINGROUP(SDMMC3_DAT3,	  SDMMC3,   RSVD,	PWM0,	    SDIO3,	INVALID,    RSVD,	INPUT,	0x33a4),
++	PINGROUP(SDMMC3_DAT4,	  SDMMC3,   PWM1,	INVALID,    SDIO3,	INVALID,    RSVD,	INPUT,	0x33a8),
++	PINGROUP(SDMMC3_DAT5,	  SDMMC3,   PWM0,	INVALID,    SDIO3,	INVALID,    RSVD,	INPUT,	0x33ac),
++	PINGROUP(SDMMC3_DAT6,	  SDMMC3,   SPDIF,	INVALID,    SDIO3,	INVALID,    RSVD,	INPUT,	0x33b0),
++	PINGROUP(SDMMC3_DAT7,	  SDMMC3,   SPDIF,	INVALID,    SDIO3,	INVALID,    RSVD,	INPUT,	0x33b4),
++	PINGROUP(PEX_L0_PRSNT_N,  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33b8),
++	PINGROUP(PEX_L0_RST_N,	  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33bc),
++	PINGROUP(PEX_L0_CLKREQ_N, PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33c0),
++	PINGROUP(PEX_WAKE_N,	  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33c4),
++	PINGROUP(PEX_L1_PRSNT_N,  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33c8),
++	PINGROUP(PEX_L1_RST_N,	  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33cc),
++	PINGROUP(PEX_L1_CLKREQ_N, PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33d0),
++	PINGROUP(PEX_L2_PRSNT_N,  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33d4),
++	PINGROUP(PEX_L2_RST_N,	  PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33d8),
++	PINGROUP(PEX_L2_CLKREQ_N, PEXCTL,   PCIE,	HDA,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33dc),
++	PINGROUP(HDMI_CEC,	  SYS,      CEC,	RSVD1,	    RSVD2,	RSVD3,	    RSVD,	INPUT,	0x33e0),
++};
++
++void __init tegra30_pinmux_init(const struct tegra_pingroup_desc **pg,
 +		int *pg_max, const struct tegra_drive_pingroup_desc **pgdrive,
-+		int *pgdrive_max) 
++		int *pgdrive_max)
 +{
 +	*pg = tegra_soc_pingroups;
 +	*pg_max = TEGRA_MAX_PINGROUP;
@@ -191,338 +851,72 @@ index 88642a5..de9d0df 100644
 +}
 +
 diff --git a/arch/arm/mach-tegra/pinmux.c b/arch/arm/mach-tegra/pinmux.c
-index 1d20165..c8d93e2 100644
+index c8d93e2..2ad5351 100644
 --- a/arch/arm/mach-tegra/pinmux.c
 +++ b/arch/arm/mach-tegra/pinmux.c
-@@ -21,6 +21,9 @@
- #include <linux/spinlock.h>
- #include <linux/io.h>
- #include <linux/platform_device.h>
-+#ifdef CONFIG_OF
-+#include <linux/of_platform.h>
+@@ -102,6 +102,49 @@ static char *tegra_mux_names[TEGRA_MAX_MUX] = {
+ 	[TEGRA_MUX_VI] = "VI",
+ 	[TEGRA_MUX_VI_SENSOR_CLK] = "VI_SENSOR_CLK",
+ 	[TEGRA_MUX_XIO] = "XIO",
++	[TEGRA_MUX_BLINK] = "BLINK",
++	[TEGRA_MUX_CEC] = "CEC",
++	[TEGRA_MUX_CLK12] = "CLK12",
++	[TEGRA_MUX_DAP] = "DAP",
++	[TEGRA_MUX_DAPSDMMC2] = "DAPSDMMC2",
++	[TEGRA_MUX_DDR] = "DDR",
++	[TEGRA_MUX_DEV3] = "DEV3",
++	[TEGRA_MUX_DTV] = "DTV",
++	[TEGRA_MUX_VI_ALT1] = "VI_ALT1",
++	[TEGRA_MUX_VI_ALT2] = "VI_ALT2",
++	[TEGRA_MUX_VI_ALT3] = "VI_ALT3",
++	[TEGRA_MUX_EMC_DLL] = "EMC_DLL",
++	[TEGRA_MUX_EXTPERIPH1] = "EXTPERIPH1",
++	[TEGRA_MUX_EXTPERIPH2] = "EXTPERIPH2",
++	[TEGRA_MUX_EXTPERIPH3] = "EXTPERIPH3",
++	[TEGRA_MUX_GMI_ALT] = "GMI_ALT",
++	[TEGRA_MUX_HDA] = "HDA",
++	[TEGRA_MUX_HSI] = "HSI",
++	[TEGRA_MUX_I2C4] = "I2C4",
++	[TEGRA_MUX_I2C5] = "I2C5",
++	[TEGRA_MUX_I2CPWR] = "I2CPWR",
++	[TEGRA_MUX_I2S0] = "I2S0",
++	[TEGRA_MUX_I2S1] = "I2S1",
++	[TEGRA_MUX_I2S2] = "I2S2",
++	[TEGRA_MUX_I2S3] = "I2S3",
++	[TEGRA_MUX_I2S4] = "I2S4",
++	[TEGRA_MUX_NAND_ALT] = "NAND_ALT",
++	[TEGRA_MUX_POPSDIO4] = "POPSDIO4",
++	[TEGRA_MUX_POPSDMMC4] = "POPSDMMC4",
++	[TEGRA_MUX_PWM0] = "PWM0",
++	[TEGRA_MUX_PWM1] = "PWM2",
++	[TEGRA_MUX_PWM2] = "PWM2",
++	[TEGRA_MUX_PWM3] = "PWM3",
++	[TEGRA_MUX_SATA] = "SATA",
++	[TEGRA_MUX_SPI5] = "SPI5",
++	[TEGRA_MUX_SPI6] = "SPI6",
++	[TEGRA_MUX_SYSCLK] = "SYSCLK",
++	[TEGRA_MUX_VGP1] = "VGP1",
++	[TEGRA_MUX_VGP2] = "VGP2",
++	[TEGRA_MUX_VGP3] = "VGP3",
++	[TEGRA_MUX_VGP4] = "VGP4",
++	[TEGRA_MUX_VGP5] = "VGP5",
++	[TEGRA_MUX_VGP6] = "VGP6",
+ 	[TEGRA_MUX_SAFE] = "<safe>",
+ };
+ 
+@@ -669,7 +712,12 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
+ }
+ 
+ static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
++#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+ 	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
 +#endif
- 
- #include <mach/iomap.h>
- #include <mach/pinmux.h>
-@@ -33,8 +36,10 @@
- #define SLWR(reg)	(((reg) >> 28) & 0x3)
- #define SLWF(reg)	(((reg) >> 30) & 0x3)
- 
--static const struct tegra_pingroup_desc *const pingroups = tegra_soc_pingroups;
--static const struct tegra_drive_pingroup_desc *const drive_pingroups = tegra_soc_drive_pingroups;
-+static const struct tegra_pingroup_desc *pingroups;
-+static const struct tegra_drive_pingroup_desc *drive_pingroups;
-+static int pingroup_max;
-+static int drive_max;
- 
- static char *tegra_mux_names[TEGRA_MAX_MUX] = {
- 	[TEGRA_MUX_AHB_CLK] = "AHB_CLK",
-@@ -116,9 +121,9 @@ static const char *tegra_slew_names[TEGRA_MAX_SLEW] = {
- 
- static DEFINE_SPINLOCK(mux_lock);
- 
--static const char *pingroup_name(enum tegra_pingroup pg)
-+static const char *pingroup_name(int pg)
- {
--	if (pg < 0 || pg >=  TEGRA_MAX_PINGROUP)
-+	if (pg < 0 || pg >=  pingroup_max)
- 		return "<UNKNOWN>";
- 
- 	return pingroups[pg].name;
-@@ -189,10 +194,10 @@ static int tegra_pinmux_set_func(const struct tegra_pingroup_config *config)
- 	int i;
- 	unsigned long reg;
- 	unsigned long flags;
--	enum tegra_pingroup pg = config->pingroup;
-+	int pg = config->pingroup;
- 	enum tegra_mux_func func = config->func;
- 
--	if (pg < 0 || pg >=  TEGRA_MAX_PINGROUP)
-+	if (pg < 0 || pg >=  pingroup_max)
- 		return -ERANGE;
- 
- 	if (pingroups[pg].mux_reg < 0)
-@@ -230,13 +235,12 @@ static int tegra_pinmux_set_func(const struct tegra_pingroup_config *config)
- 	return 0;
- }
- 
--int tegra_pinmux_set_tristate(enum tegra_pingroup pg,
--	enum tegra_tristate tristate)
-+int tegra_pinmux_set_tristate(int pg, enum tegra_tristate tristate)
- {
- 	unsigned long reg;
- 	unsigned long flags;
- 
--	if (pg < 0 || pg >=  TEGRA_MAX_PINGROUP)
-+	if (pg < 0 || pg >=  pingroup_max)
- 		return -ERANGE;
- 
- 	if (pingroups[pg].tri_reg < 0)
-@@ -255,13 +259,12 @@ int tegra_pinmux_set_tristate(enum tegra_pingroup pg,
- 	return 0;
- }
- 
--int tegra_pinmux_set_pullupdown(enum tegra_pingroup pg,
--	enum tegra_pullupdown pupd)
-+int tegra_pinmux_set_pullupdown(int pg, enum tegra_pullupdown pupd)
- {
- 	unsigned long reg;
- 	unsigned long flags;
- 
--	if (pg < 0 || pg >=  TEGRA_MAX_PINGROUP)
-+	if (pg < 0 || pg >=  pingroup_max)
- 		return -ERANGE;
- 
- 	if (pingroups[pg].pupd_reg < 0)
-@@ -287,7 +290,7 @@ int tegra_pinmux_set_pullupdown(enum tegra_pingroup pg,
- 
- static void tegra_pinmux_config_pingroup(const struct tegra_pingroup_config *config)
- {
--	enum tegra_pingroup pingroup = config->pingroup;
-+	int pingroup = config->pingroup;
- 	enum tegra_mux_func func     = config->func;
- 	enum tegra_pullupdown pupd   = config->pupd;
- 	enum tegra_tristate tristate = config->tristate;
-@@ -323,9 +326,9 @@ void tegra_pinmux_config_table(const struct tegra_pingroup_config *config, int l
- 		tegra_pinmux_config_pingroup(&config[i]);
- }
- 
--static const char *drive_pinmux_name(enum tegra_drive_pingroup pg)
-+static const char *drive_pinmux_name(int pg)
- {
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return "<UNKNOWN>";
- 
- 	return drive_pingroups[pg].name;
-@@ -352,12 +355,11 @@ static const char *slew_name(unsigned long val)
- 	return tegra_slew_names[val];
- }
- 
--static int tegra_drive_pinmux_set_hsm(enum tegra_drive_pingroup pg,
--	enum tegra_hsm hsm)
-+static int tegra_drive_pinmux_set_hsm(int pg, enum tegra_hsm hsm)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (hsm != TEGRA_HSM_ENABLE && hsm != TEGRA_HSM_DISABLE)
-@@ -377,12 +379,11 @@ static int tegra_drive_pinmux_set_hsm(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_schmitt(enum tegra_drive_pingroup pg,
--	enum tegra_schmitt schmitt)
-+static int tegra_drive_pinmux_set_schmitt(int pg, enum tegra_schmitt schmitt)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (schmitt != TEGRA_SCHMITT_ENABLE && schmitt != TEGRA_SCHMITT_DISABLE)
-@@ -402,12 +403,11 @@ static int tegra_drive_pinmux_set_schmitt(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_drive(enum tegra_drive_pingroup pg,
--	enum tegra_drive drive)
-+static int tegra_drive_pinmux_set_drive(int pg, enum tegra_drive drive)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (drive < 0 || drive >= TEGRA_MAX_DRIVE)
-@@ -425,12 +425,12 @@ static int tegra_drive_pinmux_set_drive(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_pull_down(enum tegra_drive_pingroup pg,
-+static int tegra_drive_pinmux_set_pull_down(int pg,
- 	enum tegra_pull_strength pull_down)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (pull_down < 0 || pull_down >= TEGRA_MAX_PULL)
-@@ -448,12 +448,12 @@ static int tegra_drive_pinmux_set_pull_down(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_pull_up(enum tegra_drive_pingroup pg,
-+static int tegra_drive_pinmux_set_pull_up(int pg,
- 	enum tegra_pull_strength pull_up)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (pull_up < 0 || pull_up >= TEGRA_MAX_PULL)
-@@ -471,12 +471,12 @@ static int tegra_drive_pinmux_set_pull_up(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_slew_rising(enum tegra_drive_pingroup pg,
-+static int tegra_drive_pinmux_set_slew_rising(int pg,
- 	enum tegra_slew slew_rising)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (slew_rising < 0 || slew_rising >= TEGRA_MAX_SLEW)
-@@ -494,12 +494,12 @@ static int tegra_drive_pinmux_set_slew_rising(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static int tegra_drive_pinmux_set_slew_falling(enum tegra_drive_pingroup pg,
-+static int tegra_drive_pinmux_set_slew_falling(int pg,
- 	enum tegra_slew slew_falling)
- {
- 	unsigned long flags;
- 	u32 reg;
--	if (pg < 0 || pg >=  TEGRA_MAX_DRIVE_PINGROUP)
-+	if (pg < 0 || pg >=  drive_max)
- 		return -ERANGE;
- 
- 	if (slew_falling < 0 || slew_falling >= TEGRA_MAX_SLEW)
-@@ -517,7 +517,7 @@ static int tegra_drive_pinmux_set_slew_falling(enum tegra_drive_pingroup pg,
- 	return 0;
- }
- 
--static void tegra_drive_pinmux_config_pingroup(enum tegra_drive_pingroup pingroup,
-+static void tegra_drive_pinmux_config_pingroup(int pingroup,
- 					  enum tegra_hsm hsm,
- 					  enum tegra_schmitt schmitt,
- 					  enum tegra_drive drive,
-@@ -596,7 +596,7 @@ void tegra_pinmux_set_safe_pinmux_table(const struct tegra_pingroup_config *conf
- 	for (i = 0; i < len; i++) {
- 		int err;
- 		c = config[i];
--		if (c.pingroup < 0 || c.pingroup >= TEGRA_MAX_PINGROUP) {
-+		if (c.pingroup < 0 || c.pingroup >= pingroup_max) {
- 			WARN_ON(1);
- 			continue;
- 		}
-@@ -617,7 +617,7 @@ void tegra_pinmux_config_pinmux_table(const struct tegra_pingroup_config *config
- 	for (i = 0; i < len; i++) {
- 		int err;
- 		if (config[i].pingroup < 0 ||
--		    config[i].pingroup >= TEGRA_MAX_PINGROUP) {
-+		    config[i].pingroup >= pingroup_max) {
- 			WARN_ON(1);
- 			continue;
- 		}
-@@ -635,7 +635,7 @@ void tegra_pinmux_config_tristate_table(const struct tegra_pingroup_config *conf
- {
- 	int i;
- 	int err;
--	enum tegra_pingroup pingroup;
-+	int pingroup;
- 
- 	for (i = 0; i < len; i++) {
- 		pingroup = config[i].pingroup;
-@@ -654,7 +654,7 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
- {
- 	int i;
- 	int err;
--	enum tegra_pingroup pingroup;
-+	int pingroup;
- 
- 	for (i = 0; i < len; i++) {
- 		pingroup = config[i].pingroup;
-@@ -668,11 +668,29 @@ void tegra_pinmux_config_pullupdown_table(const struct tegra_pingroup_config *co
- 	}
- }
- 
-+static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
-+	{ .compatible = "nvidia,tegra20-pinmux", tegra20_pinmux_init },
-+	{ },
-+};
-+
- static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
- {
- 	struct resource *res;
- 	int i;
- 	int config_bad = 0;
-+	const struct of_device_id *match = NULL;
-+
-+#ifdef CONFIG_OF
-+	match = of_match_device(tegra_pinmux_of_match, &pdev->dev);
++#ifdef CONFIG_ARCH_TEGRA_3x_SOC
++	{ .compatible = "nvidia,tegra30-pinmux", tegra30_pinmux_init },
 +#endif
-+
-+	if (match)
-+		((pinmux_init)(match->data))(&pingroups, &pingroup_max,
-+			&drive_pingroups, &drive_max);
-+	else
-+		/* no device tree available, so we must be on tegra20 */
-+		tegra20_pinmux_init(&pingroups, &pingroup_max,
-+					&drive_pingroups, &drive_max);
+ 	{ },
+ };
  
- 	for (i = 0; ; i++) {
- 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-@@ -681,7 +699,7 @@ static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
- 	}
- 	nbanks = i;
- 
--	for (i = 0; i < TEGRA_MAX_PINGROUP; i++) {
-+	for (i = 0; i < pingroup_max; i++) {
- 		if (pingroups[i].tri_bank >= nbanks) {
- 			dev_err(&pdev->dev, "pingroup %d: bad tri_bank\n", i);
- 			config_bad = 1;
-@@ -698,7 +716,7 @@ static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	for (i = 0; i < TEGRA_MAX_DRIVE_PINGROUP; i++) {
-+	for (i = 0; i < drive_max; i++) {
- 		if (drive_pingroups[i].reg_bank >= nbanks) {
- 			dev_err(&pdev->dev,
- 				"drive pingroup %d: bad reg_bank\n", i);
-@@ -741,11 +759,6 @@ static int __devinit tegra_pinmux_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static struct of_device_id tegra_pinmux_of_match[] __devinitdata = {
--	{ .compatible = "nvidia,tegra20-pinmux", },
--	{ },
--};
--
- static struct platform_driver tegra_pinmux_driver = {
- 	.driver		= {
- 		.name	= "tegra-pinmux",
-@@ -779,7 +792,7 @@ static int dbg_pinmux_show(struct seq_file *s, void *unused)
- 	int i;
- 	int len;
- 
--	for (i = 0; i < TEGRA_MAX_PINGROUP; i++) {
-+	for (i = 0; i < pingroup_max; i++) {
- 		unsigned long reg;
- 		unsigned long tri;
- 		unsigned long mux;
-@@ -850,7 +863,7 @@ static int dbg_drive_pinmux_show(struct seq_file *s, void *unused)
- 	int i;
- 	int len;
- 
--	for (i = 0; i < TEGRA_MAX_DRIVE_PINGROUP; i++) {
-+	for (i = 0; i < drive_max; i++) {
- 		u32 reg;
- 
- 		seq_printf(s, "\t{TEGRA_DRIVE_PINGROUP_%s",
 -- 
 1.7.7.rc0.72.g4b5ea.dirty
 
