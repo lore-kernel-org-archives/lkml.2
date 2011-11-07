@@ -1,63 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755449Ab1KGM3s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:29:48 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41095 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755407Ab1KGM3q convert rfc822-to-8bit (ORCPT
+	id S1755470Ab1KGM36 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:29:58 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47547 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab1KGM34 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:29:46 -0500
+	Mon, 7 Nov 2011 07:29:56 -0500
 MIME-Version: 1.0
-In-Reply-To: <4EB7CE71.50401@redhat.com>
-References: <1320543320-32728-1-git-send-email-agraf@suse.de>
-	<CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com>
-	<4EB65C5B.8070709@redhat.com>
-	<CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com>
-	<4EB66036.4080102@redhat.com>
-	<1320577728.1428.73.camel@jaguar>
-	<4EB67486.1070105@redhat.com>
-	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>
-	<4EB67D17.7000701@redhat.com>
-	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
-	<4EB680D9.2070706@redhat.com>
-	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
-	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
-	<CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
-	<4EB7B1A9.9000409@redhat.com>
-	<CA+1xoqfXq++t9YzqDQH60oLDkWhyvEJsC6QWJ1gx8ikQA=eAhQ@mail.gmail.com>
-	<4EB7CE71.50401@redhat.com>
-Date: Mon, 7 Nov 2011 14:29:45 +0200
-X-Google-Sender-Auth: gy-djK6aw4qar4CAsg2JYupNSaU
-Message-ID: <CAOJsxLEMdmWH06Dd+g4SkuG8H9iGwdBMSQYthMYtF9eyC2p9Ew@mail.gmail.com>
-Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test kernels
-From: Pekka Enberg <penberg@kernel.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, Gerd Hoffmann <kraxel@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <5366f62b74861af357a0aecdb4e27aa69ffd703b.1320312035.git.viresh.kumar@st.com>
+References: <5366f62b74861af357a0aecdb4e27aa69ffd703b.1320312035.git.viresh.kumar@st.com>
+Date: Mon, 7 Nov 2011 13:29:54 +0100
+Message-ID: <CACRpkdY=uN9W26mE7=TyXGkhcWsfOeGOyTBGQ3WzabNNHqa_-w@mail.gmail.com>
+Subject: Re: [PATCH] mfd/stmpe: Add support for irq over gpio pin
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Viresh Kumar <viresh.kumar@st.com>
+Cc: rabin.vincent@stericsson.com, linux-kernel@vger.kernel.org,
+        sameo@linux.intel.com, armando.visconti@st.com, shiraz.hashim@st.com,
+        vipin.kumar@st.com, rajeev-dlh.kumar@st.com, deepak.sikri@st.com,
+        vipulkumar.samar@st.com, amit.virdi@st.com, pratyush.anand@st.com,
+        bhupesh.sharma@st.com, viresh.linux@gmail.com, bhavna.yadav@st.com,
+        vincenzo.frascino@st.com, mirko.gardi@st.com,
+        srinidhi.kasagar@stericsson.com, linus.walleij@stericsson.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Avi,
+Hi Viresh,
 
-On Mon, Nov 7, 2011 at 2:26 PM, Avi Kivity <avi@redhat.com> wrote:
->> tools/power was merged in just 2 versions ago, do you think that
->> merging that was a mistake?
+On Thu, Nov 3, 2011 at 10:26 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
+
+> @@ -925,15 +928,28 @@ static int __devinit stmpe_probe(struct i2c_client *i2c,
 >
-> Things like tools/power may make sense, most of the code is tied to the
-> kernel interfaces.  tools/kvm is 20k lines and is likely to be 40k+
-> lines or more before it is generally usable.  The proportion of the code
-> that talks to the kernel is quite small.
+>        i2c_set_clientdata(i2c, stmpe);
+>
+> +       if (pdata->irq_over_gpio) {
+> +               ret = gpio_request_one(pdata->irq_gpio, GPIOF_DIR_IN, "stmpe");
+> +               if (ret) {
+> +                       dev_err(stmpe->dev, "failed to request IRQ GPIO: %d\n",
+> +                                       ret);
+> +                       goto out_free;
+> +               }
+> +
+> +               stmpe->irq = gpio_to_irq(pdata->irq_gpio);
+> +       } else {
+> +               stmpe->irq = i2c->irq;
+> +       }
+> +
+>        ret = stmpe_chip_init(stmpe);
+>        if (ret)
+> -               goto out_free;
+> +               goto free_gpio;
+>
+>        ret = stmpe_irq_init(stmpe);
+>        if (ret)
+> -               goto out_free;
+> +               goto free_gpio;
+>
+> -       ret = request_threaded_irq(stmpe->i2c->irq, NULL, stmpe_irq,
+> +       ret = request_threaded_irq(stmpe->irq, NULL, stmpe_irq,
+>                                   pdata->irq_trigger | IRQF_ONESHOT,
+>                                   "stmpe", stmpe);
+>        if (ret) {
+> @@ -951,9 +967,11 @@ static int __devinit stmpe_probe(struct i2c_client *i2c,
+>
+>  out_removedevs:
+>        mfd_remove_devices(stmpe->dev);
+> -       free_irq(stmpe->i2c->irq, stmpe);
+> +       free_irq(stmpe->irq, stmpe);
+>  out_removeirq:
+>        stmpe_irq_remove(stmpe);
+> +free_gpio:
+> +       gpio_free(pdata->irq_gpio);
 
-So what do you think about perf then? The amount of code that talks to
-the kernel is much smaller than that of the KVM tool.
+Will that work if you didn't request irq over GPIO?
 
-                        Pekka
+If you did not request GPIO and stmpe_chip_init()
+fails this will still be executed.
+
+Maybe:
+
+if (pdata->irq_over_gpio)
+   gpio_free(pdata->irq_gpio);
+
+>  out_free:
+>        kfree(stmpe);
+>        return ret;
+> @@ -965,9 +983,12 @@ static int __devexit stmpe_remove(struct i2c_client *client)
+>
+>        mfd_remove_devices(stmpe->dev);
+>
+> -       free_irq(stmpe->i2c->irq, stmpe);
+> +       free_irq(stmpe->irq, stmpe);
+>        stmpe_irq_remove(stmpe);
+>
+> +       if (stmpe->pdata->irq_over_gpio)
+> +               gpio_free(stmpe->pdata->irq_gpio);
+> +
+
+Here it seems correct.
+
+> diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+> index be1af7c..7901351 100644
+> --- a/include/linux/mfd/stmpe.h
+> +++ b/include/linux/mfd/stmpe.h
+> @@ -76,6 +76,7 @@ struct stmpe {
+>        struct stmpe_variant_info *variant;
+>        const u8 *regs;
+>
+> +       int irq;
+>        int irq_base;
+>        int num_gpios;
+>        u8 ier[2];
+> @@ -194,6 +195,8 @@ struct stmpe_platform_data {
+>        unsigned int irq_trigger;
+>        bool irq_invert_polarity;
+>        bool autosleep;
+> +       bool irq_over_gpio;
+> +       int irq_gpio;
+>        int autosleep_timeout;
+
+Please also update the kerneldoc for struct stmpe.
+
+Yours,
+Linus Walleij
