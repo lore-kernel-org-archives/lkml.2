@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1KGWQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:16:07 -0500
-Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:35141 "EHLO
-	homiemail-a37.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751041Ab1KGWQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:16:06 -0500
-X-Greylist: delayed 90055 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Nov 2011 17:16:06 EST
-Subject: Re: [PATCH] ipc/mqueue: simplify reading msgqueue limit
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Nick Piggin <npiggin@kernel.dk>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1320345109.3188.3.camel@offbook>
-References: <1320345109.3188.3.camel@offbook>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Mon, 07 Nov 2011 19:15:56 -0300
-Message-ID: <1320704156.3009.0.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753584Ab1KGWSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:18:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46085 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751067Ab1KGWSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 17:18:50 -0500
+Date: Mon, 7 Nov 2011 23:18:48 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] oom: do not kill tasks with oom_score_adj
+ OOM_SCORE_ADJ_MIN
+Message-ID: <20111107221847.GA7985@tiehlicka.suse.cz>
+References: <20111104143145.0F93B8B45E@mx2.suse.de>
+ <alpine.DEB.2.00.1111071353140.27419@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111071353140.27419@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping?
-
-On Thu, 2011-11-03 at 15:31 -0300, Davidlohr Bueso wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
+On Mon 07-11-11 13:54:38, David Rientjes wrote:
+> On Fri, 4 Nov 2011, Michal Hocko wrote:
 > 
-> Because the current task is being used to get the limit, we can simply use rlimit() instead of task_rlimit().
+> > diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> > index e916168..4883514 100644
+> > --- a/mm/oom_kill.c
+> > +++ b/mm/oom_kill.c
+> > @@ -185,6 +185,9 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+> >  	if (!p)
+> >  		return 0;
+> >  
+> > +	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
+> > +		return 0;
+> > +
+> >  	/*
+> >  	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+> >  	 * by zero, if necessary.
 > 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  ipc/mqueue.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
+> This leaves p locked, you need to do task_unlock(p) first.
+
+Yes, right you are. Thanks for spotting this out.
+
 > 
-> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-> index 2e0ecfc..c0e4fbb 100644
-> --- a/ipc/mqueue.c
-> +++ b/ipc/mqueue.c
-> @@ -127,7 +127,6 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->  
->  	if (S_ISREG(mode)) {
->  		struct mqueue_inode_info *info;
-> -		struct task_struct *p = current;
->  		unsigned long mq_bytes, mq_msg_tblsz;
->  
->  		inode->i_fop = &mqueue_file_operations;
-> @@ -158,7 +157,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
->  
->  		spin_lock(&mq_lock);
->  		if (u->mq_bytes + mq_bytes < u->mq_bytes ||
-> -		    u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
-> +		    u->mq_bytes + mq_bytes > rlimit(RLIMIT_MSGQUEUE)) {
->  			spin_unlock(&mq_lock);
->  			/* mqueue_evict_inode() releases info->messages */
->  			ret = -EMFILE;
+> Once that's fixed, please add my
+> 
+> 	Acked-by: David Rientjes <rientjes@google.com>
 
+Thanks.
 
+> and resubmit to Andrew for the 3.2 rc series.  Thanks!
+
+Andrew, could you push this for 3.2 (bugfix for post 3.1 kernel).
+
+---
+>From 10e06e7c0682af58236055ed38bfab58f7935253 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 4 Nov 2011 12:59:44 +0100
+Subject: [PATCH] oom: do not kill tasks with oom_score_adj OOM_SCORE_ADJ_MIN
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org,
+    linux-kernel@vger.kernel.org,
+    Oleg Nesterov <oleg@redhat.com>,
+    Ying Han <yinghan@google.com>,
+    KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+    Andrew Morton <akpm@linux-foundation.org>
+
+c9f01245 (oom: remove oom_disable_count) has removed oom_disable_count
+counter which has been used for early break out from oom_badness so we
+could never select a task with oom_score_adj set to OOM_SCORE_ADJ_MIN
+(oom disabled).
+
+Now that the counter is gone we are always going through heuristics
+calculation and we always return a non zero positive value.  This
+means that we can end up killing a task with OOM disabled because it is
+indistinguishable from regular tasks with 1% resp. CAP_SYS_ADMIN tasks
+with 3% usage of memory or tasks with oom_score_adj set but OOM enabled.
+
+Let's break out early if the task should have OOM disabled.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ mm/oom_kill.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index e916168..4465fb8 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -185,6 +185,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 	if (!p)
+ 		return 0;
+ 
++	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
++		task_unlock(p);
++		return 0;
++	}
++
+ 	/*
+ 	 * The memory controller may have a limit of 0 bytes, so avoid a divide
+ 	 * by zero, if necessary.
+-- 
+1.7.7.1
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
