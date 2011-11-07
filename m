@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab1KGUSs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:18:48 -0500
-Received: from www17.your-server.de ([213.133.104.17]:59167 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab1KGUSq (ORCPT
+	id S1752515Ab1KGUVO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:21:14 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50027 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750957Ab1KGUVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:18:46 -0500
-Message-ID: <1320697117.1396.4.camel@localhost.localdomain>
-Subject: [PATCH] nilfs2: unbreak compat ioctl
-From: Thomas Meyer <thomas@m3y3r.de>
-To: konishi.ryusuke@lab.ntt.co.jp,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 07 Nov 2011 21:18:37 +0100
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-DWVIevM0WrcR2vm9+1Ln"
-X-Mailer: Evolution 3.2.1 (3.2.1-1.fc16) 
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Mon, 7 Nov 2011 15:21:13 -0500
+Date: Tue, 8 Nov 2011 00:19:08 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH] proc: restrict access to /proc/interrupts
+Message-ID: <20111107201908.GA5827@albatros>
+References: <20111107174522.GA2317@albatros>
+ <9718.1320689192@turing-police.cc.vt.edu>
+ <20111107190112.GA3732@albatros>
+ <4EB82F08.8060209@zytor.com>
+ <14202.1320696659@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14202.1320696659@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 07, 2011 at 15:10 -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 07 Nov 2011 11:18:32 PST, "H. Peter Anvin" said:
+> 
+> > I would like to propose that we add a mount option to procfs, and
+> > possibly sysfs, called, say, admingrp.  These kinds of files then get
+> > restricted to the admingrp (defaulting to gid 0 if no admingrp is
+> > provided).  Historically on Unix there has been a group of people
+> > (usually "adm", but sometimes "log") who are allowed to read (but not
+> > write) the log files, which also contains potentially sensitive information.
+> 
+> Probably should be a two part - mount with 'gid=NNN', and then a
+> perm=027 or whatever, to be treated similar to a umask.  So 027
+> would allow root to do anything, would disable write for the gid= group,
+> and turn it off completely for others.  Less paranoid sites could mount
+> it with perm=002.
+> 
+> Does that cover most of the use cases?
 
---=-DWVIevM0WrcR2vm9+1Ln
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-I guess commit 828b1c50ae11e6dda68f8dfefe43b74c7182b157 incidentally broke
-all other compat ioctls. make them work again.
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
- fs/nilfs2/ioctl.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nilfs2/ioctl.c b/fs/nilfs2/ioctl.c
-index 41d6743..1773a98 100644
---- a/fs/nilfs2/ioctl.c
-+++ b/fs/nilfs2/ioctl.c
-@@ -842,8 +842,6 @@ long nilfs_compat_ioctl(struct file *filp, unsigned int=
- cmd, unsigned long arg)
- 	case FS_IOC32_GETVERSION:
- 		cmd =3D FS_IOC_GETVERSION;
- 		break;
--	default:
--		return -ENOIOCTLCMD;
- 	}
- 	return nilfs_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
- }
---=20
-1.7.7
+At the time of Linux 2.0-2.4 in Owl patch there was a plain on/off
+configure option - 022 / 066 umask.  Currently procfs restriction is
+implemented in Grsecurity with the same all-or-nothing approach.
+Brad Spengler told me that there were no user complains about the lack of
+flexibility :-)   So, I agree that we don't need anything more complex.
 
 
---=-DWVIevM0WrcR2vm9+1Ln
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAABAgAGBQJOuD0eAAoJEK2Y/UtDbsHsnPEH/iXeosVRJLdXfTZVCeLxZxUd
-tRb7/Ic2Gx9dVV8Iltk1vkvUXdcY7b+a5Mh+efsyKi7pKB0WuDiju9KCZqTlfuDM
-2XnsRGrElH8CEApYBXnofXApEW9i/l15cfsdJL5/Tl6+8AqY6L20qt3M2IHckWXh
-EkBb2NLjqaYGzNNubgkeedSYXuRXnKOsHhRskivIQHjXUEQUEk3dOiHAhH3+Ja8s
-gZ6uDyZk58ltbti9vPIm2Vlf/Ej6yQ2bjUa/4BJtMzdpSTxqm8WOK/NkP9eRvSDx
-I8Fnn8qPtqYh5/IRlXDdpXxFpXrWSWJXZbDQBs6gIWvrrQQP+9U5+HGdWd6p0sU=
-=Wjfw
------END PGP SIGNATURE-----
-
---=-DWVIevM0WrcR2vm9+1Ln--
-
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
