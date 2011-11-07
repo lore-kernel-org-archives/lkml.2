@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1KGLHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 06:07:24 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:12397 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab1KGLHX convert rfc822-to-8bit (ORCPT
+	id S1754139Ab1KGLKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:10:44 -0500
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:60518 "EHLO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418Ab1KGLKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 06:07:23 -0500
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'balbi@ti.com'" <balbi@ti.com>
-CC: "'linux-i2c@vger.kernel.org'" <'linux-i2c@vger.kernel.org'>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<'linux-arm-kernel@lists.infradead.org'>,
-        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
-        "'plagnioj@jcrosoft.com'" <plagnioj@jcrosoft.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>
-Date: Mon, 7 Nov 2011 12:06:52 +0100
-Subject: RE: [PATCH V2] drivers/i2c/busses/i2c-at91.c: fix brokeness
-Thread-Topic: [PATCH V2] drivers/i2c/busses/i2c-at91.c: fix brokeness
-Thread-Index: AcydNLYy45JamylDS0aTu+1BOHlkWAABlwkA
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B38B2AB@wm021.weinmann.com>
-References: <alpine.DEB.2.00.1111071019560.21431@gatekeeper.vosshq.de>
- <20111107094701.GF4265@legolas.emea.dhcp.ti.com>
- <EF2E73589CA71846A15D0B2CDF79505D087B38B21C@wm021.weinmann.com>
- <20111107100446.GG4265@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111107100446.GG4265@legolas.emea.dhcp.ti.com>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Nov 2011 06:10:43 -0500
+Message-ID: <4EB7BCAE.90004@ge.com>
+Date: Mon, 07 Nov 2011 11:10:38 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: gregkh@suse.de, Grant Likely <grant.likely@secretlab.ca>,
+        devel@driverdev.osuosl.org, manohar.vanga@cern.ch, cota@braap.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Driver for GE PIO2 VME Card
+References: <20111104173126.30940.28135.stgit@ES-BJ21R4J>	 <1320436514.14409.309.camel@x61.thuisdomein>  <4EB7A60D.801@ge.com> <1320659729.14409.349.camel@x61.thuisdomein>
+In-Reply-To: <1320659729.14409.349.camel@x61.thuisdomein>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Nov 2011 11:10:40.0748 (UTC) FILETIME=[E29E1AC0:01CC9D3D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > IMHO, you should split this patch into three or more smaller patches.
-> > > You're doing lots of different things in one commit and it'll be a
-> > > pain to bisect should this cause any issues to anyone.
-> >
-> > I didn't split the patch because it is virtually a complete rewrite.
-> > Due to the severe limitations of the old driver, I think it should
-> > replace the old driver.
+On 07/11/11 09:55, Paul Bolle wrote:
+> On Mon, 2011-11-07 at 09:34 +0000, Martyn Welch wrote:
+>> On 04/11/11 19:55, Paul Bolle wrote:
+>>>> +	  implementing 32 solid-state relay switched IO lines, in 4 groups of 8.
+>>>> +	  The IO lines are provided as input, output or both as a build time
+>>>> +	  option.
+>>>
+>>> What option would that be? 
+>>
+>> I think "Each bank of IO lines is pre-configured as input, output or both
+>> depending on the variant of the card" may be a bit clearer?
 > 
-> The final decision is up to Ben and/or Jean but I think we should always have
-> incremental patches, not sure if we should allow big patches for the reasons
-> above.
+> So this concerns a physical build option! Anything that makes that clear
+> (like your alternative does) is fine with me. (Perhaps "is
+> pre-configured" could be "functions", as that's less ambiguous in a
+> Kconfig file, but that's debatable.)
+> 
 
-Splitting the patch implies the possibility to test each incremental
-change independently, a possibility I don't have with my current setup as
-the old driver didn't work at all for me (for example, my client needs
-repeated start). I developed and tested the driver in an all or nothing-at-all
-approach. Splitting the patch would be a purely academic exercise for me,
-without any extra value beyond readability (which is admittedly bad now).
->From that point of view, I should maybe submit the patch as a new independent
-driver (although it is a logical replacement for the old one)?
+Yes, with this card it is a physical build option.
 
-Niko
+>>> All module parameters have a sysfs visibility (or permission) of zero.
+>>> Why is that? (This might very well be a naive question. But I often
+>>> wonder why a certain parameter's permission isn't at least 400, just to
+>>> allow a quick check of that parameter.) Are arrays tricky in sysfs? 
+>>
+>> Hadn't really thought about it to be honest. There seems to be plenty of
+>> examples where it's set to non-zero.
+> 
+> (Perhaps you meant to write "set to zero" here.)
+> 
 
+I had a look to see what other drivers did before I saw Greg's email. I was
+planning to at least change these to S_IRUGO for the next revision of the
+patch as it would probably make sense for now I think.
+
+> Greg already explained that it's OK to leave the code as is for now
+> (since all these control knobs need to be provided via "real" sysfs
+> files in the long run anyhow).
+> 
+>
+> Paul Bolle
+>
+
+Not quite sure how that would work, would the driver be loaded then the values
+written into sysfs to bind to each instance? A set of parameters are required
+for each card (bus, base, vector, level and variant), I can't think of an
+example of this, any ideas?
+
+Martyn
+
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)1327322748                         | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
