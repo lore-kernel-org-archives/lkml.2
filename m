@@ -1,127 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab1KGC7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:59:54 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:43223 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081Ab1KGC7w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:59:52 -0500
-Subject: Re: [GIT PULL] target: Updates for v3.2-rc1 (round two)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@purestorage.com>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>
-In-Reply-To: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
-References: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Nov 2011 18:59:38 -0800
-Message-ID: <1320634778.18988.10.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752155Ab1KGDFA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 22:05:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60316 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751071Ab1KGDE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Nov 2011 22:04:58 -0500
+Message-ID: <4EB74A96.2080209@cn.fujitsu.com>
+Date: Mon, 07 Nov 2011 11:03:50 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: FNST
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110322 Red Hat/3.1.9-3.el6_0 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: Andy Whitcroft <apw@canonical.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] readlinkat: ensure we return ENOENT for the empty
+ pathname for normal lookups
+References: <1312455634-16253-1-git-send-email-apw@canonical.com> <1312455634-16253-2-git-send-email-apw@canonical.com>
+In-Reply-To: <1312455634-16253-2-git-send-email-apw@canonical.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-07 11:04:52,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-11-07 11:04:53,
+	Serialize complete at 2011-11-07 11:04:53
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Greg:
 
-This is just a friendly reminder to please pull the two remaining
-target-pending branches (for-next and for-next-merge) for -rc1.
+I see that this patch was queued to stable 3.0 and 3.1, and I wanna know
+will it be merged to v3.0.9, v3.1.1?
 
-Thank you,
+The return value of readlink/readlinkat for the empty pathname had switched
+from ENOENT to EINVAL since V2.6.39, and now switched back again....
 
---nab
+It is important for LTP to check the return value for this, so can you tell
+me, thanks a lot Greg.
 
-On Fri, 2011-11-04 at 13:09 -0700, Nicholas A. Bellinger wrote:
-> Hi Linus,
+Thanks
+-Wanlong Gao
+
+> Since the commit below which added O_PATH support to the *at() calls,
+> the error return for readlink/readlinkat for the empty pathname has
+> switched from ENOENT to EINVAL:
 > 
-> The following is the second round of target core updates for the v3.2
-> merge window.  Please go ahead and pull from:
+>   commit 65cfc6722361570bfe255698d9cd4dccaf47570d
+>   Author: Al Viro <viro@zeniv.linux.org.uk>
+>   Date:   Sun Mar 13 15:56:26 2011 -0400
 > 
->    git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+>     readlinkat(), fchownat() and fstatat() with empty relative pathnames
 > 
-> A separate PULL request for the ib_srpt fabric merge will be going out
-> shortly.
+> This is both unexpected for userspace and makes readlink/readlinkat
+> inconsistant with all other interfaces; and inconsistant with our stated
+> return for these pathnames.
 > 
-> This series includes:
+> As the readlinkat call does not have a flags parameter we cannot use
+> the AT_EMPTY_PATH approach used in the other calls.  Therefore expose
+> whether the original path is infact entry via a new user_path_at_empty()
+> path lookup function.  Use this to determine whether to default to EINVAL
+> or ENOENT for failures.
 > 
-> *) Bugfixes from Joern for TMR processing during LUN_RESET handling
-> *) Bugfix for tcm_loop to explictly clear control CDB READ payload
-> *) Conversion of TFO->check_stop_free to return status as a hint to
->    LUN_RESET processing
-> *) Removal of TRANSPORT_FREE_CMD_INTR in favor of per fabric release
->    workqueues
-> *) Initial pieces of generic active I/O shutdown tracking.  (Will be enabled
->    for ib_srpt in a seperate patch)
-> *) Convert control CDB code to pass se_task into CDB emulation callback
-> *) Refactoring of CDB emulation from Christoph to universally use
->    cmd->execute_task()
+> BugLink: http://bugs.launchpad.net/bugs/817187
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  fs/namei.c            |   24 +++++++++++++++++++-----
+>  fs/stat.c             |    5 +++--
+>  include/linux/namei.h |    1 +
+>  3 files changed, 23 insertions(+), 7 deletions(-)
 > 
-> The generic active I/O shutdown bits and ->execute_task conversion got
-> in a bit late, but I still think are suitable v3.2 material.  Also, we
-> have one more bugfix+cleanup patch to remove legacy PYX_TRANSPORT_*
-> return code usage still being discussed, and will be sent out post merge
-> window to address existing breakage with se_cmd->scsi_sense_reason
-> assignment and errno return code conversion.
-> 
-> Thanks!
-> 
-> --nab
-> 
-> Christoph Hellwig (7):
->   target: add back error handling in transport_complete_task
->   target: split core_scsi2_emulate_crh
->   target: split core_scsi3_emulate_pr
->   target: pass the se_task to the CDB emulation callback
->   target: refactor transport_emulate_control_cdb
->   target: remove SCF_EMULATE_CDB_ASYNC
->   target: use ->exectute_task for all CDB emulation
-> 
-> Dan Carpenter (1):
->   target/pscsi: blk_make_request() returns an ERR_PTR()
-> 
-> Joern Engel (4):
->   target: Fix incorrect se_cmd assignment in core_tmr_drain_tmr_list
->   target: Fix wrong se_tmr being added to drain_tmr_list
->   target: Minor cleanups to core_tmr_drain_tmr_list
->   target: Avoid double list_del for aborted se_tmr_req
-> 
-> Nicholas Bellinger (8):
->   target: Fix compile warning w/ missing module.h include
->   tcm_loop: Add explict read buffer memset for
->     SCF_SCSI_CONTROL_SG_IO_CDB
->   target: Check -ENOMEM to signal QUEUE_FULL from fabric callbacks
->   iscsi-target: Add missing CMDSN_LOWER_THAN_EXP check in
->     iscsit_handle_scsi_cmd
->   iscsi-target: Fix non-immediate TMR handling
->   target: Make TFO->check_stop_free return free status
->   target: Remove core TRANSPORT_FREE_CMD_INTR usage
->   target: Add generic active I/O shutdown logic
-> 
->  drivers/target/iscsi/iscsi_target.c     |   11 +-
->  drivers/target/loopback/tcm_loop.c      |   23 ++-
->  drivers/target/target_core_alua.c       |   11 +-
->  drivers/target/target_core_alua.h       |    4 +-
->  drivers/target/target_core_cdb.c        |  217 +++++++-----------
->  drivers/target/target_core_cdb.h        |   14 +
->  drivers/target/target_core_device.c     |   14 +-
->  drivers/target/target_core_pr.c         |  349 ++++++++++++++++------------
->  drivers/target/target_core_pr.h         |    7 +-
->  drivers/target/target_core_pscsi.c      |    2 +-
->  drivers/target/target_core_tmr.c        |   23 +--
->  drivers/target/target_core_transport.c  |  392 ++++++++++++++++++++-----------
->  drivers/target/tcm_fc/tcm_fc.h          |    2 +-
->  drivers/target/tcm_fc/tfc_cmd.c         |    3 +-
->  include/target/target_core_base.h       |   13 +-
->  include/target/target_core_device.h     |    2 +-
->  include/target/target_core_fabric_ops.h |   11 +-
->  include/target/target_core_transport.h  |    7 +-
->  18 files changed, 630 insertions(+), 475 deletions(-)
->  create mode 100644 drivers/target/target_core_cdb.h
-> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 445fd5d..9e013b8 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -137,7 +137,8 @@ static int do_getname(const char __user *filename, char *page)
+>  	return retval;
+>  }
+>  
+> -static char *getname_flags(const char __user * filename, int flags)
+> +static char *getname_flags_empty(const char __user * filename,
+> +							int flags, int *empty)
+>  {
+>  	char *tmp, *result;
+>  
+> @@ -148,6 +149,8 @@ static char *getname_flags(const char __user * filename, int flags)
+>  
+>  		result = tmp;
+>  		if (retval < 0) {
+> +			if (retval == -ENOENT && empty)
+> +				*empty = 1;
+>  			if (retval != -ENOENT || !(flags & LOOKUP_EMPTY)) {
+>  				__putname(tmp);
+>  				result = ERR_PTR(retval);
+> @@ -158,9 +161,14 @@ static char *getname_flags(const char __user * filename, int flags)
+>  	return result;
+>  }
+>  
+> +static char *getname_flags(const char __user * filename, int flags)
+> +{
+> +	return getname_flags_empty(filename, flags, 0);
+> +}
+> +
+>  char *getname(const char __user * filename)
+>  {
+> -	return getname_flags(filename, 0);
+> +	return getname_flags_empty(filename, 0, 0);
+>  }
+>  
+>  #ifdef CONFIG_AUDITSYSCALL
+> @@ -1756,11 +1764,11 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
+>  	return __lookup_hash(&this, base, NULL);
+>  }
+>  
+> -int user_path_at(int dfd, const char __user *name, unsigned flags,
+> -		 struct path *path)
+> +int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
+> +		 struct path *path, int *empty)
+>  {
+>  	struct nameidata nd;
+> -	char *tmp = getname_flags(name, flags);
+> +	char *tmp = getname_flags_empty(name, flags, empty);
+>  	int err = PTR_ERR(tmp);
+>  	if (!IS_ERR(tmp)) {
+>  
+> @@ -1774,6 +1782,12 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
+>  	return err;
+>  }
+>  
+> +int user_path_at(int dfd, const char __user *name, unsigned flags,
+> +		 struct path *path)
+> +{
+> +	return user_path_at_empty(dfd, name, flags, path, 0);
+> +}
+> +
+>  static int user_path_parent(int dfd, const char __user *path,
+>  			struct nameidata *nd, char **name)
+>  {
+> diff --git a/fs/stat.c b/fs/stat.c
+> index 9610391..4c814bb 100644
+> --- a/fs/stat.c
+> +++ b/fs/stat.c
+> @@ -296,15 +296,16 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+>  {
+>  	struct path path;
+>  	int error;
+> +	int empty = 0;
+>  
+>  	if (bufsiz <= 0)
+>  		return -EINVAL;
+>  
+> -	error = user_path_at(dfd, pathname, LOOKUP_EMPTY, &path);
+> +	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
+>  	if (!error) {
+>  		struct inode *inode = path.dentry->d_inode;
+>  
+> -		error = -EINVAL;
+> +		error = (empty) ? -ENOENT : -EINVAL;
+>  		if (inode->i_op->readlink) {
+>  			error = security_inode_readlink(path.dentry);
+>  			if (!error) {
+> diff --git a/include/linux/namei.h b/include/linux/namei.h
+> index 76fe2c6..c300127 100644
+> --- a/include/linux/namei.h
+> +++ b/include/linux/namei.h
+> @@ -66,6 +66,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+>  #define LOOKUP_EMPTY		0x4000
+>  
+>  extern int user_path_at(int, const char __user *, unsigned, struct path *);
+> +extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+>  
+>  #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+>  #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 
 
