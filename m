@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab1KGOwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:52:36 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:33363 "EHLO
-	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab1KGOwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:52:35 -0500
-Message-ID: <4EB7F0AE.4080600@ilyx.ru>
-Date: Mon, 07 Nov 2011 18:52:30 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
-MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Race condition in tty buffer's function flush_to_ldisc().
-References: <4EB7BD9A.7070600@ilyx.ru>	<20111107115802.23201d45@bob.linux.org.uk>	<4EB7CCFF.5090304@ilyx.ru>	<20111107130643.07e84fca@bob.linux.org.uk>	<4EB7E0C6.7050909@ilyx.ru> <20111107145005.68ca1050@bob.linux.org.uk>
-In-Reply-To: <20111107145005.68ca1050@bob.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754257Ab1KGO5O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:57:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:36579 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab1KGO5N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 09:57:13 -0500
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, robert.richter@amd.com, mingo@elte.hu,
+        ming.m.lin@intel.com, ak@linux.intel.com
+Date: Mon, 07 Nov 2011 15:56:10 +0100
+In-Reply-To: <CABPqkBREaQJk2gK7_Q5zUQhvV=EoxE1__ADw5VsiF-YPQNzeKw@mail.gmail.com>
+References: <20111107110149.GA5177@quad> <1320667833.18053.24.camel@twins>
+	 <CABPqkBREaQJk2gK7_Q5zUQhvV=EoxE1__ADw5VsiF-YPQNzeKw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320677770.18053.51.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox wrote:
+On Mon, 2011-11-07 at 13:52 +0000, Stephane Eranian wrote:
+> But given we limit the number of events to that of counters,
+> we do have O(c^3). 
 
->> Of course I know about tty_buffer_flush(), it only read TTY_FLUSHING,
->> it can't change TTY_FLUSHING, if flush_to_ldisc() single threaded,
->> we can change TTY_FLUSHING only in one place in one time(in
->> flush_to_ldisc()), therefor we can use only "set_bit(TTY_FLUSHING,
->> &tty->flags)" without test.
-> 
-> Yes.. if you can pin down why in your testing you see the other case
-> sometimes being true.
-> 
-> Alan
->  
-> 
-> 
+Right, but SNB without HT gives you 8 GP counters, yielding a rather big
+number. Suppose you're trying to fill it with 9 cycle events (1 for the
+fixed purpose thingy), that'll end up being: 9^3 = 729 = big number.
 
-OK, I try.
-Ilya.
+(arguably adding 9 cycle counters is a tad retarded, but hey ;-)
+
+It would be good to try and get it down to somewhere near 81 again,
+although my brain isn't currently providing any sane ideas on how.
+
+> As for the map_idx, it's there to track the position of each event in the
+> initial event list. We shuffle events between constrained and unconstrained.
+> By stashing the map_idx in the hw_perf_event struct we avoid having to
+> pass around yet another array.
+
+Yeah, I saw why you needed it..
