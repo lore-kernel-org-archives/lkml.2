@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab1KGL5X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 06:57:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754835Ab1KGL5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 06:57:22 -0500
-Message-ID: <4EB7C82A.6020905@redhat.com>
-Date: Mon, 07 Nov 2011 12:59:38 +0100
-From: Kevin Wolf <kwolf@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755186Ab1KGL6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:58:55 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:38606 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754825Ab1KGL6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 06:58:54 -0500
+X-IronPort-AV: E=Sophos;i="4.69,469,1315173600"; 
+   d="scan'208";a="128925121"
+Date: Mon, 7 Nov 2011 12:58:35 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: Eliad Peller <eliad@wizery.com>
+cc: Julia Lawall <julia@diku.dk>, "John W. Linville" <linville@tuxdriver.com>,
+        kernel-janitors@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] net/mac80211/debugfs.c: use kstrtoul, etc
+In-Reply-To: <CAB3XZEfHV+sO=+vJdZUQVqXFtHvZyhJQ1Cm8LJ8Puyz9eqq9Kg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1111071258160.2527@hadrien>
+References: <1320586010-21931-1-git-send-email-julia@diku.dk> <1320586010-21931-4-git-send-email-julia@diku.dk> <CAB3XZEfHV+sO=+vJdZUQVqXFtHvZyhJQ1Cm8LJ8Puyz9eqq9Kg@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: "Ted Ts'o" <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test
- kernels
-References: <4EB67486.1070105@redhat.com> <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com> <4EB6AE34.2000907@redhat.com> <CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com> <4EB6BAED.2030400@redhat.com> <4EB6BEFA.6000303@codemonkey.ws> <20111106183132.GA4500@thunk.org> <4EB7B375.4090904@redhat.com> <alpine.LFD.2.02.1111071335140.2815@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1111071335140.2815@tux.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1619784325-1320667116=:2527"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 07.11.2011 12:38, schrieb Pekka Enberg:
-> On Mon, 7 Nov 2011, Kevin Wolf wrote:
->> Makes it a lot less hackable for me unless you want to restrict the set
->> of potential developers to Linux kernel developers...
-> 
-> We're not restricting potential developers to Linux kernel folks. We're 
-> making it easy for them because we believe that the KVM tool is a 
-> userspace component that requires the kind of low-level knowledge Linux 
-> kernel developers have.
-> 
-> I think you're looking at the KVM tool with your QEMU glasses on without 
-> realizing that there's no point in comparing the two: we only support 
-> Linux on Linux and we avoid hardware emulation as much as possible. So 
-> what makes sense for QEMU, doesn't necessarily translate to the KVM tool 
-> project.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I'm not comparing anything. I'm not even referring to the virtualization
-functionality of it. It could be doing anything else and it wouldn't
-make a difference.
+--8323329-1619784325-1320667116=:2527
+Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-For KVM tool I am not much more than a mere user. Trying it out was
-tedious for me, as it is for anyone else who isn't a kernel developer.
-That's all I'm saying.
 
-Making things easier for some kernel developers but ignoring that at the
-same time it makes things harder for users I consider a not so clever
-move. Just wanted to point that out; feel free to ignore it, your
-priorities are probably different.
 
-Kevin
+On Mon, 7 Nov 2011, Eliad Peller wrote:
+
+> On Sun, Nov 6, 2011 at 3:26 PM, Julia Lawall <julia@diku.dk> wrote:
+>> From: Julia Lawall <julia@diku.dk>
+>>
+>> Use kstrtoul, etc instead of the now deprecated strict_strtoul, etc.
+>>
+>> A semantic patch rule for the kstrtoul case is as follows:
+>> (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> expression a,b;
+>> {int,long} *c;
+>> @@
+>>
+>> -strict_strtoul
+>> +kstrtoul
+>>  (a,b,c)
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <julia@diku.dk>
+>>
+>> ---
+>>  net/mac80211/debugfs.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff -u -p a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
+>> --- a/net/mac80211/debugfs.c
+>> +++ b/net/mac80211/debugfs.c
+>> @@ -190,7 +190,7 @@ static ssize_t uapsd_max_sp_len_write(st
+>>                return -EFAULT;
+>>        buf[len] = '\0';
+>>
+>> -       ret = strict_strtoul(buf, 0, &val);
+>> +       ret = kstrtoul(buf, 0, &val);
+>>
+>>        if (ret)
+>>                return -EINVAL;
+>>
+>
+> maybe while cleaning it up change copy_from_user +
+> strict_stroul/kstroul -> kstroul_from_user?
+
+Thanks for the suggestion.  I will look into it.
+
+julia
+--8323329-1619784325-1320667116=:2527--
