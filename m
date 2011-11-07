@@ -1,42 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab1KGXJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:09:17 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36442 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab1KGXJQ (ORCPT
+	id S1754738Ab1KGXNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:13:37 -0500
+Received: from smtp-out.google.com ([74.125.121.67]:59426 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab1KGXNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:09:16 -0500
-Date: Mon, 7 Nov 2011 23:08:53 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-Cc: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Message-ID: <20111107230853.GW12913@n2100.arm.linux.org.uk>
-References: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 7 Nov 2011 18:13:36 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=oTQv5QgHJmFCc+g7+O7bZmk40BOkiKhVoXKM4T/ENAJMXXDnlNbcaXb+oYkf8xOXV
+	If7GsmgUtsRAybL0OR5gA==
+From: Vivek Haldar <haldar@google.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Vivek Haldar <haldar@google.com>
+Subject: [PATCH] ext4: protect extent cache with r/w spinlock.
+Date: Mon,  7 Nov 2011 15:13:08 -0800
+Message-Id: <1320707588-14595-1-git-send-email-haldar@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 04:20:07PM +0200, Peter De Schrijver wrote:
-> This patchset adds support for the tegra30 SoC and the cardhu development
-> board.
-> 
-> Pathset is on top of Will Deacon's ARM reset work.
+The extent cache used to be protected by an exclusive spinlock. Using
+a r/w lock instead will allow multiple concurrent readers. Also, use
+percpu counters for cache hit/miss stats.
 
-Note that there's another solution for the arch_reset() stuff floating
-around (mine) which goes a tad further than Will's, specifically avoiding
-the problems of having multiple function pointers for this stuff.
+Tested: xfstests.
 
-My version also cleans up the use of the identity mappings for non-soft
-restarts, which is going to be needed to fix soft-restarts on ARMv6+v7
-properly (as well as migrating all the soft-restart support to something
-a little saner.)
+Signed-off-by: Vivek Haldar <haldar@google.com>
+---
+ fs/ext4/ext4.h    |   10 +++++++---
+ fs/ext4/extents.c |   17 +++++++----------
+ fs/ext4/super.c   |   18 ++++++++++++++++--
+ 3 files changed, 30 insertions(+), 15 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 604c200..4732e55 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -882,6 +882,9 @@ struct ext4_inode_info {
+ 	ext4_io_end_t *cur_aio_dio;
+ 	atomic_t i_aiodio_unwritten; /* Nr. of inflight conversions pending */
+ 
++	/* r/w lock for extent cache */
++	rwlock_t extent_cache_lock;
++
+ 	spinlock_t i_block_reservation_lock;
+ 
+ 	/*
+@@ -1183,9 +1186,10 @@ struct ext4_sb_info {
+ 	unsigned long s_ext_blocks;
+ 	unsigned long s_ext_extents;
+ #endif
+-	/* ext4 extent cache stats */
+-	unsigned long extent_cache_hits;
+-	unsigned long extent_cache_misses;
++
++	/* ext4 extent cache stats, per cpu */
++	struct percpu_counter extent_cache_hits;
++	struct percpu_counter extent_cache_misses;
+ 
+ 	/* for buddy allocator */
+ 	struct ext4_group_info ***s_group_info;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 61fa9e1..9dd748f 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -1951,13 +1951,13 @@ ext4_ext_put_in_cache(struct inode *inode, ext4_lblk_t block,
+ {
+ 	struct ext4_ext_cache *cex;
+ 	BUG_ON(len == 0);
+-	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
++	write_lock(&EXT4_I(inode)->extent_cache_lock);
+ 	trace_ext4_ext_put_in_cache(inode, block, len, start);
+ 	cex = &EXT4_I(inode)->i_cached_extent;
+ 	cex->ec_block = block;
+ 	cex->ec_len = len;
+ 	cex->ec_start = start;
+-	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
++	write_unlock(&EXT4_I(inode)->extent_cache_lock);
+ }
+ 
+ /*
+@@ -2031,10 +2031,7 @@ static int ext4_ext_check_cache(struct inode *inode, ext4_lblk_t block,
+ 	struct ext4_sb_info *sbi;
+ 	int ret = 0;
+ 
+-	/*
+-	 * We borrow i_block_reservation_lock to protect i_cached_extent
+-	 */
+-	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
++	read_lock(&EXT4_I(inode)->extent_cache_lock);
+ 	cex = &EXT4_I(inode)->i_cached_extent;
+ 	sbi = EXT4_SB(inode->i_sb);
+ 
+@@ -2050,12 +2047,12 @@ static int ext4_ext_check_cache(struct inode *inode, ext4_lblk_t block,
+ 		ret = 1;
+ 	}
+ errout:
++	trace_ext4_ext_in_cache(inode, block, ret);
++	read_unlock(&EXT4_I(inode)->extent_cache_lock);
+ 	if (!ret)
+-		sbi->extent_cache_misses++;
++		percpu_counter_inc(&sbi->extent_cache_misses);
+ 	else
+-		sbi->extent_cache_hits++;
+-	trace_ext4_ext_in_cache(inode, block, ret);
+-	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
++		percpu_counter_inc(&sbi->extent_cache_hits);
+ 	return ret;
+ }
+ 
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 9953d80..739ca96 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -842,6 +842,8 @@ static void ext4_put_super(struct super_block *sb)
+ 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+ 	percpu_counter_destroy(&sbi->s_dirs_counter);
+ 	percpu_counter_destroy(&sbi->s_dirtyclusters_counter);
++	percpu_counter_destroy(&sbi->extent_cache_hits);
++	percpu_counter_destroy(&sbi->extent_cache_misses);
+ 	brelse(sbi->s_sbh);
+ #ifdef CONFIG_QUOTA
+ 	for (i = 0; i < MAXQUOTAS; i++)
+@@ -904,6 +906,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
+ 	ei->i_allocated_meta_blocks = 0;
+ 	ei->i_da_metadata_calc_len = 0;
+ 	spin_lock_init(&(ei->i_block_reservation_lock));
++	rwlock_init(&(ei->extent_cache_lock));
+ #ifdef CONFIG_QUOTA
+ 	ei->i_reserved_quota = 0;
+ #endif
+@@ -2507,13 +2510,15 @@ static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
+ static ssize_t extent_cache_hits_show(struct ext4_attr *a,
+ 				      struct ext4_sb_info *sbi, char *buf)
+ {
+-	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
++	return snprintf(buf, PAGE_SIZE, "%lld\n",
++			percpu_counter_sum(&sbi->extent_cache_hits));
+ }
+ 
+ static ssize_t extent_cache_misses_show(struct ext4_attr *a,
+ 					struct ext4_sb_info *sbi, char *buf)
+ {
+-	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
++	return snprintf(buf, PAGE_SIZE, "%lld\n",
++			percpu_counter_sum(&sbi->extent_cache_misses));
+ }
+ 
+ static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
+@@ -3589,6 +3594,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!err) {
+ 		err = percpu_counter_init(&sbi->s_dirtyclusters_counter, 0);
+ 	}
++
++	/* Allocate cache hit/miss counters. */
++	if (!err)
++		err = percpu_counter_init(&sbi->extent_cache_hits, 0);
++	if (!err)
++		err = percpu_counter_init(&sbi->extent_cache_misses, 0);
++
+ 	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "insufficient memory");
+ 		goto failed_mount3;
+@@ -3855,6 +3867,8 @@ failed_mount3:
+ 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
+ 	percpu_counter_destroy(&sbi->s_dirs_counter);
+ 	percpu_counter_destroy(&sbi->s_dirtyclusters_counter);
++	percpu_counter_destroy(&sbi->extent_cache_hits);
++	percpu_counter_destroy(&sbi->extent_cache_misses);
+ 	if (sbi->s_mmp_tsk)
+ 		kthread_stop(sbi->s_mmp_tsk);
+ failed_mount2:
+-- 
+1.7.3.1
+
