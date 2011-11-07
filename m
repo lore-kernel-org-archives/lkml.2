@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab1KGPdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 10:33:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25435 "EHLO mx1.redhat.com"
+	id S932457Ab1KGPfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 10:35:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750979Ab1KGPdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 10:33:01 -0500
-Date: Mon, 7 Nov 2011 16:32:20 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Nai Xia <nai.xia@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Pawel Sikora <pluto@agmk.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        jpiszcz@lucidpixels.com, arekm@pld-linux.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mremap: skip page table lookup for non-faulted anonymous
- VMAs
-Message-ID: <20111107153220.GD3249@redhat.com>
-References: <201111071221.35403.nai.xia@gmail.com>
+	id S1751582Ab1KGPfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 10:35:00 -0500
+Date: Mon, 7 Nov 2011 17:34:39 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
+ guests
+Message-ID: <20111107153439.GG8670@redhat.com>
+References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
+ <1320323618-10375-3-git-send-email-gleb@redhat.com>
+ <1320675725.18053.40.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201111071221.35403.nai.xia@gmail.com>
+In-Reply-To: <1320675725.18053.40.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 12:21:35PM +0800, Nai Xia wrote:
-> If an anonymous vma has not yet been faulted, move_page_tables() in move_vma()
-> is not necessary for it.
+On Mon, Nov 07, 2011 at 03:22:05PM +0100, Peter Zijlstra wrote:
+> On Thu, 2011-11-03 at 14:33 +0200, Gleb Natapov wrote:
+> > @@ -35,6 +35,7 @@ config KVM
+> >         select KVM_MMIO
+> >         select TASKSTATS
+> >         select TASK_DELAY_ACCT
+> > +       select PERF_EVENTS 
+> 
+> Do you really want to make that an unconditional part of KVM? I know we
+> can't currently build x86 without perf due to that hw breakpoint
+> trainwreck, but people were actually wanting to solve that.
+> 
+I am fine either way (the only thing is that I can't check that I can
+build kvm without pmu right now). But I doubt that there will be many
+KVM deployment without perf enabled and making it optional will increase
+test matrix. KVM has pretty extensive list of selects already for that
+reason. I let maintainers to decide on this.
 
-I actually thought of adding that (in fact fork has it and it's more
-likely to be beneficial for fork than for mremap I suspect), but this
-adds a branch to the fast path for a case that shouldn't normally
-materialize. So I don't think it's worth adding it as I expect it to
-add overhead in average.
+--
+			Gleb.
