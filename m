@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932757Ab1KGRSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:18:50 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:47985 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab1KGRSt (ORCPT
+	id S932867Ab1KGRTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:19:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:32951 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755836Ab1KGRTc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:18:49 -0500
-Date: Mon, 7 Nov 2011 17:18:45 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Lars =?iso-8859-1?Q?Nood=E9n?= <lars.nooden@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, guenter.roeck@ericsson.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: Hardware running hot and without the fan
-Message-ID: <20111107171845.GB23257@srcf.ucam.org>
-References: <4EB1108F.6070009@gmail.com>
- <20111103020301.GA22333@ericsson.com>
- <4EB250FD.3070000@gmail.com>
- <20111103134902.GA26121@ericsson.com>
- <4EB2A46B.8080600@gmail.com>
- <1320332801.2309.60.camel@groeck-laptop>
- <4EB2B0FD.309@gmail.com>
- <20111103174635.GA12229@polaris.bitmath.org>
- <4EB3BE15.3070009@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EB3BE15.3070009@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 7 Nov 2011 12:19:32 -0500
+Subject: Re: [BUG] kernel 3.1.0 possible circular locking dependency detected
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Knut Petersen <Knut_Petersen@t-online.de>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeff Mahoney <jeffm@suse.com>
+Date: Mon, 07 Nov 2011 18:18:27 +0100
+In-Reply-To: <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
+References: <4EAE5DE3.2020205@t-online.de>
+	 <CA+55aFzuWD1xRhQNLfe0ey_-1vACwY=ofD5PXSzL_5UeDRbk8g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320686307.17809.33.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 04, 2011 at 12:27:33PM +0200, Lars Noodén wrote:
+On Mon, 2011-10-31 at 08:08 -0700, Linus Torvalds wrote:
+> [ Added a few more people to the cc ]
+> 
+> On Mon, Oct 31, 2011 at 1:35 AM, Knut Petersen
+> <Knut_Petersen@t-online.de> wrote:
+> > After a " rm -r /verybigdir" (about 12G on a 25G reiserfs 3.6partition)
+> > I found the following report about a circular locking dependency in
+> > kernel 3.1.0
+> 
+> Heh. There is even a comment about the ordering violation:
+> 
+> /* We use I_MUTEX_CHILD here to silence lockdep. It's safe because xattr
+>  * mutation ops aren't called during rename or splace, which are the
+>  * only other users of I_MUTEX_CHILD. It violates the ordering, but that's
+>  * better than allocating another subclass just for this code. */
+> 
+> and apparently the comment is wrong: we *do* end up looking up xattrs
+> during splice, due to the security_inode_need_killpriv() thing.
+> 
+> So I think this needs a suid (or sgid) file that has xattrs and is removed.
+> 
+> That said, I suspect this is a false positive, because the actual
+> unlink can never happen while somebody is splicing to/from the same
+> file at the same time (because then the iput wouldn't be the last one
+> for the inode, and the file removal would be delayed until the file
+> has been closed for the last time).
+> 
+> But the hacky use of "I_MUTEX_CHILD" is basically not the proper way
+> to silence the lockdep splat.
+> 
+> Anybody?
 
-> I think there are two problems.  One is the GPU or some other part
-> running hot.  The other is the sensors/fans issue: the fans don't turn
-> on even when the system is hot.  Both problems are evident on two
-> different models of hardware, the notebook is a MacBookPro8,2 and the
-> desktop is a Macmini3,1.
-
-Fan control is under the control of the SMC. If fans aren't working then 
-either we're supposed to be feeding data into the SMC or there's a 
-hardware problem of some description.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I_MUTEX_XATTR sounds like the right nesting for something called
+xattr_*() but then, what do I know about filesystems.. Jeff Mahoney
+wrote this, Jeff any clue?
