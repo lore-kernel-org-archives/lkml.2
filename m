@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab1KGMEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:04:49 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:21062 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab1KGMEs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:04:48 -0500
-Date: Mon, 7 Nov 2011 13:04:32 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-Cc: balbi@ti.com, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [PATCH V2] drivers/i2c/busses/i2c-at91.c: fix brokeness
-Message-ID: <20111107130432.3309ffd6@endymion.delvare>
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B38B2AB@wm021.weinmann.com>
-References: <alpine.DEB.2.00.1111071019560.21431@gatekeeper.vosshq.de>
-	<20111107094701.GF4265@legolas.emea.dhcp.ti.com>
-	<EF2E73589CA71846A15D0B2CDF79505D087B38B21C@wm021.weinmann.com>
-	<20111107100446.GG4265@legolas.emea.dhcp.ti.com>
-	<EF2E73589CA71846A15D0B2CDF79505D087B38B2AB@wm021.weinmann.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754930Ab1KGMJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:09:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752418Ab1KGMJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 07:09:41 -0500
+Message-ID: <4EB7CA52.5050409@redhat.com>
+Date: Mon, 07 Nov 2011 13:08:50 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Pekka Enberg <penberg@kernel.org>, Alexander Graf <agraf@suse.de>,
+        Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        =?ISO-8859-1?Q?Am=E9rico_?= =?ISO-8859-1?Q?Wang?= 
+	<xiyou.wangcong@gmail.com>,
+        Blue Swirl <blauwirbel@gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+References: <1320543320-32728-1-git-send-email-agraf@suse.de> <CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com> <4EB66036.4080102@redhat.com> <1320577728.1428.73.camel@jaguar> <4EB67486.1070105@redhat.com> <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com> <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de> <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com> <4EB7B1A9.9000409@redhat.com> <alpine.LFD.2.02.1111071333350.2815@tux.localdomain>
+In-Reply-To: <alpine.LFD.2.02.1111071333350.2815@tux.localdomain>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Nov 2011 12:06:52 +0100, Voss, Nikolaus wrote:
-> > > > IMHO, you should split this patch into three or more smaller patches.
-> > > > You're doing lots of different things in one commit and it'll be a
-> > > > pain to bisect should this cause any issues to anyone.
-> > >
-> > > I didn't split the patch because it is virtually a complete rewrite.
-> > > Due to the severe limitations of the old driver, I think it should
-> > > replace the old driver.
-> > 
-> > The final decision is up to Ben and/or Jean but I think we should always have
-> > incremental patches, not sure if we should allow big patches for the reasons
-> > above.
+On 11/07/11 12:34, Pekka Enberg wrote:
+> On Mon, 7 Nov 2011, Gerd Hoffmann wrote:
+>>> It's not just about code, it's as much about culture and development
+>>> process.
+>>
+>> Indeed.  The BSDs have both kernel and the base system in a single
+>> repository.  There are probably good reasons for (and against) it.
+>>
+>> In Linux we don't have that culture.  No tool (except perf) lives in the
+>> kernel repo.  I fail to see why kvm-tool is that much different from
+>> udev, util-linux, iproute, filesystem tools, that it should be included.
+> 
+> You seem to think perf is an exception - I think it's going to be the
+> future norm for userspace components that are very close to the kernel.
 
-The final call is obviously to Ben, not me, as this driver falls under
-his jurisdiction. But for what it's worth, I consider the small-steps
-rule void when it comes to fixing a plain broken driver by almost fully
-rewriting it. The reviewer should really review the resulting code
-rather than the patch. If it makes everybody happier, then killing the
-old code completely first is certainly an option.
+perf *is* an exception today.
 
--- 
-Jean Delvare
+It might make sense to change that.  But IMHO it only makes sense if
+there is a really broad agreement on it and other core stuff moves into
+the kernel too.  Then you'll be able to get advantages out of it.  For
+example standardizing the process to create an initramfs (using the
+userspace tools shipped with the kernel) instead of having each distro
+creating its own way.
+
+I somehow doubt we'll see such an broad agreement though.  Most people
+seem to be happy with the current model.  There is a reason why the
+klibc + early-userspace-in-kernel-tree project died in the end ...
+
+cheers,
+  Gerd
