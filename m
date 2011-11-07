@@ -1,204 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282Ab1KGJFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 04:05:53 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:45319 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325Ab1KGJFv (ORCPT
+	id S1752597Ab1KGJLu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 04:11:50 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59566 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab1KGJLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 04:05:51 -0500
-Date: Mon, 07 Nov 2011 17:01:26 +0800
-From: "canquan.shen" <shencanquan@huawei.com>
-Subject: [PATCH v5] acpi: Fix CPU hot removal problem
-X-Originating-IP: [10.166.80.105]
-To: "lenb@kernel.org" <lenb@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "xiaowei.yang@huawei.com" <xiaowei.yang@huawei.com>,
-        hanweidong <hanweidong@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        james.chenjiabo@huawei.com, wuchangyi@huawei.com
-Message-id: <4EB79E66.9090508@huawei.com>
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_zCTRcCZz619Q6PJ+48pcvg)"
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:7.0.1) Gecko/20110929
- Thunderbird/7.0.1
-X-CFilter-Loop: Reflected
+	Mon, 7 Nov 2011 04:11:48 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: dave@gnu.org
+Cc: Hugh Dickins <hughd@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+In-Reply-To: Your message of "Sun, 06 Nov 2011 18:15:01 -0300."
+             <1320614101.3226.5.camel@offbook>
+From: Valdis.Kletnieks@vt.edu
+References: <1320614101.3226.5.camel@offbook>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1320657093_7081P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 07 Nov 2011 04:11:33 -0500
+Message-ID: <25866.1320657093@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020206.4EB7A0CB.00E1,ss=1,fgs=0,
+	ip=71.62.120.57,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1320657093_7081P
+Content-Type: text/plain; charset=us-ascii
 
---Boundary_(ID_zCTRcCZz619Q6PJ+48pcvg)
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
+On Sun, 06 Nov 2011 18:15:01 -0300, Davidlohr Bueso said:
 
-We run linux as a guest in Xen environment. When we used the xen tools 
-(xm vcpu-set <n>) to hot add and remove vcpu to and from the guest, we 
-encountered the failure on vcpu removal. We found the reason is that it 
-did't go to really remove cpu in the cpu removal code path.
+> @@ -1159,7 +1159,12 @@ shmem_write_begin(struct file *file, struct address_space *mapping,
+>  			struct page **pagep, void **fsdata)
 
-This patch adds acpi_bus_hot_remove_device in 
-acpi_process_hotplug_notify to fix this issue. With this patch, it works 
-fine for us.
+> +	if (atomic_long_read(&user->shmem_bytes) + len > 
+> +	    rlimit(RLIMIT_TMPFSQUOTA))
+> +		return -ENOSPC;
 
-Signed-off-by: Canquan Shen <shencanquan@huawei.com>
----
-  drivers/acpi/processor_driver.c |   13 +------------
-  drivers/acpi/scan.c             |    4 ++--
-  include/acpi/acpi_bus.h         |    1 +
-  3 files changed, 4 insertions(+), 14 deletions(-)
+Is this a per-process or per-user limit?  If it's per-process, it doesn't
+really do much good, because a user can use multiple processes to over-run the
+limit (either intentionally or accidentally).
 
-diff --git a/drivers/acpi/processor_driver.c 
-b/drivers/acpi/processor_driver.c
-index a4e0f1b..8429688 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -665,18 +665,7 @@ static void 
-acpi_processor_hotplug_notify(acpi_handle handle,
-      case ACPI_NOTIFY_EJECT_REQUEST:
-          ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-                    "received ACPI_NOTIFY_EJECT_REQUEST\n"));
--
--        if (acpi_bus_get_device(handle, &device)) {
--            printk(KERN_ERR PREFIX
--                    "Device don't exist, dropping EJECT\n");
--            break;
--        }
--        pr = acpi_driver_data(device);
--        if (!pr) {
--            printk(KERN_ERR PREFIX
--                    "Driver data is NULL, dropping EJECT\n");
--            return;
--        }
-+        acpi_bus_hot_remove_device(handle);
-          break;
-      default:
-          ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 449c556..6dfb4a7 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -83,7 +83,7 @@ acpi_device_modalias_show(struct device *dev, struct 
-device_attribute *attr, cha
-  }
-  static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+> @@ -1169,10 +1174,12 @@ shmem_write_end(struct file *file, struct address_space *mapping,
+>  			struct page *page, void *fsdata)
 
--static void acpi_bus_hot_remove_device(void *context)
-+void acpi_bus_hot_remove_device(void *context)
-  {
-      struct acpi_device *device;
-      acpi_handle handle = context;
-@@ -129,7 +129,7 @@ static void acpi_bus_hot_remove_device(void *context)
-       * TBD: _EJD support.
-       */
-      status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
--    if (ACPI_FAILURE(status))
-+    if (ACPI_FAILURE(status) && (status != AE_NOT_FOUND))
-          printk(KERN_WARNING PREFIX
-                  "Eject device failed\n");
+> +	if (pos + copied > inode->i_size) {
+>  		i_size_write(inode, pos + copied);
+> +		atomic_long_add(copied, &user->shmem_bytes);
+> +	}
 
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 6cd5b64..756e8d1 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -342,6 +342,7 @@ int acpi_match_device_ids(struct acpi_device *device,
-                const struct acpi_device_id *ids);
-  int acpi_create_dir(struct acpi_device *);
-  void acpi_remove_dir(struct acpi_device *);
-+void acpi_bus_hot_remove_device(void *context);
+If this is per-user, it's racy with shmem_write_begin() - two processes can hit
+the write_begin(), be under quota by (say) 1M, but by the time they both
+complete the user is 1M over the quota.
 
-  /*
-   * Bind physical devices with ACPI devices
--- 
-1.7.6.msysgit.0
+>  @@ -1535,12 +1542,15 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+> +	struct user_struct *user = current_user();
+> +	atomic_long_sub(inode->i_size, &user->shmem_bytes);
 
---Boundary_(ID_zCTRcCZz619Q6PJ+48pcvg)
-Content-type: text/plain; name=0001-acpi-Fix-CPU-hot-removal-problem.patch
-Content-transfer-encoding: 7BIT
-Content-disposition: attachment;
- filename=0001-acpi-Fix-CPU-hot-removal-problem.patch
-
->From e7795527be2e9b334dc5f3ac9fdba9eaac62a33b Mon Sep 17 00:00:00 2001
-From: Shen canquan <shencanquan@huawei.com>
-Date: Sat, 24 Sep 2011 14:00:52 +0800
-Subject: [PATCH] acpi: Fix CPU hot removal problem
-
-We run linux as a guest in Xen environment. When we used the xen tools (xm
-vcpu-set <n>) to hot add and remove vcpu to and from the guest, we
-encountered the failure on vcpu removal. We found the reason is that it
-did't go to really remove cpu in the cpu removal code path.
-
-This patch adds acpi_bus_hot_remove_device in acpi_process_hotplug_notify to
-fix this issue. With this patch, it works fine for us.
-
-Signed-off-by: Canquan Shen <shencanquan@huawei.com>
----
- drivers/acpi/processor_driver.c |   13 +------------
- drivers/acpi/scan.c             |    4 ++--
- include/acpi/acpi_bus.h         |    1 +
- 3 files changed, 4 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index a4e0f1b..8429688 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -665,18 +665,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
- 	case ACPI_NOTIFY_EJECT_REQUEST:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
--
--		if (acpi_bus_get_device(handle, &device)) {
--			printk(KERN_ERR PREFIX
--				    "Device don't exist, dropping EJECT\n");
--			break;
--		}
--		pr = acpi_driver_data(device);
--		if (!pr) {
--			printk(KERN_ERR PREFIX
--				    "Driver data is NULL, dropping EJECT\n");
--			return;
--		}
-+		acpi_bus_hot_remove_device(handle);
- 		break;
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 449c556..6dfb4a7 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -83,7 +83,7 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
- }
- static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
- 
--static void acpi_bus_hot_remove_device(void *context)
-+void acpi_bus_hot_remove_device(void *context)
- {
- 	struct acpi_device *device;
- 	acpi_handle handle = context;
-@@ -129,7 +129,7 @@ static void acpi_bus_hot_remove_device(void *context)
- 	 * TBD: _EJD support.
- 	 */
- 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status) && (status != AE_NOT_FOUND))
- 		printk(KERN_WARNING PREFIX
- 				"Eject device failed\n");
- 
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index 6cd5b64..756e8d1 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -342,6 +342,7 @@ int acpi_match_device_ids(struct acpi_device *device,
- 			  const struct acpi_device_id *ids);
- int acpi_create_dir(struct acpi_device *);
- void acpi_remove_dir(struct acpi_device *);
-+void acpi_bus_hot_remove_device(void *context);
- 
- /*
-  * Bind physical devices with ACPI devices
--- 
-1.7.6.msysgit.0
+What happens here if user 'fred' creates a file on a tmpfs, and then logs out so he has
+no processes running, and then root does a 'find tmpfs -user fred -exec rm {} \;' to clean up?
+We just decremented root's quota, not fred's....
 
 
---Boundary_(ID_zCTRcCZz619Q6PJ+48pcvg)--
+--==_Exmh_1320657093_7081P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOt6DFcC3lWbTT17ARAvgcAKCfOLpiqvy4o2wOLlDpgfbbXKPDtgCg+i9l
+P1HySIiEz+1LnLj38+VVp/k=
+=gCbY
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1320657093_7081P--
+
