@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1KGTbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:31:21 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38569 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515Ab1KGTbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:31:19 -0500
-Date: Mon, 7 Nov 2011 23:29:15 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111107192915.GA4690@albatros>
-References: <20111107174522.GA2317@albatros>
- <9718.1320689192@turing-police.cc.vt.edu>
- <20111107190112.GA3732@albatros>
- <4EB82F08.8060209@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB82F08.8060209@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753449Ab1KGTfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:35:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24059 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab1KGTfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 14:35:23 -0500
+Message-ID: <1320694510.10093.23.camel@localhost>
+Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
+From: Eric Paris <eparis@redhat.com>
+To: Serge Hallyn <serge@hallyn.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
+        ebiederm@xmission.com, dhowells@redhat.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Date: Mon, 07 Nov 2011 14:35:10 -0500
+In-Reply-To: <1320445482-8459-7-git-send-email-serge@hallyn.com>
+References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+	 <1320445482-8459-7-git-send-email-serge@hallyn.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 11:18 -0800, H. Peter Anvin wrote:
-> On 11/07/2011 11:01 AM, Vasiliy Kulikov wrote:
-> > 
-> > What's wrong with old good DAC?  You can create a group "sysinfo", do
-> > "chown sysinfo /proc/interrupts", and add the permitted users to the
-> > group.  If you need to give different access levels to different interrupts,
-> > you need another /proc/interrupts design, it does nothing with DAC vs. LSM.
-> > 
+On Fri, 2011-11-04 at 22:24 +0000, Serge Hallyn wrote:
+> From: Serge E. Hallyn <serge.hallyn@canonical.com>
 > 
-> I would like to propose that we add a mount option to procfs, and
-> possibly sysfs, called, say, admingrp.
+> cap_netlink_recv() was granting privilege if a capability is in
+> current_cap(), regardless of the user namespace.  Fix that by
+> targeting the capability check against the user namespace which
+> owns the skb.
+> 
+> Caller passes the user ns down because sock_net is static inline defined in
+> net/sock.h, which we'd rather not #include at the cap_netlink_recv function.
 
-Similar proposals:
+This is wrong at least in relation to audit.  I don't know the other
+code well enough to know if I think it's ok there.  Lets say I have
+(CAP_SYS_ADMIN | CAP_SETUID | CAP_SETGID) and I create a new task with
+CLONE_NEWNAME.  This task then immediately does the needful to remove
+all audit rules (which supposedly requires CAP_AUDIT_CONTROL).  That's
+going to succeed because the task is init in it's namespace, aka:
 
-(procfs for /proc/$PID/* permissions, sorry about different threads)
-https://lkml.org/lkml/2011/6/15/172
-https://lkml.org/lkml/2011/6/15/174
-https://lkml.org/lkml/2011/6/15/173
-https://lkml.org/lkml/2011/6/15/177
-https://lkml.org/lkml/2011/6/15/175
-https://lkml.org/lkml/2011/6/15/176
+        /* The creator of the user namespace has all caps. */
+        if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
+                return 0;
 
-(change uid/gid for newly created sysfs objects)
-https://lkml.org/lkml/2011/5/18/272
+But it just screwed with a global resource.  aka audit.  I don't know
+the meaning of these others, but it seems to me probably most or all of
+them should be against the init_user_ns, not the namespace the skb came
+from....
 
+What am I missing?
 
-As to procfs, I see no real need of adding mode/group mount option for
-global procfs files (/proc/interrupts, /proc/stat, etc.) - it can be
-done by distro specific init scripts (chown+chmod).  I don't mind
-against such an option for the convenience, though.
+-Eric
 
-
-> The current Linux trend seems to be do instead force those users to
-> become root constantly, which is *not* helping the situation.
-
-Agreed.
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
