@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab1KGSi7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 13:38:59 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56092 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751020Ab1KGSi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 13:38:58 -0500
-Date: Mon, 7 Nov 2011 18:39:50 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Race condition in tty buffer's function
- flush_to_ldisc().
-Message-ID: <20111107183950.4ec7a959@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EB822C7.6070200@ilyx.ru>
-References: <4EB7BD9A.7070600@ilyx.ru>
-	<20111107115802.23201d45@bob.linux.org.uk>
-	<4EB7CCFF.5090304@ilyx.ru>
-	<20111107130643.07e84fca@bob.linux.org.uk>
-	<4EB7E0C6.7050909@ilyx.ru>
-	<20111107145005.68ca1050@bob.linux.org.uk>
-	<4EB822C7.6070200@ilyx.ru>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751344Ab1KGSjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 13:39:17 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36306 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab1KGSjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 13:39:15 -0500
+Date: Mon, 7 Nov 2011 19:37:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, arnaldo.melo@gmail.com
+Subject: Re: [GIT PULL 0/2] perf/core fixes
+Message-ID: <20111107183734.GA23663@elte.hu>
+References: <1320340306-24062-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320340306-24062-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nested call flush_to_ldisc() happened on different CPU only. It happens because
-> one side pty call "schedule_work(&tty->buf.work)" on one CPU from "tty_flip_buffer_push()",
-> the other side call "schedule_work(&tty->buf.work)" from n_tty's layer from "n_tty_set_room()"
-> on different CPU. It also can happen in interrupt if interrupt handle on 
-> different CPU. Schedule_work() schedule work on CPU which was called(IMHO).
 
-But the two sides are different ttys so that specific case shouldn't
-matter.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Something is clearly happening because you trigger the trace but I don't
-see why the paths you indicate cause it ? If you make mthread a cpu
-struct variable and add a WARN_ON(1) in the error case do you get any
-useful traces ?
+> Hi Ingo,
+> 
+>         Please consider pulling from:
+> 
+> git://github.com/acmel/linux.git perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (2):
+>   perf top tui: Don't recalc column widths considering just the first page
+>   perf top: Fix live annotation in the --stdio interface
+> 
+>  tools/perf/builtin-top.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 
-Alan
+Pulled into tip:perf/urgent, thanks a lot Arnaldo!
+
+	Ingo
