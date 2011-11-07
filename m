@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab1KGNQm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 08:16:42 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42050 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab1KGNQk convert rfc822-to-8bit (ORCPT
+	id S1755593Ab1KGNRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 08:17:07 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63524 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab1KGNRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 08:16:40 -0500
+	Mon, 7 Nov 2011 08:17:05 -0500
+Message-ID: <4EB7DA4C.3080504@codemonkey.ws>
+Date: Mon, 07 Nov 2011 07:17:00 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
 MIME-Version: 1.0
-In-Reply-To: <20111101082653.4fa844e4@bike.lwn.net>
-References: <CANudz+unARaENw50p2iL_Ur1YQj0f=9Ndev0OyZ=790xDjbTCw@mail.gmail.com>
-	<20111101082653.4fa844e4@bike.lwn.net>
-Date: Mon, 7 Nov 2011 21:16:39 +0800
-Message-ID: <CANudz+soE9ax7668gh2TRxfnvPoAapKunwsXCc-T3ff0GAL6zg@mail.gmail.com>
-Subject: Re: some questions about block and scatterlist
-From: loody <miloody@gmail.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: kernelnewbies@kernelnewbies.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Ingo Molnar <mingo@elte.hu>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>, Blue Swirl <blauwirbel@gmail.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        Alexander Graf <agraf@suse.de>, Pekka Enberg <penberg@kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Gerd Hoffmann <kraxel@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test
+ kernels
+References: <4EB67486.1070105@redhat.com>	<CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>	<4EB67D17.7000701@redhat.com>	<CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>	<4EB680D9.2070706@redhat.com>	<CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>	<877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>	<CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>	<4EB7B1A9.9000409@redhat.com>	<alpine.LFD.2.02.1111071333350.2815@tux.localdomain> <20111107115734.GA30222@elte.hu>
+In-Reply-To: <20111107115734.GA30222@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jonathan:
-2011/11/1 Jonathan Corbet <corbet@lwn.net>:
-> On Tue, 1 Nov 2011 19:32:38 +0900
-> loody <miloody@gmail.com> wrote:
+On 11/07/2011 05:57 AM, Ingo Molnar wrote:
 >
->> My questions are below:
+> * Pekka Enberg<penberg@cs.helsinki.fi>  wrote:
 >
-> As are some answers :)
-That will be great appreciated :)
+>> On Mon, 7 Nov 2011, Gerd Hoffmann wrote:
+>>>> It's not just about code, it's as much about culture and development process.
+>>>
+>>> Indeed.  The BSDs have both kernel and the base system in a single
+>>> repository.  There are probably good reasons for (and against) it.
+>>>
+>>> In Linux we don't have that culture.  No tool (except perf) lives
+>>> in the kernel repo.  I fail to see why kvm-tool is that much
+>>> different from udev, util-linux, iproute, filesystem tools, that
+>>> it should be included.
+>>
+>> You seem to think perf is an exception - I think it's going to be
+>> the future norm for userspace components that are very close to the
+>> kernel. That's in fact what Ingo was arguing for when he suggested
+>> QEMU to be merged to the kernel tree.
 >
->> 1. Are all struct page 32-bit aligned?
->
-> Certainly, I would expect any structures found in the system memory map to
-> be so aligned, yes.  If you've created an arbitrary one elsewhere I'm only
-> 99% sure it would be.
->
->> If so, where is this part of code for handleing struct page be 32-bits aligned?
->
-> Note that the size of struct page is carefully considered, and that they
-> are packed as densely as possible, both externally and internally.  No
-> lesser alignment would make sense.
-I found kernel stealing LSB of page_link to put additional
-information, such as sg_is_chain and sg_is_last.
+> Yep, and the answer i got from the Qemu folks when i suggested that
+> merge was a polite "buzz off", along the lines of: "We don't want to
+> do that, but feel free to write your own tool, leave Qemu alone."
 
-That means the address of all pages have to be at least 4byte alignment.
-But I didn't see any additional attribute added at the end of struct
-or any precaution to take care this.
+At least it was polite :-)
 
 >
->> 2. if the page of scatterlist is located at high mem, how does
->> dma_map_sg mapping the virtual address?
+> Now that people have done exactly that some Qemu folks not only have
+> changed their objection from "write your own tool" to "erm, write
+> your own tool but do it the way *we* prefer you to do it" - they also
+> started contributing *against* the KVM tool with predictable, once
+> every 3 months objections against its upstream merge...
 >
-> That depends on a vast array of things.  What are the addressing
-> capabilities of the target device?  Is there an IOMMU involved?
-No, my device has no iommu. and I found where kernel handle this part.
->
->> 3. in blk_rq_map_sg, it seems we only copy bvec->bv_page to sg->page_link
->>    why don't we add dma_address in bvec and send the bio directly to
->> the lower level driver?
->
-> That would be a bit of a mixing of the layers, if nothing else.
->
->> 4. if I plug a USB HD with 3 partitions, will there be 3 request_queues?
->
-> No, there is one request queue for the underlying device.
-I study some block devices and it seems we use blk_init_queue for
-getting a request_queue, if we want block layer handle requests and
-coalesces adjacent requests.
-what happen and lower driver need to do if we don't use blk_init_queue
-to register a request_queue?
+> That's not very nice and not very constructive.
 
->
-> That's an interesting mix of questions.  If you have more in the future,
-> you'll likely get more (and more clueful) responses if they're accompanied
-> by the code you're working on.
->
-> Thanks,
->
-> jon
+I think it's fair to have an objection to upstream merge but I think these 
+threads are not terribly constructive right now as it's just rehashing the same 
+arguments.
 
--- 
+I've been thinking about the idea of merging more userspace tools into the 
+kernel.  I understand the basic reasoning.  The kernel has a strong, established 
+development process.  It has good infrastructure and a robust hierarchy of 
+maintainers.
+
+Good infrastructure can make a big difference to the success of a project. 
+Expanding the kernel infrastructure to more projects does seem like an obvious 
+thing to do when you think about it in that way.
+
+The approach other projects have taken to this is to form a formal incubator. 
+Apache is a good example of this.  There are clear (written) rules about what it 
+takes for a project to join.  Once a project joins, there's a clear governance 
+structure.  The project gets to consume all of the Apache infrastructure resources.
+
+Other foundations have a release cadence to ensure that multiple components form 
+a cohesive individual release (oVirt).
+
+I think you are trying to do this in a more organic way by just merging things 
+into the main git tree.  Have you thought about creating a more formal kernel 
+incubator program?
+
 Regards,
+
+Anthony Liguori
