@@ -1,43 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1KGUWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:22:10 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55533 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab1KGUWJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:22:09 -0500
+	id S1753621Ab1KGUXk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:23:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40787 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421Ab1KGUXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 15:23:39 -0500
+Date: Mon, 7 Nov 2011 12:17:14 -0800
+From: Greg KH <gregkh@suse.de>
+To: Dave Jones <davej@redhat.com>, Borislav Petkov <bp@amd64.org>,
+        x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BAD APICID ?
+Message-ID: <20111107201714.GA14185@suse.de>
+References: <20111107173948.GA1344@redhat.com>
+ <20111107175402.GA3384@gere.osrc.amd.com>
+ <20111107180950.GA6411@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CADMYwHwikr+UYh6t2trpzGE8Qwy8JMxqDHnHadv33+8KJT+hcw@mail.gmail.com>
-References: <20111107173318.12d4a5ce67a522b000d4a78c@canb.auug.org.au>
- <20111107191200.GH30282@windriver.com> <CAP=VYLqp1KcsE3UMt2-xuMp-gwtyLWfwdNmzxBvZZ=bZT_6E2w@mail.gmail.com>
- <CADMYwHwikr+UYh6t2trpzGE8Qwy8JMxqDHnHadv33+8KJT+hcw@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Mon, 7 Nov 2011 22:21:47 +0200
-X-Google-Sender-Auth: O5MhJppBXfbGKhJAzzPXekDBJOc
-Message-ID: <CADMYwHzCw5c25DAqw4dE7mKf8yMfMdH29quSTBDQhiv3WJ0G6Q@mail.gmail.com>
-Subject: Re: [GIT PULL] Left overs from the module.h split merge
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Axel Lin <axel.lin@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111107180950.GA6411@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 9:38 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Mon, Nov 7, 2011 at 9:26 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> For completeness, the above also should have listed including this:
->>
->> Axel Lin (1):
->>      hwspinlock/u8500: include linux/module.h
->
-> This one is already queued up in hwspinlock fixes together with 2
-> other fixes from Axel.
+On Mon, Nov 07, 2011 at 01:09:50PM -0500, Dave Jones wrote:
+> On Mon, Nov 07, 2011 at 06:54:02PM +0100, Borislav Petkov wrote:
+>  > On Mon, Nov 07, 2011 at 12:39:48PM -0500, Dave Jones wrote:
+>  > > We got a report from a Fedora user hitting a WARN_ON in the apic setup code.
+>  > > 
+>  > > Here..
+>  > > 
+>  > > 1230 #ifdef CONFIG_X86_32
+>  > > 1231         /*
+>  > > 1232          * APIC LDR is initialized.  If logical_apicid mapping was
+>  > > 1233          * initialized during get_smp_config(), make sure it matches the
+>  > > 1234          * actual value.
+>  > > 1235          */
+>  > > 1236         i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+>  > > 1237         WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
+>  > > 1238         /* always use the value from LDR */
+>  > > 1239         early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+>  > > 1240                 logical_smp_processor_id();
+>  > > 
+>  > > The full report is at https://bugzilla.redhat.com/show_bug.cgi?id=743930
+>  > > 
+>  > > Report is against our 3.0 builds, but that code look unchanged in 3.1 too,
+>  > > and even in current Linus head.
+>  > > 
+>  > > Any thoughts on what could cause this ?
+>  > 
+>  > Already fixed upstream: 838312be46f3abfbdc175f81c3e54a857994476d
+>  > 
+>  > Here's the whole thread: http://lkml.org/lkml/2011/10/14/231
+>  > 
+>  > HTH.
+> 
+> ah, excellent, thanks.
+> That seems to have not hit stable, even though it was cc'd. Greg ?
 
-Ok, I've dropped it from hwspinlock fixes, so feel free to push it via
-your tree. This gives us the same result with less emails :)
+It's already been queued up for the next stable release, which should be
+coming out later this week once the firehose of the 3.2 merge window
+slows down.
+
+thanks,
+
+greg k-h
