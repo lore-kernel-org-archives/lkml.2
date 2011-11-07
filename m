@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753319Ab1KGTMT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:12:19 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:55187 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753212Ab1KGTMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:12:17 -0500
-Date: Mon, 7 Nov 2011 14:12:16 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: Tim Vlaar <Tvlaar@ptgrey.com>, Greg KH <greg@kroah.com>,
-        Markus Rechberger <mrechberger@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-In-Reply-To: <20111107185255.GA9005@xanatos>
-Message-ID: <Pine.LNX.4.44L0.1111071403290.2004-100000@iolanthe.rowland.org>
+	id S1753331Ab1KGTSy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 14:18:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44506 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491Ab1KGTSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 14:18:53 -0500
+Message-ID: <4EB82F08.8060209@zytor.com>
+Date: Mon, 07 Nov 2011 11:18:32 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Vasiliy Kulikov <segoon@openwall.com>
+CC: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH] proc: restrict access to /proc/interrupts
+References: <20111107174522.GA2317@albatros> <9718.1320689192@turing-police.cc.vt.edu> <20111107190112.GA3732@albatros>
+In-Reply-To: <20111107190112.GA3732@albatros>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Nov 2011, Sarah Sharp wrote:
-
-> On Fri, Oct 14, 2011 at 08:33:29AM -0600, Greg KH wrote:
-> > On Fri, Oct 14, 2011 at 10:05:41AM -0400, Alan Stern wrote:
-> > > No, a much better approach is to remove all limits on individual
-> > > transfer sizes and instead have a global limit on the total amount of
-> > > all usbfs buffers in use at any time.  Maybe something like 16 MB; at 
-> > > SuperSpeed, that's about about 30 ms worth of data.
-> > 
-> > That sounds quite reasonable.
+On 11/07/2011 11:01 AM, Vasiliy Kulikov wrote:
 > 
-> Alan, won't this global limit on the usbfs URB buffer size effect
-> userspace drivers that are currently allocating large amounts of
-> buffers, but still respecting individual buffer limit of 16KB?  It seems
-> like the patch has the potential to break userspace drivers.
+> What's wrong with old good DAC?  You can create a group "sysinfo", do
+> "chown sysinfo /proc/interrupts", and add the permitted users to the
+> group.  If you need to give different access levels to different interrupts,
+> you need another /proc/interrupts design, it does nothing with DAC vs. LSM.
+> 
 
-It might indeed.  A further enhancement would replace that 16-MB global
-constant with a sysfs attribute (a writable module parameter for
-usbcore).  Do you have any better suggestions?
+I would like to propose that we add a mount option to procfs, and
+possibly sysfs, called, say, admingrp.  These kinds of files then get
+restricted to the admingrp (defaulting to gid 0 if no admingrp is
+provided).  Historically on Unix there has been a group of people
+(usually "adm", but sometimes "log") who are allowed to read (but not
+write) the log files, which also contains potentially sensitive information.
 
-> I think that Point Grey's USB 3.0 webcam will be attempting to queue a
-> series of bulk URBs that will be bigger than your 16MB global limit.
+The current Linux trend seems to be do instead force those users to
+become root constantly, which is *not* helping the situation.
 
-For SuperSpeed, 16 MB is rather on the low side.  For high speed it
-amounts to about 1/3-second worth of data, which arguably is also a bit
-low.  Increasing the default is easy enough, but the best choice isn't
-obvious.
-
-Alan Stern
-
+	-hpa
