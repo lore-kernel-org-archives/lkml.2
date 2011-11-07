@@ -1,85 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab1KGMfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:35:41 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39074 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753835Ab1KGMfk (ORCPT
+	id S1755461Ab1KGMfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:35:53 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57061 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753835Ab1KGMfw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:35:40 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] x86 Microcode: Fix the failure path of microcode update
- driver init code
-To: tigran@aivazian.fsnet.co.uk
-Cc: tglx@linutronix.de, bp@amd64.org, mingo@elte.hu, hpa@zytor.com,
-        andreas.herrmann3@amd.com, amd64-microcode@amd64.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 07 Nov 2011 18:05:32 +0530
-Message-ID: <20111107123530.12164.31227.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-x-cbid: 11110712-2674-0000-0000-0000011A4CC9
+	Mon, 7 Nov 2011 07:35:52 -0500
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: linux-kernel@vger.kernel.org, sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Date: Mon, 07 Nov 2011 13:34:39 +0100
+In-Reply-To: <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+	 <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320669279.18053.29.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The microcode update driver's initialization code does not handle failures
-correctly. This patch fixes this issue.
+On Fri, 2011-11-04 at 17:26 +0800, Yong Zhang wrote:
+> Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
+> lockdep_init_map() will clear all the struct. But it will break
+> lock_set_class()/lock_set_subclass(). A typical race condition
+> is like below:
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+This is a horridly ugly patch, why not simply revert that memset commit?
+I really can't see the point of that, and keeping the name/key pointers
+around (which can only be over-written with the same values, right?)
+would also cure the problem.
 
- arch/x86/kernel/microcode_core.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+Sadly the changelog is completely devoid of useful information (which is
+my own damn fault, I should never have accepted the patch in that form),
+so I can't actually comment on what it was supposed to fix.
 
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index f2d2a66..c7bdbfa 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -519,10 +519,8 @@ static int __init microcode_init(void)
- 
- 	microcode_pdev = platform_device_register_simple("microcode", -1,
- 							 NULL, 0);
--	if (IS_ERR(microcode_pdev)) {
--		microcode_dev_exit();
-+	if (IS_ERR(microcode_pdev))
- 		return PTR_ERR(microcode_pdev);
--	}
- 
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
-@@ -532,14 +530,12 @@ static int __init microcode_init(void)
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
- 
--	if (error) {
--		platform_device_unregister(microcode_pdev);
--		return error;
--	}
-+	if (error)
-+		goto out_pdev;
- 
- 	error = microcode_dev_init();
- 	if (error)
--		return error;
-+		goto out_sysdev_driver;
- 
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
-@@ -548,6 +544,13 @@ static int __init microcode_init(void)
- 		" <tigran@aivazian.fsnet.co.uk>, Peter Oruba\n");
- 
- 	return 0;
-+
-+out_sysdev_driver:
-+	sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
-+out_pdev:
-+	platform_device_unregister(microcode_pdev);
-+	return error;
-+
- }
- module_init(microcode_init);
- 
-
+Arguably kmemcheck is on crack or so since both name and key pointers
+should be in .data so there cannot be a leak by copying the thing over.
