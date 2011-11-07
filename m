@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab1KGCxS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 21:53:18 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:64444 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab1KGCxQ (ORCPT
+	id S1755167Ab1KGC7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 21:59:54 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:43223 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081Ab1KGC7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 21:53:16 -0500
-Date: Mon, 07 Nov 2011 02:53:02 +0000
-From: Qianhuibin <qianhuibin@huawei.com>
-Subject: kernel panic occurred when I do some operation about vlan.
-In-reply-to: <FF4D6E6C1D10244088EA772C65CB346E015159AF@szxeml528-mbs.china.huawei.com>
-X-Originating-IP: [10.166.82.152]
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-id: <FF4D6E6C1D10244088EA772C65CB346E01516A22@szxeml528-mbs.china.huawei.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-language: zh-CN
-Accept-Language: zh-CN, en-US
-Thread-topic: kernel panic occurred when I do some operation about vlan.
-Thread-index: Acyc97s4dyNSuTp0SeW7krROgbnwzgAAJfKh
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-CFilter-Loop: Reflected
-References: <FF4D6E6C1D10244088EA772C65CB346E015159AF@szxeml528-mbs.china.huawei.com>
+	Sun, 6 Nov 2011 21:59:52 -0500
+Subject: Re: [GIT PULL] target: Updates for v3.2-rc1 (round two)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@purestorage.com>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>
+In-Reply-To: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
+References: <1320437345.5859.94.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Nov 2011 18:59:38 -0800
+Message-ID: <1320634778.18988.10.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pA72rPSB011926
 
-Hi, all
-A kernel panic occurred when I do some operation about vlan.
+Hi Linus,
 
-The operation is as below:
-ifconfig eth2 up
-modprobe bonding
-modprobe 8021q
-ifconfig bond0 up
-ifenslave bond0 eth2
-vconfig add eth2 3300
-vconfig add bond0 33
-vconfig rem eth2.3300
+This is just a friendly reminder to please pull the two remaining
+target-pending branches (for-next and for-next-merge) for -rc1.
 
-the panic stack is as below:
-[<ffffffffa002f1c9>] panic_event+0x49/0x70 [ipmi_msghandler]
-[<ffffffff80378917>] notifier_call_chain+0x37/0x70
-[<ffffffff80372122>] panic+0xa2/0x195
-[<ffffffff80376ed8>] oops_end+0xd8/0x140
-[<ffffffff8001bea7>] no_context+0xf7/0x280
-[<ffffffff8001c1a5>] __bad_area_nosemaphore+0x175/0x250
-[<ffffffff80376318>] page_fault+0x28/0x30
-[<ffffffffa039dabd>] igb_vlan_rx_kill_vid+0x4d/0x100 [igb]
-[<ffffffffa044045f>] bond_vlan_rx_kill_vid+0x9f/0x290 [bonding]
-[<ffffffffa047e636>] unregister_vlan_dev+0x136/0x180 [8021q]
-[<ffffffffa047ed20>] vlan_ioctl_handler+0x170/0x3f0 [8021q]
-[<ffffffff802c1d3f>] sock_ioctl+0x21f/0x280
-[<ffffffff800e6d7f>] vfs_ioctl+0x2f/0xb0
-[<ffffffff800e726b>] do_vfs_ioctl+0x3cb/0x5a0
-[<ffffffff800e74e1>] sys_ioctl+0xa1/0xb0
-[<ffffffff80007388>] system_call_fastpath+0x16/0x1b
-[<00007f108a2b8bd7>] 0x7f108a2b8bd7
+Thank you,
 
-And the nic is as below:
-[root@localhost ~]# ethtool -i eth2
-driver: igb
-version: 3.0.6-k2
-firmware-version: 1.2-1
-bus-info: 0000:04:00.0
+--nab
 
-kernel version£º
-2.6.32.12-0.7 also happen in 2.6.32-131
+On Fri, 2011-11-04 at 13:09 -0700, Nicholas A. Bellinger wrote:
+> Hi Linus,
+> 
+> The following is the second round of target core updates for the v3.2
+> merge window.  Please go ahead and pull from:
+> 
+>    git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+> 
+> A separate PULL request for the ib_srpt fabric merge will be going out
+> shortly.
+> 
+> This series includes:
+> 
+> *) Bugfixes from Joern for TMR processing during LUN_RESET handling
+> *) Bugfix for tcm_loop to explictly clear control CDB READ payload
+> *) Conversion of TFO->check_stop_free to return status as a hint to
+>    LUN_RESET processing
+> *) Removal of TRANSPORT_FREE_CMD_INTR in favor of per fabric release
+>    workqueues
+> *) Initial pieces of generic active I/O shutdown tracking.  (Will be enabled
+>    for ib_srpt in a seperate patch)
+> *) Convert control CDB code to pass se_task into CDB emulation callback
+> *) Refactoring of CDB emulation from Christoph to universally use
+>    cmd->execute_task()
+> 
+> The generic active I/O shutdown bits and ->execute_task conversion got
+> in a bit late, but I still think are suitable v3.2 material.  Also, we
+> have one more bugfix+cleanup patch to remove legacy PYX_TRANSPORT_*
+> return code usage still being discussed, and will be sent out post merge
+> window to address existing breakage with se_cmd->scsi_sense_reason
+> assignment and errno return code conversion.
+> 
+> Thanks!
+> 
+> --nab
+> 
+> Christoph Hellwig (7):
+>   target: add back error handling in transport_complete_task
+>   target: split core_scsi2_emulate_crh
+>   target: split core_scsi3_emulate_pr
+>   target: pass the se_task to the CDB emulation callback
+>   target: refactor transport_emulate_control_cdb
+>   target: remove SCF_EMULATE_CDB_ASYNC
+>   target: use ->exectute_task for all CDB emulation
+> 
+> Dan Carpenter (1):
+>   target/pscsi: blk_make_request() returns an ERR_PTR()
+> 
+> Joern Engel (4):
+>   target: Fix incorrect se_cmd assignment in core_tmr_drain_tmr_list
+>   target: Fix wrong se_tmr being added to drain_tmr_list
+>   target: Minor cleanups to core_tmr_drain_tmr_list
+>   target: Avoid double list_del for aborted se_tmr_req
+> 
+> Nicholas Bellinger (8):
+>   target: Fix compile warning w/ missing module.h include
+>   tcm_loop: Add explict read buffer memset for
+>     SCF_SCSI_CONTROL_SG_IO_CDB
+>   target: Check -ENOMEM to signal QUEUE_FULL from fabric callbacks
+>   iscsi-target: Add missing CMDSN_LOWER_THAN_EXP check in
+>     iscsit_handle_scsi_cmd
+>   iscsi-target: Fix non-immediate TMR handling
+>   target: Make TFO->check_stop_free return free status
+>   target: Remove core TRANSPORT_FREE_CMD_INTR usage
+>   target: Add generic active I/O shutdown logic
+> 
+>  drivers/target/iscsi/iscsi_target.c     |   11 +-
+>  drivers/target/loopback/tcm_loop.c      |   23 ++-
+>  drivers/target/target_core_alua.c       |   11 +-
+>  drivers/target/target_core_alua.h       |    4 +-
+>  drivers/target/target_core_cdb.c        |  217 +++++++-----------
+>  drivers/target/target_core_cdb.h        |   14 +
+>  drivers/target/target_core_device.c     |   14 +-
+>  drivers/target/target_core_pr.c         |  349 ++++++++++++++++------------
+>  drivers/target/target_core_pr.h         |    7 +-
+>  drivers/target/target_core_pscsi.c      |    2 +-
+>  drivers/target/target_core_tmr.c        |   23 +--
+>  drivers/target/target_core_transport.c  |  392 ++++++++++++++++++++-----------
+>  drivers/target/tcm_fc/tcm_fc.h          |    2 +-
+>  drivers/target/tcm_fc/tfc_cmd.c         |    3 +-
+>  include/target/target_core_base.h       |   13 +-
+>  include/target/target_core_device.h     |    2 +-
+>  include/target/target_core_fabric_ops.h |   11 +-
+>  include/target/target_core_transport.h  |    7 +-
+>  18 files changed, 630 insertions(+), 475 deletions(-)
+>  create mode 100644 drivers/target/target_core_cdb.h
+> 
 
-I had tried the same operation on other nics, like tg3,bnx2. But they haven¡¯t panic.
-So I find the reason is that igb have two more netdev_ops (ndo_vlan_rx_add_vid and ndo_vlan_rx_kill_vid) than tg3 and bnx2.
-I think the reason of panic is that when ndo_vlan_rx_kill_vid has been called, the vlgrp haven¡¯t been correctly find. And it should be find in parameter like what have been done in ndo_vlan_rx_register.
 
-Finally, I kown that it¡¯s not a correct operation to creat a vlan interface on eth2 when it have been slaved by bond0, but it would cause a panic, so I think maybe some improve in ndo_vlan_rx_add_vid£¨add a vlgrp parameter in netdevice.h£© like ndo_vlan_rx_register would be better.
-
-Qin Chuanyu
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
