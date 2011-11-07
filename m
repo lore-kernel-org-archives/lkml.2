@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab1KGDT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Nov 2011 22:19:27 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:56917 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab1KGDT0 (ORCPT
+	id S1755213Ab1KGDUR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Nov 2011 22:20:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63019 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751414Ab1KGDUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Nov 2011 22:19:26 -0500
-Message-ID: <1320635954.10415.1.camel@phoenix>
-Subject: [PATCH 1/2] mfd: include linux/module.h for ab5500-core
+	Sun, 6 Nov 2011 22:20:16 -0500
+Message-ID: <1320636009.10415.2.camel@phoenix>
+Subject: [PATCH 2/2] mfd: include linux/module.h for ab5500-debugfs
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Mon, 07 Nov 2011 11:19:14 +0800
+Date: Mon, 07 Nov 2011 11:20:09 +0800
+In-Reply-To: <1320635954.10415.1.camel@phoenix>
+References: <1320635954.10415.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
@@ -26,43 +28,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Include linux/module.h to fix below build error:
 
-  CC      drivers/mfd/ab5500-core.o
-drivers/mfd/ab5500-core.c:1419: error: 'THIS_MODULE' undeclared here (not in a function)
-drivers/mfd/ab5500-core.c:1437: error: expected declaration specifiers or '...' before string constant
-drivers/mfd/ab5500-core.c:1437: warning: data definition has no type or storage class
-drivers/mfd/ab5500-core.c:1437: warning: type defaults to 'int' in declaration of 'MODULE_AUTHOR'
-drivers/mfd/ab5500-core.c:1437: warning: function declaration isn't a prototype
-drivers/mfd/ab5500-core.c:1438: error: expected declaration specifiers or '...' before string constant
-drivers/mfd/ab5500-core.c:1438: warning: data definition has no type or storage class
-drivers/mfd/ab5500-core.c:1438: warning: type defaults to 'int' in declaration of 'MODULE_DESCRIPTION'
-drivers/mfd/ab5500-core.c:1438: warning: function declaration isn't a prototype
-drivers/mfd/ab5500-core.c:1439: error: expected declaration specifiers or '...' before string constant
-drivers/mfd/ab5500-core.c:1439: warning: data definition has no type or storage class
-drivers/mfd/ab5500-core.c:1439: warning: type defaults to 'int' in declaration of 'MODULE_LICENSE'
-drivers/mfd/ab5500-core.c:1439: warning: function declaration isn't a prototype
-make[2]: *** [drivers/mfd/ab5500-core.o] Error 1
-make[1]: *** [drivers/mfd] Error 2
-make: *** [drivers] Error 2
+  CC      drivers/mfd/ab5500-debugfs.o
+drivers/mfd/ab5500-debugfs.c:571: error: 'THIS_MODULE' undeclared here (not in a function)
+make[2]: *** [drivers/mfd/ab5500-debugfs.o] Error 1
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
-I got the build error on linux-next 20111104.
-
- drivers/mfd/ab5500-core.c |    1 +
+ drivers/mfd/ab5500-debugfs.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/ab5500-core.c b/drivers/mfd/ab5500-core.c
-index 4175544..ec10629 100644
---- a/drivers/mfd/ab5500-core.c
-+++ b/drivers/mfd/ab5500-core.c
-@@ -13,6 +13,7 @@
-  * TODO: Event handling with irq_chip. Waiting for PRCMU fw support.
+diff --git a/drivers/mfd/ab5500-debugfs.c b/drivers/mfd/ab5500-debugfs.c
+index 6be1fe6..b7b2d348 100644
+--- a/drivers/mfd/ab5500-debugfs.c
++++ b/drivers/mfd/ab5500-debugfs.c
+@@ -4,6 +4,7 @@
+  * Debugfs support for the AB5500 MFD driver
   */
  
 +#include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/err.h>
- #include <linux/platform_device.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/mfd/ab5500/ab5500.h>
 -- 
 1.7.5.4
 
