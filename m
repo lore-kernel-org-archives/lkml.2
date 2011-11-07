@@ -1,180 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab1KGXNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:13:37 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:59426 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab1KGXNg (ORCPT
+	id S1753977Ab1KGXQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:16:49 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52958 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab1KGXQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:13:36 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=oTQv5QgHJmFCc+g7+O7bZmk40BOkiKhVoXKM4T/ENAJMXXDnlNbcaXb+oYkf8xOXV
-	If7GsmgUtsRAybL0OR5gA==
-From: Vivek Haldar <haldar@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Vivek Haldar <haldar@google.com>
-Subject: [PATCH] ext4: protect extent cache with r/w spinlock.
-Date: Mon,  7 Nov 2011 15:13:08 -0800
-Message-Id: <1320707588-14595-1-git-send-email-haldar@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 7 Nov 2011 18:16:47 -0500
+Date: Mon, 7 Nov 2011 23:16:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
+Message-ID: <20111107231632.GL15294@n2100.arm.linux.org.uk>
+References: <1320688617-4543-1-git-send-email-balbi@ti.com> <20111107183208.GG15294@n2100.arm.linux.org.uk> <20111107193908.GA5059@legolas.emea.dhcp.ti.com> <20111107212707.GH15294@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com> <20111107224129.GJ15294@n2100.arm.linux.org.uk> <20111107225157.GB31337@atomide.com> <20111107225529.GK15294@n2100.arm.linux.org.uk> <20111107230728.GC31337@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111107230728.GC31337@atomide.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The extent cache used to be protected by an exclusive spinlock. Using
-a r/w lock instead will allow multiple concurrent readers. Also, use
-percpu counters for cache hit/miss stats.
+On Mon, Nov 07, 2011 at 03:07:28PM -0800, Tony Lindgren wrote:
+> * Russell King - ARM Linux <linux@arm.linux.org.uk> [111107 14:20]:
+> > On Mon, Nov 07, 2011 at 02:51:57PM -0800, Tony Lindgren wrote:
+> > > Here's what I got. Looks like the removal of the sr[12]_hwmod
+> > > part is no longer needed, so only the r value check part is needed.
+> > 
+> > Err.  So do you have anything in your git tree which you're pushing out
+> > this evening which removes the sr[12]_hwmod from the omap_3xxx_hwmod
+> > list?
+> > 
+> > If not, how does that bug get fixed in mainline?
+> 
+> Ah sorry, there's also the following commit there that deals
+> with other related issues:
 
-Tested: xfstests.
+Great, so it looks like everything that I've found over the last two days
+should be solved completely by what you have queued for Arnd.
 
-Signed-off-by: Vivek Haldar <haldar@google.com>
----
- fs/ext4/ext4.h    |   10 +++++++---
- fs/ext4/extents.c |   17 +++++++----------
- fs/ext4/super.c   |   18 ++++++++++++++++--
- 3 files changed, 30 insertions(+), 15 deletions(-)
+One last issue though...
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 604c200..4732e55 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -882,6 +882,9 @@ struct ext4_inode_info {
- 	ext4_io_end_t *cur_aio_dio;
- 	atomic_t i_aiodio_unwritten; /* Nr. of inflight conversions pending */
- 
-+	/* r/w lock for extent cache */
-+	rwlock_t extent_cache_lock;
-+
- 	spinlock_t i_block_reservation_lock;
- 
- 	/*
-@@ -1183,9 +1186,10 @@ struct ext4_sb_info {
- 	unsigned long s_ext_blocks;
- 	unsigned long s_ext_extents;
- #endif
--	/* ext4 extent cache stats */
--	unsigned long extent_cache_hits;
--	unsigned long extent_cache_misses;
-+
-+	/* ext4 extent cache stats, per cpu */
-+	struct percpu_counter extent_cache_hits;
-+	struct percpu_counter extent_cache_misses;
- 
- 	/* for buddy allocator */
- 	struct ext4_group_info ***s_group_info;
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 61fa9e1..9dd748f 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -1951,13 +1951,13 @@ ext4_ext_put_in_cache(struct inode *inode, ext4_lblk_t block,
- {
- 	struct ext4_ext_cache *cex;
- 	BUG_ON(len == 0);
--	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
-+	write_lock(&EXT4_I(inode)->extent_cache_lock);
- 	trace_ext4_ext_put_in_cache(inode, block, len, start);
- 	cex = &EXT4_I(inode)->i_cached_extent;
- 	cex->ec_block = block;
- 	cex->ec_len = len;
- 	cex->ec_start = start;
--	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
-+	write_unlock(&EXT4_I(inode)->extent_cache_lock);
- }
- 
- /*
-@@ -2031,10 +2031,7 @@ static int ext4_ext_check_cache(struct inode *inode, ext4_lblk_t block,
- 	struct ext4_sb_info *sbi;
- 	int ret = 0;
- 
--	/*
--	 * We borrow i_block_reservation_lock to protect i_cached_extent
--	 */
--	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
-+	read_lock(&EXT4_I(inode)->extent_cache_lock);
- 	cex = &EXT4_I(inode)->i_cached_extent;
- 	sbi = EXT4_SB(inode->i_sb);
- 
-@@ -2050,12 +2047,12 @@ static int ext4_ext_check_cache(struct inode *inode, ext4_lblk_t block,
- 		ret = 1;
- 	}
- errout:
-+	trace_ext4_ext_in_cache(inode, block, ret);
-+	read_unlock(&EXT4_I(inode)->extent_cache_lock);
- 	if (!ret)
--		sbi->extent_cache_misses++;
-+		percpu_counter_inc(&sbi->extent_cache_misses);
- 	else
--		sbi->extent_cache_hits++;
--	trace_ext4_ext_in_cache(inode, block, ret);
--	spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
-+		percpu_counter_inc(&sbi->extent_cache_hits);
- 	return ret;
- }
- 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 9953d80..739ca96 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -842,6 +842,8 @@ static void ext4_put_super(struct super_block *sb)
- 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
- 	percpu_counter_destroy(&sbi->s_dirs_counter);
- 	percpu_counter_destroy(&sbi->s_dirtyclusters_counter);
-+	percpu_counter_destroy(&sbi->extent_cache_hits);
-+	percpu_counter_destroy(&sbi->extent_cache_misses);
- 	brelse(sbi->s_sbh);
- #ifdef CONFIG_QUOTA
- 	for (i = 0; i < MAXQUOTAS; i++)
-@@ -904,6 +906,7 @@ static struct inode *ext4_alloc_inode(struct super_block *sb)
- 	ei->i_allocated_meta_blocks = 0;
- 	ei->i_da_metadata_calc_len = 0;
- 	spin_lock_init(&(ei->i_block_reservation_lock));
-+	rwlock_init(&(ei->extent_cache_lock));
- #ifdef CONFIG_QUOTA
- 	ei->i_reserved_quota = 0;
- #endif
-@@ -2507,13 +2510,15 @@ static ssize_t lifetime_write_kbytes_show(struct ext4_attr *a,
- static ssize_t extent_cache_hits_show(struct ext4_attr *a,
- 				      struct ext4_sb_info *sbi, char *buf)
- {
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_hits);
-+	return snprintf(buf, PAGE_SIZE, "%lld\n",
-+			percpu_counter_sum(&sbi->extent_cache_hits));
- }
- 
- static ssize_t extent_cache_misses_show(struct ext4_attr *a,
- 					struct ext4_sb_info *sbi, char *buf)
- {
--	return snprintf(buf, PAGE_SIZE, "%lu\n", sbi->extent_cache_misses);
-+	return snprintf(buf, PAGE_SIZE, "%lld\n",
-+			percpu_counter_sum(&sbi->extent_cache_misses));
- }
- 
- static ssize_t inode_readahead_blks_store(struct ext4_attr *a,
-@@ -3589,6 +3594,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!err) {
- 		err = percpu_counter_init(&sbi->s_dirtyclusters_counter, 0);
- 	}
-+
-+	/* Allocate cache hit/miss counters. */
-+	if (!err)
-+		err = percpu_counter_init(&sbi->extent_cache_hits, 0);
-+	if (!err)
-+		err = percpu_counter_init(&sbi->extent_cache_misses, 0);
-+
- 	if (err) {
- 		ext4_msg(sb, KERN_ERR, "insufficient memory");
- 		goto failed_mount3;
-@@ -3855,6 +3867,8 @@ failed_mount3:
- 	percpu_counter_destroy(&sbi->s_freeinodes_counter);
- 	percpu_counter_destroy(&sbi->s_dirs_counter);
- 	percpu_counter_destroy(&sbi->s_dirtyclusters_counter);
-+	percpu_counter_destroy(&sbi->extent_cache_hits);
-+	percpu_counter_destroy(&sbi->extent_cache_misses);
- 	if (sbi->s_mmp_tsk)
- 		kthread_stop(sbi->s_mmp_tsk);
- failed_mount2:
--- 
-1.7.3.1
+We had this patch:
 
+http://lists.arm.linux.org.uk/lurker/message/20111006.232441.227dfcf6.en.html
+
+which is from Paul, post my complaint about IS_ERR_VALUE being used.
+This removed sr1_hwmod and sr2_hwmod, and the commit message explicitly
+talks about doing this.
+
+There's also the patch below.  Somehow, this resulted in that bit of
+Paul's patch being removed (possibly automatically by git) but the commit
+comments are retained, which are now stale and no longer reflect what the
+patch is doing...  That's rather unfortunate, but at this point its
+probably too late to do something about it.
+
+> From: Abhilash K V <abhilash.kv@ti.com>
+> Date: Fri, 7 Oct 2011 03:08:56 -0600
+> Subject: [PATCH] ARM: OMAP: AM35x: remove hwmods that aren't generic
+> 
+> Removing modules iva, sr1_hwmod, sr2_hwmod, mailbox from
+> the base omap3xxx_hwmods list, so that they can be excluded
+> for am35x.  This removes quite a few warnings on boot for AM35x.
+> 
+> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
+> [paul@pwsan.com: dropped 'mailbox class' comments; updated changelog]
+> Signed-off-by: Paul Walmsley <paul@pwsan.com>
+> 
+> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+> @@ -3132,7 +3132,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  	&omap3xxx_mmc2_hwmod,
+>  	&omap3xxx_mmc3_hwmod,
+>  	&omap3xxx_mpu_hwmod,
+> -	&omap3xxx_iva_hwmod,
+>  
+>  	&omap3xxx_timer1_hwmod,
+>  	&omap3xxx_timer2_hwmod,
+> @@ -3161,8 +3160,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  	&omap3xxx_i2c1_hwmod,
+>  	&omap3xxx_i2c2_hwmod,
+>  	&omap3xxx_i2c3_hwmod,
+> -	&omap34xx_sr1_hwmod,
+> -	&omap34xx_sr2_hwmod,
+>  
+>  	/* gpio class */
+>  	&omap3xxx_gpio1_hwmod,
+> @@ -3184,8 +3181,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  	&omap3xxx_mcbsp2_sidetone_hwmod,
+>  	&omap3xxx_mcbsp3_sidetone_hwmod,
+>  
+> -	/* mailbox class */
+> -	&omap3xxx_mailbox_hwmod,
+>  
+>  	/* mcspi class */
+>  	&omap34xx_mcspi1,
+> @@ -3198,31 +3193,39 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
+>  
+>  /* 3430ES1-only hwmods */
+>  static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
+> +	&omap3xxx_iva_hwmod,
+>  	&omap3430es1_dss_core_hwmod,
+> +	&omap3xxx_mailbox_hwmod,
+>  	NULL
+>  };
+>  
+>  /* 3430ES2+-only hwmods */
+>  static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
+> +	&omap3xxx_iva_hwmod,
+>  	&omap3xxx_dss_core_hwmod,
+>  	&omap3xxx_usbhsotg_hwmod,
+> +	&omap3xxx_mailbox_hwmod,
+>  	NULL
+>  };
+>  
+>  /* 34xx-only hwmods (all ES revisions) */
+>  static __initdata struct omap_hwmod *omap34xx_hwmods[] = {
+> +	&omap3xxx_iva_hwmod,
+>  	&omap34xx_sr1_hwmod,
+>  	&omap34xx_sr2_hwmod,
+> +	&omap3xxx_mailbox_hwmod,
+>  	NULL
+>  };
+>  
+>  /* 36xx-only hwmods (all ES revisions) */
+>  static __initdata struct omap_hwmod *omap36xx_hwmods[] = {
+> +	&omap3xxx_iva_hwmod,
+>  	&omap3xxx_uart4_hwmod,
+>  	&omap3xxx_dss_core_hwmod,
+>  	&omap36xx_sr1_hwmod,
+>  	&omap36xx_sr2_hwmod,
+>  	&omap3xxx_usbhsotg_hwmod,
+> +	&omap3xxx_mailbox_hwmod,
+>  	NULL
+>  };
+>  
