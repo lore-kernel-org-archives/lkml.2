@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab1KGMzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:55:42 -0500
-Received: from mga03.intel.com ([143.182.124.21]:60424 "EHLO mga03.intel.com"
+	id S932397Ab1KGM4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:56:12 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:14431 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755330Ab1KGMzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:55:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,470,1315206000"; 
-   d="scan'208";a="34029311"
-Date: Mon, 7 Nov 2011 13:06:43 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Race condition in tty buffer's function
- flush_to_ldisc().
-Message-ID: <20111107130643.07e84fca@bob.linux.org.uk>
-In-Reply-To: <4EB7CCFF.5090304@ilyx.ru>
-References: <4EB7BD9A.7070600@ilyx.ru>
-	<20111107115802.23201d45@bob.linux.org.uk>
-	<4EB7CCFF.5090304@ilyx.ru>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754128Ab1KGM4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 07:56:11 -0500
+Message-ID: <4EB7D566.40900@parallels.com>
+Date: Mon, 07 Nov 2011 16:56:06 +0400
+From: Andrew Vagin <avagin@parallels.com>
+Reply-To: avagin@parallels.com, avagin@gmail.com
+Organization: parallels
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Arun Sharma <asharma@fb.com>
+CC: Andrew Vagin <avagin@openvz.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, devel@openvz.org
+Subject: Re: [PATCH 3/4] perf: teach perf inject to merge sched_stat_* and
+ sched_switch events
+References: <1320274784-2463901-1-git-send-email-avagin@openvz.org> <1320274784-2463901-4-git-send-email-avagin@openvz.org> <4EB32D1B.8060305@fb.com>
+In-Reply-To: <4EB32D1B.8060305@fb.com>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {
-> 	.....
-> } else
-> 	prink...
-> In my syslog appear this prink on pty devices.
+Hi Arun,
 
-Then we need to understand the call paths that did this. I suspect it
-may be a bug in the hacks Linus made to n_tty. They've always bothered
-me as they never looked correct.
+On 11/04/2011 04:08 AM, Arun Sharma wrote:
+> On 11/2/11 3:59 PM, Andrew Vagin wrote:
+>
+>> + event_sw = (union perf_event *)&ent->header;
+>
+> This causes problems with -Wstrict-aliasing=3.
+I didn't see any warning, but I reworked this part a bit.
+>
+> I noticed that the suggested cmdline is:
+>
+> perf script record sched-stat -- -e sched:sched_stat_sleep
+>
+> I'd much prefer something along the lines of:
+>
+> perf script record sched-stat -e <events> -- sleep 1
+>
+> Also, the perf inject command is a bit unforgiving when the user makes
+> some mistakes (eg: didn't specify -e sched:sched_stat_sleep). The
+> failure mode is hard to understand (perf report -i perf.data.d fails
+> with "no samples").
 
-Can you get traces to see if it is actually calling flush_to_ldisc
-multithreaded on a given tty
+I see the problem. It's not in "perf inject". Look at new version I 
+improved "perf script sched_stat". Now it may be executed for specific 
+command and it reports an error if you forgot to set a sched_stat_* event.
 
-> Why we need: "if (!test_and_set_bit(TTY_FLUSHING, &tty->flags)) {"
-> if flush_to_ldisc is single threaded?
-> we can: set_bit(TTY_FLUSHING, &tty->flags)
-> without if() at all.
+> Could not find sched_switch for pid 16179
+>
+> I think this is the same issue you referenced in "Known issues".
+Actually It isn't. Now I print this message as debug information.
+>
+> Although I'm able to get some profiling info out of perf.data.d, the
+> process I really wanted to trace got zero samples.
+It's strange. Can you check new versions and describe the experiment if 
+it will be reproduces.
+>
+> -Arun
+>
 
-It is single threaded with respect to itself (you can't have two
-flush_to_ldisc on the same tty at once) but you can have a parallel
-call to tty_buffer_flush. The tty_buffer_flush path needs to pick the
-right approach reliably.
-
-So the theory is
-
-If TTY_FLUSHING is set then tty_buffer_flush lets the flush_to_ldisc do
-the work. During this time we won't fluish a buffer under the ldisc.
-
-If TTY_FLUSHING is not set then we will do the flush directly. As we
-hold tty->buf.lock at that point the two cannot race as far as I can
-see.
-
-We are actually now probably at the point we could take a per tty mutex
-on the flush_to_ldisc and use it to tidy up ldisc change, flush and
-other things. So this code could welll be something worth simplifying
-once the rest of the tty_lock() is cleaned out.
-
-Alan
