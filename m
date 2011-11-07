@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1KGLaf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 06:30:35 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41517 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab1KGLad (ORCPT
+	id S1754566Ab1KGLbQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:31:16 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44905 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754377Ab1KGLbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 06:30:33 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4EB7C14E.1070503@jp.fujitsu.com>
-Date: Mon, 07 Nov 2011 20:30:22 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai.lu@oracle.com>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [PATCH] pciehp: Retrieve link speed after link is trained
-References: <4E9147DE.3050006@oracle.com> <20111102140522.411ef343@jbarnes-desktop> <4EB23DBC.8050805@jp.fujitsu.com>
-In-Reply-To: <4EB23DBC.8050805@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 7 Nov 2011 06:31:15 -0500
+Subject: Re: [PATCH] x86, efi: Convert efi_phys_get_time() args to physical
+ addresses
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-kernel@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Zhang Rui <rui.zhang@intel.com>
+In-Reply-To: <1318330333-4617-1-git-send-email-matt@console-pimps.org>
+References: <1318330333-4617-1-git-send-email-matt@console-pimps.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Nov 2011 11:31:11 +0000
+Message-ID: <1320665471.3572.110.camel@mfleming-mobl1.ger.corp.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/11/03 16:07), Kenji Kaneshige wrote:
-> (2011/11/03 6:05), Jesse Barnes wrote:
->> On Sun, 09 Oct 2011 00:06:06 -0700
->> Yinghai Lu<yinghai.lu@oracle.com> wrote:
->>
->>>
->>> During hot plug, board_added will call pciehp_power_on_slot().
->>> But link speed is updated in pciehp_power_on_slot().
->>>
->>> We should not update link speed there, because that is too early.
->>>
->>> Move updating to pciehp_check_link_status() after making sure link is trained.
->>>
->>> Signed-off-by: Yinghai Lu<yinghai.lu@oracle.com>
->>>
->>> ---
->>> drivers/pci/hotplug/pciehp_hpc.c | 10 ++--------
->>> 1 file changed, 2 insertions(+), 8 deletions(-)
->>>
->>> Index: linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
->>> ===================================================================
->>> --- linux-2.6.orig/drivers/pci/hotplug/pciehp_hpc.c
->>> +++ linux-2.6/drivers/pci/hotplug/pciehp_hpc.c
->>> @@ -294,6 +294,8 @@ int pciehp_check_link_status(struct cont
->>> return retval;
->>> }
->>>
->>> + pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
->>> +
->>> return retval;
->>> }
->>>
->>> @@ -516,14 +518,6 @@ int pciehp_power_on_slot(struct slot * s
->>> ctrl_dbg(ctrl, "%s: SLOTCTRL %x write cmd %x\n", __func__,
->>> pci_pcie_cap(ctrl->pcie->port) + PCI_EXP_SLTCTL, slot_cmd);
->>>
->>> - retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA,&lnk_status);
->>> - if (retval) {
->>> - ctrl_err(ctrl, "%s: Cannot read LNKSTA register\n",
->>> - __func__);
->>> - return retval;
->>> - }
->>> - pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
->>> -
->>> return retval;
->>> }
->>
->> Kenji-san or Hidetoshi-san, would it be possible to get tested-bys and
->> reviewed-bys from you on this patch?
->>
->> Thanks,
->
-> Looks good to me.
-> Reviewed-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
->
-> Unfortunately, I don't have test environment right now. Maybe
-> I will be able to test it early next week.
->
+On Tue, 2011-10-11 at 11:52 +0100, Matt Fleming wrote:
+> From: Maurice Ma <maurice.ma@intel.com>
+> 
+> Because callers of efi_phys_get_time() pass virtual stack addresses as
+> arguments, we need to find their corresponding physical addresses and
+> when calling GetTime() in physical mode.
+> 
+> Without this patch the following line is printed on boot,
+> 
+> 	"Oops: efitime: can't read time!"
+> 
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Maurice Ma <maurice.ma@intel.com>
+> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+> ---
+>  arch/x86/platform/efi/efi.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
-I got the following warning messages on kernel compile. I'm using 3.1.
-Yinghai, please fix this.
-
-   CC      drivers/pci/hotplug/pciehp_hpc.o
-drivers/pci/hotplug/pciehp_hpc.c: In function 'pciehp_power_on_slot':
-drivers/pci/hotplug/pciehp_hpc.c:489: warning: unused variable 'lnk_status'
-
-Looks good to me, other than this.
-
-Tested-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-
-Regards,
-Kenji Kaneshige
-
-
+Ping?
 
 
