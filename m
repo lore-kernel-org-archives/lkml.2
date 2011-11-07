@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab1KGMpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:45:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2076 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755431Ab1KGMpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:45:03 -0500
-Message-ID: <4EB7D2C0.80201@redhat.com>
-Date: Mon, 07 Nov 2011 14:44:48 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755431Ab1KGMpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:45:19 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:39584 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755497Ab1KGMpP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 07:45:15 -0500
+X-Authenticated: #7756412
+X-Provags-ID: V01U2FsdGVkX19GMvBRAVRGQoyCWe96w/zAK+HsOHq2DNk1BzNou6
+	04SBR59bI+0azq
+Message-ID: <4EB7D2D8.2060505@gmx.net>
+Date: Mon, 07 Nov 2011 13:45:12 +0100
+From: Arne Jansen <sensille@gmx.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Sasha Levin <levinsasha928@gmail.com>, Gerd Hoffmann <kraxel@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test
- kernels
-References: <1320543320-32728-1-git-send-email-agraf@suse.de> <CAOJsxLENwuDgt1S2O8XMsgp9uet92gWeS=GFP_6QgW2w7bRQrw@mail.gmail.com> <4EB65C5B.8070709@redhat.com> <CAOJsxLEi9TU7zHzcH8KScMNm3CRyJA=ANR3ujWX3cqGFqkUxJw@mail.gmail.com> <4EB66036.4080102@redhat.com> <1320577728.1428.73.camel@jaguar> <4EB67486.1070105@redhat.com> <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com> <4EB67D17.7000701@redhat.com> <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com> <4EB680D9.2070706@redhat.com> <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com> <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de> <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com> <4EB7B1A9.9000409@redhat.com> <CA+1xoqfXq++t9YzqDQH60oLDkWhyvEJsC6QWJ1gx8ikQA=eAhQ@mail.gmail.com> <4EB7CE71.50401@redhat.com> <CAOJsxLEMdmWH06Dd+g4SkuG8H9iGwdBMSQYthMYtF9eyC2p9Ew@mail.gmail.com>
-In-Reply-To: <CAOJsxLEMdmWH06Dd+g4SkuG8H9iGwdBMSQYthMYtF9eyC2p9Ew@mail.gmail.com>
+To: Andrea Gelmini <andrea.gelmini@gmail.com>
+CC: Chris Mason <chris.mason@oracle.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs pull request
+References: <20111106183851.GA4339@shiny> <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com> <4EB7A6CC.5030502@gmx.net> <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
+In-Reply-To: <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 02:29 PM, Pekka Enberg wrote:
-> Hi Avi,
->
-> On Mon, Nov 7, 2011 at 2:26 PM, Avi Kivity <avi@redhat.com> wrote:
-> >> tools/power was merged in just 2 versions ago, do you think that
-> >> merging that was a mistake?
-> >
-> > Things like tools/power may make sense, most of the code is tied to the
-> > kernel interfaces.  tools/kvm is 20k lines and is likely to be 40k+
-> > lines or more before it is generally usable.  The proportion of the code
-> > that talks to the kernel is quite small.
->
-> So what do you think about perf then? The amount of code that talks to
-> the kernel is much smaller than that of the KVM tool.
+Hi Andrea,
 
-Maybe it's outgrown the kernel repo too.  Certainly something that has
-perl and python integration, a TUI, and one day hopefully a GUI, doesn't
-really need the kernel sources.
+On 07.11.2011 13:42, Andrea Gelmini wrote:
+> 2011/11/7 Arne Jansen <sensille@gmx.net>:
+>> On what platform are you running this? Can you please try this after
+>> a fresh boot? Maybe there's an allocation that can't be served with
+>> a badly fragmented memory.
+> 
+> Hi Arne,
+>    and thanks a lot for your reply.
+>    So:
+>    a) it's a fresh Ubuntu 11.04, with latest Linus git tree
+> (31555213f03bca37d2c02e10946296052f4ecfcd), and latest btrfs progs
+> (13eced9a0c2b6bd6bc38e6f0f46a1977b1167e67), plus Chris btrfs branch
+> for-linus;
+>    b) same problem after a fresh boot.
 
--- 
-error compiling committee.c: too many arguments to function
+is it 32 or 64 bit?
+
+Thanks,
+Arne
+
+> 
+> Thanks,
+> Andrea
 
