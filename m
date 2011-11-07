@@ -1,111 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755127Ab1KGXdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:33:41 -0500
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:54307 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755008Ab1KGXdj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:33:39 -0500
-Date: Mon, 7 Nov 2011 23:33:30 +0000
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target
- list
-Message-ID: <20111107233330.GA26705@linux-mips.org>
-References: <1314234210-11090-1-git-send-email-lacombar@gmail.com>
- <4E69FEC9.2080204@suse.cz>
- <CACqU3MUFyn_jh2pN4GLENqcGVUzAwcMJUR_WLY2EtqOhMheceQ@mail.gmail.com>
- <20111101232233.GA32441@sepie.suse.cz>
- <20111107204448.GA9949@linux-mips.org>
- <20111107211900.GB6264@sepie.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1755005Ab1KGXk0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:40:26 -0500
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:44875 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751750Ab1KGXkY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:40:24 -0500
+X-AuditID: 12074425-b7f116d0000008fe-8e-4eb86c67e142
+Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to /proc/interrupts
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=windows-1252
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20111107232750.GA4854@kroah.com>
+Date: Mon, 7 Nov 2011 18:40:13 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Eric Paris <eparis@parisplace.org>,
+        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20111107211900.GB6264@sepie.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <4BA97845-BA47-47F3-A923-9B24AB7306E9@mit.edu>
+References: <4EB82F08.8060209@zytor.com> <20111107192915.GA4690@albatros> <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com> <4EB83674.3040207@zytor.com> <20111107201120.GA5775@albatros> <4EB843FF.5080201@zytor.com> <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com> <4EB84F05.1000704@zytor.com> <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com> <20111107232132.2c6880a5@lxorguk.ukuu.org.uk> <20111107232750.GA4854@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsUixCmqrZues8PP4PIDdYvpjV4Wc9avYbNY
+	vf4Ii0Xnw7PMFucWzGC0mLZR3GLpp99sFpd3zWGz+NDziM1i5YkGJotHfW/ZLS69/8DiwOOx
+	c9Zddo+3DwM8Tsz4zeKxsvMxm0fryU2sHk//3GXzOPs1yuPzJjmPQ9vfsHmcaPnCGsAVxWWT
+	kpqTWZZapG+XwJUxt2UTc8FbtopV09oYGxg3sHYxcnJICJhInN9xlxHCFpO4cG89WxcjF4eQ
+	wD5GiVNX+pghnPWMEu/XdjFCOEeZJA50PgdrFxYIlehv2M0MYvMKGEusufWOBcRmFtCT2HH9
+	F1gNm4CSxJ1P+8HinEDxfWfvMoHYLAIqEsu+NYINZRb4zywxfdthdohmbYllC19DDbWSuN/6
+	kAli8wNmibfb3oAViQjISHQs2cMOcbi8RMvXO2wTGAVnITlkFpJDZiGZu4CReRWjbEpulW5u
+	YmZOcWqybnFyYl5eapGuhV5uZoleakrpJkZQxLG7qO5gnHBI6RCjAAejEg/vTNEdfkKsiWXF
+	lbmHGCU5mJREeedmAIX4kvJTKjMSizPii0pzUosPMUpwMCuJ8IqEAuV4UxIrq1KL8mFS0hws
+	SuK8r3c4+AkJpCeWpGanphakFsFkZTg4lCR487KBGgWLUtNTK9Iyc0oQ0kwcnCDDeYCG96eC
+	DC8uSMwtzkyHyJ9iVJQS5/0O0iwAksgozYPrhSXEV4ziQK8I81omA1XxAJMpXPcroMFMQIPb
+	dbeBDC5JREhJNTAa1n5hLD0SxDSRMy7F5pDYtrvOF/ujTecxV9fYzyicubtyk8sB1R9HStom
+	bGVQdWhwmrRsqeqG4z4dO0r32rdbHp0bcPtJ+amXvcqiyv896rZ6XrDeJrNfaf0Mvp9dOcen
+	av2qncI2z0VoQrSNYIL9fm3Xh3HbXlmrTXT1+blARalXfGtDvJASS3FGoqEWc1FxIgCCzpLO
+	YwMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 10:19:00PM +0100, Michal Marek wrote:
 
-> Wild guess - does this patch help?
+On Nov 7, 2011, at 6:27 PM, Greg KH wrote:
 > 
-> 
-> diff --git a/Kbuild b/Kbuild
-> index 4caab4f..77c191a 100644
-> --- a/Kbuild
-> +++ b/Kbuild
-> @@ -94,7 +94,7 @@ targets += missing-syscalls
->  quiet_cmd_syscalls = CALL    $<
->        cmd_syscalls = $(CONFIG_SHELL) $< $(CC) $(c_flags)
->  
-> -missing-syscalls: scripts/checksyscalls.sh $(offsets-file) FORCE
-> +missing-syscalls: scripts/checksyscalls.sh $(offsets-file) $(bounds-file) FORCE
->  	$(call cmd,syscalls)
->  
->  # Keep these two files during make clean
+> So, what do we really need revoke() for these days?
 
-No, it didn't.
+As I mentioned at the kernel summit, I'd like revoke along with a formal notification from block devices that get ejected to the file system layer, and the file system should be able to call a VFS library function which revokes all open file descriptor on the ejected block device.  It would result in much cleaner handling at the file system level when a USB storage device gets pulled.
 
-> If not, please attach logs of make V=1 with clean Linus' tree and with
-> 5f7efb4c6da9f90cb306923ced2a6494d065a595 reverted.
+> But that's getting away from the original topic here, sorry…
 
-$ git checkout 31555213f03bca37d2c02e10946296052f4ecfcd
-$ git revert 5f7efb4c6da9f90cb306923ced2a6494d065a595
-$ make ARCH=mips ip27_defconfig
-$ make ARCH=mips V=1 2>&1 | tee log
+Yup.   But if revoke has come up, I'd like to remind folks that there are good uses of it besides just tty devices that receive hangup events.   Having the modem connection disappear and the USB device disappear isn't all that different from a conceptual point of view.
 
-make -f /home/ralf/src/linux/linux-mips/Makefile silentoldconfig
-make -f scripts/Makefile.build obj=scripts/basic
-rm -f .tmp_quiet_recordmcount
-mkdir -p include/linux include/config
-make -f scripts/Makefile.build obj=scripts/kconfig silentoldconfig
-mkdir -p include/generated
-scripts/kconfig/conf --silentoldconfig Kconfig
-warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
-warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
-rm -f include/config/kernel.release
-echo "3.1.0$(/bin/sh /home/ralf/src/linux/linux-mips/scripts/setlocalversion /home/ralf/src/linux/linux-mips)" > include/config/kernel.release
-make -f /home/ralf/src/linux/linux-mips/scripts/Makefile.asm-generic \
-            obj=arch/mips/include/generated/asm
-set -e; : '  CHK     include/linux/version.h'; mkdir -p include/linux/; 	(echo \#define LINUX_VERSION_CODE 196864; echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';) < /home/ralf/src/linux/linux-mips/Makefile > include/linux/version.h.tmp; if [ -r include/linux/version.h ] && cmp -s include/linux/version.h include/linux/version.h.tmp; then rm -f include/linux/version.h.tmp; else : '  UPD     include/linux/version.h'; mv -f include/linux/version.h.tmp include/linux/version.h; fi
-set -e; : '  CHK     include/generated/utsrelease.h'; mkdir -p include/generated/; 	if [ `echo -n "3.1.0-10325-g3155521-dirty" | wc -c ` -gt 64 ]; then echo '"3.1.0-10325-g3155521-dirty" exceeds 64 characters' >&2; exit 1; fi; (echo \#define UTS_RELEASE \"3.1.0-10325-g3155521-dirty\";) < include/config/kernel.release > include/generated/utsrelease.h.tmp; if [ -r include/generated/utsrelease.h ] && cmp -s include/generated/utsrelease.h include/generated/utsrelease.h.tmp; then rm -f include/generated/utsrelease.h.tmp; else : '  UPD     include/generated/utsrelease.h'; mv -f include/generated/utsrelease.h.tmp include/generated/utsrelease.h; fi
-mkdir -p .tmp_versions ; rm -f .tmp_versions/*
-make -f scripts/Makefile.build obj=scripts/basic
-(cat /dev/null; ) > scripts/basic/modules.order
-rm -f .tmp_quiet_recordmcount
-  Checking missing-syscalls for N32
-make -f scripts/Makefile.build obj=. missing-syscalls ccflags-y="-mabi=n32"
-  /bin/sh scripts/checksyscalls.sh mips64-linux-gcc -Wp,-MD,./.missing-syscalls.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO -mabi=n32    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(missing_syscalls)"  -D"KBUILD_MODNAME=KBUILD_STR(missing_syscalls)"
-<stdin>:1562:2: warning: #warning syscall process_vm_readv not implemented [-Wcpp]
-<stdin>:1566:2: warning: #warning syscall process_vm_writev not implemented [-Wcpp]
-  Checking missing-syscalls for O32
-make -f scripts/Makefile.build obj=. missing-syscalls ccflags-y="-mabi=32"
-  /bin/sh scripts/checksyscalls.sh mips64-linux-gcc -Wp,-MD,./.missing-syscalls.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO -mabi=32    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(missing_syscalls)"  -D"KBUILD_MODNAME=KBUILD_STR(missing_syscalls)"
-<stdin>:1562:2: warning: #warning syscall process_vm_readv not implemented [-Wcpp]
-<stdin>:1566:2: warning: #warning syscall process_vm_writev not implemented [-Wcpp]
-make -f scripts/Makefile.build obj=.
-(cat /dev/null; ) > modules.order
-mkdir -p kernel/
-  mips64-linux-gcc -Wp,-MD,kernel/.bounds.s.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(bounds)"  -D"KBUILD_MODNAME=KBUILD_STR(bounds)" -fverbose-asm -S -o kernel/bounds.s kernel/bounds.c
-mkdir -p include/generated/
-  	(set -e; echo "#ifndef __LINUX_BOUNDS_H__"; echo "#define __LINUX_BOUNDS_H__"; echo "/*"; echo " * DO NOT MODIFY."; echo " *"; echo " * This file was generated by Kbuild"; echo " *"; echo " */"; echo ""; sed -ne 	"/^->/{s:->#\(.*\):/* \1 */:; s:^->\([^ ]*\) [\$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; s:^->\([^ ]*\) [\$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; s:->::; p;}" kernel/bounds.s; echo ""; echo "#endif" ) > include/generated/bounds.h
-mkdir -p arch/mips/kernel/
-  mips64-linux-gcc -Wp,-MD,arch/mips/kernel/.asm-offsets.s.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(asm_offsets)"  -D"KBUILD_MODNAME=KBUILD_STR(asm_offsets)" -fverbose-asm -S -o arch/mips/kernel/asm-offsets.s arch/mips/kernel/asm-offsets.c
-  	(set -e; echo "#ifndef __ASM_OFFSETS_H__"; echo "#define __ASM_OFFSETS_H__"; echo "/*"; echo " * DO NOT MODIFY."; echo " *"; echo " * This file was generated by Kbuild"; echo " *"; echo " */"; echo ""; sed -ne 	"/^->/{s:->#\(.*\):/* \1 */:; s:^->\([^ ]*\) [\$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; s:^->\([^ ]*\) [\$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; s:->::; p;}" arch/mips/kernel/asm-offsets.s; echo ""; echo "#endif" ) > include/generated/asm-offsets.h
-make -f scripts/Makefile.build obj=. missing-syscalls
-  /bin/sh scripts/checksyscalls.sh mips64-linux-gcc -Wp,-MD,./.missing-syscalls.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(missing_syscalls)"  -D"KBUILD_MODNAME=KBUILD_STR(missing_syscalls)"
-<stdin>:1562:2: warning: #warning syscall process_vm_readv not implemented [-Wcpp]
-<stdin>:1566:2: warning: #warning syscall process_vm_writev not implemented [-Wcpp]
-make -f scripts/Makefile.build obj=scripts
-make -f scripts/Makefile.build obj=scripts/mod
-
-Thanks,
-
-  Ralf
+-- Ted
+ 
