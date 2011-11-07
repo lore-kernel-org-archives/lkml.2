@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab1KGRzx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:55:53 -0500
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45625 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932732Ab1KGRzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:55:52 -0500
-Date: Mon, 7 Nov 2011 09:55:23 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, eric.dumazet@gmail.com,
-        shaohua.li@intel.com, ak@linux.intel.com, mhocko@suse.cz,
-        alex.shi@intel.com, efault@gmx.de, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.1
-Message-ID: <20111107175523.GK2332@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4EAA14A1.5060204@cn.fujitsu.com>
- <20111029182710.GG6160@linux.vnet.ibm.com>
- <4EAE57AF.1060706@cn.fujitsu.com>
- <20111031093256.GI6160@linux.vnet.ibm.com>
- <4EAF5B68.8090005@cn.fujitsu.com>
- <1320678902.18053.63.camel@twins>
- <CABPqkBTbWE6wVkg_sFnoVL0r4_yi6gCwCoUXzC97kxcxC47zYQ@mail.gmail.com>
- <1320683756.17809.28.camel@twins>
- <20111107165603.GD2332@linux.vnet.ibm.com>
- <1320685789.17809.30.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320685789.17809.30.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11110717-8974-0000-0000-0000018B39CC
+	id S933186Ab1KGR5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:57:06 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:37058 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932732Ab1KGR5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 12:57:04 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
+Date: Mon,  7 Nov 2011 19:56:57 +0200
+Message-Id: <1320688617-4543-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.7.8.rc0
+Organization: Texas Instruments\n
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 06:09:49PM +0100, Peter Zijlstra wrote:
-> On Mon, 2011-11-07 at 08:56 -0800, Paul E. McKenney wrote:
-> > 
-> > If this really is a false positive, what should be used to get rid of
-> > the splats? 
-> 
-> 
-> Probably something slightly less horrid than the below.. ;-)
+commit d6504acd (OMAP2+: hwmod: remove OMAP_CHIP*) has
+mistakenly added MUSB as a hwmod available only on ES2.0
+of OMAP3430.
 
-Hmmm...  Could the "1" below be replaced by the task's reference count?
-Probabilistic, but should eventually catch it.
+MUSB hwmod has always be available on all OMAP revisions
+since OMAP2430.
 
-							Thanx, Paul
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_3xxx_data.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> ---
-> 
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index d1a1bee..8f05201 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -229,7 +229,7 @@ static void perf_ctx_unlock(struct perf_cpu_context *cpuctx,
->  static inline struct perf_cgroup *
->  perf_cgroup_from_task(struct task_struct *task)
->  {
-> -	return container_of(task_subsys_state(task, perf_subsys_id),
-> +	return container_of(task_subsys_state_check(task, perf_subsys_id, 1),
->  			struct perf_cgroup, css);
->  }
->  
-> 
+diff --git a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+index 3008e16..74f1454 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
+@@ -3232,7 +3232,6 @@ static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
+ /* 3430ES2+-only hwmods */
+ static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
+ 	&omap3xxx_dss_core_hwmod,
+-	&omap3xxx_usbhsotg_hwmod,
+ 	NULL
+ };
+ 
+@@ -3240,6 +3239,7 @@ static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
+ static __initdata struct omap_hwmod *omap34xx_hwmods[] = {
+ 	&omap34xx_sr1_hwmod,
+ 	&omap34xx_sr2_hwmod,
++	&omap3xxx_usbhsotg_hwmod,
+ 	NULL
+ };
+ 
+-- 
+1.7.8.rc0
 
