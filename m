@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1KGHAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 02:00:08 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:37397 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1KGHAG convert rfc822-to-8bit (ORCPT
+	id S1752603Ab1KGHbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 02:31:33 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:45631
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751227Ab1KGHbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 02:00:06 -0500
+	Mon, 7 Nov 2011 02:31:32 -0500
+Date: Mon, 7 Nov 2011 02:31:27 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: Hugh Dickins <hughd@google.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+Message-ID: <20111107073127.GA7410@infradead.org>
+References: <1320614101.3226.5.camel@offbook>
 MIME-Version: 1.0
-In-Reply-To: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp>
-References: <20111107055108.7928.89454.stgit@ltc219.sdl.hitachi.co.jp>
-Date: Mon, 7 Nov 2011 09:00:05 +0200
-X-Google-Sender-Auth: tWdl9KDuEUpd3EGobu0SMqKqsPA
-Message-ID: <CAOJsxLGH6maRZPx0TX4r6Zy=AiXQMRssoySeOmjn02O-BkBDEA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] x86: check stack overflows more reliably
-From: Pekka Enberg <penberg@kernel.org>
-To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320614101.3226.5.camel@offbook>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 7:51 AM, Mitsuo Hayasaka
-<mitsuo.hayasaka.hu@hitachi.com> wrote:
-> (2) check stack overflow in detail
->    Currently, only kernel stack is checked for the overflow,
->    which is not sufficient for enterprise systems. To enhance
->    reliability, expand stack overflow checking to IRQ and
->    exception stacks optionally. This is disabled by default
->    in Kconfig.
+On Sun, Nov 06, 2011 at 06:15:01PM -0300, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
+> 
+> This patch adds a new RLIMIT_TMPFSQUOTA resource limit to restrict an individual user's quota across all mounted tmpfs filesystems.
+> It's well known that a user can easily fill up commonly used directories (like /tmp, /dev/shm) causing programs to break through DoS.
 
-This sounds useful. What's the reason for not enabling this by
-default? Performance regressions?
+Please jyst implement the normal user/group quota interfaces we use for other
+filesystem.  
 
-                        Pekka
