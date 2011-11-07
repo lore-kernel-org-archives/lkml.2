@@ -1,128 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1KGUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:01:09 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:36865 "EHLO e5.ny.us.ibm.com"
+	id S1753983Ab1KGUDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:03:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60667 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752869Ab1KGUBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:01:06 -0500
-Date: Mon, 7 Nov 2011 12:00:08 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Subject: Re: [PATCH 15/28] ext4: Calculate and verify block bitmap checksum
-Message-ID: <20111107200008.GW12447@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075522.20506.22239.stgit@elm3c44.beaverton.ibm.com> <AE869D1A-2A06-4849-8752-74924B0C05BD@dilger.ca> <20111013071631.GQ12447@tux1.beaverton.ibm.com>
+	id S1751322Ab1KGUDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 15:03:49 -0500
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Vince Weaver <vince@deater.net>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?us-ascii?Q?=3D=3Fiso-8859-1=3FQ=3FAm=3DE9rico=3F=3D?= Wang 
+	<xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test kernels
+References: <4EB6AE34.2000907@redhat.com>
+	<CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com>
+	<4EB6BAED.2030400@redhat.com> <4EB6BEFA.6000303@codemonkey.ws>
+	<20111106183132.GA4500@thunk.org>
+	<CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
+	<CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
+	<20111106231953.GD4500@thunk.org>
+	<alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
+	<alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
+	<20111107175942.GA9395@elte.hu>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Mon, 07 Nov 2011 15:03:00 -0500
+In-Reply-To: <20111107175942.GA9395@elte.hu> (Ingo Molnar's message of "Mon, 7 Nov 2011 18:59:42 +0100")
+Message-ID: <y0mpqh3og3v.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111013071631.GQ12447@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-x-cbid: 11110720-5930-0000-0000-00000103BD5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 13, 2011 at 12:16:31AM -0700, Darrick J. Wong wrote:
-> On Wed, Oct 12, 2011 at 06:00:40PM -0600, Andreas Dilger wrote:
-> > On 2011-10-08, at 1:55 AM, Darrick J. Wong wrote:
-> > > Compute and verify the checksum of the block bitmap; this checksum is
-> > > stored in the block group descriptor.
-> > > 
-> > > @@ -353,11 +360,26 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
-> > > 	/*
-> > > 	 * file system mounted not to panic on error,
-> > > +	 * -EIO with corrupt bitmap
-> > > 	 */
-> > > +	ext4_lock_group(sb, block_group);
-> > > +	if (!ext4_valid_block_bitmap(sb, desc, block_group, bh) ||
-> > > +	    !ext4_block_bitmap_csum_verify(sb, block_group, desc, bh,
-> > > +					   EXT4_BLOCKS_PER_GROUP(sb) / 8)) {
-> > > +		ext4_unlock_group(sb, block_group);
-> > > +		put_bh(bh);
-> > > +		ext4_error(sb, "Corrupt block bitmap - block_group = %u, "
-> > > +			   "block_bitmap = %llu", block_group, bitmap_blk);
-> > > +		return NULL;
-> > > +	}
-> > > +	ext4_unlock_group(sb, block_group);
-> > > +	set_buffer_verified(bh);
-> > 
-> > I've been thinking a while that we should add per-group error flags
-> > for the block and inode bitmaps.  That way, if we detect errors with
-> > either one, we can set the flag in the group descriptor and avoid
-> > using it for any allocations in the future.  Otherwise, we try to
-> > read the bitmap in repeatedly.
-> 
-> I think there's some code in ext4 somewhere that does that.  I also wonder if
-> the possibility that we're seeing a transient corruption error is worth
-> rechecking the block until it fails?  (I suspect not, but I decided to throw
-> that out there anyway.)
+Ingo Molnar <mingo@elte.hu> writes:
 
-There's a bit of code in ext4_init_block_bitmap that makes a block group
-unwritable if the bg checksum fails to verify:
+> [...]
+>> It's problem enough that there's no way to know what version of the 
+>> perf_event abi you are running against and we have to guess based 
+>> on kernel version.  This gets "fun" because all of the vendors have 
+>> backported seemingly random chunks of perf_event code to their 
+>> older kernels.
+>
+> The ABI design allows for that kind of flexible extensibility, and 
+> it's one of its major advantages.
+>
+> What we *cannot* protect against is you relying on obscure details of 
+> the ABI [...]
 
-/* If checksum is bad mark all blocks used to prevent allocation
- * essentially implementing a per-group read-only flag. */
-if (!ext4_group_desc_csum_verify(sbi, block_group, gdp)) {
-	ext4_error(sb, "Checksum bad for group %u",
-			block_group);
-	ext4_free_blks_set(sb, gdp, 0);
-	ext4_free_inodes_set(sb, gdp, 0);
-	ext4_itable_unused_set(sb, gdp, 0);
-	memset(bh->b_data, 0xff, sb->s_blocksize);
-	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
-				   EXT4_BLOCKS_PER_GROUP(sb) /
-				   8);
-	return 0;
-}
+Is there some documentation that clearly spells out which parts of the
+perf syscall userspace ABI are "obscure" and thus presumably
+changeable?
 
-Do people think that doing this in the event of a block/inode bitmap checksum
-failure is a good idea?
+> [...]  The usual ABI rules also apply: we'll revert everything that
+> breaks the ABI - but for that you need to report it *in time* [...]
 
---D
-> 
-> > > @@ -803,6 +842,11 @@ static int ext4_mb_init_cache(struct page *page, char *incore)
-> > > 	if (groups_per_page == 0)
-> > > 		groups_per_page = 1;
-> > > 
-> > > +	csd = kzalloc(sizeof(struct ext4_csum_data) * groups_per_page,
-> > > +		      GFP_NOFS);
-> > > +	if (csd == NULL)
-> > > +		goto out;
-> > > +
-> > > 	/* allocate buffer_heads to read bitmaps */
-> > > 	if (groups_per_page > 1) {
-> > > 		err = -ENOMEM;
-> > > @@ -880,22 +924,25 @@ static int ext4_mb_init_cache(struct page *page, char *incore)
-> > > 		 * get set with buffer lock held.
-> > > 		 */
-> > > 		set_bitmap_uptodate(bh[i]);
-> > > -		bh[i]->b_end_io = end_buffer_read_sync;
-> > > +		csd[i].cd_sb = sb;
-> > > +		csd[i].cd_group = first_group + i;
-> > > +		bh[i]->b_private = csd + i;
-> > > +		bh[i]->b_end_io = ext4_end_buffer_read_sync;
-> > 
-> > It seems to be allocating this extra csd[] and calling the more complex
-> > ext4_end_buffer_read_sync() callback regardless of whether the checksum
-> > code is enabled or not.  Would it be better to only set the custom
-> > callback if we need to verify the checksum?
-> 
-> Yep, we could go straight to end_buffer_read_sync in the no-csum case.
-> 
-> --D
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+If the ABI is so great in its flexible extensibility, how come it
+can't be flexibly extended without having to passing the burden of
+compatibility testing & reversion-yawping to someone else?
 
+
+- FChE
