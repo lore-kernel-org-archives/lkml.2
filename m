@@ -1,288 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab1KGKeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 05:34:14 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47970 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754136Ab1KGKeL (ORCPT
+	id S1754264Ab1KGKh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 05:37:57 -0500
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:34395 "EHLO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754138Ab1KGKh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 05:34:11 -0500
-Subject: [RFC PATCH v4 08/10] fadump: Invalidate registration and release
-	reserved memory for general use.
-To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-Cc: Amerigo Wang <amwang@redhat.com>, Ananth Narayan <ananth@in.ibm.com>,
-        Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
-        Anton Blanchard <anton@samba.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Mon, 07 Nov 2011 15:26:18 +0530
-Message-ID: <20111107095618.1997.59178.stgit@mars.in.ibm.com>
-In-Reply-To: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
-References: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
-User-Agent: StGit/0.15-1-ged5e-dirty
+	Mon, 7 Nov 2011 05:37:56 -0500
+Message-ID: <4EB7B4FF.7060806@ge.com>
+Date: Mon, 07 Nov 2011 10:37:51 +0000
+From: Martyn Welch <martyn.welch@ge.com>
+Organization: GE Intelligent Platforms
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Greg KH <gregkh@suse.de>
+CC: Paul Bolle <pebolle@tiscali.nl>, Grant Likely <grant.likely@secretlab.ca>,
+        devel@driverdev.osuosl.org, manohar.vanga@cern.ch, cota@braap.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Driver for GE PIO2 VME Card
+References: <20111104173126.30940.28135.stgit@ES-BJ21R4J> <1320436514.14409.309.camel@x61.thuisdomein> <20111104200057.GB400@suse.de>
+In-Reply-To: <20111104200057.GB400@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 11110709-9574-0000-0000-000000133ACD
+X-OriginalArrivalTime: 07 Nov 2011 10:37:54.0124 (UTC) FILETIME=[4E6B18C0:01CC9D39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+On 04/11/11 20:00, Greg KH wrote:
+> On Fri, Nov 04, 2011 at 08:55:14PM +0100, Paul Bolle wrote:
+>> A few random remarks follow. Ie, things that came up while quickly
+>> scanning this.
+>>
+>> On Fri, 2011-11-04 at 17:33 +0000, Martyn Welch wrote:
+>>> diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
+>>> index ca5ba89..99f5414 100644
+>>> --- a/drivers/staging/vme/devices/Kconfig
+>>> +++ b/drivers/staging/vme/devices/Kconfig
+>>> @@ -6,3 +6,13 @@ config VME_USER
+>>>  	  If you say Y here you want to be able to access a limited number of
+>>>  	  VME windows in a manner at least semi-compatible with the interface
+>>>  	  provided with the original driver at http://vmelinux.org/.
+>>
+>> Blank line here.
+>>
+>>> +config VME_PIO2
+>>> +	tristate "GE PIO2 VME"
+>>> +	help
+>>> +	  If you say Y here you have a GE PIO2. The PIO2 is a 6U VME Card,
+>>
+>> Maybe something like: "Say Y here if you have a GE PIO2."?
+>>
+>>> +	  implementing 32 solid-state relay switched IO lines, in 4 groups of 8.
+>>> +	  The IO lines are provided as input, output or both as a build time
+>>> +	  option.
+>>
+>> What option would that be?
+>>
+>>> +	  Otherwise it is safe to say N here.
+>>> +
+>>
+>> A lot of modules have the "if you say M here the module will be called"
+>> boilerplate here (which actually doesn't match the line I just made up).
+>>
+>>> +/* These are required for each board */
+>>> +MODULE_PARM_DESC(bus, "Enumeration of VMEbus to which the board is connected");
+>>> +module_param_array(bus, int, &bus_num, 0);
+>>> +
+>>> +MODULE_PARM_DESC(base, "Base VME address for PIO2 Registers");
+>>> +module_param_array(base, long, &base_num, 0);
+>>> +
+>>> +MODULE_PARM_DESC(vector, "VME IRQ Vector (Lower 4 bits masked)");
+>>> +module_param_array(vector, int, &vector_num, 0);
+>>> +
+>>> +MODULE_PARM_DESC(level, "VME IRQ Level");
+>>> +module_param_array(level, int, &level_num, 0);
+>>> +
+>>> +MODULE_PARM_DESC(variant, "Last 4 characters of PIO2 board variant");
+>>> +module_param_array(variant, charp, &variant_num, 0);
+>>> +
+>>> +/* This is for debugging */
+>>> +MODULE_PARM_DESC(loopback, "Enable loopback mode on all cards");
+>>> +module_param(loopback, bool, 0);
+>>
+>> All module parameters have a sysfs visibility (or permission) of zero.
+>> Why is that? (This might very well be a naive question. But I often
+>> wonder why a certain parameter's permission isn't at least 400, just to
+>> allow a quick check of that parameter.) Are arrays tricky in sysfs?
+> 
+> Yes, arrays are tricky, and in the end, all of these need to be "real"
+> sysfs files, not module parameters, but for now, it's ok to leave it as
+> is until the code is cleaned up.
+> 
 
-This patch introduces an sysfs interface '/sys/kernel/fadump_release_mem' to
-invalidate the last fadump registration, invalidate '/proc/vmcore', release
-the reserved memory for general use and re-register for future kernel dump.
-Once the dump is copied to the disk, the userspace tool will echo 1 to
-'/sys/kernel/fadump_release_mem'.
+Hi Greg,
 
-Release the reserved memory region excluding the size of the memory required
-for future kernel dump registration.
+Am I right in thinking we wouldn't then be able to pass the parameters in the
+boot args?
 
-Change in v3:
-- Syncronize the fadump invalidation step to handle simultaneous writes to
-  /sys/kernel/fadump_release_mem.
+Martyn
 
-Change in v2:
-- Introduced cpu_notes_buf_free() function to free memory allocated for
-  cpu notes buffer.
+> thanks,
+> 
+> greg k-h
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/fadump.h |    3 +
- arch/powerpc/kernel/fadump.c      |  157 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 156 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/fadump.h b/arch/powerpc/include/asm/fadump.h
-index 0c14097..8ddfbc7 100644
---- a/arch/powerpc/include/asm/fadump.h
-+++ b/arch/powerpc/include/asm/fadump.h
-@@ -202,6 +202,9 @@ extern int fadump_reserve_mem(void);
- extern int setup_fadump(void);
- extern int is_fadump_active(void);
- extern void crash_fadump(struct pt_regs *, const char *);
-+extern void fadump_cleanup(void);
-+
-+extern void vmcore_cleanup(void);
- #else	/* CONFIG_FA_DUMP */
- static inline int is_fadump_active(void) { return 0; }
- #endif
-diff --git a/arch/powerpc/kernel/fadump.c b/arch/powerpc/kernel/fadump.c
-index e68ee3a..b449b55 100644
---- a/arch/powerpc/kernel/fadump.c
-+++ b/arch/powerpc/kernel/fadump.c
-@@ -33,6 +33,8 @@
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/crash_dump.h>
-+#include <linux/kobject.h>
-+#include <linux/sysfs.h>
- 
- #include <asm/page.h>
- #include <asm/prom.h>
-@@ -986,6 +988,131 @@ static int fadump_unregister_dump(struct fadump_mem_struct *fdm)
- 	return 0;
- }
- 
-+static int fadump_invalidate_dump(struct fadump_mem_struct *fdm)
-+{
-+	int rc = 0;
-+	unsigned int wait_time;
-+
-+	pr_debug("Invalidating firmware-assisted dump registration\n");
-+
-+	/* TODO: Add upper time limit for the delay */
-+	do {
-+		rc = rtas_call(fw_dump.ibm_configure_kernel_dump, 3, 1, NULL,
-+			FADUMP_INVALIDATE, fdm,
-+			sizeof(struct fadump_mem_struct));
-+
-+		wait_time = rtas_busy_delay_time(rc);
-+		if (wait_time)
-+			mdelay(wait_time);
-+	} while (wait_time);
-+
-+	if (rc) {
-+		printk(KERN_ERR "Failed to invalidate firmware-assisted dump "
-+			"rgistration. unexpected error(%d).\n", rc);
-+		return rc;
-+	}
-+	fw_dump.dump_active = 0;
-+	fdm_active = NULL;
-+	return 0;
-+}
-+
-+void fadump_cleanup(void)
-+{
-+	/* Invalidate the registration only if dump is active. */
-+	if (fw_dump.dump_active) {
-+		init_fadump_mem_struct(&fdm,
-+			fdm_active->cpu_state_data.destination_address);
-+		fadump_invalidate_dump(&fdm);
-+	}
-+}
-+
-+/*
-+ * Release the memory that was reserved in early boot to preserve the memory
-+ * contents. The released memory will be available for general use.
-+ */
-+static void fadump_release_memory(unsigned long begin, unsigned long end)
-+{
-+	unsigned long addr;
-+	unsigned long ra_start, ra_end;
-+
-+	ra_start = fw_dump.reserve_dump_area_start;
-+	ra_end = ra_start + fw_dump.reserve_dump_area_size;
-+
-+	for (addr = begin; addr < end; addr += PAGE_SIZE) {
-+		/*
-+		 * exclude the dump reserve area. Will reuse it for next
-+		 * fadump registration.
-+		 */
-+		if (addr <= ra_end && ((addr + PAGE_SIZE) > ra_start))
-+			continue;
-+
-+		ClearPageReserved(pfn_to_page(addr >> PAGE_SHIFT));
-+		init_page_count(pfn_to_page(addr >> PAGE_SHIFT));
-+		free_page((unsigned long)__va(addr));
-+		totalram_pages++;
-+	}
-+}
-+
-+static void fadump_invalidate_release_mem(void)
-+{
-+	unsigned long reserved_area_start, reserved_area_end;
-+	unsigned long destination_address;
-+
-+	mutex_lock(&fadump_mutex);
-+	if (!fw_dump.dump_active) {
-+		mutex_unlock(&fadump_mutex);
-+		return;
-+	}
-+
-+	destination_address = fdm_active->cpu_state_data.destination_address;
-+	fadump_cleanup();
-+	mutex_unlock(&fadump_mutex);
-+
-+	/*
-+	 * Save the current reserved memory bounds we will require them
-+	 * later for releasing the memory for general use.
-+	 */
-+	reserved_area_start = fw_dump.reserve_dump_area_start;
-+	reserved_area_end = reserved_area_start +
-+			fw_dump.reserve_dump_area_size;
-+	/*
-+	 * Setup reserve_dump_area_start and its size so that we can
-+	 * reuse this reserved memory for Re-registration.
-+	 */
-+	fw_dump.reserve_dump_area_start = destination_address;
-+	fw_dump.reserve_dump_area_size = get_dump_area_size();
-+
-+	fadump_release_memory(reserved_area_start, reserved_area_end);
-+	if (fw_dump.cpu_notes_buf) {
-+		cpu_notes_buf_free((unsigned long)__va(fw_dump.cpu_notes_buf),
-+					fw_dump.cpu_notes_buf_size);
-+		fw_dump.cpu_notes_buf = 0;
-+		fw_dump.cpu_notes_buf_size = 0;
-+	}
-+	/* Initialize the kernel dump memory structure for FAD registration. */
-+	init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
-+}
-+
-+static ssize_t fadump_release_memory_store(struct kobject *kobj,
-+					struct kobj_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	if (!fw_dump.dump_active)
-+		return -EPERM;
-+
-+	if (buf[0] == '1') {
-+		/*
-+		 * Take away the '/proc/vmcore'. We are releasing the dump
-+		 * memory, hence it will not be valid anymore.
-+		 */
-+		vmcore_cleanup();
-+		fadump_invalidate_release_mem();
-+
-+	} else
-+		return -EINVAL;
-+	return count;
-+}
-+
- static ssize_t fadump_enabled_show(struct kobject *kobj,
- 					struct kobj_attribute *attr,
- 					char *buf)
-@@ -1045,10 +1172,13 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 	if (!fw_dump.fadump_enabled)
- 		return 0;
- 
-+	mutex_lock(&fadump_mutex);
- 	if (fdm_active)
- 		fdm_ptr = fdm_active;
--	else
-+	else {
-+		mutex_unlock(&fadump_mutex);
- 		fdm_ptr = &fdm;
-+	}
- 
- 	seq_printf(m,
- 			"CPU : [%#016llx-%#016llx] %#llx bytes, "
-@@ -1078,7 +1208,7 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 	if (!fdm_active ||
- 		(fw_dump.reserve_dump_area_start ==
- 		fdm_ptr->cpu_state_data.destination_address))
--		return 0;
-+		goto out;
- 
- 	/* Dump is active. Show reserved memory region. */
- 	seq_printf(m,
-@@ -1090,9 +1220,15 @@ static int fadump_region_show(struct seq_file *m, void *private)
- 			fw_dump.reserve_dump_area_start,
- 			fdm_ptr->cpu_state_data.destination_address -
- 			fw_dump.reserve_dump_area_start);
-+out:
-+	if (fdm_active)
-+		mutex_unlock(&fadump_mutex);
- 	return 0;
- }
- 
-+static struct kobj_attribute fadump_release_attr = __ATTR(fadump_release_mem,
-+						0200, NULL,
-+						fadump_release_memory_store);
- static struct kobj_attribute fadump_attr = __ATTR(fadump_enabled,
- 						0444, fadump_enabled_show,
- 						NULL);
-@@ -1133,6 +1269,13 @@ static void fadump_init_files(void)
- 	if (!debugfs_file)
- 		printk(KERN_ERR "fadump: unable to create debugfs file"
- 				" fadump_region\n");
-+
-+	if (fw_dump.dump_active) {
-+		rc = sysfs_create_file(kernel_kobj, &fadump_release_attr.attr);
-+		if (rc)
-+			printk(KERN_ERR "fadump: unable to create sysfs file"
-+				" fadump_release_mem (%d)\n", rc);
-+	}
- 	return;
- }
- 
-@@ -1152,8 +1295,14 @@ int __init setup_fadump(void)
- 	 * If dump data is available then see if it is valid and prepare for
- 	 * saving it to the disk.
- 	 */
--	if (fw_dump.dump_active)
--		process_fadump(fdm_active);
-+	if (fw_dump.dump_active) {
-+		/*
-+		 * if dump process fails then invalidate the registration
-+		 * and release memory before proceeding for re-registration.
-+		 */
-+		if (process_fadump(fdm_active) < 0)
-+			fadump_invalidate_release_mem();
-+	}
- 	/* Initialize the kernel dump memory structure for FAD registration. */
- 	else if (fw_dump.reserve_dump_area_size)
- 		init_fadump_mem_struct(&fdm, fw_dump.reserve_dump_area_start);
-
+-- 
+Martyn Welch (Principal Software Engineer) | Registered in England and
+GE Intelligent Platforms                   | Wales (3828642) at 100
+T +44(0)1327322748                         | Barbirolli Square, Manchester,
+E martyn.welch@ge.com                      | M2 3AB  VAT:GB 927559189
