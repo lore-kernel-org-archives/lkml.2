@@ -1,34 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab1KGKYd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 05:24:33 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47894 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752938Ab1KGKX5 (ORCPT
+	id S1754010Ab1KGKZS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 05:25:18 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:53155 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab1KGKZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 05:23:57 -0500
-Date: Mon, 7 Nov 2011 10:24:44 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Paul Fulghum <paulkf@microgate.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: PROBLEM: n_hdlc not atomic use tty->flags.
-Message-ID: <20111107102444.495f3436@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EB7899E.5090006@ilyx.ru>
-References: <4EB7899E.5090006@ilyx.ru>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 7 Nov 2011 05:25:16 -0500
+Subject: [RFC PATCH v4 09/10] fadump: Invalidate the fadump registration
+	during machine shutdown.
+To: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+Cc: Amerigo Wang <amwang@redhat.com>, Ananth Narayan <ananth@in.ibm.com>,
+        Milton Miller <miltonm@bga.com>, Haren Myneni <hbabu@us.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Mon, 07 Nov 2011 15:26:24 +0530
+Message-ID: <20111107095624.1997.39099.stgit@mars.in.ibm.com>
+In-Reply-To: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
+References: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
+User-Agent: StGit/0.15-1-ged5e-dirty
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 11110709-8878-0000-0000-000000222F2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Nov 2011 11:32:46 +0400
-Ilya Zykov <ilya@ilyx.ru> wrote:
+From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
 
-> N_HDLC can spoil tty->flags because use not atomic operations on tty->flags.
-> I use n_hdlc line discipline and it happens.
+If dump is active during system reboot, shutdown or halt then invalidate
+the fadump registration as it does not get invalidated automatically.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+---
+ arch/powerpc/kernel/setup-common.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index ce35aaf..67e5caa 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -110,6 +110,14 @@ EXPORT_SYMBOL(ppc_do_canonicalize_irqs);
+ /* also used by kexec */
+ void machine_shutdown(void)
+ {
++#ifdef CONFIG_FA_DUMP
++	/*
++	 * if fadump is active, cleanup the fadump registration before we
++	 * shutdown.
++	 */
++	fadump_cleanup();
++#endif
++
+ 	if (ppc_md.machine_shutdown)
+ 		ppc_md.machine_shutdown();
+ }
+
