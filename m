@@ -1,98 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab1KGT6M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 14:58:12 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:65228 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab1KGT6K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 14:58:10 -0500
+	id S1753799Ab1KGUBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:01:09 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:36865 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752869Ab1KGUBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 15:01:06 -0500
+Date: Mon, 7 Nov 2011 12:00:08 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Subject: Re: [PATCH 15/28] ext4: Calculate and verify block bitmap checksum
+Message-ID: <20111107200008.GW12447@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075522.20506.22239.stgit@elm3c44.beaverton.ibm.com> <AE869D1A-2A06-4849-8752-74924B0C05BD@dilger.ca> <20111013071631.GQ12447@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <874nygu3cd.fsf@rustcorp.com.au>
-References: <467be983bed865e1b772136ed488f9ff@localhost>
-	<874nygu3cd.fsf@rustcorp.com.au>
-Date: Mon, 7 Nov 2011 11:58:08 -0800
-Message-ID: <CAJiQ=7D4SSzzkPpPMGnaTq-wZXUGmXCRfKhYdPFg7APDu+VTwA@mail.gmail.com>
-Subject: Re: [PATCH] module: Fix performance regression on modules with large
- symbol tables
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        Jan Beulich <JBeulich@novell.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111013071631.GQ12447@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+x-cbid: 11110720-5930-0000-0000-00000103BD5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 6, 2011 at 5:29 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> I see you honored Jan's original patch by leaving it mysterious and
-> undocumented.  I was totally confused by your patch.
+On Thu, Oct 13, 2011 at 12:16:31AM -0700, Darrick J. Wong wrote:
+> On Wed, Oct 12, 2011 at 06:00:40PM -0600, Andreas Dilger wrote:
+> > On 2011-10-08, at 1:55 AM, Darrick J. Wong wrote:
+> > > Compute and verify the checksum of the block bitmap; this checksum is
+> > > stored in the block group descriptor.
+> > > 
+> > > @@ -353,11 +360,26 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
+> > > 	/*
+> > > 	 * file system mounted not to panic on error,
+> > > +	 * -EIO with corrupt bitmap
+> > > 	 */
+> > > +	ext4_lock_group(sb, block_group);
+> > > +	if (!ext4_valid_block_bitmap(sb, desc, block_group, bh) ||
+> > > +	    !ext4_block_bitmap_csum_verify(sb, block_group, desc, bh,
+> > > +					   EXT4_BLOCKS_PER_GROUP(sb) / 8)) {
+> > > +		ext4_unlock_group(sb, block_group);
+> > > +		put_bh(bh);
+> > > +		ext4_error(sb, "Corrupt block bitmap - block_group = %u, "
+> > > +			   "block_bitmap = %llu", block_group, bitmap_blk);
+> > > +		return NULL;
+> > > +	}
+> > > +	ext4_unlock_group(sb, block_group);
+> > > +	set_buffer_verified(bh);
+> > 
+> > I've been thinking a while that we should add per-group error flags
+> > for the block and inode bitmaps.  That way, if we detect errors with
+> > either one, we can set the flag in the group descriptor and avoid
+> > using it for any allocations in the future.  Otherwise, we try to
+> > read the bitmap in repeatedly.
+> 
+> I think there's some code in ext4 somewhere that does that.  I also wonder if
+> the possibility that we're seeing a transient corruption error is worth
+> rechecking the block until it fails?  (I suspect not, but I decided to throw
+> that out there anyway.)
 
-Sorry - was just trying to mimic the existing level of verbosity.
+There's a bit of code in ext4_init_block_bitmap that makes a block group
+unwritable if the bg checksum fails to verify:
 
-> But I don't think it quite works in general.  gcc is allowed to
-> compact the strtab itself, eg with two names "foobar" and "bar", it
-> can reuse the tail of the first strtab entry.  It may not yet, but it
-> could.
+/* If checksum is bad mark all blocks used to prevent allocation
+ * essentially implementing a per-group read-only flag. */
+if (!ext4_group_desc_csum_verify(sbi, block_group, gdp)) {
+	ext4_error(sb, "Checksum bad for group %u",
+			block_group);
+	ext4_free_blks_set(sb, gdp, 0);
+	ext4_free_inodes_set(sb, gdp, 0);
+	ext4_itable_unused_set(sb, gdp, 0);
+	memset(bh->b_data, 0xff, sb->s_blocksize);
+	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
+				   EXT4_BLOCKS_PER_GROUP(sb) /
+				   8);
+	return 0;
+}
 
-Well, sure enough, libbfd's elf-strtab.c is advertised as:
+Do people think that doing this in the event of a block/inode bitmap checksum
+failure is a good idea?
 
-/* ELF strtab with GC and suffix merging support. */
+--D
+> 
+> > > @@ -803,6 +842,11 @@ static int ext4_mb_init_cache(struct page *page, char *incore)
+> > > 	if (groups_per_page == 0)
+> > > 		groups_per_page = 1;
+> > > 
+> > > +	csd = kzalloc(sizeof(struct ext4_csum_data) * groups_per_page,
+> > > +		      GFP_NOFS);
+> > > +	if (csd == NULL)
+> > > +		goto out;
+> > > +
+> > > 	/* allocate buffer_heads to read bitmaps */
+> > > 	if (groups_per_page > 1) {
+> > > 		err = -ENOMEM;
+> > > @@ -880,22 +924,25 @@ static int ext4_mb_init_cache(struct page *page, char *incore)
+> > > 		 * get set with buffer lock held.
+> > > 		 */
+> > > 		set_bitmap_uptodate(bh[i]);
+> > > -		bh[i]->b_end_io = end_buffer_read_sync;
+> > > +		csd[i].cd_sb = sb;
+> > > +		csd[i].cd_group = first_group + i;
+> > > +		bh[i]->b_private = csd + i;
+> > > +		bh[i]->b_end_io = ext4_end_buffer_read_sync;
+> > 
+> > It seems to be allocating this extra csd[] and calling the more complex
+> > ext4_end_buffer_read_sync() callback regardless of whether the checksum
+> > code is enabled or not.  Would it be better to only set the custom
+> > callback if we need to verify the checksum?
+> 
+> Yep, we could go straight to end_buffer_read_sync in the no-csum case.
+> 
+> --D
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-The function that performs the suffix merging is
-_bfd_elf_strtab_finalize().  For some reason this only seems to get
-called for .shstrtab (or .dynstr), not for the larger .strtab .  And I'm
-not sure why this would be useful for .shstrtab, since the section names
-usually start with '.'.  I guess it might save a few dozen bytes for
-cases like .init.data or .exit.text .
-
-But as you said, there is nothing keeping the binutils maintainers from
-extending this to .strtab in the future.
-
-One thing I noticed when making a test case was that the earliest entry
-in the section table doesn't necessarily pick the longest substring:
-
-  [ 1] .text             PROGBITS         0000000000000000  00000040
-       0000000000000006  0000000000000000  AX       0     0     4
-  [ 2] .data             PROGBITS         0000000000000000  00000048
-       0000000000000000  0000000000000000  WA       0     0     4
-  [ 3] .bss              NOBITS           0000000000000000  00000048
-       0000000000000000  0000000000000000  WA       0     0     4
-  [ 4] a_                PROGBITS         0000000000000000  00000048
-       0000000000000006  0000000000000000  AX       0     0     1
-  [ 5] fedcba_           PROGBITS         0000000000000000  0000004e
-       0000000000000006  0000000000000000  AX       0     0     1
-  [ 6] cba_              PROGBITS         0000000000000000  00000054
-       0000000000000006  0000000000000000  AX       0     0     1
-
-Hex dump of section '.shstrtab':
-  0x00000000 002e7379 6d746162 002e7374 72746162 ..symtab..strtab
-  0x00000010 002e7368 73747274 6162002e 74657874 ..shstrtab..text
-  0x00000020 002e6461 7461002e 62737300 67666564 ..data..bss.gfed
-  0x00000030 6362615f 002e636f 6d6d656e 74002e6e cba_..comment..n
-  0x00000040 6f74652e 474e552d 73746163 6b002e72 ote.GNU-stack..r
-  0x00000050 656c612e 65685f66 72616d65 00       ela.eh_frame.
-
-So, the first entry referencing "gfedcba_" has sh_name 0x32 ("a_").
-
-The second entry referencing "gfedcba_" has sh_name 0x2d ("fedcba_").
-
-The third entry referencing "gfedcba_" has sh_name 0x30 ("cba_").
-
-If the same holds true for .symtab, this means we probably need to
-change the logic to "backtrack" to the beginning of the string before
-copying it into core_strtab, because a subsequent symtab entry could
-reference a larger chunk of the string.
-
-We will also want to check the strmap bits, since it's possible that
-"cba_" was a core symbol but "edcba_" is not.  In which case we did not
-allocate room for the "ed" part, back in layout_symtab().
-
-> I've started a separate patch to add comments to all this.
-
-Not sure how you want to handle combining these changes?
-
-I'll just send a V2 that rolls in all of the desired modifications, if
-there are no objections...
-
-Thanks.
