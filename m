@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932951Ab1KGQT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:19:29 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:49940 "EHLO
+	id S932769Ab1KGQRV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:17:21 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:49592 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932774Ab1KGQRX (ORCPT
+	with ESMTP id S932618Ab1KGQRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:17:23 -0500
+	Mon, 7 Nov 2011 11:17:16 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v8 10/16] ARM: LPAE: Invalidate the TLB before freeing the PMD
-Date: Mon,  7 Nov 2011 16:16:52 +0000
-Message-Id: <1320682618-1182-11-git-send-email-catalin.marinas@arm.com>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH v8 01/16] ARM: pgtable: switch to use pgtable-nopud.h
+Date: Mon,  7 Nov 2011 16:16:43 +0000
+Message-Id: <1320682618-1182-2-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.4.2.g597a6
 In-Reply-To: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
 References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 07 Nov 2011 16:17:12.0748 (UTC) FILETIME=[B51A96C0:01CC9D68]
-X-MC-Unique: 111110716172006201
+X-OriginalArrivalTime: 07 Nov 2011 16:17:10.0123 (UTC) FILETIME=[B38A0BB0:01CC9D68]
+X-MC-Unique: 111110716171308001
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pA7GJltQ015314
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pA7GK9GJ015318
 
-Similar to the PTE freeing, this patch introduced __pmd_free_tlb() which
-invalidates the TLB before freeing a PMD page. This is needed because on
-newer processors the entry in the upper page table may be cached by the
-TLB and point to random data after the PMD has been freed.
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Nick Piggin noted upon introducing 4level-fixup.h:
+
+| Add a temporary "fallback" header so architectures can run with
+| the 4level pagetables patch without modification. All architectures
+| should be converted to use the folding headers (include/asm-generic/
+| pgtable-nop?d.h) as soon as possible, and the fallback header removed.
+
+This makes ARM compliant with this statement.
+
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 ---
- arch/arm/include/asm/tlb.h |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+ arch/arm/include/asm/pgalloc.h |    2 +-
+ arch/arm/include/asm/pgtable.h |   23 +++++++++++++----------
+ arch/arm/include/asm/tlb.h     |    1 +
+ 3 files changed, 15 insertions(+), 11 deletions(-)
 
+diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
+index 3e08fd3..7418894 100644
+--- a/arch/arm/include/asm/pgalloc.h
++++ b/arch/arm/include/asm/pgalloc.h
+@@ -30,7 +30,7 @@
+  */
+ #define pmd_alloc_one(mm,addr)		({ BUG(); ((pmd_t *)2); })
+ #define pmd_free(mm, pmd)		do { } while (0)
+-#define pgd_populate(mm,pmd,pte)	BUG()
++#define pud_populate(mm,pmd,pte)	BUG()
+ 
+ extern pgd_t *pgd_alloc(struct mm_struct *mm);
+ extern void pgd_free(struct mm_struct *mm, pgd_t *pgd);
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 9451dce..a1aca79 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -11,15 +11,16 @@
+ #define _ASMARM_PGTABLE_H
+ 
+ #include <linux/const.h>
+-#include <asm-generic/4level-fixup.h>
+ #include <asm/proc-fns.h>
+ 
+ #ifndef CONFIG_MMU
+ 
++#include <asm-generic/4level-fixup.h>
+ #include "pgtable-nommu.h"
+ 
+ #else
+ 
++#include <asm-generic/pgtable-nopud.h>
+ #include <asm/memory.h>
+ #include <mach/vmalloc.h>
+ #include <asm/pgtable-hwdef.h>
+@@ -164,20 +165,22 @@ extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+ #define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
+ 
+ /*
+- * The "pgd_xxx()" functions here are trivial for a folded two-level
+- * setup: the pgd is never bad, and a pmd always exists (as it's folded
+- * into the pgd entry)
++ * The "pud_xxx()" functions here are trivial when the pmd is folded into
++ * the pud: the pud entry is never bad, always exists, and can't be set or
++ * cleared.
+  */
+-#define pgd_none(pgd)		(0)
+-#define pgd_bad(pgd)		(0)
+-#define pgd_present(pgd)	(1)
+-#define pgd_clear(pgdp)		do { } while (0)
+-#define set_pgd(pgd,pgdp)	do { } while (0)
++#define pud_none(pud)		(0)
++#define pud_bad(pud)		(0)
++#define pud_present(pud)	(1)
++#define pud_clear(pudp)		do { } while (0)
+ #define set_pud(pud,pudp)	do { } while (0)
+ 
+ 
+ /* Find an entry in the second-level page table.. */
+-#define pmd_offset(dir, addr)	((pmd_t *)(dir))
++static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
++{
++	return (pmd_t *)pud;
++}
+ 
+ #define pmd_none(pmd)		(!pmd_val(pmd))
+ #define pmd_present(pmd)	(pmd_val(pmd))
 diff --git a/arch/arm/include/asm/tlb.h b/arch/arm/include/asm/tlb.h
-index b509e44..5d3ed7e3 100644
+index 265f908..b509e44 100644
 --- a/arch/arm/include/asm/tlb.h
 +++ b/arch/arm/include/asm/tlb.h
-@@ -202,8 +202,17 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
- 	tlb_remove_page(tlb, pte);
- }
+@@ -204,6 +204,7 @@ static inline void __pte_free_tlb(struct mmu_gather *tlb, pgtable_t pte,
  
-+static inline void __pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmdp,
-+				  unsigned long addr)
-+{
-+#ifdef CONFIG_ARM_LPAE
-+	tlb_add_flush(tlb, addr);
-+	tlb_remove_page(tlb, virt_to_page(pmdp));
-+#endif
-+}
-+
  #define pte_free_tlb(tlb, ptep, addr)	__pte_free_tlb(tlb, ptep, addr)
--#define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
-+#define pmd_free_tlb(tlb, pmdp, addr)	__pmd_free_tlb(tlb, pmdp, addr)
- #define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
+ #define pmd_free_tlb(tlb, pmdp, addr)	pmd_free((tlb)->mm, pmdp)
++#define pud_free_tlb(tlb, pudp, addr)	pud_free((tlb)->mm, pudp)
  
  #define tlb_migrate_finish(mm)		do { } while (0)
+ 
 
