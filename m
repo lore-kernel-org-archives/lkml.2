@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755101Ab1KGXXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:23:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22326 "EHLO mx1.redhat.com"
+	id S1755157Ab1KGXX7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:23:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22464 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755044Ab1KGXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:23:48 -0500
+	id S1755112Ab1KGXX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:23:56 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH -v2 3/4] ACPI APEI: Convert atomicio routines
+Subject: [PATCH -v2 4/4] ACPI: Remove ./drivers/acpi/atomicio.[ch]
 To: lenb@kernel.org
 Cc: linux-acpi@vger.kernel.org, rjw@sisk.pl, ying.huang@intel.com,
         bhelgaas@google.com, trenn@suse.de, linux-kernel@vger.kernel.org
-Date: Mon, 07 Nov 2011 16:23:41 -0700
-Message-ID: <20111107232341.13472.19933.stgit@amt.stowe>
+Date: Mon, 07 Nov 2011 16:23:47 -0700
+Message-ID: <20111107232347.13472.17553.stgit@amt.stowe>
 In-Reply-To: <20111107232321.13472.52069.stgit@amt.stowe>
 References: <20111107232321.13472.52069.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -25,284 +25,418 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Myron Stowe <mstowe@redhat.com>
 
-APEI needs memory access in interrupt context.  The obvious choice is
-acpi_read(), but originally it couldn't be used in interrupt context
-because it makes temporary mappings with ioremap().  Therefore, we added
-drivers/acpi/atomicio.c, which provides:
-    acpi_pre_map_gar()     -- ioremap in process context
-	acpi_atomic_read()     -- memory access in interrupt context
-	acpi_post_unmap_gar()  -- iounmap
-
-Later we added acpi_os_map_generic_address() (2971852) and enhanced
-acpi_read() so it works in interrupt context as long as the address has
-been previously mapped (620242a).  Now this sequence:
-    acpi_os_map_generic_address()    -- ioremap in process context
-    acpi_read()/apei_read()          -- now OK in interrupt context
-    acpi_os_unmap_generic_address()
-is equivalent to what atomicio.c provides.
-
-This patch introduces apei_read() and apei_write(), which currently are
-functional equivalents of acpi_read() and acpi_write().  This is mainly
-proactive, to prevent APEI breakages if acpi_read() and acpi_write()
-are ever augmented to support the 'bit_offset' field of GAS, as APEI's
-__apei_exec_write_register() precludes splitting up functionality
-related to 'bit_offset' and APEI's 'mask' (see its
-APEI_EXEC_PRESERVE_REGISTER block).
-
-With apei_read() and apei_write() in place, usages of atomicio routines
-are converted to apei_read()/apei_write() and existing calls within
-osl.c and the CA, based on the re-factoring that was done in an earlier
-patch series - http://marc.info/?l=linux-acpi&m=128769263327206&w=2:
-    acpi_pre_map_gar()     -->  acpi_os_map_generic_address()
-    acpi_post_unmap_gar()  -->  acpi_os_unmap_generic_address()
-    acpi_atomic_read()     -->  apei_read()
-    acpi_atomic_write()    -->  apei_write()
-
-
-Note that acpi_read() and acpi_write() currently use 'bit_width'
-for accessing GARs which seems incorrect.  'bit_width' is the size of
-the register, while 'access_width' is the size of the access the
-processor must generate on the bus.  The 'access_width' may be larger,
-for example, if the hardware only supports 32-bit or 64-bit reads.  I
-wanted to minimize any possible impacts with this patch series so I
-did *not* change this behavior.
-
+With the conversion of atomicio routines in place, atomicio.[ch] can be
+removed, replacing the APEI specific pre-mapping capabilities with the
+more generalized versions that commits 620242ae8c3 and 29718521237
+provide.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/acpi/apei/apei-base.c     |  102 +++++++++++++++++++++++++++++++++++--
- drivers/acpi/apei/apei-internal.h |    3 +
- drivers/acpi/apei/ghes.c          |   10 ++--
- 3 files changed, 104 insertions(+), 11 deletions(-)
+ drivers/acpi/Makefile   |    1 
+ drivers/acpi/atomicio.c |  365 -----------------------------------------------
+ include/acpi/atomicio.h |   10 -
+ 3 files changed, 0 insertions(+), 376 deletions(-)
+ delete mode 100644 drivers/acpi/atomicio.c
+ delete mode 100644 include/acpi/atomicio.h
 
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index 6154036..f54550a 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -34,13 +34,13 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/acpi.h>
-+#include <linux/acpi_io.h>
- #include <linux/slab.h>
- #include <linux/io.h>
- #include <linux/kref.h>
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
- #include <linux/debugfs.h>
+diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+index ecb26b4..e7c1d0f 100644
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -19,7 +19,6 @@ obj-y				+= acpi.o \
+ 
+ # All the builtin files are in the "acpi." module_param namespace.
+ acpi-y				+= osl.o utils.o reboot.o
+-acpi-y				+= atomicio.o
+ 
+ # sleep related files
+ acpi-y				+= wakeup.o
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+deleted file mode 100644
+index 7489b89..0000000
+--- a/drivers/acpi/atomicio.c
++++ /dev/null
+@@ -1,365 +0,0 @@
+-/*
+- * atomicio.c - ACPI IO memory pre-mapping/post-unmapping, then
+- * accessing in atomic context.
+- *
+- * This is used for NMI handler to access IO memory area, because
+- * ioremap/iounmap can not be used in NMI handler. The IO memory area
+- * is pre-mapped in process context and accessed in NMI handler.
+- *
+- * Copyright (C) 2009-2010, Intel Corp.
+- *	Author: Huang Ying <ying.huang@intel.com>
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public License version
+- * 2 as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/acpi.h>
+-#include <linux/io.h>
+-#include <linux/kref.h>
+-#include <linux/rculist.h>
+-#include <linux/interrupt.h>
+-#include <linux/slab.h>
 -#include <acpi/atomicio.h>
- 
- #include "apei-internal.h"
- 
-@@ -70,7 +70,7 @@ int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val)
- {
- 	int rc;
- 
--	rc = acpi_atomic_read(val, &entry->register_region);
-+	rc = apei_read(val, &entry->register_region);
- 	if (rc)
- 		return rc;
- 	*val >>= entry->register_region.bit_offset;
-@@ -116,13 +116,13 @@ int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val)
- 	val <<= entry->register_region.bit_offset;
- 	if (entry->flags & APEI_EXEC_PRESERVE_REGISTER) {
- 		u64 valr = 0;
--		rc = acpi_atomic_read(&valr, &entry->register_region);
-+		rc = apei_read(&valr, &entry->register_region);
- 		if (rc)
- 			return rc;
- 		valr &= ~(entry->mask << entry->register_region.bit_offset);
- 		val |= valr;
- 	}
--	rc = acpi_atomic_write(val, &entry->register_region);
-+	rc = apei_write(val, &entry->register_region);
- 
- 	return rc;
- }
-@@ -243,7 +243,7 @@ static int pre_map_gar_callback(struct apei_exec_context *ctx,
- 	u8 ins = entry->instruction;
- 
- 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
--		return acpi_pre_map_gar(&entry->register_region);
-+		return acpi_os_map_generic_address(&entry->register_region);
- 
- 	return 0;
- }
-@@ -276,7 +276,7 @@ static int post_unmap_gar_callback(struct apei_exec_context *ctx,
- 	u8 ins = entry->instruction;
- 
- 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
--		acpi_post_unmap_gar(&entry->register_region);
-+		acpi_os_unmap_generic_address(&entry->register_region);
- 
- 	return 0;
- }
-@@ -553,6 +553,96 @@ static int apei_check_gar(struct acpi_generic_address *reg, u64 *paddr)
- 	return 0;
- }
- 
-+/* read GAR in interrupt (including NMI) or process context */
-+int apei_read(u64 *val, struct acpi_generic_address *reg)
-+{
-+	int rc;
-+	u64 address;
-+	u32 tmp, width = reg->bit_width;
-+	acpi_status status;
-+
-+	rc = apei_check_gar(reg, &address);
-+	if (rc)
-+		return rc;
-+
-+	if (width == 64)
-+		width = 32;	/* Break into two 32-bit transfers */
-+
-+	*val = 0;
-+	switch(reg->space_id) {
-+	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-+		status = acpi_os_read_memory((acpi_physical_address)
-+					     address, &tmp, width);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+		*val = tmp;
-+
-+		if (reg->bit_width == 64) {
-+			/* Read the top 32 bits */
-+			status = acpi_os_read_memory((acpi_physical_address)
-+						     (address + 4), &tmp, 32);
-+			if (ACPI_FAILURE(status))
-+				return -EIO;
-+			*val |= ((u64)tmp << 32);
-+		}
-+		break;
-+	case ACPI_ADR_SPACE_SYSTEM_IO:
-+		status = acpi_os_read_port(address, (u32 *)val, reg->bit_width);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_read);
-+
-+/* write GAR in interrupt (including NMI) or process context */
-+int apei_write(u64 val, struct acpi_generic_address *reg)
-+{
-+	int rc;
-+	u64 address;
-+	u32 width = reg->bit_width;
-+	acpi_status status;
-+
-+	rc = apei_check_gar(reg, &address);
-+	if (rc)
-+		return rc;
-+
-+	if (width == 64)
-+		width = 32;	/* Break into two 32-bit transfers */
-+
-+	switch (reg->space_id) {
-+	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-+		status = acpi_os_write_memory((acpi_physical_address)
-+					      address, ACPI_LODWORD(val),
-+					      width);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+
-+		if (reg->bit_width == 64) {
-+			status = acpi_os_write_memory((acpi_physical_address)
-+						      (address + 4),
-+						      ACPI_HIDWORD(val), 32);
-+			if (ACPI_FAILURE(status))
-+				return -EIO;
-+		}
-+		break;
-+	case ACPI_ADR_SPACE_SYSTEM_IO:
-+		status = acpi_os_write_port(address, val, reg->bit_width);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_write);
-+
- static int collect_res_callback(struct apei_exec_context *ctx,
- 				struct acpi_whea_header *entry,
- 				void *data)
-diff --git a/drivers/acpi/apei/apei-internal.h b/drivers/acpi/apei/apei-internal.h
-index f57050e..617fb10 100644
---- a/drivers/acpi/apei/apei-internal.h
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -68,6 +68,9 @@ static inline int apei_exec_run_optional(struct apei_exec_context *ctx, u8 actio
- /* IP has been set in instruction function */
- #define APEI_EXEC_SET_IP	1
- 
-+int apei_read(u64 *val, struct acpi_generic_address *reg);
-+int apei_write(u64 val, struct acpi_generic_address *reg);
-+
- int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val);
- int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val);
- int apei_exec_read_register(struct apei_exec_context *ctx,
-diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-index b8e08cb..9d75fbc 100644
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -33,6 +33,7 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/acpi.h>
-+#include <linux/acpi_io.h>
- #include <linux/io.h>
- #include <linux/interrupt.h>
- #include <linux/timer.h>
-@@ -46,7 +47,6 @@
- #include <linux/llist.h>
- #include <linux/genalloc.h>
- #include <acpi/apei.h>
--#include <acpi/atomicio.h>
- #include <acpi/hed.h>
- #include <asm/mce.h>
- #include <asm/tlbflush.h>
-@@ -299,7 +299,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
- 	if (!ghes)
- 		return ERR_PTR(-ENOMEM);
- 	ghes->generic = generic;
--	rc = acpi_pre_map_gar(&generic->error_status_address);
-+	rc = acpi_os_map_generic_address(&generic->error_status_address);
- 	if (rc)
- 		goto err_free;
- 	error_block_length = generic->error_block_length;
-@@ -319,7 +319,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
- 	return ghes;
- 
- err_unmap:
--	acpi_post_unmap_gar(&generic->error_status_address);
-+	acpi_os_unmap_generic_address(&generic->error_status_address);
- err_free:
- 	kfree(ghes);
- 	return ERR_PTR(rc);
-@@ -328,7 +328,7 @@ err_free:
- static void ghes_fini(struct ghes *ghes)
- {
- 	kfree(ghes->estatus);
--	acpi_post_unmap_gar(&ghes->generic->error_status_address);
-+	acpi_os_unmap_generic_address(&ghes->generic->error_status_address);
- }
- 
- enum {
-@@ -399,7 +399,7 @@ static int ghes_read_estatus(struct ghes *ghes, int silent)
- 	u32 len;
- 	int rc;
- 
--	rc = acpi_atomic_read(&buf_paddr, &g->error_status_address);
-+	rc = apei_read(&buf_paddr, &g->error_status_address);
- 	if (rc) {
- 		if (!silent && printk_ratelimit())
- 			pr_warning(FW_WARN GHES_PFX
+-
+-#define ACPI_PFX "ACPI: "
+-
+-static LIST_HEAD(acpi_iomaps);
+-/*
+- * Used for mutual exclusion between writers of acpi_iomaps list, for
+- * synchronization between readers and writer, RCU is used.
+- */
+-static DEFINE_SPINLOCK(acpi_iomaps_lock);
+-
+-struct acpi_iomap {
+-	struct list_head list;
+-	void __iomem *vaddr;
+-	unsigned long size;
+-	phys_addr_t paddr;
+-	struct kref ref;
+-};
+-
+-/* acpi_iomaps_lock or RCU read lock must be held before calling */
+-static struct acpi_iomap *__acpi_find_iomap(phys_addr_t paddr,
+-					    unsigned long size)
+-{
+-	struct acpi_iomap *map;
+-
+-	list_for_each_entry_rcu(map, &acpi_iomaps, list) {
+-		if (map->paddr + map->size >= paddr + size &&
+-		    map->paddr <= paddr)
+-			return map;
+-	}
+-	return NULL;
+-}
+-
+-/*
+- * Atomic "ioremap" used by NMI handler, if the specified IO memory
+- * area is not pre-mapped, NULL will be returned.
+- *
+- * acpi_iomaps_lock or RCU read lock must be held before calling
+- */
+-static void __iomem *__acpi_ioremap_fast(phys_addr_t paddr,
+-					 unsigned long size)
+-{
+-	struct acpi_iomap *map;
+-
+-	map = __acpi_find_iomap(paddr, size);
+-	if (map)
+-		return map->vaddr + (paddr - map->paddr);
+-	else
+-		return NULL;
+-}
+-
+-/* acpi_iomaps_lock must be held before calling */
+-static void __iomem *__acpi_try_ioremap(phys_addr_t paddr,
+-					unsigned long size)
+-{
+-	struct acpi_iomap *map;
+-
+-	map = __acpi_find_iomap(paddr, size);
+-	if (map) {
+-		kref_get(&map->ref);
+-		return map->vaddr + (paddr - map->paddr);
+-	} else
+-		return NULL;
+-}
+-
+-/*
+- * Used to pre-map the specified IO memory area. First try to find
+- * whether the area is already pre-mapped, if it is, increase the
+- * reference count (in __acpi_try_ioremap) and return; otherwise, do
+- * the real ioremap, and add the mapping into acpi_iomaps list.
+- */
+-static void __iomem *acpi_pre_map(phys_addr_t paddr,
+-				  unsigned long size)
+-{
+-	void __iomem *vaddr;
+-	struct acpi_iomap *map;
+-	unsigned long pg_sz, flags;
+-	phys_addr_t pg_off;
+-
+-	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+-	vaddr = __acpi_try_ioremap(paddr, size);
+-	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-	if (vaddr)
+-		return vaddr;
+-
+-	pg_off = paddr & PAGE_MASK;
+-	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
+-	vaddr = ioremap(pg_off, pg_sz);
+-	if (!vaddr)
+-		return NULL;
+-	map = kmalloc(sizeof(*map), GFP_KERNEL);
+-	if (!map)
+-		goto err_unmap;
+-	INIT_LIST_HEAD(&map->list);
+-	map->paddr = pg_off;
+-	map->size = pg_sz;
+-	map->vaddr = vaddr;
+-	kref_init(&map->ref);
+-
+-	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+-	vaddr = __acpi_try_ioremap(paddr, size);
+-	if (vaddr) {
+-		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-		iounmap(map->vaddr);
+-		kfree(map);
+-		return vaddr;
+-	}
+-	list_add_tail_rcu(&map->list, &acpi_iomaps);
+-	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-
+-	return map->vaddr + (paddr - map->paddr);
+-err_unmap:
+-	iounmap(vaddr);
+-	return NULL;
+-}
+-
+-/* acpi_iomaps_lock must be held before calling */
+-static void __acpi_kref_del_iomap(struct kref *ref)
+-{
+-	struct acpi_iomap *map;
+-
+-	map = container_of(ref, struct acpi_iomap, ref);
+-	list_del_rcu(&map->list);
+-}
+-
+-/*
+- * Used to post-unmap the specified IO memory area. The iounmap is
+- * done only if the reference count goes zero.
+- */
+-static void acpi_post_unmap(phys_addr_t paddr, unsigned long size)
+-{
+-	struct acpi_iomap *map;
+-	unsigned long flags;
+-	int del;
+-
+-	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+-	map = __acpi_find_iomap(paddr, size);
+-	BUG_ON(!map);
+-	del = kref_put(&map->ref, __acpi_kref_del_iomap);
+-	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+-
+-	if (!del)
+-		return;
+-
+-	synchronize_rcu();
+-	iounmap(map->vaddr);
+-	kfree(map);
+-}
+-
+-/* In NMI handler, should set silent = 1 */
+-static int acpi_check_gar(struct acpi_generic_address *reg,
+-			  u64 *paddr, int silent)
+-{
+-	u32 width, space_id;
+-
+-	width = reg->bit_width;
+-	space_id = reg->space_id;
+-	/* Handle possible alignment issues */
+-	memcpy(paddr, &reg->address, sizeof(*paddr));
+-	if (!*paddr) {
+-		if (!silent)
+-			pr_warning(FW_BUG ACPI_PFX
+-			"Invalid physical address in GAR [0x%llx/%u/%u]\n",
+-				   *paddr, width, space_id);
+-		return -EINVAL;
+-	}
+-
+-	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
+-		if (!silent)
+-			pr_warning(FW_BUG ACPI_PFX
+-				   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
+-				   *paddr, width, space_id);
+-		return -EINVAL;
+-	}
+-
+-	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
+-	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
+-		if (!silent)
+-			pr_warning(FW_BUG ACPI_PFX
+-			"Invalid address space type in GAR [0x%llx/%u/%u]\n",
+-				   *paddr, width, space_id);
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+-/* Pre-map, working on GAR */
+-int acpi_pre_map_gar(struct acpi_generic_address *reg)
+-{
+-	u64 paddr;
+-	void __iomem *vaddr;
+-	int rc;
+-
+-	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
+-		return 0;
+-
+-	rc = acpi_check_gar(reg, &paddr, 0);
+-	if (rc)
+-		return rc;
+-
+-	vaddr = acpi_pre_map(paddr, reg->bit_width / 8);
+-	if (!vaddr)
+-		return -EIO;
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(acpi_pre_map_gar);
+-
+-/* Post-unmap, working on GAR */
+-int acpi_post_unmap_gar(struct acpi_generic_address *reg)
+-{
+-	u64 paddr;
+-	int rc;
+-
+-	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
+-		return 0;
+-
+-	rc = acpi_check_gar(reg, &paddr, 0);
+-	if (rc)
+-		return rc;
+-
+-	acpi_post_unmap(paddr, reg->bit_width / 8);
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
+-
+-/*
+- * Can be used in atomic (including NMI) or process context. RCU read
+- * lock can only be released after the IO memory area accessing.
+- */
+-static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
+-{
+-	void __iomem *addr;
+-
+-	rcu_read_lock();
+-	addr = __acpi_ioremap_fast(paddr, width);
+-	switch (width) {
+-	case 8:
+-		*val = readb(addr);
+-		break;
+-	case 16:
+-		*val = readw(addr);
+-		break;
+-	case 32:
+-		*val = readl(addr);
+-		break;
+-#ifdef readq
+-	case 64:
+-		*val = readq(addr);
+-		break;
+-#endif
+-	default:
+-		return -EINVAL;
+-	}
+-	rcu_read_unlock();
+-
+-	return 0;
+-}
+-
+-static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
+-{
+-	void __iomem *addr;
+-
+-	rcu_read_lock();
+-	addr = __acpi_ioremap_fast(paddr, width);
+-	switch (width) {
+-	case 8:
+-		writeb(val, addr);
+-		break;
+-	case 16:
+-		writew(val, addr);
+-		break;
+-	case 32:
+-		writel(val, addr);
+-		break;
+-#ifdef writeq
+-	case 64:
+-		writeq(val, addr);
+-		break;
+-#endif
+-	default:
+-		return -EINVAL;
+-	}
+-	rcu_read_unlock();
+-
+-	return 0;
+-}
+-
+-/* GAR accessing in atomic (including NMI) or process context */
+-int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg)
+-{
+-	u64 paddr;
+-	int rc;
+-
+-	rc = acpi_check_gar(reg, &paddr, 1);
+-	if (rc)
+-		return rc;
+-
+-	*val = 0;
+-	switch (reg->space_id) {
+-	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+-		return acpi_atomic_read_mem(paddr, val, reg->bit_width);
+-	case ACPI_ADR_SPACE_SYSTEM_IO:
+-		return acpi_os_read_port(paddr, (u32 *)val, reg->bit_width);
+-	default:
+-		return -EINVAL;
+-	}
+-}
+-EXPORT_SYMBOL_GPL(acpi_atomic_read);
+-
+-int acpi_atomic_write(u64 val, struct acpi_generic_address *reg)
+-{
+-	u64 paddr;
+-	int rc;
+-
+-	rc = acpi_check_gar(reg, &paddr, 1);
+-	if (rc)
+-		return rc;
+-
+-	switch (reg->space_id) {
+-	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
+-		return acpi_atomic_write_mem(paddr, val, reg->bit_width);
+-	case ACPI_ADR_SPACE_SYSTEM_IO:
+-		return acpi_os_write_port(paddr, val, reg->bit_width);
+-	default:
+-		return -EINVAL;
+-	}
+-}
+-EXPORT_SYMBOL_GPL(acpi_atomic_write);
+diff --git a/include/acpi/atomicio.h b/include/acpi/atomicio.h
+deleted file mode 100644
+index 8b9fb4b..0000000
+--- a/include/acpi/atomicio.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-#ifndef ACPI_ATOMIC_IO_H
+-#define ACPI_ATOMIC_IO_H
+-
+-int acpi_pre_map_gar(struct acpi_generic_address *reg);
+-int acpi_post_unmap_gar(struct acpi_generic_address *reg);
+-
+-int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg);
+-int acpi_atomic_write(u64 val, struct acpi_generic_address *reg);
+-
+-#endif
 
