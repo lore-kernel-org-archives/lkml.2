@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab1KGXpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:45:52 -0500
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38863 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751231Ab1KGXpu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:45:50 -0500
-X-Sasl-enc: lzoyo+cWg8KQr2VzXZ8UJK+Xdb7mFrlHQrsHtvsNJ1Zq 1320709549
-Date: Mon, 7 Nov 2011 15:45:46 -0800
-From: Greg KH <greg@kroah.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Eric Paris <eparis@parisplace.org>,
-        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111107234546.GA5835@kroah.com>
-References: <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
- <4EB83674.3040207@zytor.com>
- <20111107201120.GA5775@albatros>
- <4EB843FF.5080201@zytor.com>
- <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
- <4EB84F05.1000704@zytor.com>
- <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
- <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
- <20111107232750.GA4854@kroah.com>
- <4BA97845-BA47-47F3-A923-9B24AB7306E9@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BA97845-BA47-47F3-A923-9B24AB7306E9@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755296Ab1KGXr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:47:59 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:53435 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751768Ab1KGXr6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:47:58 -0500
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Nov 2011 18:47:57 EST
+X-AuditID: 12074423-b7f756d0000008d0-7d-4eb86d00fdf3
+Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test kernels
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=US-ASCII
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <4EB85969.2010108@codemonkey.ws>
+Date: Mon, 7 Nov 2011 18:42:47 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, Pekka Enberg <penberg@kernel.org>,
+        Vince Weaver <vince@deater.net>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Transfer-Encoding: 7BIT
+Message-Id: <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu>
+References: <CAOJsxLFGAnNL9uA=WHD8eJVs5V2+BSrtC+3ff2FsPi326dtjZw@mail.gmail.com>	<4EB6BAED.2030400@redhat.com>	<4EB6BEFA.6000303@codemonkey.ws>	<20111106183132.GA4500@thunk.org>	<CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>	<CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>	<20111106231953.GD4500@thunk.org>	<alpine.LFD.2.02.1111070838520.1823@tux.localdomain>	<alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>	<CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>	<20111107203255.GF24234@thunk.org> <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws>
+To: Anthony Liguori <anthony@codemonkey.ws>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLKsWRmVeSWpSXmKPExsUixG6nrsuQu8PPYEmfiMWJK/8YLeY8fMZq
+	seXOZzaLW/cELOZMLbS4vGsOm8WWS82sFm2f/7FaHO/dwWLxqO8tu8Wbx/vZLFZt6GJ04PGY
+	evEIo0fLCU2PW21/mD12zrrL7rFpVSebx4kZv1k8nlzbzOTxft9VNo/Np6s9Pm+SC+CK4rJJ
+	Sc3JLEst0rdL4Mo42WlS8IS14sGcAywNjEdZuhg5OCQETCS6fup1MXICmWISF+6tZ+ti5OIQ
+	EtjHKLF/cQsLhLOeUeLIg3mMEM5RJokFjVsZQVqEBUIlTq28xAZi8woYS6y59Y4FxGYW0JHY
+	ufUOWJxNQEnizqf9YHFOAV2J/we+M4JsZhFQkfj+uBpkJrPALhaJZ0cWMEH0akssW/iaGWKm
+	lcSkifvYIRbPZpXoOPsULCECVPRg80ZGiLvlJVq+3mGbwCg4C8kds5DcMQvJ3AWMzKsYZVNy
+	q3RzEzNzilOTdYuTE/PyUot0zfRyM0v0UlNKNzGCY81FeQfjn4NKhxgFOBiVeHhniu7wE2JN
+	LCuuzD3EKMnBpCTKOzcDKMSXlJ9SmZFYnBFfVJqTWnyIUYKDWUmEVyQUKMebklhZlVqUD5OS
+	5mBREueV2engJySQnliSmp2aWpBaBJOV4eBQkuBNyAFqFCxKTU+tSMvMKUFIM3FwggznARre
+	nwoyvLggMbc4Mx0if4pRUUqcNx2kWQAkkVGaB9cLS4WvGMWBXhHmtUwGquIBplG47ldAg5mA
+	BrfrbgMZXJKIkJJqYKzz9p6SEB7AOcs2KIXroEnvZ7vvbaujJoQoaHHmTWOytpp0U8JgZalv
+	qaJD6aXDTgV3KxL8zb4wR5hrnj2n0llwtsVybSvv6Rijj56XJwteOvyyhk+wdlWT522v2dyX
+	TQPjhHP/ZE2+WFGy6cenm3PUn4fG7G+7e2HF3q27by9KZq40Xp0WrMRSnJFoqMVcVJwIAJyc
+	36lgAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 06:40:13PM -0500, Theodore Tso wrote:
+
+On Nov 7, 2011, at 5:19 PM, Anthony Liguori wrote:
+
 > 
-> On Nov 7, 2011, at 6:27 PM, Greg KH wrote:
-> > 
-> > So, what do we really need revoke() for these days?
+> The kernel ecosystem does not have to be limited to linux.git.  There could be a process to be a "kernel.org project" for projects that fit a certain set of criteria.  These projects could all share the Linux kernel release cadence and have a kernel maintainer as a sponsor or something like that.
 > 
-> As I mentioned at the kernel summit, I'd like revoke along with a
-> formal notification from block devices that get ejected to the file
-> system layer, and the file system should be able to call a VFS library
-> function which revokes all open file descriptor on the ejected block
-> device.  It would result in much cleaner handling at the file system
-> level when a USB storage device gets pulled.
+> That is something that could potentially benefit things like e2fs-tools and all of the other tools that are tied closely to the kernel.
 
-So you want revoke() on a block device to do what?  The same thing as
-disconnecting it from the hardware level?
+We have that already.   Packages such as e2fsprogs, xfsprogs, xfstests, sparse, git, etc., have git trees under git.kernel.org.  And I agree that's the perfect place for kvm-tool and perf.   :-)
 
-> > But that's getting away from the original topic here, sorry…
-> 
-> Yup.   But if revoke has come up, I'd like to remind folks that there
-> are good uses of it besides just tty devices that receive hangup
-> events.   Having the modem connection disappear and the USB device
-> disappear isn't all that different from a conceptual point of view.
+-- Ted
 
-Oh, I forgot that this came up while we were drinking at the LinuxCon
-Japan conference this year and we figured out that you could just use
-the 'unbind' and 'bind' files in sysfs to disconnect and reconnect the
-device from the driver from userspace which would simulate a revoke()
-call on pretty much any type of char device we have today.
-
-Sure, it's crude, and yes, it's the result of a lot of whisky, but even
-now, it still seems like a nice hack if you really want and need this
-from userspace :)
-
-thanks,
-
-greg k-h
