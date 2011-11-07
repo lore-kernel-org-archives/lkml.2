@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab1KGX1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:27:20 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:41362 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751137Ab1KGX1T (ORCPT
+	id S1754936Ab1KGX2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:28:04 -0500
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56364 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751137Ab1KGX2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:27:19 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+HPIJ4PR8NZI6LmrP+Fdcp
-Date: Mon, 7 Nov 2011 15:27:13 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
-Message-ID: <20111107232713.GD31337@atomide.com>
-References: <1320688617-4543-1-git-send-email-balbi@ti.com>
- <20111107183208.GG15294@n2100.arm.linux.org.uk>
- <20111107193908.GA5059@legolas.emea.dhcp.ti.com>
- <20111107212707.GH15294@n2100.arm.linux.org.uk>
- <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com>
- <20111107224129.GJ15294@n2100.arm.linux.org.uk>
- <20111107225157.GB31337@atomide.com>
- <20111107225529.GK15294@n2100.arm.linux.org.uk>
- <20111107230728.GC31337@atomide.com>
- <20111107231632.GL15294@n2100.arm.linux.org.uk>
+	Mon, 7 Nov 2011 18:28:01 -0500
+X-Sasl-enc: dkC4X6dfUcadnR6J7SolQtnq0KXCLjpJS+9obXr1sVod 1320708480
+Date: Mon, 7 Nov 2011 15:27:50 -0800
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Eric Paris <eparis@parisplace.org>,
+        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
+ /proc/interrupts
+Message-ID: <20111107232750.GA4854@kroah.com>
+References: <4EB82F08.8060209@zytor.com>
+ <20111107192915.GA4690@albatros>
+ <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
+ <4EB83674.3040207@zytor.com>
+ <20111107201120.GA5775@albatros>
+ <4EB843FF.5080201@zytor.com>
+ <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
+ <4EB84F05.1000704@zytor.com>
+ <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
+ <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111107231632.GL15294@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [111107 14:41]:
-> On Mon, Nov 07, 2011 at 03:07:28PM -0800, Tony Lindgren wrote:
-> > * Russell King - ARM Linux <linux@arm.linux.org.uk> [111107 14:20]:
-> > > On Mon, Nov 07, 2011 at 02:51:57PM -0800, Tony Lindgren wrote:
-> > > > Here's what I got. Looks like the removal of the sr[12]_hwmod
-> > > > part is no longer needed, so only the r value check part is needed.
-> > > 
-> > > Err.  So do you have anything in your git tree which you're pushing out
-> > > this evening which removes the sr[12]_hwmod from the omap_3xxx_hwmod
-> > > list?
-> > > 
-> > > If not, how does that bug get fixed in mainline?
-> > 
-> > Ah sorry, there's also the following commit there that deals
-> > with other related issues:
+On Mon, Nov 07, 2011 at 11:21:32PM +0000, Alan Cox wrote:
+> > It's better than nothing, but it really isn't wonderful - because it's
+> > really not just about audio. And revoke doesn't work universally.
 > 
-> Great, so it looks like everything that I've found over the last two days
-> should be solved completely by what you have queued for Arnd.
+> BSD invented revoke but never implemented it universally. It turns out
+> that this isn't a big problem. Right now we basically only have revoke
+> for tty devices but we don't need it for that much more. Revoke on disk
+> files and the like has simply never happened because its not a matter of
+> revoke being universal so much as universal revoke being universally
+> pointless.
 
-OK good to hear.
+I looked into implementing revoke() a while ago, and looked at how BSD
+did it.  They really only implemented it for a very narrow range of
+devices (tty only I think), which is not what we really want.
 
-> One last issue though...
-> 
-> We had this patch:
-> 
-> http://lists.arm.linux.org.uk/lurker/message/20111006.232441.227dfcf6.en.html
-> 
-> which is from Paul, post my complaint about IS_ERR_VALUE being used.
-> This removed sr1_hwmod and sr2_hwmod, and the commit message explicitly
-> talks about doing this.
-> 
-> There's also the patch below.  Somehow, this resulted in that bit of
-> Paul's patch being removed (possibly automatically by git) but the commit
-> comments are retained, which are now stale and no longer reflect what the
-> patch is doing...  That's rather unfortunate, but at this point its
-> probably too late to do something about it.
+I thought people wanted it for all char and block devices, if this isn't
+so, then it might be easier to implement than I thought.
 
-Yeah that's a bit unfortunate. At least the commit message mentions
-what it fixes, and then mentions the secondary bug related to the
-sr[12]_hwmod entries. Anyways, I'd rather not start messing with commit
-unless people think it's worth rebasing about half of the patches
-in fixes.
+So, what do we really need revoke() for these days?
 
-Regards,
+But that's getting away from the original topic here, sorry...
 
-Tony
+greg k-h
