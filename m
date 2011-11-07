@@ -1,124 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab1KGOv3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:51:29 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:60404 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752450Ab1KGOv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:51:27 -0500
-Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bart Van Assche <bvanassche@acm.org>,
-        linux-scsi@vger.kernel.org
-In-Reply-To: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
-References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Nov 2011 08:51:24 -0600
-Message-ID: <1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
+	id S1755775Ab1KGOwg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:52:36 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:33363 "EHLO
+	dnet.ilyx.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752711Ab1KGOwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 09:52:35 -0500
+Message-ID: <4EB7F0AE.4080600@ilyx.ru>
+Date: Mon, 07 Nov 2011 18:52:30 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110929 Iceape/2.0.11
+MIME-Version: 1.0
+To: Alan Cox <alan@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Race condition in tty buffer's function flush_to_ldisc().
+References: <4EB7BD9A.7070600@ilyx.ru>	<20111107115802.23201d45@bob.linux.org.uk>	<4EB7CCFF.5090304@ilyx.ru>	<20111107130643.07e84fca@bob.linux.org.uk>	<4EB7E0C6.7050909@ilyx.ru> <20111107145005.68ca1050@bob.linux.org.uk>
+In-Reply-To: <20111107145005.68ca1050@bob.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-07 at 17:24 +1100, Stephen Rothwell wrote:
-> Hi all,
+Alan Cox wrote:
+
+>> Of course I know about tty_buffer_flush(), it only read TTY_FLUSHING,
+>> it can't change TTY_FLUSHING, if flush_to_ldisc() single threaded,
+>> we can change TTY_FLUSHING only in one place in one time(in
+>> flush_to_ldisc()), therefor we can use only "set_bit(TTY_FLUSHING,
+>> &tty->flags)" without test.
 > 
-> Starting some time last week I am getting the following during boot on
-> our PPC970 blade:
+> Yes.. if you can pin down why in your testing you see the other case
+> sometimes being true.
 > 
-> calling  .ipr_init+0x0/0x68 @ 1
-> ipr: IBM Power RAID SCSI Device Driver version: 2.5.2 (April 27, 2011)
-> ipr 0000:01:01.0: Found IOA with IRQ: 26
-> ipr 0000:01:01.0: Starting IOA initialization sequence.
-> ipr 0000:01:01.0: Adapter firmware version: 06160039
-> ipr 0000:01:01.0: IOA initialized.
-> scsi0 : IBM 572E Storage Adapter
-> ------------[ cut here ]------------
-> WARNING: at drivers/scsi/scsi_lib.c:1704
-> Modules linked in:
-> NIP: c00000000053b3d4 LR: c00000000053e5b0 CTR: c000000000541d70
-> REGS: c0000000783c2f60 TRAP: 0700   Not tainted  (3.1.0-autokern1)
-> MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 24002024  XER: 20000002
-> TASK = c0000000783b8000[1] 'swapper' THREAD: c0000000783c0000 CPU: 0
-> GPR00: 0000000000000001 c0000000783c31e0 c000000000cf38b0 c00000000239a9d0 
-> GPR04: c000000000cbe8f8 0000000000000000 c0000000783c3040 0000000000000000 
-> GPR08: c000000075daf488 c000000078a3b7ff c000000000bcacc8 0000000000000000 
-> GPR12: 0000000044002028 c000000007ffb000 0000000002e40000 000000000099b800 
-> GPR16: 0000000000000000 c000000000bba5fc c000000000a61db8 0000000000000000 
-> GPR20: 0000000001b77200 0000000000000000 c000000078990000 0000000000000001 
-> GPR24: c000000002396828 0000000000000000 0000000000000000 c000000078a3b938 
-> GPR28: fffffffffffffffa c0000000008ad2c0 c000000000c7faa8 c00000000239a9d0 
-> NIP [c00000000053b3d4] .scsi_free_queue+0x24/0x90
-> LR [c00000000053e5b0] .scsi_alloc_sdev+0x280/0x2e0
-> Call Trace:
-> [c0000000783c31e0] [c000000000c7faa8] wireless_seq_fops+0x278d0/0x2eb88 (unreliable)
-> [c0000000783c3270] [c00000000053e5b0] .scsi_alloc_sdev+0x280/0x2e0
-> [c0000000783c3330] [c00000000053eba0] .scsi_probe_and_add_lun+0x390/0xb40
-> [c0000000783c34a0] [c00000000053f7ec] .__scsi_scan_target+0x16c/0x650
-> [c0000000783c35f0] [c00000000053fd90] .scsi_scan_channel+0xc0/0x100
-> [c0000000783c36a0] [c00000000053fefc] .scsi_scan_host_selected+0x12c/0x1c0
-> [c0000000783c3750] [c00000000083dcb4] .ipr_probe+0x2c0/0x390
-> [c0000000783c3830] [c0000000003f50b4] .local_pci_probe+0x34/0x50
-> [c0000000783c38a0] [c0000000003f5f78] .pci_device_probe+0x148/0x150
-> [c0000000783c3950] [c0000000004e1e8c] .driver_probe_device+0xdc/0x210
-> [c0000000783c39f0] [c0000000004e20cc] .__driver_attach+0x10c/0x110
-> [c0000000783c3a80] [c0000000004e1228] .bus_for_each_dev+0x98/0xf0
-> [c0000000783c3b30] [c0000000004e1bf8] .driver_attach+0x28/0x40
-> [c0000000783c3bb0] [c0000000004e07d8] .bus_add_driver+0x218/0x340
-> [c0000000783c3c60] [c0000000004e2a2c] .driver_register+0x9c/0x1b0
-> [c0000000783c3d00] [c0000000003f62d4] .__pci_register_driver+0x64/0x140
-> [c0000000783c3da0] [c000000000b99f88] .ipr_init+0x4c/0x68
-> [c0000000783c3e20] [c00000000000ad24] .do_one_initcall+0x1a4/0x1e0
-> [c0000000783c3ee0] [c000000000b512d0] .kernel_init+0x14c/0x1fc
-> [c0000000783c3f90] [c000000000022468] .kernel_thread+0x54/0x70
-> Instruction dump:
-> ebe1fff8 7c0803a6 4e800020 7c0802a6 fba1ffe8 fbe1fff8 7c7f1b78 f8010010 
-> f821ff71 e8030398 3120ffff 7c090110 <0b000000> e86303b0 482de065 60000000 
-> ---[ end trace 759bed76a85e8dec ]---
-> scsi 0:0:1:0: Direct-Access     IBM-ESXS MAY2036RC        T106 PQ: 0 ANSI: 5
-> ------------[ cut here ]------------
+> Alan
+>  
 > 
-> I get lots more of these.  The obvious commit to point the finger at
-> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
-> commands") but the root cause may be something different.
+> 
 
-Actually, I don't think it's anything to do with this: it's Anton's
-fault
-
-commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
-Author: Anton Blanchard <anton@samba.org>
-Date:   Thu Nov 3 08:56:22 2011 +1100
-
-    [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
-
-Doesn't completely do the teardown.  The true fix is to do a proper
-teardown instead of hand rolling it.  Does this fix it for you?
-
-James
-
----
-diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-index 72273a0..b3c6d95 100644
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -319,11 +319,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
- 	return sdev;
- 
- out_device_destroy:
--	scsi_device_set_state(sdev, SDEV_DEL);
--	transport_destroy_device(&sdev->sdev_gendev);
--	put_device(&sdev->sdev_dev);
--	scsi_free_queue(sdev->request_queue);
--	put_device(&sdev->sdev_gendev);
-+	__scsi_remove_device(sdev);
- out:
- 	if (display_failure_msg)
- 		printk(ALLOC_FAILURE_MSG, __func__);
-
-
-
-
+OK, I try.
+Ilya.
