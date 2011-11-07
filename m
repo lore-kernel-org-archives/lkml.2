@@ -1,143 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1KGXQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 18:16:49 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52958 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab1KGXQr (ORCPT
+	id S1754764Ab1KGXUv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:20:51 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58446 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753374Ab1KGXUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 18:16:47 -0500
-Date: Mon, 7 Nov 2011 23:16:32 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] arm: omap2+: hwmod: fix breakage introduced by d6504acd
-Message-ID: <20111107231632.GL15294@n2100.arm.linux.org.uk>
-References: <1320688617-4543-1-git-send-email-balbi@ti.com> <20111107183208.GG15294@n2100.arm.linux.org.uk> <20111107193908.GA5059@legolas.emea.dhcp.ti.com> <20111107212707.GH15294@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1111071428001.12394@utopia.booyaka.com> <20111107224129.GJ15294@n2100.arm.linux.org.uk> <20111107225157.GB31337@atomide.com> <20111107225529.GK15294@n2100.arm.linux.org.uk> <20111107230728.GC31337@atomide.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107230728.GC31337@atomide.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 7 Nov 2011 18:20:49 -0500
+Date: Mon, 7 Nov 2011 23:21:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Vasiliy Kulikov <segoon@openwall.com>,
+        Eric Paris <eparis@parisplace.org>,
+        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
+ /proc/interrupts
+Message-ID: <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
+In-Reply-To: <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
+References: <20111107174522.GA2317@albatros>
+	<9718.1320689192@turing-police.cc.vt.edu>
+	<20111107190112.GA3732@albatros>
+	<4EB82F08.8060209@zytor.com>
+	<20111107192915.GA4690@albatros>
+	<CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
+	<4EB83674.3040207@zytor.com>
+	<20111107201120.GA5775@albatros>
+	<4EB843FF.5080201@zytor.com>
+	<CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
+	<4EB84F05.1000704@zytor.com>
+	<CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 03:07:28PM -0800, Tony Lindgren wrote:
-> * Russell King - ARM Linux <linux@arm.linux.org.uk> [111107 14:20]:
-> > On Mon, Nov 07, 2011 at 02:51:57PM -0800, Tony Lindgren wrote:
-> > > Here's what I got. Looks like the removal of the sr[12]_hwmod
-> > > part is no longer needed, so only the r value check part is needed.
-> > 
-> > Err.  So do you have anything in your git tree which you're pushing out
-> > this evening which removes the sr[12]_hwmod from the omap_3xxx_hwmod
-> > list?
-> > 
-> > If not, how does that bug get fixed in mainline?
-> 
-> Ah sorry, there's also the following commit there that deals
-> with other related issues:
+> Why? Because the problem really isn't about opening the file. The
+> problem is about any access: once you've opened the file, you *still*
+> must not be able to read the data from it if you have logged out and
+> somebody else has logged in. Think opening the microphone (which you
+> *should* be able to do) and just keeping it open until the next user
+> logs in.
 
-Great, so it looks like everything that I've found over the last two days
-should be solved completely by what you have queued for Arnd.
+We need minimal revocation stuff. This hasn't changed in years. You can
+mostly work around it with SELinux but the underlying problem is that you
+need a small controlled subset of revokable devices and objects and a
+meaningful way to revoke them.
 
-One last issue though...
+The latter is hard to do with a simple noddy model because there are
+multi-user systems with multiple audio devices, multiple displays and the
+like where the mapping is not a simple 'this list of objects is console'
+but needs user space to do the work.
 
-We had this patch:
+> Faking it with posix acl's is what the /dev/audio stuff tends to do.
 
-http://lists.arm.linux.org.uk/lurker/message/20111006.232441.227dfcf6.en.html
+The audio stuff mostly uses daemons to manage it. A bigger problem is
+file system mounts. If you've got an old handle on /dev/cdrom you can
+pass it down a socket to a background irritant that just does an eject
+every five minutes. Students were doing this in SunOS 4 and I'm sure
+still find it funny today.
 
-which is from Paul, post my complaint about IS_ERR_VALUE being used.
-This removed sr1_hwmod and sr2_hwmod, and the commit message explicitly
-talks about doing this.
+> It's better than nothing, but it really isn't wonderful - because it's
+> really not just about audio. And revoke doesn't work universally.
 
-There's also the patch below.  Somehow, this resulted in that bit of
-Paul's patch being removed (possibly automatically by git) but the commit
-comments are retained, which are now stale and no longer reflect what the
-patch is doing...  That's rather unfortunate, but at this point its
-probably too late to do something about it.
+BSD invented revoke but never implemented it universally. It turns out
+that this isn't a big problem. Right now we basically only have revoke
+for tty devices but we don't need it for that much more. Revoke on disk
+files and the like has simply never happened because its not a matter of
+revoke being universal so much as universal revoke being universally
+pointless.
 
-> From: Abhilash K V <abhilash.kv@ti.com>
-> Date: Fri, 7 Oct 2011 03:08:56 -0600
-> Subject: [PATCH] ARM: OMAP: AM35x: remove hwmods that aren't generic
-> 
-> Removing modules iva, sr1_hwmod, sr2_hwmod, mailbox from
-> the base omap3xxx_hwmods list, so that they can be excluded
-> for am35x.  This removes quite a few warnings on boot for AM35x.
-> 
-> Signed-off-by: Abhilash K V <abhilash.kv@ti.com>
-> [paul@pwsan.com: dropped 'mailbox class' comments; updated changelog]
-> Signed-off-by: Paul Walmsley <paul@pwsan.com>
-> 
-> --- a/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_3xxx_data.c
-> @@ -3132,7 +3132,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  	&omap3xxx_mmc2_hwmod,
->  	&omap3xxx_mmc3_hwmod,
->  	&omap3xxx_mpu_hwmod,
-> -	&omap3xxx_iva_hwmod,
->  
->  	&omap3xxx_timer1_hwmod,
->  	&omap3xxx_timer2_hwmod,
-> @@ -3161,8 +3160,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  	&omap3xxx_i2c1_hwmod,
->  	&omap3xxx_i2c2_hwmod,
->  	&omap3xxx_i2c3_hwmod,
-> -	&omap34xx_sr1_hwmod,
-> -	&omap34xx_sr2_hwmod,
->  
->  	/* gpio class */
->  	&omap3xxx_gpio1_hwmod,
-> @@ -3184,8 +3181,6 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  	&omap3xxx_mcbsp2_sidetone_hwmod,
->  	&omap3xxx_mcbsp3_sidetone_hwmod,
->  
-> -	/* mailbox class */
-> -	&omap3xxx_mailbox_hwmod,
->  
->  	/* mcspi class */
->  	&omap34xx_mcspi1,
-> @@ -3198,31 +3193,39 @@ static __initdata struct omap_hwmod *omap3xxx_hwmods[] = {
->  
->  /* 3430ES1-only hwmods */
->  static __initdata struct omap_hwmod *omap3430es1_hwmods[] = {
-> +	&omap3xxx_iva_hwmod,
->  	&omap3430es1_dss_core_hwmod,
-> +	&omap3xxx_mailbox_hwmod,
->  	NULL
->  };
->  
->  /* 3430ES2+-only hwmods */
->  static __initdata struct omap_hwmod *omap3430es2plus_hwmods[] = {
-> +	&omap3xxx_iva_hwmod,
->  	&omap3xxx_dss_core_hwmod,
->  	&omap3xxx_usbhsotg_hwmod,
-> +	&omap3xxx_mailbox_hwmod,
->  	NULL
->  };
->  
->  /* 34xx-only hwmods (all ES revisions) */
->  static __initdata struct omap_hwmod *omap34xx_hwmods[] = {
-> +	&omap3xxx_iva_hwmod,
->  	&omap34xx_sr1_hwmod,
->  	&omap34xx_sr2_hwmod,
-> +	&omap3xxx_mailbox_hwmod,
->  	NULL
->  };
->  
->  /* 36xx-only hwmods (all ES revisions) */
->  static __initdata struct omap_hwmod *omap36xx_hwmods[] = {
-> +	&omap3xxx_iva_hwmod,
->  	&omap3xxx_uart4_hwmod,
->  	&omap3xxx_dss_core_hwmod,
->  	&omap36xx_sr1_hwmod,
->  	&omap36xx_sr2_hwmod,
->  	&omap3xxx_usbhsotg_hwmod,
-> +	&omap3xxx_mailbox_hwmod,
->  	NULL
->  };
->  
+Alan
