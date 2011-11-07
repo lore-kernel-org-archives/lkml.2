@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186Ab1KGL6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 06:58:55 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:38606 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754825Ab1KGL6y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 06:58:54 -0500
-X-IronPort-AV: E=Sophos;i="4.69,469,1315173600"; 
-   d="scan'208";a="128925121"
-Date: Mon, 7 Nov 2011 12:58:35 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Eliad Peller <eliad@wizery.com>
-cc: Julia Lawall <julia@diku.dk>, "John W. Linville" <linville@tuxdriver.com>,
-        kernel-janitors@vger.kernel.org,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] net/mac80211/debugfs.c: use kstrtoul, etc
-In-Reply-To: <CAB3XZEfHV+sO=+vJdZUQVqXFtHvZyhJQ1Cm8LJ8Puyz9eqq9Kg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1111071258160.2527@hadrien>
-References: <1320586010-21931-1-git-send-email-julia@diku.dk> <1320586010-21931-4-git-send-email-julia@diku.dk> <CAB3XZEfHV+sO=+vJdZUQVqXFtHvZyhJQ1Cm8LJ8Puyz9eqq9Kg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755269Ab1KGL7p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 06:59:45 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49301 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab1KGL7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 06:59:44 -0500
+Date: Mon, 7 Nov 2011 12:57:34 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Gerd Hoffmann <kraxel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Alexander Graf <agraf@suse.de>, Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Blue Swirl <blauwirbel@gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+Message-ID: <20111107115734.GA30222@elte.hu>
+References: <4EB67486.1070105@redhat.com>
+ <CAOJsxLE2_ce+SCT25cmS7iFuH3SyJeYRNHjxG5iBPkodTX1AoA@mail.gmail.com>
+ <4EB67D17.7000701@redhat.com>
+ <CAOJsxLGRDeMg1CWJ+A6zYCb7dZnm1cm7UL0UVipmJJk4GFGtWA@mail.gmail.com>
+ <4EB680D9.2070706@redhat.com>
+ <CAOJsxLFpNG1iZt8=XU2xH3x9dFCqjM=+i8y4EMPg0Ah47bYfqg@mail.gmail.com>
+ <877C82F4-F07C-44AA-8722-3AF57CFC4597@suse.de>
+ <CAOJsxLFhB8V94VWbDgM6d_rgcy8XQNEfYBKYG1eh6oUMiQicEA@mail.gmail.com>
+ <4EB7B1A9.9000409@redhat.com>
+ <alpine.LFD.2.02.1111071333350.2815@tux.localdomain>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1619784325-1320667116=:2527"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1111071333350.2815@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323329-1619784325-1320667116=:2527
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+* Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 
+> On Mon, 7 Nov 2011, Gerd Hoffmann wrote:
+> >>It's not just about code, it's as much about culture and development process.
+> >
+> >Indeed.  The BSDs have both kernel and the base system in a single
+> >repository.  There are probably good reasons for (and against) it.
+> >
+> > In Linux we don't have that culture.  No tool (except perf) lives 
+> > in the kernel repo.  I fail to see why kvm-tool is that much 
+> > different from udev, util-linux, iproute, filesystem tools, that 
+> > it should be included.
+> 
+> You seem to think perf is an exception - I think it's going to be 
+> the future norm for userspace components that are very close to the 
+> kernel. That's in fact what Ingo was arguing for when he suggested 
+> QEMU to be merged to the kernel tree.
 
+Yep, and the answer i got from the Qemu folks when i suggested that 
+merge was a polite "buzz off", along the lines of: "We don't want to 
+do that, but feel free to write your own tool, leave Qemu alone."
 
-On Mon, 7 Nov 2011, Eliad Peller wrote:
+Now that people have done exactly that some Qemu folks not only have 
+changed their objection from "write your own tool" to "erm, write 
+your own tool but do it the way *we* prefer you to do it" - they also 
+started contributing *against* the KVM tool with predictable, once 
+every 3 months objections against its upstream merge...
 
-> On Sun, Nov 6, 2011 at 3:26 PM, Julia Lawall <julia@diku.dk> wrote:
->> From: Julia Lawall <julia@diku.dk>
->>
->> Use kstrtoul, etc instead of the now deprecated strict_strtoul, etc.
->>
->> A semantic patch rule for the kstrtoul case is as follows:
->> (http://coccinelle.lip6.fr/)
->>
->> // <smpl>
->> @@
->> expression a,b;
->> {int,long} *c;
->> @@
->>
->> -strict_strtoul
->> +kstrtoul
->>  (a,b,c)
->> // </smpl>
->>
->> Signed-off-by: Julia Lawall <julia@diku.dk>
->>
->> ---
->>  net/mac80211/debugfs.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff -u -p a/net/mac80211/debugfs.c b/net/mac80211/debugfs.c
->> --- a/net/mac80211/debugfs.c
->> +++ b/net/mac80211/debugfs.c
->> @@ -190,7 +190,7 @@ static ssize_t uapsd_max_sp_len_write(st
->>                return -EFAULT;
->>        buf[len] = '\0';
->>
->> -       ret = strict_strtoul(buf, 0, &val);
->> +       ret = kstrtoul(buf, 0, &val);
->>
->>        if (ret)
->>                return -EINVAL;
->>
->
-> maybe while cleaning it up change copy_from_user +
-> strict_stroul/kstroul -> kstroul_from_user?
+That's not very nice and not very constructive.
 
-Thanks for the suggestion.  I will look into it.
+The only valid technical objection against tools/kvm/ that i can see 
+would be that it's not useful enough yet for the upstream kernel 
+versus other tools such as Qemu. In all fairness i think we might 
+still be at that early stage of the project but it's clearly 
+progressing very rapidly and i'm already using it on a daily basis 
+for my own kernel testing purposes. During the Kernel Summit that's 
+how i tested contemporary kernels on contemporary user-space 
+remotely, without having to risk a physical reboot.
 
-julia
---8323329-1619784325-1320667116=:2527--
+Thanks,
+
+	Ingo
