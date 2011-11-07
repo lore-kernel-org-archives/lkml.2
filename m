@@ -1,312 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab1KGRnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 12:43:17 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45811 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755836Ab1KGRnQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 12:43:16 -0500
-From: Jonathan Cameron <jic23@kernel.org>
-To: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: guenter.roeck@ericsson.com, khali@linux-fr.org, dmitry.torokhov@gmail.com,
-        broonie@opensource.wolfsonmicro.com, gregkh@suse.de,
-        alan@lxorguk.ukuu.org.uk, arnd@arndb.de, linus.walleij@linaro.org,
-        lars@metafoo.de, maxime.ripard@free-electrons.com,
-        lm-sensors@lm-sensors.org, thomas.petazzoni@free-electrons.com,
-        zdevai@gmail.com, Jonathan Cameron <jic23@cam.ac.uk>
-Subject: [PATCH] IIO:hwmon interface client driver.
-Date: Mon,  7 Nov 2011 17:43:01 +0000
-Message-Id: <1320687781-15306-1-git-send-email-jic23@kernel.org>
-X-Mailer: git-send-email 1.7.7.2
-In-Reply-To: <4EB817C6.5070503@kernel.org>
-References: <4EB817C6.5070503@kernel.org>
+	id S933146Ab1KGRqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 12:46:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:41411 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755944Ab1KGRqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 12:46:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,471,1315206000"; 
+   d="scan'208";a="82060118"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        David Miller <davem@davemloft.net>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 7 Nov 2011 09:46:31 -0800
+Subject: RE: linux-next: build failure after merge of the origin tree
+Thread-Topic: linux-next: build failure after merge of the origin tree
+Thread-Index: AcydDjzzNn/sMOVzTpeMq++Cpu1XowAXlbzwAAIXdTA=
+Message-ID: <43F901BD926A4E43B106BF17856F075501A1CCA47F@orsmsx508.amr.corp.intel.com>
+References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
+ <20111106.205259.1237400984015921904.davem@davemloft.net>
+ <20111107134706.3e7fc633f913b5e155153127@canb.auug.org.au>
+ <20111106.223619.1348742215191441592.davem@davemloft.net>
+ <EAE7BD3E-8965-47A4-B3CA-01686E2602C2@intel.com>
+ <43F901BD926A4E43B106BF17856F075501A1CCA399@orsmsx508.amr.corp.intel.com>
+In-Reply-To: <43F901BD926A4E43B106BF17856F075501A1CCA399@orsmsx508.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_43F901BD926A4E43B106BF17856F075501A1CCA47Forsmsx508amrc_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonathan Cameron <jic23@cam.ac.uk>
+--_002_43F901BD926A4E43B106BF17856F075501A1CCA47Forsmsx508amrc_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Should move to drivers/hwmon once people are happy with it.
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org]
+> On Behalf Of Rose, Gregory V
+> Sent: Monday, November 07, 2011 8:47 AM
+> To: Kirsher, Jeffrey T; David Miller
+> Cc: sfr@canb.auug.org.au; torvalds@linux-foundation.org; linux-
+> next@vger.kernel.org; linux-kernel@vger.kernel.org; netdev@vger.kernel.or=
+g
+> Subject: RE: linux-next: build failure after merge of the origin tree
+>=20
+>=20
+>=20
+> > -----Original Message-----
+> > From: Kirsher, Jeffrey T
+> > Sent: Sunday, November 06, 2011 9:30 PM
+> > To: David Miller
+> > Cc: sfr@canb.auug.org.au; torvalds@linux-foundation.org; linux-
+> > next@vger.kernel.org; linux-kernel@vger.kernel.org; Rose, Gregory V;
+> > netdev@vger.kernel.org
+> > Subject: Re: linux-next: build failure after merge of the origin tree
+> >
+> >
+> >
+> > Cheers,
+> > Jeff
+> >
+> > On Nov 6, 2011, at 19:38, "David Miller" <davem@davemloft.net> wrote:
+> >
+> > > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > Date: Mon, 7 Nov 2011 13:47:06 +1100
+> > >
+> > >>> If you just revert the commit in origin from -next, then you will
+> get
+> > >>> conflicts with you pull the net.git tree in.
+> > >>
+> > >> I got no conflicts when I merged in the net tree and can see no fix
+> for
+> > >> this problem in the net tree.  My current head of the net tree is
+> > 1a6422f
+> > >> "etherh: Add MAINTAINERS entry for etherh".
+> > >
+> > > Ok, Jeff please take a look at this and send me a fix soon.
+> > >
+> > > Thanks.
+> >
+> > Ok Dave, at this point, I am puttying together a patch to revert this
+> fix
+> > since it appears that more trouble comes with this fix.  I will take a
+> > look at it quickly before sending out a patch to fix the issue.
+>=20
+> My bad...  I fixed a compiler warning that occurred with CONFIG_PCI_IOV
+> turned on and didn't realize that my patch would cause an error when
+> turning it back off.
+>=20
+> I'll have it fixed ASAP.
+>=20
+> - Greg
 
-Minimal support of simple in, curr and temp attributes
-so far.
+I have posted a fix for this problem to netdev and attached it to this emai=
+l.
 
-Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
----
-Fixed up the missing free Guenter spotted.
-Thanks!
- drivers/iio/Kconfig     |    8 ++
- drivers/iio/Makefile    |    1 +
- drivers/iio/iio_hwmon.c |  228 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 237 insertions(+), 0 deletions(-)
- create mode 100644 drivers/iio/iio_hwmon.c
+Again, my apologies for the mix up.
 
-diff --git a/drivers/iio/Kconfig b/drivers/iio/Kconfig
-index 308bc97..c2f0970 100644
---- a/drivers/iio/Kconfig
-+++ b/drivers/iio/Kconfig
-@@ -11,6 +11,14 @@ menuconfig IIO
- 
- if IIO
- 
-+config IIO_HWMON
-+       tristate "Hwmon driver that uses channels specified via iio maps"
-+       depends on HWMON
-+       help
-+	  This is a platform driver that in combination with a suitable
-+	  map allows IIO devices to provide  basic hwmon functionality
-+	  for those channels specified in the map.
-+
- source "drivers/iio/adc/Kconfig"
- source "drivers/iio/imu/Kconfig"
- source "drivers/iio/light/Kconfig"
-diff --git a/drivers/iio/Makefile b/drivers/iio/Makefile
-index cfb588a..5f9c01a 100644
---- a/drivers/iio/Makefile
-+++ b/drivers/iio/Makefile
-@@ -6,6 +6,7 @@ obj-y = inkern.o
- obj-$(CONFIG_IIO) += iio.o
- industrialio-y := core.o
- 
-+obj-$(CONFIG_IIO_HWMON) += iio_hwmon.o
- obj-y += adc/
- obj-y += imu/
- obj-y += light/
-diff --git a/drivers/iio/iio_hwmon.c b/drivers/iio/iio_hwmon.c
-new file mode 100644
-index 0000000..880ce6d
---- /dev/null
-+++ b/drivers/iio/iio_hwmon.c
-@@ -0,0 +1,228 @@
-+/* Hwmon client for industrial I/O devices
-+ *
-+ * Copyright (c) 2011 Jonathan Cameron
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * Limited functionality currently supported.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/iio/inkern.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+
-+/**
-+ * struct iio_hwmon_state - device instance state
-+ * @channels:		filled with null terminated array of channels from iio
-+ * @num_channels:	number of channels in channels (saves counting twice)
-+ * @hwmon_dev:		associated hwmon device
-+ * @attr_group:	the group of attributes
-+ * @attrs:		null terminated array of attribute pointers.
-+ */
-+struct iio_hwmon_state {
-+	struct iio_channel **channels;
-+	int num_channels;
-+	struct device *hwmon_dev;
-+	struct attribute_group attr_group;
-+	struct attribute **attrs;
-+};
-+
-+/*
-+ * Assumes that IIO and hwmon operate in the same base units.
-+ * This is supposed to be true, but needs verification for
-+ * new channel types.
-+ */
-+static ssize_t iio_hwmon_read_val(struct device *dev,
-+				  struct device_attribute *attr,
-+				  char *buf)
-+{
-+	long result;
-+	int val, ret, scaleint, scalepart;
-+	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
-+	struct iio_hwmon_state *state = dev_get_drvdata(dev);
-+
-+	/*
-+	 * No locking between this pair, so theoretically possible
-+	 * the scale has changed.
-+	 */
-+	ret = iio_read_channel_raw(state->channels[sattr->index],
-+				   &val);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = iio_read_channel_scale(state->channels[sattr->index],
-+				     &scaleint, &scalepart);
-+	if (ret < 0)
-+		return ret;
-+	switch (ret) {
-+	case IIO_VAL_INT:
-+		result = val * scaleint;
-+		break;
-+	case IIO_VAL_INT_PLUS_MICRO:
-+		result = (long)val * (long)scaleint +
-+			div_s64((s64)val * (s64)scalepart, 1000000LL);
-+		break;
-+	case IIO_VAL_INT_PLUS_NANO:
-+		result = (long)val * (long)scaleint +
-+			div_s64((s64)val * (s64)scalepart, 1000000000LL);
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	return sprintf(buf, "%ld\n", result);
-+}
-+
-+static void iio_hwmon_free_attrs(struct iio_hwmon_state *st)
-+{
-+	int i;
-+	struct sensor_device_attribute *a;
-+	for (i = 0; i < st->num_channels; i++)
-+		if (st->attrs[i]) {
-+			a = to_sensor_dev_attr(
-+				container_of(st->attrs[i],
-+					     struct device_attribute,
-+					     attr));
-+			kfree(a);
-+		}
-+}
-+
-+static int __devinit iio_hwmon_probe(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st;
-+	struct sensor_device_attribute *a;
-+	int ret, i;
-+	int in_i = 1, temp_i = 1, curr_i = 1;
-+
-+	st = kzalloc(sizeof(*st), GFP_KERNEL);
-+	if (st == NULL) {
-+		ret = -ENOMEM;
-+		goto error_ret;
-+	}
-+
-+	st->channels = iio_channel_get_all(&pdev->dev, NULL);
-+	if (IS_ERR(st->channels)) {
-+		ret = PTR_ERR(st->channels);
-+		goto error_free_state;
-+	}
-+
-+	/* count how many attributes we have */
-+	while (st->channels[st->num_channels])
-+		st->num_channels++;
-+
-+	st->attrs = kzalloc(sizeof(st->attrs) * (st->num_channels + 1),
-+			    GFP_KERNEL);
-+	if (st->attrs == NULL) {
-+		ret = -ENOMEM;
-+		goto error_release_channels;
-+	}
-+	for (i = 0; i < st->num_channels; i++) {
-+		a = kzalloc(sizeof(*a), GFP_KERNEL);
-+		if (a == NULL) {
-+			ret = -ENOMEM;
-+			goto error_free_attrs;
-+		}
-+
-+		sysfs_attr_init(&a->dev_attr.attr);
-+		switch (iio_get_channel_type(st->channels[i])) {
-+		case IIO_VOLTAGE:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "in%d_input",
-+							  in_i++);
-+			break;
-+		case IIO_TEMP:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "temp%d_input",
-+							  temp_i++);
-+			break;
-+		case IIO_CURRENT:
-+			a->dev_attr.attr.name = kasprintf(GFP_KERNEL,
-+							  "curr%d_input",
-+							  curr_i++);
-+			break;
-+		default:
-+			ret = -EINVAL;
-+			kfree(a);
-+			goto error_free_attrs;
-+		}
-+		if (a->dev_attr.attr.name == NULL) {
-+			kfree(a);
-+			ret = -ENOMEM;
-+			goto error_free_attrs;
-+		}
-+		a->dev_attr.show = iio_hwmon_read_val;
-+		a->dev_attr.attr.mode = S_IRUGO;
-+		a->index = i;
-+		st->attrs[i] = &a->dev_attr.attr;
-+	}
-+
-+	st->attr_group.attrs = st->attrs;
-+	platform_set_drvdata(pdev, st);
-+	ret = sysfs_create_group(&pdev->dev.kobj, &st->attr_group);
-+	if (ret < 0)
-+		goto error_free_attrs;
-+
-+	st->hwmon_dev = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(st->hwmon_dev)) {
-+		ret = PTR_ERR(st->hwmon_dev);
-+		goto error_remove_group;
-+	}
-+	return 0;
-+
-+error_remove_group:
-+	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-+error_free_attrs:
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+error_release_channels:
-+	iio_channel_release_all(st->channels);
-+error_free_state:
-+	kfree(st);
-+error_ret:
-+	return ret;
-+}
-+
-+static int __devexit iio_hwmon_remove(struct platform_device *pdev)
-+{
-+	struct iio_hwmon_state *st = platform_get_drvdata(pdev);
-+
-+	hwmon_device_unregister(st->hwmon_dev);
-+	sysfs_remove_group(&pdev->dev.kobj, &st->attr_group);
-+	iio_hwmon_free_attrs(st);
-+	kfree(st->attrs);
-+	iio_channel_release_all(st->channels);
-+	kfree(st);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver __refdata iio_hwmon_driver = {
-+	.driver = {
-+		.name = "iio_hwmon",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = iio_hwmon_probe,
-+	.remove = __devexit_p(iio_hwmon_remove),
-+};
-+
-+static int iio_inkern_init(void)
-+{
-+	return platform_driver_register(&iio_hwmon_driver);
-+}
-+module_init(iio_inkern_init);
-+
-+static void iio_inkern_exit(void)
-+{
-+	platform_driver_unregister(&iio_hwmon_driver);
-+}
-+module_exit(iio_inkern_exit);
-+
-+MODULE_AUTHOR("Jonathan Cameron <jic23@cam.ac.uk>");
-+MODULE_DESCRIPTION("IIO to hwmon driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.7.2
+- Greg
 
+
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--_002_43F901BD926A4E43B106BF17856F075501A1CCA47Forsmsx508amrc_
+Content-Type: message/rfc822
+
+Received: from orsmga002.jf.intel.com (10.7.209.21) by
+ orsmsx606-1.jf.intel.com (10.22.226.128) with Microsoft SMTP Server id
+ 8.2.255.0; Mon, 7 Nov 2011 09:44:27 -0800
+Received: from orsmga101.jf.intel.com ([10.7.208.22])  by
+ orsmga002-1.jf.intel.com with ESMTP; 07 Nov 2011 09:44:27 -0800
+Received: from vger.kernel.org ([209.132.180.67])  by mga02.intel.com with
+ ESMTP; 07 Nov 2011 09:44:26 -0800
+Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand	id
+ S932719Ab1KGRoU (ORCPT <rfc822;tushar.n.dave@intel.com>	+ 22 others); Mon, 7
+ Nov 2011 12:44:20 -0500
+Received: from mga03.intel.com ([143.182.124.21]:34247 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP	id S1755812Ab1KGRoU
+ (ORCPT <rfc822;netdev@vger.kernel.org>);	Mon, 7 Nov 2011 12:44:20 -0500
+Received: from azsmga002.ch.intel.com ([10.2.17.35])  by
+ azsmga101.ch.intel.com with ESMTP; 07 Nov 2011 09:44:19 -0800
+Received: from gitlad.jf.intel.com ([10.23.23.37])  by AZSMGA002.ch.intel.com
+ with ESMTP; 07 Nov 2011 09:44:19 -0800
+Received: from gitlad.jf.intel.com (gitlad.jf.intel.com [127.0.0.1])	by
+ gitlad.jf.intel.com (8.14.2/8.14.2) with ESMTP id pA7HiHq8008667;	Mon, 7 Nov
+ 2011 09:44:17 -0800
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "davem@davemloft.net" <davem@davemloft.net>
+Sender: "netdev-owner@vger.kernel.org" <netdev-owner@vger.kernel.org>
+Content-Class: urn:content-classes:message
+Date: Mon, 7 Nov 2011 09:44:17 -0800
+Subject: [net-ext PATCH] ixgbe: Fix compile for kernel without
+ CONFIG_PCI_IOV	defined
+Thread-Topic: [net-ext PATCH] ixgbe: Fix compile for kernel without
+ CONFIG_PCI_IOV	defined
+Thread-Index: AcyddOW473jGvoqIRoi0L2fGYAfLWg==
+Message-ID: <20111107174417.8638.87569.stgit@gitlad.jf.intel.com>
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-Exchange-Organization-AuthSource: orsmsx606.amr.corp.intel.com
+X-MS-Has-Attach: 
+X-Auto-Response-Suppress: All
+X-MS-TNEF-Correlator: 
+x-ironport-av: E=Sophos;i="4.69,471,1315206000";    d="scan'208";a="34125486"
+x-extloop1: 1
+x-ironport-anti-spam-filtered: true
+x-ironport-anti-spam-result:  AjACACMYuE7RhLRDkWdsb2JhbABChHqVUI4EgSIiAQEBAQkLCwcUBh+BdAEFAiAEJysGCQIkAiYCAgMuFh4LBRgEh2mlG5IdgTCGZYEWBIgLjBaIcYkc
+user-agent: StGIT/0.14.2
+list-id: <netdev.vger.kernel.org>
+x-mailing-list: netdev@vger.kernel.org
+x-sg-badattachmentnoreply: True
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+MIME-Version: 1.0
+
+Rml4IGNvbXBpbGVyIGVycm9ycyBhbmQgd2FybmluZ3Mgd2l0aCBDT05GSUdfUENJX0lPViBkZWZp
+bmVkIGFuZCBub3QNCmRlZmluZWQuDQoNClNpZ25lZC1vZmYtYnk6IEdyZWcgUm9zZSA8Z3JlZ29y
+eS52LnJvc2VAaW50ZWwuY29tPg0KLS0tDQoNCiBkcml2ZXJzL25ldC9ldGhlcm5ldC9pbnRlbC9p
+eGdiZS9peGdiZV9zcmlvdi5jIHwgICAgMiArKw0KIGRyaXZlcnMvbmV0L2V0aGVybmV0L2ludGVs
+L2l4Z2JlL2l4Z2JlX3NyaW92LmggfCAgICA0ICsrLS0NCiAyIGZpbGVzIGNoYW5nZWQsIDQgaW5z
+ZXJ0aW9ucygrKSwgMiBkZWxldGlvbnMoLSkNCg0KZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L2V0
+aGVybmV0L2ludGVsL2l4Z2JlL2l4Z2JlX3NyaW92LmMgYi9kcml2ZXJzL25ldC9ldGhlcm5ldC9p
+bnRlbC9peGdiZS9peGdiZV9zcmlvdi5jDQppbmRleCBkYjk1NzMxLi4wMGZjZDM5IDEwMDY0NA0K
+LS0tIGEvZHJpdmVycy9uZXQvZXRoZXJuZXQvaW50ZWwvaXhnYmUvaXhnYmVfc3Jpb3YuYw0KKysr
+IGIvZHJpdmVycy9uZXQvZXRoZXJuZXQvaW50ZWwvaXhnYmUvaXhnYmVfc3Jpb3YuYw0KQEAgLTQ0
+MiwxMiArNDQyLDE0IEBAIHN0YXRpYyBpbnQgaXhnYmVfc2V0X3ZmX21hY3ZsYW4oc3RydWN0IGl4
+Z2JlX2FkYXB0ZXIgKmFkYXB0ZXIsDQoNCiBpbnQgaXhnYmVfY2hlY2tfdmZfYXNzaWdubWVudChz
+dHJ1Y3QgaXhnYmVfYWRhcHRlciAqYWRhcHRlcikNCiB7DQorI2lmZGVmIENPTkZJR19QQ0lfSU9W
+DQogICAgICAgIGludCBpOw0KICAgICAgICBmb3IgKGkgPSAwOyBpIDwgYWRhcHRlci0+bnVtX3Zm
+czsgaSsrKSB7DQogICAgICAgICAgICAgICAgaWYgKGFkYXB0ZXItPnZmaW5mb1tpXS52ZmRldi0+
+ZGV2X2ZsYWdzICYNCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgUENJX0RFVl9GTEFH
+U19BU1NJR05FRCkNCiAgICAgICAgICAgICAgICAgICAgICAgIHJldHVybiB0cnVlOw0KICAgICAg
+ICB9DQorI2VuZGlmDQogICAgICAgIHJldHVybiBmYWxzZTsNCiB9DQoNCmRpZmYgLS1naXQgYS9k
+cml2ZXJzL25ldC9ldGhlcm5ldC9pbnRlbC9peGdiZS9peGdiZV9zcmlvdi5oIGIvZHJpdmVycy9u
+ZXQvZXRoZXJuZXQvaW50ZWwvaXhnYmUvaXhnYmVfc3Jpb3YuaA0KaW5kZXggNGE1ZDg4OS4uZGYw
+NGYxYSAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvbmV0L2V0aGVybmV0L2ludGVsL2l4Z2JlL2l4Z2Jl
+X3NyaW92LmgNCisrKyBiL2RyaXZlcnMvbmV0L2V0aGVybmV0L2ludGVsL2l4Z2JlL2l4Z2JlX3Ny
+aW92LmgNCkBAIC00MiwxMSArNDIsMTEgQEAgaW50IGl4Z2JlX25kb19zZXRfdmZfc3Bvb2ZjaGso
+c3RydWN0IG5ldF9kZXZpY2UgKm5ldGRldiwgaW50IHZmLCBib29sIHNldHRpbmcpOw0KIGludCBp
+eGdiZV9uZG9fZ2V0X3ZmX2NvbmZpZyhzdHJ1Y3QgbmV0X2RldmljZSAqbmV0ZGV2LA0KICAgICAg
+ICAgICAgICAgICAgICAgICAgICAgIGludCB2Ziwgc3RydWN0IGlmbGFfdmZfaW5mbyAqaXZpKTsN
+CiB2b2lkIGl4Z2JlX2NoZWNrX3ZmX3JhdGVfbGltaXQoc3RydWN0IGl4Z2JlX2FkYXB0ZXIgKmFk
+YXB0ZXIpOw0KLSNpZmRlZiBDT05GSUdfUENJX0lPVg0KIHZvaWQgaXhnYmVfZGlzYWJsZV9zcmlv
+dihzdHJ1Y3QgaXhnYmVfYWRhcHRlciAqYWRhcHRlcik7DQoraW50IGl4Z2JlX2NoZWNrX3ZmX2Fz
+c2lnbm1lbnQoc3RydWN0IGl4Z2JlX2FkYXB0ZXIgKmFkYXB0ZXIpOw0KKyNpZmRlZiBDT05GSUdf
+UENJX0lPVg0KIHZvaWQgaXhnYmVfZW5hYmxlX3NyaW92KHN0cnVjdCBpeGdiZV9hZGFwdGVyICph
+ZGFwdGVyLA0KICAgICAgICAgICAgICAgICAgICAgICAgY29uc3Qgc3RydWN0IGl4Z2JlX2luZm8g
+KmlpKTsNCi1pbnQgaXhnYmVfY2hlY2tfdmZfYXNzaWdubWVudChzdHJ1Y3QgaXhnYmVfYWRhcHRl
+ciAqYWRhcHRlcik7DQogI2VuZGlmDQoNCg0KDQotLQ0KVG8gdW5zdWJzY3JpYmUgZnJvbSB0aGlz
+IGxpc3Q6IHNlbmQgdGhlIGxpbmUgInVuc3Vic2NyaWJlIG5ldGRldiIgaW4NCnRoZSBib2R5IG9m
+IGEgbWVzc2FnZSB0byBtYWpvcmRvbW9Admdlci5rZXJuZWwub3JnDQpNb3JlIG1ham9yZG9tbyBp
+bmZvIGF0ICBodHRwOi8vdmdlci5rZXJuZWwub3JnL21ham9yZG9tby1pbmZvLmh0bWwNCg==
+
+--_002_43F901BD926A4E43B106BF17856F075501A1CCA47Forsmsx508amrc_--
