@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754290Ab1KGW6N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:58:13 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:51550 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187Ab1KGW6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:58:11 -0500
-Message-ID: <4EB8625C.8020109@parallels.com>
-Date: Mon, 7 Nov 2011 20:57:32 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+	id S1754237Ab1KGXAu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 18:00:50 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58301 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754109Ab1KGXAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 18:00:49 -0500
+Date: Mon, 7 Nov 2011 23:01:35 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Davidlohr Bueso <dave@gnu.org>, Christoph Hellwig <hch@infradead.org>,
+        Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Kay Sievers <kay.sievers@vrfy.org>
 Subject: Re: [RFC PATCH] tmpfs: support user quotas
-References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de> <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk> <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com> <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Message-ID: <20111107230135.62ee7aae@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111107143010.GA3630@tango.0pointer.de>
+References: <1320614101.3226.5.camel@offbook>
+	<20111107112952.GB25130@tango.0pointer.de>
+	<1320675607.2330.0.camel@offworld>
+	<20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
+	<20111107143010.GA3630@tango.0pointer.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 08:53 PM, Alan Cox wrote:
->> What part of the message did you read? This is about _per_user_
->> limits, not global limits!
->
-> What part of 'we support lots of mounts' don't you understand. Or perhaps
-> you could go use a control group for it ?
+> > Which is almost certainly not what you want to happen. Think about direct
+> > rendering.
+> 
+> I don't see what direct rendering has to do with closing the security
+> hole that /dev/shm currently is.
 
-We are trying to implement an indirect limit on slab objects in the 
-memory controller.
-Our specific use case is to control the number of dentries currently 
-pinned in some given physical filesystem. If you can't allocate a dentry 
-from the dentry cache, you can also not DoS a system - in our case, a 
-container.
+Direct render objects (like shared memory objects) are backed by shmfs,
+so if you impose random limits on the shmfs you'll get weird graphics
+happenings. You use a *lot* of shmfs objects when you are running 3D
+gaming, enormous amounts for all your textures and the like.
 
-Maybe this will also solve your problems?
+The DRM case means you can't set tight limits on shmfs and expect to play
+Warcraft.
 
->> Any untrusted user can fill /dev/shm today and DOS many services that
->> way on any machine out there. Same for /tmp when it's a tmpfs, or
->> /run/user. This is an absolutely unacceptable state and needs fixing.
->
-> Actually if you've mounted it with limits they can be a nuisance but
-> little more, and if you are running with memory overcommit disabled then
-> its accounted for in that. If you are running with memory over commit
-> allowed (as eg Red Hat and Fedora do) you are peeing into the wind at this
-> point anyway so wasting time.
->
->> I don't care about which interface it is, if someting else fits
->> better, let's discuss that, but it has surely absolutely noting to do
->> with size/nr_blocks/nr_inodes.
->
-> Per user would be quota, per process would be rlimit. Quite simple
-> really, nice standard interfaces we've had for years. Various systems
-> have been quotaing /tmp/ for a long time. Smart secure ones of course
-> mount a per user /tmp via PAM or similar to avoid /tmp attacks and in that
-> case the mount options I pointed out already do the job.
->
-> Quota isn't entirely trivial because you want your quota db initialised
-> at mount so you'd need to pass a quota file pointer to the mount command
-> ideally. All doable however and makes the management easy and means you
-> get all the application expected behaviour when you exceed your limits
-> (that is for properly written stuff - lots of crappy badly written desktop
-> programs randomly crash or worse as we already know)
->
-> This is why I'm confused - you are wittering about all sorts of security
-> stuff but you are not addressing the more serious matters first - the
-> ones that go beyond a DoS.
->
-> Alan
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+> Uh? I am pretty sure we don't want to mount a private tmpfs for each
+> user in /dev/shm and /tmp. If you have 500 users you'd have 500 tmpfs on
 
+Oh I do. That would actually do something abut temporary file handling
+which is a much much bigger issue than a DoS when people get it wrong.
+It's a bit of Unix history that wants sorting out more than /usr
+and /bin...
+
+> /tmp and on /dev/shm. Despite that without some ugly namespace hackery
+
+Only if they were all logged in
+
+> you couldn't make them all appear in /tmp as /dev/shm without
+> subdirectories. Don't forget that /dev/shm and /tmp are an established
+> userspace API.
+
+Don't forget there have been pam modules for doing per user /tmp/ for
+years and years.
+
+> Resource limits are exactly the API that makes sense here, because:
+
+No because they are inherited process things and the exhaustion behaviour
+is not standards defined. Christoph is right that this should be
+implemnted via quota.
+
+It might well be that your quota implementation is handled by a mount
+option (sysfs just makes it more complex) and that
+
+	mount blah -oquotaallusers=16G 
+
+is how you set it up, but doing it via quota interfaces makes all sorts
+of crap just work including warning users about quota limits.
+
+Alan
