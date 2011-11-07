@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab1KGWPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 17:15:19 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58624 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab1KGWPR (ORCPT
+	id S1753493Ab1KGWQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:16:07 -0500
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:35141 "EHLO
+	homiemail-a37.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751041Ab1KGWQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 17:15:17 -0500
-Message-ID: <4EB8586B.5060804@jp.fujitsu.com>
-Date: Mon, 07 Nov 2011 14:15:07 -0800
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: mzxreary@0pointer.de
-CC: alan@lxorguk.ukuu.org.uk, dave@gnu.org, hch@infradead.org,
-        hughd@google.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, kay.sievers@vrfy.org
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de> <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk> <20111107143010.GA3630@tango.0pointer.de>
-In-Reply-To: <20111107143010.GA3630@tango.0pointer.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Nov 2011 17:16:06 -0500
+X-Greylist: delayed 90055 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Nov 2011 17:16:06 EST
+Subject: Re: [PATCH] ipc/mqueue: simplify reading msgqueue limit
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Nick Piggin <npiggin@kernel.dk>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1320345109.3188.3.camel@offbook>
+References: <1320345109.3188.3.camel@offbook>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Mon, 07 Nov 2011 19:15:56 -0300
+Message-ID: <1320704156.3009.0.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(11/7/2011 6:30 AM), Lennart Poettering wrote:
-> On Mon, 07.11.11 13:58, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+ping?
+
+On Thu, 2011-11-03 at 15:31 -0300, Davidlohr Bueso wrote:
+> From: Davidlohr Bueso <dave@gnu.org>
 > 
->>
->>> Right, rlimit approach guarantees a simple way of dealing with users
->>> across all tmpfs instances.
->>
->> Which is almost certainly not what you want to happen. Think about direct
->> rendering.
+> Because the current task is being used to get the limit, we can simply use rlimit() instead of task_rlimit().
 > 
-> I don't see what direct rendering has to do with closing the security
-> hole that /dev/shm currently is.
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> ---
+>  ipc/mqueue.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
->> For simple stuff tmpfs already supports size/nr_blocks/nr_inodes mount
->> options so you can mount private resource constrained tmpfs objects
->> already without kernel changes. No rlimit hacks needed - and rlimit is
->> the wrong API anyway.
-> 
-> Uh? I am pretty sure we don't want to mount a private tmpfs for each
-> user in /dev/shm and /tmp. If you have 500 users you'd have 500 tmpfs on
-> /tmp and on /dev/shm. Despite that without some ugly namespace hackery
-> you couldn't make them all appear in /tmp as /dev/shm without
-> subdirectories. Don't forget that /dev/shm and /tmp are an established
-> userspace API.
-> 
-> Resource limits are exactly the API that makes sense here, because:
-> 
-> a) we only want one tmpfs on /tmp, and one tmpfs on /dev/shm, not 500 on
-> each for each user
-
-Ok, seems fair.
-
-> b) we cannot move /dev/shm, /tmp around without breaking userspace
-> massively
-
-agreed.
-
-> 
-> c) we want a global limit across all tmpfs file systems for each user
-
-Why? Is there any benefit this?
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index 2e0ecfc..c0e4fbb 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -127,7 +127,6 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+>  
+>  	if (S_ISREG(mode)) {
+>  		struct mqueue_inode_info *info;
+> -		struct task_struct *p = current;
+>  		unsigned long mq_bytes, mq_msg_tblsz;
+>  
+>  		inode->i_fop = &mqueue_file_operations;
+> @@ -158,7 +157,7 @@ static struct inode *mqueue_get_inode(struct super_block *sb,
+>  
+>  		spin_lock(&mq_lock);
+>  		if (u->mq_bytes + mq_bytes < u->mq_bytes ||
+> -		    u->mq_bytes + mq_bytes > task_rlimit(p, RLIMIT_MSGQUEUE)) {
+> +		    u->mq_bytes + mq_bytes > rlimit(RLIMIT_MSGQUEUE)) {
+>  			spin_unlock(&mq_lock);
+>  			/* mqueue_evict_inode() releases info->messages */
+>  			ret = -EMFILE;
 
 
-> d) we don't want to have to upload the quota database into each tmpfs at
-> mount time.
-> 
-> And hence: a per user RLIMIT is exactly the minimal solution we want
-> here.
-
-If you want per-user limitation, RLIMIT is bad idea. RLIMIT is only inherited
-by fork. So, The api semantics clearly mismatch your usecase.
-
-Instead, I suggest to implement new sysfs knob.
-
-Thank you.
