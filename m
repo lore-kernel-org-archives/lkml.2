@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab1KGP5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 10:57:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10267 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab1KGP5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 10:57:49 -0500
-Message-ID: <4EB7FFEA.6070409@redhat.com>
-Date: Mon, 07 Nov 2011 09:57:30 -0600
-From: David Smith <dsmith@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH v2] Tracepoint: add exec tracepoint
-References: <4EB2BA74.5070207@redhat.com> <1320670609.18053.32.camel@twins>
-In-Reply-To: <1320670609.18053.32.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932350Ab1KGQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:02:16 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:53302 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752546Ab1KGQCO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 11:02:14 -0500
+Subject: Re: [PATCHv2 6/9] perf: expose perf capability to other modules.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
+Date: Mon, 07 Nov 2011 17:01:11 +0100
+In-Reply-To: <20111107155336.GI8670@redhat.com>
+References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
+	 <1320323618-10375-7-git-send-email-gleb@redhat.com>
+	 <1320674870.18053.37.camel@twins> <20111107155336.GI8670@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320681671.17809.5.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 06:56 AM, Peter Zijlstra wrote:
+On Mon, 2011-11-07 at 17:53 +0200, Gleb Natapov wrote:
+> I removed branch-miss-retired here because for perf user it exists. Perf
+> approximates it by other event but perf user shouldn't know that. A
+> guest is not always runs with exactly same cpu model number as a host,
+> so if we will not drop the bit here if guest will see cpu model other
+> than the one that has this quirk it will not be able to use the event.
 
-> On Thu, 2011-11-03 at 10:59 -0500, David Smith wrote:
->> Added general purpose exec tracepoint.  The 'bprm' argument gives
->> details of the exec.
+Right, so what model number do you expose? Anyway I don't really mind
+masking the thing as long as we grow an ebx iteration,
 
->>
+> BTW why perf does not check event mask to see if architectural event is
+> available before programming it? 
 
-> This 'changelog' if one can call it that, is completely devoid of
-> rationale, why should we care and why should we merge.
-
-
-Sorry for being too terse.
-
-Exec is an important major event in the life of a task (like fork or
-exit).  If you want to watch a task start up, when it gets exec'ed is a
-good place to start.  With the addition of this tracepoint, we can
-monitor exec's and get a better picture of system activity in general.
-This will also enable better process tracking, allowing you to answer
-questions like "what process keeps starting up process X?".
-
-This tracepoint can also be useful in ftrace filtering (i.e. starting or
-stopping filtering when exec is called)
-
--- 
-David Smith
-dsmith@redhat.com
-Red Hat
-http://www.redhat.com
-256.217.0141 (direct)
-256.837.0057 (fax)
+No idea why not.. just one of those things nobody noticed/got around to
+doing or so.
