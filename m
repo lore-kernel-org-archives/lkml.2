@@ -1,179 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab1KGMXn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 07:23:43 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52325 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932262Ab1KGMXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 07:23:41 -0500
-From: Michal Simek <monstr@monstr.eu>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: grant.likely@secretlab.ca, john.williams@petalogix.com,
-        linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>
-Subject: [PATCH] of: gpio: Add support for dual xilinx GPIO
-Date: Mon,  7 Nov 2011 13:23:36 +0100
-Message-Id: <1320668616-12225-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	id S1755394Ab1KGMYH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 07:24:07 -0500
+Received: from mga03.intel.com ([143.182.124.21]:2751 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932094Ab1KGMYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 07:24:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,469,1315206000"; 
+   d="scan'208";a="71337848"
+Date: Mon, 7 Nov 2011 20:24:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Witold Baryluk <baryluk@smp.if.uj.edu.pl>
+Subject: [GIT PULL] fix uninitialized task_ratelimit that impacts tracing
+Message-ID: <20111107122401.GA15421@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register new gpiochip for the second channel.
+Linus,
 
-The first channel name is: /plb@0/gpio@81420000
-The second channel name is: /plb@0/gpio@81420008
+The following changes since commit 31555213f03bca37d2c02e10946296052f4ecfcd:
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- drivers/gpio/xilinx_gpio.c |   84 +++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 76 insertions(+), 8 deletions(-)
+  Revert "hvc_console: display printk messages on console." (2011-11-06 22:22:16 -0800)
 
-diff --git a/drivers/gpio/xilinx_gpio.c b/drivers/gpio/xilinx_gpio.c
-index 846fbd5..a92f9f6 100644
---- a/drivers/gpio/xilinx_gpio.c
-+++ b/drivers/gpio/xilinx_gpio.c
-@@ -25,10 +25,13 @@
- #define XGPIO_DATA_OFFSET   (0x0)	/* Data register  */
- #define XGPIO_TRI_OFFSET    (0x4)	/* I/O direction register  */
- 
-+#define XGPIO_CHANNEL_OFFSET	0x8
-+
- struct xgpio_instance {
- 	struct of_mm_gpio_chip mmchip;
- 	u32 gpio_state;		/* GPIO state shadow register */
- 	u32 gpio_dir;		/* GPIO direction shadow register */
-+	u32 offset;
- 	spinlock_t gpio_lock;	/* Lock used for synchronization */
- };
- 
-@@ -43,8 +46,11 @@ struct xgpio_instance {
- static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
- {
- 	struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
-+	struct xgpio_instance *chip =
-+	    container_of(mm_gc, struct xgpio_instance, mmchip);
- 
--	return (in_be32(mm_gc->regs + XGPIO_DATA_OFFSET) >> gpio) & 1;
-+	return (in_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET)
-+								>> gpio) & 1;
- }
- 
- /**
-@@ -70,7 +76,8 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
- 		chip->gpio_state |= 1 << gpio;
- 	else
- 		chip->gpio_state &= ~(1 << gpio);
--	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
-+							chip->gpio_state);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- }
-@@ -95,7 +102,7 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
- 
- 	/* Set the GPIO bit in shadow register and set direction as input */
- 	chip->gpio_dir |= (1 << gpio);
--	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- 
-@@ -126,11 +133,12 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
- 		chip->gpio_state |= 1 << gpio;
- 	else
- 		chip->gpio_state &= ~(1 << gpio);
--	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
-+							chip->gpio_state);
- 
- 	/* Clear the GPIO bit in shadow register and set direction as output */
- 	chip->gpio_dir &= (~(1 << gpio));
--	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
- 
- 	spin_unlock_irqrestore(&chip->gpio_lock, flags);
- 
-@@ -146,8 +154,9 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
- 	struct xgpio_instance *chip =
- 	    container_of(mm_gc, struct xgpio_instance, mmchip);
- 
--	out_be32(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
--	out_be32(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
-+							chip->gpio_state);
-+	out_be32(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
- }
- 
- /**
-@@ -205,7 +214,66 @@ static int __devinit xgpio_of_probe(struct device_node *np)
- 		       np->full_name, status);
- 		return status;
- 	}
--	pr_info("XGpio: %s: registered\n", np->full_name);
-+
-+	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
-+							chip->mmchip.gc.base);
-+
-+	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
-+	if (tree_info && be32_to_cpup(tree_info)) {
-+		/* Distinguish dual gpio chip */
-+		/* NOTE baseaddr ends with zero address XGPIO_CHANNEL_OFFSET */
-+		np->full_name[strlen(np->full_name) - 1] = '8';
-+
-+		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-+		if (!chip)
-+			return -ENOMEM;
-+
-+		/* Add dual channel offset */
-+		chip->offset = XGPIO_CHANNEL_OFFSET;
-+
-+		/* Update GPIO state shadow register with default value */
-+		tree_info = of_get_property(np, "xlnx,dout-default-2", NULL);
-+		if (tree_info)
-+			chip->gpio_state = be32_to_cpup(tree_info);
-+
-+		/* Update GPIO direction shadow register with default value */
-+		/* By default, all pins are inputs */
-+		chip->gpio_dir = 0xFFFFFFFF;
-+		tree_info = of_get_property(np, "xlnx,tri-default-2", NULL);
-+		if (tree_info)
-+			chip->gpio_dir = be32_to_cpup(tree_info);
-+
-+		/* Check device node and parent device node for device width */
-+		/* By default assume full GPIO controller */
-+		chip->mmchip.gc.ngpio = 32;
-+		tree_info = of_get_property(np, "xlnx,gpio2-width", NULL);
-+		if (!tree_info)
-+			tree_info = of_get_property(np->parent,
-+						"xlnx,gpio2-width", NULL);
-+		if (tree_info)
-+			chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
-+
-+		spin_lock_init(&chip->gpio_lock);
-+
-+		chip->mmchip.gc.direction_input = xgpio_dir_in;
-+		chip->mmchip.gc.direction_output = xgpio_dir_out;
-+		chip->mmchip.gc.get = xgpio_get;
-+		chip->mmchip.gc.set = xgpio_set;
-+
-+		chip->mmchip.save_regs = xgpio_save_regs;
-+
-+		/* Call the OF gpio helper to setup and register the GPIO dev */
-+		status = of_mm_gpiochip_add(np, &chip->mmchip);
-+		if (status) {
-+			kfree(chip);
-+			pr_err("%s: error in probe function with status %d\n",
-+			np->full_name, status);
-+			return status;
-+		}
-+		pr_info("XGpio: %s: dual channel registered, base is %d\n",
-+					np->full_name, chip->mmchip.gc.base);
-+	}
-+
- 	return 0;
- }
- 
--- 
-1.7.5.4
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git urgent-for-linus
+
+Wu Fengguang (1):
+      writeback: fix uninitialized task_ratelimit
+
+ mm/page-writeback.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+Thanks,
+Fengguang
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Commit 3a73dbbc9bb3fc8594cd67af4db6c563175dfddb
+from git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOt7+XAAoJECvKgwp+S8Ja/8wP/3Nhja3/uVOwcNYbAqc4e4uI
+nuz67xLXaUleCHRFnFjmvm1SkGtzTFPQF593xu8SRCFeRUS0JCV9NGB0CObWPv4Z
+2FQ00m0gAKbI0paYoBehav+KOnY8Jq3Ro1Ldykb8ArHzwJlLfHojlhzLmmLKRYuV
+DTajFA0RKnCIWUQOPbgBF/aSeJS5GYu+Ou+1eSTTnJsofvYptEtbdduBfnCItJLE
+uGj4VrfbvH/NcXodUXkXCk1cD63tJ564pOp5zXwbj7clnB3J5xcEOJF375dPJnrm
+2qVBCiQRISwanrwgFJqY/td8O0ZiIC5ksKHTtb9tQKtxtOYrhRXNm5UYmTlEvmtK
+9lKv9n7EGNJaJ7Hf1Phg4OAShIdkGwP1er9uLd1bTDafQ1MmfRxcfbFnOidbXQkw
+zcz2KoFQhk5vW8F+N0xTjR3ip/L9UlOtkgC+LlZPmNo6gzawI4M+b9LdRVEynbiA
+9qQR2mUYnSkTz5wUjfGZQe0W/tQ3JROZwCOnll8OysX5vgkWvbBokEK5cSKOffIC
+TfaiNzYSh5EiqIPL5qahuYqMSWpXs254qnEs3oW0RHbV4KPNyqdKr+yYZeCaGJBG
+YnRLACaZA9A2rHeH4CiAdShViPFB0NYRfc1G+s3D3vLZUeJUZGgN8nGUgUltCN1/
+A0+QUxt24rA0cWqE/FEK
+=AsO6
+-----END PGP SIGNATURE-----
