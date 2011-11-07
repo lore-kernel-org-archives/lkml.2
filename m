@@ -1,40 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932776Ab1KGQqY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 11:46:24 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56826 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804Ab1KGQqX convert rfc822-to-8bit (ORCPT
+	id S932837Ab1KGQqm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 11:46:42 -0500
+Received: from mga14.intel.com ([143.182.124.37]:24684 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755190Ab1KGQqk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 11:46:23 -0500
-Subject: Re: [PATCHv2 2/9] KVM: Expose a version 2 architectural PMU to a
- guests
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
-Date: Mon, 07 Nov 2011 17:45:14 +0100
-In-Reply-To: <20111107152540.GF8670@redhat.com>
-References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
-	 <1320323618-10375-3-git-send-email-gleb@redhat.com>
-	 <1320676609.18053.44.camel@twins> <20111107152540.GF8670@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 7 Nov 2011 11:46:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,470,1315206000"; 
+   d="scan'208";a="71428752"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        David Miller <davem@davemloft.net>
+CC: "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Mon, 7 Nov 2011 08:46:35 -0800
+Subject: RE: linux-next: build failure after merge of the origin tree
+Thread-Topic: linux-next: build failure after merge of the origin tree
+Thread-Index: AcydDjzzNn/sMOVzTpeMq++Cpu1XowAXlbzw
+Message-ID: <43F901BD926A4E43B106BF17856F075501A1CCA399@orsmsx508.amr.corp.intel.com>
+References: <20111107101202.96fcb76d580e5265bd99aeee@canb.auug.org.au>
+ <20111106.205259.1237400984015921904.davem@davemloft.net>
+ <20111107134706.3e7fc633f913b5e155153127@canb.auug.org.au>
+ <20111106.223619.1348742215191441592.davem@davemloft.net>
+ <EAE7BD3E-8965-47A4-B3CA-01686E2602C2@intel.com>
+In-Reply-To: <EAE7BD3E-8965-47A4-B3CA-01686E2602C2@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320684314.17809.29.camel@twins>
-Mime-Version: 1.0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-11-07 at 17:25 +0200, Gleb Natapov wrote:
-> > Since the below programming doesn't use perf_event_attr::pinned, yes.
-> > 
-> Yes, that is on todo :). Actually I do want to place all guest perf
-> counters into the same event group and make it pinned. But currently perf
-> event groups are not very flexible. In our usage scenario we can't have
-> one event as a group leader since events are created and destroyed very
-> dynamically. What I would like is to have something like meta event that
-> will group all other real event. 
 
-Is there a reason to have them grouped if you pin them all anyway?
+
+> -----Original Message-----
+> From: Kirsher, Jeffrey T
+> Sent: Sunday, November 06, 2011 9:30 PM
+> To: David Miller
+> Cc: sfr@canb.auug.org.au; torvalds@linux-foundation.org; linux-
+> next@vger.kernel.org; linux-kernel@vger.kernel.org; Rose, Gregory V;
+> netdev@vger.kernel.org
+> Subject: Re: linux-next: build failure after merge of the origin tree
+> 
+> 
+> 
+> Cheers,
+> Jeff
+> 
+> On Nov 6, 2011, at 19:38, "David Miller" <davem@davemloft.net> wrote:
+> 
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 7 Nov 2011 13:47:06 +1100
+> >
+> >>> If you just revert the commit in origin from -next, then you will get
+> >>> conflicts with you pull the net.git tree in.
+> >>
+> >> I got no conflicts when I merged in the net tree and can see no fix for
+> >> this problem in the net tree.  My current head of the net tree is
+> 1a6422f
+> >> "etherh: Add MAINTAINERS entry for etherh".
+> >
+> > Ok, Jeff please take a look at this and send me a fix soon.
+> >
+> > Thanks.
+> 
+> Ok Dave, at this point, I am puttying together a patch to revert this fix
+> since it appears that more trouble comes with this fix.  I will take a
+> look at it quickly before sending out a patch to fix the issue.
+
+My bad...  I fixed a compiler warning that occurred with CONFIG_PCI_IOV turned on and didn't realize that my patch would cause an error when turning it back off.
+
+I'll have it fixed ASAP.
+
+- Greg
+
