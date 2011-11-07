@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab1KGUXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 15:23:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751421Ab1KGUXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 15:23:39 -0500
-Date: Mon, 7 Nov 2011 12:17:14 -0800
-From: Greg KH <gregkh@suse.de>
-To: Dave Jones <davej@redhat.com>, Borislav Petkov <bp@amd64.org>,
-        x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BAD APICID ?
-Message-ID: <20111107201714.GA14185@suse.de>
-References: <20111107173948.GA1344@redhat.com>
- <20111107175402.GA3384@gere.osrc.amd.com>
- <20111107180950.GA6411@redhat.com>
+	id S1754046Ab1KGUXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 15:23:54 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:49480 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab1KGUXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 15:23:52 -0500
+Date: Mon, 7 Nov 2011 20:23:24 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Zhang Rui <rui.zhang@intel.com>,
+        Huang Ying <huang.ying.caritas@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] x86, efi: Calling __pa() with an ioremap'd address
+ is invalid
+Message-ID: <20111107202324.GA27515@srcf.ucam.org>
+References: <1320680088-2584-1-git-send-email-matt@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111107180950.GA6411@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320680088-2584-1-git-send-email-matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 01:09:50PM -0500, Dave Jones wrote:
-> On Mon, Nov 07, 2011 at 06:54:02PM +0100, Borislav Petkov wrote:
->  > On Mon, Nov 07, 2011 at 12:39:48PM -0500, Dave Jones wrote:
->  > > We got a report from a Fedora user hitting a WARN_ON in the apic setup code.
->  > > 
->  > > Here..
->  > > 
->  > > 1230 #ifdef CONFIG_X86_32
->  > > 1231         /*
->  > > 1232          * APIC LDR is initialized.  If logical_apicid mapping was
->  > > 1233          * initialized during get_smp_config(), make sure it matches the
->  > > 1234          * actual value.
->  > > 1235          */
->  > > 1236         i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
->  > > 1237         WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
->  > > 1238         /* always use the value from LDR */
->  > > 1239         early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
->  > > 1240                 logical_smp_processor_id();
->  > > 
->  > > The full report is at https://bugzilla.redhat.com/show_bug.cgi?id=743930
->  > > 
->  > > Report is against our 3.0 builds, but that code look unchanged in 3.1 too,
->  > > and even in current Linus head.
->  > > 
->  > > Any thoughts on what could cause this ?
->  > 
->  > Already fixed upstream: 838312be46f3abfbdc175f81c3e54a857994476d
->  > 
->  > Here's the whole thread: http://lkml.org/lkml/2011/10/14/231
->  > 
->  > HTH.
-> 
-> ah, excellent, thanks.
-> That seems to have not hit stable, even though it was cc'd. Greg ?
+On Mon, Nov 07, 2011 at 03:34:48PM +0000, Matt Fleming wrote:
 
-It's already been queued up for the next stable release, which should be
-coming out later this week once the firehose of the 3.2 merge window
-slows down.
+> After the feedback from v1 I tried to unify the efi_ioremap()
+> implementations but ran into the issue detailed in the RH bug report
+> in the changelog. Unless we teach the x86 setup code that
+> EFI_RUNTIME_SERVICES_DATA regions should be part of the direct kernel
+> mapping table (even though they're marked as E820_RESERVED) I think
+> this patch makes the most sense.
 
-thanks,
+Honestly it seems like there may well be an argument for that. We're 
+talking about executable code that the kernel will be calling - it seems 
+theoretically neater for it to be added to the direct mapping. We're 
+just heavily constrained by our collapsing of the EFI memory map onto 
+the rather less fine-grained E820 one and the lack of any obvious way to 
+extend that in an OS-specific manner. I guess we could expect the 
+bootloader to conform to the standard and then re-walk the EFI memory 
+map ourselves to fix things up, but eww...
 
-greg k-h
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
