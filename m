@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab1KGO1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 09:27:45 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:40028 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1KGO1n (ORCPT
+	id S1755699Ab1KGO17 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 09:27:59 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59664 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab1KGO15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 09:27:43 -0500
-Date: Mon, 7 Nov 2011 14:27:40 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [PATCH] X86: Solve Dell Latitudes do not reboot on x86_64 more
- generally
-Message-ID: <20111107142740.GA17686@srcf.ucam.org>
-References: <4EB39139.3090709@suse.de>
- <1320453843-938-1-git-send-email-trenn@suse.de>
- <20111107135923.GA17060@srcf.ucam.org>
- <201111071525.14255.trenn@suse.de>
+	Mon, 7 Nov 2011 09:27:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201111071525.14255.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
+References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de>
+ <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Mon, 7 Nov 2011 15:27:36 +0100
+Message-ID: <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Davidlohr Bueso <dave@gnu.org>, Lennart Poettering <mzxreary@0pointer.de>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 03:25:13PM +0100, Thomas Renninger wrote:
-> On Monday, November 07, 2011 02:59:24 PM Matthew Garrett wrote:
-> > On Sat, Nov 05, 2011 at 01:44:03AM +0100, Thomas Renninger wrote:
-> > > There are quite some reports that those do not reboot:
-> > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/833705
-> > > ->E6520, E6220
-> > > http://www.linux-club.de/viewtopic.php?f=29&t=114459&start=20
-> > > ->E5520
-> > > and some more already are blacklisted
-> > 
-> > It's a bug in the SMM code on these machines, and it goes away if you 
-> > disable VT-D. Let's try to actually fix it
-> How do you intend to fix that?
-> From description above it sounds as if this problem is not
-> fixable from OS side.
+On Mon, Nov 7, 2011 at 14:58, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Right, rlimit approach guarantees a simple way of dealing with users
+>> across all tmpfs instances.
+>
+> Which is almost certainly not what you want to happen. Think about direct
+> rendering.
+>
+> For simple stuff tmpfs already supports size/nr_blocks/nr_inodes mount
+> options so you can mount private resource constrained tmpfs objects
+> already without kernel changes. No rlimit hacks needed - and rlimit is
+> the wrong API anyway.
 
-Tear down VT-D state before reboot.
+What part of the message did you read? This is about _per_user_
+limits, not global limits!
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Any untrusted user can fill /dev/shm today and DOS many services that
+way on any machine out there. Same for /tmp when it's a tmpfs, or
+/run/user. This is an absolutely unacceptable state and needs fixing.
+
+I don't care about which interface it is, if someting else fits
+better, let's discuss that, but it has surely absolutely noting to do
+with size/nr_blocks/nr_inodes.
+
+Kay
