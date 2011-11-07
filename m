@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab1KGVyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 16:54:43 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41741 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1KGVym (ORCPT
+	id S1753345Ab1KGWPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 17:15:19 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58624 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab1KGWPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 16:54:42 -0500
-Date: Mon, 7 Nov 2011 13:54:38 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Hocko <mhocko@suse.cz>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] oom: do not kill tasks with oom_score_adj
- OOM_SCORE_ADJ_MIN
-In-Reply-To: <20111104143145.0F93B8B45E@mx2.suse.de>
-Message-ID: <alpine.DEB.2.00.1111071353140.27419@chino.kir.corp.google.com>
-References: <20111104143145.0F93B8B45E@mx2.suse.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 7 Nov 2011 17:15:17 -0500
+Message-ID: <4EB8586B.5060804@jp.fujitsu.com>
+Date: Mon, 07 Nov 2011 14:15:07 -0800
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: mzxreary@0pointer.de
+CC: alan@lxorguk.ukuu.org.uk, dave@gnu.org, hch@infradead.org,
+        hughd@google.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, kay.sievers@vrfy.org
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de> <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk> <20111107143010.GA3630@tango.0pointer.de>
+In-Reply-To: <20111107143010.GA3630@tango.0pointer.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Nov 2011, Michal Hocko wrote:
+(11/7/2011 6:30 AM), Lennart Poettering wrote:
+> On Mon, 07.11.11 13:58, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+> 
+>>
+>>> Right, rlimit approach guarantees a simple way of dealing with users
+>>> across all tmpfs instances.
+>>
+>> Which is almost certainly not what you want to happen. Think about direct
+>> rendering.
+> 
+> I don't see what direct rendering has to do with closing the security
+> hole that /dev/shm currently is.
+> 
+>> For simple stuff tmpfs already supports size/nr_blocks/nr_inodes mount
+>> options so you can mount private resource constrained tmpfs objects
+>> already without kernel changes. No rlimit hacks needed - and rlimit is
+>> the wrong API anyway.
+> 
+> Uh? I am pretty sure we don't want to mount a private tmpfs for each
+> user in /dev/shm and /tmp. If you have 500 users you'd have 500 tmpfs on
+> /tmp and on /dev/shm. Despite that without some ugly namespace hackery
+> you couldn't make them all appear in /tmp as /dev/shm without
+> subdirectories. Don't forget that /dev/shm and /tmp are an established
+> userspace API.
+> 
+> Resource limits are exactly the API that makes sense here, because:
+> 
+> a) we only want one tmpfs on /tmp, and one tmpfs on /dev/shm, not 500 on
+> each for each user
 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index e916168..4883514 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -185,6 +185,9 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
->  	if (!p)
->  		return 0;
->  
-> +	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN)
-> +		return 0;
-> +
->  	/*
->  	 * The memory controller may have a limit of 0 bytes, so avoid a divide
->  	 * by zero, if necessary.
+Ok, seems fair.
 
-This leaves p locked, you need to do task_unlock(p) first.
+> b) we cannot move /dev/shm, /tmp around without breaking userspace
+> massively
 
-Once that's fixed, please add my
+agreed.
 
-	Acked-by: David Rientjes <rientjes@google.com>
+> 
+> c) we want a global limit across all tmpfs file systems for each user
 
-and resubmit to Andrew for the 3.2 rc series.  Thanks!
+Why? Is there any benefit this?
+
+
+> d) we don't want to have to upload the quota database into each tmpfs at
+> mount time.
+> 
+> And hence: a per user RLIMIT is exactly the minimal solution we want
+> here.
+
+If you want per-user limitation, RLIMIT is bad idea. RLIMIT is only inherited
+by fork. So, The api semantics clearly mismatch your usecase.
+
+Instead, I suggest to implement new sysfs knob.
+
+Thank you.
