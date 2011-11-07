@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752294Ab1KGSxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 13:53:11 -0500
-Received: from mga02.intel.com ([134.134.136.20]:63269 "EHLO mga02.intel.com"
+	id S1752570Ab1KGSz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 13:55:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17360 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab1KGSxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 13:53:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="72027540"
-Date: Mon, 7 Nov 2011 10:52:55 -0800
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Tim Vlaar <Tvlaar@ptgrey.com>
-Cc: Greg KH <greg@kroah.com>, Markus Rechberger <mrechberger@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Increase USBFS Bulk Transfer size
-Message-ID: <20111107185255.GA9005@xanatos>
-References: <CA+O4pCKKOvjRmgpC1fijzmpKOMQGdb1vkKeiSgFTY3Sv7xeaoQ@mail.gmail.com>
- <Pine.LNX.4.44L0.1110140956390.2036-100000@iolanthe.rowland.org>
- <20111014143329.GB9478@kroah.com>
+	id S1751352Ab1KGSz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 13:55:57 -0500
+Date: Mon, 7 Nov 2011 13:09:50 -0500
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: x86@kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        gregkh@suse.de
+Subject: Re: BAD APICID ?
+Message-ID: <20111107180950.GA6411@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@amd64.org>, x86@kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>, gregkh@suse.de
+References: <20111107173948.GA1344@redhat.com>
+ <20111107175402.GA3384@gere.osrc.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111014143329.GB9478@kroah.com>
+In-Reply-To: <20111107175402.GA3384@gere.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 14, 2011 at 08:33:29AM -0600, Greg KH wrote:
-> On Fri, Oct 14, 2011 at 10:05:41AM -0400, Alan Stern wrote:
-> > No, a much better approach is to remove all limits on individual
-> > transfer sizes and instead have a global limit on the total amount of
-> > all usbfs buffers in use at any time.  Maybe something like 16 MB; at 
-> > SuperSpeed, that's about about 30 ms worth of data.
-> 
-> That sounds quite reasonable.
+On Mon, Nov 07, 2011 at 06:54:02PM +0100, Borislav Petkov wrote:
+ > On Mon, Nov 07, 2011 at 12:39:48PM -0500, Dave Jones wrote:
+ > > We got a report from a Fedora user hitting a WARN_ON in the apic setup code.
+ > > 
+ > > Here..
+ > > 
+ > > 1230 #ifdef CONFIG_X86_32
+ > > 1231         /*
+ > > 1232          * APIC LDR is initialized.  If logical_apicid mapping was
+ > > 1233          * initialized during get_smp_config(), make sure it matches the
+ > > 1234          * actual value.
+ > > 1235          */
+ > > 1236         i = early_per_cpu(x86_cpu_to_logical_apicid, cpu);
+ > > 1237         WARN_ON(i != BAD_APICID && i != logical_smp_processor_id());
+ > > 1238         /* always use the value from LDR */
+ > > 1239         early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
+ > > 1240                 logical_smp_processor_id();
+ > > 
+ > > The full report is at https://bugzilla.redhat.com/show_bug.cgi?id=743930
+ > > 
+ > > Report is against our 3.0 builds, but that code look unchanged in 3.1 too,
+ > > and even in current Linus head.
+ > > 
+ > > Any thoughts on what could cause this ?
+ > 
+ > Already fixed upstream: 838312be46f3abfbdc175f81c3e54a857994476d
+ > 
+ > Here's the whole thread: http://lkml.org/lkml/2011/10/14/231
+ > 
+ > HTH.
 
-Alan, won't this global limit on the usbfs URB buffer size effect
-userspace drivers that are currently allocating large amounts of
-buffers, but still respecting individual buffer limit of 16KB?  It seems
-like the patch has the potential to break userspace drivers.
+ah, excellent, thanks.
+That seems to have not hit stable, even though it was cc'd. Greg ?
 
-I think that Point Grey's USB 3.0 webcam will be attempting to queue a
-series of bulk URBs that will be bigger than your 16MB global limit.
+	Dave
 
-Tim, what is the total size of buffers that will be in flight at any one
-time for your device?
-
-Sarah Sharp
