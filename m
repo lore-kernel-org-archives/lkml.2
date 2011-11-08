@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab1KHLNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 06:13:10 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:31038 "EHLO relay.sw.ru"
+	id S932169Ab1KHLNT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 06:13:19 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38735 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752063Ab1KHLNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 06:13:07 -0500
-Subject: [PATCH v2 1/7] SUNRPC: create RPC pipefs superblock per network
-	namespace context
+	id S932111Ab1KHLNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 06:13:16 -0500
+Subject: [PATCH v2 2/7] SUNRPC: hold current network namespace while pipefs
+	superblock is active
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 08 Nov 2011 15:12:20 +0300
-Message-ID: <20111108111220.6206.42087.stgit@localhost6.localdomain6>
+Date: Tue, 08 Nov 2011 15:12:29 +0300
+Message-ID: <20111108111229.6206.8078.stgit@localhost6.localdomain6>
 In-Reply-To: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
 References: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,36 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the initial step of RPC pipefs virtualization. It changes nothing to
-current pipefs behaviour except that mount of pipefs in other than init_net
-network namespace context will provide only root tree. No other dentries will
-be visible.
+We want to be sure that network namespace is still alive while we have pipefs
+mounted.
+This will be required later, when RPC pipefs will be mounting only from
+user-space context.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- net/sunrpc/rpc_pipe.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ net/sunrpc/rpc_pipe.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index e2f7b7f..bb8a40b 100644
+index bb8a40b..ff41fef 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -994,6 +994,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- {
- 	struct inode *inode;
- 	struct dentry *root;
-+	struct net *net = data;
+@@ -27,6 +27,9 @@
+ #include <linux/workqueue.h>
+ #include <linux/sunrpc/rpc_pipe_fs.h>
+ #include <linux/sunrpc/cache.h>
++#include <linux/nsproxy.h>
++
++#include "netns.h"
  
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
- 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
-@@ -1018,7 +1019,7 @@ static struct dentry *
- rpc_mount(struct file_system_type *fs_type,
- 		int flags, const char *dev_name, void *data)
- {
--	return mount_single(fs_type, flags, data, rpc_fill_super);
-+	return mount_ns(fs_type, flags, current->nsproxy->net_ns, rpc_fill_super);
+ static struct vfsmount *rpc_mnt __read_mostly;
+ static int rpc_mount_count;
+@@ -1012,6 +1015,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	}
+ 	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
+ 		return -ENOMEM;
++	sb->s_fs_info = get_net(net);
+ 	return 0;
  }
  
+@@ -1022,11 +1026,19 @@ rpc_mount(struct file_system_type *fs_type,
+ 	return mount_ns(fs_type, flags, current->nsproxy->net_ns, rpc_fill_super);
+ }
+ 
++void rpc_kill_sb(struct super_block *sb)
++{
++	struct net *net = sb->s_fs_info;
++
++	put_net(net);
++	kill_litter_super(sb);
++}
++
  static struct file_system_type rpc_pipe_fs_type = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "rpc_pipefs",
+ 	.mount		= rpc_mount,
+-	.kill_sb	= kill_litter_super,
++	.kill_sb	= rpc_kill_sb,
+ };
+ 
+ static void
 
