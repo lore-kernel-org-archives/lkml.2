@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932639Ab1KHORI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:17:08 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64254 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377Ab1KHORF convert rfc822-to-8bit (ORCPT
+	id S932618Ab1KHORo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:17:44 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41010 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932415Ab1KHORm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:17:05 -0500
+	Tue, 8 Nov 2011 09:17:42 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] eg20t: Fix fallback handling
+To: linux-kernel@vger.kernel.org, karl@iwl.com,
+        tomoya-linux@dsn.lapis-semi.com
+Date: Tue, 08 Nov 2011 14:28:36 +0000
+Message-ID: <20111108142725.1801.83996.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1111081027310.1964@pobox.suse.cz>
-References: <1320455660-20989-1-git-send-email-levinsasha928@gmail.com> <alpine.LNX.2.00.1111081027310.1964@pobox.suse.cz>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Tue, 8 Nov 2011 16:16:42 +0200
-Message-ID: <CA+1xoqfC0UmuBnQ8p+xfszVZ26fBg6nv6ZZGWx+ZhbYF3fDnsg@mail.gmail.com>
-Subject: Re: [PATCH TRIVIAL] MAINTAINERS: Update KVM doc path
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 11:27 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Sat, 5 Nov 2011, Sasha Levin wrote:
->
->> Cc: Jiri Kosina <trivial@kernel.org>
->> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
->> ---
->>  MAINTAINERS |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 506fe49..0acdc78 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -3732,7 +3732,7 @@ M:      Marcelo Tosatti <mtosatti@redhat.com>
->>  L:   kvm@vger.kernel.org
->>  W:   http://kvm.qumranet.com
->>  S:   Supported
->> -F:   Documentation/*/kvm.txt
->> +F:   Documentation/*/kvm/
->
-> By that you are dropping Documentation/ia64/kvm.txt and
-> Documentation/s390/kvm.txt from the pattern which I guess is not what you
-> want?
+From: Alan Cox <alan@linux.intel.com>
 
-Yup, I meant to add it, not replace what was there before :)
+The 8250 PCI driver was updated to be smart about the EG20T devices. If the
+right driver is included the kernel 8250 driver skips these ports and they
+are driven in native mode. If they are not then it should drive them as
+8250 ports.
 
-Will resend.
+Unfortunately the patch to do this forgot to set the setup method so
+instead in this specific instance the kernel instead jumps to fishkill.
 
->>  F:   arch/*/kvm/
->>  F:   arch/*/include/asm/kvm*
->>  F:   include/linux/kvm*
->> --
->> 1.7.7.2
->>
->
-> --
-> Jiri Kosina
-> SUSE Labs
->
+Add the setup pointers.
+
+Reported-by: Karl Auerbach <karl@iwl.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/tty/serial/8250_pci.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+
+diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
+index 3abeca2..55677b9 100644
+--- a/drivers/tty/serial/8250_pci.c
++++ b/drivers/tty/serial/8250_pci.c
+@@ -1558,46 +1558,55 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8811,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8812,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8813,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = PCI_VENDOR_ID_INTEL,
+ 		.device         = 0x8814,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8027,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8028,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x8029,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x800C,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	{
+ 		.vendor         = 0x10DB,
+ 		.device         = 0x800D,
+ 		.init		= pci_eg20t_init,
++		.setup		= pci_default_setup,
+ 	},
+ 	/*
+ 	 * Cronyx Omega PCI (PLX-chip based)
+
