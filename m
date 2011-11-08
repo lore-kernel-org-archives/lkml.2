@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab1KHGhu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 01:37:50 -0500
-Received: from mamba.nagafix.co.uk ([194.145.196.68]:39960 "EHLO
-	mail.nagafix.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751047Ab1KHGht (ORCPT
+	id S1751413Ab1KHGo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 01:44:56 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41885 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717Ab1KHGoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 01:37:49 -0500
-X-Greylist: delayed 631 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 01:37:49 EST
-Message-ID: <4EB8CBB0.8010201@nagafix.co.uk>
-Date: Tue, 08 Nov 2011 13:26:56 +0700
-From: Antoine Martin <antoine@nagafix.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Tue, 8 Nov 2011 01:44:54 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.15 with qID pA86iljM031475, This message is released by code: ctlocs8528
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH] r8169: increase the delay parameter of pm_schedule_suspend
+Date: Tue, 8 Nov 2011 14:44:37 +0800
+X-BOX-Message-Id: pA86iljM031475
+Message-ID: <1320734677-1372-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.6.2
 MIME-Version: 1.0
-To: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: 2.6.32.47 breaks UML build (both i386 and amd64)
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(...)
-  LD      .tmp_vmlinux1
-drivers/built-in.o: In function `sysdev_resume':
-/linux-2.6.32.47-amd64/drivers/base/sys.c:478: undefined reference to
-`irq_pm_syscore_resume'
-collect2: ld returned 1 exit status
-  KSYM    .tmp_kallsyms1.S
-nm: '.tmp_vmlinux1': No such file
-No valid symbol.
-make: *** [.tmp_kallsyms1.S] Error 1
+The link down would occur when reseting PHY. And it would take about 2 ~ 5 seconds
+from link down to link up. If the delay of pm_schedule_suspend is not long enough,
+the device would enter runtime_suspend before link up. After link up, the device
+would wake up and reset PHY again. Then, you would find the driver keep in a loop
+of runtime_suspend and rumtime_resume.
 
-Using this config for a 64-bit build:
-http://uml.devloop.org.uk/kernels/kernel64-2.6.32.46.config
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/ethernet/realtek/r8169.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Note: I only applied the patch to the existing build tree and did not
-make clean or make mrproper.
-2.6.33.20 is not affected.
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 92b45f0..6f06aa1 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -1292,7 +1292,7 @@ static void __rtl8169_check_link_status(struct net_device *dev,
+ 		netif_carrier_off(dev);
+ 		netif_info(tp, ifdown, dev, "link down\n");
+ 		if (pm)
+-			pm_schedule_suspend(&tp->pci_dev->dev, 100);
++			pm_schedule_suspend(&tp->pci_dev->dev, 5000);
+ 	}
+ 	spin_unlock_irqrestore(&tp->lock, flags);
+ }
+-- 
+1.7.6.2
 
-Cheers
-Antoine
