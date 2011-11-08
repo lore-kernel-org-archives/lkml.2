@@ -1,217 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933378Ab1KHVRM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:17:12 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:59205 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933367Ab1KHVRI (ORCPT
+	id S933349Ab1KHVRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:17:05 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:65039 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab1KHVRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:17:08 -0500
+	Tue, 8 Nov 2011 16:17:04 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, x86@kernel.org, len.brown@intel.com,
         tglx@linutronix.de, jeremy@goop.org, hpa@zytor.com, bp@alien8.de,
         tj@kernel.org, trenn@suse.de
 Cc: mingo@redhat.com, xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@kernel.org
-Subject: [PATCH 2/3] x86/cpa: Use pte_attrs instead of pte_flags on CPA/set_p.._wb/wc operations.
-Date: Tue,  8 Nov 2011 16:15:13 -0500
-Message-Id: <1320786914-10541-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/3] x86/paravirt: Use pte_val instead of pte_flags on CPA pageattr_test
+Date: Tue,  8 Nov 2011 16:15:14 -0500
+Message-Id: <1320786914-10541-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.1
 In-Reply-To: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
 References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4EB99BF9.0023,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A02020B.4EB99BF9.00D5,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using the paravirt interface, most of the page operations are wrapped
-in the pvops interface. The one that is not is the pte_flags. The reason
-being that for most cases, the "raw" PTE flag values for baremetal and whatever
-pvops platform is running (in this case) - share the same bit meaning.
+For details refer to patch "x86/paravirt: Use pte_attrs instead of
+pte_flags on CPA/set_p.._wb/wc operations." which explains that
+some pages have the _PAGE_PWT bit set in the _PAGE_PSE field
+when running under Xen.
 
-Except for PAT. Under Linux, the PAT MSR is written to be:
+When pageattr_test is running it uses pte_flags to check whether
+it succedded in setting _PAGE_UNUSED1 bit, but also whether the
+page had _PAGE_PSE. This can happen when one of the randomly selected
+pages to be tested is a page that has been set to be _PAGE_WC
+as under Xen, that field is under _PAGE_PSE. Since the 'pte_huge'
+call is using the pte_flags(x) macro, which extracts the "raw" contents
+of the PTE, the translation of _PAGE_PSE -> _PAGE_PWT does not happen
+and we incorrectly identify the PTE as bad.
 
-          PAT4                 PAT0
-+---+----+----+----+-----+----+----+
- WC | WC | WB | UC | UC- | WC | WB |  <= Linux
-+---+----+----+----+-----+----+----+
- WC | WT | WB | UC | UC- | WT | WB |  <= BIOS
-+---+----+----+----+-----+----+----+
- WC | WP | WC | UC | UC- | WT | WB |  <= Xen
-+---+----+----+----+-----+----+----+
+Using the 'pte_val' instead of 'pte_flags' fixes the problem and
+this patch does that.
 
-The lookup of this index table translates to looking up
-Bit 7, Bit 4, and Bit 3 of PTE:
-
- PAT/PSE (bit 7) ... PCD (bit 4) .. PWT (bit 3).
-
-If all bits are off, then we are using PAT0. If bit 3 turned on,
-then we are using PAT1, if bit 3 and bit 4, then PAT2..
-
-Back to the PAT MSR table:
-
-As you can see, the PAT1 translates to PAT4 under Xen. Under Linux
-we only use PAT0, PAT1, and PAT2 for the caching as:
-
- WB = none (so PAT0)
- WC = PWT (bit 3 on)
- UC = PWT | PCD (bit 3 and 4 are on).
-
-But to make it work with Xen, we end up doing for WC a translation:
-
- PWT (so bit 3 on) --> PAT (so bit 7 is on) and clear bit 3
-
-And to translate back (when the paravirt pte_val is used) we would:
-
- PAT (bit 7 on) --> PWT (bit 3 on) and clear bit 7.
-
-This works quite well, except if code uses the pte_flags, as pte_flags
-reads the raw value and does not go through the paravirt. Which means
-that if (when running under Xen):
-
- 1) we allocate some pages.
- 2) call set_pages_array_wc, which ends up calling:
-     __page_change_att_set_clr(.., __pgprot(__PAGE_WC),  /* set */
-                                 , __pgprot(__PAGE_MASK), /* clear */
-    which ends up reading the _raw_ PTE flags and _only_ look at the
-    _PTE_FLAG_MASK contents with __PAGE_MASK cleared (0x18) and
-    __PAGE_WC (0x8) set.
-
-     read raw *pte -> 0x67
-     *pte = 0x67 & ^0x18 | 0x8
-     *pte = 0x67 & 0xfffffe7 | 0x8
-     *pte = 0x6f
-
-   [now set_pte_atomic is called, and 0x6f is written in, but under
-    xen_make_pte, the bit 3 is translated to bit 7, so it ends up
-    writting 0xa7, which is correct]
-
- 3) do something to them.
- 4) call set_pages_array_wb
-     __page_change_att_set_clr(.., __pgprot(__PAGE_WB),  /* set */
-                                 , __pgprot(__PAGE_MASK), /* clear */
-    which ends up reading the _raw_ PTE and _only_ look at the
-    _PTE_FLAG_MASK contents with _PAGE_MASK cleared (0x18) and
-    __PAGE_WB (0x0) set:
-
-     read raw *pte -> 0xa7
-     *pte = 0xa7 & &0x18 | 0
-     *pte = 0xa7 & 0xfffffe7 | 0
-     *pte = 0xa7
-
-   [we check whether the old PTE is different from the new one
-
-    if (pte_val(old_pte) != pte_val(new_pte)) {
-        set_pte_atomic(kpte, new_pte);
-        ...
-
-   and find out that 0xA7 == 0xA7 so we do not write the new PTE value in]
-
-   End result is that we failed at removing the WC caching bit!
-
- 5) free them.
-   [and have pages with PAT4 (bit 7) set, so other subsystems end up using
-    the pages that have the write combined bit set resulting in crashes. Yikes!].
-
-The fix, which this patch proposes, is to wrap the pte_pgprot in the CPA
-code with newly introduced pte_attrs which can go through the pvops interface
-to get the "emulated" value instead of the raw. Naturally if CONFIG_PARAVIRT is
-not set, it would end calling native_pte_val.
-
-The other way to fix this is by wrapping pte_flags and go through the pvops
-interface and it really is the Right Thing to do.  The problem is, that past
-experience with mprotect stuff demonstrates that it be really expensive in inner
-loops, and pte_flags() is used in some very perf-critical areas.
-
-Example code to run this and see the various mysterious subsystems/applications
-crashing
-
-MODULE_AUTHOR("Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>");
-MODULE_DESCRIPTION("wb_to_wc_and_back");
-MODULE_LICENSE("GPL");
-MODULE_VERSION(WB_TO_WC);
-
-static int thread(void *arg)
-{
-	struct page *a[MAX_PAGES];
-	unsigned int i, j;
-	do {
-		for (j = 0, i = 0;i < MAX_PAGES; i++, j++) {
-			a[i] = alloc_page(GFP_KERNEL);
-			if (!a[i])
-				break;
-		}
-		set_pages_array_wc(a, j);
-		set_current_state(TASK_INTERRUPTIBLE);
-		schedule_timeout_interruptible(HZ);
-		for (i = 0; i < j; i++) {
-			unsigned long *addr = page_address(a[i]);
-			if (addr) {
-				memset(addr, 0xc2, PAGE_SIZE);
-			}
-		}
-		set_pages_array_wb(a, j);
-		for (i = 0; i< MAX_PAGES; i++) {
-			if (a[i])
-				__free_page(a[i]);
-			a[i] = NULL;
-		}
-	} while (!kthread_should_stop());
-	return 0;
-}
-static struct task_struct *t;
-static int __init wb_to_wc_init(void)
-{
-	t = kthread_run(thread, NULL, "wb_to_wc_and_back");
-	return 0;
-}
-static void __exit wb_to_wc_exit(void)
-{
-	if (t)
-		kthread_stop(t);
-}
-module_init(wb_to_wc_init);
-module_exit(wb_to_wc_exit);
-
-This fixes RH BZ #742032
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 CC: stable@kernel.org
 ---
- arch/x86/include/asm/pgtable.h |    5 +++++
- arch/x86/mm/pageattr.c         |    2 +-
- 2 files changed, 6 insertions(+), 1 deletions(-)
+ arch/x86/mm/pageattr-test.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 18601c8..34027b0 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -349,6 +349,11 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
- 	return __pgprot(preservebits | addbits);
+diff --git a/arch/x86/mm/pageattr-test.c b/arch/x86/mm/pageattr-test.c
+index b008656..da853e3 100644
+--- a/arch/x86/mm/pageattr-test.c
++++ b/arch/x86/mm/pageattr-test.c
+@@ -38,6 +38,10 @@ static int pte_testbit(pte_t pte)
+ {
+ 	return pte_flags(pte) & _PAGE_UNUSED1;
  }
- 
-+static inline pgprot_t pte_attrs(pte_t pte)
++static int pte_testhuge(pte_t pte)
 +{
-+	return __pgprot(pte_val(pte) & PTE_FLAGS_MASK);
++	return pte_val(pte) & _PAGE_PSE;
 +}
-+
- #define pte_pgprot(x) __pgprot(pte_flags(x) & PTE_FLAGS_MASK)
  
- #define canon_pgprot(p) __pgprot(massage_pgprot(p))
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index f9e5267..efa8040 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -651,7 +651,7 @@ repeat:
+ struct split_state {
+ 	long lpg, gpg, spg, exec;
+@@ -180,7 +184,7 @@ static int pageattr_test(void)
+ 		}
  
- 	if (level == PG_LEVEL_4K) {
- 		pte_t new_pte;
--		pgprot_t new_prot = pte_pgprot(old_pte);
-+		pgprot_t new_prot = pte_attrs(old_pte);
- 		unsigned long pfn = pte_pfn(old_pte);
- 
- 		pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
+ 		pte = lookup_address(addr[i], &level);
+-		if (!pte || !pte_testbit(*pte) || pte_huge(*pte)) {
++		if (!pte || !pte_testbit(*pte) || pte_testhuge(*pte)) {
+ 			printk(KERN_ERR "CPA %lx: bad pte %Lx\n", addr[i],
+ 				pte ? (u64)pte_val(*pte) : 0ULL);
+ 			failed++;
 -- 
 1.7.7.1
 
