@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102Ab1KHApb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 19:45:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab1KHApa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753524Ab1KHApn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 19:45:43 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59744 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752680Ab1KHApa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Nov 2011 19:45:30 -0500
-Date: Mon, 7 Nov 2011 16:30:24 -0800
-From: Greg KH <gregkh@suse.de>
-To: Ian Campbell <ian.campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: Linux 2.6.32.47
-Message-ID: <20111108003024.GA6610@suse.de>
-References: <20111107213431.GA8483@kroah.com>
- <1320708564@msgid.manchmal.in-ulm.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320708564@msgid.manchmal.in-ulm.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 8 Nov 2011 00:46:15 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
+        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [RFC PATCH] tmpfs: support user quotas
+Message-ID: <20111108004615.39477beb@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111108002520.GB25769@tango.0pointer.de>
+References: <1320614101.3226.5.camel@offbook>
+	<20111107112952.GB25130@tango.0pointer.de>
+	<1320675607.2330.0.camel@offworld>
+	<20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
+	<CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
+	<20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
+	<20111107230712.GA25769@tango.0pointer.de>
+	<20111107234337.1dc9d612@lxorguk.ukuu.org.uk>
+	<20111108002520.GB25769@tango.0pointer.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 12:43:49AM +0100, Christoph Biedl wrote:
-> Greg KH wrote...
-> 
-> > I'm announcing the release of the 2.6.32.47 kernel.
-> 
-> Unfortunately this does not build anymore on ARM (Debian armel):
-> 
->   CHK     include/linux/version.h
->   SYMLINK include/asm -> include/asm-arm
-> make[1]: `include/asm-arm/mach-types.h' is up to date.
->   CHK     include/linux/utsrelease.h
->   CALL    scripts/checksyscalls.sh
->   CHK     include/linux/compile.h
->   GEN     .version
->   CHK     include/linux/compile.h
->   UPD     include/linux/compile.h
->   CC      init/version.o
->   LD      init/built-in.o
->   LD      .tmp_vmlinux1
-> drivers/built-in.o: In function `sysdev_resume':
-> ledtrig-default-on.c:(.text+0x2a97c): undefined reference to `irq_pm_syscore_resume'
-> make: *** [.tmp_vmlinux1] Error 1
-> 
-> 
-> The most likely culprit is
-> 
->     commit 0f12a6ad9fa3a03f2bcee36c9cb704821e244c40
->     Author: Ian Campbell <ian.campbell@citrix.com>
->     Date:   Mon Oct 3 15:37:00 2011 +0100
-> 
-> 	genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier
-> 
-> as reverting that commit made the error go away.
-> 
-> The .config used is attached. FWIW, the target system is a DockStar.
-> 
-> Sorry for not having checked during the review period, I should have
-> done so.
+> And half of the other resource limits are "oddities" too?
+> For  example RLIMIT_SIGPENDING is per-user and so is RLIMIT_MSGQUEUE,
+> and others too.
 
-Not good.
+When you look at the standards - yes.
 
-Ian, Konrad, any thoughts as to how to fix this?
+> > And the standards have no idea how a resource limit hit for an fs would
+> > be reported, nor how an app installer would check for it. Quota on the
+> > other hand is defined behaviour.
+> 
+> EDQUOT is POSIX, but afaik there is no POSIX standardized API for quota,
+> is there? i.e. the reporting of the user hitting quota is defined, but
 
-Christoph, sorry I didn't catch this, I need to get my ARM system back
-up and running for simple build things like this.
+Its part of Unix and its well defined and used by applications, both for
+hitting quota (the easy bit), checking quota (when checking space for
+things particularly), and manipulating them
 
-greg k-h
+The latter bit is nice, it means you can mount with a user quota set in
+the mount options, and if you want then use quota tools to change the
+quota of a specific user or two that have special rules.
+
+Alan
