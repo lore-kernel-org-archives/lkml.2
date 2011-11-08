@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab1KHT5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:57:48 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:15667 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab1KHT5r (ORCPT
+	id S1756364Ab1KHT7A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:59:00 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:45366 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750769Ab1KHT67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:57:47 -0500
-Message-ID: <4EB989B9.2060904@cavium.com>
-Date: Tue, 08 Nov 2011 11:57:45 -0800
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 8 Nov 2011 14:58:59 -0500
+Date: Tue, 8 Nov 2011 21:58:55 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Felipe Balbi <balbi@ti.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        rmallon@gmail.com, Nikolaus Voss <n.voss@weinmann.de>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        ben-linux@fluff.org, khali@linux-fr.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Message-ID: <20111108195854.GD24399@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <cover.1320753142.git.n.voss@weinmann.de>
+ <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de>
+ <20111108144115.GH20728@legolas.emea.dhcp.ti.com>
+ <4EB9477E.8070002@atmel.com>
+ <20111108152343.GJ20728@legolas.emea.dhcp.ti.com>
+ <20111108182955.GH12913@n2100.arm.linux.org.uk>
+ <20111108184447.GB24399@legolas.emea.dhcp.ti.com>
+ <20111108185525.GI12913@n2100.arm.linux.org.uk>
+ <20111108190200.GC24399@legolas.emea.dhcp.ti.com>
+ <20111108193930.GJ12913@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: "manesoni@cisco.com" <manesoni@cisco.com>
-CC: Ralf Baechle <ralf@linux-mips.org>,
-        "ananth@in.ibm.com" <ananth@in.ibm.com>,
-        "kamensky@cisco.com" <kamensky@cisco.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 1/4] MIPS Kprobes: Fix OOPS in arch_prepare_kprobe()
-References: <20111108170336.GA16526@cisco.com> <20111108170454.GB16526@cisco.com>
-In-Reply-To: <20111108170454.GB16526@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Nov 2011 19:57:47.0256 (UTC) FILETIME=[AFE5FF80:01CC9E50]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DrWhICOqskFTAXiy"
+Content-Disposition: inline
+In-Reply-To: <20111108193930.GJ12913@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 09:04 AM, Maneesh Soni wrote:
-[...]
->
-> diff --git a/arch/mips/kernel/kprobes.c b/arch/mips/kernel/kprobes.c
-> index ee28683..9fb1876 100644
-> --- a/arch/mips/kernel/kprobes.c
-> +++ b/arch/mips/kernel/kprobes.c
-> @@ -25,6 +25,7 @@
->
->   #include<linux/kprobes.h>
->   #include<linux/preempt.h>
-> +#include<linux/uaccess.h>
->   #include<linux/kdebug.h>
->   #include<linux/slab.h>
->
-> @@ -118,11 +119,19 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
->   	union mips_instruction prev_insn;
->   	int ret = 0;
->
-> -	prev_insn = p->addr[-1];
->   	insn = p->addr[0];
->
-> -	if (insn_has_delayslot(insn) || insn_has_delayslot(prev_insn)) {
-> -		pr_notice("Kprobes for branch and jump instructions are not supported\n");
-> +	if (insn_has_delayslot(insn)) {
-> +		pr_notice("Kprobes for branch and jump instructions are not"
-> +			  "supported\n");
 
-Don't wrap these strings.
+--DrWhICOqskFTAXiy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It is better to go a little bit over 80 columns, than have this.
+Hi,
 
-David Daney
+On Tue, Nov 08, 2011 at 07:39:30PM +0000, Russell King - ARM Linux wrote:
+> But, that's something very different from your statement in your previous
+> message about my alleged stance on *all* asm/*.h includes in drivers,
+> which is FALSE.
 
+http://marc.info/?l=3Dlinux-arm-kernel&m=3D132077795410718&w=3D2
+
+I don't see me complaining about *all* headers anywhere in that message.
+I did generalize, but I didn't stated you were complaining about *all*
+headers. Go back and read it for yourself.
+
+> > Now, all the other topics I agree and, in fact, have been pushing for
+> > that as I can. Specially with regards to IP cores being shared among
+> > several architectures (see drivers/usb/dwc3 where I have a core driver
+> > shared between ARM and PCI/x86).
+>=20
+> Good, so you've just taken back most of what you said in your previous
+> message.
+
+of course not... maybe you misunderstood me. My whole point was to avoid
+using cpu_is_* exactly because it would prevent this driver from
+compiling anywhere outside of ARM builds.
+
+here's where you chiped in:
+
+http://marc.info/?l=3Dlinux-kernel&m=3D132077706910296&w=3D2
+
+And a small quote:
+
+| On Tue, Nov 08, 2011 at 05:23:46PM +0200, Felipe Balbi wrote:
+| > On Tue, Nov 08, 2011 at 04:15:10PM +0100, Nicolas Ferre wrote:
+| > > -----BEGIN PGP SIGNED MESSAGE-----
+| > > Hash: SHA1
+| > >=20
+| > > On 11/08/2011 03:41 PM, Felipe Balbi :
+| > >=20
+| > > >> +	if (cpu_is_at91rm9200()) {			/*  AT91RM9200 Errata #22 */
+| > > >=20
+| > > > I don't think you should be using cpu_is_* on drivers.
+| > >=20
+| > > It is a common pattern in at91 drivers and has worked for ages.
+| > > Do you think it is related to the need to be able to compile the
+| > > driver for any SoC in the case of multi-SoC zImage support?
+| >=20
+| > we have drivers compiling on multiple OMAP versions without those
+| > hacks.
+| > Generally, we check the IP revision for that. Don't you have a
+| > Revision register of some sort ?
+
+You see ? I was asking $author to try and use some revision register in
+order to apply erratas instead of using cpu_is_at91rm9200().
+
+--=20
+balbi
+
+--DrWhICOqskFTAXiy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOuYn+AAoJEIaOsuA1yqREmpQQAJxm/v/PRk7H0O69Nq3Z45jj
+GjWNy2pcgHlWytkGoWEQzjYfz2anqowCRCRl4uABu5T/Uj/u6i+Mkf2CKDAK8nYM
+EIs0wfARPaOcdXxCL84g+XZRJGwzjQ5yx2uJJ/sJZJ7AlyuAMg52wiASThJzTzXZ
+filWw/k1EfOJc7C6+ReUCkkKkHvg54K7NpeNnGm6zIi70ZmVvXAtdz24wt9CwB/D
+y3vwxWO8ER+9SVaY3N0I8fnuWAmt2BrNhgOEYVbvNyNwHEZPYZVdYhOY91v2vk3h
+NtE5ZZ5YLRrC3KG1tNn/2AhyYDlbsrTJ0aJkmV8ebQ9dzuR9WzAn2v1jcfQu0LKl
+sjBCdlIoD/T4aBLLLee293MJOyDDh8falW6QeHn+h+b88tFa8/7JFFx3wpzYKdbh
+eR56v6kmirVIh3b7Z4IPrkNPm9nqawWNN29kQBnTXjSfMXGkjwyHDjbxWJsoFKdK
+EbrrWMC5cW5vJelqKUER7Kkb128m9EwjlK+xz4yjXyIze79vSlREDEDj+nrYICLf
+zcRcTFJ/bQc4XeXl9tX14RU+R+sjoPjVoc87r4myM2DT/jJ/QHYa8U1rkiG7Hwyp
+9Mg5HMGaUCdalQEAjV+R3F7/BeyqV9VjntbYkwdiy0gVB3wbLlsaXyPDV0lfEzA9
+Wv9tBi334ksMIC9p7+pz
+=3cwg
+-----END PGP SIGNATURE-----
+
+--DrWhICOqskFTAXiy--
