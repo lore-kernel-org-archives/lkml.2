@@ -1,134 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab1KHDYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 22:24:45 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:59757 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033Ab1KHDYl (ORCPT
+	id S1753833Ab1KHD2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 22:28:14 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:50059 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab1KHD2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 22:24:41 -0500
-Date: Tue, 8 Nov 2011 14:24:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shaohua Li <shaohua.li@intel.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>, Len Brown <len.brown@intel.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20111108142432.c27531efb6b6f8518e2555a0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Nov_2011_14_24_32_+1100_0xwVUgiEQnMTsJm0"
+	Mon, 7 Nov 2011 22:28:13 -0500
+Date: Tue, 8 Nov 2011 03:29:02 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
+        ebiederm@xmission.com, dhowells@redhat.com,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>
+Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
+Message-ID: <20111108032902.GA29433@hallyn.com>
+References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+ <1320445482-8459-7-git-send-email-serge@hallyn.com>
+ <1320694510.10093.23.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320694510.10093.23.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Nov_2011_14_24_32_+1100_0xwVUgiEQnMTsJm0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Quoting Eric Paris (eparis@redhat.com):
+> On Fri, 2011-11-04 at 22:24 +0000, Serge Hallyn wrote:
+> > From: Serge E. Hallyn <serge.hallyn@canonical.com>
+> > 
+> > cap_netlink_recv() was granting privilege if a capability is in
+> > current_cap(), regardless of the user namespace.  Fix that by
+> > targeting the capability check against the user namespace which
+> > owns the skb.
+> > 
+> > Caller passes the user ns down because sock_net is static inline defined in
+> > net/sock.h, which we'd rather not #include at the cap_netlink_recv function.
+> 
+> This is wrong at least in relation to audit.
 
-Hi Andrew,
+You may well be right, but before I proceed, I want to make sure that
+you do see the current code is even more wrong?  But I was (as with the other
+patch I reverted) probably overzealous and should have switched this a
+different way (see bottom).
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/idle/intel_idle.c between commit 46bcfad7a819 ("cpuidle:
-Single/Global registration of idle states") from Linus' tree and commit
-"intel_idle: fix API misuse" from the akpm tree.
+Regarding audit:  if I create a new network namespace, I can't open a
+netlink socket to talk to the kernel.  At least,
 
-The former moved the code modified by the latter.  I fixed it up (see
-below0 and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	unshare -n /bin/bash
+	# strace -f auditctl -l
 
-diff --cc drivers/idle/intel_idle.c
-index 5d2f8e1,0a53882..0000000
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@@ -424,60 -398,6 +424,60 @@@ static void intel_idle_cpuidle_devices_
-  	return;
-  }
-  /*
- + * intel_idle_cpuidle_driver_init()
- + * allocate, initialize cpuidle_states
- + */
- +static int intel_idle_cpuidle_driver_init(void)
- +{
- +	int cstate;
- +	struct cpuidle_driver *drv =3D &intel_idle_driver;
- +
- +	drv->state_count =3D 1;
- +
- +	for (cstate =3D 1; cstate < MWAIT_MAX_NUM_CSTATES; ++cstate) {
- +		int num_substates;
- +
- +		if (cstate > max_cstate) {
- +			printk(PREFIX "max_cstate %d reached\n",
- +				max_cstate);
- +			break;
- +		}
- +
- +		/* does the state exist in CPUID.MWAIT? */
- +		num_substates =3D (mwait_substates >> ((cstate) * 4))
- +					& MWAIT_SUBSTATE_MASK;
- +		if (num_substates =3D=3D 0)
- +			continue;
- +		/* is the state not enabled? */
- +		if (cpuidle_state_table[cstate].enter =3D=3D NULL) {
- +			/* does the driver not know about the state? */
- +			if (*cpuidle_state_table[cstate].name =3D=3D '\0')
- +				pr_debug(PREFIX "unaware of model 0x%x"
- +					" MWAIT %d please"
- +					" contact lenb@kernel.org",
- +				boot_cpu_data.x86_model, cstate);
- +			continue;
- +		}
- +
- +		if ((cstate > 2) &&
- +			!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
- +			mark_tsc_unstable("TSC halts in idle"
- +					" states deeper than C2");
- +
- +		drv->states[drv->state_count] =3D	/* structure copy */
- +			cpuidle_state_table[cstate];
- +
- +		drv->state_count +=3D 1;
- +	}
- +
- +	if (auto_demotion_disable_flags)
-- 		smp_call_function(auto_demotion_disable, NULL, 1);
-++		on_each_cpu(auto_demotion_disable, NULL, 1);
- +
- +	return 0;
- +}
- +
- +
- +/*
-   * intel_idle_cpuidle_devices_init()
-   * allocate, initialize, register cpuidle_devices
-   */
+shows -ECONNREFUSED from the sendto.  So I'm really not sure that the
+kernel/audit.c patch is wrong.  (I want to make sure it's understood,
+below, that I'm proposing tightening down the checks because that's more
+in keeping with the purpose of this patchset, not because I agree the
+checks are or will be, in the end, wrong)
 
---Signature=_Tue__8_Nov_2011_14_24_32_+1100_0xwVUgiEQnMTsJm0
-Content-Type: application/pgp-signature
+>   I don't know the other
+> code well enough to know if I think it's ok there.  Lets say I have
+> (CAP_SYS_ADMIN | CAP_SETUID | CAP_SETGID) and I create a new task with
+> CLONE_NEWNAME.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+(just to be sure, do you mean CLONE_NEWUSER?)
 
-iQIcBAEBCAAGBQJOuKDwAAoJEECxmPOUX5FE8NEQAJUtpA4t5zSeD+2+tUOSCP8O
-BsO9zNpmDhQD33/urTSOECQ7Ym3SsMfT1/AaaB2EYd8aVivqA2UdmzHbFtucnvjL
-VfpZcZUMkb3aUfpN8NqNFUPE8BxZshxvAgFRWMHgoeyh1CCPdYFStYDUrTf4WAZp
-pqEbyunlx2CbkPQNiaUGft5h0oQkCeXaNKCIIyhMKHJa8mfyNBrlpROdV32dPTPJ
-C27hDY/IigNBRJ/tvx5mur4OYcZajyOPqqAi1XI67kf5IJD4vq6nprGUyF2AjyD1
-mPjR5En3xMinONF/UyU078qQUjRkOG3Kh/66D8iyZibnPghlrrLpH8nK6FtvWbFa
-cF8D6neaS62Aanf3B7qrYChC37QtqSLiSSC7y3k2aIz7YBwvjcMk57ZeWy4OB7xi
-n8ahSXNWj71MWHtjnL2rPZrfX9qPREz2+PKah5+BO5SuEGqbTQLa7io1HGEXAg38
-jMWl+uUCygieSMn1J8JtUM1edEH8zmnC1HzRS/gPPaA6kQ4OZ/DmTzwfshjHq1Qe
-t+D4jh1jGVWFW+W4NJwmKW5fLGusRhJZFRE6ugXk+6nhJWR3azsQiNhdvsEKqjw3
-jkCOekoj8BkHFbcpWp6MYeK89CDGTbSytmJs1/QE/MulXRUVvnGGmJ1rYDgpqVHl
-cGeRdCrJOSevWXlfqKn9
-=NZnJ
------END PGP SIGNATURE-----
+>   This task then immediately does the needful to remove
+> all audit rules (which supposedly requires CAP_AUDIT_CONTROL).  That's
+> going to succeed because the task is init in it's namespace, aka:
+> 
+>         /* The creator of the user namespace has all caps. */
+>         if (targ_ns != &init_user_ns && targ_ns->creator == cred->user)
+>                 return 0;
 
---Signature=_Tue__8_Nov_2011_14_24_32_+1100_0xwVUgiEQnMTsJm0--
+That will only happen if the current user created the target user_ns.
+So if task p1 created task p2 through clone(CLONE_NEWUSER), then p1 would
+pass this on access check to p2's user_ns, but p2 would not.
+
+But that really isn't related to the issue you raise.
+
+> But it just screwed with a global resource.  aka audit.  I don't know
+> the meaning of these others, but it seems to me probably most or all of
+> them should be against the init_user_ns, not the namespace the skb came
+> from....
+> 
+> What am I missing?
+
+I'm not sure, depends on how much we're misunderstanding each other :)
+
+But, regardless, your point is valid in that I'm not tightening down as
+much as I could.  So how about I don't change the security_netlink_recv()
+and callers yet, and instead I change cap_netlink_recv() to do:
+
+	if (!IN_ROOT_USER_NS && !cap_raised(current_cap(), cap))
+
+?
+
+thanks,
+-serge
