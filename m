@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab1KHRww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 12:52:52 -0500
-Received: from mail-va3.bigfish.com ([216.32.180.10]:46083 "EHLO
-	VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751247Ab1KHRwv (ORCPT
+	id S932388Ab1KHRyp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 12:54:45 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:18542
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751247Ab1KHRyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 12:52:51 -0500
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 12:52:51 EST
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h61h)
+	Tue, 8 Nov 2011 12:54:41 -0500
+X-SpamScore: -26
+X-BigFish: VPS-26(zz936eK1432N98dK4015Lzz1202hzz15d4Rz2dh668h839h944h61h)
 X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
 X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH 1/2] regmap: Add helper function for checking if a register range is volatile
-Date: Tue, 8 Nov 2011 18:37:25 +0100
-Message-ID: <1320773846-28635-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.7
+X-WSS-ID: 0LUCSEJ-02-20K-02
+X-M-MSG: 
+Date: Tue, 8 Nov 2011 18:54:10 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>
+Subject: Re: [PATCH] pci: More PRI/PASID cleanup
+Message-ID: <20111108175410.GH5182@amd.com>
+References: <20111103034359.10286.19062.stgit@bling.home>
+ <20111108162826.GD5182@amd.com>
+ <1320770670.19116.23.camel@bling.home>
+ <20111108171725.GE5182@amd.com>
+ <1320773518.19116.30.camel@bling.home>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1320773518.19116.30.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already have the same code for checking whether a register range is volatile
-in two different places. Instead of duplicating it once more  add a small helper
-function for checking whether a register range is voltaile.
+On Tue, Nov 08, 2011 at 10:31:58AM -0700, Alex Williamson wrote:
+> On Tue, 2011-11-08 at 18:17 +0100, Roedel, Joerg wrote:
+> > On Tue, Nov 08, 2011 at 09:44:30AM -0700, Alex Williamson wrote:
+> > 
+> > > bit 0 (PCI_PASID_ENABLE) is reserved in the CAP register...
+> > 
+> > Is it? Which spec are you using? In my version it is not reserved but
+> > states if it is supported to set the enable-bit.
+> 
+> Latest I can find is the March 31, 2011 PASID ECN, which just lists that
+> bit as reserved.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/base/regmap/regmap.c |   29 ++++++++++++++++-------------
- 1 files changed, 16 insertions(+), 13 deletions(-)
+Okay, my one is older and there it is stated as I implemented it. I will
+check with reality first before changing the code...
 
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index bf441db..4016b00 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -64,6 +64,18 @@ bool regmap_precious(struct regmap *map, unsigned int reg)
- 	return false;
- }
- 
-+static bool regmap_volatile_range(struct regmap *map, unsigned int reg,
-+	unsigned int num)
-+{
-+	unsigned int i;
-+
-+	for (i = 0; i < num; i++)
-+		if (!regmap_volatile(map, reg + i))
-+			return false;
-+
-+	return true;
-+}
-+
- static void regmap_format_4_12_write(struct regmap *map,
- 				     unsigned int reg, unsigned int val)
- {
-@@ -481,15 +493,11 @@ EXPORT_SYMBOL_GPL(regmap_read);
- int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
- 		    size_t val_len)
- {
-+	size_t val_count = val_len / map->format.val_bytes;
- 	int ret;
--	int i;
--	bool vol = true;
--
--	for (i = 0; i < val_len / map->format.val_bytes; i++)
--		if (!regmap_volatile(map, reg + i))
--			vol = false;
- 
--	WARN_ON(!vol && map->cache_type != REGCACHE_NONE);
-+	WARN_ON(!regmap_volatile_range(map, reg, val_count) &&
-+		map->cache_type != REGCACHE_NONE);
- 
- 	mutex_lock(&map->lock);
- 
-@@ -517,16 +525,11 @@ int regmap_bulk_read(struct regmap *map, unsigned int reg, void *val,
- {
- 	int ret, i;
- 	size_t val_bytes = map->format.val_bytes;
--	bool vol = true;
-+	bool vol = regmap_volatile_range(map, reg, val_count);
- 
- 	if (!map->format.parse_val)
- 		return -EINVAL;
- 
--	/* Is this a block of volatile registers? */
--	for (i = 0; i < val_count; i++)
--		if (!regmap_volatile(map, reg + i))
--			vol = false;
--
- 	if (vol || map->cache_type == REGCACHE_NONE) {
- 		ret = regmap_raw_read(map, reg, val, val_bytes * val_count);
- 		if (ret != 0)
+> I can drop it if need be, was just trying to do some cleanup on the
+> consistency of pci_reg.h before adding a bunch more defines to help
+> bounds checking and parsing for vfio-pci.  Unless my spec is outdated,
+> it seems like there's more than an aesthetic change here though, so
+> resolving the conflicts with your latest work might be warranted.
+
+Fine with me. The best is probably when I carry this change forward
+(when Jesse is ok with that) and put my changes on-top of that.
+
+Thanks,
+
+	Joerg
+
 -- 
-1.7.7
+AMD Operating System Research Center
 
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
