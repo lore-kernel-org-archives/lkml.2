@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756440Ab1KHWar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 17:30:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57731 "EHLO mx2.suse.de"
+	id S1756451Ab1KHWhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 17:37:52 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39073 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754899Ab1KHWap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 17:30:45 -0500
-Message-ID: <4EB9AD98.3010404@suse.cz>
-Date: Tue, 08 Nov 2011 23:30:48 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1755926Ab1KHWhv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 17:37:51 -0500
+Date: Tue, 8 Nov 2011 23:37:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Drake <dsd@laptop.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Geode LX boot fails after x86 microcode revision change
+Message-ID: <20111108223744.GA1996@x1.osrc.amd.com>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel Drake <dsd@laptop.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Borislav Petkov <bp@amd64.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com>
+ <20111108203116.GF25083@aftab>
+ <4EB9A6BC.7050600@zytor.com>
+ <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com>
+ <CAMLZHHTu-FNphvt5_L7fxqRpPukfs8nbS71x3GYo5GsPBo5cNw@mail.gmail.com>
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, Arnaud Lacombe <lacombar@gmail.com>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "Daney, David" <David.Daney@caviumnetworks.com>
-Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target
- list
-References: <1314234210-11090-1-git-send-email-lacombar@gmail.com> <4E69FEC9.2080204@suse.cz> <CACqU3MUFyn_jh2pN4GLENqcGVUzAwcMJUR_WLY2EtqOhMheceQ@mail.gmail.com> <20111101232233.GA32441@sepie.suse.cz> <20111107204448.GA9949@linux-mips.org> <20111107211900.GB6264@sepie.suse.cz> <20111107233330.GA26705@linux-mips.org> <4EB8E75D.1010706@suse.cz> <4EB97333.1050403@gmail.com>
-In-Reply-To: <4EB97333.1050403@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMLZHHTu-FNphvt5_L7fxqRpPukfs8nbS71x3GYo5GsPBo5cNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8.11.2011 19:21, David Daney wrote:
-> The problem is that compiler options meant to be used only for the 
-> compiling done by scripts/checksyscalls.sh are now leaking into the 
-> compilation of other parts of the kernel (asm-offsets.c), where they 
-> wreak havoc.
+On Tue, Nov 08, 2011 at 04:17:21PM -0600, Daniel Drake wrote:
+> On Tue, Nov 8, 2011 at 4:13 PM, Petkov, Borislav
+> <Borislav.Petkov@amd.com> wrote:
+> > This could definitely explain why it hangs, the rdmsr_safe call is
+> >  in early_init_amd(), so it could really be too early for exception tables.
 > 
-> Something like the attached is what I think needs to be done.
+> I think this is almost certainly the cause too. The symptoms of this
+> issue are exactly the same as the early boot hang once discussed in a
+> thread titled "Dynamic nop selection breaks boot on Geode LX" (which
+> you wrote to as well) which was a problem of running code before
+> having exception tables set up.
 
-Ah, right. That makes a lot of sense now. Ralf, does the patch at
-https://lkml.org/lkml/2011/11/8/312 work for you?
+Oh yeah, that.
 
-Michal
+> I haven't yet run your tests except for "rdmsr 0x8b" which returns
+> "pread: Input/output error" - let me know if you would still like
+> results from the other tests.
+
+Yep, just send me /proc/cpuinfo from a working kernel.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+   Boris
