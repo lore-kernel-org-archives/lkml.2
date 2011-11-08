@@ -1,88 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933327Ab1KHVPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:15:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48569 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751661Ab1KHVPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:15:47 -0500
-Date: Tue, 8 Nov 2011 22:15:01 +0100 (CET)
-From: John Kacur <jkacur@redhat.com>
-X-X-Sender: jkacur@localhost6.localdomain6
-To: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
- tools/perf/ and tools/kvm/
-In-Reply-To: <20111108163331.GJ24234@thunk.org>
-Message-ID: <alpine.LFD.2.00.1111082212560.8887@localhost6.localdomain6>
-References: <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com> <20111107203255.GF24234@thunk.org>
- <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws> <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu> <20111108093225.GB32533@elte.hu> <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125509.GB1022@elte.hu>
- <20111108163331.GJ24234@thunk.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756428Ab1KHVP6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:15:58 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41303 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753536Ab1KHVP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 16:15:56 -0500
+Date: Tue, 8 Nov 2011 21:16:56 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Subject: Staging clear up
+Message-ID: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Moorestown/Oaktrail has appeared only in the PC like form so the
+following bits of staging can be binned
 
+drivers/staging/spectra
 
-On Tue, 8 Nov 2011, Ted Ts'o wrote:
+(not needed)
 
-> On Tue, Nov 08, 2011 at 01:55:09PM +0100, Ingo Molnar wrote:
-> > I guess you can do well with a split project as well - my main claim 
-> > is that good compatibility comes *naturally* with integration.
-> 
-> Here I have to disagree; my main worry is that integration makes it
-> *naturally* easy for people to skip the hard work needed to keep a
-> stable kernel/userspace interface.
-> 
-> The other worry which I've mentioned, but which I haven't seen
-> addressed, is that the even if you can use a perf from a newer kernel
-> with an older kernel, this causes distributions a huge amount of pain,
-> since they have to package two different kernel source packages, and
-> only compile perf from the newer kernel source package.  This leads to
-> all sorts of confusion from a distribution packaging point of view.
-> 
-> For example, assume that RHEL 5, which is using 2.6.32 or something
-> like that, wants to use a newer e2fsck that does a better job fixing
-> file system corruptions.  If it were bundled with the kernel, then
-> they would have to package up the v3.1 kernel sources, and have a
-> source RPM that isn't used for building kernel sources, but just to
-> build a newer version of e2fsck.  Fortunately, they don't have to do
-> that.  They just pull down a newer version of e2fsprogs, and package,
-> build, test, and ship that.
-> 
-> In addition, suppose Red Hat ships a security bug fix which means a
-> new kernel-image RPM has to be shipped.  Does that mean that Red Hat
-> has to ship new binary RPM's for any and all tools/* programs that
-> they have packaged as separate RPM's?  Or should installing a new
-> kernel RPM also imply dropping new binaries in /usr/bin/perf, et. al?
-> There are all sorts of packaging questions that are raised
-> integration, and from where I sit I don't think they've been
-> adequately solved yet.
->
- 
-This in practice is not a big deal.
+drivers/staging/intel_sst
 
-There are many approaches for how the RPM can be built, but basically
-getting the perf source is just a matter of
-make perf-tar-src-pkg or friends such as
-make perf-tarbz2-src-pkg
-which will create perf-3.2.0-rc1.tar, and perf-3.2.0-rc1.tar.bz2
-respectively which can be used for the src rpms. This tar ball can be used
-as a separate package or subpackage.
+This also appears on Medfield but there is an ASoC driver for the
+Medfield version and we no longer need to keep this. There were naughty
+bits of code peeking into staging for files but that should now be sorted
+(and if not they need to break and be forced to fix them)
 
-Thanks
+I can send patches but they are enormous and rather boring...
 
+I will be sending patches for other bits like the battery manager which
+in actual product is always ACPI handled.
+
+Alan
