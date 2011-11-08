@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab1KHVy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:54:58 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:40109 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936Ab1KHVy4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:54:56 -0500
-Message-ID: <4EB9A50D.1040302@oracle.com>
-Date: Tue, 08 Nov 2011 13:54:21 -0800
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S1755319Ab1KHWAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 17:00:43 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58216 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750899Ab1KHWAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 17:00:42 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Power management fixes for 3.2
+Date: Tue, 8 Nov 2011 23:03:20 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
 MIME-Version: 1.0
-To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH] pciehp: Wait for link get trained in pci_check_link_status()
-References: <4EB88238.4050409@oracle.com> <4EB8F434.6090003@jp.fujitsu.com> <4EB94A51.6070809@oracle.com>
-In-Reply-To: <4EB94A51.6070809@oracle.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4EB9A52D.015A,ss=1,re=0.000,fgs=0
+Message-Id: <201111082303.21067.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 07:27 AM, Yinghai Lu wrote:
+Hi Linus,
 
-> On 11/08/2011 01:19 AM, Kenji Kaneshige wrote:
->>
->> What about the patch below? I think it's much simpler and has less impact.
-> 
-> Should work. will try it today.
+Please pull power management fixes (on top of commit
+94956eed14b4b16d401c8ad36d68df0608f968cb) for 3.2 from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-fixes
+
+with top-most commit 156acb166ea9a43d7fcdf9b8051694ce4e91dbfc
+(PM / OPP: Use ERR_CAST instead of ERR_PTR(PTR_ERR())).
+
+They include:
+
+* PM QoS regression fix from Dominik Brodowski.
+
+* devfreq structure field name fix from Jon Corbet.
+
+* cgroups freezer documentation fix.
+
+* Error pointer casting cleanup in OPP core from Thomas Meyer.
+
+Thanks!
 
 
-yes, that works too.
+ Documentation/cgroups/freezer-subsystem.txt |    4 ++--
+ drivers/base/power/opp.c                    |    2 +-
+ include/linux/devfreq.h                     |    2 +-
+ kernel/power/qos.c                          |    1 +
+ 4 files changed, 5 insertions(+), 4 deletions(-)
 
-Thanks
+---------------
 
-Yinghai
+Dominik Brodowski (1):
+      PM / QoS: Set cpu_dma_pm_qos->name
+
+Jonathan Corbet (1):
+      PM / devfreq: fix private_data
+
+Rafael J. Wysocki (1):
+      Documentation: Fix typo in freezer-subsystem.txt
+
+Thomas Meyer (1):
+      PM / OPP: Use ERR_CAST instead of ERR_PTR(PTR_ERR())
+
