@@ -1,146 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072Ab1KHTLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:11:52 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:36795 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752940Ab1KHTLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:11:51 -0500
-Date: Tue, 8 Nov 2011 13:11:49 -0600
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] specific do_timer_cpu value for nohz off mode
-Message-ID: <20111108191149.GA7236@sgi.com>
+	id S933094Ab1KHTNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:13:08 -0500
+Received: from gerolde.archlinux.org ([66.211.214.132]:36485 "EHLO
+	archlinux.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754712Ab1KHTNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 14:13:07 -0500
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 14:13:07 EST
+Message-ID: <4EB97DD2.7000209@archlinux.org>
+Date: Tue, 08 Nov 2011 20:06:58 +0100
+From: =?ISO-8859-15?Q?Thomas_B=E4chler?= <thomas@archlinux.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.2-rc1
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+In-Reply-To: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="------------enigBA7DEB0D1472A961CC83F5F7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending this.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigBA7DEB0D1472A961CC83F5F7
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
+
+Am 08.11.2011 03:10, schrieb Linus Torvalds:
+> Which brings me to a question I already asked on G+ - do people really
+> need the old-fashioned patches? The -rc1 patch is about 22MB gzip-9'd,
+> and part of the reason is that all those renames cause big
+> delete/create diffs. We *could* use git rename patches, but then you'd
+> have to apply them with "git apply" rather than the legacy "patch"
+> executables. But as it is, the patch is almost a third of the size of
+> the tar-ball, which makes me wonder if there's even any point to such
+> a big patch?
+
+=46rom a distro packager's point of view, I can say this:
+
+For packaging, we always use the latest .0 release tarball and patch it
+with the -stable patch files from kernel.org. It would be desirable if
+those would keep working with GNU patch - not necessary though because
+'git apply' doesn't require a git repository.
+
+When packaging development versions of the kernel, it is much easier to
+pull the lastest code directly from the git tree, so I never needed the
+patch files for the -rc's.
 
 
-Allow manual override of the tick_do_timer_cpu.
+--------------enigBA7DEB0D1472A961CC83F5F7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-While not necessarily harmful, doing jiffies updates on an application cpu
-does cause some extra overhead that HPC benchmarking people notice.  They
-prefer to have OS activity isolated to certain cpus.  They like reproducibility
-of results, and having jiffies updates bouncing around introduces variability.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- kernel/time/tick-sched.c |   98 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 98 insertions(+)
+iEYEAREIAAYFAk65fdIACgkQEda5KzHP/VAExACgjJXeumtlSOBiCACCFUoo4urk
+b/QAnA3PIGNqNhxPf62+N9MgtTkr19yC
+=j2d3
+-----END PGP SIGNATURE-----
 
-Index: linux/kernel/time/tick-sched.c
-===================================================================
---- linux.orig/kernel/time/tick-sched.c
-+++ linux/kernel/time/tick-sched.c
-@@ -834,6 +834,104 @@ void tick_cancel_sched_timer(int cpu)
- }
- #endif
- 
-+
-+#ifdef CONFIG_SYSFS
-+/**
-+ * sysfs_show_do_timer_cpu - sysfs interface for tick_do_timer_cpu
-+ * @dev:        unused
-+ * @buf:        char buffer where value of tick_do_timer_cpu is copied
-+ *
-+ * Provides sysfs interface for showing the current tick_do_timer_cpu.
-+ */
-+static ssize_t
-+sysfs_show_do_timer_cpu(struct sys_device *dev,
-+				struct sysdev_attribute *attr, char *buf)
-+{
-+	ssize_t count = 0;
-+
-+	count = snprintf(buf, PAGE_SIZE, "%d\n", tick_do_timer_cpu);
-+
-+	return count;
-+}
-+
-+/**
-+ * sysfs_override_do_timer_cpu - manually override tick_do_timer_cpu
-+ * @dev:        unused
-+ * @buf:        cpu number of desired tick_do_timer_cpu
-+ * @count:      length of buffer
-+ *
-+ * Takes input from sysfs interface for manually overriding the selected
-+ * tick_do_timer_cpu.  Only applicable when not running in nohz mode.
-+ */
-+static ssize_t
-+sysfs_override_do_timer_cpu(struct sys_device *dev,
-+					struct sysdev_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	char b[16];
-+	size_t ret = count;
-+	int c;
-+
-+#ifdef CONFIG_NO_HZ
-+	/* nohz mode not supported */
-+	if (tick_nohz_enabled)
-+		return -EINVAL;
-+#endif
-+	/* strings from sysfs write are not 0 terminated! */
-+	if (count >= sizeof(b))
-+		return -EINVAL;
-+
-+	/* strip off \n: */
-+	if (buf[count-1] == '\n')
-+		count--;
-+	if (count < 1)
-+		return -EINVAL;
-+
-+	memcpy(b, buf, count);
-+	b[count] = 0;
-+
-+	if (sscanf(b, "%d", &c) != 1)
-+		return -EINVAL;
-+
-+	if (!cpu_online(c))
-+		return -EINVAL;
-+
-+	tick_do_timer_cpu = c;
-+
-+	return ret;
-+}
-+
-+/*
-+ * Sysfs setup bits:
-+ */
-+static SYSDEV_ATTR(jiffies_cpu, 0644, sysfs_show_do_timer_cpu,
-+		   sysfs_override_do_timer_cpu);
-+
-+static struct sysdev_class timekeeping_sysclass = {
-+	.name = "timekeeping",
-+};
-+
-+static struct sys_device device_timekeeping = {
-+	.id     = 0,
-+	.cls    = &timekeeping_sysclass,
-+};
-+
-+static int __init init_timekeeping_sysfs(void)
-+{
-+	int error = sysdev_class_register(&timekeeping_sysclass);
-+
-+	if (!error)
-+		error = sysdev_register(&device_timekeeping);
-+	if (!error)
-+		error = sysdev_create_file(
-+				&device_timekeeping,
-+				&attr_jiffies_cpu);
-+	return error;
-+}
-+
-+device_initcall(init_timekeeping_sysfs);
-+#endif /* SYSFS */
-+
- /**
-  * Async notification about clocksource changes
-  */
+--------------enigBA7DEB0D1472A961CC83F5F7--
