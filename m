@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab1KHGVv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 01:21:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35940 "EHLO mga11.intel.com"
+	id S1752275Ab1KHGYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 01:24:33 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64173 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751234Ab1KHGVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 01:21:49 -0500
+	id S1751436Ab1KHGYa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 01:24:30 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,475,1315206000"; 
-   d="p7s'?scan'208";a="82266373"
-Subject: Re: softirq oops from b44_poll
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="p7s'?scan'208";a="72124831"
+Subject: Re: Add IPSec IP Range in Linux kernel
 From: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-To: Josh Boyer <jwboyer@redhat.com>
-Cc: Gary Zambrano <zambrano@broadcom.com>,
+To: Daniil Stolnikov <danila.st@mail.ru>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@fedoraproject.org" <kernel-team@fedoraproject.org>
-In-Reply-To: <20111107205647.GC14216@zod.bos.redhat.com>
-References: <20111107205647.GC14216@zod.bos.redhat.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-umMvEba7cJ1OAEP2nHSY"
-Date: Mon, 07 Nov 2011 22:21:41 -0800
-Message-ID: <1320733301.21617.3.camel@ppwaskie-mobl2>
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+In-Reply-To: <92909814.20111108111036@mail.ru>
+References: <92909814.20111108111036@mail.ru>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-c7i/szVTBrbMAj5FtM3n"
+Date: Mon, 07 Nov 2011 22:24:25 -0800
+Message-ID: <1320733465.21617.4.camel@ppwaskie-mobl2>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,88 +30,27 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-umMvEba7cJ1OAEP2nHSY
+--=-c7i/szVTBrbMAj5FtM3n
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2011-11-07 at 12:56 -0800, Josh Boyer wrote:
-> Hi all,
+On Mon, 2011-11-07 at 19:10 -0800, Daniil Stolnikov wrote:
+> Hello!
 >=20
-> We've had two reports of a WARN_ON being spit out from kernel/softirq.c
-> that seem fairly related in symptoms.  Both seem to involved b44_poll
-> either during the middle of some disk I/O.  An example of the output is
-> here:
->=20
-> :WARNING: at kernel/softirq.c:159 _local_bh_enable_ip+0x44/0x8e()
-> :Hardware name: Vostro 1500                    =20
-> :Modules linked in: fuse lockd ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ip=
-v6
-> ip6table_filter ip6_tables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
-> nf_conntrack sunrpc uinput snd_hda_codec_idt snd_hda_intel snd_hda_codec
-> snd_hwdep snd_seq snd_seq_device snd_pcm dell_wmi sparse_keymap dell_lapt=
-op
-> joydev dcdbas microcode r852 sm_common nand nand_ids b44 nand_ecc r592 mt=
-d ssb
-> mii memstick arc4 i2c_i801 iTCO_wdt iTCO_vendor_support iwl3945 iwl_legac=
-y
-> mac80211 cfg80211 rfkill snd_timer snd soundcore snd_page_alloc firewire_=
-ohci
-> firewire_core crc_itu_t uas usb_storage sdhci_pci sdhci mmc_core nouveau =
-ttm
-> drm_kms_helper drm i2c_algo_bit i2c_core mxm_wmi wmi video [last unloaded=
-:
-> scsi_wait_scan]
-> :Pid: 1511, comm: nepomukservices Not tainted 3.1.0-1.fc16.x86_64 #1
-> :Call Trace:
-> : <IRQ>  [<ffffffff81057a56>] warn_slowpath_common+0x83/0x9b
-> : [<ffffffff81057a88>] warn_slowpath_null+0x1a/0x1c
-> : [<ffffffff8105d462>] _local_bh_enable_ip+0x44/0x8e
-> : [<ffffffff8105d4ba>] local_bh_enable_ip+0xe/0x10
-> : [<ffffffff814b5af4>] _raw_spin_unlock_bh+0x15/0x17
-> : [<ffffffffa03cc969>] destroy_conntrack+0x9d/0xdc [nf_conntrack]
-> : [<ffffffff813fa083>] nf_conntrack_destroy+0x19/0x1b
-> : [<ffffffff813ce4ed>] skb_release_head_state+0xa7/0xef
-> : [<ffffffff813ce2f1>] __kfree_skb+0x13/0x83
-> : [<ffffffff813ce3b7>] consume_skb+0x56/0x6b
-> : [<ffffffffa02e48c4>] b44_poll+0xaf/0x3ec [b44]
-> : [<ffffffff813d8137>] net_rx_action+0xa9/0x1b8
-> : [<ffffffffa02e202e>] ? br32+0x19/0x1d [b44]
-> : [<ffffffff8105d6b3>] __do_softirq+0xc9/0x1b5
-> : [<ffffffff81027719>] ? ack_APIC_irq+0x15/0x17
-> : [<ffffffff814be32c>] call_softirq+0x1c/0x30
-> : [<ffffffff81010b45>] do_softirq+0x46/0x81
-> : [<ffffffff8105d97b>] irq_exit+0x57/0xb1
-> : [<ffffffff814bec0e>] do_IRQ+0x8e/0xa5
-> : [<ffffffff814b5d2e>] common_interrupt+0x6e/0x6e
-> : <EOI>  [<ffffffff814bc1f4>] ? sysret_audit+0x16/0x20
->=20
-> You can find the original bug reports in the URLs below.  This has happen=
-ed
-> on two different machines, one 32-bit and another 64-bit.  I'm fairly sur=
-e
-> both reports are the same issue, but I haven't a clue what that issue mig=
-ht
-> be at the moment.
->=20
-> Thoughts?
+> Found that the stack IPSec in Linux does not support any IP range. Many p=
+eople ask this question. The archives say strongswan said that their daemon=
+ supports a range, but the Linux IPSec stack supports only the subnets. I a=
+m writing to you to implement support for IP range in Linux. I think that a=
+ lot more people will appreciate this innovation.
 
-I don't have the hardware to play with, but from inspection, I suspect a
-thread is getting stuck on that CPU from the spin_lock_irqsave() in
-b44_poll().  There are some calls that are mapping and unmapping memory,
-which could be blocking.  NAPI should be offering protection under
-softirq context, so I'm not sure why that spinlock is even there.  And
-comparing with a number of other NAPI poll routines in other drivers,
-they are also not locking.
-
-This is entirely a theory that I can't test though.
+It'd be even better if you could write a patch for us to review.
 
 Cheers,
 -PJ
 
-> https://bugzilla.redhat.com/show_bug.cgi?id=3D749856
-> https://bugzilla.redhat.com/show_bug.cgi?id=3D741117
 >=20
-> josh
+> Regards
+> Daniil Stolnikov.
 >=20
 > --
 > To unsubscribe from this list: send the line "unsubscribe netdev" in
@@ -120,7 +61,7 @@ Cheers,
 Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
 LAN Access Division, Intel Corporation
 
---=-umMvEba7cJ1OAEP2nHSY
+--=-c7i/szVTBrbMAj5FtM3n
 Content-Type: application/x-pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -196,14 +137,14 @@ EY0z7VFdjsZjJH9EQA0UbF1aYcshv0a/M2deKN9TdYuJ1eTKRSZdzSiRG5w75xujFMYZgo4ETlu1
 Behgey1jvJiyWdOsPt7at08QMYIB6jCCAeYCAQEwZDBWMQswCQYDVQQGEwJVUzEaMBgGA1UEChMR
 SW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJhc2ljIElzc3Vpbmcg
 Q0EgM0ICCn9HrP0AAQAAURUwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEw
-HAYJKoZIhvcNAQkFMQ8XDTExMTEwODA2MjE0MVowIwYJKoZIhvcNAQkEMRYEFKZgo+1vtmCWFhZt
-m7tJ6y7nwwiWMA0GCSqGSIb3DQEBAQUABIIBAMQVSCGTuegHvTWUR0aeRp38ZF9+Fk6ueCbiAmKA
-Lx8KQO6l2KgUh82Stflp6BxmPS6UjRx8ImaLpT1o7U3dVKT3rr1tEaLyEcVDgXSN1N2JRRoAwQl8
-7o5jDlhsGXtCKjoubCjhzHKy2epIwRT7aAAIz7IpRuh7iBVT4VmxX34xiTx3oGLG7JkEe4X9gctZ
-ikTIpO6vgN/6n40UGO8eD0z5A/l4lKyFnmY9tfU9tLkran2cQKxv0p3xhhX5dGbTSCv6TOg7+Q1a
-l9FSzO1opkMSVbR5tYzeW4E0d2VlUabPchqbD7mqi2Frb5wKft1M/M2CbgExRK3HQRjuWsyx1jsA
+HAYJKoZIhvcNAQkFMQ8XDTExMTEwODA2MjQyNVowIwYJKoZIhvcNAQkEMRYEFNEjRWM655x3G0RW
+7MDj4hztfyUBMA0GCSqGSIb3DQEBAQUABIIBADN72PetgEzH3H9SJwhMV/rF6SVtLk2vMle7eN1I
+IiJDNxSz+rQaknr4HTO7ja4S+c3PPcidFlU0U0LFjuV/mJjHEyY95loPkDwhE8CPe7P7dYj7d+lH
+K2SzCM/cclJ/zv+aHDni8UNgA5fWyVMtJFv4y0uZZ/IEV0oLzbDiEO+jpsANih/GrgW6wk6Xf7nB
+xCecKHiij4YL4cLOlcc7hjqoe/tDuU0x3+JyuEP0eqzJRgelxfkueOJTrA8xpfVSVcxS2AECfeFx
+IIZO9yD2DYu4eaojhQP2Txc6UQ127zbH5bn1hyX5DoDXy63+KJVtHfYRmecHYrgGnT4OrnrUAQUA
 AAAAAAA=
 
 
---=-umMvEba7cJ1OAEP2nHSY--
+--=-c7i/szVTBrbMAj5FtM3n--
 
