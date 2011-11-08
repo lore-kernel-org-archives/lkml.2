@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab2HVHa7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:30:59 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:36612 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab2HVHaq (ORCPT
+	id S1753445Ab2H2IMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:12:08 -0400
+Received: from mail.steuer-voss.com ([85.183.17.159]:42009 "EHLO
+	mail.steuer-voss.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752829Ab2H2ILB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:30:46 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <59b067da1a02e939e8d9a926a20ed1c2580b31ef.1345618760.git.n.voss@weinmann.de>
-In-Reply-To: <cover.1345618760.git.n.voss@weinmann.de>
-References: <cover.1345618760.git.n.voss@weinmann.de>
+	Wed, 29 Aug 2012 04:11:01 -0400
+Message-Id: <9c04c52f03e0fe035539ccb526d81d945492e029.1346225321.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1346225321.git.n.voss@weinmann.de>
+References: <cover.1346225321.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
 Date: Tue, 8 Nov 2011 11:49:24 +0100
 Subject: [PATCH v11 1/4] drivers/i2c/busses/i2c-at91.c: remove old polling driver
