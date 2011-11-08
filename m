@@ -1,54 +1,755 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab1KHXNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 18:13:24 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56343 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1KHXNX (ORCPT
+	id S1756485Ab1KHXQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 18:16:36 -0500
+Received: from fmmailgate04.web.de ([217.72.192.242]:55509 "EHLO
+	fmmailgate04.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753606Ab1KHXQe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 18:13:23 -0500
-Message-ID: <4EB9B731.9040804@windriver.com>
-Date: Tue, 8 Nov 2011 18:11:45 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Tue, 8 Nov 2011 18:16:34 -0500
+Date: Wed, 9 Nov 2011 00:16:32 +0100 (CET)
+From: "Roland Kletzing" <devzero@web.de>
+To: linux-kernel@vger.kernel.org
+Message-ID: <358621669.14423.1320794192807.JavaMail.fmail@mwmweb019>
+Subject: FW: Re: Data corruption with NEC USB2.0 card on older VIA system
 MIME-Version: 1.0
-To: "George G. Davis" <gdavis@mvista.com>
-CC: Greg KH <greg@kroah.com>, <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <torvalds@linux-foundation.org>, <stable@kernel.org>,
-        <jason.wessel@windriver.com>, Andi Kleen <andi@firstfloor.org>,
-        <lwn@lwn.net>
-Subject: Re: Announcement: Plans for v2.6.34-longterm
-References: <20101203210719.GB21223@windriver.com> <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com>
-In-Reply-To: <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Priority: 3
+Importance: normal
+Sensitivity: Normal
+X-Provags-ID: V01U2FsdGVkX1/+w2YJuBTFW2tXz6N1+BM85HAmtZnFsNnaa/CxfbbZ/kqcvJR6vt0X
+ CMTyd3p2bG6LTTcWaUZJMQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-08 05:14 PM, George G. Davis wrote:
-> Greetings,
-> 
+Hello,
+this was about fighting with data corruption becuase of 686b southbridge
+bug. (see below)
 
-[...]
+i think i would have put this in bugzilla now, but it seems bugzilla is still
+down because of the kernel.org hack . so this is the last try if someone
+likes to comment.
 
-> 
-> Are there any plans to continue maintenance of v2.6.34-longterm now that
-> kernel.org is back online?
+i spend quite some time with this issue and i think while the workaround i
+found is ok for me, i`d like to make sure that this perhaps better get fixed
+in the kernel if there is a chance.....  (there was no reply on linux-pci ML, so 
+maye here is a better and the last place for reporting about the issue)
 
-Yes,  in fact I have a queue ready for review shortly.  However I didn't
-want to overtax the kernel.org maintainers with nagging questions about
-longterm/stable directory layout & restoration -- as I'm sure they had more
-than their hands full with getting people back on the server and getting
-stuff functional for the merge window which just closed yesterday.
+i`m posting this for another time because i think such bug is treacherous
+and it`s difficult to find the reason for this issue.  if there is no realiable
+workaround for every type of hardware combination, wouldn`t it at least
+make sense if the kernel spits out some warning if it detects one of the
+affected VIA chipsets ? (it`s probably a little bit late for that, though....)
 
-Paul.
+regards
+roland
 
-> 
-> TIA!
-> 
-> --
-> Regards,
-> George
+
+-----Ursprüngliche Nachricht-----
+Von: "Roland Kletzing" <devzero@web.de>
+Gesendet: 06.11.2011 02:31:05
+An: linux-pci@vger.kernel.org
+Betreff: Re: Data corruption with NEC USB2.0 card on older VIA system
+
+>ok, i spent some more time with this issue this evening, and apparently it`s
+>NOT related to the USB controller at all but it must be some issue with the
+>VIA chipset. (have ProSavage PM133). So moving this one from linux-usb to
+>linux-pci.
+>
+>I first came across this one, which made me raise an eyebrow:
+>http://adsl.cutw.net/dlink-dsl200-via.html
+>Apparently it`s "the" or "a" more or less well known "VIA 686B" Bug!?
+>
+>After reading lots of stuff, i found a workaround for my problem myself:
+>
+>setpci -v -d 1033:* latency_timer=ff
+>
+>Increasing the usb controllers pci latency to the max seems to have reliable
+>stopped my data corruption.  md5sum test on copied data running for more
+>than an hour now - no corruption anymore
+>
+>I don`t have a clue if this can be called a good/recommended workaround, 
+>as i don`t know what side effects it can have to set pci device latency too
+>such a high value. Maybe someone wants to comment on this. 
+>
+>Anyway, I`m curious why i have this issue, as there is a fixed windows driver
+>from VIA and apparently for Linux,  there is also code in drivers/pci/quirks.c
+>(code snippet below) which looks to me that it`s something which should handle
+>this bug.
+>
+>From searching the net, i get the impression, the problems with this VIA chipsets
+>are not too exotic or unknown, so i`m curious, why Linux kernel at least does not
+>tell me on boot, that my PCI chipset is "dangerous" and known for data corruption,
+>system freeze or sound crackle. I also don`t see "Applying VIA southbridge 
+>workaround" from the quirk in my dmesg, so i assume, the quirk does not get
+>applied to all problematic chipsets (i.e. PCI ID`s) and so, it appears incomplete
+>to me.
+>
+>Ok, it`s an old chipset, but apparently other people also being hit by it,at least
+>these ones seem to be related - and really long threads:
+>
+>Re: Corrupt data - RAID sata_sil 3114 chip
+>->
+>http://marc.info/?l=debian-user&m=123089870204953&w=2
+>http://marc.info/?l=linux-ide&m=126478361819344&w=2
+>
+>or:
+>http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=565797
+>
+>Not sure if it`s worth to put more work on such old chipset/problem, but i
+>wanted to share my findings. Maybe there is room for improvement......
+>
+>regards
+>Roland
+>
+>ps:
+>is kernel.org bugzilla currently down?
+>
+>
+>/*
+>226 * VIA Apollo KT133 needs PCI latency patch
+>227 * Made according to a windows driver based patch by George E. Breese
+>228 * see PCI Latency Adjust on http://www.viahardware.com/download/viatweak.shtm[http://www.viahardware.com/download/viatweak.shtm]
+>229 * and http://www.georgebreese.com/net/software/#PCI[http://www.georgebreese.com/net/software/#PCI]
+>230 * Also see http://www.au-ja.org/review-kt133a-1-en.phtml[http://www.au-ja.org/review-kt133a-1-en.phtml] for
+>231 * the info on which Mr Breese based his work.
+>232 *
+>233 * Updated based on further information from the site and also on
+>234 * information provided by VIA
+>235 */
+>236 static void quirk_vialatency(struct pci_dev *dev)
+>237 {
+>238 struct pci_dev *p;
+>239 u8 busarb;
+>240 /* Ok we have a potential problem chipset here. Now see if we have
+>241 a buggy southbridge */
+>242
+>243 p = pci_get_device(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_82C686, NULL);
+>244 if (p!=NULL) {
+>245 /* 0x40 - 0x4f == 686B, 0x10 - 0x2f == 686A; thanks Dan Hollis */
+>246 /* Check for buggy part revisions */
+>247 if (p->revision < 0x40 || p->revision > 0x42)
+>248 goto exit;
+>249 } else {
+>250 p = pci_get_device(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8231, NULL);
+>251 if (p==NULL) /* No problem parts */
+>252 goto exit;
+>253 /* Check for buggy part revisions */
+>254 if (p->revision < 0x10 || p->revision > 0x12)
+>255 goto exit;
+>256 }
+>257
+>258 /*
+>259 * Ok we have the problem. Now set the PCI master grant to
+>260 * occur every master grant. The apparent bug is that under high
+>261 * PCI load (quite common in Linux of course) you can get data
+>262 * loss when the CPU is held off the bus for 3 bus master requests
+>263 * This happens to include the IDE controllers....
+>264 *
+>265 * VIA only apply this fix when an SB Live! is present but under
+>266 * both Linux and Windows this isn't enough, and we have seen
+>267 * corruption without SB Live! but with things like 3 UDMA IDE
+>268 * controllers. So we ignore that bit of the VIA recommendation..
+>269 */
+>270
+>271 pci_read_config_byte(dev, 0x76, &busarb);
+>272 /* Set bit 4 and bi 5 of byte 76 to 0x01
+>273 "Master priority rotation on every PCI master grant */
+>274 busarb &= ~(1<<5);
+>275 busarb |= (1<<4);
+>276 pci_write_config_byte(dev, 0x76, busarb);
+>277 dev_info(&dev->dev, "Applying VIA southbridge workaround\n");
+>278 exit:
+>279 pci_dev_put(p);
+>280 }
+>281 DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8363_0, quirk_vialatency);
+>282 DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8371_1, quirk_vialatency);
+>283 DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8361, quirk_vialatency);
+>284 /* Must restore this on a resume from RAM */
+>285 DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8363_0, quirk_vialatency);
+>286 DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8371_1, quirk_vialatency);
+>287 DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8361, quirk_vialatency);
+>288
+> 
+>
+>-----Ursprüngliche Nachricht-----
+>Von: "Roland Kletzing" <devzero@web.de>
+>Gesendet: 05.11.2011 22:39:30
+>An: linux-usb@vger.kernel.org
+>Betreff: Data corruption with NEC USB2.0 card on older VIA system
+>
+>>
+>>Hello,
+>>i have a strange problem with data corruption via USB mass-storage.
+>>I`m using an older (but nice and tiny) VIA C3 based Mini-PC.
+>>That system runs very well, i have one running as a home server for years
+>>without any problems.
+>>Using mass-storage with the builtin onboard USB1.1 works fine (but is slow).
+>>To speed things up, i attached a NEC PCI 4+1 USB 2.0 Controller to the internal
+>>PCI port for better speed, but whatever storage i attach to it, i`m getting
+>>data corruption with that storage very quickly.
+>>When doing tests with writing 100MB files, most of them get corrupted (verified
+>>with md5sum. Even if the files being written contain all zeroes, i see data
+>>corruption.
+>>I have done a hexdump of the corrupted files (od -h) and it seems, it looks a
+>>little bit like a "repeating pattern" inside. I have attached the hexdump, see
+>>below. Looks that corruption is not completely randomly sprinkled all accross
+>>the files but it seems it only happens at larger distance and it`s mostly few
+>>bytes being corrupted.
+>>maybe pci/dma issue !?
+>>i tried 2.6.33 and 2.6.37 kernel but no difference.
+>>Does anybody have a clue what`s going wrong here and how to analyse/fix that?
+>>
+>>I have googled for NEC or VIA related problems regarding data corruption, but
+>>did not find anything usable.
+>>Driver Bug? hardware bug? Incompatible combination?
+>>Any clues?
+>>regards
+>>Roland
+>>lspci
+>>00:00.0 Host bridge: VIA Technologies, Inc. VT8605 [ProSavage PM133] (rev 01)
+>>00:01.0 PCI bridge: VIA Technologies, Inc. VT8605 [PM133 AGP]
+>>00:06.0 USB Controller: NEC Corporation USB (rev 43)
+>>00:06.1 USB Controller: NEC Corporation USB (rev 43)
+>>00:06.2 USB Controller: NEC Corporation USB 2.0 (rev 04)
+>>00:07.0 ISA bridge: VIA Technologies, Inc. VT82C686 [Apollo Super South] (rev 40)
+>>00:07.1 IDE interface: VIA Technologies, Inc. VT82C586A/B/VT82C686/A/B/VT823x/A/C PIPC Bus Master IDE (rev 06)
+>>00:07.2 USB Controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 Controller (rev 1a)
+>>00:07.4 Bridge: VIA Technologies, Inc. VT82C686 [Apollo Super ACPI] (rev 40)
+>>00:07.5 Multimedia audio controller: VIA Technologies, Inc. VT82C686 AC97 Audio Controller (rev 50)
+>>00:09.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL-8139/8139C/8139C+ (rev 10)
+>>01:00.0 VGA compatible controller: S3 Inc. ProSavage PM133 (rev 02)
+>>
+>>output of "od -h" done on the corrupted files:
+>>
+>>/mnt/2.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>15161000 8002 1c7b 2102 4200 0000 4000 92a0 1c7b
+>>15161020 9780 1c7b 0009 0000 2c80 9e00 0200 04f4
+>>15161040 1000 04f4 2000 04f4 3000 04f4 0000 0000
+>>15161060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>47477000 8002 1c7b 2102 4200 0000 4000 96c0 1c7b
+>>47477020 9a80 1c7b 0009 0000 1c80 b200 0e00 0495
+>>47477040 1000 0495 2000 0495 3000 0495 4000 0495
+>>47477060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>56355040 80c2 1c7b 2202 4200 0000 4000 9a80 1c7b
+>>56355060 9840 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>56355100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>105314000 8002 1c7b 2102 4200 0000 4000 9a80 1c7b
+>>105314020 9960 1c7b 0009 0000 1c80 2800 0800 0431
+>>105314040 1000 0431 2000 0431 3000 0431 0000 0000
+>>105314060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>351257000 8002 1c7b 2102 4200 0000 4000 91e0 1c7b
+>>351257020 9660 1c7b 0009 0000 2c80 0200 1e00 0811
+>>351257040 2000 0811 3000 0811 0000 0000 0000 0000
+>>351257060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/3.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>15066040 80c2 1c7b 2202 4200 0000 4000 92a0 1c7b
+>>15066060 9840 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>15066100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>51377000 8002 1c7b 2102 4200 0000 4000 9240 1c7b
+>>51377020 9360 1c7b 0009 0000 2c80 1200 4e00 17af
+>>51377040 5000 17af 6000 17af 7000 17af 0000 0000
+>>51377060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>72556000 8002 1c7b 2102 4200 0000 4000 9c60 1c7b
+>>72556020 9a80 1c7b 0009 0000 0c80 9400 7c00 176b
+>>72556040 8000 176b 0000 0000 0000 0000 0000 0000
+>>72556060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>103531020 0000 0000 9420 1c7b 9458 dc7b 9458 dc7b
+>>103531040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>110432000 0001 0000 0001 0000 0040 0000 0000 0000
+>>110432020 0000 0000 0000 0000 0000 0000 0000 0000
+>>110432040 80c2 1c7b 2202 4200 0000 4000 9840 1c7b
+>>110432060 9a80 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>110432100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>124637020 0000 0000 9360 1c7b 9398 dc7b 9398 dc7b
+>>124637040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>131713000 0001 0000 0001 0000 0040 0000 0000 0000
+>>131713020 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>131713060 0000 0000 9780 1c7b 97b8 dc7b 97b8 dc7b
+>>131713100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>435014040 80c2 1c7b 2202 4200 0000 4000 93c0 1c7b
+>>435014060 90c0 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>435014100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/4.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>31560000 8002 1c7b 2102 4200 0000 4000 9840 1c7b
+>>31560020 9300 1c7b 0009 0000 3c80 2000 5000 1a4e
+>>31560040 6000 1a4e 7000 1a4e 8000 1a4e 9000 1a4e
+>>31560060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>51667000 8002 1c7b 2102 4200 0000 4000 9660 1c7b
+>>51667020 99c0 1c7b 0009 0000 1c80 0200 4e00 19ba
+>>51667040 5000 19ba 0000 0000 0000 0000 0000 0000
+>>51667060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>116674040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>116674060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>116674100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>127477000 8002 1c7b 2102 4200 0000 4000 9240 1c7b
+>>127477020 9a80 1c7b 0009 0000 3c80 1200 5e00 183a
+>>127477040 6000 183a 7000 183a 8000 183a 9000 183a
+>>127477060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>214234040 80c2 1c7b 2202 4200 0000 4000 9300 1c7b
+>>214234060 9780 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>214234100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>237727000 8002 1c7b 2102 4200 0000 4000 99c0 1c7b
+>>237727020 9c60 1c7b 0009 0000 1c80 3200 ae00 15cb
+>>237727040 b000 15cb c000 15cb d000 15cb e000 15cb
+>>237727060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>331524000 8002 1c7b 2102 4200 0000 4000 9420 1c7b
+>>331524020 98a0 1c7b 0009 0000 0c80 0800 6800 124c
+>>331524040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>363235020 0000 0000 9360 1c7b 9398 dc7b 9398 dc7b
+>>363235040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>415522040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>415522060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>415522100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>417467000 8002 1c7b 2102 4200 0000 4000 9c60 1c7b
+>>417467020 9360 1c7b 0009 0000 1c80 2200 0e00 12ce
+>>417467040 1000 12ce 2000 12ce 3000 12ce 0000 0000
+>>417467060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/5.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>50275000 8002 1c7b 2102 4200 0000 4000 9480 1c7b
+>>50275020 98a0 1c7b 0009 0000 0c80 8600 9a00 0453
+>>50275040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>101721000 8002 1c7b 2102 4200 0000 4000 9060 1c7b
+>>101721020 9540 1c7b 0009 0000 0c80 be00 0200 03dc
+>>101721040 1000 03dc 2000 03dc 3000 03dc 0000 0000
+>>101721060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>121715000 8002 1c7b 2102 4200 0000 4000 9060 1c7b
+>>121715020 96c0 1c7b 0009 0000 3c80 0600 4a00 0409
+>>121715040 5000 0409 6000 0409 7000 0409 0000 0000
+>>121715060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/6.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>243767000 8002 1c7b 2102 4200 0000 4000 91e0 1c7b
+>>243767020 9960 1c7b 0009 0000 2c80 1200 4e00 1430
+>>243767040 5000 1430 6000 1430 7000 1430 0000 0000
+>>243767060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>325615020 0000 0000 9420 1c7b 9458 dc7b 9458 dc7b
+>>325615040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>336174040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>336174060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>336174100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>604462000 8002 1c7b 2102 4200 0000 4000 9a20 1c7b
+>>604462020 94e0 1c7b 0009 0000 0c80 0c00 d400 0f35
+>>604462040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/7.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>26267040 80c2 1c7b 2202 4200 0000 4000 9960 1c7b
+>>26267060 9840 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>26267100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>104061040 80c2 1c7b 2202 4200 0000 4000 9780 1c7b
+>>104061060 9240 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>104061100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>120472040 80c2 1c7b 2202 4200 0000 4000 9b40 1c7b
+>>120472060 9240 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>120472100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>126167000 8002 1c7b 2102 4200 0000 4000 9300 1c7b
+>>126167020 9b40 1c7b 0009 0000 2c80 2200 0e00 165b
+>>126167040 1000 165b 2000 165b 3000 165b 4000 165b
+>>126167060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>131057040 80c2 1c7b 2202 4200 0000 4000 9480 1c7b
+>>131057060 96c0 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>131057100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>176312040 80c2 1c7b 2202 4200 0000 4000 98a0 1c7b
+>>176312060 9c00 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>176312100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>177052040 80c2 1c7b 2202 4200 0000 4000 9c00 1c7b
+>>177052060 99c0 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>177052100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>226363040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>226363060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>226363100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>601033000 8002 1c7b 2102 4200 0000 4000 9960 1c7b
+>>601033020 98a0 1c7b 0009 0000 0c80 8a00 5600 0e06
+>>601033040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>613176000 8002 1c7b 2102 4200 0000 4000 9ae0 1c7b
+>>613176020 9240 1c7b 0009 0000 0c80 0400 0c00 0ea4
+>>613176040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/8.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>77762000 8002 1c7b 2102 4200 0000 4000 95a0 1c7b
+>>77762020 97e0 1c7b 0009 0000 0c80 0c00 6400 0276
+>>77762040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>176334040 80c2 1c7b 2202 4200 0000 4000 9240 1c7b
+>>176334060 99c0 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>176334100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>376763000 8002 1c7b 2102 4200 0000 4000 9360 1c7b
+>>376763020 9780 1c7b 0009 0000 0c80 ba00 0600 1891
+>>376763040 1000 1891 2000 1891 3000 1891 0000 0000
+>>376763060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>467671000 8002 1c7b 2102 4200 0000 4000 9ba0 1c7b
+>>467671020 9660 1c7b 0009 0000 0c80 0e00 0200 09d8
+>>467671040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>532675040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>532675060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>532675100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/9.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>170755020 0000 0000 9060 1c7b 9098 dc7b 9098 dc7b
+>>170755040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>176551040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>176551060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>176551100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>337311000 8002 1c7b 2102 4200 0000 4000 9300 1c7b
+>>337311020 9ae0 1c7b 0009 0000 0c80 0e00 6200 1c13
+>>337311040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>376163020 0000 0000 9720 1c7b 9758 dc7b 9758 dc7b
+>>376163040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>444505040 80c2 1c7b 2202 4200 0000 4000 9120 1c7b
+>>444505060 9480 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>444505100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>500161000 8002 1c7b 2102 4200 0000 4000 9300 1c7b
+>>500161020 91e0 1c7b 0009 0000 0c80 8e00 4200 1e93
+>>500161040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/10.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>40716040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>40716060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>40716100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>376260000 8002 1c7b 2102 4200 0000 4000 97e0 1c7b
+>>376260020 98a0 1c7b 0009 0000 3c80 9000 c000 12e8
+>>376260040 d000 12e8 e000 12e8 f000 12e8 0000 0000
+>>376260060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>401724000 8002 1c7b 2102 4200 0000 4000 92a0 1c7b
+>>401724020 9ba0 1c7b 0009 0000 0c80 c800 0800 1285
+>>401724040 1000 1285 2000 1285 3000 1285 4000 1285
+>>401724060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>411270020 0000 0000 9c60 1c7b 9c98 dc7b 9c98 dc7b
+>>411270040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>455231000 8002 1c7b 2102 4200 0000 4000 9960 1c7b
+>>455231020 9540 1c7b 0009 0000 8c80 0e00 2200 17fe
+>>455231040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/11.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>31556000 8002 1c7b 2102 4200 0000 4000 9540 1c7b
+>>31556020 9ba0 1c7b 0009 0000 4c80 0400 5c00 0f01
+>>31556040 6000 0f01 7000 0f01 8000 0f01 9000 0f01
+>>31556060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>251574040 80c2 1c7b 2202 4200 0000 4000 9480 1c7b
+>>251574060 9c00 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>251574100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>415453000 8002 1c7b 2102 4200 0000 4000 9b40 1c7b
+>>415453020 9ba0 1c7b 0009 0000 4c80 8a00 0600 1570
+>>415453040 1000 1570 2000 1570 3000 1570 4000 1570
+>>415453060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>541552040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>541552060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>541552100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/12.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>210703000 8002 1c7b 2102 4200 0000 4000 9420 1c7b
+>>210703020 9ba0 1c7b 0009 0000 0c80 0a00 4600 19e9
+>>210703040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>365720020 0000 0000 9ba0 1c7b 9bd8 dc7b 9bd8 dc7b
+>>365720040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>372762040 80c2 1c7b 2202 4200 0000 4000 99c0 1c7b
+>>372762060 9540 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>372762100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>421667000 8002 1c7b 2102 4200 0000 4000 9480 1c7b
+>>421667020 9ae0 1c7b 0009 0000 1c80 0200 ce00 0796
+>>421667040 d000 0796 0000 0000 0000 0000 0000 0000
+>>421667060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/13.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>13047040 80c2 1c7b 2202 4200 0000 4000 9c00 1c7b
+>>13047060 96c0 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>13047100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/14.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>4317040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>4317060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>4317100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>615601040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>615601060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>615601100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/15.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>33642040 80c2 1c7b 2202 4200 0000 4000 9840 1c7b
+>>33642060 9900 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>33642100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>114722040 80c2 1c7b 2202 4200 0000 4000 9780 1c7b
+>>114722060 9540 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>114722100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>115051040 80c2 1c7b 2202 4200 0000 4000 9780 1c7b
+>>115051060 9540 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>115051100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>572014000 8002 1c7b 2102 4200 0000 4000 95a0 1c7b
+>>572014020 94e0 1c7b 0009 0000 8c80 0800 b800 1629
+>>572014040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/16.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>516356000 8002 1c7b 2102 4200 0000 4000 9300 1c7b
+>>516356020 9900 1c7b 0009 0000 1c80 8400 8c00 0673
+>>516356040 9000 0673 0000 0000 0000 0000 0000 0000
+>>516356060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/17.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>62332040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>62332060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>62332100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/18.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/19.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>35704040 80c2 1c7b 2202 4200 0000 4000 9780 1c7b
+>>35704060 9540 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>35704100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>511722040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>511722060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>511722100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/20.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>6074020 0000 0000 9a20 1c7b 9a58 dc7b 9a58 dc7b
+>>6074040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>37356000 8002 1c7b 2102 4200 0000 4000 9840 1c7b
+>>37356020 99c0 1c7b 0009 0000 0c80 b400 8c00 0ae0
+>>37356040 9000 0ae0 a000 0ae0 b000 0ae0 0000 0000
+>>37356060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>371446040 80c2 1c7b 2202 4200 0000 4000 9a20 1c7b
+>>371446060 9060 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>371446100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/21.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>207055040 80c2 1c7b 2202 4200 0000 4000 94e0 1c7b
+>>207055060 90c0 1c7b 0009 0000 8d00 8000 a00d 1cb7
+>>207055100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>346075020 0000 0000 91e0 1c7b 9218 dc7b 9218 dc7b
+>>346075040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>351044020 0000 0000 9420 1c7b 9458 dc7b 9458 dc7b
+>>351044040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>502562040 80c2 1c7b 2202 4200 0000 4000 90c0 1c7b
+>>502562060 9780 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>502562100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>605530000 8002 1c7b 2102 4200 0000 4000 99c0 1c7b
+>>605530020 9660 1c7b 0009 0000 3c80 1000 0000 0249
+>>605530040 1000 0249 2000 0249 3000 0249 0000 0000
+>>605530060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/22.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>23642000 8002 1c7b 2102 4200 0000 4000 9420 1c7b
+>>23642020 9060 1c7b 0009 0000 0c80 9c00 4400 01e7
+>>23642040 5000 01e7 0000 0000 0000 0000 0000 0000
+>>23642060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>170627000 8002 1c7b 2102 4200 0000 4000 90c0 1c7b
+>>170627020 95a0 1c7b 0009 0000 0c80 8200 ee00 0b9b
+>>170627040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/23.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>74163040 80c2 1c7b 2202 4200 0000 4000 9960 1c7b
+>>74163060 9900 1c7b 0009 0000 8d00 0000 a00d 1cb7
+>>74163100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/24.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>102511000 8002 1c7b 2102 4200 0000 4000 9ae0 1c7b
+>>102511020 9780 1c7b 0009 0000 0c80 8e00 e200 0570
+>>102511040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>142675040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>142675060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>142675100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>341402000 8002 1c7b 2102 4200 0000 4000 9ae0 1c7b
+>>341402020 9660 1c7b 0009 0000 1c80 8c00 8400 109f
+>>341402040 9000 109f 0000 0000 0000 0000 0000 0000
+>>341402060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/25.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>51702000 8002 1c7b 2102 4200 0000 4000 9720 1c7b
+>>51702020 9ae0 1c7b 0009 0000 3c80 9c00 8400 0d3f
+>>51702040 9000 0d3f a000 0d3f b000 0d3f c000 0d3f
+>>51702060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>56430020 0000 0000 91e0 1c7b 9218 dc7b 9218 dc7b
+>>56430040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>77475020 0000 0000 9060 1c7b 9098 dc7b 9098 dc7b
+>>77475040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>77775020 0000 0000 9ba0 1c7b 9bd8 dc7b 9bd8 dc7b
+>>77775040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>123277000 8002 1c7b 2102 4200 0000 4000 91e0 1c7b
+>>123277020 9900 1c7b 0009 0000 0c80 8200 9e00 092c
+>>123277040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>207514040 80c2 1c7b 6002 4040 0000 4000 91e0 1c7b
+>>207514060 9180 1c7b 0009 0000 8d00 0000 a000 1cb7
+>>207514100 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>346511000 8002 1c7b 2102 4200 0000 4000 92a0 1c7b
+>>346511020 9ba0 1c7b 0009 0000 0c80 be00 0200 0c4f
+>>346511040 1000 0c4f 2000 0c4f 3000 0c4f 0000 0000
+>>346511060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/26.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>1665000 8002 1c7b 2102 4200 0000 4000 9300 1c7b
+>>1665020 91e0 1c7b 0009 0000 0c80 8600 ea00 07e1
+>>1665040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>26016000 8002 1c7b 2102 4200 0000 4000 92a0 1c7b
+>>26016020 9900 1c7b 0009 0000 0c80 3400 cc00 0e5a
+>>26016040 d000 0e5a e000 0e5a f000 0e5a 0000 0000
+>>26016060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>620000000
+>>/mnt/27.dat
+>>0000000 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>44057000 8002 1c7b 2102 4200 0000 4000 9c60 1c7b
+>>44057020 94e0 1c7b 0009 0000 0c80 1200 ee00 0feb
+>>44057040 f000 0feb 0000 0000 0000 0000 0000 0000
+>>44057060 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>46774020 0000 0000 9ba0 1c7b 9bd8 dc7b 9bd8 dc7b
+>>46774040 0000 0000 0000 0000 0000 0000 0000 0000
+>>*
+>>406500000
+>
+
+
+___________________________________________________________
+SMS schreiben mit WEB.DE FreeMail - einfach, schnell und
+kostenguenstig. Jetzt gleich testen! http://f.web.de/?mc=021192
