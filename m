@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab1KHLQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 06:16:05 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42845 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932436Ab1KHLQB (ORCPT
+	id S932611Ab1KHLQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 06:16:22 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:63579 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932161Ab1KHLQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 06:16:01 -0500
+	Tue, 8 Nov 2011 06:16:19 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 04/20] Staging: comedi: fix printk issue in cb_das16_cs.c
-Date: Tue,  8 Nov 2011 16:45:14 +0530
-Message-Id: <1320750930-9764-4-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 07/20] Staging: comedi: fix brace coding style issue in das16m1.c
+Date: Tue,  8 Nov 2011 16:45:17 +0530
+Message-Id: <1320750930-9764-7-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1320750930-9764-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1320750930-9764-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,88 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_das16_cs.c file that fixes up a printk
+This is a patch to the das16m1.c file that fixes up a brace coding
 warning found by the checkpatch.pl tool.
-
-Converted printks to dev_printk.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_das16_cs.c |   18 ++++++++----------
- 1 files changed, 8 insertions(+), 10 deletions(-)
+ drivers/staging/comedi/drivers/das16m1.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_das16_cs.c b/drivers/staging/comedi/drivers/cb_das16_cs.c
-index e171c56..9beb34c 100644
---- a/drivers/staging/comedi/drivers/cb_das16_cs.c
-+++ b/drivers/staging/comedi/drivers/cb_das16_cs.c
-@@ -150,7 +150,7 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
- 			return das16cs_boards + i;
- 	}
+diff --git a/drivers/staging/comedi/drivers/das16m1.c b/drivers/staging/comedi/drivers/das16m1.c
+index a5ce3b2..b8de374 100644
+--- a/drivers/staging/comedi/drivers/das16m1.c
++++ b/drivers/staging/comedi/drivers/das16m1.c
+@@ -384,20 +384,20 @@ static int das16m1_cmd_exec(struct comedi_device *dev,
+ 	byte = 0;
+ 	/* if we are using external start trigger (also board dislikes having
+ 	 * both start and conversion triggers external simultaneously) */
+-	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT) {
++	if (cmd->start_src == TRIG_EXT && cmd->convert_src != TRIG_EXT)
+ 		byte |= EXT_TRIG_BIT;
+-	}
++
+ 	outb(byte, dev->iobase + DAS16M1_CS);
+ 	/* clear interrupt bit */
+ 	outb(0, dev->iobase + DAS16M1_CLEAR_INTR);
  
--	printk("unknown board!\n");
-+	dev_dbg(dev->hw_dev, "unknown board!\n");
+ 	/* enable interrupts and internal pacer */
+ 	devpriv->control_state &= ~PACER_MASK;
+-	if (cmd->convert_src == TRIG_TIMER) {
++	if (cmd->convert_src == TRIG_TIMER)
+ 		devpriv->control_state |= INT_PACER;
+-	} else {
++	else
+ 		devpriv->control_state |= EXT_PACER;
+-	}
++
+ 	devpriv->control_state |= INTE;
+ 	outb(devpriv->control_state, dev->iobase + DAS16M1_INTR_CONTROL);
  
- 	return NULL;
- }
-@@ -163,20 +163,19 @@ static int das16cs_attach(struct comedi_device *dev,
- 	int ret;
- 	int i;
- 
--	printk("comedi%d: cb_das16_cs: ", dev->minor);
-+	dev_dbg(dev->hw_dev, "comedi%d: cb_das16_cs: attached\n", dev->minor);
- 
- 	link = cur_dev;		/* XXX hack */
- 	if (!link)
- 		return -EIO;
- 
- 	dev->iobase = link->resource[0]->start;
--	printk("I/O base=0x%04lx ", dev->iobase);
-+	dev_dbg(dev->hw_dev, "I/O base=0x%04lx\n", dev->iobase);
- 
--	printk("fingerprint:\n");
-+	dev_dbg(dev->hw_dev, "fingerprint:\n");
- 	for (i = 0; i < 48; i += 2)
--		printk("%04x ", inw(dev->iobase + i));
-+		dev_dbg(dev->hw_dev, "%04x\n", inw(dev->iobase + i));
- 
--	printk("\n");
- 
- 	ret = request_irq(link->irq, das16cs_interrupt,
- 			  IRQF_SHARED, "cb_das16_cs", dev);
-@@ -185,7 +184,7 @@ static int das16cs_attach(struct comedi_device *dev,
- 
- 	dev->irq = link->irq;
- 
--	printk("irq=%u ", dev->irq);
-+	dev_dbg(dev->hw_dev, "irq=%u\n", dev->irq);
- 
- 	dev->board_ptr = das16cs_probe(dev, link);
- 	if (!dev->board_ptr)
-@@ -252,14 +251,13 @@ static int das16cs_attach(struct comedi_device *dev,
- 		s->type = COMEDI_SUBD_UNUSED;
- 	}
- 
--	printk("attached\n");
- 
- 	return 1;
- }
- 
- static int das16cs_detach(struct comedi_device *dev)
+@@ -531,9 +531,8 @@ static void munge_sample_array(short *array, unsigned int num_elements)
  {
--	printk("comedi%d: das16cs: remove\n", dev->minor);
-+	dev_dbg(dev->hw_dev, "comedi%d: das16cs: remove\n", dev->minor);
+ 	unsigned int i;
  
- 	if (dev->irq)
- 		free_irq(dev->irq, dev);
-@@ -312,7 +310,7 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
- 				break;
- 		}
- 		if (to == TIMEOUT) {
--			printk("cb_das16_cs: ai timeout\n");
-+			dev_dbg(dev->hw_dev, "cb_das16_cs: ai timeout\n");
- 			return -ETIME;
- 		}
- 		data[i] = (unsigned short)inw(dev->iobase + 0);
+-	for (i = 0; i < num_elements; i++) {
++	for (i = 0; i < num_elements; i++)
+ 		array[i] = munge_sample(array[i]);
+-	}
+ }
+ 
+ static void das16m1_handler(struct comedi_device *dev, unsigned int status)
 -- 
 1.7.0.4
 
