@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1KHJkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:40:35 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34831 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab1KHJkb (ORCPT
+	id S1754820Ab1KHJk7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:40:59 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39338 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754710Ab1KHJk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:40:31 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: davem@davemloft.net, ian.campbell@citrix.com, eric.dumazet@gmail.com,
-        jeffrey.t.kirsher@intel.com, jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH] net/ll_temac: FIX : Wait for indirect wait to end
-Date: Tue,  8 Nov 2011 10:39:57 +0100
-Message-Id: <1320745197-11053-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 1.7.7.1
+	Tue, 8 Nov 2011 04:40:58 -0500
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
+Date: Tue, 08 Nov 2011 10:40:46 +0100
+In-Reply-To: <20111108090735.GA4038@zhy>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+	 <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+	 <1320669279.18053.29.camel@twins>
+	 <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+	 <1320682230.17809.11.camel@twins> <20111108025847.GB11439@zhy>
+	 <1320739015.2244.0.camel@twins> <20111108081433.GA3746@zhy>
+	 <1320741980.2244.4.camel@twins> <20111108090735.GA4038@zhy>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320745246.2244.12.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While tracing down a connectivity problem on the temac I connected a
-probe to the Cross bar irq, and it was triggered when doing
-ifdown->ifup.
+On Tue, 2011-11-08 at 17:07 +0800, Yong Zhang wrote:
+> So something like below?
 
-This is fixed once waiting for the indirect write to end. Since it is
-not on the hot path there is no performance loss.
+that fails to clear/init the class_cache, leading to all sorts of
+problems.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/net/ethernet/xilinx/ll_temac_main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Wiping the class_cache just reduces performance somewhat, not wiping
+them is disastrous since it can results in wild pointer derefs.
 
-diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-index 4d1658e..cf59dac 100644
---- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-+++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-@@ -114,6 +114,7 @@ void temac_indirect_out32(struct temac_local *lp, int reg, u32 value)
- 		return;
- 	temac_iow(lp, XTE_LSW0_OFFSET, value);
- 	temac_iow(lp, XTE_CTL0_OFFSET, CNTLREG_WRITE_ENABLE_MASK | reg);
-+	temac_indirect_busywait(lp);
- }
- 
- /**
--- 
-1.7.7.1
+Now we could fix up register_lock_class() to reset the class_cache,
+although that's a little tricky and I'm not sure its worth it.
 
+Anyway, I see you just realized the same.. ;-)
