@@ -1,107 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932995Ab1KHPkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 10:40:11 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:49404 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab1KHPkJ (ORCPT
+	id S1756056Ab1KHPkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 10:40:25 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44310 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab1KHPkW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 10:40:09 -0500
-Date: Tue, 8 Nov 2011 17:40:05 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: "Voss, Nikolaus" <N.Voss@weinmann.de>
-Cc: "'balbi@ti.com'" <balbi@ti.com>,
-        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
-        "'khali@linux-fr.org'" <khali@linux-fr.org>,
-        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
-        "'rmallon@gmail.com'" <rmallon@gmail.com>
-Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Message-ID: <20111108154004.GK20728@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1320753142.git.n.voss@weinmann.de>
- <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de>
- <20111108144115.GH20728@legolas.emea.dhcp.ti.com>
- <EF2E73589CA71846A15D0B2CDF79505D087B38B899@wm021.weinmann.com>
+	Tue, 8 Nov 2011 10:40:22 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cN0A5YokcrYPGsSB"
-Content-Disposition: inline
-In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B38B899@wm021.weinmann.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320719974-3598-4-git-send-email-ying.huang@intel.com>
+References: <1320719974-3598-1-git-send-email-ying.huang@intel.com> <1320719974-3598-4-git-send-email-ying.huang@intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 8 Nov 2011 08:40:00 -0700
+Message-ID: <CAErSpo7XSi-xsLYmv7B0u2qmdjyGJ91gdOH7wPqFq5JYEo68OQ@mail.gmail.com>
+Subject: Re: [PATCH 3/9] ACPI, Record ACPI NVS regions
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 7, 2011 at 7:39 PM, Huang Ying <ying.huang@intel.com> wrote:
+> Some firmware will access memory in ACPI NVS region via APEI.  That
+> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
+> region.  The original resource conflict checking in APEI code will
+> check memory/ioport accessed by APEI via general resource management
+> mechanism.  But ACPI NVS region is marked as busy already, so that the
+> false resource conflict will prevent APEI ERST/EINJ to work.
+>
+> To fix this, this patch record ACPI NVS regions, so that we can avoid
+> request resources for memory region inside it.
 
---cN0A5YokcrYPGsSB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I don't really like these patches (3 & 4), as I mentioned before:
+  https://lkml.org/lkml/2011/8/22/270
+  https://lkml.org/lkml/2011/9/19/397
 
-On Tue, Nov 08, 2011 at 04:35:21PM +0100, Voss, Nikolaus wrote:
-> Hi,
->=20
-> > > +#include <mach/at91_twi.h>
-> > > +#include <mach/board.h>
-> > > +#include <mach/cpu.h>
-> >=20
-> > avoid including <mach/*> on drivers.
->=20
-> Should I move at91_twi.h to include/linux (omap does it like this,
-> other use the mach-include)?
+To recap, e820 currently marks everything except E820_RESERVED areas
+as "BUSY" in the iomem_resource tree.  That basically means that RAM,
+ACPI, and NVS are marked as BUSY.  Later APEI attempts a
+request_mem_region() on a a resource, and it fails because e820 has
+already marked it BUSY.
 
-maybe, is at91_twi.h some sort of platform_data ? there's
-<linux/platform_data/...> for that.
+It makes sense for e820 to mark RAM as BUSY, because we we don't use
+iomem_resource to manage it; we pass it all off to memblock and
+eventually the regular memory allocator.  But from e820's point of
+view, everything else (RESERVED, ACPI, NVS, etc) is just a clue  that
+something uses that region and we shouldn't place anything else on top
+of it.
 
-> > > +	if (irqstatus & AT91_TWI_TXCOMP) {
-> > > +		at91_disable_twi_interrupts(dev);
-> > > +		dev->transfer_status =3D status;
-> > > +		complete(&dev->cmd_complete);
-> > > +	}
-> > > +	else if (irqstatus & AT91_TWI_RXRDY) {
-> > > +		at91_twi_read_next_byte(dev);
-> > > +	}
-> > > +	else if (irqstatus & AT91_TWI_TXRDY) {
-> > > +		at91_twi_write_next_byte(dev);
-> > > +	}
-> > > +	else {
-> > > +		return IRQ_NONE;
-> >=20
-> > coding style is wrong. Also, are those IRQ events really mutually exclu=
-sive ??
->=20
-> These are indeed mutually exclusive (semantically).
+We normally mark something BUSY when a driver calls request_region()
+to indicate that it owns the region and any other requests for the
+same region should fail.  I think it's a mistake for e820 to mark
+things BUSY because it really is not the the owner of any of those
+regions (except for RAM, because in that case e820 *is* essentially
+taking ownership of RAM and passing it off to memblock).
 
-so you couldn't have AT91_TWI_TXCOMP and AT91_TWI_RXRDY set when you
-read irqstatus ?
+I think a better solution for the APEI problem would be to have e820
+leave non-RAM regions in iomem_resource, but not mark them BUSY, as in
+this patch from Yinghai:
 
---=20
-balbi
+--- linux-2.6.orig/arch/x86/kernel/e820.c
++++ linux-2.6/arch/x86/kernel/e820.c
+@@ -995,7 +995,8 @@ void __init e820_reserve_resources(void)
+ 		 * pcibios_resource_survey()
+ 		 */
+ 		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
+-			res->flags |= IORESOURCE_BUSY;
++			if (e820.map[i].type != E820_NVS)
++				res->flags |= IORESOURCE_BUSY;
+ 			insert_resource(&iomem_resource, res);
+ 		}
+ 		res++;
 
---cN0A5YokcrYPGsSB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+That's much simpler than having e820 pretend to be the owner of NVS
+regions, building an extra list of the NVS regions, and subtracting
+them from the regions APEI needs to request ownership of.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Bjorn
 
-iQIcBAEBAgAGBQJOuU1UAAoJEIaOsuA1yqRE2r8P/AwmLrcJP264ulVpxtuv8lNc
-yt6fQoS2boPLhRbin8z4gqSHCJKdmglT2BBMp5rkGDIVN2bE2kmNXGRFdg7o0jAK
-i7PVsHl2xZVhlWA5CrjZBFZqsH26EK7QrD9TsHXN9FiEGxKq+2oUYxA2Z/R5x+Ws
-809VN9lU9Lu4jfBWfjpNknMgTV1DSvSYSq9Scso+4q26cjmZl1WgL+FQ9tSF3Qe+
-j7+YDDsLcnAHZuekGc3CbaEQmp5iVJ9nSMmhBADUey2nYXSbi1+qcIAuEYSZgJ7d
-pGWkXxW9/fEPcApnMp68puM+X0F9aJjfSj9SLKbw4Pw4yHzHgqSpJrkfgj44KCbr
-LH2mtN+WG3P833LUwqs2sOjv/P6I8F7xK5eey+DOHDhiKMAfSsysnq9iB2i0fw5c
-VjC+iw/25wMTMQWaDpA0Vad6Ew0v1/0WxvQ6o9W06V+V/GgYRx4J1qaVCYWJjKSs
-w+QT877HgXgg4UPtSWjJ0lXFuBQB+SQaRTE9sXyJ5IgUzStqOfE7W6WY0ntzzqWy
-RZm43IyCc3VJ9CcJJar6LOOWvvxxA3puvLJknEOyeb1Dgn72bjH3235UDR/Rr71F
-6P1/rNsvMqJEtpLMqIKfl7KwTTW7vexwgl/cVg18YgFV9wv7ZCHv1udbZ7aukBB4
-5FIB6IW+8S852r4tToD2
-=J/Z9
------END PGP SIGNATURE-----
-
---cN0A5YokcrYPGsSB--
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  arch/x86/kernel/e820.c |    4 +--
+>  drivers/acpi/Makefile  |    3 +-
+>  drivers/acpi/nvs.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  include/linux/acpi.h   |   20 ++++++++++++------
+>  4 files changed, 70 insertions(+), 10 deletions(-)
+>
+> --- a/arch/x86/kernel/e820.c
+> +++ b/arch/x86/kernel/e820.c
+> @@ -714,7 +714,7 @@ void __init e820_mark_nosave_regions(uns
+>  }
+>  #endif
+>
+> -#ifdef CONFIG_HIBERNATION
+> +#ifdef CONFIG_ACPI
+>  /**
+>  * Mark ACPI NVS memory region, so that we can save/restore it during
+>  * hibernation and the subsequent resume.
+> @@ -727,7 +727,7 @@ static int __init e820_mark_nvs_memory(v
+>                struct e820entry *ei = &e820.map[i];
+>
+>                if (ei->type == E820_NVS)
+> -                       suspend_nvs_register(ei->addr, ei->size);
+> +                       acpi_nvs_register(ei->addr, ei->size);
+>        }
+>
+>        return 0;
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -20,11 +20,12 @@ obj-y                               += acpi.o \
+>  # All the builtin files are in the "acpi." module_param namespace.
+>  acpi-y                         += osl.o utils.o reboot.o
+>  acpi-y                         += atomicio.o
+> +acpi-y                         += nvs.o
+>
+>  # sleep related files
+>  acpi-y                         += wakeup.o
+>  acpi-y                         += sleep.o
+> -acpi-$(CONFIG_ACPI_SLEEP)      += proc.o nvs.o
+> +acpi-$(CONFIG_ACPI_SLEEP)      += proc.o
+>
+>
+>  #
+> --- a/drivers/acpi/nvs.c
+> +++ b/drivers/acpi/nvs.c
+> @@ -15,6 +15,56 @@
+>  #include <linux/acpi_io.h>
+>  #include <acpi/acpiosxf.h>
+>
+> +/* ACPI NVS regions, APEI may use it */
+> +
+> +struct nvs_region {
+> +       __u64 phys_start;
+> +       __u64 size;
+> +       struct list_head node;
+> +};
+> +
+> +static LIST_HEAD(nvs_region_list);
+> +
+> +#ifdef CONFIG_ACPI_SLEEP
+> +static int suspend_nvs_register(unsigned long start, unsigned long size);
+> +#else
+> +static inline int suspend_nvs_register(unsigned long a, unsigned long b)
+> +{
+> +       return 0;
+> +}
+> +#endif
+> +
+> +int acpi_nvs_register(__u64 start, __u64 size)
+> +{
+> +       struct nvs_region *region;
+> +
+> +       region = kmalloc(sizeof(*region), GFP_KERNEL);
+> +       if (!region)
+> +               return -ENOMEM;
+> +       region->phys_start = start;
+> +       region->size = size;
+> +       list_add_tail(&region->node, &nvs_region_list);
+> +
+> +       return suspend_nvs_register(start, size);
+> +}
+> +
+> +int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
+> +                            void *data)
+> +{
+> +       int rc;
+> +       struct nvs_region *region;
+> +
+> +       list_for_each_entry(region, &nvs_region_list, node) {
+> +               rc = func(region->phys_start, region->size, data);
+> +               if (rc)
+> +                       return rc;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +
+> +#ifdef CONFIG_ACPI_SLEEP
+>  /*
+>  * Platforms, like ACPI, may want us to save some memory used by them during
+>  * suspend and to restore the contents of this memory during the subsequent
+> @@ -41,7 +91,7 @@ static LIST_HEAD(nvs_list);
+>  *     things so that the data from page-aligned addresses in this region will
+>  *     be copied into separate RAM pages.
+>  */
+> -int suspend_nvs_register(unsigned long start, unsigned long size)
+> +static int suspend_nvs_register(unsigned long start, unsigned long size)
+>  {
+>        struct nvs_page *entry, *next;
+>
+> @@ -159,3 +209,4 @@ void suspend_nvs_restore(void)
+>                if (entry->data)
+>                        memcpy(entry->kaddr, entry->data, entry->size);
+>  }
+> +#endif
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
+>                                             u32 *mask, u32 req);
+>  extern void acpi_early_init(void);
+>
+> +extern int acpi_nvs_register(__u64 start, __u64 size);
+> +
+> +extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
+> +                                   void *data);
+> +
+>  #else  /* !CONFIG_ACPI */
+>
+>  #define acpi_disabled 1
+> @@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
+>  {
+>        return -1;
+>  }
+> -#endif /* !CONFIG_ACPI */
+>
+> -#ifdef CONFIG_ACPI_SLEEP
+> -int suspend_nvs_register(unsigned long start, unsigned long size);
+> -#else
+> -static inline int suspend_nvs_register(unsigned long a, unsigned long b)
+> +static inline int acpi_nvs_register(__u64 start, __u64 size)
+>  {
+>        return 0;
+>  }
+> -#endif
+> +
+> +static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
+> +                                          void *data)
+> +{
+> +       return 0;
+> +}
+> +
+> +#endif /* !CONFIG_ACPI */
+>
+>  #endif /*_LINUX_ACPI_H*/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
