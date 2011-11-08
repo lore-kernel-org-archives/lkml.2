@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab1KHQVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:21:13 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:44473 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755158Ab1KHQVM convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:21:12 -0500
-MIME-Version: 1.0
-In-Reply-To: <87sjm31ngz.fsf@ti.com>
-References: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
-	<1320185752-568-3-git-send-email-omar.ramirez@ti.com>
-	<87sjm31ngz.fsf@ti.com>
-Date: Tue, 8 Nov 2011 10:21:08 -0600
-Message-ID: <CAB-zwWgd5U+8UNFe_rLY99VpiaHhTqscwYNF+SmuRTyDi+h3+A@mail.gmail.com>
-Subject: Re: [PATCH v3 2/4] OMAP4: hwmod data: add mmu hwmod for ipu and dsp
-From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
+	id S932344Ab1KHQXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:23:23 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:47983
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932067Ab1KHQXW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 11:23:22 -0500
+X-SpamScore: -23
+X-BigFish: VPS-23(zz9371K1431J1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LUCO6O-02-475-02
+X-M-MSG: 
+Date: Tue, 8 Nov 2011 17:23:11 +0100
+From: Joerg Roedel <Joerg.Roedel@amd.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: <iommu@lists.linux-foundation.org>, <linux-omap@vger.kernel.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>, lo <linux-omap@vger.kernel.org>,
-        lak <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, lm <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Subject: Re: [PATCH v4 0/7] iommu: split mapping to page sizes as supported
+ by the hardware
+Message-ID: <20111108162311.GB5182@amd.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+ <CAK=Wgbb5K+rqPNdM2sC8z+9d4-hdcPwV-vXk6gcAYWaO+dVx3w@mail.gmail.com>
+ <20111108140133.GD2113@amd.com>
+ <CAK=WgbYiF04i8XRkn+YQhd=z6uDRwr8JEiWP1CLFLjM7Y+xWKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbYiF04i8XRkn+YQhd=z6uDRwr8JEiWP1CLFLjM7Y+xWKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Nov 08, 2011 at 04:03:09PM +0200, Ohad Ben-Cohen wrote:
+> On Tue, Nov 8, 2011 at 4:01 PM, Joerg Roedel <Joerg.Roedel@amd.com> wrote:
+> > On Tue, Nov 08, 2011 at 02:57:02PM +0200, Ohad Ben-Cohen wrote:
+> >> Joerg, gentle reminder. thanks.
+> >
+> > Just wanted to wait until -rc1 is out and I can start merging
+> > new stuff :)
+> 
+> np, thanks :)
 
-On Fri, Nov 4, 2011 at 6:23 PM, Kevin Hilman <khilman@ti.com> wrote:
->> +     .flags          = HWMOD_INIT_NO_RESET,
->
-> Why is this needed?
-...
->> +     .flags          = HWMOD_INIT_NO_RESET,
->
-> And this?
+Does not apply cleanly. Can you please rebase against v3.2-rc1 and
+resend?
 
-I have this because the hwmod complains about a failure in hard reset,
-even though the reset deassert does complete after the clock is
-enabled. Later on, hwmod will warn again because of a wrong state when
-enabling, I believe because of the failure on _setup but didn't dig
-into it yet.
 
-Regards,
+	Joerg
 
-Omar
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
