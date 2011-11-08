@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab1KHLSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 06:18:10 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56113 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932617Ab1KHLQr (ORCPT
+	id S932932Ab1KHLSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 06:18:37 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:37254 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932668Ab1KHLQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 06:16:47 -0500
+	Tue, 8 Nov 2011 06:16:37 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 13/20] Staging: comedi: fix printk issue in cb_pcimdas.c
-Date: Tue,  8 Nov 2011 16:45:23 +0530
-Message-Id: <1320750930-9764-13-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 11/20] Staging: comedi: fix printk issue in cb_pcidio.c
+Date: Tue,  8 Nov 2011 16:45:21 +0530
+Message-Id: <1320750930-9764-11-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1320750930-9764-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1320750930-9764-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -23,40 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcimdas.c file that fixes up a printk
+This is a patch to the cb_pcidio.c file that fixes up a printk
 warning found by the checkpatch.pl tool.
 
-converted printks to dev_version.
-Removed ifdef CBPCIMDAS_DEBUG.
+converted printks to dev_printk and Removed unnecessary printk
+statements.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcimdas.c |   12 +++++-------
- 1 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidio.c |   23 ++++++++---------------
+ 1 files changed, 8 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcimdas.c b/drivers/staging/comedi/drivers/cb_pcimdas.c
-index 321af6d..5d25e78 100644
---- a/drivers/staging/comedi/drivers/cb_pcimdas.c
-+++ b/drivers/staging/comedi/drivers/cb_pcimdas.c
-@@ -274,13 +274,11 @@ found:
- 	devpriv->BADR3 = pci_resource_start(devpriv->pci_dev, 3);
- 	devpriv->BADR4 = pci_resource_start(devpriv->pci_dev, 4);
+diff --git a/drivers/staging/comedi/drivers/cb_pcidio.c b/drivers/staging/comedi/drivers/cb_pcidio.c
+index 79477a5..0c74491 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidio.c
++++ b/drivers/staging/comedi/drivers/cb_pcidio.c
+@@ -184,8 +184,6 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	int index;
+ 	int i;
  
--#ifdef CBPCIMDAS_DEBUG
--	printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
--	printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
--	printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
--	printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
--	printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
--#endif
-+	dev_dbg(dev->hw_dev, "devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
-+	dev_dbg(dev->hw_dev, "devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
-+	dev_dbg(dev->hw_dev, "devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
-+	dev_dbg(dev->hw_dev, "devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
-+	dev_dbg(dev->hw_dev, "devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
+-	printk("comedi%d: cb_pcidio: \n", dev->minor);
+-
+ /*
+  * Allocate the private structure area.  alloc_private() is a
+  * convenient macro defined in comedidev.h.
+@@ -223,8 +221,7 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		}
+ 	}
  
- /* Dont support IRQ yet */
- /*  get irq */
+-	printk("No supported ComputerBoards/MeasurementComputing card found on "
+-	       "requested position\n");
++	dev_err(dev->hw_dev, "No supported ComputerBoards/MeasurementComputing card found on requested position\n");
+ 	return -EIO;
+ 
+ found:
+@@ -236,14 +233,12 @@ found:
+ 	dev->board_name = thisboard->name;
+ 
+ 	devpriv->pci_dev = pcidev;
+-	printk("Found %s on bus %i, slot %i\n", thisboard->name,
+-	       devpriv->pci_dev->bus->number,
+-	       PCI_SLOT(devpriv->pci_dev->devfn));
+-	if (comedi_pci_enable(pcidev, thisboard->name)) {
+-		printk
+-		    ("cb_pcidio: failed to enable PCI device and request regions\n");
++	dev_dbg(dev->hw_dev, "Found %s on bus %i, slot %i\n", thisboard->name,
++		devpriv->pci_dev->bus->number,
++		PCI_SLOT(devpriv->pci_dev->devfn));
++	if (comedi_pci_enable(pcidev, thisboard->name))	
+ 		return -EIO;
+-	}
++
+ 	devpriv->dio_reg_base
+ 	    =
+ 	    pci_resource_start(devpriv->pci_dev,
+@@ -259,11 +254,10 @@ found:
+ 	for (i = 0; i < thisboard->n_8255; i++) {
+ 		subdev_8255_init(dev, dev->subdevices + i,
+ 				 NULL, devpriv->dio_reg_base + i * 4);
+-		printk(" subdev %d: base = 0x%lx\n", i,
+-		       devpriv->dio_reg_base + i * 4);
++		dev_dbg(dev->hw_dev, "subdev %d: base = 0x%lx\n", i,
++			devpriv->dio_reg_base + i * 4);
+ 	}
+ 
+-	printk("attached\n");
+ 	return 1;
+ }
+ 
+@@ -277,7 +271,6 @@ found:
+  */
+ static int pcidio_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: cb_pcidio: remove\n", dev->minor);
+ 	if (devpriv) {
+ 		if (devpriv->pci_dev) {
+ 			if (devpriv->dio_reg_base)
 -- 
 1.7.0.4
 
