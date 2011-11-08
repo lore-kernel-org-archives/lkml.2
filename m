@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab1KHAgf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 19:36:35 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:41764 "EHLO smtp.outflux.net"
+	id S1753102Ab1KHApb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 19:45:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53699 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937Ab1KHAga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 19:36:30 -0500
-Date: Mon, 7 Nov 2011 16:36:22 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Bryan Freed <bfreed@chromium.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, msb@chromium.org,
-        marco.stornelli@gmail.com, seiji.aguchi@hds.com
-Subject: Re: [PATCH] ramoops: Add a device file for ramoops buffer access.
-Message-ID: <20111108003622.GM21663@outflux.net>
-References: <1320710760-2734-1-git-send-email-bfreed@chromium.org>
+	id S1751917Ab1KHApa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 19:45:30 -0500
+Date: Mon, 7 Nov 2011 16:30:24 -0800
+From: Greg KH <gregkh@suse.de>
+To: Ian Campbell <ian.campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: Linux 2.6.32.47
+Message-ID: <20111108003024.GA6610@suse.de>
+References: <20111107213431.GA8483@kroah.com>
+ <1320708564@msgid.manchmal.in-ulm.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320710760-2734-1-git-send-email-bfreed@chromium.org>
-Organization: Outflux
-X-HELO: www.outflux.net
+In-Reply-To: <1320708564@msgid.manchmal.in-ulm.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan,
+On Tue, Nov 08, 2011 at 12:43:49AM +0100, Christoph Biedl wrote:
+> Greg KH wrote...
+> 
+> > I'm announcing the release of the 2.6.32.47 kernel.
+> 
+> Unfortunately this does not build anymore on ARM (Debian armel):
+> 
+>   CHK     include/linux/version.h
+>   SYMLINK include/asm -> include/asm-arm
+> make[1]: `include/asm-arm/mach-types.h' is up to date.
+>   CHK     include/linux/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/linux/compile.h
+>   GEN     .version
+>   CHK     include/linux/compile.h
+>   UPD     include/linux/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+>   LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `sysdev_resume':
+> ledtrig-default-on.c:(.text+0x2a97c): undefined reference to `irq_pm_syscore_resume'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> 
+> The most likely culprit is
+> 
+>     commit 0f12a6ad9fa3a03f2bcee36c9cb704821e244c40
+>     Author: Ian Campbell <ian.campbell@citrix.com>
+>     Date:   Mon Oct 3 15:37:00 2011 +0100
+> 
+> 	genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier
+> 
+> as reverting that commit made the error go away.
+> 
+> The .config used is attached. FWIW, the target system is a DockStar.
+> 
+> Sorry for not having checked during the review period, I should have
+> done so.
 
-On Mon, Nov 07, 2011 at 04:06:00PM -0800, Bryan Freed wrote:
-> Add a /dev/ramoops device file that gives direct access to ramoops buffers.
-> This interface is cleaner than using /dev/mem to access the buffers because
-> we no longer need to lseek() or (for ARM) mmap() to an address specified in
-> the sysfs mem_address file.
+Not good.
 
-This looks pretty good, except that I'd also want to remove all the module
-parameters since this would bypass CONFIG_STRICT_DEVMEM (imagine a
-malicious root user loading this module to spy on RAM via the new
-interface).
+Ian, Konrad, any thoughts as to how to fix this?
 
-Last week I actually wrote an entire seq_file interface for ramoops[1], but
-it seems it shouldn't live in /proc, so it needs to be reworked a bit to
-live in /dev, as you have it.
+Christoph, sorry I didn't catch this, I need to get my ARM system back
+up and running for simple build things like this.
 
-Perhaps we could merge our efforts?
-
--Kees
-
-[1] https://gerrit.chromium.org/gerrit/#change,11242
-
--- 
-Kees Cook
-ChromeOS Security
+greg k-h
