@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1KHApn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 19:45:43 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59744 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752680Ab1KHApa (ORCPT
+	id S1753161Ab1KHAv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 19:51:28 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:40241 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab1KHAv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 19:45:30 -0500
-Date: Tue, 8 Nov 2011 00:46:15 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-Message-ID: <20111108004615.39477beb@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111108002520.GB25769@tango.0pointer.de>
-References: <1320614101.3226.5.camel@offbook>
-	<20111107112952.GB25130@tango.0pointer.de>
-	<1320675607.2330.0.camel@offworld>
-	<20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
-	<CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
-	<20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
-	<20111107230712.GA25769@tango.0pointer.de>
-	<20111107234337.1dc9d612@lxorguk.ukuu.org.uk>
-	<20111108002520.GB25769@tango.0pointer.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Nov 2011 19:51:26 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20111107095835.208466a386fbcf046c512d70@canb.auug.org.au>
+	<m139e0q0n5.fsf@fess.ebiederm.org>
+	<20111107213319.01f37a306f1c29faa386891e@canb.auug.org.au>
+Date: Mon, 07 Nov 2011 16:52:17 -0800
+In-Reply-To: <20111107213319.01f37a306f1c29faa386891e@canb.auug.org.au>
+	(Stephen Rothwell's message of "Mon, 7 Nov 2011 21:33:19 +1100")
+Message-ID: <m1pqh3o2pq.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX187iKRQzVr2FpKEJiH3LomWHRE1324nPS8=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: **
+Subject: Re: linux-next: failing to fetch the sysctl tree
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And half of the other resource limits are "oddities" too?
-> For  example RLIMIT_SIGPENDING is per-user and so is RLIMIT_MSGQUEUE,
-> and others too.
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-When you look at the standards - yes.
+> Hi Eric,
+>
+> On Sun, 06 Nov 2011 15:41:50 -0800 ebiederm@xmission.com (Eric W. Biederman) wrote:
+>>
+>> Something weird happened when I re-uploaded things.  Apparently hitting
+>> Ctrl-C if when you are uploading and realized you forgot to clone from
+>> Linus's repository is fatal to how git.kernel.org manages things.  Last
+>> I checked I could not even delete the broken repository.
+>> 
+>> Can you please switch to linux/kernel/git/ebiederm/sysctl.git instead of
+>> sysctl-2.6.git.
+>
+> Done.
+>
+> BTW to remove the other tree do this:
+>
+> ssh gitolte@ra.kernel.org unlock pub/scm/linux/kernel/git/ebiederm/sysctl-2.6
+> ssh gitolte@ra.kernel.org rm pub/scm/linux/kernel/git/ebiederm/sysctl-2.6
 
-> > And the standards have no idea how a resource limit hit for an fs would
-> > be reported, nor how an app installer would check for it. Quota on the
-> > other hand is defined behaviour.
-> 
-> EDQUOT is POSIX, but afaik there is no POSIX standardized API for quota,
-> is there? i.e. the reporting of the user hitting quota is defined, but
+Thanks.  unlock was apparently the gitolite magic command I did not know about.
 
-Its part of Unix and its well defined and used by applications, both for
-hitting quota (the easy bit), checking quota (when checking space for
-things particularly), and manipulating them
-
-The latter bit is nice, it means you can mount with a user quota set in
-the mount options, and if you want then use quota tools to change the
-quota of a specific user or two that have special rules.
-
-Alan
+Eric
