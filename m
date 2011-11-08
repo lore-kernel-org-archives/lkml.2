@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab1KHAdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 19:33:50 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49840 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab1KHAds (ORCPT
+	id S1753047Ab1KHAeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 19:34:00 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:64473 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752911Ab1KHAd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 19:33:48 -0500
-Message-ID: <4EB878F3.1040508@jp.fujitsu.com>
-Date: Mon, 07 Nov 2011 19:33:55 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: kay.sievers@vrfy.org
-CC: mzxreary@0pointer.de, alan@lxorguk.ukuu.org.uk, dave@gnu.org,
-        hch@infradead.org, hughd@google.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-References: <1320614101.3226.5.camel@offbook> <20111107112952.GB25130@tango.0pointer.de> <1320675607.2330.0.camel@offworld> <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk> <20111107143010.GA3630@tango.0pointer.de> <4EB8586B.5060804@jp.fujitsu.com> <CAPXgP118CzaTuV-kABfEC-D-+K75zdKVwbaYba+FuN7umJO4kA@mail.gmail.com>
-In-Reply-To: <CAPXgP118CzaTuV-kABfEC-D-+K75zdKVwbaYba+FuN7umJO4kA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Nov 2011 19:33:58 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: x86@kernel.org, Ingo Molnar <mingo@elte.hu>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Adrian Bunk <bunk@stusta.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 0/2] Fix and re-enable vsyscall=emulate
+Date: Mon,  7 Nov 2011 16:33:39 -0800
+Message-Id: <cover.1320712291.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.7.6.4
+In-Reply-To: <CALCETrXAiHs9PyziHBm-gZRiyahYafbxxUSxJUcFh=a-0th0EQ@mail.gmail.com>
+References: <CALCETrXAiHs9PyziHBm-gZRiyahYafbxxUSxJUcFh=a-0th0EQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(11/7/2011 5:37 PM), Kay Sievers wrote:
-> On Mon, Nov 7, 2011 at 23:15, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
->> (11/7/2011 6:30 AM), Lennart Poettering wrote:
-> 
->> If you want per-user limitation, RLIMIT is bad idea. RLIMIT is only inherited
->> by fork. So, The api semantics clearly mismatch your usecase.
-> 
-> Like RLIMIT_NPROC?
+The really nice fix (wiring up access_ok failures to be able to raise
+signals) won't be ready on time for 3.2, so let's try the simpler fix
+for now.
 
-I suggest to don't follow useless interfaces.
+Changes from the earlier version:
+ - Clean up the odd ptr==0 check.
+ - Flip the default back to vsyscall=emulate
+
+Andy Lutomirski (2):
+  x86-64: Set siginfo and context on vsyscall emulation faults
+  x86: Default to vsyscall=emulate
+
+ Documentation/kernel-parameters.txt |    7 +--
+ arch/x86/include/asm/thread_info.h  |    3 +-
+ arch/x86/include/asm/uaccess.h      |    2 +-
+ arch/x86/kernel/vsyscall_64.c       |   77 ++++++++++++++++++++++++++++++----
+ arch/x86/mm/extable.c               |    2 +-
+ arch/x86/mm/fault.c                 |   22 +++++++---
+ 6 files changed, 91 insertions(+), 22 deletions(-)
+
+-- 
+1.7.6.4
 
