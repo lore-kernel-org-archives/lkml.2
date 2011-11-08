@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab1KHVPK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:15:10 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58118 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750907Ab1KHVPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:15:08 -0500
-Date: Tue, 8 Nov 2011 21:14:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, rmallon@gmail.com,
-        Nikolaus Voss <n.voss@weinmann.de>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Message-ID: <20111108211442.GK12913@n2100.arm.linux.org.uk>
-References: <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de> <20111108144115.GH20728@legolas.emea.dhcp.ti.com> <4EB9477E.8070002@atmel.com> <20111108152343.GJ20728@legolas.emea.dhcp.ti.com> <20111108182955.GH12913@n2100.arm.linux.org.uk> <20111108184447.GB24399@legolas.emea.dhcp.ti.com> <20111108185525.GI12913@n2100.arm.linux.org.uk> <20111108190200.GC24399@legolas.emea.dhcp.ti.com> <20111108193930.GJ12913@n2100.arm.linux.org.uk> <20111108195854.GD24399@legolas.emea.dhcp.ti.com>
+	id S933327Ab1KHVPt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:15:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751661Ab1KHVPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 16:15:47 -0500
+Date: Tue, 8 Nov 2011 22:15:01 +0100 (CET)
+From: John Kacur <jkacur@redhat.com>
+X-X-Sender: jkacur@localhost6.localdomain6
+To: "Ted Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
+ tools/perf/ and tools/kvm/
+In-Reply-To: <20111108163331.GJ24234@thunk.org>
+Message-ID: <alpine.LFD.2.00.1111082212560.8887@localhost6.localdomain6>
+References: <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com> <20111107203255.GF24234@thunk.org>
+ <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws> <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu> <20111108093225.GB32533@elte.hu> <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125509.GB1022@elte.hu>
+ <20111108163331.GJ24234@thunk.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111108195854.GD24399@legolas.emea.dhcp.ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 09:58:55PM +0200, Felipe Balbi wrote:
-> Hi,
+
+
+On Tue, 8 Nov 2011, Ted Ts'o wrote:
+
+> On Tue, Nov 08, 2011 at 01:55:09PM +0100, Ingo Molnar wrote:
+> > I guess you can do well with a split project as well - my main claim 
+> > is that good compatibility comes *naturally* with integration.
 > 
-> On Tue, Nov 08, 2011 at 07:39:30PM +0000, Russell King - ARM Linux wrote:
-> > But, that's something very different from your statement in your previous
-> > message about my alleged stance on *all* asm/*.h includes in drivers,
-> > which is FALSE.
+> Here I have to disagree; my main worry is that integration makes it
+> *naturally* easy for people to skip the hard work needed to keep a
+> stable kernel/userspace interface.
 > 
-> http://marc.info/?l=linux-arm-kernel&m=132077795410718&w=2
+> The other worry which I've mentioned, but which I haven't seen
+> addressed, is that the even if you can use a perf from a newer kernel
+> with an older kernel, this causes distributions a huge amount of pain,
+> since they have to package two different kernel source packages, and
+> only compile perf from the newer kernel source package.  This leads to
+> all sorts of confusion from a distribution packaging point of view.
 > 
-> I don't see me complaining about *all* headers anywhere in that message.
-> I did generalize, but I didn't stated you were complaining about *all*
-> headers. Go back and read it for yourself.
+> For example, assume that RHEL 5, which is using 2.6.32 or something
+> like that, wants to use a newer e2fsck that does a better job fixing
+> file system corruptions.  If it were bundled with the kernel, then
+> they would have to package up the v3.1 kernel sources, and have a
+> source RPM that isn't used for building kernel sources, but just to
+> build a newer version of e2fsck.  Fortunately, they don't have to do
+> that.  They just pull down a newer version of e2fsprogs, and package,
+> build, test, and ship that.
+> 
+> In addition, suppose Red Hat ships a security bug fix which means a
+> new kernel-image RPM has to be shipped.  Does that mean that Red Hat
+> has to ship new binary RPM's for any and all tools/* programs that
+> they have packaged as separate RPM's?  Or should installing a new
+> kernel RPM also imply dropping new binaries in /usr/bin/perf, et. al?
+> There are all sorts of packaging questions that are raised
+> integration, and from where I sit I don't think they've been
+> adequately solved yet.
+>
+ 
+This in practice is not a big deal.
 
-I really can't believe what you're saying.
+There are many approaches for how the RPM can be built, but basically
+getting the perf source is just a matter of
+make perf-tar-src-pkg or friends such as
+make perf-tarbz2-src-pkg
+which will create perf-3.2.0-rc1.tar, and perf-3.2.0-rc1.tar.bz2
+respectively which can be used for the src rpms. This tar ball can be used
+as a separate package or subpackage.
 
-"You were (actually still is) one of the biggest source of complaints for
-drivers using <mach/*> and <asm/*> includes and now you're changing your
-mind ?"
+Thanks
 
-That's an exact quote.
-
-That statement is very clear in its meaning - and it doesn't match your
-assertion that it doesn't mean "all" because it makes no distinction what
-so ever between any of those header files.
-
-> You see ? I was asking $author to try and use some revision register in
-> order to apply erratas instead of using cpu_is_at91rm9200().
-
-For fuck sake, - AND AGAIN - I was asking you to *qualify* your fucking
-statement.  It was you who then launched an attack about irrelevant junk
-like what includes and so forth.
-
-You must be drunk this evening.  Please come back once you've sobered up.
