@@ -1,93 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab1KHC6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 21:58:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52793 "EHLO
+	id S1754556Ab1KHC65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:58:57 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63897 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab1KHC6F convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751041Ab1KHC64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 21:58:05 -0500
+	Mon, 7 Nov 2011 21:58:56 -0500
+Date: Tue, 8 Nov 2011 10:58:47 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+Message-ID: <20111108025847.GB11439@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+ <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+ <1320669279.18053.29.camel@twins>
+ <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+ <1320682230.17809.11.camel@twins>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <4EB8044B.7020403@windriver.com>
-References: <1320635954.10415.1.camel@phoenix> <1320636009.10415.2.camel@phoenix>
- <4EB8044B.7020403@windriver.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 8 Nov 2011 10:57:43 +0800
-Message-ID: <CAF+7xWnQhfEzDMeWRAvrbxpUySEp6aUpO1BdAztcfH9Fuu=X_g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mfd: include linux/module.h for ab5500-debugfs
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mattias Wallin <mattias.wallin@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1320682230.17809.11.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/8 Paul Gortmaker <paul.gortmaker@windriver.com>:
-> On 11-11-06 10:20 PM, Axel Lin wrote:
->> Include linux/module.h to fix below build error:
->>
->>   CC      drivers/mfd/ab5500-debugfs.o
->> drivers/mfd/ab5500-debugfs.c:571: error: 'THIS_MODULE' undeclared here (not in a function)
->> make[2]: *** [drivers/mfd/ab5500-debugfs.o] Error 1
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->>  drivers/mfd/ab5500-debugfs.c |    1 +
->>  1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/mfd/ab5500-debugfs.c b/drivers/mfd/ab5500-debugfs.c
->> index 6be1fe6..b7b2d348 100644
->> --- a/drivers/mfd/ab5500-debugfs.c
->> +++ b/drivers/mfd/ab5500-debugfs.c
->> @@ -4,6 +4,7 @@
->>   * Debugfs support for the AB5500 MFD driver
->>   */
->>
->> +#include <linux/module.h>
->
-> This one looks incorrect.  I don't see any uses of MODULE_* or
-> module_* in the file, so I'll make a commit for it to use export.h
-> and retest.
->
-hi Paul,
-drivers/mfd/ab8500-debugfs.c does use MODULE_AUTHOR, MODULE_DESCRIPTION, etc.
-I got below build error if only includes linux/export.h
+On Mon, Nov 07, 2011 at 05:10:29PM +0100, Peter Zijlstra wrote:
+> On Mon, 2011-11-07 at 16:28 +0100, Vegard Nossum wrote:
+> > 1. Initialise the thing completely before doing the copy, or
+> > 2. Ignore the warning.
+> > 
+> > The memset() patch (f59de8992aa6dc85e81aadc26b0f69e17809721d) attempts
+> > to do the first, i.e. to clear the whole struct in lockdep_init_map().
+> > 
+> > I think nr. 1 is the best way to go in principle, but I don't know
+> > what it takes for this to work properly. The blanket-clear memset()
+> > presumably doesn't work because it clears out something that was
+> > already initialised by the caller (right?).
+> > 
+> > Yong Zhang, can you think of a way to avoid the race you described,
+> > perhaps by memset()ing only the right/relevant parts of struct
+> > lockdep_map in lockdep_init_map()?
+> 
+> We could move the key and name pointer to the start of the structure and
+> memset everything after that, however wouldn't that leave kmemcheck with
+> the same problem? It wouldn't know those two pointers would be
+> initialized properly.
+> 
+> > Peter Zijlstra, if you prefer, we can also just tell kmemcheck that
+> > this particular copy is fine, but it means that kmemcheck will not be
+> > able to detect any real bugs in this code. It can be done with
+> > something like:
 
-  CC      drivers/mfd/ab8500-debugfs.o
-drivers/mfd/ab8500-debugfs.c:632: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/ab8500-debugfs.c:632: warning: data definition has no type
-or storage class
-drivers/mfd/ab8500-debugfs.c:632: warning: type defaults to 'int' in
-declaration of 'MODULE_AUTHOR'
-drivers/mfd/ab8500-debugfs.c:632: warning: function declaration isn't
-a prototype
-drivers/mfd/ab8500-debugfs.c:633: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/ab8500-debugfs.c:633: warning: data definition has no type
-or storage class
-drivers/mfd/ab8500-debugfs.c:633: warning: type defaults to 'int' in
-declaration of 'MODULE_DESCRIPTION'
-drivers/mfd/ab8500-debugfs.c:633: warning: function declaration isn't
-a prototype
-drivers/mfd/ab8500-debugfs.c:634: error: expected declaration
-specifiers or '...' before string constant
-drivers/mfd/ab8500-debugfs.c:634: warning: data definition has no type
-or storage class
-drivers/mfd/ab8500-debugfs.c:634: warning: type defaults to 'int' in
-declaration of 'MODULE_LICENSE'
-drivers/mfd/ab8500-debugfs.c:634: warning: function declaration isn't
-a prototype
-make[2]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-make[1]: *** [drivers/mfd] Error 2
-make: *** [drivers] Error 2
+We should take ->calss_cache more carefully, because if we memset() it
+unconditionnally we will have no chance to set it anymore. Thus the
+performace brought by ->class_cache will be gone.
 
-Well, I don't know why I don't see these errors when I build the code last time.
+1) for lock_set_subclass(): we can't initialize ->class_cache because
+   it's still valid and we need it.
+2) for lock_set_class(): we have to initialize ->class_cache because
+   it's invalid anymore.
 
-Regards,
-Axel
+Maybe we could unconditionally set it we look_up_lock_class() find the
+class?
+
+> 
+> Something like this, although it would be best to come up with a nicer
+> way to write it..
+> 
+> ---
+>  include/linux/lockdep.h |    2 +-
+>  kernel/lockdep.c        |    3 ++-
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+> index b6a56e3..7d66268 100644
+> --- a/include/linux/lockdep.h
+> +++ b/include/linux/lockdep.h
+> @@ -148,9 +148,9 @@ void clear_lock_stats(struct lock_class *class);
+>   * This is embedded into specific lock instances:
+>   */
+>  struct lockdep_map {
+> +	const char			*name;
+>  	struct lock_class_key		*key;
+>  	struct lock_class		*class_cache[NR_LOCKDEP_CACHING_CLASSES];
+> -	const char			*name;
+>  #ifdef CONFIG_LOCK_STAT
+>  	int				cpu;
+>  	unsigned long			ip;
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index e69434b..81855cf 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2948,7 +2948,8 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+>  void lockdep_init_map(struct lockdep_map *lock, const char *name,
+>  		      struct lock_class_key *key, int subclass)
+>  {
+> -	memset(lock, 0, sizeof(*lock));
+> +	kmemcheck_mark_initialized(lock, 2*sizeof(void *));
+> +	memset(&lock->class_cache[0], 0, sizeof(*lock)-2*sizeof(void *));
+
+That means ->key have chance to be 0 at some time, right? Then I think it'll
+lead to another false positive warning like what Borislav has reported:
+http://marc.info/?l=linux-kernel&m=132039877026653
+
+The reason is some rq->lock could carry a wrong key at certain time.
+
+	CPU A				CPU B
+  lock_set_subclass(lockA)
+    __lock_set_class(lockA)
+      lockdep_init_map(lockA)
+        memset() /* ->key = NULL */
+      				__lock_acquire(lockA)
+				  register_lock_class(lockA)
+				    look_up_lock_class(lockA)
+				      if (unlikely(!lock->key))
+				              lock->key = (void *)lock;
+	->key = key;
+				/* lockA maybe carry wrong class in later running
+				 * due to ->class_cache
+				 */
+
+
+Then when another lock_set_subclass() comes:
+        CPU A                           CPU B
+  lock_set_subclass(lockA);
+    lock_set_class(lockA);
+      				__lock_acquire(lockA)
+                                  /* lockA->class_cache[] is not set,
+				   * different subclass */
+                                  register_lock_class(lockA);
+                                     look_up_lock_class(lockA); /* retrun NULL */
+      lockdep_init_map(lockA);
+        memset(lockA); /* ->key = NULL */
+                                  if (!static_obj(lock->key))
+                                  /* we get warning here */
+
+
+So maybe the simplest way is just annotating ->lock like this:
+	kmemcheck_mark_initialized(lock, sizeof(*lock));
+
+Thanks,
+Yong
