@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933272Ab1KHUIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 15:08:01 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:52404 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932222Ab1KHUH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 15:07:59 -0500
-Date: Tue, 8 Nov 2011 15:07:35 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Greg KH <greg@kroah.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Eric Paris <eparis@parisplace.org>,
-        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111108200735.GM24234@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Greg KH <greg@kroah.com>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Vasiliy Kulikov <segoon@openwall.com>,
-	Eric Paris <eparis@parisplace.org>,
-	kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-	linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-security-module@vger.kernel.org
-References: <4EB83674.3040207@zytor.com>
- <20111107201120.GA5775@albatros>
- <4EB843FF.5080201@zytor.com>
- <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
- <4EB84F05.1000704@zytor.com>
- <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
- <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
- <20111107232750.GA4854@kroah.com>
- <4BA97845-BA47-47F3-A923-9B24AB7306E9@mit.edu>
- <20111107234546.GA5835@kroah.com>
+	id S933227Ab1KHUNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 15:13:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42430 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1KHUNi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 15:13:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107234546.GA5835@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <CAKWSe6Dr7G3TgeMiff=hrT1bMc+StnXdtW0MEmQcuA5yFOWJYw@mail.gmail.com>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+ <CAKWSe6Dr7G3TgeMiff=hrT1bMc+StnXdtW0MEmQcuA5yFOWJYw@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Nov 2011 12:13:16 -0800
+X-Google-Sender-Auth: TapOrKcpH07zoHrHBdvkTuyT20s
+Message-ID: <CA+55aFyojS9n=jP07X2BcxZ5z8YkBaZnNnthTs8xBkdtBdK1XA@mail.gmail.com>
+Subject: Re: Linux 3.2-rc1
+To: Alessandro Suardi <alessandro.suardi@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        platform-driver-x86@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 03:45:46PM -0800, Greg KH wrote:
-> > As I mentioned at the kernel summit, I'd like revoke along with a
-> > formal notification from block devices that get ejected to the file
-> > system layer, and the file system should be able to call a VFS library
-> > function which revokes all open file descriptor on the ejected block
-> > device.  It would result in much cleaner handling at the file system
-> > level when a USB storage device gets pulled.
-> 
-> So you want revoke() on a block device to do what?  The same thing as
-> disconnecting it from the hardware level?
+On Tue, Nov 8, 2011 at 6:53 AM, Alessandro Suardi
+<alessandro.suardi@gmail.com> wrote:
+>
+> Dell laptop support (and I'd suspect other drivers using LED support)
+>  doesn't build with undefined LED-related functions, as in:
+>
+> ERROR: "led_classdev_unregister" [drivers/platform/x86/dell-laptop.ko]
+> undefined!
+> ERROR: "led_classdev_register" [drivers/platform/x86/dell-laptop.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
+>
+> It's enough to configure NEW_LEDS (unneeded in 3.1.0) to allow the build to go
+>  through; maybe NEW_LEDS should be auto-selected in Kconfig by drivers that
+>  make use of led_classdev_* functions ?
 
-No, what I meant is that a disconnect at the hardware level should
-lead to notification to the file system via a call to struct super
-operations function.  And then the file system can use that callback
-(call it super->s_ops->device_ejected) to call revoke on all of the
-open files on the file system.
+Yeah, that sounds like the right fix. There are a lot of "select
+NEW_LEDS" around already, but apparently not the Dell driver.
 
-If we were to implement a revoke(2) system call (as opposed to just
-VFS functionality callable from kernel code), it should probably do
-what revoke(2) does on other Unix systems:
+Matthew?
 
-     The revoke() system call invalidates all current open file
-     descriptors in the system for the file named by path.  Subsequent
-     operations on any such descriptors fail, with the exceptions that
-     a read() from a character device file which has been revoked
-     returns a count of zero (end of file), and a close() system call
-     will succeed.  If the file is a special file for a device which
-     is open, the device close function is called as if all open
-     references to the file had been closed.
-
-     Access to a file may be revoked only by its owner or the super
-     user.  The revoke() system call is currently supported only for
-     block and character special device files.  It is normally used to
-     prepare a terminal device for a new login session, preventing any
-     access by a previous user of the terminal.
-
-The revoke functionality I was talking about is a way to disconnect a
-file descriptor from the mounted file system, since when the device
-that backed it has disappeared, the file system should disappear as
-well.  What should be left are file descriptors that return an error
-when read or written, and which are administratively managed by the
-VFS layer, with all of the file system's refcounts appropriate
-decremented, such that if it were loaded as a module, the fs module
-could be safely unloaded.  
-
-      	 					- Ted
-
+                 Linus
