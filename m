@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab2HVHhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:37:13 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:38983 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab2HVHhD (ORCPT
+	id S1753501Ab2H2IMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:12:10 -0400
+Received: from mail.steuer-voss.com ([85.183.17.159]:42010 "EHLO
+	mail.steuer-voss.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752866Ab2H2ILA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:37:03 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <39bedb5607e56a9b2193a5b3ca2ff47ed50d81f6.1345618760.git.n.voss@weinmann.de>
-In-Reply-To: <cover.1345618760.git.n.voss@weinmann.de>
-References: <cover.1345618760.git.n.voss@weinmann.de>
+	Wed, 29 Aug 2012 04:11:00 -0400
+Message-Id: <9597aaa3e47b02ff846c5079cebe4bb0860933d0.1346225321.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1346225321.git.n.voss@weinmann.de>
+References: <cover.1346225321.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
 Date: Tue, 8 Nov 2011 12:09:30 +0100
 Subject: [PATCH v11 2/4] Replace clk_lookup.con_id with clk_lookup.dev_id entries
