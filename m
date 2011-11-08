@@ -1,87 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933222Ab1KHT3c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:29:32 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:5370 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab1KHT3a (ORCPT
+	id S933211Ab1KHTcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:32:18 -0500
+Received: from www17.your-server.de ([213.133.104.17]:56021 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab1KHTcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:29:30 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=QemAkzczEFLpmQfqFUuhPAppfE6qdL9QKC9DoPRg+3YPt3kA2ifKjNP3L85DVz8zb
-	uCae1LQC6YlDw2bNWe3Ug==
-Subject: [PATCH v2 2/3] hvc_init():  Enforce one-time initialization.
-To: linux-kernel@vger.kernel.org
-From: Miche Baker-Harvey <miche@google.com>
-Date: Tue, 08 Nov 2011 11:29:27 -0800
-Message-ID: <20111108192927.30437.79372.stgit@miche.sea.corp.google.com>
-In-Reply-To: <20111108192916.30437.47434.stgit@miche.sea.corp.google.com>
-References: <20111108192916.30437.47434.stgit@miche.sea.corp.google.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 8 Nov 2011 14:32:17 -0500
+Subject: [PATCH] staging: rtl8192e: Use kmemdup rather than duplicating its
+ implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>, wlanfae@realtek.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Tue, 08 Nov 2011 20:30:20 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Message-ID: <1320780630.8062.150.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hvc_init() must only be called once, and no thread should continue with hvc_alloc()
-until after initialization is complete.  The original code does not enforce either
-of these requirements.  A new mutex limits entry to hvc_init() to a single thread,
-and blocks all later comers until it has completed.
+From: Thomas Meyer <thomas@m3y3r.de>
 
-This patch fixes multiple crash symptoms.
+ Use kmemdup rather than duplicating its implementation
 
-Signed-off-by: Miche Baker-Harvey <miche@google.com>
+ The semantic patch that makes this change is available
+ in scripts/coccinelle/api/memdup.cocci.
+
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
- drivers/tty/hvc/hvc_console.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index b6b2d18..09a6159 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -29,8 +29,9 @@
- #include <linux/kernel.h>
- #include <linux/kthread.h>
- #include <linux/list.h>
--#include <linux/module.h>
- #include <linux/major.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
- #include <linux/sysrq.h>
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
-@@ -84,6 +85,10 @@ static LIST_HEAD(hvc_structs);
-  * list traversal.
-  */
- static DEFINE_SPINLOCK(hvc_structs_lock);
-+/*
-+ * only one task does allocation at a time.
-+ */
-+static DEFINE_MUTEX(hvc_ports_mutex);
+diff -u -p a/drivers/staging/rtl8192e/rtllib_wx.c b/drivers/staging/rtl8192e/rtllib_wx.c
+--- a/drivers/staging/rtl8192e/rtllib_wx.c 2011-11-07 19:38:11.783647197 +0100
++++ b/drivers/staging/rtl8192e/rtllib_wx.c 2011-11-08 10:51:57.493656037 +0100
+@@ -846,10 +846,9 @@ int rtllib_wx_set_gen_ie(struct rtllib_d
  
- /*
-  * This value is used to assign a tty->index value to a hvc_struct based
-@@ -825,11 +830,15 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 	int i;
- 
- 	/* We wait until a driver actually comes along */
-+	mutex_lock(&hvc_ports_mutex);
- 	if (!hvc_driver) {
- 		int err = hvc_init();
--		if (err)
-+		if (err) {
-+			mutex_unlock(&hvc_ports_mutex);
- 			return ERR_PTR(err);
-+		}
- 	}
-+	mutex_unlock(&hvc_ports_mutex);
- 
- 	hp = kzalloc(ALIGN(sizeof(*hp), sizeof(long)) + outbuf_size,
- 			GFP_KERNEL);
+ 			ieee->wps_ie_len = (len < MAX_WZC_IE_LEN) ? (len) :
+ 					   (MAX_WZC_IE_LEN);
+-			buf = kmalloc(ieee->wps_ie_len, GFP_KERNEL);
++			buf = kmemdup(ie, ieee->wps_ie_len, GFP_KERNEL);
+ 			if (buf == NULL)
+ 				return -ENOMEM;
+-			memcpy(buf, ie, ieee->wps_ie_len);
+ 			ieee->wps_ie = buf;
+ 			return 0;
+ 		}
+@@ -860,10 +859,9 @@ int rtllib_wx_set_gen_ie(struct rtllib_d
+ 	if (len) {
+ 		if (len != ie[1]+2)
+ 			return -EINVAL;
+-		buf = kmalloc(len, GFP_KERNEL);
++		buf = kmemdup(ie, len, GFP_KERNEL);
+ 		if (buf == NULL)
+ 			return -ENOMEM;
+-		memcpy(buf, ie, len);
+ 		kfree(ieee->wpa_ie);
+ 		ieee->wpa_ie = buf;
+ 		ieee->wpa_ie_len = len;
+
 
