@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab1KHQgm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:36:42 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:34291
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1755659Ab1KHQgd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:36:33 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42047
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754328Ab1KHQg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:36:26 -0500
+	id S1753280Ab1KHQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 11:36:25 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org, ohering@suse.com,
         James.Bottomley@HansenPartnership.com, hch@infradead.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 03/11] Staging: hv: storvsc: Fixup the error when processing SET_WINDOW command
-Date: Tue,  8 Nov 2011 09:01:42 -0800
-Message-Id: <1320771710-29139-3-git-send-email-kys@microsoft.com>
+Subject: [PATCH 06/11] Staging: hv: storvsc: Use the unlocked version queuecommand
+Date: Tue,  8 Nov 2011 09:01:45 -0800
+Message-Id: <1320771710-29139-6-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1320771710-29139-1-git-send-email-kys@microsoft.com>
 References: <1320771677-29095-1-git-send-email-kys@microsoft.com>
@@ -24,27 +24,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixup the error when processing SET_WINDOW command.
+Use the unlocked version queuecommand.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   19 +++++--------------
+ 1 files changed, 5 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index a72cc22..e16c7a3 100644
+index b21e85f..827bc68 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1136,7 +1136,7 @@ static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
- 	switch (scsi_op) {
- 	/* smartd sends this command, which will offline the device */
- 	case SET_WINDOW:
--		scmnd->result = DID_ERROR << 16;
-+		scmnd->result = ILLEGAL_REQUEST << 16;
- 		allowed = false;
- 		break;
- 	default:
+@@ -1137,11 +1137,10 @@ static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
+ /*
+  * storvsc_queuecommand - Initiate command processing
+  */
+-static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+-				void (*done)(struct scsi_cmnd *))
++static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ {
+ 	int ret;
+-	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
++	struct hv_host_device *host_dev = shost_priv(host);
+ 	struct hv_device *dev = host_dev->dev;
+ 	struct hv_storvsc_request *request;
+ 	struct storvsc_cmd_request *cmd_request;
+@@ -1152,7 +1151,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 	struct vmscsi_request *vm_srb;
+ 
+ 	if (storvsc_check_scsi_cmd(scmnd) == false) {
+-		done(scmnd);
++		scmnd->scsi_done(scmnd);
+ 		return 0;
+ 	}
+ 
+@@ -1165,16 +1164,13 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 		goto retry_request;
+ 	}
+ 
+-	scmnd->scsi_done = done;
+-
+ 	request_size = sizeof(struct storvsc_cmd_request);
+ 
+ 	cmd_request = mempool_alloc(host_dev->request_mempool,
+ 				       GFP_ATOMIC);
+-	if (!cmd_request) {
+-		scmnd->scsi_done = NULL;
++	if (!cmd_request)
+ 		return SCSI_MLQUEUE_DEVICE_BUSY;
+-	}
++
+ 	memset(cmd_request, 0, sizeof(struct storvsc_cmd_request));
+ 
+ 	/* Setup the cmd request */
+@@ -1227,7 +1223,6 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 				create_bounce_buffer(sgl, scsi_sg_count(scmnd),
+ 						     scsi_bufflen(scmnd));
+ 			if (!cmd_request->bounce_sgl) {
+-				scmnd->scsi_done = NULL;
+ 				scmnd->host_scribble = NULL;
+ 				mempool_free(cmd_request,
+ 						host_dev->request_mempool);
+@@ -1274,7 +1269,6 @@ retry_request:
+ 
+ 		mempool_free(cmd_request, host_dev->request_mempool);
+ 
+-		scmnd->scsi_done = NULL;
+ 		scmnd->host_scribble = NULL;
+ 
+ 		ret = SCSI_MLQUEUE_DEVICE_BUSY;
+@@ -1283,9 +1277,6 @@ retry_request:
+ 	return ret;
+ }
+ 
+-static DEF_SCSI_QCMD(storvsc_queuecommand)
+-
+-
+ /* Scsi driver */
+ static struct scsi_host_template scsi_driver = {
+ 	.module	=		THIS_MODULE,
 -- 
 1.7.4.1
 
