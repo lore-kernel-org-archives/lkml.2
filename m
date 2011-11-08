@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab1KHClj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 21:41:39 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54796 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab1KHCjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 21:39:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,473,1315206000"; 
-   d="scan'208";a="34288590"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 2/9] ACPI, APEI, Remove table not found message
-Date: Tue,  8 Nov 2011 10:39:27 +0800
-Message-Id: <1320719974-3598-3-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1320719974-3598-1-git-send-email-ying.huang@intel.com>
-References: <1320719974-3598-1-git-send-email-ying.huang@intel.com>
+	id S1754609Ab1KHC4e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:56:34 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42986 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752544Ab1KHC4b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 21:56:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=o9eef+9SxzwUMosmr58
+	PxvLEiGYtmqU9BIEMdqVOut0gBpWV5t3jJe3XrpueZrPZEXTUTxBWrTlTGGoqE2q
+	Xj0lSxxeRJSD224fxHR0v9xEZWEDgqbuLUxuFC61tRj17yyVyoj1qhziAI50cK4m
+	hNJ6j2pt/Lo5UuM1E3FcftKc=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.8.rc1
+Date: Mon, 07 Nov 2011 18:56:28 -0800
+Message-ID: <7vwrbbz5ib.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 41EFB69E-09B5-11E1-B48B-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because APEI tables are optional, these message may confuse users, for
-example,
+A release candidate Git 1.7.8.rc1 is available for testing. Since rc0, we
+killed all known regressions. Because there won't be any more new feature
+merged until the 1.7.8 final, it is a good time for the coolest kids on
+the block to start using the upcoming release before others do.
 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/599715
+The release tarballs are found at:
 
-Reported-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/einj.c |    5 ++---
- drivers/acpi/apei/erst.c |    5 ++---
- drivers/acpi/apei/hest.c |    5 ++---
- 3 files changed, 6 insertions(+), 9 deletions(-)
+    http://code.google.com/p/git-core/downloads/list
 
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -466,10 +466,9 @@ static int __init einj_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_EINJ, 0,
- 				(struct acpi_table_header **)&einj_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(EINJ_PFX "Table is not found!\n");
-+	if (status == AE_NOT_FOUND)
- 		return -ENODEV;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
- 		return -EINVAL;
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -1112,10 +1112,9 @@ static int __init erst_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_ERST, 0,
- 				(struct acpi_table_header **)&erst_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(ERST_PFX "Table is not found!\n");
-+	if (status == AE_NOT_FOUND)
- 		goto err;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -221,10 +221,9 @@ void __init acpi_hest_init(void)
- 
- 	status = acpi_get_table(ACPI_SIG_HEST, 0,
- 				(struct acpi_table_header **)&hest_tab);
--	if (status == AE_NOT_FOUND) {
--		pr_info(HEST_PFX "Table not found.\n");
-+	if (status == AE_NOT_FOUND)
- 		goto err;
--	} else if (ACPI_FAILURE(status)) {
-+	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
- 		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
+and their SHA-1 checksums are:
+
+f35e5c4410b21710434cb591f4c89843e75bb793  git-1.7.8.rc1.tar.gz
+72e27cd397f5ae7b3c9d8bb030a76d7c99cdbb50  git-htmldocs-1.7.8.rc1.tar.gz
+95429858e879df3f9425cf1279e03cdec7832379  git-manpages-1.7.8.rc1.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.8.rc1
+tag and the master branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+----------------------------------------------------------------
+
+Changes since v1.7.8-rc0 are as follows:
+
+Dan McGee (4):
+      pack-objects: mark add_to_write_order() as inline
+      pack-objects: use unsigned int for counter and offset values
+      pack-objects: rewrite add_descendants_to_write_order() iteratively
+      pack-objects: don't traverse objects unnecessarily
+
+Erik Faye-Lund (4):
+      mingw: move poll out of sys-folder
+      compat/win32/poll.c: upgrade from upstream
+      upload-archive: use start_command instead of fork
+      mingw: poll.h is no longer in sys/
+
+Johannes Sixt (1):
+      name-hash.c: always initialize dir_next pointer
+
+Junio C Hamano (5):
+      (squash) test for previous
+      Git 1.7.7.2
+      Update draft release notes to 1.7.8
+      receive-pack: do not expect object 0{40} to exist
+      Git 1.7.8-rc1
+
+Nguyễn Thái Ngọc Duy (2):
+      pretty.c: free get_header() return value
+      pretty.c: use original commit message if reencoding fails
+
+Pat Thoyts (1):
+      t7511: avoid use of reserved filename on Windows.
+
+Pete Wyckoff (1):
+      git-p4: ignore apple filetype
+
+Sebastian Schuberth (2):
+      blame.c: Properly initialize strbuf after calling, textconv_object()
+      blame.c: Properly initialize strbuf after calling textconv_object(), again
+
+Stefan Naewe (2):
+      t3200: add test case for 'branch -m'
+      http: don't always prompt for password
+
+Tay Ray Chuan (1):
+      branch -m: handle no arg properly
+
+Ted Percival (1):
+      svn: Quote repository root in regex match
+
+Ævar Arnfjörð Bjarmason (2):
+      t/t6030-bisect-porcelain.sh: use test_i18ngrep
+      t/t7508-status.sh: use test_i18ncmp
+
