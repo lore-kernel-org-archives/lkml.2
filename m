@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab1KHORo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:17:44 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41010 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932415Ab1KHORm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:17:42 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] eg20t: Fix fallback handling
-To: linux-kernel@vger.kernel.org, karl@iwl.com,
-        tomoya-linux@dsn.lapis-semi.com
-Date: Tue, 08 Nov 2011 14:28:36 +0000
-Message-ID: <20111108142725.1801.83996.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932641Ab1KHOSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:18:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754913Ab1KHOSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 09:18:52 -0500
+Date: Tue, 8 Nov 2011 16:18:25 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
+Subject: Re: [PATCHv2 6/9] perf: expose perf capability to other modules.
+Message-ID: <20111108141825.GQ3225@redhat.com>
+References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
+ <1320323618-10375-7-git-send-email-gleb@redhat.com>
+ <1320674870.18053.37.camel@twins>
+ <20111108124906.GO3225@redhat.com>
+ <1320758811.11519.1.camel@twins>
+ <20111108135432.GP3225@redhat.com>
+ <1320761547.11519.3.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320761547.11519.3.camel@twins>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, Nov 08, 2011 at 03:12:27PM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-08 at 15:54 +0200, Gleb Natapov wrote:
+> > Isn't it better to introduce mapping between ebx bits and architectural
+> > events and do for_each_set_bit loop?
+> 
+> Probably, but I only thought of that halfway through ;-)
+> 
+> >  But I wouldn't want to introduce
+> > patch as below as part of this series. 
+> 
+> Well, since you're actually going to frob cpuid10.ebx bits we had better
+> deal with it properly.
+OK. We need to figure what is the proper way though. How about me
+introducing cpuid10_ebx with event_mask bitmask, mapping array, but
+not disabling events for now.
 
-The 8250 PCI driver was updated to be smart about the EG20T devices. If the
-right driver is included the kernel 8250 driver skips these ports and they
-are driven in native mode. If they are not then it should drive them as
-8250 ports.
+> 
+> > I do not want to introduce
+> > incidental regressions. For instance the patch below will introduce
+> > regression on my Nehalem cpu. It reports value 0x44 in cpuid10.ebx which
+> > means that unhalted_reference_cycles is not available (bit set means
+> > event is not available), but event still works! Actually it is listed as
+> > supported by the cpu in Table A-4 SDM 3B. Go figure. 
+> 
+> We'd better figure out why your machine says that. It could be we need
+> another quirk for the nehalem machines, it could be your BIOS is smoking
+> crack and there's nothing we can do about it.
+> 
+I asked Intel a week (or so) ago. Waiting for an answer. Will try to
+find other machines with similar cpu to do more checks meanwhile.
 
-Unfortunately the patch to do this forgot to set the setup method so
-instead in this specific instance the kernel instead jumps to fishkill.
-
-Add the setup pointers.
-
-Reported-by: Karl Auerbach <karl@iwl.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/tty/serial/8250_pci.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-
-diff --git a/drivers/tty/serial/8250_pci.c b/drivers/tty/serial/8250_pci.c
-index 3abeca2..55677b9 100644
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -1558,46 +1558,55 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8811,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8812,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8813,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = PCI_VENDOR_ID_INTEL,
- 		.device         = 0x8814,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8027,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8028,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x8029,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x800C,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	{
- 		.vendor         = 0x10DB,
- 		.device         = 0x800D,
- 		.init		= pci_eg20t_init,
-+		.setup		= pci_default_setup,
- 	},
- 	/*
- 	 * Cronyx Omega PCI (PLX-chip based)
-
+--
+			Gleb.
