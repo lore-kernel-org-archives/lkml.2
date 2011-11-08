@@ -1,31 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974Ab1KHQXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:23:54 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34179 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932228Ab1KHQXv (ORCPT
+	id S933048Ab1KHQYV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:24:21 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:39169
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932162Ab1KHQYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:23:51 -0500
+	Tue, 8 Nov 2011 11:24:17 -0500
+X-SpamScore: -18
+X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4R8275bhz32i668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LUCO87-01-9E0-02
+X-M-MSG: 
+Date: Tue, 8 Nov 2011 17:24:05 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: <tom.leiming@gmail.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iommu: omap: fix compile failure
+Message-ID: <20111108162405.GC5182@amd.com>
+References: <1320748155-18818-1-git-send-email-tom.leiming@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [213.189.36.98]
-Date: Tue, 8 Nov 2011 17:23:49 +0100
-Message-ID: <CAMZR1YCRwR39xkHQ61BfhSa3UV_MCMH4R1o+dk58xiSERjv_Ug@mail.gmail.com>
-Subject: question about versions
-From: Maciej Soltysiak <maciej@soltysiak.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1320748155-18818-1-git-send-email-tom.leiming@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, quick one, please,
+On Tue, Nov 08, 2011 at 06:29:15PM +0800, tom.leiming@gmail.com wrote:
+> From: Ming Lei <tom.leiming@gmail.com>
+> 
+> Fix the failure below:
 
-Am I correct to think that latest stable kernel is 3.0.8 ?
-And that 3.1 and 3.2-rc10 are next development versions ?
-What's next-20111108 then?
+Applied with a shorter commit-msg. Thanks.
 
-Long time no read kernel.org and got confused :)
+-- 
+AMD Operating System Research Center
 
-Thanks in advance,
-Maciej
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
