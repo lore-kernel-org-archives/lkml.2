@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab1KHRcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 12:32:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18025 "EHLO mx1.redhat.com"
+	id S1756200Ab1KHRcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 12:32:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab1KHRcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 12:32:03 -0500
-Message-ID: <1320773518.19116.30.camel@bling.home>
-Subject: Re: [PATCH] pci: More PRI/PASID cleanup
-From: Alex Williamson <alex.williamson@redhat.com>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>
-Date: Tue, 08 Nov 2011 10:31:58 -0700
-In-Reply-To: <20111108171725.GE5182@amd.com>
-References: <20111103034359.10286.19062.stgit@bling.home>
-	 <20111108162826.GD5182@amd.com> <1320770670.19116.23.camel@bling.home>
-	 <20111108171725.GE5182@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751247Ab1KHRcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 12:32:11 -0500
+Date: Tue, 8 Nov 2011 12:31:53 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@fedoraproject.org
+Subject: DMA-API check_sync errors with 3.2
+Message-ID: <20111108173153.GE14216@zod.bos.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 18:17 +0100, Roedel, Joerg wrote:
-> On Tue, Nov 08, 2011 at 09:44:30AM -0700, Alex Williamson wrote:
-> 
-> > bit 0 (PCI_PASID_ENABLE) is reserved in the CAP register...
-> 
-> Is it? Which spec are you using? In my version it is not reserved but
-> states if it is supported to set the enable-bit.
+Hi All,
 
-Latest I can find is the March 31, 2011 PASID ECN, which just lists that
-bit as reserved.
+We have a few reports coming in on 3.2 git snapshots and 3.2-rc1
+where the DMA-API reports an error about a driver trying to sync
+memory it has not allocated.  I've seen a couple reports of this for
+sky2 and one for tg3, but I'm not sure if it's a driver problem or
+something a bit more generic.  An example trace is below:
 
-> > Which means we need to check CTRL, not CAP to see if it was previously
-> > enabled... or maybe this check is entirely wrong and we're was trying to
-> > see if enable is supported.
-> 
-> I will check how this looks in my test environment.
-> 
-> > And nobody exposes PCI_PASID_ENABLE because it doesn't exist as a
-> > capability.
-> > 
-> > It's easy to see this if the bit definitions are named appropriately and
-> > specified per register instead of being lumped together as "close
-> > enough".  Thanks,
-> 
-> I don't object against your renames as long as it doesn't cause
-> merge-conflicts with what I plan to send upstream.
+backtrace:
+:WARNING: at lib/dma-debug.c:965 check_sync+0x2a8/0x530()
+:Hardware name: P5K-E
+:sky2 0000:02:00.0: DMA-API: device driver tries to sync DMA memory it has not
+allocated [device address=0x0000000105258040] [size=60 bytes]
+:Modules linked in: fuse lp parport ebtable_nat ebtables ipt_MASQUERADE
+iptable_nat nf_nat xt_CHECKSUM iptable_mangle tun bridge lockd stp llc
+ip6t_REJECT nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_ipv6
+nf_defrag_ipv6 nf_conntrack_ipv4 nf_defrag_ipv4 ip6table_filter xt_state
+nf_conntrack ip6_tables raid1 uvcvideo videodev snd_usb_audio
+snd_hda_codec_hdmi media v4l2_compat_ioctl32 snd_usbmidi_lib joydev snd_rawmidi
+snd_seq_device snd_hda_codec_analog snd_hda_intel snd_hda_codec snd_hwdep
+snd_pcm snd_timer snd microcode i2c_i801 iTCO_wdt iTCO_vendor_support serio_raw
+sky2 asus_atk0110 soundcore snd_page_alloc configfs virtio_net kvm_intel kvm
+uinput sunrpc raid10 btrfs zlib_deflate libcrc32c ata_generic pata_acpi
+firewire_ohci firewire_core crc_itu_t pata_jmicron radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: scsi_wait_scan]
+:Pid: 2520, comm: boinc Not tainted 3.2.0-0.rc0.git6.0.fc17.x86_64 #1
+:Call Trace:
+: <IRQ>  [<ffffffff8107ce9f>] warn_slowpath_common+0x7f/0xc0
+: [<ffffffff8107cf96>] warn_slowpath_fmt+0x46/0x50
+: [<ffffffff81325658>] check_sync+0x2a8/0x530
+: [<ffffffff81311c8e>] ? random32+0x2e/0x40
+: [<ffffffff81325b62>] debug_dma_sync_single_for_cpu+0x42/0x50
+: [<ffffffff81192cac>] ? ksize+0x1c/0xc0
+: [<ffffffff813217cc>] ? is_swiotlb_buffer+0x3c/0x50
+: [<ffffffff81321fe8>] ? swiotlb_sync_single+0x38/0x80
+: [<ffffffff8132212c>] ? swiotlb_sync_single_for_cpu+0xc/0x10
+: [<ffffffffa0331873>] sky2_poll+0x573/0xd90 [sky2]
+: [<ffffffff815454e1>] ? net_rx_action+0xa1/0x460
+: [<ffffffff815455a9>] net_rx_action+0x169/0x460
+: [<ffffffff81020c89>] ? sched_clock+0x9/0x10
+: [<ffffffff810ab9b5>] ? sched_clock_local+0x25/0x90
+: [<ffffffff810858f8>] __do_softirq+0xc8/0x3a0
+: [<ffffffff810ab9b5>] ? sched_clock_local+0x25/0x90
+: [<ffffffff81685efc>] call_softirq+0x1c/0x30
+: [<ffffffff8101b385>] do_softirq+0xa5/0xe0
+: [<ffffffff81085f2e>] irq_exit+0xbe/0xf0
+: [<ffffffff816867d3>] do_IRQ+0x63/0xe0
+: [<ffffffff8167b673>] common_interrupt+0x73/0x73
+: <EOI>  [<ffffffff8167b719>] ? retint_swapgs+0x13/0x1b
 
-I can drop it if need be, was just trying to do some cleanup on the
-consistency of pci_reg.h before adding a bunch more defines to help
-bounds checking and parsing for vfio-pci.  Unless my spec is outdated,
-it seems like there's more than an aesthetic change here though, so
-resolving the conflicts with your latest work might be warranted.
-Thanks,
+>From what I can tell, net_rx_action is calling dma_issue_pending_all at
+the end of the function and this is forcing the flush and check (though
+I really haven't figured out why), and it's being attributed to the driver.
 
-Alex
+Originally there was a suggestion that c6a21d0b8d (dma-debug:
+hash_bucket_find needs to allow for offsets within an entry) would solve
+the issue, but that seems to have not proven true.  We still see this on
+kernels that have that commit included.  I've linked the bug reports below.
+
+Any ideas?
+
+josh
+
+https://bugzilla.redhat.com/show_bug.cgi?id=751005
+https://bugzilla.redhat.com/show_bug.cgi?id=751797
+https://bugzilla.redhat.com/show_bug.cgi?id=752113
 
