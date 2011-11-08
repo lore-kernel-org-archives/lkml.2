@@ -1,121 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab1KHJGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:06:30 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:58423 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1KHJG0 (ORCPT
+	id S1752675Ab1KHJHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:07:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48524 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab1KHJHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:06:26 -0500
-Date: Tue, 8 Nov 2011 10:05:34 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: lm63: Add support for the NatSemi LM96163.
-Message-ID: <20111108090534.GE27841@avionic-0098.mockup.avionic-design.de>
-References: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
- <1320684566.2309.115.camel@groeck-laptop>
- <20111108073052.GC27841@avionic-0098.mockup.avionic-design.de>
- <20111108095925.0d99aea5@endymion.delvare>
+	Tue, 8 Nov 2011 04:07:43 -0500
+Date: Tue, 8 Nov 2011 17:07:35 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+Message-ID: <20111108090735.GA4038@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+ <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+ <1320669279.18053.29.camel@twins>
+ <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+ <1320682230.17809.11.camel@twins>
+ <20111108025847.GB11439@zhy>
+ <1320739015.2244.0.camel@twins>
+ <20111108081433.GA3746@zhy>
+ <1320741980.2244.4.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="11Y7aswkeuHtSBEs"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111108095925.0d99aea5@endymion.delvare>
+In-Reply-To: <1320741980.2244.4.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:VJO23iL8ZUIz24e8/Dt9z72v9QFhGAuclRjlkd5Deo1
- x8w41GLWScCa8S38+J1nAhWREPWtQOuinkTnjbobImD8MRrnZR
- fw+Knx6+2Budao4wVh4QJ4TTFlX6nlAYHViQFZb7Gs7FjhdWdl
- e6zlMcvenv1V/kUO/aEu/hQsCRr3dW7bmEm7U2is19uO15B6DM
- F1FcgWbiBfkpRA9KqytAJz/NsGx56TdT46mPabPdQDOckfY0dY
- 7ToZKm2s8t8s1+cb3XrOp3qaXJp1AHFDTEmtNmafhYBNcUVMKk
- 4S0oxjNbVoUBV6/up8GCdpB6KsLif4AN9zHCNtRjesbtmKEeyD
- v9hyOhUmNwAwa8lYNOZYEC2FeQE1rwuLe/fk75U5xDr3pVbf5M
- wOiuKj7Dtb2tD4laq+7Kf5Eo9C2SEythiY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 08, 2011 at 09:46:20AM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-08 at 16:14 +0800, Yong Zhang wrote:
+> > 
+> > But how do we deal with ->class_cache? Always set it in
+> > loop_up_lock_class()? 
+> 
+> Hrm.. good point, aside from that there's another problem as well, I
+> think we can deal with the cache being NULL, but is memset() an atomic
+> write? If not a read could observe an intermediate state and go funny.
 
---11Y7aswkeuHtSBEs
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yup.
 
-* Jean Delvare wrote:
-> Hi Thierry,
->=20
-> On Tue, 8 Nov 2011 08:30:52 +0100, Thierry Reding wrote:
-> > * Guenter Roeck wrote:
-> > > Hi,
-> > >=20
-> > > On Mon, 2011-11-07 at 05:20 -0500, Thierry Reding wrote:
-> > > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > > ---
-> > > >  drivers/hwmon/lm63.c |    2 +-
-> > > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > >=20
-> > > > diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-> > > > index 508cb29..94e373c 100644
-> > > > --- a/drivers/hwmon/lm63.c
-> > > > +++ b/drivers/hwmon/lm63.c
-> > > > @@ -483,7 +483,7 @@ static int lm63_detect(struct i2c_client *new_c=
-lient,
-> > > >  		return -ENODEV;
-> > > >  	}
-> > > > =20
-> > > > -	if (chip_id =3D=3D 0x41 && address =3D=3D 0x4c)
-> > > > +	if ((chip_id =3D=3D 0x41 || chip_id =3D=3D 0x49) && address =3D=
-=3D 0x4c)
-> > > >  		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
-> > > >  	else if (chip_id =3D=3D 0x51 && (address =3D=3D 0x18 || address =
-=3D=3D 0x4e))
-> > > >  		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
-> > >=20
-> > > Minor - the new chip should be mentioned in drivers/hwmon/Kconfig and=
- in
-> > > Documentation/hwmon/lm63.
-> >=20
-> > I don't see how to list this variant meaningfully in the documentation.
-> > Since, as you mention, no functionality specific to the LM96163 is adde=
-d,
-> > this patch really only adds support for one more lm63 chip.
->=20
-> The new chip name should at least be listed in
-> Documentation/hwmon/lm63, drivers/hwmon/Kconfig.
+> 
+> I'm tempted to go with the pure kmemcheck_mark_initialized() thing for
+> now.
 
-Okay.
+me too :)
 
-> > > My main concern is that LM96163 supports a high resolution PWM mode.
-> > > Since that mode is much more convenient than the LM63-compatible mode=
-, I
-> > > think it is likely to be enabled in designs using LM96163, and it sho=
-uld
-> > > be supported by the driver if we add support for LM96163.
-> >=20
-> > Unfortunately our design doesn't use the PWM at all. It is only used for
-> > temperature measurements, so I'm not able to test any of the PWM code.
->=20
-> You still need to ensure that nothing bad will happen if users load the
-> lm63 driver with a LM96163 chip (if nothing else, by disabling the
-> unimplemented/untested feature.)
-
-Okay. I'll make sure to mention that in the documentation as well.
+So something like below?
 
 Thanks,
-Thierry
+Yong
+---
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH] lockdep: kmemcheck: annotate ->lock in lockdep_init_map()
 
---11Y7aswkeuHtSBEs
-Content-Type: application/pgp-signature
+Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
+lockdep_init_map() will clear all the struct. But it will break
+lock_set_class()/lock_set_subclass(). A typical race condition
+is like below:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+     CPU A                                   CPU B
+lock_set_subclass(lockA);
+ lock_set_class(lockA);
+   lockdep_init_map(lockA);
+     /* lockA->name is cleared */
+     memset(lockA);
+                                     __lock_acquire(lockA);
+                                       /* lockA->class_cache[] is cleared */
+                                       register_lock_class(lockA);
+                                         look_up_lock_class(lockA);
+                                           WARN_ON_ONCE(class->name !=
+                                                     lock->name);
 
-iEYEARECAAYFAk648N4ACgkQZ+BJyKLjJp9hMQCfSJ7hQxRyKcb1yMCICizRtE54
-ULsAn31NEvWDdUU8DjLotxsr36Q0MtCp
-=C8OX
------END PGP SIGNATURE-----
+     lock->name = name;
 
---11Y7aswkeuHtSBEs--
+So annotate ->lock with kmemcheck_mark_initialized() to cure this problem
+and the one reported in commit f59de89.
+
+Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Reported-by: Borislav Petkov <bp@alien8.de>
+Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+---
+ kernel/lockdep.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index e69434b..08a2b1b 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -2948,7 +2948,7 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+ void lockdep_init_map(struct lockdep_map *lock, const char *name,
+ 		      struct lock_class_key *key, int subclass)
+ {
+-	memset(lock, 0, sizeof(*lock));
++	kmemcheck_mark_initialized(lock, sizeof(*lock));
+ 
+ #ifdef CONFIG_LOCK_STAT
+ 	lock->cpu = raw_smp_processor_id();
+-- 
+1.7.5.4
+
