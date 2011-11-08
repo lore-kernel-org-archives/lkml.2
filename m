@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967Ab1KHOz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:55:58 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:41136 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755138Ab1KHOz5 (ORCPT
+	id S1756027Ab1KHO4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:56:22 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60831 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab1KHO4T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:55:57 -0500
+	Tue, 8 Nov 2011 09:56:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <1320763712-764-1-git-send-email-marc.zyngier@arm.com>
-References: <1320763712-764-1-git-send-email-marc.zyngier@arm.com>
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 8 Nov 2011 20:25:35 +0530
-Message-ID: <CAMQu2gwL+enHoyiAB7LWix3WqW76HMbmSs_DmPX0h8uX=OBmdw@mail.gmail.com>
-Subject: Re: [PATCH] genirq: don't allow per cpu interrupts to be suspended
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20111108145257.GA10846@infradead.org>
+References: <1320543320-32728-1-git-send-email-agraf@suse.de>
+ <4EB93FA4.8020800@redhat.com> <20111108145257.GA10846@infradead.org>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Tue, 8 Nov 2011 16:55:57 +0200
+Message-ID: <CA+1xoqe-T-GYHq8nm1vVTs5Tb3mcmxThywbLmTT+1TTXtZbVzw@mail.gmail.com>
+Subject: Re: [PATCH] KVM: Add wrapper script around QEMU to test kernels
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        "Am?rico Wang" <xiyou.wangcong@gmail.com>,
+        Blue Swirl <blauwirbel@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 8:18 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> The power management functions related to interrupts do not know
-> (yet) about per-cpu interrupts and end up calling the wrong
-> low-level methods to enable/disable interrupts.
+On Tue, Nov 8, 2011 at 4:52 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Tue, Nov 08, 2011 at 04:41:40PM +0200, Avi Kivity wrote:
+>> On 11/06/2011 03:35 AM, Alexander Graf wrote:
+>> > To quickly get going, just execute the following as user:
+>> >
+>> >     $ ./Documentation/run-qemu.sh -r / -a init=/bin/bash
+>> >
+>> > This will drop you into a shell on your rootfs.
+>> >
+>>
+>> Doesn't work on Fedora 15.  F15's qemu-kvm doesn't have -machine or
+>> -virtfs.  Even qemu.git on F15 won't build virtfs since xattr.h
+>> detection is broken (patch posted).
 >
-> This leads to all kind of interesting issues (action taken on one
-> CPU only, updating a refcount which is not used otherwise...).
+> Nevermind that running virtfs as a rootfs is a really dumb idea.  You
+> do now want to run a VM that has a rootfs that gets changed all the
+> time behind your back.
 >
-> The workaround for the time being is simply to flag these interrupts
-> with IRQF_NO_SUSPEND. At least on ARM, these interrupts are actually
-> dealt with at the architecture level.
->
-> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> ---
-Just to add, the suspend is broken on mainline
-for ARM machines which are using IRQCHIP_MASK_ON_SUSPEND.
-The $subject patch fixes that issue.
+> Running qemu -snapshot on the actual root block device is the only
+> safe way to reuse the host installation, although it gets a bit
+> complicated if people have multiple devices mounted into the namespace.
 
-Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-
-Regards,
-Santosh
+Using block devices also requires root.
