@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab1KHOJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:09:23 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37228 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751255Ab1KHOJW (ORCPT
+	id S1755833Ab1KHOMi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:12:38 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:38982 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913Ab1KHOMg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:09:22 -0500
-Date: Tue, 8 Nov 2011 14:10:14 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: karl@iwl.com
-Cc: linux-kernel@vger.kernel.org,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Subject: Re: Kernel (3.0 and later) panic
-Message-ID: <20111108141014.2dfd614f@lxorguk.ukuu.org.uk>
-In-Reply-To: <4EB83D4A.4010408@iwl.com>
-References: <4EB83D4A.4010408@iwl.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Tue, 8 Nov 2011 09:12:36 -0500
+Subject: Re: [PATCHv2 6/9] perf: expose perf capability to other modules.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: kvm@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, acme@ghostprotocols.net
+Date: Tue, 08 Nov 2011 15:12:27 +0100
+In-Reply-To: <20111108135432.GP3225@redhat.com>
+References: <1320323618-10375-1-git-send-email-gleb@redhat.com>
+	 <1320323618-10375-7-git-send-email-gleb@redhat.com>
+	 <1320674870.18053.37.camel@twins> <20111108124906.GO3225@redhat.com>
+	 <1320758811.11519.1.camel@twins> <20111108135432.GP3225@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320761547.11519.3.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Nov 2011 12:19:22 -0800
-Karl Auerbach <karl@iwl.com> wrote:
+On Tue, 2011-11-08 at 15:54 +0200, Gleb Natapov wrote:
+> Isn't it better to introduce mapping between ebx bits and architectural
+> events and do for_each_set_bit loop?
 
-> Versions 3.0 and later of the Linux kernel get a null pointer panic when
-> booting on a Soekris Net6501 board.
-> 
-> The documentation for that board is at:
-> 
->   http://soekris.com/media/manuals/net6501_manual.pdf
-> 
-> (It's an Intel Atom based board.)
+Probably, but I only thought of that halfway through ;-)
 
-And with an EG20T. Yes I see whats going on.
+>  But I wouldn't want to introduce
+> patch as below as part of this series. 
 
-I think its being caused by Tomoya Morinaga's patch to handle EG20T
-nicely. If you don't have the EG20T driver in then it tries to fall back
-to 8250 but the entries are missing
+Well, since you're actually going to frob cpuid10.ebx bits we had better
+deal with it properly.
 
-	.setup = pci_default_setup.
+> I do not want to introduce
+> incidental regressions. For instance the patch below will introduce
+> regression on my Nehalem cpu. It reports value 0x44 in cpuid10.ebx which
+> means that unhalted_reference_cycles is not available (bit set means
+> event is not available), but event still works! Actually it is listed as
+> supported by the cpu in Table A-4 SDM 3B. Go figure. 
+
+We'd better figure out why your machine says that. It could be we need
+another quirk for the nehalem machines, it could be your BIOS is smoking
+crack and there's nothing we can do about it.
 
 
-Patch to test will follow in about 2 minutes. Please test and report back.
-
-Alan
