@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932322Ab1KHLNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 06:13:45 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:34395 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932274Ab1KHLNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 06:13:41 -0500
-Subject: [PATCH v2 5/7] SUNRPC: put pipefs superblock link on network namespace
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Tue, 08 Nov 2011 15:12:53 +0300
-Message-ID: <20111108111253.6206.52611.stgit@localhost6.localdomain6>
-In-Reply-To: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
-References: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932426Ab1KHLPs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 06:15:48 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:42845 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752428Ab1KHLPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 06:15:46 -0500
+From: Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar karkala Mallikarjunayya 
+	<ravishankar.km@greenturtles.in>
+Subject: [PATCH 01/20] Staging: comedi: fix printk issue in das6402.c
+Date: Tue,  8 Nov 2011 16:45:11 +0530
+Message-Id: <1320750930-9764-1-git-send-email-ravishankar.km@greenturtles.in>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have modules (like, pNFS blocklayout module) which creates pipes on
-rpc_pipefs. Thus we need per-net operations for them. To make it possible we
-require appropriate super block. So we have to put sb link on network namespace
-context. Note, that it's not strongly required to create pipes in per-net
-operations. IOW, if pipefs wasn't mounted yet, that no sb link reference will
-present on network namespace and in this case we need just need to pass through
-pipe creation. Pipe dentry will be created during pipefs mount notification.
+This is a patch to the das6402.c file that fixes up a printk
+warning found by the checkpatch.pl tool.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Converted printks to dev_version.
+Removed unnecessary printk statements.
 
+Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- net/sunrpc/netns.h    |    2 ++
- net/sunrpc/rpc_pipe.c |    4 ++++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/staging/comedi/drivers/das6402.c |   23 +++++++----------------
+ 1 files changed, 7 insertions(+), 16 deletions(-)
 
-diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
-index d013bf2..b384252 100644
---- a/net/sunrpc/netns.h
-+++ b/net/sunrpc/netns.h
-@@ -9,6 +9,8 @@ struct cache_detail;
- struct sunrpc_net {
- 	struct proc_dir_entry *proc_net_rpc;
- 	struct cache_detail *ip_map_cache;
-+
-+	struct super_block *pipefs_sb;
- };
+diff --git a/drivers/staging/comedi/drivers/das6402.c b/drivers/staging/comedi/drivers/das6402.c
+index 6328f52..f256841 100644
+--- a/drivers/staging/comedi/drivers/das6402.c
++++ b/drivers/staging/comedi/drivers/das6402.c
+@@ -171,7 +171,7 @@ static irqreturn_t intr_handler(int irq, void *d)
+ 	struct comedi_subdevice *s = dev->subdevices;
  
- extern int sunrpc_net_id;
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 1de840d..831e81d 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -1030,6 +1030,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	struct inode *inode;
- 	struct dentry *root;
- 	struct net *net = data;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
- 	int err;
+ 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+-		printk("das6402: BUG: spurious interrupt\n");
++		dev_warn(dev->hw_dev, "BUG: spurious interrupt\n");
+ 		return IRQ_HANDLED;
+ 	}
+ #ifdef DEBUG
+@@ -228,9 +228,7 @@ static int das6402_ai_cancel(struct comedi_device *dev,
+ 	 */
  
- 	sb->s_blocksize = PAGE_CACHE_SIZE;
-@@ -1054,6 +1055,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	if (err)
- 		goto err_depopulate;
- 	sb->s_fs_info = get_net(net);
-+	sn->pipefs_sb = sb;
- 	return 0;
- 
- err_depopulate:
-@@ -1074,7 +1076,9 @@ rpc_mount(struct file_system_type *fs_type,
- void rpc_kill_sb(struct super_block *sb)
+ 	devpriv->das6402_ignoreirq = 1;
+-#ifdef DEBUG
+-	printk("das6402: Stopping acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Stopping acquisition\n");
+ 	devpriv->das6402_ignoreirq = 1;
+ 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+@@ -246,10 +244,7 @@ static int das6402_ai_mode2(struct comedi_device *dev,
+ 			    struct comedi_subdevice *s, comedi_trig * it)
  {
- 	struct net *net = sb->s_fs_info;
-+	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	devpriv->das6402_ignoreirq = 1;
+-
+-#ifdef DEBUG
+-	printk("das6402: Starting acquisition\n");
+-#endif
++	dev_dbg(dev->hw_dev, "Starting acquisition\n");
+ 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
+ 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
+ 	outb_p(IRQ | CONVSRC | BURSTEN | INTE, dev->iobase + 9);
+@@ -329,10 +324,8 @@ static int das6402_attach(struct comedi_device *dev,
+ 	if (iobase == 0)
+ 		iobase = 0x300;
  
-+	sn->pipefs_sb = NULL;
- 	put_net(net);
- 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
- 					   RPC_PIPEFS_UMOUNT,
+-	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+-
+ 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+-		printk(" I/O port conflict\n");
++		dev_err(dev->hw_dev, "I/O port conflict\n");
+ 		return -EIO;
+ 	}
+ 	dev->iobase = iobase;
+@@ -340,14 +333,12 @@ static int das6402_attach(struct comedi_device *dev,
+ 	/* should do a probe here */
+ 
+ 	irq = it->options[0];
+-	printk(" ( irq = %u )", irq);
++	dev_dbg(dev->hw_dev, "( irq = %u )\n", irq);
+ 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
+-	if (ret < 0) {
+-		printk("irq conflict\n");
++	if (ret < 0)
+ 		return ret;
+-	}
+-	dev->irq = irq;
+ 
++	dev->irq = irq;
+ 	ret = alloc_private(dev, sizeof(struct das6402_private));
+ 	if (ret < 0)
+ 		return ret;
+-- 
+1.7.0.4
 
