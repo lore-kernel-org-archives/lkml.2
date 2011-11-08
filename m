@@ -1,140 +1,1187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab1KHJxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:53:31 -0500
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:56667 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750816Ab1KHJx3 convert rfc822-to-8bit (ORCPT
+	id S1754808Ab1KHJz0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:55:26 -0500
+Received: from exprod5og115.obsmtp.com ([64.18.0.246]:33741 "EHLO
+	exprod5og115.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab1KHJzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:53:29 -0500
-Date: Tue, 8 Nov 2011 09:53:13 +0000
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Arnaud Lacombe <lacombar@gmail.com>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        David Daney <ddaney@caviumnetworks.com>
-Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target
- list
-Message-ID: <20111108095313.GB26705@linux-mips.org>
-References: <1314234210-11090-1-git-send-email-lacombar@gmail.com>
- <4E69FEC9.2080204@suse.cz>
- <CACqU3MUFyn_jh2pN4GLENqcGVUzAwcMJUR_WLY2EtqOhMheceQ@mail.gmail.com>
- <20111101232233.GA32441@sepie.suse.cz>
- <20111107204448.GA9949@linux-mips.org>
- <20111107211900.GB6264@sepie.suse.cz>
- <20111107233330.GA26705@linux-mips.org>
- <4EB8E75D.1010706@suse.cz>
+	Tue, 8 Nov 2011 04:55:24 -0500
+Subject: [PATCH v3] Driver for GE PIO2 VME Card
+To: gregkh@suse.de
+From: Martyn Welch <martyn.welch@ge.com>
+Cc: devel@driverdev.osuosl.org, pebolle@tiscali.nl,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        cota@braap.org, manohar.vanga@cern.ch
+Date: Tue, 08 Nov 2011 09:54:25 +0000
+Message-ID: <20111108094911.11927.97619.stgit@ES-BJ21R4J>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <4EB8E75D.1010706@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 09:25:01AM +0100, Michal Marek wrote:
+This patch implements a driver for the GE PIO2 VME Parallel I/O Card.  This
+card is a 6U VME Card, implementing 32 solid-state relay switched IO lines,
+in 4 groups of 8. Each bank of IO lines is built to function as input,
+output or both depending on the variant of the card.
 
-> Thanks, can you also post a log without the revert?
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+---
 
-$ git checkout 31555213f03bca37d2c02e10946296052f4ecfcd
-$ make ARCH=mips ip27_defconfig
-$ make ARCH=mips V=1 2>&1 | tee log
-make -f /home/ralf/src/linux/linux-mips/Makefile silentoldconfig
-make -f scripts/Makefile.build obj=scripts/basic
-rm -f .tmp_quiet_recordmcount
-mkdir -p include/linux include/config
-make -f scripts/Makefile.build obj=scripts/kconfig silentoldconfig
-mkdir -p include/generated
-scripts/kconfig/conf --silentoldconfig Kconfig
-warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
-warning: (AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
-rm -f include/config/kernel.release
-echo "3.1.0$(/bin/sh /home/ralf/src/linux/linux-mips/scripts/setlocalversion /home/ralf/src/linux/linux-mips)" > include/config/kernel.release
-make -f /home/ralf/src/linux/linux-mips/scripts/Makefile.asm-generic \
-            obj=arch/mips/include/generated/asm
-set -e; : '  CHK     include/linux/version.h'; mkdir -p include/linux/; 	(echo \#define LINUX_VERSION_CODE 196864; echo '#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))';) < /home/ralf/src/linux/linux-mips/Makefile > include/linux/version.h.tmp; if [ -r include/linux/version.h ] && cmp -s include/linux/version.h include/linux/version.h.tmp; then rm -f include/linux/version.h.tmp; else : '  UPD     include/linux/version.h'; mv -f include/linux/version.h.tmp include/linux/version.h; fi
-set -e; : '  CHK     include/generated/utsrelease.h'; mkdir -p include/generated/; 	if [ `echo -n "3.1.0-10325-g3155521" | wc -c ` -gt 64 ]; then echo '"3.1.0-10325-g3155521" exceeds 64 characters' >&2; exit 1; fi; (echo \#define UTS_RELEASE \"3.1.0-10325-g3155521\";) < include/config/kernel.release > include/generated/utsrelease.h.tmp; if [ -r include/generated/utsrelease.h ] && cmp -s include/generated/utsrelease.h include/generated/utsrelease.h.tmp; then rm -f include/generated/utsrelease.h.tmp; else : '  UPD     include/generated/utsrelease.h'; mv -f include/generated/utsrelease.h.tmp include/generated/utsrelease.h; fi
-mkdir -p .tmp_versions ; rm -f .tmp_versions/*
-make -f scripts/Makefile.build obj=scripts/basic
-(cat /dev/null; ) > scripts/basic/modules.order
-rm -f .tmp_quiet_recordmcount
-  Checking missing-syscalls for N32
-make -f scripts/Makefile.build obj=. missing-syscalls ccflags-y="-mabi=n32"
-mkdir -p kernel/
-  mips64-linux-gcc -Wp,-MD,kernel/.bounds.s.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO -mabi=n32    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(bounds)"  -D"KBUILD_MODNAME=KBUILD_STR(bounds)" -fverbose-asm -S -o kernel/bounds.s kernel/bounds.c
-mkdir -p include/generated/
-  	(set -e; echo "#ifndef __LINUX_BOUNDS_H__"; echo "#define __LINUX_BOUNDS_H__"; echo "/*"; echo " * DO NOT MODIFY."; echo " *"; echo " * This file was generated by Kbuild"; echo " *"; echo " */"; echo ""; sed -ne 	"/^->/{s:->#\(.*\):/* \1 */:; s:^->\([^ ]*\) [\$#]*\([-0-9]*\) \(.*\):#define \1 \2 /* \3 */:; s:^->\([^ ]*\) [\$#]*\([^ ]*\) \(.*\):#define \1 \2 /* \3 */:; s:->::; p;}" kernel/bounds.s; echo ""; echo "#endif" ) > include/generated/bounds.h
-mkdir -p arch/mips/kernel/
-  mips64-linux-gcc -Wp,-MD,arch/mips/kernel/.asm-offsets.s.d  -nostdinc -isystem /usr/lib64/gcc/mips64-linux/4.6.0/include -I/home/ralf/src/linux/linux-mips/arch/mips/include -Iarch/mips/include/generated -Iinclude  -include /home/ralf/src/linux/linux-mips/include/linux/kconfig.h -D__KERNEL__ -D"VMLINUX_LOAD_ADDRESS=0xa80000000001c000" -D"DATAOFFSET=0" -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -mno-check-zero-division -mabi=64 -G 0 -mno-abicalls -fno-pic -pipe -msoft-float -ffreestanding -march=r10000 -Wa,--trap -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-ip27 -I/home/ralf/src/linux/linux-mips/arch/mips/include/asm/mach-generic -Wframe-larger-than=2048 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO -mabi=n32    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(asm_offsets)"  -D"KBUILD_MODNAME=KBUILD_STR(asm_offsets)" -fverbose-asm -S -o arch/mips/kernel/asm-offsets.s arch/mips/kernel/asm-offsets.c
-In file included from include/linux/bitops.h:22:0,
-                 from include/linux/kernel.h:17,
-                 from include/linux/cache.h:4,
-                 from include/linux/time.h:7,
-                 from include/linux/stat.h:60,
-                 from include/linux/compat.h:10,
-                 from arch/mips/kernel/asm-offsets.c:11:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h: In function ‘__fls’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:570:2: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:572:3: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:575:2: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:579:2: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:583:2: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:587:2: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/bitops.h:591:2: warning: left shift count >= width of type [enabled by default]
-In file included from /home/ralf/src/linux/linux-mips/arch/mips/include/asm/page.h:46:0,
-                 from /home/ralf/src/linux/linux-mips/arch/mips/include/asm/compat.h:8,
-                 from include/linux/compat.h:18,
-                 from arch/mips/kernel/asm-offsets.c:11:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘phys_to_virt’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:136:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘isa_bus_to_virt’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:149:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘outq’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘inq’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘outq_p’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘inq_p’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘__mem_outq’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘__mem_inq’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘__mem_outq_p’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h: In function ‘__mem_inq_p’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/io.h:436:1: error: size of unnamed array is negative
-In file included from /home/ralf/src/linux/linux-mips/arch/mips/include/asm/pgtable.h:15:0,
-                 from include/linux/mm.h:42,
-                 from arch/mips/kernel/asm-offsets.c:14:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/pgtable-64.h: In function ‘mk_swap_pte’:
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/pgtable-64.h:273:1: warning: left shift count >= width of type [enabled by default]
-/home/ralf/src/linux/linux-mips/arch/mips/include/asm/pgtable-64.h:273:1: warning: left shift count >= width of type [enabled by default]
-In file included from arch/mips/kernel/asm-offsets.c:14:0:
-include/linux/mm.h: In function ‘virt_to_head_page’:
-include/linux/mm.h:407:9: warning: right shift count >= width of type [enabled by default]
-In file included from arch/mips/kernel/asm-offsets.c:14:0:
-include/linux/mm.h: In function ‘lowmem_page_address’:
-include/linux/mm.h:737:9: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-make[1]: *** [arch/mips/kernel/asm-offsets.s] Error 1
-make: *** [archprepare] Error 2
+This patch provides basic support for the GPIO on the PIO-2 at this point it
+does not provide support for IRQs generated by GPIO or the 6 counters also
+provided by the board. However, it does provide a good example of how to write
+a VME driver for real hardware.
 
-The issue is related to
+[v2] : Corrections as suggested by Paul Bolle.
+[v3] : Fixed missed correction in Kconfig entry.
 
-archprepare:
-ifdef CONFIG_MIPS32_N32
-        @echo '  Checking missing-syscalls for N32'
-        $(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=n32"
-endif
-ifdef CONFIG_MIPS32_O32
-        @echo '  Checking missing-syscalls for O32'
-        $(Q)$(MAKE) $(build)=. missing-syscalls ccflags-y="-mabi=32"
-endif
+ drivers/staging/vme/devices/Kconfig         |   12 +
+ drivers/staging/vme/devices/Makefile        |    3 
+ drivers/staging/vme/devices/vme_pio2.h      |  249 +++++++++++++
+ drivers/staging/vme/devices/vme_pio2_cntr.c |   71 ++++
+ drivers/staging/vme/devices/vme_pio2_core.c |  524 +++++++++++++++++++++++++++
+ drivers/staging/vme/devices/vme_pio2_gpio.c |  227 ++++++++++++
+ 6 files changed, 1086 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/vme/devices/vme_pio2.h
+ create mode 100644 drivers/staging/vme/devices/vme_pio2_cntr.c
+ create mode 100644 drivers/staging/vme/devices/vme_pio2_core.c
+ create mode 100644 drivers/staging/vme/devices/vme_pio2_gpio.c
 
-that if the ifdef'ed code is removed or both if conditions are false
-compilation will succeed.
 
-  Ralf
+diff --git a/drivers/staging/vme/devices/Kconfig b/drivers/staging/vme/devices/Kconfig
+index ca5ba89..8f5d286 100644
+--- a/drivers/staging/vme/devices/Kconfig
++++ b/drivers/staging/vme/devices/Kconfig
+@@ -6,3 +6,15 @@ config VME_USER
+ 	  If you say Y here you want to be able to access a limited number of
+ 	  VME windows in a manner at least semi-compatible with the interface
+ 	  provided with the original driver at http://vmelinux.org/.
++
++config VME_PIO2
++	tristate "GE PIO2 VME"
++	help
++	  Say Y here to include support for the GE PIO2. The PIO2 is a 6U VME
++	  slave card, implementing 32 solid-state relay switched IO lines, in
++	  4 groups of 8. Each bank of IO lines is built to function as input,
++	  output or both depending on the variant of the card.
++
++	  To compile this driver as a module, choose M here. The module will
++	  be called vme_pio2. If unsure, say N.
++
+diff --git a/drivers/staging/vme/devices/Makefile b/drivers/staging/vme/devices/Makefile
+index 459742a..172512c 100644
+--- a/drivers/staging/vme/devices/Makefile
++++ b/drivers/staging/vme/devices/Makefile
+@@ -3,3 +3,6 @@
+ #
+ 
+ obj-$(CONFIG_VME_USER)		+= vme_user.o
++
++vme_pio2-objs	:= vme_pio2_cntr.o vme_pio2_gpio.o vme_pio2_core.o
++obj-$(CONFIG_VME_PIO2)         += vme_pio2.o
+diff --git a/drivers/staging/vme/devices/vme_pio2.h b/drivers/staging/vme/devices/vme_pio2.h
+new file mode 100644
+index 0000000..3c59313
+--- /dev/null
++++ b/drivers/staging/vme/devices/vme_pio2.h
+@@ -0,0 +1,249 @@
++#ifndef _VME_PIO2_H_
++#define _VME_PIO2_H_
++
++#define PIO2_CARDS_MAX			32
++
++#define PIO2_VARIANT_LENGTH		5
++
++#define PIO2_NUM_CHANNELS		32
++#define PIO2_NUM_IRQS			11
++#define PIO2_NUM_CNTRS			6
++
++#define PIO2_REGS_SIZE			0x40
++
++#define PIO2_REGS_DATA0			0x0
++#define PIO2_REGS_DATA1			0x1
++#define PIO2_REGS_DATA2			0x2
++#define PIO2_REGS_DATA3			0x3
++
++static const int PIO2_REGS_DATA[4] = { PIO2_REGS_DATA0, PIO2_REGS_DATA1,
++					PIO2_REGS_DATA2, PIO2_REGS_DATA3 };
++
++#define PIO2_REGS_INT_STAT0		0x8
++#define PIO2_REGS_INT_STAT1		0x9
++#define PIO2_REGS_INT_STAT2		0xa
++#define PIO2_REGS_INT_STAT3		0xb
++
++static const int PIO2_REGS_INT_STAT[4] = { PIO2_REGS_INT_STAT0,
++					PIO2_REGS_INT_STAT1,
++					PIO2_REGS_INT_STAT2,
++					PIO2_REGS_INT_STAT3 };
++
++#define PIO2_REGS_INT_STAT_CNTR		0xc
++#define PIO2_REGS_INT_MASK0		0x10
++#define PIO2_REGS_INT_MASK1		0x11
++#define PIO2_REGS_INT_MASK2		0x12
++#define PIO2_REGS_INT_MASK3		0x13
++#define PIO2_REGS_INT_MASK4		0x14
++#define PIO2_REGS_INT_MASK5		0x15
++#define PIO2_REGS_INT_MASK6		0x16
++#define PIO2_REGS_INT_MASK7		0x17
++
++static const int PIO2_REGS_INT_MASK[8] = { PIO2_REGS_INT_MASK0,
++					PIO2_REGS_INT_MASK1,
++					PIO2_REGS_INT_MASK2,
++					PIO2_REGS_INT_MASK3,
++					PIO2_REGS_INT_MASK4,
++					PIO2_REGS_INT_MASK5,
++					PIO2_REGS_INT_MASK6,
++					PIO2_REGS_INT_MASK7 };
++
++
++
++#define PIO2_REGS_CTRL			0x18
++#define PIO2_REGS_VME_VECTOR		0x19
++#define PIO2_REGS_CNTR0			0x20
++#define PIO2_REGS_CNTR1			0x22
++#define PIO2_REGS_CNTR2			0x24
++#define PIO2_REGS_CTRL_WRD0		0x26
++#define PIO2_REGS_CNTR3			0x28
++#define PIO2_REGS_CNTR4			0x2a
++#define PIO2_REGS_CNTR5			0x2c
++#define PIO2_REGS_CTRL_WRD1		0x2e
++
++#define PIO2_REGS_ID			0x30
++
++
++/* PIO2_REGS_DATAx (0x0 - 0x3) */
++
++static const int PIO2_CHANNEL_BANK[32] = { 0, 0, 0, 0, 0, 0, 0, 0,
++					1, 1, 1, 1, 1, 1, 1, 1,
++					2, 2, 2, 2, 2, 2, 2, 2,
++					3, 3, 3, 3, 3, 3, 3, 3 };
++
++#define PIO2_CHANNEL0_BIT		(1 << 0)
++#define PIO2_CHANNEL1_BIT		(1 << 1)
++#define PIO2_CHANNEL2_BIT		(1 << 2)
++#define PIO2_CHANNEL3_BIT		(1 << 3)
++#define PIO2_CHANNEL4_BIT		(1 << 4)
++#define PIO2_CHANNEL5_BIT		(1 << 5)
++#define PIO2_CHANNEL6_BIT		(1 << 6)
++#define PIO2_CHANNEL7_BIT		(1 << 7)
++#define PIO2_CHANNEL8_BIT		(1 << 0)
++#define PIO2_CHANNEL9_BIT		(1 << 1)
++#define PIO2_CHANNEL10_BIT		(1 << 2)
++#define PIO2_CHANNEL11_BIT		(1 << 3)
++#define PIO2_CHANNEL12_BIT		(1 << 4)
++#define PIO2_CHANNEL13_BIT		(1 << 5)
++#define PIO2_CHANNEL14_BIT		(1 << 6)
++#define PIO2_CHANNEL15_BIT		(1 << 7)
++#define PIO2_CHANNEL16_BIT		(1 << 0)
++#define PIO2_CHANNEL17_BIT		(1 << 1)
++#define PIO2_CHANNEL18_BIT		(1 << 2)
++#define PIO2_CHANNEL19_BIT		(1 << 3)
++#define PIO2_CHANNEL20_BIT		(1 << 4)
++#define PIO2_CHANNEL21_BIT		(1 << 5)
++#define PIO2_CHANNEL22_BIT		(1 << 6)
++#define PIO2_CHANNEL23_BIT		(1 << 7)
++#define PIO2_CHANNEL24_BIT		(1 << 0)
++#define PIO2_CHANNEL25_BIT		(1 << 1)
++#define PIO2_CHANNEL26_BIT		(1 << 2)
++#define PIO2_CHANNEL27_BIT		(1 << 3)
++#define PIO2_CHANNEL28_BIT		(1 << 4)
++#define PIO2_CHANNEL29_BIT		(1 << 5)
++#define PIO2_CHANNEL30_BIT		(1 << 6)
++#define PIO2_CHANNEL31_BIT		(1 << 7)
++
++static const int PIO2_CHANNEL_BIT[32] = { PIO2_CHANNEL0_BIT, PIO2_CHANNEL1_BIT,
++					PIO2_CHANNEL2_BIT, PIO2_CHANNEL3_BIT,
++					PIO2_CHANNEL4_BIT, PIO2_CHANNEL5_BIT,
++					PIO2_CHANNEL6_BIT, PIO2_CHANNEL7_BIT,
++					PIO2_CHANNEL8_BIT, PIO2_CHANNEL9_BIT,
++					PIO2_CHANNEL10_BIT, PIO2_CHANNEL11_BIT,
++					PIO2_CHANNEL12_BIT, PIO2_CHANNEL13_BIT,
++					PIO2_CHANNEL14_BIT, PIO2_CHANNEL15_BIT,
++					PIO2_CHANNEL16_BIT, PIO2_CHANNEL17_BIT,
++					PIO2_CHANNEL18_BIT, PIO2_CHANNEL19_BIT,
++					PIO2_CHANNEL20_BIT, PIO2_CHANNEL21_BIT,
++					PIO2_CHANNEL22_BIT, PIO2_CHANNEL23_BIT,
++					PIO2_CHANNEL24_BIT, PIO2_CHANNEL25_BIT,
++					PIO2_CHANNEL26_BIT, PIO2_CHANNEL27_BIT,
++					PIO2_CHANNEL28_BIT, PIO2_CHANNEL29_BIT,
++					PIO2_CHANNEL30_BIT, PIO2_CHANNEL31_BIT
++					};
++
++/* PIO2_REGS_INT_STAT_CNTR (0xc) */
++#define PIO2_COUNTER0			(1 << 0)
++#define PIO2_COUNTER1			(1 << 1)
++#define PIO2_COUNTER2			(1 << 2)
++#define PIO2_COUNTER3			(1 << 3)
++#define PIO2_COUNTER4			(1 << 4)
++#define PIO2_COUNTER5			(1 << 5)
++
++static const int PIO2_COUNTER[6] = { PIO2_COUNTER0, PIO2_COUNTER1,
++					PIO2_COUNTER2, PIO2_COUNTER3,
++					PIO2_COUNTER4, PIO2_COUNTER5 };
++
++/* PIO2_REGS_CTRL (0x18) */
++#define PIO2_VME_INT_MASK		0x7
++#define PIO2_LED			(1 << 6)
++#define PIO2_LOOP			(1 << 7)
++
++/* PIO2_REGS_VME_VECTOR (0x19) */
++#define PIO2_VME_VECTOR_SPUR		0x0
++#define PIO2_VME_VECTOR_BANK0		0x1
++#define PIO2_VME_VECTOR_BANK1		0x2
++#define PIO2_VME_VECTOR_BANK2		0x3
++#define PIO2_VME_VECTOR_BANK3		0x4
++#define PIO2_VME_VECTOR_CNTR0		0x5
++#define PIO2_VME_VECTOR_CNTR1		0x6
++#define PIO2_VME_VECTOR_CNTR2		0x7
++#define PIO2_VME_VECTOR_CNTR3		0x8
++#define PIO2_VME_VECTOR_CNTR4		0x9
++#define PIO2_VME_VECTOR_CNTR5		0xa
++
++#define PIO2_VME_VECTOR_MASK		0xf0
++
++static const int PIO2_VECTOR_BANK[4] = { PIO2_VME_VECTOR_BANK0,
++					PIO2_VME_VECTOR_BANK1,
++					PIO2_VME_VECTOR_BANK2,
++					PIO2_VME_VECTOR_BANK3 };
++
++static const int PIO2_VECTOR_CNTR[6] = { PIO2_VME_VECTOR_CNTR0,
++					PIO2_VME_VECTOR_CNTR1,
++					PIO2_VME_VECTOR_CNTR2,
++					PIO2_VME_VECTOR_CNTR3,
++					PIO2_VME_VECTOR_CNTR4,
++					PIO2_VME_VECTOR_CNTR5 };
++
++/* PIO2_REGS_CNTRx (0x20 - 0x24 & 0x28 - 0x2c) */
++
++static const int PIO2_CNTR_DATA[6] = { PIO2_REGS_CNTR0, PIO2_REGS_CNTR1,
++					PIO2_REGS_CNTR2, PIO2_REGS_CNTR3,
++					PIO2_REGS_CNTR4, PIO2_REGS_CNTR5 };
++
++/* PIO2_REGS_CTRL_WRDx (0x26 & 0x2e) */
++
++static const int PIO2_CNTR_CTRL[6] = { PIO2_REGS_CTRL_WRD0,
++					PIO2_REGS_CTRL_WRD0,
++					PIO2_REGS_CTRL_WRD0,
++					PIO2_REGS_CTRL_WRD1,
++					PIO2_REGS_CTRL_WRD1,
++					PIO2_REGS_CTRL_WRD1 };
++
++#define PIO2_CNTR_SC_DEV0		0
++#define PIO2_CNTR_SC_DEV1		(1 << 6)
++#define PIO2_CNTR_SC_DEV2		(2 << 6)
++#define PIO2_CNTR_SC_RDBACK		(3 << 6)
++
++static const int PIO2_CNTR_SC_DEV[6] = { PIO2_CNTR_SC_DEV0, PIO2_CNTR_SC_DEV1,
++					PIO2_CNTR_SC_DEV2, PIO2_CNTR_SC_DEV0,
++					PIO2_CNTR_SC_DEV1, PIO2_CNTR_SC_DEV2 };
++
++#define PIO2_CNTR_RW_LATCH		0
++#define PIO2_CNTR_RW_LSB		(1 << 4)
++#define PIO2_CNTR_RW_MSB		(2 << 4)
++#define PIO2_CNTR_RW_BOTH		(3 << 4)
++
++#define PIO2_CNTR_MODE0			0
++#define PIO2_CNTR_MODE1			(1 << 1)
++#define PIO2_CNTR_MODE2			(2 << 1)
++#define PIO2_CNTR_MODE3			(3 << 1)
++#define PIO2_CNTR_MODE4			(4 << 1)
++#define PIO2_CNTR_MODE5			(5 << 1)
++
++#define PIO2_CNTR_BCD			1
++
++
++
++enum pio2_bank_config { NOFIT, INPUT, OUTPUT, BOTH };
++enum pio2_int_config { NONE = 0, LOW2HIGH = 1, HIGH2LOW = 2, EITHER = 4 };
++
++/* Bank configuration structure */
++struct pio2_io_bank {
++	enum pio2_bank_config config;
++	u8 value;
++	enum pio2_int_config irq[8];
++};
++
++/* Counter configuration structure */
++struct pio2_cntr {
++	int mode;
++	int count;
++};
++
++struct pio2_card {
++	int id;
++	int bus;
++	long base;
++	int irq_vector;
++	int irq_level;
++	char variant[6];
++	int led;
++
++	struct vme_dev *vdev;
++	struct vme_resource *window;
++
++	struct gpio_chip gc;
++	struct pio2_io_bank bank[4];
++
++	struct pio2_cntr cntr[6];
++};
++
++int pio2_cntr_reset(struct pio2_card *);
++
++int pio2_gpio_reset(struct pio2_card *);
++int __init pio2_gpio_init(struct pio2_card *);
++void __exit pio2_gpio_exit(struct pio2_card *);
++
++#endif /* _VME_PIO2_H_ */
+diff --git a/drivers/staging/vme/devices/vme_pio2_cntr.c b/drivers/staging/vme/devices/vme_pio2_cntr.c
+new file mode 100644
+index 0000000..08e0d59
+--- /dev/null
++++ b/drivers/staging/vme/devices/vme_pio2_cntr.c
+@@ -0,0 +1,71 @@
++/*
++ * GE PIO2 Counter Driver
++ *
++ * Author: Martyn Welch <martyn.welch@ge.com>
++ * Copyright 2009 GE Intelligent Platforms Embedded Systems, Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ * The PIO-2 has 6 counters, currently this code just disables the interrupts
++ * and leaves them alone.
++ *
++ */
++
++#include <linux/device.h>
++#include <linux/types.h>
++#include <linux/gpio.h>
++
++#include "../vme.h"
++#include "vme_pio2.h"
++
++static int pio2_cntr_irq_set(struct pio2_card *card, int id)
++{
++	int retval;
++	u8 data;
++
++	data = PIO2_CNTR_SC_DEV[id] | PIO2_CNTR_RW_BOTH | card->cntr[id].mode;
++	retval = vme_master_write(card->window, &data, 1, PIO2_CNTR_CTRL[id]);
++	if (retval < 0)
++		return retval;
++
++	data = card->cntr[id].count & 0xFF;
++	retval = vme_master_write(card->window, &data, 1, PIO2_CNTR_DATA[id]);
++	if (retval < 0)
++		return retval;
++
++	data = (card->cntr[id].count >> 8) & 0xFF;
++	retval = vme_master_write(card->window, &data, 1, PIO2_CNTR_DATA[id]);
++	if (retval < 0)
++		return retval;
++
++	return 0;
++}
++
++int pio2_cntr_reset(struct pio2_card *card)
++{
++	int i, retval = 0;
++	u8 reg;
++
++	/* Clear down all timers */
++	for (i = 0; i < 6; i++) {
++		card->cntr[i].mode = PIO2_CNTR_MODE5;
++		card->cntr[i].count = 0;
++		retval = pio2_cntr_irq_set(card, i);
++		if (retval < 0)
++			return retval;
++	}
++
++	/* Ensure all counter interrupts are cleared */
++	do {
++		retval = vme_master_read(card->window, &reg, 1,
++			PIO2_REGS_INT_STAT_CNTR);
++		if (retval < 0)
++			return retval;
++	} while (reg != 0);
++
++	return retval;
++}
++
+diff --git a/drivers/staging/vme/devices/vme_pio2_core.c b/drivers/staging/vme/devices/vme_pio2_core.c
+new file mode 100644
+index 0000000..9fedc44
+--- /dev/null
++++ b/drivers/staging/vme/devices/vme_pio2_core.c
+@@ -0,0 +1,524 @@
++/*
++ * GE PIO2 6U VME I/O Driver
++ *
++ * Author: Martyn Welch <martyn.welch@ge.com>
++ * Copyright 2009 GE Intelligent Platforms Embedded Systems, Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/version.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/device.h>
++#include <linux/ctype.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++
++#include "../vme.h"
++#include "vme_pio2.h"
++
++
++static const char driver_name[] = "pio2";
++
++static int bus[PIO2_CARDS_MAX];
++static int bus_num;
++static long base[PIO2_CARDS_MAX];
++static int base_num;
++static int vector[PIO2_CARDS_MAX];
++static int vector_num;
++static int level[PIO2_CARDS_MAX];
++static int level_num;
++static const char *variant[PIO2_CARDS_MAX];
++static int variant_num;
++
++static int loopback;
++
++static int pio2_match(struct vme_dev *);
++static int __devinit pio2_probe(struct vme_dev *);
++static int __devexit pio2_remove(struct vme_dev *);
++
++static int pio2_get_led(struct pio2_card *card)
++{
++	/* Can't read hardware, state saved in structure */
++	return card->led;
++}
++
++static int pio2_set_led(struct pio2_card *card, int state)
++{
++	u8 reg;
++	int retval;
++
++	reg = card->irq_level;
++
++	/* Register state inverse of led state */
++	if (!state)
++		reg |= PIO2_LED;
++
++	if (loopback)
++		reg |= PIO2_LOOP;
++
++	retval = vme_master_write(card->window, &reg, 1, PIO2_REGS_CTRL);
++	if (retval < 0)
++		return retval;
++
++	card->led = state ? 1 : 0;
++
++	return 0;
++}
++
++static void pio2_int(int level, int vector, void *ptr)
++{
++	int vec, i, channel, retval;
++	u8 reg;
++	struct pio2_card *card  = ptr;
++
++	vec = vector & ~PIO2_VME_VECTOR_MASK;
++
++	switch (vec) {
++	case 0:
++		dev_warn(&card->vdev->dev, "Spurious Interrupt\n");
++		break;
++	case 1:
++	case 2:
++	case 3:
++	case 4:
++		/* Channels 0 to 7 */
++		retval = vme_master_read(card->window, &reg, 1,
++			PIO2_REGS_INT_STAT[vec - 1]);
++		if (retval < 0) {
++			dev_err(&card->vdev->dev,
++				"Unable to read IRQ status register\n");
++			return;
++		}
++		for (i = 0; i < 8; i++) {
++			channel = ((vec - 1) * 8) + i;
++			if (reg & PIO2_CHANNEL_BIT[channel])
++				dev_info(&card->vdev->dev,
++					"Interrupt on I/O channel %d\n",
++					channel);
++		}
++		break;
++	case 5:
++	case 6:
++	case 7:
++	case 8:
++	case 9:
++	case 10:
++		/* Counters are dealt with by their own handler */
++		dev_err(&card->vdev->dev,
++			"Counter interrupt\n");
++		break;
++	}
++}
++
++
++/*
++ * We return whether this has been successful - this is used in the probe to
++ * ensure we have a valid card.
++ */
++static int pio2_reset_card(struct pio2_card *card)
++{
++	int retval = 0;
++	u8 data = 0;
++
++	/* Clear main register*/
++	retval = vme_master_write(card->window, &data, 1, PIO2_REGS_CTRL);
++	if (retval < 0)
++		return retval;
++
++	/* Clear VME vector */
++	retval = vme_master_write(card->window, &data, 1, PIO2_REGS_VME_VECTOR);
++	if (retval < 0)
++		return retval;
++
++	/* Reset GPIO */
++	retval = pio2_gpio_reset(card);
++	if (retval < 0)
++		return retval;
++
++	/* Reset counters */
++	retval = pio2_cntr_reset(card);
++	if (retval < 0)
++		return retval;
++
++	return 0;
++}
++
++static struct vme_driver pio2_driver = {
++	.name = driver_name,
++	.match = pio2_match,
++	.probe = pio2_probe,
++	.remove = __devexit_p(pio2_remove),
++};
++
++
++static int __init pio2_init(void)
++{
++	int retval = 0;
++
++	if (bus_num == 0) {
++		printk(KERN_ERR "%s: No cards, skipping registration\n",
++			driver_name);
++		goto err_nocard;
++	}
++
++	if (bus_num > PIO2_CARDS_MAX) {
++		printk(KERN_ERR
++			"%s: Driver only able to handle %d PIO2 Cards\n",
++			driver_name, PIO2_CARDS_MAX);
++		bus_num = PIO2_CARDS_MAX;
++	}
++
++	/* Register the PIO2 driver */
++	retval = vme_register_driver(&pio2_driver, bus_num);
++	if (retval != 0)
++		goto err_reg;
++
++	return retval;
++
++err_reg:
++err_nocard:
++	return retval;
++}
++
++static int pio2_match(struct vme_dev *vdev)
++{
++
++	if (vdev->num >= bus_num) {
++		dev_err(&vdev->dev,
++			"The enumeration of the VMEbus to which the board is connected must be specified");
++		return 0;
++	}
++
++	if (vdev->num >= base_num) {
++		dev_err(&vdev->dev,
++			"The VME address for the cards registers must be specified");
++		return 0;
++	}
++
++	if (vdev->num >= vector_num) {
++		dev_err(&vdev->dev,
++			"The IRQ vector used by the card must be specified");
++		return 0;
++	}
++
++	if (vdev->num >= level_num) {
++		dev_err(&vdev->dev,
++			"The IRQ level used by the card must be specified");
++		return 0;
++	}
++
++	if (vdev->num >= variant_num) {
++		dev_err(&vdev->dev, "The variant of the card must be specified");
++		return 0;
++	}
++
++	return 1;
++}
++
++static int __devinit pio2_probe(struct vme_dev *vdev)
++{
++	struct pio2_card *card;
++	int retval;
++	int i;
++	u8 reg;
++	int vec;
++
++	card = kzalloc(sizeof(struct pio2_card), GFP_KERNEL);
++	if (card == NULL) {
++		dev_err(&vdev->dev, "Unable to allocate card structure\n");
++		retval = -ENOMEM;
++		goto err_struct;
++	}
++
++	card->id = vdev->num;
++	card->bus = bus[card->id];
++	card->base = base[card->id];
++	card->irq_vector = vector[card->id];
++	card->irq_level = level[card->id] & PIO2_VME_INT_MASK;
++	strncpy(card->variant, variant[card->id], PIO2_VARIANT_LENGTH);
++	card->vdev = vdev;
++
++	for (i = 0; i < PIO2_VARIANT_LENGTH; i++) {
++
++		if (isdigit(card->variant[i]) == 0) {
++			dev_err(&card->vdev->dev, "Variant invalid\n");
++			retval = -EINVAL;
++			goto err_variant;
++		}
++	}
++
++	/*
++	 * Bottom 4 bits of VME interrupt vector used to determine source,
++	 * provided vector should only use upper 4 bits.
++	 */
++	if (card->irq_vector & ~PIO2_VME_VECTOR_MASK) {
++		dev_err(&card->vdev->dev,
++			"Invalid VME IRQ Vector, vector must not use lower 4 bits\n");
++		retval = -EINVAL;
++		goto err_vector;
++	}
++
++	/*
++	 * There is no way to determine the build variant or whether each bank
++	 * is input, output or both at run time. The inputs are also inverted
++	 * if configured as both.
++	 *
++	 * We pass in the board variant and use that to determine the
++	 * configuration of the banks.
++	 */
++	for (i = 1; i < PIO2_VARIANT_LENGTH; i++) {
++		switch (card->variant[i]) {
++		case '0':
++			card->bank[i-1].config = NOFIT;
++			break;
++		case '1':
++		case '2':
++		case '3':
++		case '4':
++			card->bank[i-1].config = INPUT;
++			break;
++		case '5':
++			card->bank[i-1].config = OUTPUT;
++			break;
++		case '6':
++		case '7':
++		case '8':
++		case '9':
++			card->bank[i-1].config = BOTH;
++			break;
++		}
++	}
++
++	/* Get a master window and position over regs */
++	card->window = vme_master_request(vdev, VME_A24, VME_SCT, VME_D16);
++	if (card->window == NULL) {
++		dev_err(&card->vdev->dev,
++			"Unable to assign VME master resource\n");
++		retval = -EIO;
++		goto err_window;
++	}
++
++	retval = vme_master_set(card->window, 1, card->base, 0x10000, VME_A24,
++		(VME_SCT | VME_USER | VME_DATA), VME_D16);
++	if (retval) {
++		dev_err(&card->vdev->dev,
++			"Unable to configure VME master resource\n");
++		goto err_set;
++	}
++
++	/*
++	 * There is also no obvious register which we can probe to determine
++	 * whether the provided base is valid. If we can read the "ID Register"
++	 * offset and the reset function doesn't error, assume we have a valid
++	 * location.
++	 */
++	retval = vme_master_read(card->window, &reg, 1, PIO2_REGS_ID);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev, "Unable to read from device\n");
++		goto err_read;
++	}
++
++	dev_dbg(&card->vdev->dev, "ID Register:%x\n", reg);
++
++	/*
++	 * Ensure all the I/O is cleared. We can't read back the states, so
++	 * this is the only method we have to ensure that the I/O is in a known
++	 * state.
++	 */
++	retval = pio2_reset_card(card);
++	if (retval) {
++		dev_err(&card->vdev->dev,
++			"Failed to reset card, is location valid?");
++		retval = -ENODEV;
++		goto err_reset;
++	}
++
++	/* Configure VME Interrupts */
++	reg = card->irq_level;
++	if (pio2_get_led(card))
++		reg |= PIO2_LED;
++	if (loopback)
++		reg |= PIO2_LOOP;
++	retval = vme_master_write(card->window, &reg, 1, PIO2_REGS_CTRL);
++	if (retval < 0)
++		return retval;
++
++	/* Set VME vector */
++	retval = vme_master_write(card->window, &card->irq_vector, 1,
++		PIO2_REGS_VME_VECTOR);
++	if (retval < 0)
++		return retval;
++
++	/* Attach spurious interrupt handler. */
++	vec = card->irq_vector | PIO2_VME_VECTOR_SPUR;
++
++	retval = vme_irq_request(vdev, card->irq_level, vec,
++		&pio2_int, (void *)card);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev,
++			"Unable to attach VME interrupt vector0x%x, level 0x%x\n",
++			 vec, card->irq_level);
++		goto err_irq;
++	}
++
++	/* Attach GPIO interrupt handlers. */
++	for (i = 0; i < 4; i++) {
++		vec = card->irq_vector | PIO2_VECTOR_BANK[i];
++
++		retval = vme_irq_request(vdev, card->irq_level, vec,
++			&pio2_int, (void *)card);
++		if (retval < 0) {
++			dev_err(&card->vdev->dev,
++				"Unable to attach VME interrupt vector0x%x, level 0x%x\n",
++				 vec, card->irq_level);
++			goto err_gpio_irq;
++		}
++	}
++
++	/* Attach counter interrupt handlers. */
++	for (i = 0; i < 6; i++) {
++		vec = card->irq_vector | PIO2_VECTOR_CNTR[i];
++
++		retval = vme_irq_request(vdev, card->irq_level, vec,
++			&pio2_int, (void *)card);
++		if (retval < 0) {
++			dev_err(&card->vdev->dev,
++				"Unable to attach VME interrupt vector0x%x, level 0x%x\n",
++				vec, card->irq_level);
++			goto err_cntr_irq;
++		}
++	}
++
++	/* Register IO */
++	retval = pio2_gpio_init(card);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev,
++			"Unable to register with GPIO framework\n");
++		goto err_gpio;
++	}
++
++	/* Set LED - This also sets interrupt level */
++	retval = pio2_set_led(card, 0);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev, "Unable to set LED\n");
++		goto err_led;
++	}
++
++	dev_set_drvdata(&card->vdev->dev, card);
++
++	dev_info(&card->vdev->dev,
++		"PIO2 (variant %s) configured at 0x%lx\n", card->variant,
++		card->base);
++
++	return 0;
++
++err_led:
++	pio2_gpio_exit(card);
++err_gpio:
++	i = 6;
++err_cntr_irq:
++	while (i > 0) {
++		i--;
++		vec = card->irq_vector | PIO2_VECTOR_CNTR[i];
++		vme_irq_free(vdev, card->irq_level, vec);
++	}
++
++	i = 4;
++err_gpio_irq:
++	while (i > 0) {
++		i--;
++		vec = card->irq_vector | PIO2_VECTOR_BANK[i];
++		vme_irq_free(vdev, card->irq_level, vec);
++	}
++
++	vec = (card->irq_vector & PIO2_VME_VECTOR_MASK) | PIO2_VME_VECTOR_SPUR;
++	vme_irq_free(vdev, card->irq_level, vec);
++err_irq:
++	 pio2_reset_card(card);
++err_reset:
++err_read:
++	vme_master_set(card->window, 0, 0, 0, VME_A16, 0, VME_D16);
++err_set:
++	vme_master_free(card->window);
++err_window:
++err_vector:
++err_variant:
++	kfree(card);
++err_struct:
++	return retval;
++}
++
++static int __devexit pio2_remove(struct vme_dev *vdev)
++{
++	int vec;
++	int i;
++
++	struct pio2_card *card = dev_get_drvdata(&vdev->dev);
++
++	pio2_gpio_exit(card);
++
++	for (i = 0; i < 6; i++) {
++		vec = card->irq_vector | PIO2_VECTOR_CNTR[i];
++		vme_irq_free(vdev, card->irq_level, vec);
++	}
++
++	for (i = 0; i < 4; i++) {
++		vec = card->irq_vector | PIO2_VECTOR_BANK[i];
++		vme_irq_free(vdev, card->irq_level, vec);
++	}
++
++	vec = (card->irq_vector & PIO2_VME_VECTOR_MASK) | PIO2_VME_VECTOR_SPUR;
++	vme_irq_free(vdev, card->irq_level, vec);
++
++	pio2_reset_card(card);
++
++	vme_master_set(card->window, 0, 0, 0, VME_A16, 0, VME_D16);
++
++	vme_master_free(card->window);
++
++	kfree(card);
++
++	return 0;
++}
++
++static void __exit pio2_exit(void)
++{
++	vme_unregister_driver(&pio2_driver);
++}
++
++
++/* These are required for each board */
++MODULE_PARM_DESC(bus, "Enumeration of VMEbus to which the board is connected");
++module_param_array(bus, int, &bus_num, S_IRUGO);
++
++MODULE_PARM_DESC(base, "Base VME address for PIO2 Registers");
++module_param_array(base, long, &base_num, S_IRUGO);
++
++MODULE_PARM_DESC(vector, "VME IRQ Vector (Lower 4 bits masked)");
++module_param_array(vector, int, &vector_num, S_IRUGO);
++
++MODULE_PARM_DESC(level, "VME IRQ Level");
++module_param_array(level, int, &level_num, S_IRUGO);
++
++MODULE_PARM_DESC(variant, "Last 4 characters of PIO2 board variant");
++module_param_array(variant, charp, &variant_num, S_IRUGO);
++
++/* This is for debugging */
++MODULE_PARM_DESC(loopback, "Enable loopback mode on all cards");
++module_param(loopback, bool, S_IRUGO);
++
++MODULE_DESCRIPTION("GE PIO2 6U VME I/O Driver");
++MODULE_AUTHOR("Martyn Welch <martyn.welch@ge.com");
++MODULE_LICENSE("GPL");
++
++module_init(pio2_init);
++module_exit(pio2_exit);
++
+diff --git a/drivers/staging/vme/devices/vme_pio2_gpio.c b/drivers/staging/vme/devices/vme_pio2_gpio.c
+new file mode 100644
+index 0000000..2ac88ad
+--- /dev/null
++++ b/drivers/staging/vme/devices/vme_pio2_gpio.c
+@@ -0,0 +1,227 @@
++/*
++ * GE PIO2 GPIO Driver
++ *
++ * Author: Martyn Welch <martyn.welch@ge.com>
++ * Copyright 2009 GE Intelligent Platforms Embedded Systems, Inc.
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ */
++
++#include <linux/version.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/ctype.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++
++#include "../vme.h"
++#include "vme_pio2.h"
++
++static const char driver_name[] = "pio2_gpio";
++
++static struct pio2_card *gpio_to_pio2_card(struct gpio_chip *chip)
++{
++	return container_of(chip, struct pio2_card, gc);
++}
++
++static int pio2_gpio_get(struct gpio_chip *chip, unsigned int offset)
++{
++	u8 reg;
++	int retval;
++	struct pio2_card *card = gpio_to_pio2_card(chip);
++
++	if ((card->bank[PIO2_CHANNEL_BANK[offset]].config == OUTPUT) |
++		(card->bank[PIO2_CHANNEL_BANK[offset]].config == NOFIT)) {
++
++		dev_err(&card->vdev->dev, "Channel not available as input\n");
++		return 0;
++	}
++
++	retval = vme_master_read(card->window, &reg, 1,
++		PIO2_REGS_DATA[PIO2_CHANNEL_BANK[offset]]);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev, "Unable to read from GPIO\n");
++		return 0;
++	}
++
++	/*
++	 * Remember, input on channels configured as both input and output
++	 * are inverted!
++	 */
++	if (reg & PIO2_CHANNEL_BIT[offset]) {
++		if (card->bank[PIO2_CHANNEL_BANK[offset]].config != BOTH)
++			return 0;
++		else
++			return 1;
++	} else {
++		if (card->bank[PIO2_CHANNEL_BANK[offset]].config != BOTH)
++			return 1;
++		else
++			return 0;
++	}
++}
++
++static void pio2_gpio_set(struct gpio_chip *chip, unsigned int offset,
++	int value)
++{
++	u8 reg;
++	int retval;
++	struct pio2_card *card = gpio_to_pio2_card(chip);
++
++	if ((card->bank[PIO2_CHANNEL_BANK[offset]].config == INPUT) |
++		(card->bank[PIO2_CHANNEL_BANK[offset]].config == NOFIT)) {
++
++		dev_err(&card->vdev->dev, "Channel not availabe as output\n");
++		return;
++	}
++
++	if (value)
++		reg = card->bank[PIO2_CHANNEL_BANK[offset]].value |
++			PIO2_CHANNEL_BIT[offset];
++	else
++		reg = card->bank[PIO2_CHANNEL_BANK[offset]].value &
++			~PIO2_CHANNEL_BIT[offset];
++
++	retval = vme_master_write(card->window, &reg, 1,
++		PIO2_REGS_DATA[PIO2_CHANNEL_BANK[offset]]);
++	if (retval < 0) {
++		dev_err(&card->vdev->dev, "Unable to write to GPIO\n");
++		return;
++	}
++
++	card->bank[PIO2_CHANNEL_BANK[offset]].value = reg;
++}
++
++/* Directionality configured at board build - send appropriate response */
++static int pio2_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
++{
++	int data;
++	struct pio2_card *card = gpio_to_pio2_card(chip);
++
++	if ((card->bank[PIO2_CHANNEL_BANK[offset]].config == OUTPUT) |
++		(card->bank[PIO2_CHANNEL_BANK[offset]].config == NOFIT)) {
++		dev_err(&card->vdev->dev,
++			"Channel directionality not configurable at runtine\n");
++
++		data = -EINVAL;
++	} else {
++		data = 0;
++	}
++
++	return data;
++}
++
++/* Directionality configured at board build - send appropriate response */
++static int pio2_gpio_dir_out(struct gpio_chip *chip, unsigned offset, int value)
++{
++	int data;
++	struct pio2_card *card = gpio_to_pio2_card(chip);
++
++	if ((card->bank[PIO2_CHANNEL_BANK[offset]].config == INPUT) |
++		(card->bank[PIO2_CHANNEL_BANK[offset]].config == NOFIT)) {
++		dev_err(&card->vdev->dev,
++			"Channel directionality not configurable at runtine\n");
++
++		data = -EINVAL;
++	} else {
++		data = 0;
++	}
++
++	return data;
++}
++
++/*
++ * We return whether this has been successful - this is used in the probe to
++ * ensure we have a valid card.
++ */
++int pio2_gpio_reset(struct pio2_card *card)
++{
++	int retval = 0;
++	int i, j;
++
++	u8 data = 0;
++
++	/* Zero output registers */
++	for (i = 0; i < 4; i++) {
++		retval = vme_master_write(card->window, &data, 1,
++			PIO2_REGS_DATA[i]);
++		if (retval < 0)
++			return retval;
++		card->bank[i].value = 0;
++	}
++
++	/* Set input interrupt masks */
++	for (i = 0; i < 8; i++) {
++		retval = vme_master_write(card->window, &data, 1,
++			PIO2_REGS_INT_MASK[i]);
++		if (retval < 0)
++			return retval;
++
++		for (j = 0; j < 8; j++)
++			card->bank[i].irq[j] = NONE;
++	}
++
++	/* Ensure all I/O interrupts are cleared */
++	for (i = 0; i < 4; i++) {
++		do {
++			retval = vme_master_read(card->window, &data, 1,
++				PIO2_REGS_INT_STAT[i]);
++			if (retval < 0)
++				return retval;
++		} while (data != 0);
++	}
++
++	return 0;
++}
++
++int __init pio2_gpio_init(struct pio2_card *card)
++{
++	int retval = 0;
++	char *label;
++
++	label = kmalloc(PIO2_NUM_CHANNELS, GFP_KERNEL);
++	if (label == NULL) {
++		dev_err(&card->vdev->dev, "Unable to allocate GPIO label\n");
++		return -ENOMEM;
++	}
++
++	sprintf(label, "%s@%s", driver_name, dev_name(&card->vdev->dev));
++	card->gc.label = label;
++
++	card->gc.ngpio = PIO2_NUM_CHANNELS;
++	/* Dynamic allocation of base */
++	card->gc.base = -1;
++	/* Setup pointers to chip functions */
++	card->gc.direction_input = pio2_gpio_dir_in;
++	card->gc.direction_output = pio2_gpio_dir_out;
++	card->gc.get = pio2_gpio_get;
++	card->gc.set = pio2_gpio_set;
++
++	/* This function adds a memory mapped GPIO chip */
++	retval = gpiochip_add(&(card->gc));
++	if (retval) {
++		dev_err(&card->vdev->dev, "Unable to register GPIO\n");
++		kfree(card->gc.label);
++	}
++
++	return retval;
++};
++
++void __exit pio2_gpio_exit(struct pio2_card *card)
++{
++	const char *label = card->gc.label;
++
++	if (gpiochip_remove(&(card->gc)))
++		dev_err(&card->vdev->dev, "Failed to remove GPIO");
++
++	kfree(label);
++}
++
+
+
+--
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
