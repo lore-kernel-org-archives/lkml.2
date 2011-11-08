@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab1KHVak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:30:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab1KHVaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:30:39 -0500
-Date: Tue, 8 Nov 2011 23:31:50 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Subject: Re: virtio-pci new configuration proposal
-Message-ID: <20111108213148.GA4504@redhat.com>
-References: <20111104142338.GB24452@redhat.com>
- <1320418385.3334.25.camel@lappy>
- <20111106073007.GA7146@redhat.com>
- <1320611097.3299.10.camel@lappy>
- <20111106213849.GA14292@redhat.com>
- <871utktsuw.fsf@rustcorp.com.au>
- <20111107211413.GA11577@redhat.com>
- <87aa87sd4y.fsf@rustcorp.com.au>
- <20111108063249.GB11577@redhat.com>
- <87vcqurk25.fsf@rustcorp.com.au>
+	id S1752157Ab1KHVdW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:33:22 -0500
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:36102 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab1KHVdU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 16:33:20 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4EB9A021.6000705@cam.ac.uk>
+Date: Tue, 08 Nov 2011 21:33:21 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vcqurk25.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Newsgroups: gmane.linux.kernel.input,gmane.linux.kernel
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: JJ Ding <jj_ding@emc.com.tw>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, JJ Ding <dgdunix@gmail.com>
+Subject: Re: [PATCH v2] Input: convert obsolete strict_strtox to kstrtox
+References: <1320666890-29615-1-git-send-email-jj_ding@emc.com.tw> <20111108035930.GC21927@core.coreip.homeip.net> <20111108062800.GA1837@core.coreip.homeip.net> <87vcqv838n.fsf@emc.com.tw> <87sjlz80gy.fsf@emc.com.tw> <CAKdAkRR+kmxBzmhBJ80F4pMTbf_oQWiUh-hXaG2tQMRynmWP3A@mail.gmail.com>
+In-Reply-To: <CAKdAkRR+kmxBzmhBJ80F4pMTbf_oQWiUh-hXaG2tQMRynmWP3A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 08:51:38PM +1030, Rusty Russell wrote:
-> On Tue, 8 Nov 2011 08:32:50 +0200, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > On Tue, Nov 08, 2011 at 10:23:33AM +1030, Rusty Russell wrote:
-> > > Even so, should we just use the PCI cap list, and have each
-> > > cap entry just contain a BIR & offset?
-> > > 
-> > > Thanks,
-> > > Rusty.
-> > 
-> > And size :)
-> > I say, Rusty, did you see my patch? That's what it's doing,
-> > I also addressed the issue that with KVM on x86, PIO is faster
-> > than MMIO so we need to use it for notifications/isr.
+On 11/08/2011 06:41 PM, Dmitry Torokhov wrote:
+> On Tue, Nov 8, 2011 at 12:47 AM, JJ Ding <jj_ding@emc.com.tw> wrote:
+>> On Tue, 08 Nov 2011 15:47:36 +0800, JJ Ding <jj_ding@emc.com.tw> wrote:
+>>> On Mon, 7 Nov 2011 22:28:01 -0800, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>>>> On Mon, Nov 07, 2011 at 07:59:30PM -0800, Dmitry Torokhov wrote:
+>>>>>
+>>>>> Applied, thanks JJ.
+>>>>>
+>>>>
+>>>> Sorry, I take it back...
+>>>>
+>>>>> -       if (strict_strtoul(buf, 10, &value) || value > 1)
+>>>>> +       if (kstrtouint(buf, 10, &value) || value > 1)
+>>>>>                 return -EINVAL;
+>>>>
+>>>> This mangles error condition from kstrtouint and reporting conditions
+>>>> beside -EINVAL was the reason for introducing new API IIRC. The proper
+>>>> conversion should be:
+>>>>
+>>>>     err = kstrtouint(buf, 10, &value);
+>>>>     if (err)
+>>>>             return err;
+>>>>
+>>>>     if (value > 1)
+>>>>             return -EINVAL;
+>>>>
+>>>> Thanks.
+>>>>
+>>>
+>>> Thanks, I get it. I'll fix and resend.
+>>>
+>>> jj
+>>>
+>>
+>> Thinking a bit more about your suggestion, and looking at the code more
+>> closely, some uses of these conversions really want a u8, and some want a
+>> bool. I think I should check the data type where these converted values
+>> are really used, and use a more appropriate kstrtox.
 > 
-> Faster?  Really?  Why?
-
-I think, because it doesn't need to be emulated to get the address
-and the value. There are so many ways on x86 to do memory
-access, you need a lot of code to figure out what's going on.
-
-> Were the ppc guys right that's it's obsolescent?
-
-For PCI - surely not.  PCI Express spec tries to discourage its usage.
-But support is there even in Express.
-
-> Because PIO is going to be ugly AFAICT for every non-x86 platform.
+> If some really want full u8 range then yes, I agree, kstrtou8 is best. For
+> ones where we have just a few valid values I think we should stick with
+> conversing to unsigned int and then validate the range manually.
 > 
-> Cheers,
-> Rusty.
+>>
+>> And for those that just need a bool, do you think using strtobool
+>> introduced in commit d0f1fed29e6e73d9d17f4c91a5896a4ce3938d45 OK?
+>> That way the user may even type [NnYy01].
 > 
+> I do not like strtobool because it is sloppy. It will also accept 10, yoda, nada
+> and similar inputs as correct.
+> 
+plenty of room for kstrtobool if anyone wants to take it on...
 
-
-So we should make the BAR MMIO on non-x86 host, PIO on x86.
-Guest should just map and use what it's given.
-
--- 
-MST
