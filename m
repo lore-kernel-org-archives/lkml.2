@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756081Ab1KHPwG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 10:52:06 -0500
-Received: from portal.weinmann.de ([62.8.140.122]:64759 "EHLO
-	portal.weinmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045Ab1KHPwE convert rfc822-to-8bit (ORCPT
+	id S1756073Ab1KHP4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 10:56:17 -0500
+Received: from smtp-out1.tiscali.nl ([195.241.79.176]:39899 "EHLO
+	smtp-out1.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab1KHP4Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 10:52:04 -0500
-From: "Voss, Nikolaus" <N.Voss@weinmann.de>
-To: "'balbi@ti.com'" <balbi@ti.com>
-CC: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
-        "'khali@linux-fr.org'" <khali@linux-fr.org>,
-        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
-        "'rmallon@gmail.com'" <rmallon@gmail.com>
-Date: Tue, 8 Nov 2011 16:35:21 +0100
-Subject: RE: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Topic: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Thread-Index: AcyeJIEYrU7G/BA6Q22nbQzMCBlkGAABsj1A
-Message-ID: <EF2E73589CA71846A15D0B2CDF79505D087B38B899@wm021.weinmann.com>
-References: <cover.1320753142.git.n.voss@weinmann.de>
- <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de>
- <20111108144115.GH20728@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111108144115.GH20728@legolas.emea.dhcp.ti.com>
-Accept-Language: en-US, de-DE
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US, de-DE
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 8 Nov 2011 10:56:16 -0500
+Subject: [PATCH] [TRIVIAL] Blackfin: remove bfin_simple_timer.h
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Nov 2011 16:56:11 +0100
+Message-ID: <1320767771.14409.389.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Since it was introduced in commit 1394f03221 ("blackfin architecture"),
+bfin_simple_timer.h has always been unused: no file includes it and
+(unsurprisingly) the macros it defines are never used.
 
-> > +#include <mach/at91_twi.h>
-> > +#include <mach/board.h>
-> > +#include <mach/cpu.h>
-> 
-> avoid including <mach/*> on drivers.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Entirely untested (I don't have the Blackfin toolchain at hand).
 
-Should I move at91_twi.h to include/linux (omap does it like this,
-other use the mach-include)?
+ arch/blackfin/include/asm/bfin_simple_timer.h |   19 -------------------
+ 1 files changed, 0 insertions(+), 19 deletions(-)
+ delete mode 100644 arch/blackfin/include/asm/bfin_simple_timer.h
 
-
-> > +	if (irqstatus & AT91_TWI_TXCOMP) {
-> > +		at91_disable_twi_interrupts(dev);
-> > +		dev->transfer_status = status;
-> > +		complete(&dev->cmd_complete);
-> > +	}
-> > +	else if (irqstatus & AT91_TWI_RXRDY) {
-> > +		at91_twi_read_next_byte(dev);
-> > +	}
-> > +	else if (irqstatus & AT91_TWI_TXRDY) {
-> > +		at91_twi_write_next_byte(dev);
-> > +	}
-> > +	else {
-> > +		return IRQ_NONE;
-> 
-> coding style is wrong. Also, are those IRQ events really mutually exclusive ??
-
-These are indeed mutually exclusive (semantically).
-
-Niko
+diff --git a/arch/blackfin/include/asm/bfin_simple_timer.h b/arch/blackfin/include/asm/bfin_simple_timer.h
+deleted file mode 100644
+index 5248c13..0000000
+--- a/arch/blackfin/include/asm/bfin_simple_timer.h
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/*
+- * Copyright 2006-2008 Analog Devices Inc.
+- *
+- * Licensed under the GPL-2 or later.
+- */
+-
+-#ifndef _bfin_simple_timer_h_
+-#define _bfin_simple_timer_h_
+-
+-#include <linux/ioctl.h>
+-
+-#define BFIN_SIMPLE_TIMER_IOCTL_MAGIC 't'
+-
+-#define BFIN_SIMPLE_TIMER_SET_PERIOD _IO (BFIN_SIMPLE_TIMER_IOCTL_MAGIC,  2)
+-#define BFIN_SIMPLE_TIMER_START      _IO (BFIN_SIMPLE_TIMER_IOCTL_MAGIC,  6)
+-#define BFIN_SIMPLE_TIMER_STOP       _IO (BFIN_SIMPLE_TIMER_IOCTL_MAGIC,  8)
+-#define BFIN_SIMPLE_TIMER_READ       _IO (BFIN_SIMPLE_TIMER_IOCTL_MAGIC, 10)
+-
+-#endif
+-- 
+1.7.4.4
 
