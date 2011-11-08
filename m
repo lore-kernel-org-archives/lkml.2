@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab1KHTwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:52:04 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27135 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1KHTwB (ORCPT
+	id S1756357Ab1KHT5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:57:48 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15667 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969Ab1KHT5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:52:01 -0500
-Date: Tue, 8 Nov 2011 20:57:27 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Andrei Warkentin <andreiw@vmware.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
-In-Reply-To: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
-Message-ID: <alpine.LNX.2.00.1111082056510.5763@swampdragon.chaosbits.net>
-References: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 8 Nov 2011 14:57:47 -0500
+Message-ID: <4EB989B9.2060904@cavium.com>
+Date: Tue, 08 Nov 2011 11:57:45 -0800
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "manesoni@cisco.com" <manesoni@cisco.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "kamensky@cisco.com" <kamensky@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 1/4] MIPS Kprobes: Fix OOPS in arch_prepare_kprobe()
+References: <20111108170336.GA16526@cisco.com> <20111108170454.GB16526@cisco.com>
+In-Reply-To: <20111108170454.GB16526@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Nov 2011 19:57:47.0256 (UTC) FILETIME=[AFE5FF80:01CC9E50]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Nov 2011, Andrei Warkentin wrote:
+On 11/08/2011 09:04 AM, Maneesh Soni wrote:
+[...]
+>
+> diff --git a/arch/mips/kernel/kprobes.c b/arch/mips/kernel/kprobes.c
+> index ee28683..9fb1876 100644
+> --- a/arch/mips/kernel/kprobes.c
+> +++ b/arch/mips/kernel/kprobes.c
+> @@ -25,6 +25,7 @@
+>
+>   #include<linux/kprobes.h>
+>   #include<linux/preempt.h>
+> +#include<linux/uaccess.h>
+>   #include<linux/kdebug.h>
+>   #include<linux/slab.h>
+>
+> @@ -118,11 +119,19 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+>   	union mips_instruction prev_insn;
+>   	int ret = 0;
+>
+> -	prev_insn = p->addr[-1];
+>   	insn = p->addr[0];
+>
+> -	if (insn_has_delayslot(insn) || insn_has_delayslot(prev_insn)) {
+> -		pr_notice("Kprobes for branch and jump instructions are not supported\n");
+> +	if (insn_has_delayslot(insn)) {
+> +		pr_notice("Kprobes for branch and jump instructions are not"
+> +			  "supported\n");
 
-> 1 is a power of two, therefore rounddown_pow_of_two(1) should return 1. It does
-> in case the argument is a variable but in case it's a constant it behaves
-> wrong and returns 0. Probably nobody ever did it so this was never noticed,
-> however net/drivers/vmxnet3 with latest GCC does and breaks on unicpu systems.
-> 
-> Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
-> ---
->  include/linux/log2.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/log2.h b/include/linux/log2.h
-> index 25b8086..ccda848 100644
-> --- a/include/linux/log2.h
-> +++ b/include/linux/log2.h
-> @@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
->  #define rounddown_pow_of_two(n)			\
->  (						\
->  	__builtin_constant_p(n) ? (		\
-> -		(n == 1) ? 0 :			\
-> +		(n == 1) ? 1 :			\
->  		(1UL << ilog2(n))) :		\
->  	__rounddown_pow_of_two(n)		\
->   )
-> 
+Don't wrap these strings.
 
-For what it's worth; looks good to me.
+It is better to go a little bit over 80 columns, than have this.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+David Daney
 
