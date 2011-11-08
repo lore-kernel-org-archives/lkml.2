@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755384Ab1KHKwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 05:52:09 -0500
-Received: from smtp3.mail.ru ([94.100.176.131]:49057 "EHLO smtp3.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750892Ab1KHKwH convert rfc822-to-8bit (ORCPT
+	id S1755426Ab1KHKwt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 05:52:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49496 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1KHKwr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 05:52:07 -0500
-Date: Tue, 8 Nov 2011 18:51:52 +0800
-From: Daniil Stolnikov <danila.st@mail.ru>
-Reply-To: Daniil Stolnikov <danila.st@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1936723309.20111108185152@mail.ru>
-To: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        <linux-crypto@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>, <davem@davemloft.net>
-Subject: Re: Add IPSec IP Range in Linux kernel
-In-Reply-To: <1320733465.21617.4.camel@ppwaskie-mobl2>
-References: <92909814.20111108111036@mail.ru> <1320733465.21617.4.camel@ppwaskie-mobl2>
+	Tue, 8 Nov 2011 05:52:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <CA+55aFydrFEKUaSV-JPKXqPc63imZVmaVW0n6Ft_YqoWxp7RQQ@mail.gmail.com>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+	<20111108031242.GU2203@ZenIV.linux.org.uk>
+	<CA+55aFydrFEKUaSV-JPKXqPc63imZVmaVW0n6Ft_YqoWxp7RQQ@mail.gmail.com>
+Date: Tue, 8 Nov 2011 11:52:46 +0100
+X-Google-Sender-Auth: PMWNGJ5kDGexsxW0GdkGF-Y3YZY
+Message-ID: <CAMuHMdXA9zoFyMifj3DZQPB321Z-CkxB2W2eg9oX0rSD7_CJHg@mail.gmail.com>
+Subject: Re: Linux 3.2-rc1
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Spam: Not detected
-X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 2011-11-07 at 19:10 -0800, Daniil Stolnikov wrote:
->> Hello!
->> 
->> Found that the stack IPSec in Linux does not support any IP range. Many people ask this question. The archives say strongswan said that their daemon supports a range, but the Linux IPSec stack supports only the subnets. I am writing to you to implement support for IP range in Linux. I think that a lot more people will appreciate this innovation.
+On Tue, Nov 8, 2011 at 05:26, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> And the binary patches we've always generated the magical git binary
+> version of, since there is no traditional format for that at all - and
+> it has never been a problem in practice. I think the only binary file
+> we have is the logo, and that one doesn't change.
 
-> It'd be even better if you could write a patch for us to review.
+The logos are ASCII PNM files.
 
-> Cheers,
-> -PJ
+There are a few PDFs in Documentation/DocBook/media/{dvb,v4l}/ though
+(strange, never noticed them before).
 
-I was a little not so put it:) I'd certainly be happy and he would write a patch, but I'm afraid do not have the necessary knowledge to implement IPSec Linux. I turned to you, the developers, but rather to urge you to implement this feature using IP range. I hope very much for your help and support. This is especially beneficial for all - the Linux kernel will be more flexible and more compatible with different devices and software.
+Gr{oetje,eeting}s,
 
-Regards
-Daniil Stolnikov
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
