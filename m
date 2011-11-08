@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab1KHOsk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:48:40 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:33927 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab1KHOsh (ORCPT
+	id S1755947Ab1KHOxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:53:05 -0500
+Received: from smtp-out-102.synserver.de ([212.40.185.102]:1321 "EHLO
+	smtp-out-097.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755138Ab1KHOxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:48:37 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] genirq: don't allow per cpu interrupts to be suspended
-Date: Tue,  8 Nov 2011 14:48:32 +0000
-Message-Id: <1320763712-764-1-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 08 Nov 2011 14:48:32.0806 (UTC) FILETIME=[7C959C60:01CC9E25]
-X-MC-Unique: 111110814483502101
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 8 Nov 2011 09:53:03 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 14961
+Message-ID: <4EB9426A.2040503@metafoo.de>
+Date: Tue, 08 Nov 2011 15:53:30 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111005 Iceowl/1.0b2 Icedove/3.1.15
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        guenter.roeck@ericsson.com, khali@linux-fr.org,
+        dmitry.torokhov@gmail.com, broonie@opensource.wolfsonmicro.com,
+        gregkh@suse.de, alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        linus.walleij@linaro.org, maxime.ripard@free-electrons.com
+Subject: Re: [PATCH 0/6 V2] IIO: Out of staging step 1: The core
+References: <1320677563-18378-1-git-send-email-jic23@cam.ac.uk> <4EB92F78.8090200@metafoo.de> <4EB93B61.3030805@kernel.org>
+In-Reply-To: <4EB93B61.3030805@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id pA8Emj0B021194
 
-The power management functions related to interrupts do not know
-(yet) about per-cpu interrupts and end up calling the wrong
-low-level methods to enable/disable interrupts.
+On 11/08/2011 03:23 PM, Jonathan Cameron wrote:
+> On 11/08/2011 01:32 PM, Lars-Peter Clausen wrote:
+>> On 11/07/2011 03:52 PM, jic23@cam.ac.uk wrote:
+>>> From: Jonathan Cameron <jic23@kernel.org>
+>>>
+>>> [...]
+>>> Dear All,
+>>>
+>>> Firstly note that I have pushed ahead of this alongside the ongoing
+>>> discussions on how to handle in kernel interfaces for the devices
+>>> covered by IIO.  I propose to build those on top of this patch
+>>> set and will be working on that support whilst this set is
+>>> under review.
+>>>
+>>> Secondly, this code has some namespace clashes with the staging
+>>> IIO code, so you will need a couple of patches that can be found
+>>> in https://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+>>>
+>>> This is our first attempt to propose moving 'some' of the
+>>> Industrial I/O subsystem out of staging.  This cover letter
+>>> attempts to explain what IIO is and why it is needed.
+>>> All comments welcome on this as well as the code!
+>>
+>>
+>> I don't think moving just part of the IIO core out of staging will work.
+> It's the only option that looks plausible.  We just aren't going to get
+> anyone to review all the code in one go.  The original move into staging
+> was entirely about exposure, rather than code quality (not to say we
+> haven't improved that as well!)  The other thing is that the
+> simple stuff is mature and useful.  The buffering and event side of
+> things is still evolving and hence it may be a while yet before it is
+> stable enough.  (It was mature until the whole in kernel interface stuff
+> came up and lead to a substantial rewrite!)
+>  We
+>> now end up with two competing frameworks for the same purpose which mostly
+>> have the same API. If I for example enable both ST_IIO and IIO at the same
+>> time everything will explode, since both want to register the same device class.
+> True. That would be fixed by a simple namespace move though.  Annoying,
+> but plausible.
 
-This leads to all kind of interesting issues (action taken on one
-CPU only, updating a refcount which is not used otherwise...).
+Still two almost identical frameworks for the same purpose. The code for the
+out-of-staging and still-in-staging branches have already started to divert.
+Having both in the mainline kernel is going to be maintenance hell. People
+will start sending patches for one, but not the other. I just don't think
+this will workout well.
 
-The workaround for the time being is simply to flag these interrupts
-with IRQF_NO_SUSPEND. At least on ARM, these interrupts are actually
-dealt with at the architecture level.
+>>
+>> In my opinion we should move all of the core interface including events and
+>> buffer support at once. Drivers of course can stay in staging. I guess the
+>> main reason why this code is still in staging is that we don't fell
+>> confident enough about the user-space ABI yet. The overall code quality is
+>> ok and there are no major problems with the internal API.
+> Partly that, and partly that and partly there are controversial elements
+> to be discussed in each of the major parts.  There's a lot of pressure
+> to get 'something' out for the simple drivers now even if we take a
+> while to 'discuss' the other elements.  Hence it needs to happen in
+> chunks from the point of view of review, even if the final pull request
+> will bring over the whole core.
+> 
 
-Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- kernel/irq/manage.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+If the core split-up is just for review and is not intended to be merged
+part-by-part over several kernel releases I don't see a problem.
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 67ce837..0e2b179 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -1596,7 +1596,7 @@ int request_percpu_irq(unsigned int irq, irq_handler_t handler,
- 		return -ENOMEM;
- 
- 	action->handler = handler;
--	action->flags = IRQF_PERCPU;
-+	action->flags = IRQF_PERCPU | IRQF_NO_SUSPEND;
- 	action->name = devname;
- 	action->percpu_dev_id = dev_id;
- 
--- 
-1.7.0.4
-
+- Lars
 
