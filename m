@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933178Ab1KHTTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:19:48 -0500
-Received: from www17.your-server.de ([213.133.104.17]:58014 "EHLO
+	id S1756340Ab1KHTUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:20:20 -0500
+Received: from www17.your-server.de ([213.133.104.17]:58097 "EHLO
 	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab1KHTTr (ORCPT
+	with ESMTP id S1754109Ab1KHTUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:19:47 -0500
+	Tue, 8 Nov 2011 14:20:18 -0500
 Subject: [PATCH] staging: rtl8192e: Use kzalloc rather than kmalloc
 From: Thomas Meyer <thomas@m3y3r.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>, wlanfae@realtek.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Tue, 08 Nov 2011 20:17:53 +0100
+        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Nov 2011 20:18:26 +0100
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-Message-ID: <1320779880.8062.146.camel@localhost.localdomain>
+Message-ID: <1320779913.8062.147.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,20 +40,20 @@ From: Thomas Meyer <thomas@m3y3r.de>
 Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
 ---
 
-diff -u -p a/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c b/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c
---- a/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c 2011-11-07 19:38:11.773647045 +0100
-+++ b/drivers/staging/rtl8192e/rtllib_crypt_ccmp.c 2011-11-08 09:40:09.422573035 +0100
-@@ -63,10 +63,9 @@ static void *rtllib_ccmp_init(int key_id
- {
- 	struct rtllib_ccmp_data *priv;
- 
--	priv = kmalloc(sizeof(*priv), GFP_ATOMIC);
-+	priv = kzalloc(sizeof(*priv), GFP_ATOMIC);
- 	if (priv == NULL)
- 		goto fail;
--	memset(priv, 0, sizeof(*priv));
- 	priv->key_idx = key_idx;
- 
- 	priv->tfm = (void *)crypto_alloc_cipher("aes", 0, CRYPTO_ALG_ASYNC);
+diff -u -p a/drivers/staging/rtl8192e/rtllib_softmac.c b/drivers/staging/rtl8192e/rtllib_softmac.c
+--- a/drivers/staging/rtl8192e/rtllib_softmac.c 2011-11-07 19:38:11.780313813 +0100
++++ b/drivers/staging/rtl8192e/rtllib_softmac.c 2011-11-08 09:40:07.649215930 +0100
+@@ -3048,10 +3048,9 @@ void rtllib_softmac_init(struct rtllib_d
+ 	ieee->state = RTLLIB_NOLINK;
+ 	for (i = 0; i < 5; i++)
+ 		ieee->seq_ctrl[i] = 0;
+-	ieee->pDot11dInfo = kmalloc(sizeof(struct rt_dot11d_info), GFP_ATOMIC);
++	ieee->pDot11dInfo = kzalloc(sizeof(struct rt_dot11d_info), GFP_ATOMIC);
+ 	if (!ieee->pDot11dInfo)
+ 		RTLLIB_DEBUG(RTLLIB_DL_ERR, "can't alloc memory for DOT11D\n");
+-	memset(ieee->pDot11dInfo, 0, sizeof(struct rt_dot11d_info));
+ 	ieee->LinkDetectInfo.SlotIndex = 0;
+ 	ieee->LinkDetectInfo.SlotNum = 2;
+ 	ieee->LinkDetectInfo.NumRecvBcnInPeriod = 0;
 
 
