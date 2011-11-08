@@ -1,167 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab1KHVie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:38:34 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51377 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1KHVid convert rfc822-to-8bit (ORCPT
+	id S1752787Ab1KHVjS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:39:18 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:49968 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab1KHVjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:38:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <1320719974-3598-7-git-send-email-ying.huang@intel.com>
-References: <1320719974-3598-1-git-send-email-ying.huang@intel.com>
-	<1320719974-3598-7-git-send-email-ying.huang@intel.com>
-Date: Tue, 8 Nov 2011 14:38:32 -0700
-Message-ID: <CAL-B5D1z35ReG9dKVBLNkktrJ-c8OVspsCYTUAO16wCK1B_4dA@mail.gmail.com>
-Subject: Re: [PATCH 6/9] ACPI, Add RAM mapping support to ACPI atomic IO support
-From: Myron Stowe <myron.stowe@gmail.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Nov 2011 16:39:16 -0500
+Message-ID: <1320788342.10668.49.camel@work-vm>
+Subject: Re: [PATCH] clocksource: Avoid selecting mult values that might
+ overflow when adjusted
+From: John Stultz <john.stultz@linaro.org>
+To: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Chen Jie <chenj@lemote.com>,
+        zhangfx <zhangfx@lemote.com>
+Date: Tue, 08 Nov 2011 13:39:02 -0800
+In-Reply-To: <20111108050259.GA13225@zhy>
+References: <1320264087-3413-1-git-send-email-john.stultz@linaro.org>
+	 <20111103211000.GA17895@elte.hu> <1320721740.10668.23.camel@work-vm>
+	 <20111108050259.GA13225@zhy>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.0- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 11110821-7408-0000-0000-000000AFEF3D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 7:39 PM, Huang Ying <ying.huang@intel.com> wrote:
-> On one of our testing machine, the following EINJ command lines:
->
->  # echo 0x10000000 > param1
->  # echo 0xfffffffffffff000 > param2
->  # echo 0x8 > error_type
->  # echo 1 > error_inject
->
-> Will get:
->
->  echo: write error: Input/output error
->
-> The EIO comes from:
->
->    rc = apei_exec_pre_map_gars(&trigger_ctx);
->
-> The root cause is as follow.  Normally, ACPI atomic IO support is used
-> to access IO memory.  But in EINJ of that machine, it is used to
-> access RAM to trigger the injected error.  And the ioremap() called by
-> apei_exec_pre_map_gars() can not map the RAM.
->
-> This patch add RAM mapping support to ACPI atomic IO support to
-> satisfy EINJ requirement.
->
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Tested-by: Tony Luck <tony.luck@intel.com>
-> ---
->  drivers/acpi/atomicio.c |   34 ++++++++++++++++++++++++++++++----
->  1 file changed, 30 insertions(+), 4 deletions(-)
->
+On Tue, 2011-11-08 at 13:02 +0800, Yong Zhang wrote:
+> On Mon, Nov 07, 2011 at 07:09:00PM -0800, John Stultz wrote:
+> > Yong: Can you also give this a test run to make sure you don't see any
+> > problems?
+> 
+> Still get warning (3.2-rc1 + your patch):
+> 
+> [    0.017009] ------------[ cut here ]------------
+> [    0.022156] WARNING: at /build/linux/kernel/time/timekeeping.c:828 do_timer+0x402/0x4e0()
+> [    0.035917] Adjusting jiffies more then 11% (1024068096 vs 1024064000)
 
-Hi Huang:
+Ah. We're tripping the warning here in early boot. We use jiffies as the
+default clocksource initially even before it is registered and the
+maxadj is then set. So since its null here, any adjustment triggers the
+warning.
 
-This patch collides with my series to remove atomicio.[ch]:
-  https://mail.google.com/mail/?shva=1#label/linux-acpi+list/133805812264a542
-and I don't want such functionality to get lost if/when the removal series
-is accepted.  I'm interested in working with you, not against you, so would
-you like me to do anything with respect to this patch within the osl.c based
-mapping routines so this capability would not become lost?
+That's easy enough to avoid. Can you give this updated version a try to
+make sure I didn't miss anything else?
 
-The obvious choices would be for me to post a new patch, copying this
-functionality into osl.c's mapping routines, that would apply on top of the
-removal series.  Another tact could be for me to do basically the same
-thing but within the removal series (by adding this into it, and reposting).
-The latter tactic seems like it could be a constant problem if more changes
-to atomicio occur during this interim period.  Of course you may have other
-ideas here as how to progress.
+Thanks so much for the great testing and reports!
+-john
 
-This type of occurrence, among many others, is a good example of why we
-need to get down to just one set of mapping routines as soon as possible.
-During this interim period I'll try and monitor the linux-acpi-list
-for future such
-occurrences but if you could, please try and cc me on any future atomicio
-modifications.
+>From d2c1397e75ccf561bea767e31c06fb944b5391e8 Mon Sep 17 00:00:00 2001
+From: John Stultz <john.stultz@linaro.org>
+Date: Mon, 31 Oct 2011 17:06:35 -0400
+Subject: [PATCH] clocksource: Avoid selecting mult values that might overflow when adjusted
 
-Thanks,
- Myron
+For some frequqencies, the clocks_calc_mult_shift() function will
+unfortunately select mult values very close to 0xffffffff.  This
+has the potential to overflow when NTP adjusts the clock, adding
+to the mult value.
 
-> --- a/drivers/acpi/atomicio.c
-> +++ b/drivers/acpi/atomicio.c
-> @@ -32,6 +32,8 @@
->  #include <linux/rculist.h>
->  #include <linux/interrupt.h>
->  #include <linux/slab.h>
-> +#include <linux/mm.h>
-> +#include <linux/highmem.h>
->  #include <acpi/atomicio.h>
->
->  #define ACPI_PFX "ACPI: "
-> @@ -97,6 +99,30 @@ static void __iomem *__acpi_try_ioremap(
->                return NULL;
->  }
->
-> +static void __iomem *acpi_map(phys_addr_t pg_off, unsigned long pg_sz)
-> +{
-> +       unsigned long pfn;
-> +
-> +       pfn = pg_off >> PAGE_SHIFT;
-> +       if (page_is_ram(pfn)) {
-> +               if (pg_sz > PAGE_SIZE)
-> +                       return NULL;
-> +               return (void __iomem __force *)kmap(pfn_to_page(pfn));
-> +       } else
-> +               return ioremap(pg_off, pg_sz);
-> +}
-> +
-> +static void acpi_unmap(phys_addr_t pg_off, void __iomem *vaddr)
-> +{
-> +       unsigned long pfn;
-> +
-> +       pfn = pg_off >> PAGE_SHIFT;
-> +       if (page_is_ram(pfn))
-> +               kunmap(pfn_to_page(pfn));
-> +       else
-> +               iounmap(vaddr);
-> +}
-> +
->  /*
->  * Used to pre-map the specified IO memory area. First try to find
->  * whether the area is already pre-mapped, if it is, increase the
-> @@ -119,7 +145,7 @@ static void __iomem *acpi_pre_map(phys_a
->
->        pg_off = paddr & PAGE_MASK;
->        pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
-> -       vaddr = ioremap(pg_off, pg_sz);
-> +       vaddr = acpi_map(pg_off, pg_sz);
->        if (!vaddr)
->                return NULL;
->        map = kmalloc(sizeof(*map), GFP_KERNEL);
-> @@ -135,7 +161,7 @@ static void __iomem *acpi_pre_map(phys_a
->        vaddr = __acpi_try_ioremap(paddr, size);
->        if (vaddr) {
->                spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-> -               iounmap(map->vaddr);
-> +               acpi_unmap(pg_off, map->vaddr);
->                kfree(map);
->                return vaddr;
->        }
-> @@ -144,7 +170,7 @@ static void __iomem *acpi_pre_map(phys_a
->
->        return map->vaddr + (paddr - map->paddr);
->  err_unmap:
-> -       iounmap(vaddr);
-> +       acpi_unmap(pg_off, vaddr);
->        return NULL;
->  }
->
-> @@ -177,7 +203,7 @@ static void acpi_post_unmap(phys_addr_t
->                return;
->
->        synchronize_rcu();
-> -       iounmap(map->vaddr);
-> +       acpi_unmap(map->paddr, map->vaddr);
->        kfree(map);
->  }
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+This patch adds a clocksource.maxadj value, which provides
+an approximation of an 11% adjustment(NTP limits adjustments to
+500ppm and the tick adjustment is limited to 10%), which could
+be made to the clocksource.mult value. This is then used to both
+check that the current mult value won't overflow/underflow, as
+well as warning us if the timekeeping_adjust() code pushes over
+that 11% boundary.
+
+v2: Fix max_adjustment calculation, and improve WARN_ONCE
+messages.
+
+v3: Don't warn before maxadj has actually been set
+
+CC: Yong Zhang <yong.zhang0@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Chen Jie <chenj@lemote.com>
+CC: zhangfx <zhangfx@lemote.com>
+Reported-by: Chen Jie <chenj@lemote.com>
+Reported-by: zhangfx <zhangfx@lemote.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/clocksource.h |    3 +-
+ kernel/time/clocksource.c   |   58 +++++++++++++++++++++++++++++++++++-------
+ kernel/time/timekeeping.c   |    7 +++++
+ 3 files changed, 57 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 139c4db..c86c940 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -156,6 +156,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
+  * @mult:		cycle to nanosecond multiplier
+  * @shift:		cycle to nanosecond divisor (power of two)
+  * @max_idle_ns:	max idle time permitted by the clocksource (nsecs)
++ * @maxadj		maximum adjustment value to mult (~11%)
+  * @flags:		flags describing special properties
+  * @archdata:		arch-specific data
+  * @suspend:		suspend function for the clocksource, if necessary
+@@ -172,7 +173,7 @@ struct clocksource {
+ 	u32 mult;
+ 	u32 shift;
+ 	u64 max_idle_ns;
+-
++	u32 maxadj;
+ #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
+ 	struct arch_clocksource_data archdata;
+ #endif
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index cf52fda..cfc65e1 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -492,6 +492,22 @@ void clocksource_touch_watchdog(void)
+ }
+ 
+ /**
++ * clocksource_max_adjustment- Returns max adjustment amount
++ * @cs:         Pointer to clocksource
++ *
++ */
++static u32 clocksource_max_adjustment(struct clocksource *cs)
++{
++	u64 ret;
++	/*
++	 * We won't try to correct for more then 11% adjustments (110,000 ppm),
++	 */
++	ret = (u64)cs->mult * 11;
++	do_div(ret,100);
++	return (u32)ret;
++}
++
++/**
+  * clocksource_max_deferment - Returns max time the clocksource can be deferred
+  * @cs:         Pointer to clocksource
+  *
+@@ -503,25 +519,28 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	/*
+ 	 * Calculate the maximum number of cycles that we can pass to the
+ 	 * cyc2ns function without overflowing a 64-bit signed result. The
+-	 * maximum number of cycles is equal to ULLONG_MAX/cs->mult which
+-	 * is equivalent to the below.
+-	 * max_cycles < (2^63)/cs->mult
+-	 * max_cycles < 2^(log2((2^63)/cs->mult))
+-	 * max_cycles < 2^(log2(2^63) - log2(cs->mult))
+-	 * max_cycles < 2^(63 - log2(cs->mult))
+-	 * max_cycles < 1 << (63 - log2(cs->mult))
++	 * maximum number of cycles is equal to ULLONG_MAX/(cs->mult+cs->maxadj)
++	 * which is equivalent to the below.
++	 * max_cycles < (2^63)/(cs->mult + cs->maxadj)
++	 * max_cycles < 2^(log2((2^63)/(cs->mult + cs->maxadj)))
++	 * max_cycles < 2^(log2(2^63) - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 2^(63 - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 1 << (63 - log2(cs->mult + cs->maxadj))
+ 	 * Please note that we add 1 to the result of the log2 to account for
+ 	 * any rounding errors, ensure the above inequality is satisfied and
+ 	 * no overflow will occur.
+ 	 */
+-	max_cycles = 1ULL << (63 - (ilog2(cs->mult) + 1));
++	max_cycles = 1ULL << (63 - (ilog2(cs->mult + cs->maxadj) + 1));
+ 
+ 	/*
+ 	 * The actual maximum number of cycles we can defer the clocksource is
+ 	 * determined by the minimum of max_cycles and cs->mask.
++	 * Note: Here we subtract the maxadj to make sure we don't sleep for
++	 * too long if there's a large negative adjustment.
+ 	 */
+ 	max_cycles = min_t(u64, max_cycles, (u64) cs->mask);
+-	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult, cs->shift);
++	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult - cs->maxadj,
++					cs->shift);
+ 
+ 	/*
+ 	 * To ensure that the clocksource does not wrap whilst we are idle,
+@@ -640,7 +659,6 @@ static void clocksource_enqueue(struct clocksource *cs)
+ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ {
+ 	u64 sec;
+-
+ 	/*
+ 	 * Calc the maximum number of seconds which we can run before
+ 	 * wrapping around. For clocksources which have a mask > 32bit
+@@ -661,6 +679,20 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 
+ 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+ 			       NSEC_PER_SEC / scale, sec * scale);
++
++	/*
++	 * for clocksources that have large mults, to avoid overflow.
++	 * Since mult may be adjusted by ntp, add an safety extra margin
++	 *
++	 */
++	cs->maxadj = clocksource_max_adjustment(cs);
++	while ((cs->mult + cs->maxadj < cs->mult)
++		|| (cs->mult - cs->maxadj > cs->mult)) {
++		cs->mult >>= 1;
++		cs->shift--;
++		cs->maxadj = clocksource_max_adjustment(cs);
++	}
++
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
+ }
+ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+@@ -701,6 +733,12 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+  */
+ int clocksource_register(struct clocksource *cs)
+ {
++	/* calculate max adjustment for given mult/shift */
++	cs->maxadj = clocksource_max_adjustment(cs);
++	WARN_ONCE(cs->mult + cs->maxadj < cs->mult,
++		"Clocksource %s might overflow on 11%% adjustment\n",
++		cs->name);
++
+ 	/* calculate max idle time permitted for this clocksource */
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 2b021b0e..e65ff31 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -820,6 +820,13 @@ static void timekeeping_adjust(s64 offset)
+ 	} else
+ 		return;
+ 
++	WARN_ONCE(timekeeper.clock->maxadj &&
++			(timekeeper.mult + adj > timekeeper.clock->mult +
++						timekeeper.clock->maxadj),
++			"Adjusting %s more then 11%% (%ld vs %ld)\n",
++			timekeeper.clock->name, (long)timekeeper.mult + adj,
++			(long)timekeeper.clock->mult +
++				timekeeper.clock->maxadj);
+ 	timekeeper.mult += adj;
+ 	timekeeper.xtime_interval += interval;
+ 	timekeeper.xtime_nsec -= offset;
+-- 
+1.7.3.2.146.gca209
+
+
+
