@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab1K1LoN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Nov 2011 06:44:13 -0500
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:17669 "EHLO
+	id S1753573Ab1K1LoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 28 Nov 2011 06:44:22 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:35427 "EHLO
 	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab1K1LoJ (ORCPT
+	with ESMTP id S1751390Ab1K1LoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Nov 2011 06:44:09 -0500
+	Mon, 28 Nov 2011 06:44:19 -0500
 X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
 X-RZG-CLASS-ID: mo05
-Message-Id: <e233e2c15becb8a3a5a6379f30e94b7e0e48a930.1322479017.git.n.voss@weinmann.de>
+Message-Id: <d80df1c6391d76b959473990baeccbb9e2011174.1322479017.git.n.voss@weinmann.de>
 In-Reply-To: <cover.1322479017.git.n.voss@weinmann.de>
 References: <cover.1322479017.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Tue, 8 Nov 2011 12:09:30 +0100
-Subject: [PATCH v8 2/7] Replace clk_lookup.con_id with clk_lookup.dev_id entries
- for twi clk
+Date: Tue, 8 Nov 2011 12:11:03 +0100
+Subject: [PATCH v8 4/7] G45 TWI: remove open drain setting for twi function
+ gpios
 To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
 Cc: ben-linux@fluff.org
@@ -23,106 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old driver used con_id clock entries. Convert to use dev_id
-for clock lookup via standard method.
+The G45 datasheets explicitly states that setting the open drain property
+on peripheral function gpios is not allowed. (How about other A91 chips?)
 
 Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
 ---
- arch/arm/mach-at91/at91cap9.c    |    1 +
- arch/arm/mach-at91/at91rm9200.c  |    1 +
- arch/arm/mach-at91/at91sam9260.c |    1 +
- arch/arm/mach-at91/at91sam9261.c |    1 +
- arch/arm/mach-at91/at91sam9263.c |    1 +
- arch/arm/mach-at91/at91sam9g45.c |    2 ++
- arch/arm/mach-at91/at91sam9rl.c  |    2 ++
- 7 files changed, 9 insertions(+), 0 deletions(-)
+ arch/arm/mach-at91/at91sam9g45_devices.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-at91/at91cap9.c b/arch/arm/mach-at91/at91cap9.c
-index ecdd54d..e69d5e0 100644
---- a/arch/arm/mach-at91/at91cap9.c
-+++ b/arch/arm/mach-at91/at91cap9.c
-@@ -219,6 +219,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- };
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index 713d3bd..a52f777 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -193,6 +193,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- };
-diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
-index b84a9f6..6e98738 100644
---- a/arch/arm/mach-at91/at91sam9260.c
-+++ b/arch/arm/mach-at91/at91sam9260.c
-@@ -199,6 +199,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("t4_clk", "atmel_tcb.1", &tc4_clk),
- 	CLKDEV_CON_DEV_ID("t5_clk", "atmel_tcb.1", &tc5_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
- 	/* more usart lookup table for DT entries */
- 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
- 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
-diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
-index 658a518..4946fb5 100644
---- a/arch/arm/mach-at91/at91sam9261.c
-+++ b/arch/arm/mach-at91/at91sam9261.c
-@@ -176,6 +176,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &hck0),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
- };
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 09a16d6..8743b14 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -684,18 +684,12 @@ void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, in
+ 	/* pins used for TWI interface */
+ 	if (i2c_id == 0) {
+ 		at91_set_A_periph(AT91_PIN_PA20, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PA20, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PA21, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PA21, 1);
  
- static struct clk_lookup usart_clocks_lookups[] = {
-diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
-index f83fbb0..2c14e43 100644
---- a/arch/arm/mach-at91/at91sam9263.c
-+++ b/arch/arm/mach-at91/at91sam9263.c
-@@ -189,6 +189,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
- 	/* fake hclk clock */
- 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
- };
-diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
-index 318b040..357f056 100644
---- a/arch/arm/mach-at91/at91sam9g45.c
-+++ b/arch/arm/mach-at91/at91sam9g45.c
-@@ -220,6 +220,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb0_clk),
- 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.1", &tcb0_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.0", &twi0_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.1", &twi1_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
- 	CLKDEV_CON_DEV_ID(NULL, "atmel-trng", &trng_clk),
-diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
-index a238105..312beb5 100644
---- a/arch/arm/mach-at91/at91sam9rl.c
-+++ b/arch/arm/mach-at91/at91sam9rl.c
-@@ -184,6 +184,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
- 	CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.0", &tc2_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
- 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.0", &twi0_clk),
-+	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.1", &twi1_clk),
- };
+ 		platform_device_register(&at91sam9g45_twi0_device);
+ 	} else {
+ 		at91_set_A_periph(AT91_PIN_PB10, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PB10, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PB11, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PB11, 1);
  
- static struct clk_lookup usart_clocks_lookups[] = {
+ 		platform_device_register(&at91sam9g45_twi1_device);
+ 	}
 -- 
 1.7.5.4
 
