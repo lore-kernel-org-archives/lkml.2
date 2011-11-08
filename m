@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab1KHUqF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 15:46:05 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53739 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932500Ab1KHUqC (ORCPT
+	id S933288Ab1KHUvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 15:51:36 -0500
+Received: from smtp141.dfw.emailsrvr.com ([67.192.241.141]:50915 "EHLO
+	smtp141.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab1KHUvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 15:46:02 -0500
-Date: Tue, 8 Nov 2011 23:45:55 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Julia Lawall <julia@diku.dk>, "J. Bruce Fields" <bfields@fieldses.org>,
-        kernel-janitors@vger.kernel.org, Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] net/sunrpc: use kstrtoul, etc
-Message-ID: <20111108204555.GA4379@p183.telecom.by>
-References: <1320586010-21931-1-git-send-email-julia@diku.dk>
- <1320586010-21931-3-git-send-email-julia@diku.dk>
- <20111108193817.GA3453@p183.telecom.by>
- <alpine.DEB.2.02.1111082113380.1880@hadrien>
+	Tue, 8 Nov 2011 15:51:35 -0500
+X-Greylist: delayed 515 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 15:51:35 EST
+Message-ID: <4EB99452.1090204@iwl.com>
+Date: Tue, 08 Nov 2011 12:42:58 -0800
+From: Karl Auerbach <karl@iwl.com>
+Reply-To: karl@iwl.com
+Organization: InterWorking Labs
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Fedora/3.1.15-1.fc14 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1111082113380.1880@hadrien>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+Subject: Re: Kernel (3.0 and later) panic
+References: <4EB83D4A.4010408@iwl.com> <20111108141014.2dfd614f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111108141014.2dfd614f@lxorguk.ukuu.org.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 09:19:30PM +0100, Julia Lawall wrote:
-> 
-> 
-> On Tue, 8 Nov 2011, Alexey Dobriyan wrote:
-> 
-> > On Sun, Nov 06, 2011 at 02:26:47PM +0100, Julia Lawall wrote:
-> >> @@
-> >> expression a,b;
-> >> {int,long} *c;
-> >> @@
-> >>
-> >> -strict_strtoul
-> >> +kstrtoul
-> >
-> > No, no, no!
-> 
-> Sorry, this was not the real rule I used for the strtoul case.  Instead I 
-> used the following:
-> 
-> @@
-> typedef ulong;
-> expression a,b;
-> {ulong,unsigned long,unsigned int,size_t} *c;
-> @@
-> 
-> -strict_strtoul
-> +kstrtoul
->   (a,b,c)
-> 
-> But now I have seen that there is a separate function for integers, so I 
-> have made a rule to use that function when the type is unsigned int.
-> 
-> > In every case see the type or real data and use appropriate function.
-> > kstrtou8() for ports.
-> 
-> The type of the destination variable in all of these cases is unsigned 
-> long.  But maybe that is not enough information to make the 
-> transformation in the right way.
 
-That's because previous functions following libc didn't accept anything
-less than unsigned long.
+The patch you sent (in a separate email) works.  Several of us using the
+new Soekris Net6501 will be very happy.
 
-For these conversion, one should literally look at every usecase and
-see what types data have for real (not unsigned long) and
-make conversion and remove explicit EINVAL checks if necesasry.
+Thanks for taking a look at this and fixing it so quickly.
 
-In sunrpc case: switch to kstrtou8 + remove "> 255" check.
+	--karl--
+	Karl Auerbach
 
-This program doesn't and won't do that.
+On 11/08/2011 06:10 AM, Alan Cox wrote:
+> On Mon, 07 Nov 2011 12:19:22 -0800
+> Karl Auerbach <karl@iwl.com> wrote:
+> 
+>> Versions 3.0 and later of the Linux kernel get a null pointer panic when
+>> booting on a Soekris Net6501 board.
+>>
+>> The documentation for that board is at:
+>>
+>>   http://soekris.com/media/manuals/net6501_manual.pdf
+>>
+>> (It's an Intel Atom based board.)
+> 
+> And with an EG20T. Yes I see whats going on.
+> 
+> I think its being caused by Tomoya Morinaga's patch to handle EG20T
+> nicely. If you don't have the EG20T driver in then it tries to fall back
+> to 8250 but the entries are missing
+> 
+> 	.setup = pci_default_setup.
+> 
+> 
+> Patch to test will follow in about 2 minutes. Please test and report back.
+> 
+> Alan
+
