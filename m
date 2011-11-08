@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab1KHQnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:43:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56072 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab1KHQnr (ORCPT
+	id S1755316Ab1KHQoB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:44:01 -0500
+Received: from mail-va3.bigfish.com ([216.32.180.10]:28604 "EHLO
+	VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754684Ab1KHQn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:43:47 -0500
+	Tue, 8 Nov 2011 11:43:57 -0500
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 11:43:56 EST
+X-SpamScore: -19
+X-BigFish: VPS-19(zz1432N98dKzz1202hzz15d4R8275bhz2dh668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LUCOFE-02-4OX-02
+X-M-MSG: 
+Date: Tue, 8 Nov 2011 17:28:26 +0100
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>
+Subject: Re: [PATCH] pci: More PRI/PASID cleanup
+Message-ID: <20111108162826.GD5182@amd.com>
+References: <20111103034359.10286.19062.stgit@bling.home>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.63.171]
-In-Reply-To: <20111108162311.GB5182@amd.com>
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
- <CAK=Wgbb5K+rqPNdM2sC8z+9d4-hdcPwV-vXk6gcAYWaO+dVx3w@mail.gmail.com>
- <20111108140133.GD2113@amd.com> <CAK=WgbYiF04i8XRkn+YQhd=z6uDRwr8JEiWP1CLFLjM7Y+xWKg@mail.gmail.com>
- <20111108162311.GB5182@amd.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 8 Nov 2011 18:43:26 +0200
-Message-ID: <CAK=WgbaeB5B5ygB58YeANaVraah7ifRa+=hN3AacYv1qt=jYKA@mail.gmail.com>
-Subject: Re: [PATCH v4 0/7] iommu: split mapping to page sizes as supported by
- the hardware
-To: Joerg Roedel <Joerg.Roedel@amd.com>
-Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        KyongHo Cho <pullip.cho@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20111103034359.10286.19062.stgit@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 6:23 PM, Joerg Roedel <Joerg.Roedel@amd.com> wrote:
-> Does not apply cleanly. Can you please rebase against v3.2-rc1 and
-> resend?
+On Wed, Nov 02, 2011 at 11:53:56PM -0400, Alex Williamson wrote:
+> More consistency cleanups.  Drop the _OFF, separate and indent
+> CTRL/CAP/STATUS bit definitions, fix that PASID_CAP doesn't
+> actually report the ENABLE bit.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+> 
+> Joerg, I can't test this, so you may want to make sure I'm not
+> breaking your API.  The March 31, 2011 version of the PASID ECN
+> shows bit 0 of the PASID capability register as reserved, not
+> an indicator of support for or status of the enable bit.
+> Presumably the entire capability wouldn't be included if it
+> can't be enabled.  With the below, pci_enable_pasid() now checks
+> the right bit, but also pci_pasid_features() no longer masks in
+> bit 0, but being reserved, it should have been clear anyway.
 
-sure!
+Looks like you are only renaming stuff. I don't see the real point but I
+also don't object unless this will be merged upstream soon. I plan to
+push the code using these capabilities for the next merge-window and if
+this one will me merged then too it will cause a lot of pain.
 
-will refresh and resend.
+	
+	Joerg
+
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
