@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab1KHItt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 03:49:49 -0500
-Received: from emcscan.emc.com.tw ([192.72.220.5]:12972 "EHLO
-	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754299Ab1KHItr (ORCPT
+	id S1754680Ab1KHIuD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 03:50:03 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:43617 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab1KHIuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 03:49:47 -0500
-From: JJ Ding <jj_ding@emc.com.tw>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        JJ Ding <dgdunix@gmail.com>
-Subject: Re: [PATCH v2] Input: convert obsolete strict_strtox to kstrtox
-In-Reply-To: <87vcqv838n.fsf@emc.com.tw>
-References: <1320666890-29615-1-git-send-email-jj_ding@emc.com.tw> <20111108035930.GC21927@core.coreip.homeip.net> <20111108062800.GA1837@core.coreip.homeip.net> <87vcqv838n.fsf@emc.com.tw>
-User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 08 Nov 2011 16:47:25 +0800
-Message-ID: <87sjlz80gy.fsf@emc.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 8 Nov 2011 03:50:00 -0500
+Date: Tue, 8 Nov 2011 19:49:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
+Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
+Message-Id: <20111108194939.1ddff5af4c877850cfb9e1f9@canb.auug.org.au>
+In-Reply-To: <CAO+b5-pPTt9B1se3-oGrZZ4-mScJh7_9MA29UTbOSB3QR4L38A@mail.gmail.com>
+References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
+	<1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
+	<20111108110300.e8494242e6c404142b1fe4c0@canb.auug.org.au>
+	<CAO+b5-pPTt9B1se3-oGrZZ4-mScJh7_9MA29UTbOSB3QR4L38A@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_Nov_2011_19_49_39_+1100_DxQyOnXa65BzQ2kh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Nov 2011 15:47:36 +0800, JJ Ding <jj_ding@emc.com.tw> wrote:
-> On Mon, 7 Nov 2011 22:28:01 -0800, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > On Mon, Nov 07, 2011 at 07:59:30PM -0800, Dmitry Torokhov wrote:
-> > > 
-> > > Applied, thanks JJ.
-> > > 
-> > 
-> > Sorry, I take it back...
-> > 
-> > > -       if (strict_strtoul(buf, 10, &value) || value > 1)
-> > > +       if (kstrtouint(buf, 10, &value) || value > 1)
-> > >                 return -EINVAL;
-> > 
-> > This mangles error condition from kstrtouint and reporting conditions
-> > beside -EINVAL was the reason for introducing new API IIRC. The proper
-> > conversion should be:
-> > 
-> > 	err = kstrtouint(buf, 10, &value);
-> > 	if (err)
-> > 		return err;
-> > 
-> > 	if (value > 1)
-> > 		return -EINVAL;
-> > 
-> > Thanks.
-> > 
-> 
-> Thanks, I get it. I'll fix and resend.
-> 
-> jj
-> 
+--Signature=_Tue__8_Nov_2011_19_49_39_+1100_DxQyOnXa65BzQ2kh
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thinking a bit more about your suggestion, and looking at the code more
-closely, some uses of these conversions really want a u8, and some want a
-bool. I think I should check the data type where these converted values
-are really used, and use a more appropriate kstrtox.
+On Tue, 8 Nov 2011 08:07:37 +0100 Bart Van Assche <bvanassche@acm.org> wrot=
+e:
+>
+> On Tue, Nov 8, 2011 at 1:03 AM, Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+> > On Mon, 07 Nov 2011 08:51:24 -0600 James Bottomley <James.Bottomley@Han=
+senPartnership.com> wrote:
+> >>=C2=A0The true fix is to do a proper
+> >> teardown instead of hand rolling it. =C2=A0Does this fix it for you?
+> >
+> > I don't get the WARNING any more, but now get lots of:
+> >
+> > scsi: killing requests for dead queue
+>=20
+> This patch should help: http://www.spinics.net/lists/linux-scsi/msg55373.=
+html.
 
-And for those that just need a bool, do you think using strtobool
-introduced in commit d0f1fed29e6e73d9d17f4c91a5896a4ce3938d45 OK?
-That way the user may even type [NnYy01].
+Thanks.  Will that be added to the scsi{,-rc-fixes} trees soon?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-What do you think about the approach above?
+--Signature=_Tue__8_Nov_2011_19_49_39_+1100_DxQyOnXa65BzQ2kh
+Content-Type: application/pgp-signature
 
-Thanks,
-jj
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> > -- 
-> > Dmitry
+iQIcBAEBCAAGBQJOuO0jAAoJEECxmPOUX5FE72oP/RhYlr1uDZ1XdeDZOpHIyOkw
+xgRJDVM1PmhSG/P5y7pEZRP1pu/fTS8mGAmsz4fnc97bOnbdShZ10tZ3+zNrPE64
+zuQi1uN09f0QqfocR+CQrEbj+5cPES0mtKLQBVO+b4JA4fdXx9xHWTrD5pD0IG9o
+kjwg91Zme+ocFNPy3zLFGeVC3h+qJNzD9hd1TGKY8txmRHolJnaLlWUZcRdvvWVD
++Krv9xLwKAsMghdi6MwsGbxLK4+sdz6q6OVhKeYOR7i1aT2hvJV3i+4CzfnLsVWz
+3U9jZlA3QSwa/J2p6NxGTqLhkqLJ7uw2i/yRtzYvrkz7iVtw8PReD9B5O0Xdk1KC
+xbWJR+vPIQObRUSj2+A0z5AkE7tXDIcJZKc0pZa0ZTxGQkpwlQHziSJieUEdEBXw
+sxzAF9iNinJ2MaUc4862GrRXbBVIk+/OtQu1JAX92PBEkmAJMpEN/sHOIYkV1w8v
+8A26DwmUMBhBKOBlfY7eD4yKYxp//gfZnhmDzBkbnXZvvB/yOvwWEmC4Tkrp4nsE
+6MbENYZdYAOo7OPOmVIaQqUlLtB4aC/txnkfnGJB6z17R/ETrpnG2sHahVSqQ7Kn
+4I6aAZudpEsig6irxoa7dlJYsFDcpFWq8bfBOeeyGPljxwo34AscV4s/LOzFJFy1
+w2UVefxG4GdcF10OXA/Z
+=XIBl
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Nov_2011_19_49_39_+1100_DxQyOnXa65BzQ2kh--
