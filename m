@@ -1,219 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab1KHVZy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:25:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899Ab1KHVZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:25:51 -0500
-From: Johannes Weiner <jweiner@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 02/10] mm: vmscan: distinguish global reclaim from global LRU scanning
-Date: Tue,  8 Nov 2011 22:23:20 +0100
-Message-Id: <1320787408-22866-3-git-send-email-jweiner@redhat.com>
-In-Reply-To: <1320787408-22866-1-git-send-email-jweiner@redhat.com>
-References: <1320787408-22866-1-git-send-email-jweiner@redhat.com>
+	id S1754462Ab1KHV2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:28:25 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37118 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab1KHV2X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 16:28:23 -0500
+Message-ID: <4EB99EF0.4090108@suse.cz>
+Date: Tue, 08 Nov 2011 22:28:16 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.32.47
+References: <20111107213431.GA8483@kroah.com>
+In-Reply-To: <20111107213431.GA8483@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The traditional zone reclaim code is scanning the per-zone LRU lists
-during direct reclaim and kswapd, and the per-zone per-memory cgroup
-LRU lists when reclaiming on behalf of a memory cgroup limit.
+On 11/07/2011 10:34 PM, Greg KH wrote:
+> I'm announcing the release of the 2.6.32.47 kernel.
+...
+> Yang Li (1):
+>        powerpc/mpic: Fix problem that affinity is not updated
 
-Subsequent patches will convert the traditional reclaim code to
-reclaim exclusively from the per-memory cgroup LRU lists.  As a
-result, using the predicate for which LRU list is scanned will no
-longer be appropriate to tell global reclaim from limit reclaim.
+Hi, this one is broken:
+arch/powerpc/sysdev/mpic.c: In function 'irq_choose_cpu':
+arch/powerpc/sysdev/mpic.c:574: error: passing argument 1 of 
+'__cpus_equal' from incompatible pointer type
 
-This patch adds a global_reclaim() predicate to tell direct/kswapd
-reclaim from memory cgroup limit reclaim and substitutes it in all
-places where currently scanning_global_lru() is used for that.
+Why the backport of the patch misses the cpus_equal -> cpumask_equal switch?
 
-Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- mm/vmscan.c |   62 +++++++++++++++++++++++++++++++++++-----------------------
- 1 files changed, 37 insertions(+), 25 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a1893c0..189597e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -153,9 +153,25 @@ static LIST_HEAD(shrinker_list);
- static DECLARE_RWSEM(shrinker_rwsem);
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
--#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
-+static bool global_reclaim(struct scan_control *sc)
-+{
-+	return !sc->mem_cgroup;
-+}
-+
-+static bool scanning_global_lru(struct scan_control *sc)
-+{
-+	return !sc->mem_cgroup;
-+}
- #else
--#define scanning_global_lru(sc)	(1)
-+static bool global_reclaim(struct scan_control *sc)
-+{
-+	return true;
-+}
-+
-+static bool scanning_global_lru(struct scan_control *sc)
-+{
-+	return true;
-+}
- #endif
- 
- static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
-@@ -1006,7 +1022,7 @@ keep_lumpy:
- 	 * back off and wait for congestion to clear because further reclaim
- 	 * will encounter the same problem
- 	 */
--	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
-+	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
- 		zone_set_flag(zone, ZONE_CONGESTED);
- 
- 	free_page_list(&free_pages);
-@@ -1325,7 +1341,7 @@ static int too_many_isolated(struct zone *zone, int file,
- 	if (current_is_kswapd())
- 		return 0;
- 
--	if (!scanning_global_lru(sc))
-+	if (!global_reclaim(sc))
- 		return 0;
- 
- 	if (file) {
-@@ -1503,6 +1519,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	if (scanning_global_lru(sc)) {
- 		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
- 			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
-+	} else {
-+		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
-+			&nr_scanned, sc->order, reclaim_mode, zone,
-+			sc->mem_cgroup, 0, file);
-+	}
-+	if (global_reclaim(sc)) {
- 		zone->pages_scanned += nr_scanned;
- 		if (current_is_kswapd())
- 			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
-@@ -1510,14 +1532,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 		else
- 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
- 					       nr_scanned);
--	} else {
--		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
--			&nr_scanned, sc->order, reclaim_mode, zone,
--			sc->mem_cgroup, 0, file);
--		/*
--		 * mem_cgroup_isolate_pages() keeps track of
--		 * scanned pages on its own.
--		 */
- 	}
- 
- 	if (nr_taken == 0) {
-@@ -1658,18 +1672,16 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
- 						&pgscanned, sc->order,
- 						reclaim_mode, zone,
- 						1, file);
--		zone->pages_scanned += pgscanned;
- 	} else {
- 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
- 						&pgscanned, sc->order,
- 						reclaim_mode, zone,
- 						sc->mem_cgroup, 1, file);
--		/*
--		 * mem_cgroup_isolate_pages() keeps track of
--		 * scanned pages on its own.
--		 */
- 	}
- 
-+	if (global_reclaim(sc))
-+		zone->pages_scanned += pgscanned;
-+
- 	reclaim_stat->recent_scanned[file] += nr_taken;
- 
- 	__count_zone_vm_events(PGREFILL, zone, pgscanned);
-@@ -1839,7 +1851,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 
- static int vmscan_swappiness(struct scan_control *sc)
- {
--	if (scanning_global_lru(sc))
-+	if (global_reclaim(sc))
- 		return vm_swappiness;
- 	return mem_cgroup_swappiness(sc->mem_cgroup);
- }
-@@ -1874,9 +1886,9 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	 * latencies, so it's better to scan a minimum amount there as
- 	 * well.
- 	 */
--	if (scanning_global_lru(sc) && current_is_kswapd())
-+	if (current_is_kswapd())
- 		force_scan = true;
--	if (!scanning_global_lru(sc))
-+	if (!global_reclaim(sc))
- 		force_scan = true;
- 
- 	/* If we have no swap space, do not bother scanning anon pages. */
-@@ -1893,7 +1905,7 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
- 		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
- 
--	if (scanning_global_lru(sc)) {
-+	if (global_reclaim(sc)) {
- 		free  = zone_page_state(zone, NR_FREE_PAGES);
- 		/* If we have very few page cache pages,
- 		   force-scan anon pages. */
-@@ -2125,7 +2137,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
- 		 * Take care memory controller reclaiming has small influence
- 		 * to global LRU.
- 		 */
--		if (scanning_global_lru(sc)) {
-+		if (global_reclaim(sc)) {
- 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
- 				continue;
- 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
-@@ -2223,7 +2235,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 	get_mems_allowed();
- 	delayacct_freepages_start();
- 
--	if (scanning_global_lru(sc))
-+	if (global_reclaim(sc))
- 		count_vm_event(ALLOCSTALL);
- 
- 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
-@@ -2237,7 +2249,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		 * Don't shrink slabs when reclaiming memory from
- 		 * over limit cgroups
- 		 */
--		if (scanning_global_lru(sc)) {
-+		if (global_reclaim(sc)) {
- 			unsigned long lru_pages = 0;
- 			for_each_zone_zonelist(zone, z, zonelist,
- 					gfp_zone(sc->gfp_mask)) {
-@@ -2299,7 +2311,7 @@ out:
- 		return 0;
- 
- 	/* top priority shrink_zones still had more to do? don't OOM, then */
--	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
-+	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
- 		return 1;
- 
- 	return 0;
+regards,
 -- 
-1.7.6.4
-
+js
+suse labs
