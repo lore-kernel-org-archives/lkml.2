@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab1KHOzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:55:24 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:34463 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755138Ab1KHOzR (ORCPT
+	id S1755967Ab1KHOz6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:55:58 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:41136 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755138Ab1KHOz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:55:17 -0500
-Date: Tue, 8 Nov 2011 09:55:10 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.2-rc1
-Message-ID: <20111108145510.GA5142@elliptictech.com>
-References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+	Tue, 8 Nov 2011 09:55:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320763712-764-1-git-send-email-marc.zyngier@arm.com>
+References: <1320763712-764-1-git-send-email-marc.zyngier@arm.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 8 Nov 2011 20:25:35 +0530
+Message-ID: <CAMQu2gwL+enHoyiAB7LWix3WqW76HMbmSs_DmPX0h8uX=OBmdw@mail.gmail.com>
+Subject: Re: [PATCH] genirq: don't allow per cpu interrupts to be suspended
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-07 18:10 -0800, Linus Torvalds wrote:
-> Have fun, give it a good testing. There shouldn't be anything hugely
-> scary in there, but there *is* a lot of stuff. The fact that 3.1
-> dragged out did mean that this ended up being one of the bigger merge
-> windows, but I'm not feeling *too* nervous about it.
+On Tue, Nov 8, 2011 at 8:18 PM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> The power management functions related to interrupts do not know
+> (yet) about per-cpu interrupts and end up calling the wrong
+> low-level methods to enable/disable interrupts.
+>
+> This leads to all kind of interesting issues (action taken on one
+> CPU only, updating a refcount which is not used otherwise...).
+>
+> The workaround for the time being is simply to flag these interrupts
+> with IRQF_NO_SUSPEND. At least on ARM, these interrupts are actually
+> dealt with at the architecture level.
+>
+> Reported-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+Just to add, the suspend is broken on mainline
+for ARM machines which are using IRQCHIP_MASK_ON_SUSPEND.
+The $subject patch fixes that issue.
 
-Mode switches are very noisy on an Intel G45 in 3.2-rc1:
+Tested-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-  HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-  HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-  HDMI: detected monitor W2253 at connection type HDMI
-  HDMI: available speakers: FL/FR
-  HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
-
-These lines get printed every single switch; previously only a single
-line was printed once at boot (the "HDMI status" line).
-
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Regards,
+Santosh
