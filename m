@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab1KHLNh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 06:13:37 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:18414 "EHLO relay.sw.ru"
+	id S932322Ab1KHLNp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 06:13:45 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:34395 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932111Ab1KHLNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 06:13:32 -0500
-Subject: [PATCH v2 4/7] SUNRPC: pipefs dentry lookup helper introduced
+	id S932274Ab1KHLNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 06:13:41 -0500
+Subject: [PATCH v2 5/7] SUNRPC: put pipefs superblock link on network namespace
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Tue, 08 Nov 2011 15:12:45 +0300
-Message-ID: <20111108111245.6206.5308.stgit@localhost6.localdomain6>
+Date: Tue, 08 Nov 2011 15:12:53 +0300
+Message-ID: <20111108111253.6206.52611.stgit@localhost6.localdomain6>
 In-Reply-To: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
 References: <20111108111056.6206.11410.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,63 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In all places, where pipefs dentries are created, only directory inode is
-actually required to create new dentry. And all this directories has root
-pipefs dentry as their parent. So we actually don't need this pipefs mount
-point at all if some pipefs lookup method will be provided.
-IOW, all we really need is just superblock and simple lookup method to find
-root's child dentry with appropriate name. And this patch introduces this
-method.
-Note, that no locking implemented in rpc_d_lookup_sb(). So it can be used only
-in case of assurance, that pipefs superblock still exist. IOW, we can use this
-method only in pipefs mount-umount notification subscribers callbacks.
+We have modules (like, pNFS blocklayout module) which creates pipes on
+rpc_pipefs. Thus we need per-net operations for them. To make it possible we
+require appropriate super block. So we have to put sb link on network namespace
+context. Note, that it's not strongly required to create pipes in per-net
+operations. IOW, if pipefs wasn't mounted yet, that no sb link reference will
+present on network namespace and in this case we need just need to pass through
+pipe creation. Pipe dentry will be created during pipefs mount notification.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/sunrpc/rpc_pipe_fs.h |    3 +++
- net/sunrpc/rpc_pipe.c              |   16 ++++++++++++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
+ net/sunrpc/netns.h    |    2 ++
+ net/sunrpc/rpc_pipe.c |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 733ef50..4585985 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -51,6 +51,9 @@ enum {
- 	RPC_PIPEFS_UMOUNT,
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index d013bf2..b384252 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -9,6 +9,8 @@ struct cache_detail;
+ struct sunrpc_net {
+ 	struct proc_dir_entry *proc_net_rpc;
+ 	struct cache_detail *ip_map_cache;
++
++	struct super_block *pipefs_sb;
  };
  
-+extern struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
-+				      const unsigned char *dir_name);
-+
- extern ssize_t rpc_pipe_generic_upcall(struct file *, struct rpc_pipe_msg *,
- 				       char __user *, size_t);
- extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ extern int sunrpc_net_id;
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 07fb7dd..1de840d 100644
+index 1de840d..831e81d 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -1008,6 +1008,22 @@ static const struct rpc_filelist files[] = {
- 	},
- };
+@@ -1030,6 +1030,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	struct inode *inode;
+ 	struct dentry *root;
+ 	struct net *net = data;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	int err;
  
-+/*
-+ * This call can be used only in RPC pipefs mount notification hooks.
-+ */
-+struct dentry *rpc_d_lookup_sb(const struct super_block *sb,
-+			       const unsigned char *dir_name)
-+{
-+	struct qstr dir = {
-+		.name = dir_name,
-+		.len = strlen(dir_name),
-+		.hash = full_name_hash(dir_name, strlen(dir_name)),
-+	};
-+
-+	return d_lookup(sb->s_root, &dir);
-+}
-+EXPORT_SYMBOL_GPL(rpc_d_lookup_sb);
-+
- static int
- rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	sb->s_blocksize = PAGE_CACHE_SIZE;
+@@ -1054,6 +1055,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (err)
+ 		goto err_depopulate;
+ 	sb->s_fs_info = get_net(net);
++	sn->pipefs_sb = sb;
+ 	return 0;
+ 
+ err_depopulate:
+@@ -1074,7 +1076,9 @@ rpc_mount(struct file_system_type *fs_type,
+ void rpc_kill_sb(struct super_block *sb)
  {
+ 	struct net *net = sb->s_fs_info;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 
++	sn->pipefs_sb = NULL;
+ 	put_net(net);
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
 
