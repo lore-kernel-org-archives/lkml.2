@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab1KHQhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:37:48 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42059
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1756084Ab1KHQhp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:37:45 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:34318
+	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753803Ab1KHQg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754448Ab1KHQg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Nov 2011 11:36:26 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         James.Bottomley@HansenPartnership.com, hch@infradead.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 09/11] Staging: hv: storvsc: Upgrade the vmstor protocol version
-Date: Tue,  8 Nov 2011 09:01:48 -0800
-Message-Id: <1320771710-29139-9-git-send-email-kys@microsoft.com>
+Subject: [PATCH 11/11] Staging: hv: storvsc: Support hot-removing of scsi devices
+Date: Tue,  8 Nov 2011 09:01:50 -0800
+Message-Id: <1320771710-29139-11-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1320771710-29139-1-git-send-email-kys@microsoft.com>
 References: <1320771677-29095-1-git-send-email-kys@microsoft.com>
@@ -24,38 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for supporting hot add/remove of scsi devices,
-upgrade the vmstor protocol version.
+Support hot-removing of scsi devices.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   45 ++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 4cdb417..9153641 100644
+index 7c82d14..0245143 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -80,7 +80,7 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
- /* V1 Beta                    0.1 */
- /* V1 RC < 2008/1/31          1.0 */
- /* V1 RC > 2008/1/31          2.0 */
--#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(2, 0)
-+#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(4, 2)
+@@ -328,6 +328,27 @@ static void storvsc_bus_scan(struct work_struct *work)
+ 	kfree(wrk);
+ }
  
++static void storvsc_remove_lun(struct work_struct *work)
++{
++	struct storvsc_scan_work *wrk;
++	struct scsi_device *sdev;
++
++	wrk = container_of(work, struct storvsc_scan_work, work);
++	if (!scsi_host_get(wrk->host))
++		goto done;
++
++	sdev = scsi_device_lookup(wrk->host, 0, 0, wrk->lun);
++
++	if (sdev) {
++		scsi_remove_device(sdev);
++		scsi_device_put(sdev);
++	}
++	scsi_host_put(wrk->host);
++
++done:
++	kfree(wrk);
++}
++
+ static inline struct storvsc_device *get_out_stor_device(
+ 					struct hv_device *device)
+ {
+@@ -1112,6 +1133,7 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+ 	struct scsi_sense_hdr sense_hdr;
+ 	struct vmscsi_request *vm_srb;
++	struct storvsc_scan_work *wrk;
  
+ 	vm_srb = &request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+@@ -1134,6 +1156,29 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ 	else
+ 		scmnd->result = vm_srb->scsi_status;
  
-@@ -106,7 +106,8 @@ enum vstor_packet_operation {
- 	VSTOR_OPERATION_END_INITIALIZATION	= 8,
- 	VSTOR_OPERATION_QUERY_PROTOCOL_VERSION	= 9,
- 	VSTOR_OPERATION_QUERY_PROPERTIES	= 10,
--	VSTOR_OPERATION_MAXIMUM			= 10
-+	VSTOR_OPERATION_ENUMERATE_BUS		= 11,
-+	VSTOR_OPERATION_MAXIMUM			= 11
- };
- 
- /*
++	/*
++	 * If the LUN is invalid; remove the device.
++	 */
++	if (vm_srb->srb_status == 0x20) {
++		struct storvsc_device *stor_dev;
++		struct hv_device *dev = host_dev->dev;
++		struct Scsi_Host *host;
++
++		stor_dev = get_in_stor_device(dev);
++		host = stor_dev->host;
++
++		wrk = kmalloc(sizeof(struct storvsc_scan_work),
++				GFP_ATOMIC);
++		if (!wrk) {
++			scmnd->result = DID_TARGET_FAILURE << 16;
++		} else {
++			wrk->host = host;
++			wrk->lun = vm_srb->lun;
++			INIT_WORK(&wrk->work, storvsc_remove_lun);
++			schedule_work(&wrk->work);
++		}
++	}
++
+ 	if (scmnd->result) {
+ 		if (scsi_normalize_sense(scmnd->sense_buffer,
+ 				SCSI_SENSE_BUFFERSIZE, &sense_hdr))
 -- 
 1.7.4.1
 
