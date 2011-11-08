@@ -1,197 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757920Ab1KRNdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:33:36 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49225 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab1KRNde (ORCPT
+	id S1757939Ab1KRNeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:34:21 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:27254 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757478Ab1KRNdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:33:34 -0500
-Message-ID: <1321623207.3277.4.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: routing bug?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Pozs=E1r_Bal=E1zs?= <pozsy@uhulinux.hu>
-Cc: Sven-Haegar Koch <haegar@sdinet.de>,
-        Linux-Kernel-Mailinglist <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Tam=E1si_J=E1nos?= <janusz@uhulinux.hu>,
-        netdev@vger.kernel.org
-Date: Fri, 18 Nov 2011 14:33:27 +0100
-In-Reply-To: <4EC65C4B.6050505@uhulinux.hu>
-References: <4EC648C9.8080405@uhulinux.hu>
-		 <alpine.DEB.2.02.1111181346480.17023@aurora>
-	 <1321621796.3277.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <4EC65C4B.6050505@uhulinux.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Fri, 18 Nov 2011 08:33:17 -0500
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <12e984094b98dbb5708357610bff5ffa1c61d3a5.1321616787.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1321616787.git.n.voss@weinmann.de>
+References: <cover.1321616787.git.n.voss@weinmann.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Tue, 8 Nov 2011 12:09:30 +0100
+Subject: [PATCH v6 2/5] Replace clk_lookup.con_id with clk_lookup.dev_id entries
+ for twi clk
+To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: ben-linux@fluff.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 18 novembre 2011 à 14:23 +0100, Pozsár Balázs a écrit :
-> On 2011-11-18 14:09, Eric Dumazet wrote:
-> > Le vendredi 18 novembre 2011 à 13:48 +0100, Sven-Haegar Koch a écrit :
-> >    
-> >> Added netdev list to CC:, there you should have a higher chance of a
-> >> usefull answer.
-> >>
-> >> On Fri, 18 Nov 2011, Pozsár Balázs wrote:
-> >>
-> >>      
-> >>> Hi all,
-> >>>
-> >>> I have been struggling with this not easily reproducible issue since a while.
-> >>> I am using linux kernel v3.1.0, and sometimes routing to a few IP addresses
-> >>> does not work. What seems to happen is that instead of sending the packet to
-> >>> the gateway, the kernel treats the destination address as local, and tries to
-> >>> gets its MAC address via ARP.
-> >>>
-> >>> For example, now my current IP address is 172.16.1.104/24, the gateway is
-> >>> 172.16.1.254:
-> >>>
-> >>> |# ifconfig eth0 eth0      Link encap:Ethernet  HWaddr 00:1B:63:97:FC:DC
-> >>>            inet addr:172.16.1.104  Bcast:172.16.1.255  Mask:255.255.255.0
-> >>>            UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
-> >>>            RX packets:230772 errors:0 dropped:0 overruns:0 frame:0
-> >>>            TX packets:171013 errors:0 dropped:0 overruns:0 carrier:0
-> >>>            collisions:0 txqueuelen:1000
-> >>>            RX bytes:191879370 (182.9 Mb)  TX bytes:47173253 (44.9 Mb)
-> >>>            Interrupt:17
-> >>>
-> >>> # route -n
-> >>> Kernel IP routing table
-> >>> Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
-> >>> 0.0.0.0         172.16.1.254    0.0.0.0         UG    0      0        0 eth0
-> >>> 172.16.1.0      0.0.0.0         255.255.255.0   U     1      0        0 eth0
-> >>> |
-> >>>
-> >>> I can ping a few addresses, but not 172.16.0.59:
-> >>>
-> >>> |# ping -c1 172.16.1.254
-> >>> PING 172.16.1.254 (172.16.1.254) 56(84) bytes of data.
-> >>> 64 bytes from 172.16.1.254: icmp_seq=1 ttl=64 time=0.383 ms
-> >>>
-> >>> --- 172.16.1.254 ping statistics ---
-> >>> 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-> >>> rtt min/avg/max/mdev = 0.383/0.383/0.383/0.000 ms
-> >>> root@pozsybook:~# ping -c1 172.16.0.1
-> >>> PING 172.16.0.1 (172.16.0.1) 56(84) bytes of data.
-> >>> 64 bytes from 172.16.0.1: icmp_seq=1 ttl=63 time=5.54 ms
-> >>>
-> >>> --- 172.16.0.1 ping statistics ---
-> >>> 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-> >>> rtt min/avg/max/mdev = 5.545/5.545/5.545/0.000 ms
-> >>> root@pozsybook:~# ping -c1 172.16.0.2
-> >>> PING 172.16.0.2 (172.16.0.2) 56(84) bytes of data.
-> >>> 64 bytes from 172.16.0.2: icmp_seq=1 ttl=62 time=7.92 ms
-> >>>
-> >>> --- 172.16.0.2 ping statistics ---
-> >>> 1 packets transmitted, 1 received, 0% packet loss, time 0ms
-> >>> rtt min/avg/max/mdev = 7.925/7.925/7.925/0.000 ms
-> >>> root@pozsybook:~# ping -c1 172.16.0.59
-> >>> PING 172.16.0.59 (172.16.0.59) 56(84) bytes of data.
-> >>>  From 172.16.1.104 icmp_seq=1 Destination Host Unreachable
-> >>>
-> >>> --- 172.16.0.59 ping statistics ---
-> >>> 1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
-> >>> |
-> >>>
-> >>> When trying to ping 172.16.0.59, I can see in tcpdump that an ARP req was
-> >>> sent:
-> >>>
-> >>> |# tcpdump -n -i eth0|grep ARP
-> >>> tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
-> >>> listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes
-> >>> 15:25:16.671217 ARP, Request who-has 172.16.0.59 tell 172.16.1.104, length 28
-> >>> |
-> >>>
-> >>> and /proc/net/arp has an incomplete entry for 172.16.0.59:
-> >>>
-> >>> |# grep 172.16.0.59 /proc/net/arp
-> >>>
-> >>> 172.16.0.59      0x1         0x0         00:00:00:00:00:00     *        eth0
-> >>> |
-> >>>
-> >>> Please note, that 172.16.0.59 /is/ accessible from this LAN from other
-> >>> computers.
-> >>>
-> >>>
-> >>> Does anyone have any idea of what's going on? Thanks,
-> >>>
-> >>>
-> >>> Balazs Pozsar
-> >>>
-> >>> ps: I think it is related to this one: https://lkml.org/lkml/2011/11/16/292
-> >>>
-> >>> --
-> >>>        
-> > Could you send us result of :
-> >
-> > ip route get 172.16.0.59
-> > ip route list cache match 172.16.0.59
-> >    
-> 
-> I did not tell you in my first mail, that some times different hosts are 
-> reachable and unreachable. I will try to not confuse you :)
-> As of now, 172.16.0.59 is OK, and 172.16.0.37 is NOT OK.
-> Also, 172.16.0.64 is OK now, and 172.16.0.42 is NOT OK now.
-> 
-> The two commands you have requested give the following output for these 
-> IP addresses:
-> 
-> These are OK:
-> 
-> # ip route get 172.16.0.64
-> 172.16.0.64 via 172.16.1.254 dev eth0  src 172.16.1.22
->      cache
-> # ip route get 172.16.0.59
-> 172.16.0.59 via 172.16.1.254 dev eth0  src 172.16.1.22
->      cache
-> 
-> These are NOT OK:
-> 
-> # ip route get 172.16.0.37
-> 172.16.0.37 dev eth0  src 172.16.1.22
->      cache <redirected>  ipid 0x97a4
-> # ip route get 172.16.0.42
-> 172.16.0.42 dev eth0  src 172.16.1.22
->      cache <redirected>  ipid 0x0d21
-> 
-> These are OK:
-> 
-> # ip route list cache match 172.16.0.59
-> 172.16.0.59 via 172.16.1.254 dev eth0  src 172.16.1.22
->      cache
-> # ip route list cache match 172.16.0.64
-> 172.16.0.64 via 172.16.1.254 dev eth0  src 172.16.1.22
->      cache
-> 
-> These are NOT OK:
-> 
-> # ip route list cache match 172.16.0.37
-> 172.16.0.37 dev eth0  src 172.16.1.22
->      cache <redirected>  ipid 0x97a4
-> 172.16.0.37 from 172.16.1.22 dev eth0
->      cache <redirected>  ipid 0x97a4
-> 172.16.0.37 from 172.16.1.22 dev eth0
->      cache <redirected>  ipid 0x97a4
-> # ip route list cache match 172.16.0.42
-> 172.16.0.42 dev eth0  src 172.16.1.22
->      cache <redirected>  ipid 0x0d21
-> 172.16.0.42 from 172.16.1.22 dev eth0
->      cache <redirected>  ipid 0x0d21
-> 
-> 
-> How can I fix this?
-> 
-> Thanks!
+The old driver used con_id clock entries. Convert to use dev_id
+for clock lookup via standard method.
 
-We are working on it (see threads in netdev)
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ arch/arm/mach-at91/at91cap9.c    |    1 +
+ arch/arm/mach-at91/at91rm9200.c  |    1 +
+ arch/arm/mach-at91/at91sam9260.c |    1 +
+ arch/arm/mach-at91/at91sam9261.c |    1 +
+ arch/arm/mach-at91/at91sam9263.c |    1 +
+ arch/arm/mach-at91/at91sam9g45.c |    2 ++
+ arch/arm/mach-at91/at91sam9rl.c  |    2 ++
+ 7 files changed, 9 insertions(+), 0 deletions(-)
 
-You can in the meantime 
-
-echo 0 >/proc/sys/net/ipv4/conf/eth0/accept_redirects
-
-
+diff --git a/arch/arm/mach-at91/at91cap9.c b/arch/arm/mach-at91/at91cap9.c
+index ecdd54d..e69d5e0 100644
+--- a/arch/arm/mach-at91/at91cap9.c
++++ b/arch/arm/mach-at91/at91cap9.c
+@@ -219,6 +219,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ };
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 713d3bd..a52f777 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -193,6 +193,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9260.c b/arch/arm/mach-at91/at91sam9260.c
+index b84a9f6..6e98738 100644
+--- a/arch/arm/mach-at91/at91sam9260.c
++++ b/arch/arm/mach-at91/at91sam9260.c
+@@ -199,6 +199,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t4_clk", "atmel_tcb.1", &tc4_clk),
+ 	CLKDEV_CON_DEV_ID("t5_clk", "atmel_tcb.1", &tc5_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
+ 	/* more usart lookup table for DT entries */
+ 	CLKDEV_CON_DEV_ID("usart", "fffff200.serial", &mck),
+ 	CLKDEV_CON_DEV_ID("usart", "fffb0000.serial", &usart0_clk),
+diff --git a/arch/arm/mach-at91/at91sam9261.c b/arch/arm/mach-at91/at91sam9261.c
+index 658a518..4946fb5 100644
+--- a/arch/arm/mach-at91/at91sam9261.c
++++ b/arch/arm/mach-at91/at91sam9261.c
+@@ -176,6 +176,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.2", &ssc2_clk),
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &hck0),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
+ };
+ 
+ static struct clk_lookup usart_clocks_lookups[] = {
+diff --git a/arch/arm/mach-at91/at91sam9263.c b/arch/arm/mach-at91/at91sam9263.c
+index f83fbb0..2c14e43 100644
+--- a/arch/arm/mach-at91/at91sam9263.c
++++ b/arch/arm/mach-at91/at91sam9263.c
+@@ -189,6 +189,7 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.0", &spi0_clk),
+ 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c", &twi_clk),
+ 	/* fake hclk clock */
+ 	CLKDEV_CON_DEV_ID("hclk", "at91_ohci", &ohci_clk),
+ };
+diff --git a/arch/arm/mach-at91/at91sam9g45.c b/arch/arm/mach-at91/at91sam9g45.c
+index 318b040..357f056 100644
+--- a/arch/arm/mach-at91/at91sam9g45.c
++++ b/arch/arm/mach-at91/at91sam9g45.c
+@@ -220,6 +220,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("spi_clk", "atmel_spi.1", &spi1_clk),
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.0", &tcb0_clk),
+ 	CLKDEV_CON_DEV_ID("t0_clk", "atmel_tcb.1", &tcb0_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.0", &twi0_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.1", &twi1_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
+ 	CLKDEV_CON_DEV_ID(NULL, "atmel-trng", &trng_clk),
+diff --git a/arch/arm/mach-at91/at91sam9rl.c b/arch/arm/mach-at91/at91sam9rl.c
+index a238105..312beb5 100644
+--- a/arch/arm/mach-at91/at91sam9rl.c
++++ b/arch/arm/mach-at91/at91sam9rl.c
+@@ -184,6 +184,8 @@ static struct clk_lookup periph_clocks_lookups[] = {
+ 	CLKDEV_CON_DEV_ID("t2_clk", "atmel_tcb.0", &tc2_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.0", &ssc0_clk),
+ 	CLKDEV_CON_DEV_ID("pclk", "ssc.1", &ssc1_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.0", &twi0_clk),
++	CLKDEV_CON_DEV_ID(NULL, "at91_i2c.1", &twi1_clk),
+ };
+ 
+ static struct clk_lookup usart_clocks_lookups[] = {
+-- 
+1.7.5.4
 
