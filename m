@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1KHTHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:07:48 -0500
-Received: from www17.your-server.de ([213.133.104.17]:41859 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab1KHTHr (ORCPT
+	id S1756323Ab1KHTI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:08:27 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:37446 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753211Ab1KHTI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:07:47 -0500
-Subject: [PATCH] staging: rtl8192e: Use kzalloc rather than kmalloc
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        wlanfae <wlanfae@realtek.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 Nov 2011 20:05:53 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1320779160.8062.139.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Tue, 8 Nov 2011 14:08:26 -0500
+From: Andrei Warkentin <andreiw@vmware.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrei Warkentin <andreiw@vmware.com>
+Subject: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+Date: Tue,  8 Nov 2011 14:08:15 -0500
+Message-Id: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+1 is a power of two, therefore rounddown_pow_of_two(1) should return 1. It does
+in case the argument is a variable but in case it's a constant it behaves
+wrong and returns 0. Probably nobody ever did it so this was never noticed,
+however net/drivers/vmxnet3 with latest GCC does and breaks on unicpu systems.
 
- Use kzalloc rather than kmalloc followed by memset with 0
-
- This considers some simple cases that are common and easy to validate
- Note in particular that there are no ...s in the rule, so all of the
- matched code has to be contiguous
-
- The semantic patch that makes this change is available
- in scripts/coccinelle/api/alloc/kzalloc-simple.cocci.
-
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
 ---
+ include/linux/log2.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff -u -p a/drivers/staging/rtl8192e/rtllib_crypt_wep.c b/drivers/staging/rtl8192e/rtllib_crypt_wep.c
---- a/drivers/staging/rtl8192e/rtllib_crypt_wep.c 2011-11-07 19:38:11.773647045 +0100
-+++ b/drivers/staging/rtl8192e/rtllib_crypt_wep.c 2011-11-08 09:40:08.842565261 +0100
-@@ -38,10 +38,9 @@ static void *prism2_wep_init(int keyidx)
- {
- 	struct prism2_wep_data *priv;
- 
--	priv = kmalloc(sizeof(*priv), GFP_ATOMIC);
-+	priv = kzalloc(sizeof(*priv), GFP_ATOMIC);
- 	if (priv == NULL)
- 		goto fail;
--	memset(priv, 0, sizeof(*priv));
- 	priv->key_idx = keyidx;
- 
- 	priv->tx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
-
+diff --git a/include/linux/log2.h b/include/linux/log2.h
+index 25b8086..ccda848 100644
+--- a/include/linux/log2.h
++++ b/include/linux/log2.h
+@@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+ #define rounddown_pow_of_two(n)			\
+ (						\
+ 	__builtin_constant_p(n) ? (		\
+-		(n == 1) ? 0 :			\
++		(n == 1) ? 1 :			\
+ 		(1UL << ilog2(n))) :		\
+ 	__rounddown_pow_of_two(n)		\
+  )
+-- 
+1.7.4.1
 
