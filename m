@@ -1,111 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab1KHNfw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 08:35:52 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54860 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755653Ab1KHNfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 08:35:16 -0500
-From: Michal Simek <monstr@monstr.eu>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: grant.likely@secretlab.ca, john.williams@petalogix.com,
-        michal.simek@petalogix.com, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org, jacmet@sunsite.dk, arnd@arndb.de
-Subject: [RFC 2/2] serial: 8250: Add OF alias support
-Date: Tue,  8 Nov 2011 14:35:07 +0100
-Message-Id: <1320759307-24877-3-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
-In-Reply-To: <1320759307-24877-2-git-send-email-monstr@monstr.eu>
-References: <1320759307-24877-1-git-send-email-monstr@monstr.eu>
- <1320759307-24877-2-git-send-email-monstr@monstr.eu>
+	id S932303Ab1KHNlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 08:41:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64482 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172Ab1KHNlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 08:41:22 -0500
+Message-ID: <4EB9315A.10806@redhat.com>
+Date: Tue, 08 Nov 2011 14:40:42 +0100
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Theodore Tso <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git	repository,
+ tools/perf/ and tools/kvm/
+References: <20111106231953.GD4500@thunk.org> <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com> <20111107203255.GF24234@thunk.org> <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws> <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu> <20111108093225.GB32533@elte.hu> <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125609.GA14272@ghostprotocols.net>
+In-Reply-To: <20111108125609.GA14272@ghostprotocols.net>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Follow alias number for OF driven boards.
-For example:
-	aliases {
-		serial2 = &RS232_Uart_1;
-	} ;
+  Hi,
 
-Setup port->line number in of_platform_serial_probe from alias node.
+> Indeed, documentation is lacking, I think coming from a kernel
+> standpoint I relied too much in the "documentation is source code"
+> mantra of old days.
 
-Fixing serial8250_find_match_or_unused function is more complicated
-because it is key function which check which port is available.
+Sorry for the shameless plug, but as you are speaking of lacking
+documentation:  Where the heck is the perf config file documented, other
+than source code?  Reading the parser to figure how the config file is
+supposed to look like really isn't fun :(
 
-This was probably done for any ancient ISA support where all ports are
-registered first in serial8250_register_ports (serial8250_isa_init_ports).
-and then, if they are usused, unregistered and registered with
-proper setting. Not sure if this is needed.
+I'm looking for a way to disable the colors in the perf report tui.  Or
+configure them into something readable.  No, light green on light gray
+which is used by default isn't readable.
 
-If port entry matches, it is used. If not, code looks first at entry
-at port->line number to be able to assign ttySX number according
-port->line setup from of_platform_serial_probe. If this port is used
-code looks for the first free entry as before.
-
-The only one change is to check entry on port->line first.
-
-This patch requires more testing because there are several usage of
-standard 8250 compatible driver.
-
-Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- drivers/tty/serial/8250.c      |    7 +++++++
- drivers/tty/serial/of_serial.c |   15 +++++++++++++++
- 2 files changed, 22 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index 7f50999..ade3c77 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -3212,6 +3212,13 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
- 		if (uart_match_port(&serial8250_ports[i].port, port))
- 			return &serial8250_ports[i];
- 
-+	/* Look at setup port->line port first. If is available, use it */
-+	if (port->line >= 0 && port->line < nr_uarts)
-+		if (serial8250_ports[port->line].port.type == PORT_UNKNOWN &&
-+		    serial8250_ports[port->line].port.iobase == 0) {
-+			return &serial8250_ports[port->line];
-+		}
-+
- 	/*
- 	 * We didn't find a matching entry, so look for the first
- 	 * free entry.  We look for one which hasn't been previously
-diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-index 24aa67c..486f2bd 100644
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -98,6 +98,7 @@ static int __devinit of_platform_serial_probe(struct platform_device *ofdev)
- 	struct uart_port port;
- 	int port_type;
- 	int ret;
-+	int id;
- 
- 	match = of_match_device(of_platform_serial_table, &ofdev->dev);
- 	if (!match)
-@@ -115,6 +116,20 @@ static int __devinit of_platform_serial_probe(struct platform_device *ofdev)
- 	if (ret)
- 		goto out;
- 
-+	id = of_alias_get_id(ofdev->dev.of_node, "serial");
-+	if (id < 0) {
-+		dev_warn(&ofdev->dev, "FAILED to find out alias id\n");
-+	} else {
-+		if (id < CONFIG_SERIAL_8250_RUNTIME_UARTS)
-+			port.line = id;
-+		else {
-+			dev_warn(&ofdev->dev,
-+				"FAILED to register serial driver with id %d\n",
-+									id);
-+			goto out;
-+		}
-+	}
-+
- 	switch (port_type) {
- #ifdef CONFIG_SERIAL_8250
- 	case PORT_8250 ... PORT_MAX_8250:
--- 
-1.7.5.4
-
+thanks,
+  Gerd
