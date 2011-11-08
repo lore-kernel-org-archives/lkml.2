@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab1KHQRN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:17:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44365 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756088Ab1KHQRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:17:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,477,1315206000"; 
-   d="scan'208";a="82468511"
-Subject: Re: [PATCH v2 1/2] USB-musb: move to dma_transfer_direction
-From: Vinod Koul <vinod.koul@linux.intel.com>
-To: balbi@ti.com
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <20111108140756.GA20728@legolas.emea.dhcp.ti.com>
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
-	 <1318610350-23335-1-git-send-email-vinod.koul@linux.intel.com>
-	 <20111108140222.GT6921@legolas.emea.dhcp.ti.com>
-	 <20111108140756.GA20728@legolas.emea.dhcp.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Nov 2011 21:42:52 +0530
-Message-ID: <1320768772.32205.149.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756153Ab1KHQVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:21:13 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:44473 "EHLO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755158Ab1KHQVM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 11:21:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <87sjm31ngz.fsf@ti.com>
+References: <1320185752-568-1-git-send-email-omar.ramirez@ti.com>
+	<1320185752-568-3-git-send-email-omar.ramirez@ti.com>
+	<87sjm31ngz.fsf@ti.com>
+Date: Tue, 8 Nov 2011 10:21:08 -0600
+Message-ID: <CAB-zwWgd5U+8UNFe_rLY99VpiaHhTqscwYNF+SmuRTyDi+h3+A@mail.gmail.com>
+Subject: Re: [PATCH v3 2/4] OMAP4: hwmod data: add mmu hwmod for ipu and dsp
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, Benoit Cousson <b-cousson@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>, lo <linux-omap@vger.kernel.org>,
+        lak <linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>, lm <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 16:07 +0200, Felipe Balbi wrote:
-> On Tue, Nov 08, 2011 at 04:02:25PM +0200, Felipe Balbi wrote:
-> > On Fri, Oct 14, 2011 at 10:09:09PM +0530, Vinod Koul wrote:
-> > > fixup usage of dma direction by introducing dma_transfer_direction,
-> > > this patch moves usb/musb driver to use new enum
-> > > 
-> > > Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> > > Cc: Felipe Balbi <balbi@ti.com>
-> > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> > applied, thanks
-> 
-> I replied too early, this breaks compilation. Please review both
-> patches, compile test them at least, and resend Ccing linux-usb and the
-> maintainers of musb (myself) and Renesas... to make it easier, run
-> scripts/get_maintainer.pl on both patches.
-These cant be applied individually as they depends on 1/10 of v1 I had
-sent across, that explains your compilation failure.
+Hi,
 
-If you are fine with this, please ACK it and I can carry these thru
-slave-dmaengine tree
+On Fri, Nov 4, 2011 at 6:23 PM, Kevin Hilman <khilman@ti.com> wrote:
+>> +     .flags          = HWMOD_INIT_NO_RESET,
+>
+> Why is this needed?
+...
+>> +     .flags          = HWMOD_INIT_NO_RESET,
+>
+> And this?
 
+I have this because the hwmod complains about a failure in hard reset,
+even though the reset deassert does complete after the clock is
+enabled. Later on, hwmod will warn again because of a wrong state when
+enabling, I believe because of the failure on _setup but didn't dig
+into it yet.
 
--- 
-~Vinod
+Regards,
 
+Omar
