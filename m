@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310Ab1KHJ2d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:28:33 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:33837 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753731Ab1KHJ2b convert rfc822-to-8bit (ORCPT
+	id S1754530Ab1KHJ3c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:29:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41698 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab1KHJ33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:28:31 -0500
-Subject: Re: [patch 1/3] sched: use jump labels to reduce overhead when
- bandwidth control is inactive
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
-Date: Tue, 08 Nov 2011 10:28:25 +0100
-References: <20111108042632.977080206@google.com>
-	 <20111108042736.560831357@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320744505.2244.7.camel@twins>
-Mime-Version: 1.0
+	Tue, 8 Nov 2011 04:29:29 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: netdev@vger.kernel.org (open list:NETWORKING DRIVERS),
+        linux-kernel@vger.kernel.org (open list)
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH] net/temac: FIX segfault when process old irqs
+Date: Tue,  8 Nov 2011 10:29:21 +0100
+Message-Id: <1320744561-10740-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 10:26 +0100, Peter Zijlstra wrote:
-> On Mon, 2011-11-07 at 20:26 -0800, Paul Turner wrote:
-> > +static void account_cfs_bandwidth_used(int enabled, int was_enabled)
-> > +{
-> > +       /* only need to count groups transitioning between enabled/!enabled */
-> > +       if (enabled && !was_enabled)
-> > +               jump_label_inc(&__cfs_bandwidth_used);
-> > +       else if (!enabled && was_enabled)
-> > +               jump_label_dec(&__cfs_bandwidth_used);
-> > +} 
-> 
-> Can't you use jump_label_enabled(&__cfs_bandwidth_used) to was_enabled ?
+Do not enable the irq until the scatter gather registers are ready to
+handle the data. Otherwise an irq from a packet send/received before
+last close can lead to an access to an invalid memory region on the irq
+handler.
 
-n/m I'm not awake yet..
+Also, stop the dma engine on close.
+
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+---
+ drivers/net/ethernet/xilinx/ll_temac_main.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
+index 4d1658e..c8db76a 100644
+--- a/drivers/net/ethernet/xilinx/ll_temac_main.c
++++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
+@@ -203,6 +203,9 @@ static void temac_dma_bd_release(struct net_device *ndev)
+ 	struct temac_local *lp = netdev_priv(ndev);
+ 	int i;
+ 
++	/* Reset Local Link (DMA) */
++	lp->dma_out(lp, DMA_CONTROL_REG, DMA_CONTROL_RST);
++
+ 	for (i = 0; i < RX_BD_NUM; i++) {
+ 		if (!lp->rx_skb[i])
+ 			break;
+@@ -860,6 +863,8 @@ static int temac_open(struct net_device *ndev)
+ 		phy_start(lp->phy_dev);
+ 	}
+ 
++	temac_device_reset(ndev);
++
+ 	rc = request_irq(lp->tx_irq, ll_temac_tx_irq, 0, ndev->name, ndev);
+ 	if (rc)
+ 		goto err_tx_irq;
+@@ -867,7 +872,6 @@ static int temac_open(struct net_device *ndev)
+ 	if (rc)
+ 		goto err_rx_irq;
+ 
+-	temac_device_reset(ndev);
+ 	return 0;
+ 
+  err_rx_irq:
+-- 
+1.7.7.1
+
