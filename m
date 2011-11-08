@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab1KHWNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 17:13:07 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:35490 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755868Ab1KHWNF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 17:13:05 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 1/2] ah: Correctly pass error codes in ahash output callback.
-Date: Tue,  8 Nov 2011 17:12:44 -0500
-Message-Id: <1320790365-29152-2-git-send-email-nbowler@elliptictech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1320790365-29152-1-git-send-email-nbowler@elliptictech.com>
-References: <1320790365-29152-1-git-send-email-nbowler@elliptictech.com>
+	id S932726Ab1KHWOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 17:14:03 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:15703
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932137Ab1KHWOB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 17:14:01 -0500
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzzz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LUD4F7-01-90Z-02
+X-M-MSG: 
+From: "Petkov, Borislav" <Borislav.Petkov@amd.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>
+CC: Daniel Drake <dsd@laptop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Geode LX boot fails after x86 microcode revision change
+Thread-Topic: Geode LX boot fails after x86 microcode revision change
+Thread-Index: AQHMnlD57YAO6bPZokyNta5nuC+qkJWjweoAgAAZOAD//64ekw==
+Date: Tue, 8 Nov 2011 22:13:56 +0000
+Message-ID: <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com>
+References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com>
+ <20111108203116.GF25083@aftab>,<4EB9A6BC.7050600@zytor.com>
+In-Reply-To: <4EB9A6BC.7050600@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.13.16]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AH4/6 ahash output callbacks pass nexthdr to xfrm_output_resume
-instead of the error code.  This appears to be a copy+paste error from
-the input case, where nexthdr is expected.  This causes the driver to
-continuously add AH headers to the datagram until either an allocation
-fails and the packet is dropped or the ahash driver hits a synchronous
-fallback and the resulting monstrosity is transmitted.
+> On 11/08/2011 12:31 PM, Borislav Petkov wrote:
+> >
+> > it might be that the Geode doesn't have the patch level MSR.., can you
+> > send /proc/cpuinfo from a working kernel please, say 3.1?
+> >
+> > Although, I have rdmsr_safe in the patch there so it actually shouldn't
+> > be an issue, theoretically.
+> >
+> 
+> rdmsr_safe() requires exception table support, may not be available yet.
+> 
+>        -hpa
 
-Correct this issue by simply passing the error code unadulterated.
+This could definitely explain why it hangs, the rdmsr_safe call is
+ in early_init_amd(), so it could really be too early for exception tables.
 
-Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
----
- net/ipv4/ah4.c |    2 --
- net/ipv6/ah6.c |    2 --
- 2 files changed, 0 insertions(+), 4 deletions(-)
+If so, then a family check is unavoidable.
 
-diff --git a/net/ipv4/ah4.c b/net/ipv4/ah4.c
-index c1f4154..33ca186 100644
---- a/net/ipv4/ah4.c
-+++ b/net/ipv4/ah4.c
-@@ -136,8 +136,6 @@ static void ah_output_done(struct crypto_async_request *base, int err)
- 		memcpy(top_iph+1, iph+1, top_iph->ihl*4 - sizeof(struct iphdr));
- 	}
- 
--	err = ah->nexthdr;
--
- 	kfree(AH_SKB_CB(skb)->tmp);
- 	xfrm_output_resume(skb, err);
- }
-diff --git a/net/ipv6/ah6.c b/net/ipv6/ah6.c
-index 2195ae6..ede4d9d 100644
---- a/net/ipv6/ah6.c
-+++ b/net/ipv6/ah6.c
-@@ -324,8 +324,6 @@ static void ah6_output_done(struct crypto_async_request *base, int err)
- #endif
- 	}
- 
--	err = ah->nexthdr;
--
- 	kfree(AH_SKB_CB(skb)->tmp);
- 	xfrm_output_resume(skb, err);
- }
--- 
-1.7.3.4
+Thanks.
+
+(Please forgive the formatting, I'm using the xchange crap)
+
+
 
