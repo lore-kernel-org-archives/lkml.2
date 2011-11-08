@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212Ab1KHQjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:39:35 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34845 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751404Ab1KHQje (ORCPT
+	id S1754638Ab1KHQnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:43:50 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:56072 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab1KHQnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 11:39:34 -0500
-Subject: Re: [PATCH 0000/0011] Staging: hv: storvsc cleanup/new features
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com, hch@infradead.org
-In-Reply-To: <1320771677-29095-1-git-send-email-kys@microsoft.com>
-References: <1320771677-29095-1-git-send-email-kys@microsoft.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Nov 2011 10:39:30 -0600
-Message-ID: <1320770370.2883.10.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Nov 2011 11:43:47 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.63.171]
+In-Reply-To: <20111108162311.GB5182@amd.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+ <CAK=Wgbb5K+rqPNdM2sC8z+9d4-hdcPwV-vXk6gcAYWaO+dVx3w@mail.gmail.com>
+ <20111108140133.GD2113@amd.com> <CAK=WgbYiF04i8XRkn+YQhd=z6uDRwr8JEiWP1CLFLjM7Y+xWKg@mail.gmail.com>
+ <20111108162311.GB5182@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 8 Nov 2011 18:43:26 +0200
+Message-ID: <CAK=WgbaeB5B5ygB58YeANaVraah7ifRa+=hN3AacYv1qt=jYKA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/7] iommu: split mapping to page sizes as supported by
+ the hardware
+To: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 09:01 -0800, K. Y. Srinivasan wrote:
-> Cleanup storvsc based on review comments from James and
-> implement a couple of new features:
-> 
-> 	1) The bulk of this patch-set addresses the review comments by James.
-> 	   James, the last time I had posted the patch to move the storage
-> 	   driver out of staging, you wanted to wait until Greg's tree had
-> 	   percolated up. Now, Greg's staging/hv has been merged up. Do you 
-> 	   now want me to re-post the patch to move the storage driver 
-> 	   out of staging? Let me know.
-> 
-> 	2) I have also implemented the feature to support hot add/remove
-> 	   of devices configured under the scsi controller on the host.
+On Tue, Nov 8, 2011 at 6:23 PM, Joerg Roedel <Joerg.Roedel@amd.com> wrote:
+> Does not apply cleanly. Can you please rebase against v3.2-rc1 and
+> resend?
 
-If you want scsi review on this, it should go to the scsi list:
+sure!
 
-linux-scsi@vger.kernel.org
-
-James
-
-
+will refresh and resend.
