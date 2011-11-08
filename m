@@ -1,40 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab1KHD7i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 22:59:38 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:59569 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1KHD7g (ORCPT
+	id S1755390Ab1KHEBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 23:01:24 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:45907 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab1KHEBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 22:59:36 -0500
-Date: Mon, 7 Nov 2011 19:59:30 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: JJ Ding <jj_ding@emc.com.tw>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        JJ Ding <dgdunix@gmail.com>
-Subject: Re: [PATCH v2] Input: convert obsolete strict_strtox to kstrtox
-Message-ID: <20111108035930.GC21927@core.coreip.homeip.net>
-References: <1320666890-29615-1-git-send-email-jj_ding@emc.com.tw>
-MIME-Version: 1.0
+	Mon, 7 Nov 2011 23:01:20 -0500
+Subject: Re: [PATCH] mount.nfs: ensure AF priority when mounting
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320666890-29615-1-git-send-email-jj_ding@emc.com.tw>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
+Date: Mon, 7 Nov 2011 23:01:09 -0500
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, steved@redhat.com, jlayton@redhat.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1617B125-3EFF-42EB-8F1B-A1D57E6ADC12@oracle.com>
+References: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
+To: Hamo <hamo.by@gmail.com>
+X-Mailer: Apple Mail (2.1084)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4EB8A98E.0015,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 07:54:50PM +0800, JJ Ding wrote:
-> From: JJ Ding <dgdunix@gmail.com>
-> 
-> With commit 67d0a0754455f89ef3946946159d8ec9e45ce33a we mark strict_strtox
-> as obsolete. Convert all remaining such uses in drivers/input/.
-> 
-> Also change the data type from long to int as Dmitry sugguests, we now have
-> kstrtouint which suits these uses better.
-> 
 
-Applied, thanks JJ.
+On Nov 7, 2011, at 10:14 PM, Hamo wrote:
+
+> On different architectures, getaddrinfo() may return different
+> orders of address families. This may confuse the users.
+> This patch fixes this problem by ensuring that we first try
+> through IPv6(if present), then through IPv4.
+> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=750729
+
+By the way, this bug isn't public (I can't access it, anyway).  If RH can't make it public, perhaps a copy of the relevant parts of the bug can be created in bugzilla.linux-nfs.org?  Otherwise, it's hard to tell what you are trying to fix so we can do a thorough patch review.
+
+(Also, I'm not sure why you copied lkml and linux-fsdevel on this NFS-specific user space patch).
+
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> ---
+> utils/mount/stropts.c |   41 +++++++++++++++++++++++++++++++++++++++++
+> 1 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
+> index 4032bf3..aa5ee86 100644
+> --- a/utils/mount/stropts.c
+> +++ b/utils/mount/stropts.c
+> @@ -654,7 +654,28 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
+> 	struct addrinfo *ai;
+> 	int ret = 0;
+> 
+> +	/* first, try IPv6 */
+> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET6)
+> +			continue;
+> +		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
+> +		if (ret != 0)
+> +			return ret;
+> +
+> +		switch (errno) {
+> +		case ECONNREFUSED:
+> +		case EOPNOTSUPP:
+> +		case EHOSTUNREACH:
+> +			continue;
+> +		default:
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	/* then, try IPv4 */
+> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET)
+> +			continue;
+> 		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
+> 		if (ret != 0)
+> 			return ret;
+> @@ -742,7 +763,27 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
+> 	struct addrinfo *ai;
+> 	int ret = 0;
+> 
+> +	/* first, try IPv6 */
+> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET6)
+> +			continue;
+> +		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
+> +		if (ret != 0)
+> +			return ret;
+> +
+> +		switch (errno) {
+> +		case ECONNREFUSED:
+> +		case EHOSTUNREACH:
+> +			continue;
+> +		default:
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	/* then, try IPv4 */
+> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET)
+> +			continue;
+> 		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
+> 		if (ret != 0)
+> 			return ret;
+> -- 
+> 1.7.1
 
 -- 
-Dmitry
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
+
