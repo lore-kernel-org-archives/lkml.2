@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932726Ab1KHWOD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 17:14:03 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:15703
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932137Ab1KHWOB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 17:14:01 -0500
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2dK9371K1432N98dKzz1202hzzz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LUD4F7-01-90Z-02
-X-M-MSG: 
-From: "Petkov, Borislav" <Borislav.Petkov@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@amd64.org>
-CC: Daniel Drake <dsd@laptop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: Geode LX boot fails after x86 microcode revision change
-Thread-Topic: Geode LX boot fails after x86 microcode revision change
-Thread-Index: AQHMnlD57YAO6bPZokyNta5nuC+qkJWjweoAgAAZOAD//64ekw==
-Date: Tue, 8 Nov 2011 22:13:56 +0000
-Message-ID: <F625F33982F5D847987879CC59FF132D6F5B@storexdag03.amd.com>
-References: <CAMLZHHTSuHZoPbm_YfB8G05JA+xKCE4+Jmj4NW8mnZUHogQSBA@mail.gmail.com>
- <20111108203116.GF25083@aftab>,<4EB9A6BC.7050600@zytor.com>
-In-Reply-To: <4EB9A6BC.7050600@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.13.16]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+	id S933340Ab1KHWOf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 17:14:35 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:49117 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756408Ab1KHWOd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 17:14:33 -0500
+Subject: Re: Announcement: Plans for v2.6.34-longterm
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: "George G. Davis" <gdavis@mvista.com>
+In-Reply-To: <20101203210719.GB21223@windriver.com>
+Date: Tue, 8 Nov 2011 17:14:29 -0500
+Cc: "George G. Davis" <gdavis@mvista.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org,
+        jason.wessel@windriver.com, Andi Kleen <andi@firstfloor.org>,
+        lwn@lwn.net
+Content-Transfer-Encoding: 7bit
+Message-Id: <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com>
+References: <20101203210719.GB21223@windriver.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 11/08/2011 12:31 PM, Borislav Petkov wrote:
-> >
-> > it might be that the Geode doesn't have the patch level MSR.., can you
-> > send /proc/cpuinfo from a working kernel please, say 3.1?
-> >
-> > Although, I have rdmsr_safe in the patch there so it actually shouldn't
-> > be an issue, theoretically.
-> >
+Greetings,
+
+On Dec 3, 2010, at 4:07 PM, Paul Gortmaker wrote:
+
+> Firstly, I'd like to thank Greg for all the past work he's done on
+> juggling all these different stable releases - many people have
+> reaped the benefits of them for quite some time, and it only makes
+> sense to spread the loading around as it has grown significantly.
 > 
-> rdmsr_safe() requires exception table support, may not be available yet.
-> 
->        -hpa
+> With that in mind, it is our intention to also maintain a 2.6.34
+> longterm tree.  Jason and I work at Wind River, which already has
+> released products based on v2.6.34, and as such it only makes sense
+> to have a public long-term tree that others who are also based on
+> 2.6.34 can make use of.
 
-This could definitely explain why it hangs, the rdmsr_safe call is
- in early_init_amd(), so it could really be too early for exception tables.
+Are there any plans to continue maintenance of v2.6.34-longterm now that
+kernel.org is back online?
 
-If so, then a family check is unavoidable.
+TIA!
 
-Thanks.
-
-(Please forgive the formatting, I'm using the xchange crap)
-
-
-
+--
+Regards,
+George
