@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab1KHDz5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 22:55:57 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35207 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab1KHDzz (ORCPT
+	id S1755324Ab1KHD52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 22:57:28 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:43454 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab1KHD50 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 22:55:55 -0500
-Date: Mon, 7 Nov 2011 19:55:48 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Andrew Skalski <askalski@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] Additional ALPS touchpad protocol support
-Message-ID: <20111108035548.GB21927@core.coreip.homeip.net>
-References: <1320699160-28492-1-git-send-email-seth.forshee@canonical.com>
-MIME-Version: 1.0
+	Mon, 7 Nov 2011 22:57:26 -0500
+Subject: Re: [PATCH] mount.nfs: ensure AF priority when mounting
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320699160-28492-1-git-send-email-seth.forshee@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
+Date: Mon, 7 Nov 2011 22:57:14 -0500
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, steved@redhat.com, jlayton@redhat.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4A9C7673-1CC1-4B8E-AF18-4DA39A14BCB7@oracle.com>
+References: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
+To: Hamo <hamo.by@gmail.com>
+X-Mailer: Apple Mail (2.1084)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020209.4EB8A8A4.002E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 02:52:33PM -0600, Seth Forshee wrote:
-> Minor updates to previous patches to address review comments and to
-> rebase onto ALPS driver changes in 3.2.
-> 
-> Changes since v1:
-> 
->  - Changed to use stack-allocated buffer instead of kmalloced buffer in
->    alps_poll.
->  - Rebased onto alps.c changes merged in 3.2 merge window, changing all
->    debug and error messages to use psmouse_* print statements.
-> 
-> Seth Forshee (7):
->       Input: ALPS - Move protocol information to Documentation
->       Input: psmouse - Add PSMOUSE_CMD_RESET_WRAP
->       Input: ALPS - Add protocol version field in alps_model_info
->       Input: ALPS - Remove assumptions about packet size
->       Input: ALPS - Add support for protocol versions 3 and 4
->       Input: ALPS - Add semi-MT support for v3 protocol
->       Input: ALPS - Add documentation for protocol versions 3 and 4
-> 
 
-Applied all (bit folded 2 into 5). Thanks Seth.
+On Nov 7, 2011, at 10:14 PM, Hamo wrote:
+
+> On different architectures, getaddrinfo() may return different
+> orders of address families. This may confuse the users.
+
+Isn't this controlled by /etc/gai.conf ?  I'm not sure we want mount.nfs to override that.
+
+> This patch fixes this problem by ensuring that we first try
+> through IPv6(if present), then through IPv4.
+> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=750729
+> 
+> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+> ---
+> utils/mount/stropts.c |   41 +++++++++++++++++++++++++++++++++++++++++
+> 1 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
+> index 4032bf3..aa5ee86 100644
+> --- a/utils/mount/stropts.c
+> +++ b/utils/mount/stropts.c
+> @@ -654,7 +654,28 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
+> 	struct addrinfo *ai;
+> 	int ret = 0;
+> 
+> +	/* first, try IPv6 */
+> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET6)
+> +			continue;
+> +		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
+> +		if (ret != 0)
+> +			return ret;
+> +
+> +		switch (errno) {
+> +		case ECONNREFUSED:
+> +		case EOPNOTSUPP:
+> +		case EHOSTUNREACH:
+> +			continue;
+> +		default:
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	/* then, try IPv4 */
+> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET)
+> +			continue;
+> 		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
+> 		if (ret != 0)
+> 			return ret;
+> @@ -742,7 +763,27 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
+> 	struct addrinfo *ai;
+> 	int ret = 0;
+> 
+> +	/* first, try IPv6 */
+> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET6)
+> +			continue;
+> +		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
+> +		if (ret != 0)
+> +			return ret;
+> +
+> +		switch (errno) {
+> +		case ECONNREFUSED:
+> +		case EHOSTUNREACH:
+> +			continue;
+> +		default:
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	/* then, try IPv4 */
+> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
+> +		if (ai->ai_family != AF_INET)
+> +			continue;
+> 		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
+> 		if (ret != 0)
+> 			return ret;
+> -- 
+> 1.7.1
 
 -- 
-Dmitry
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
+
