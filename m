@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab1KHStu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 13:49:50 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:3615 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754382Ab1KHStt (ORCPT
+	id S1756250Ab1KHSzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 13:55:46 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48665 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab1KHSzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 13:49:49 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=lyV4F/OGVLOrLzO67d75/UOoSUXdn8MfVAVKTdyuMhMzbzP2DFLuT2MkIY+zkE10J
-	yl1n+lbNA82qQj299IGDQ==
-Subject: [RESEND PATCH] x86: mpparse: fix mp_bus_not_pci handling
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dan McGrath <troubledaemon@gmail.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org#2.6.26+,
-        Jonathan Nieder <jrnieder@gmail.com>,
-        Alexey Starikovskiy <astarikovskiy@suse.de>
-Date: Tue, 08 Nov 2011 11:49:34 -0700
-Message-ID: <20111108184934.5180.26968.stgit@bhelgaas.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Tue, 8 Nov 2011 13:55:45 -0500
+Date: Tue, 8 Nov 2011 18:55:25 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, rmallon@gmail.com,
+        Nikolaus Voss <n.voss@weinmann.de>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Message-ID: <20111108185525.GI12913@n2100.arm.linux.org.uk>
+References: <cover.1320753142.git.n.voss@weinmann.de> <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de> <20111108144115.GH20728@legolas.emea.dhcp.ti.com> <4EB9477E.8070002@atmel.com> <20111108152343.GJ20728@legolas.emea.dhcp.ti.com> <20111108182955.GH12913@n2100.arm.linux.org.uk> <20111108184447.GB24399@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108184447.GB24399@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan bisected a Dell PowerEdge 4200 boot regression to commit f8924e770.
-Prior to that commit, 32-bit kernels set mp_bus_not_pci for all buses
-except PCI.  Afterwards, we set mp_bus_not_pci only for ISA.  But ISA is
-not the only non-PCI bus, so it's better to always set mp_bus_not_pci
-and clear it only for PCI.
+On Tue, Nov 08, 2011 at 08:44:48PM +0200, Felipe Balbi wrote:
+> hi,
+> 
+> On Tue, Nov 08, 2011 at 06:29:55PM +0000, Russell King - ARM Linux wrote:
+> > On Tue, Nov 08, 2011 at 05:23:46PM +0200, Felipe Balbi wrote:
+> > > On Tue, Nov 08, 2011 at 04:15:10PM +0100, Nicolas Ferre wrote:
+> > > > -----BEGIN PGP SIGNED MESSAGE-----
+> > > > Hash: SHA1
+> > > > 
+> > > > On 11/08/2011 03:41 PM, Felipe Balbi :
+> > > > 
+> > > > >> +	if (cpu_is_at91rm9200()) {			/* AT91RM9200 Errata #22 */
+> > > > > 
+> > > > > I don't think you should be using cpu_is_* on drivers.
+> > > > 
+> > > > It is a common pattern in at91 drivers and has worked for ages.
+> > > > Do you think it is related to the need to be able to compile the
+> > > > driver for any SoC in the case of multi-SoC zImage support?
+> > > 
+> > > we have drivers compiling on multiple OMAP versions without those hacks.
+> > > Generally, we check the IP revision for that. Don't you have a Revision
+> > > register of some sort ?
+> > 
+> > I'm not sure what your objection is - this is no different from what
+> > happens with OMAP when detecting OMAP1,2,3,4 etc.  E.g.:
+> 
+> so ? Instead of saying this to me, you should contact the
+> authors/maintainers of those drivers and ask them to clean that up.
 
-The workaround was to boot with "noapic".  Dan verified that with this
-patch, his system boots without "noapic".
+Oh for god sake, I was just asking you to clarify your statement in
+light of what is currently being done.
 
-Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=586494
-Reported-and-tested-by: Dan McGrath <troubledaemon@gmail.com>
-Cc: Alexey Starikovskiy <astarikovskiy@suse.de>
-Cc: stable@kernel.org # 2.6.26+
-Reviewed-by: Jonathan Nieder <jrnieder@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- arch/x86/kernel/mpparse.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Now, let me set something straight.  I've been saying that machine_is_xxx()
+should not be used in drivers.  That's a platform thing and platform
+specifics should not be in drivers - it should be passed in via DT or
+platform data.  That's enforced by the way DT works (Grant's decision
+not mine) - with DT you don't have any kind of testable machine ID for
+machine_is_xxx() to use.
 
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 9103b89..0741b062 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -95,8 +95,8 @@ static void __init MP_bus_info(struct mpc_bus *m)
- 	}
- #endif
- 
-+	set_bit(m->busid, mp_bus_not_pci);
- 	if (strncmp(str, BUSTYPE_ISA, sizeof(BUSTYPE_ISA) - 1) == 0) {
--		set_bit(m->busid, mp_bus_not_pci);
- #if defined(CONFIG_EISA) || defined(CONFIG_MCA)
- 		mp_bus_id_to_type[m->busid] = MP_BUS_ISA;
- #endif
+I've never said that cpu_is_xxx() should not - that's something *other*
+people are saying (and quite rightly so) because if we're going to start
+sharing drivers between different SoCs (or even architectures - eg, PXA
+IP appearing on x86) then it doesn't make sense for the type of SoC to
+be tested.  It makes more sense for the revision of the IP implementation
+to be checked IFF such information is available.  If not, some other way
+of controlling the 'features' needs to be sought.
 
+As far as the use of asm/*.h includes, I've NEVER made any statement
+about the use of those in drivers.  In fact, I don't see any reason to
+avoid them _provided_ they're standard cross-arch includes.
+
+As for mach/*.h includes, I don't think that I've made any statement
+about those either, but at this point - given that we're working towards
+a single zImage on ARM - it is _sensible_ to avoid such includes in
+drivers.
+
+So, I think your reaction to my statement is way off mark, and you're
+attributing statements (that it seems you personally don't agree with)
+to me.
