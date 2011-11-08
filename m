@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab1KHJP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:15:26 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:22400 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab1KHJPV (ORCPT
+	id S1753581Ab1KHJQL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:16:11 -0500
+Received: from smtp-out0.tiscali.nl ([195.241.79.175]:58320 "EHLO
+	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab1KHJQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:15:21 -0500
-Date: Tue, 8 Nov 2011 10:15:12 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: lm63: Add support for the NatSemi LM96163.
-Message-ID: <20111108101512.7baa9d29@endymion.delvare>
-In-Reply-To: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Tue, 8 Nov 2011 04:16:06 -0500
+Subject: [PATCH] [TRIVIAL] Documentation: cpufreq: Fix typo and outdated
+ line
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Nov 2011 10:16:03 +0100
+Message-ID: <1320743763.14409.375.camel@x61.thuisdomein>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  7 Nov 2011 11:20:58 +0100, Thierry Reding wrote:
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
->  drivers/hwmon/lm63.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-> index 508cb29..94e373c 100644
-> --- a/drivers/hwmon/lm63.c
-> +++ b/drivers/hwmon/lm63.c
-> @@ -483,7 +483,7 @@ static int lm63_detect(struct i2c_client *new_client,
->  		return -ENODEV;
->  	}
->  
-> -	if (chip_id == 0x41 && address == 0x4c)
-> +	if ((chip_id == 0x41 || chip_id == 0x49) && address == 0x4c)
->  		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
->  	else if (chip_id == 0x51 && (address == 0x18 || address == 0x4e))
->  		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
+'sampling_rate_max' was removed with commit ef598549 ("[...] Remove
+deprecated sysfs file sampling_rate_max"), so its line can be dropped
+from governors.txt. And 'show_sampling_rate_min' is a typo: the sysfs
+file is called 'sampling_rate_min'.
 
-Oh, BTW... there's really no reason to reuse the "lm63" name when both
-chips are not fully compatible. Please introduce a new name for the new
-chip. It's fairly easy.
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+ Documentation/cpu-freq/governors.txt |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-I've added detection support to sensors-detect:
-http://dl.lm-sensors.org/lm-sensors/files/sensors-detect
-
-I would appreciate if you could try it and report.
-
-I would also appreciate if you could provide a dump of your chip's
-registers (using the i2c-dev driver with i2cdump - part of the
-i2c-tools package) for my collection.
-
+diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
+index d221781..c7a2eb8 100644
+--- a/Documentation/cpu-freq/governors.txt
++++ b/Documentation/cpu-freq/governors.txt
+@@ -127,7 +127,7 @@ in the bash (as said, 1000 is default), do:
+ echo `$(($(cat cpuinfo_transition_latency) * 750 / 1000)) \
+     >ondemand/sampling_rate
+ 
+-show_sampling_rate_min:
++sampling_rate_min:
+ The sampling rate is limited by the HW transition latency:
+ transition_latency * 100
+ Or by kernel restrictions:
+@@ -140,8 +140,6 @@ HZ=100:  min=200000us (200ms)
+ The highest value of kernel and HW latency restrictions is shown and
+ used as the minimum sampling rate.
+ 
+-show_sampling_rate_max: THIS INTERFACE IS DEPRECATED, DON'T USE IT.
+-
+ up_threshold: defines what the average CPU usage between the samplings
+ of 'sampling_rate' needs to be for the kernel to make a decision on
+ whether it should increase the frequency.  For example when it is set
 -- 
-Jean Delvare
+1.7.4.4
+
+
+
