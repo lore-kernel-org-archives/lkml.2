@@ -1,117 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324Ab1KHD52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 22:57:28 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:43454 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab1KHD50 convert rfc822-to-8bit (ORCPT
+	id S932096Ab1KHD5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 22:57:51 -0500
+Received: from mailservice.tudelft.nl ([130.161.131.5]:33641 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753437Ab1KHD5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 22:57:26 -0500
-Subject: Re: [PATCH] mount.nfs: ensure AF priority when mounting
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
-Date: Mon, 7 Nov 2011 22:57:14 -0500
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, steved@redhat.com, jlayton@redhat.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4A9C7673-1CC1-4B8E-AF18-4DA39A14BCB7@oracle.com>
-References: <CAO_0yfP8XRH0+Gdn43QSncUFFPPmwbsxx2ZFdPpFTjKAQeuyAw@mail.gmail.com>
-To: Hamo <hamo.by@gmail.com>
-X-Mailer: Apple Mail (2.1084)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020209.4EB8A8A4.002E,ss=1,re=0.000,fgs=0
+	Mon, 7 Nov 2011 22:57:50 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -9.468
+Message-ID: <4EB8A8B6.1010205@tremplin-utc.net>
+Date: Tue, 08 Nov 2011 04:57:42 +0100
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111006 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] lis3lv02d: Avoid zero-division
+References: <s5hy5vx9zmr.wl%tiwai@suse.de>
+In-Reply-To: <s5hy5vx9zmr.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Op 03-11-11 13:09, Takashi Iwai schreef:
+> In some weird situation, HP DriveGuard chip can't read ODR value
+> correctly, and it results in a zero-division Oops in lis3lv02d driver.
+> This patch fixes the Oops by checking the value appopriately, and skips
+> if any weird value is read.
+Hi Takashi,
+Actually, a similar patch already just landed in linus' tree:
+1510dd5954 (lis3lv02d: avoid divide by zero due to unchecked)
 
-On Nov 7, 2011, at 10:14 PM, Hamo wrote:
+However, in the patch applied, the device is disabled (until next 
+reboot) while in yours, the sleep is just skipped. Does it work again 
+after the read of odr fails? If so, maybe I could improve the current 
+version by, after the odr read fails, sleeping a long and safe time and 
+then trying to read the odr again. Then if it fails again, we give up, 
+otherwise the device can be used again.
 
-> On different architectures, getaddrinfo() may return different
-> orders of address families. This may confuse the users.
+Do you have such a device yourself? Could you let me know if after a 
+failing read of the odr, the device keeps working?
 
-Isn't this controlled by /etc/gai.conf ?  I'm not sure we want mount.nfs to override that.
+Cheers,
+Éric
 
-> This patch fixes this problem by ensuring that we first try
-> through IPv6(if present), then through IPv4.
-> Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=750729
-> 
-> Signed-off-by: Yang Bai <hamo.by@gmail.com>
+>
+> Cc:<stable@kernel.org>
+> Signed-off-by: Takashi Iwai<tiwai@suse.de>
 > ---
-> utils/mount/stropts.c |   41 +++++++++++++++++++++++++++++++++++++++++
-> 1 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/utils/mount/stropts.c b/utils/mount/stropts.c
-> index 4032bf3..aa5ee86 100644
-> --- a/utils/mount/stropts.c
-> +++ b/utils/mount/stropts.c
-> @@ -654,7 +654,28 @@ static int nfs_try_mount_v3v2(struct nfsmount_info *mi)
-> 	struct addrinfo *ai;
-> 	int ret = 0;
-> 
-> +	/* first, try IPv6 */
-> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
-> +		if (ai->ai_family != AF_INET6)
-> +			continue;
-> +		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
-> +		if (ret != 0)
-> +			return ret;
+>   drivers/misc/lis3lv02d/lis3lv02d.c |   14 +++++++++++---
+>   1 files changed, 11 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/misc/lis3lv02d/lis3lv02d.c b/drivers/misc/lis3lv02d/lis3lv02d.c
+> index 8b51cd6..c4eb2f3 100644
+> --- a/drivers/misc/lis3lv02d/lis3lv02d.c
+> +++ b/drivers/misc/lis3lv02d/lis3lv02d.c
+> @@ -228,6 +228,14 @@ static int lis3lv02d_set_odr(int rate)
+>   	return -EINVAL;
+>   }
+>
+> +static void lis3lv02d_power_delay(struct lis3lv02d *lis3)
+> +{
+> +	int odr = lis3lv02d_get_odr();
+> +	if (odr<= 0)
+> +		return;
+> +	msleep(lis3->pwron_delay / odr);
+> +}
 > +
-> +		switch (errno) {
-> +		case ECONNREFUSED:
-> +		case EOPNOTSUPP:
-> +		case EHOSTUNREACH:
-> +			continue;
-> +		default:
-> +			goto out;
-> +		}
-> +	}
-> +
-> +	/* then, try IPv4 */
-> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
-> +		if (ai->ai_family != AF_INET)
-> +			continue;
-> 		ret = nfs_do_mount_v3v2(mi, ai->ai_addr, ai->ai_addrlen);
-> 		if (ret != 0)
-> 			return ret;
-> @@ -742,7 +763,27 @@ static int nfs_try_mount_v4(struct nfsmount_info *mi)
-> 	struct addrinfo *ai;
-> 	int ret = 0;
-> 
-> +	/* first, try IPv6 */
-> 	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
-> +		if (ai->ai_family != AF_INET6)
-> +			continue;
-> +		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
-> +		if (ret != 0)
-> +			return ret;
-> +
-> +		switch (errno) {
-> +		case ECONNREFUSED:
-> +		case EHOSTUNREACH:
-> +			continue;
-> +		default:
-> +			goto out;
-> +		}
-> +	}
-> +
-> +	/* then, try IPv4 */
-> +	for (ai = mi->address; ai != NULL; ai = ai->ai_next) {
-> +		if (ai->ai_family != AF_INET)
-> +			continue;
-> 		ret = nfs_do_mount_v4(mi, ai->ai_addr, ai->ai_addrlen);
-> 		if (ret != 0)
-> 			return ret;
-> -- 
-> 1.7.1
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+>   static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+>   {
+>   	u8 ctlreg, reg;
+> @@ -266,7 +274,7 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+>
+>   	lis3->read(lis3, ctlreg,&reg);
+>   	lis3->write(lis3, ctlreg, (reg | selftest));
+> -	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+> +	lis3lv02d_power_delay(lis3);
+>
+>   	/* Read directly to avoid axis remap */
+>   	x = lis3->read_data(lis3, OUTX);
+> @@ -275,7 +283,7 @@ static int lis3lv02d_selftest(struct lis3lv02d *lis3, s16 results[3])
+>
+>   	/* back to normal settings */
+>   	lis3->write(lis3, ctlreg, reg);
+> -	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+> +	lis3lv02d_power_delay(lis3);
+>
+>   	results[0] = x - lis3->read_data(lis3, OUTX);
+>   	results[1] = y - lis3->read_data(lis3, OUTY);
+> @@ -385,7 +393,7 @@ void lis3lv02d_poweron(struct lis3lv02d *lis3)
+>   	}
+>
+>   	/* LIS3 power on delay is quite long */
+> -	msleep(lis3->pwron_delay / lis3lv02d_get_odr());
+> +	lis3lv02d_power_delay(lis3);
+>
+>   	if (lis3->reg_ctrl)
+>   		lis3_context_restore(lis3);
 
