@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab1KHKcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 05:32:53 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36341 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1KHKcw convert rfc822-to-8bit (ORCPT
+	id S1754903Ab1KHKd1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 05:33:27 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:35705 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab1KHKdZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 05:32:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1320744887.14409.379.camel@x61.thuisdomein>
-References: <1320673476.14409.367.camel@x61.thuisdomein>
-	<alpine.LNX.2.00.1111081025470.1964@pobox.suse.cz>
-	<1320744887.14409.379.camel@x61.thuisdomein>
-Date: Tue, 8 Nov 2011 11:32:51 +0100
-X-Google-Sender-Auth: Aa2D7tHh_mwRx9-DqKtFi1qza1g
-Message-ID: <CAMuHMdWTyQDJZ2LuQfdyH1U5SMFKu6YPPqnxwJdDQyoCkJqk=Q@mail.gmail.com>
-Subject: Re: [PATCH] [TRIVIAL] 8250_hp300: Fix warning typo 'CONFIG_8250'
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-m68k@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Nov 2011 05:33:25 -0500
+Subject: Re: [F.A.Q.] perf ABI backwards and forwards compatibility
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Vince Weaver <vince@deater.net>,
+        Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Tue, 08 Nov 2011 11:32:46 +0100
+In-Reply-To: <20111108102235.GA1241@elte.hu>
+References: <20111106183132.GA4500@thunk.org>
+	 <CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
+	 <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
+	 <20111106231953.GD4500@thunk.org>
+	 <alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
+	 <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
+	 <20111107175942.GA9395@elte.hu> <y0mpqh3og3v.fsf@fche.csb>
+	 <alpine.LFD.2.02.1111072204370.3082@tux.localdomain>
+	 <20111107203514.GG24234@thunk.org> <20111108102235.GA1241@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320748366.2244.15.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 10:34, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Tue, 2011-11-08 at 10:26 +0100, Jiri Kosina wrote:
->> On Mon, 7 Nov 2011, Paul Bolle wrote:
->> > 1) If SERIAL_8250_HP300 is set but neither HPDCA nor HPAPCI are set we
->> > end up with an elaborate nop, don't we? Initialization should always
->> > fail in that case. So effectively SERIAL_8250_HP300 depends on HPDCA
->> > and/or HPAPCI. Was there perhaps some problem in translating that
->> > dependency into a Kconfig dependency?
->
-> [...]
->
->> > --- a/drivers/tty/serial/8250_hp300.c
->> > +++ b/drivers/tty/serial/8250_hp300.c
->> > @@ -21,7 +21,7 @@
->> >  #include "8250.h"
->> >
->> >  #if !defined(CONFIG_HPDCA) && !defined(CONFIG_HPAPCI)
->> > -#warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
->> > +#warning CONFIG_SERIAL_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
->> >  #endif
->>
->> What is the point of this warning anyway? Shouldn't everything necessary
->> be taken care of by Kconfig rules?
->
-> That's exactly what I'm trying to find out with my questions (aimed at
-> the m68k people, see 1) above).
+On Tue, 2011-11-08 at 11:22 +0100, Ingo Molnar wrote:
+> 
+> We do even more than that, the perf ABI is fully backwards *and* 
+> forwards compatible: you can run older perf on newer ABIs and newer 
+> perf on older ABIs. 
 
-I already had that on my todo list...
+The ABI yes, the tool no, the tool very much relies on some newer ABI
+parts. Supporting fallbacks isn't always possible/wanted.
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
