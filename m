@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab1KHEV4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 23:21:56 -0500
-Received: from gate.crashing.org ([63.228.1.57]:44646 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab1KHEVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 23:21:55 -0500
-Message-ID: <1320726103.9419.14.camel@pasglop>
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Nov 2011 15:21:43 +1100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755122Ab1KHE0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 23:26:44 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43225 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab1KHE0m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 23:26:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111108031242.GU2203@ZenIV.linux.org.uk>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+ <20111108031242.GU2203@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 7 Nov 2011 20:26:20 -0800
+X-Google-Sender-Auth: k0vLmpaW1FJcrk0UksPr4ao1dGs
+Message-ID: <CA+55aFydrFEKUaSV-JPKXqPc63imZVmaVW0n6Ft_YqoWxp7RQQ@mail.gmail.com>
+Subject: Re: Linux 3.2-rc1
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Mon, Nov 7, 2011 at 7:12 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> FWIW, agruen seems to be doing patch(1) development these days; the last
+> snapshot has this in NEWS:
+>
+> * Support for most features of the "diff --git" format: renames and copies,
+>  permission changes, symlink diffs.
 
-Me again :-) So yesterday you pulled my -next branch with the bulk of
-what happened since the last merge window up to when I left for my long
-vacation (5 weeks). Today are a few remaining nits that happened during
-that time.
+Oh, good.
 
-Essentially small fixes, a defconfig bit, some janitorial stuff
-(IRQ_DISABLED removal), a board support for 52xx that I forgot to pull
-from Anatolij, and a fix to properly parse NUMA info from the
-device-tree on powernc.
+> Caveats:
+>  + Binary diffs are not supported yet; patch will complain and skip them.
+>  + In the "diff --git" format, all the patches are relative to the original
+>    state of the files to patch, allowing things like criss-cross renames.
+>    GNU patch will currently fail for such patches.
 
-Ah, also finally add main memory to /proc/iomem. I've resisted that for
-a long time but too much userspace gunk relies on it so here we go.
+This is all fine. The criss-cross renames are possible, but I don't
+generate them: you need to specify the "-B" flag to git to "break"
+existing names, and none of my normal kernel patches ever do that. It
+can be useful to find cases where people have renamed things on top of
+existing files (which does happen occasionally), but on the whole it's
+not a big feature.
 
-Cheers,
-Ben.
+And the binary patches we've always generated the magical git binary
+version of, since there is no traditional format for that at all - and
+it has never been a problem in practice. I think the only binary file
+we have is the logo, and that one doesn't change.
 
-The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
+So it sounds like 'patch' will handle all the cases that are really relevant.
 
-  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
+> Hell knows how long until they release it and distros pick the result, of
+> course.  Their git tree on git://git.savannah.gnu.org/patch.git is fairly
+> quiet; there had been a bunch of local fixes since the last snapshot (this
+> April) but not much else...
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
+It sounds like I should continue to do the traditional patches for a
+while longer, but it does sound like it's an issue that will fix
+itself in the not too distant future.  Goodie.
 
-Anton Blanchard (1):
-      powerpc: Add System RAM to /proc/iomem
-
-Benjamin Herrenschmidt (1):
-      Merge remote-tracking branch 'agust/next' into merge
-
-Dipankar Sarma (1):
-      powerpc/numa: NUMA topology support for PowerNV
-
-Geoff Levand (2):
-      powerpc/ps3: Fix PS3 repository build warnings
-      powerpc/ps3: Fix lv1_gpu_attribute hcall
-
-Heiko Schocher (2):
-      powerpc/5200: add support for charon board
-      powerpc, tqm5200: update tqm5200_defconfig to fit for charon board.
-
-Michael Neuling (1):
-      powerpc: Add KVM as module to defconfigs
-
-Nishanth Aravamudan (1):
-      powerpc/kvm: Fix build with older toolchains
-
-Yong Zhang (2):
-      powerpc/irq: Remove IRQF_DISABLED
-      powerpc/ps3: irq: Remove IRQF_DISABLED
-
- arch/powerpc/boot/dts/charon.dts               |  236 ++++++++++++++++++++++++
- arch/powerpc/configs/52xx/tqm5200_defconfig    |   20 ++-
- arch/powerpc/configs/ppc64_defconfig           |    4 +
- arch/powerpc/configs/pseries_defconfig         |    4 +
- arch/powerpc/include/asm/floppy.h              |    4 +-
- arch/powerpc/include/asm/lv1call.h             |    2 +-
- arch/powerpc/include/asm/xics.h                |    4 +-
- arch/powerpc/kernel/smp.c                      |    2 +-
- arch/powerpc/kvm/book3s_hv_rmhandlers.S        |    2 +-
- arch/powerpc/mm/mem.c                          |   30 +++
- arch/powerpc/mm/numa.c                         |   24 ++-
- arch/powerpc/platforms/52xx/mpc5200_simple.c   |    1 +
- arch/powerpc/platforms/cell/beat.c             |    2 +-
- arch/powerpc/platforms/cell/celleb_scc_pciex.c |    2 +-
- arch/powerpc/platforms/cell/iommu.c            |    3 +-
- arch/powerpc/platforms/cell/pmu.c              |    2 +-
- arch/powerpc/platforms/cell/spu_base.c         |    9 +-
- arch/powerpc/platforms/powermac/pic.c          |    1 -
- arch/powerpc/platforms/powermac/smp.c          |    4 +-
- arch/powerpc/platforms/ps3/device-init.c       |    2 +-
- arch/powerpc/platforms/ps3/repository.c        |   32 ++--
- arch/powerpc/sysdev/mpic.c                     |    2 -
- arch/powerpc/sysdev/ppc4xx_soc.c               |    2 +-
- arch/powerpc/sysdev/xics/xics-common.c         |    5 +-
- drivers/ps3/ps3-vuart.c                        |    2 +-
- drivers/ps3/ps3stor_lib.c                      |    2 +-
- sound/ppc/snd_ps3.c                            |    2 +-
- 27 files changed, 343 insertions(+), 62 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/charon.dts
-
-
+              Linus
