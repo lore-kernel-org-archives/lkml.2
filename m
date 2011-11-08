@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab1KHOCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 09:02:50 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:45386 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751141Ab1KHOCt (ORCPT
+	id S1755818Ab1KHODc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 09:03:32 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36316 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754649Ab1KHODa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 09:02:49 -0500
-Date: Tue, 8 Nov 2011 16:02:43 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
-        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 2/2] USB-renesas: move to dma_transfer_direction
-Message-ID: <20111108140241.GU6921@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
- <1318610350-23335-2-git-send-email-vinod.koul@linux.intel.com>
+	Tue, 8 Nov 2011 09:03:30 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3/Wm4stOzDzLYPbq"
-Content-Disposition: inline
-In-Reply-To: <1318610350-23335-2-git-send-email-vinod.koul@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [93.172.63.171]
+In-Reply-To: <20111108140133.GD2113@amd.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+ <CAK=Wgbb5K+rqPNdM2sC8z+9d4-hdcPwV-vXk6gcAYWaO+dVx3w@mail.gmail.com> <20111108140133.GD2113@amd.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 8 Nov 2011 16:03:09 +0200
+Message-ID: <CAK=WgbYiF04i8XRkn+YQhd=z6uDRwr8JEiWP1CLFLjM7Y+xWKg@mail.gmail.com>
+Subject: Re: [PATCH v4 0/7] iommu: split mapping to page sizes as supported by
+ the hardware
+To: Joerg Roedel <Joerg.Roedel@amd.com>
+Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 8, 2011 at 4:01 PM, Joerg Roedel <Joerg.Roedel@amd.com> wrote:
+> On Tue, Nov 08, 2011 at 02:57:02PM +0200, Ohad Ben-Cohen wrote:
+>> Joerg, gentle reminder. thanks.
+>
+> Just wanted to wait until -rc1 is out and I can start merging
+> new stuff :)
 
---3/Wm4stOzDzLYPbq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Fri, Oct 14, 2011 at 10:09:10PM +0530, Vinod Koul wrote:
-> fixup usage of dma direction by introducing dma_transfer_direction,
-> this patch moves usb/renesas driver to use new enum
->=20
-> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-
-applied, thanks
-
---=20
-balbi
-
---3/Wm4stOzDzLYPbq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOuTaBAAoJEIaOsuA1yqREqfoQAJZyjdLdlKS1rRajDBovt/W3
-cCGG03w9bmqk4XLnPN+uwliT99hjMC/mEqErSOX0LShC+obJqHkx2gWfAHZyTii2
-VRVc6XrMmt5Sn6NaTNRGODoLiPuQTB4j22kDmP+EENbKhlnulF2gcUT+XnvLPr1D
-AnyN/OF9Ocg20HVv6MBKlOPfquLAyxHf/at6QYxaeGlnbn1kc4L0hhbhWVJKVA5/
-K/d6daNFNtxR76QEARomUfkOWQaS9gWMnfXhvf2am9LmgFALEVwxQUAcaSUl3+Nl
-LZF89eJwA9eug70PhXncyyFm281MDRbfT+TLJIF9xTexUopbGZ4y2gMvqm0HM9kB
-PkPTr76xNAn9k+UzQUvzjBXeMvpeU1NOwrkfCp1qxKckmn6HkcMe8C/KaWYuuE4G
-1/R0cLYWbQDSSUxJtGuhU6rGXQMPWphg7MHYI5tx0GXgr3ana0Cq4MlKufb4/pBT
-bCrw+jgB7aYjX3UfbO/A5fXDkvTncEjtlONEtdNY4XmY4kt9smKEbGzL9KTXNqxx
-fOjJ/1TEnJ0NZ0khFI7YevsEeVY/saizR7RJzPGWGxgcDRblNRaYP/tcSLCPlvMm
-R8+dNYjPnzqYkZWP0CbL8RQS4IlDfv/VvOcNlVGd7TGadmwvP6XbD/vfCTwtL4pP
-8mNSYc0aF70CdsO+9cFe
-=ytRX
------END PGP SIGNATURE-----
-
---3/Wm4stOzDzLYPbq--
+np, thanks :)
