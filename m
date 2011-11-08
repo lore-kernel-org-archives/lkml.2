@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1KHTI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:08:27 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:37446 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753211Ab1KHTI0 (ORCPT
+	id S1756334Ab1KHTJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:09:05 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:21901 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753920Ab1KHTJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:08:26 -0500
-From: Andrei Warkentin <andreiw@vmware.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrei Warkentin <andreiw@vmware.com>
-Subject: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
-Date: Tue,  8 Nov 2011 14:08:15 -0500
-Message-Id: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
-X-Mailer: git-send-email 1.7.4.1
+	Tue, 8 Nov 2011 14:09:04 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Tue, 08 Nov 2011 14:08:58 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv3 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
+In-reply-to: <1320777184-22446-3-git-send-email-sboyd@codeaurora.org>
+Message-id: <alpine.LFD.2.02.1111081406220.3307@xanadu.home>
+References: <1320777184-22446-1-git-send-email-sboyd@codeaurora.org>
+ <1320777184-22446-3-git-send-email-sboyd@codeaurora.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1 is a power of two, therefore rounddown_pow_of_two(1) should return 1. It does
-in case the argument is a variable but in case it's a constant it behaves
-wrong and returns 0. Probably nobody ever did it so this was never noticed,
-however net/drivers/vmxnet3 with latest GCC does and breaks on unicpu systems.
+On Tue, 8 Nov 2011, Stephen Boyd wrote:
 
-Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
----
- include/linux/log2.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Add support for DEBUG_LL on the 8660 and 8960 development boards.
+> While we're here cleanup the uncompress.h code a bit. Avoid
+> the use of readl/writel as those are Linux specific APIs that
+> aren't guaranteed to work in the decompressor.
+> 
+> Cc: Nicolas Pitre <nico@fluxnic.net>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-diff --git a/include/linux/log2.h b/include/linux/log2.h
-index 25b8086..ccda848 100644
---- a/include/linux/log2.h
-+++ b/include/linux/log2.h
-@@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
- #define rounddown_pow_of_two(n)			\
- (						\
- 	__builtin_constant_p(n) ? (		\
--		(n == 1) ? 0 :			\
-+		(n == 1) ? 1 :			\
- 		(1UL << ilog2(n))) :		\
- 	__rounddown_pow_of_two(n)		\
-  )
--- 
-1.7.4.1
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
+Independently from this patch, I was wondering about this code:
+
+> +	.macro	senduart, rd, rx
+> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
+> +	@ Write the 1 character to UARTDM_TF
+> +	str	\rd, [\rx, #0x70]
+> +#else
+>  	teq	\rx, #0
+>  	strne	\rd, [\rx, #0x0C]
+> +#endif
+>  	.endm
+
+Why testing for zero in the #else part?  The upper level code should 
+never call this macro with a null byte.
+
+
+Nicolas
