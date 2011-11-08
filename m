@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab1KHVpz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:45:55 -0500
-Received: from smtp-out.google.com ([74.125.121.67]:52826 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab1KHVpi (ORCPT
+	id S1753278Ab1KHVrh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:47:37 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38972 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab1KHVrg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:45:38 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=oTWEtYo0zZIhpsNlXzDgYkrQNTiFQXgz/gGlSaFBV/gC5lkvXgzFJ9xQAOLfyukoX
-	HpjNdMZNKM+MotXkx/PHg==
-Subject: [PATCH RFC v3 0/3] Support multiple VirtioConsoles.
-To: Greg Kroah-Hartman <gregkh@suse.de>
-From: Miche Baker-Harvey <miche@google.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        Anton Blanchard <anton@samba.org>, Amit Shah <amit.shah@redhat.com>,
-        Mike Waychison <mikew@google.com>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Eric Northrup <digitaleric@google.com>
-Date: Tue, 08 Nov 2011 13:44:53 -0800
-Message-ID: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
-User-Agent: StGit/0.15
+	Tue, 8 Nov 2011 16:47:36 -0500
+Message-ID: <4EB9A373.1010508@suse.cz>
+Date: Tue, 08 Nov 2011 22:47:31 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Greg KH <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net,
+        Jiajun Wu <b06378@freescale.com>, Li Yang <leoli@freescale.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: ppc: irq_choose_cpu breaks build [was: Linux 2.6.32.47]
+References: <20111107213431.GA8483@kroah.com>
+In-Reply-To: <20111107213431.GA8483@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Amit pointed out that the patches never went out. This was a resend of
-the series meant to go out on 11/2/2011; Now it's a resend of the mail this
-morning, with everyone copied on the same mail.  So sorry for the spam!
-This is v3.)
+Damn, CCs fixed.
 
-This patchset applies to linux-next/next-20111102.
+On 11/07/2011 10:34 PM, Greg KH wrote:
+> I'm announcing the release of the 2.6.32.47 kernel.
+...
+> Yang Li (1):
+>        powerpc/mpic: Fix problem that affinity is not updated
 
-This series implements support for multiple virtio_consoles using KVM.
+Hi, this one is broken:
+arch/powerpc/sysdev/mpic.c: In function 'irq_choose_cpu':
+arch/powerpc/sysdev/mpic.c:574: error: passing argument 1 of 
+'__cpus_equal' from incompatible pointer type
 
-This patchset addresses several issues associated with trying to
-establish multiple virtio consoles. 
+Why the backport of the patch misses the cpus_equal -> cpumask_equal switch?
 
-I'm trying to start a guest via KVM that supports multiple virtual
-consoles, with getty's on each, and with some being console devices.
-
-These patches let me establish more than one VirtioConsole (I'm
-running eight at the moment), and enable console output appearing on
-one of them.  It still doesn't successfully generate console output on
-multiple VirtioConsoles.
-
-Let me apologise for my last patch having gotten into Linus' tree, and
-leaving other people to deal with crashes.  I had meant to be asking
-for guidance, but I didn't mark it as "RFC".
-
-This series reflects the input from Konrad Rzeszutek, Amit Shah, Stephen
-Boyd, and Rusty Russell.  I think we do have to limit hvc_alloc() to one
-thread.
-
-I would appreciate any comments or feedback, or accept if appropriate.
-
-Thanks,
-Miche Baker-Harvey
-
----
-
-Miche Baker-Harvey (3):
-      virtio_console:  Fix locking of vtermno.
-      hvc_init():  Enforce one-time initialization.
-      Use separate struct console structure for each hvc_console.
-
-
- drivers/char/virtio_console.c |    9 ++++++---
- drivers/tty/hvc/hvc_console.c |   33 +++++++++++++++++++++++++++++++--
- drivers/tty/hvc/hvc_console.h |    1 +
- 3 files changed, 38 insertions(+), 5 deletions(-)
-
+regards,
 -- 
+js
+suse labs
