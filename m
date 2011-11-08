@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab1KHJHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:07:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48524 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1KHJHn (ORCPT
+	id S1752911Ab1KHJL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:11:57 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:40779 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796Ab1KHJLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:07:43 -0500
-Date: Tue, 8 Nov 2011 17:07:35 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
-        sergey.senozhatsky@gmail.com, bp@alien8.de,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
-Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
-Message-ID: <20111108090735.GA4038@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
- <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
- <1320669279.18053.29.camel@twins>
- <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
- <1320682230.17809.11.camel@twins>
- <20111108025847.GB11439@zhy>
- <1320739015.2244.0.camel@twins>
- <20111108081433.GA3746@zhy>
- <1320741980.2244.4.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Tue, 8 Nov 2011 04:11:54 -0500
+Date: Tue, 8 Nov 2011 10:07:16 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Hayes Wang <hayeswang@realtek.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] r8169: increase the delay parameter of pm_schedule_suspend
+Message-ID: <20111108090716.GA4885@electric-eye.fr.zoreil.com>
+References: <1320734677-1372-1-git-send-email-hayeswang@realtek.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320741980.2244.4.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1320734677-1372-1-git-send-email-hayeswang@realtek.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 09:46:20AM +0100, Peter Zijlstra wrote:
-> On Tue, 2011-11-08 at 16:14 +0800, Yong Zhang wrote:
-> > 
-> > But how do we deal with ->class_cache? Always set it in
-> > loop_up_lock_class()? 
-> 
-> Hrm.. good point, aside from that there's another problem as well, I
-> think we can deal with the cache being NULL, but is memset() an atomic
-> write? If not a read could observe an intermediate state and go funny.
+Hayes Wang <hayeswang@realtek.com> :
+> The link down would occur when reseting PHY. And it would take about 2 ~ 5 seconds
+> from link down to link up. If the delay of pm_schedule_suspend is not long enough,
+> the device would enter runtime_suspend before link up. After link up, the device
+> would wake up and reset PHY again. Then, you would find the driver keep in a loop
+> of runtime_suspend and rumtime_resume.
 
-Yup.
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
 
-> 
-> I'm tempted to go with the pure kmemcheck_mark_initialized() thing for
-> now.
+So far the worst offender here is the 8111evl (RTL_GIGA_MAC_VER_34) with a
+max delay a bit below 4000 ms.
 
-me too :)
+[...]
+[ 4195.444121] r8169 0000:03:00.0: 8111e-vl-0: link up
+[ 4195.549396] r8169 0000:03:00.0: 8111e-vl-0: link down
+[ 4195.888002] r8169 0000:03:00.0: 8111e-vl-0: link up
+[ 4199.444120] r8169 0000:03:00.0: 8111e-vl-0: link up
+[ 4199.582073] r8169 0000:03:00.0: 8111e-vl-0: link down
 
-So something like below?
+[...]
+[ 4171.580422] r8169 0000:03:00.0: 8111e-vl-0: link down
+[ 4171.904002] r8169 0000:03:00.0: 8111e-vl-0: link up
+[ 4175.444131] r8169 0000:03:00.0: 8111e-vl-0: link up
+[ 4175.547453] r8169 0000:03:00.0: 8111e-vl-0: link down
 
-Thanks,
-Yong
----
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH] lockdep: kmemcheck: annotate ->lock in lockdep_init_map()
+The 8168d-vb-gr (RTL_GIGA_MAC_VER_26) and the 8168b (RTL_GIGA_MAC_VER_12)
+worked out of the box without the patch - at least with a kernel including
+Rafael's recent changes - and the old PCI 8169 always worked.
 
-Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
-lockdep_init_map() will clear all the struct. But it will break
-lock_set_class()/lock_set_subclass(). A typical race condition
-is like below:
+I have not tested the 8168f nor the 810x yet.
 
-     CPU A                                   CPU B
-lock_set_subclass(lockA);
- lock_set_class(lockA);
-   lockdep_init_map(lockA);
-     /* lockA->name is cleared */
-     memset(lockA);
-                                     __lock_acquire(lockA);
-                                       /* lockA->class_cache[] is cleared */
-                                       register_lock_class(lockA);
-                                         look_up_lock_class(lockA);
-                                           WARN_ON_ONCE(class->name !=
-                                                     lock->name);
+Increasing the delay over and over in the driver alone will not ensure
+that the system is always stable but it should send the stuff on a far
+enough orbit for some time.
 
-     lock->name = name;
-
-So annotate ->lock with kmemcheck_mark_initialized() to cure this problem
-and the one reported in commit f59de89.
-
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
----
- kernel/lockdep.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index e69434b..08a2b1b 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2948,7 +2948,7 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 		      struct lock_class_key *key, int subclass)
- {
--	memset(lock, 0, sizeof(*lock));
-+	kmemcheck_mark_initialized(lock, sizeof(*lock));
- 
- #ifdef CONFIG_LOCK_STAT
- 	lock->cpu = raw_smp_processor_id();
 -- 
-1.7.5.4
-
+Ueimor
