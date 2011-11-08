@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab1KHXRz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 18:17:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60502 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754874Ab1KHXRy (ORCPT
+	id S1755375Ab1KHXTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 18:19:19 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:47494 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab1KHXTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 18:17:54 -0500
-Date: Tue, 8 Nov 2011 15:17:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Stephen Wilson <wilsons@start.ca>,
-        Alexey Dobriyan <adobriyan@gmail.com>, security@kernel.org
-Subject: Re: [PATCH] proc: restrict access to /proc/$PID/{sched,schedstat}
-Message-Id: <20111108151752.b2e37741.akpm@linux-foundation.org>
-In-Reply-To: <20111108115900.GA14587@albatros>
-References: <20111105104828.GA3489@albatros>
-	<20111108115900.GA14587@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 8 Nov 2011 18:19:18 -0500
+Date: Wed, 9 Nov 2011 10:19:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failed import of the rr quilt series
+Message-Id: <20111109101909.585d2406dc46af8890f28e66@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__9_Nov_2011_10_19_09_+1100_=5cWu3jO_E3MBfi2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Nov 2011 15:59:00 +0400
-Vasiliy Kulikov <segoon@openwall.com> wrote:
+--Signature=_Wed__9_Nov_2011_10_19_09_+1100_=5cWu3jO_E3MBfi2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> (CC'ed l-k)
+Hi Rusty,
 
-security@kernel.org isn't working, btw.
+Tryiong to import the rr quilt series today produced this error:
 
-> On Sat, Nov 05, 2011 at 14:48 +0400, Vasiliy Kulikov wrote:
-> > /proc/$PID/{sched,schedstat} contain debugging scheduler counters, which
-> > should not be world readable.  They may be used to gather private information
-> > about processes' activity.  E.g. it can be used to count the number of
-> > characters typed in gksu dialog:
-> > 
-> > http://www.openwall.com/lists/oss-security/2011/11/05/3
-> > 
-> > This infoleak is similar to io (1d1221f375c) and stat's eip/esp (f83ce3e6b02d)
-> > infoleaks.  Probably other 0644/0444 procfs files are vulnerable to
-> > similar infoleaks.
+Importing rr based on v3.1-8907-g43672a0
+$ git reset --hard 43672a0784707d795556b1f93925da8b8e797d03
+Checking out files: 100% (37600/37600), done.
+HEAD is now at 43672a0 Merge git://git.kernel.org/pub/scm/linux/kernel/git/=
+steve/linux-dm
+$ git am ../quilt/rr/virtio:pci_fix_use_after_free.patch
+Applying: virtio-pci: fix use after free
+error: patch failed: drivers/virtio/virtio_pci.c:822
+error: drivers/virtio/virtio_pci.c: patch does not apply
+Patch failed at 0001 virtio-pci: fix use after free
+When you have resolved this problem run "git am --resolved".
+If you would prefer to skip this patch, instead run "git am --skip".
+To restore the original branch and stop patching run "git am --abort".
 
-Grumble.
+Maybe you forgot to update the BASE?
 
-The obvious issue with this patch is its non-back-compatibility.  What
-existing code will break, in what manner and what is the seriousness of
-the breakage?
+I will use the rr tree from next-20111108 for today.
 
-You *know* this is the main issue, yet you didn't address it at all! 
-You just leave the issue out there for other people to work out, and to
-ask the obvious questions.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This happens over and over and I'm getting rather tired of the charade.
+--Signature=_Wed__9_Nov_2011_10_19_09_+1100_=5cWu3jO_E3MBfi2
+Content-Type: application/pgp-signature
 
-So I'm going to ignore this patch and I ask that you and other security
-people never do this again.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-If you're going to submit a patch which you know will change kernel
-interfaces in a non-backward-compatible fashion then don't just pretend
-that it didn't happen!  Please provide us with a complete description
-of the breakage and at least some analysis of the downstream
-implications of the change.  So that we are better able to decide
-whether the security improvements justify the disruption.
+iQIcBAEBCAAGBQJOubjtAAoJEECxmPOUX5FE670QAKfV68VjQdOFZBJ57O/fNDlu
+wSsUgn/F9+bXu38UfFiXZHflXjeuxJTaqD5vipDF/Dp/eSr6U97LwctAdakv2Mty
+ELV4RWYvFG6bFXQ6I0F1GHHoKSDoAjd2G/I5VejUz4kCtZHcGZhPbbdvUjCgNsVy
+efwx2J5wsaiw3WmcMfB1pfgeio9++Y1Irf3ULvBabQJSOvvYMMa1vE7idp5ogchv
+CRAaWWrUuW+L8GYaI5GGm+Qns30E6HqaXW2gsSzbNdM7/ylNpjJv4H98Yh1pl6ME
+Pp9UiCHH1iFoy6Ucm3aYmAHlguXAAWaoEyb8H6Chxrt07f8W4/J5r0cpH381W4kT
+4VxH5Fh0H7fjkbIsBxTjTj4zo8+FL8OheBYAsYxJ7YgG2Q5vlZ71yIh1kRjckgmX
+v6nBA57qju3RQ/H+DbP09Xt1tjOKT84bbqofsQ4zgd5KhyLuUNSAzemBcRRMQjZJ
+Hm+XEq3MNmqZXkSh4gY95pHmIxXSoF5glLKvr0Ch/u237poDG63RoxqPvTAUwlEE
+fletJo/nAaM7Wv+QqFlxOOXbObqUzM6krR2/wVEpt0BHZInYLJa+LYKug7/Tr9Gp
+C/QgjzPXK9y7JeDXwLPoGhoZSv98+8tVZ2c0pYduKXkYKIuVe/mOgZwAARcTlYui
+UovEXDeRPiWV2CRgqATh
+=I0Zh
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__9_Nov_2011_10_19_09_+1100_=5cWu3jO_E3MBfi2--
