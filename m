@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab1KHTEJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:04:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:51140 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab1KHTEH (ORCPT
+	id S1756262Ab1KHTHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:07:48 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41859 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab1KHTHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:04:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <1320775737.2382.42.camel@deneb.redhat.com>
-References: <1320179267.14825.107.camel@deneb.redhat.com> <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
- <1320529182.14081.78.camel@deneb.redhat.com> <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
- <1320775737.2382.42.camel@deneb.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 Nov 2011 11:03:45 -0800
-X-Google-Sender-Auth: 4Q4WKMTUZQmdRbsvpY5uHnaDNMU
-Message-ID: <CA+55aFx_bjbpbY8wG11UqVmnK_-hNJBQTM_OhAAMjDyEyvbtUg@mail.gmail.com>
-Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
-To: Mark Salter <msalter@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "JACQUIOT-XID, Aurelien" <a-jacquiot@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Nov 2011 14:07:47 -0500
+Subject: [PATCH] staging: rtl8192e: Use kzalloc rather than kmalloc
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        wlanfae <wlanfae@realtek.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Nov 2011 20:05:53 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1320779160.8062.139.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 10:08 AM, Mark Salter <msalter@redhat.com> wrote:
->
-> Having a little time to think about this some more, I'm going to take
-> another crack at it. Defining __pa/__va with PAGE_OFFSET as they are
-> currently creates a physical space which doesn't match the hardware
-> when PAGE_OFFSET is non-zero.
->
-> For arches using device tree support, that means that the physical
-> addresses in the device tree are either linux-specific or early boot
-> code would have to go through the tree to fixup the "hardware physical"
-> addresses so that they are "linux physical" addresses for the kernel.
+From: Thomas Meyer <thomas@m3y3r.de>
 
-Ok, that's actually a good argument - external interfaces defining
-what "physical" means.
+ Use kzalloc rather than kmalloc followed by memset with 0
 
-Fair enough. I'll consider myself convinced.
+ This considers some simple cases that are common and easy to validate
+ Note in particular that there are no ...s in the rule, so all of the
+ matched code has to be contiguous
 
-         Linus
+ The semantic patch that makes this change is available
+ in scripts/coccinelle/api/alloc/kzalloc-simple.cocci.
+
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/staging/rtl8192e/rtllib_crypt_wep.c b/drivers/staging/rtl8192e/rtllib_crypt_wep.c
+--- a/drivers/staging/rtl8192e/rtllib_crypt_wep.c 2011-11-07 19:38:11.773647045 +0100
++++ b/drivers/staging/rtl8192e/rtllib_crypt_wep.c 2011-11-08 09:40:08.842565261 +0100
+@@ -38,10 +38,9 @@ static void *prism2_wep_init(int keyidx)
+ {
+ 	struct prism2_wep_data *priv;
+ 
+-	priv = kmalloc(sizeof(*priv), GFP_ATOMIC);
++	priv = kzalloc(sizeof(*priv), GFP_ATOMIC);
+ 	if (priv == NULL)
+ 		goto fail;
+-	memset(priv, 0, sizeof(*priv));
+ 	priv->key_idx = keyidx;
+ 
+ 	priv->tx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
+
+
