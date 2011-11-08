@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753686Ab1KHMPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 07:15:13 -0500
-Received: from mail001.aei.ca ([206.123.6.130]:49444 "EHLO mail001.aei.ca"
+	id S1753951Ab1KHMRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 07:17:11 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47821 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab1KHMPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 07:15:10 -0500
-From: Ed Tomlinson <edt@aei.ca>
-To: Valdis.Kletnieks@vt.edu
-Cc: John Stoffel <john@stoffel.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>, Cyclonus J <cyclonusj@gmail.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        David Rientjes <rientjes@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, ngupta@vflare.org,
-        Chris Mason <chris.mason@oracle.com>, JBeulich@novell.com,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [GIT PULL] mm: frontswap (for 3.2 window)
-Date: Tue, 08 Nov 2011 07:15:04 -0500
-Message-ID: <15917317.H6lYS7chMM@grover>
-Organization: me
-User-Agent: KMail/4.7.3 (Linux/3.1.0-crc+; KDE/4.7.3; x86_64; ; )
-In-Reply-To: <201529.1320618774@turing-police.cc.vt.edu>
-References: <b2fa75b6-f49c-4399-ba94-7ddf08d8db6e@default> <20139.5644.583790.903531@quad.stoffel.home> <201529.1320618774@turing-police.cc.vt.edu>
+	id S1751632Ab1KHMRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 07:17:09 -0500
+Date: Tue, 8 Nov 2011 13:15:01 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Vince Weaver <vince@deater.net>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [F.A.Q.] perf ABI backwards and forwards compatibility
+Message-ID: <20111108121501.GA1022@elte.hu>
+References: <20111106231953.GD4500@thunk.org>
+ <alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
+ <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
+ <20111107175942.GA9395@elte.hu>
+ <y0mpqh3og3v.fsf@fche.csb>
+ <alpine.LFD.2.02.1111072204370.3082@tux.localdomain>
+ <20111107203514.GG24234@thunk.org>
+ <20111108102235.GA1241@elte.hu>
+ <20111108113150.GA13195@redhat.com>
+ <alpine.LFD.2.02.1111081336410.18135@tux.localdomain>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1111081336410.18135@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 November 2011 17:32:54 Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 28 Oct 2011 16:52:28 EDT, John Stoffel said:
-> > Dan> "WHY" this is such a good idea is the same as WHY it is useful to
-> > Dan> add RAM to your systems. 
-> >
-> > So why would I use this instead of increasing the physical RAM?
-> 
-> You're welcome to buy me a new laptop that has a third DIMM slot. :)
-> 
-> There's a lot of people running hardware that already has the max amount of
-> supported RAM, and who for budget or legacy-support reasons can't easily do a
-> forklift upgrade to a new machine.
 
-I've got three boxes with this problem here.  Hense my support for frontswap/cleancache.
+* Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 
-Ed
+> [...] There's an easy fix for this too: improve "perf test" to 
+> cover the cases you're intested in. While ABI spec would be a nice 
+> addition, it's not going to make compatibility problems magically 
+> go away.
 
-> > if I've got a large system which cannot physically use any more
-> > memory, then it might be worth my while to use TMEM to get more
-> > performance out of this expensive hardware.
-> 
-> It's not always a large system....
+Yes, exactly - 'perf test' has been written with that exact purpose. 
+In practice 'perf' will cover almost all parts of the ABI.
+
+The one notable thing that isnt being tested in a natural way is the 
+'group of events' abstraction - which, ironically, has been added on 
+the perfmon guys' insistence. No app beyond the PAPI self-test makes 
+actual use of it though, which results in an obvious lack of testing.
+
+Vince: the code is in tools/perf/builtin-test.c and our offer still 
+stands, feel free to extend it. Maybe there's some other volunteer 
+willing to do that?
+
+Thanks,
+
+	Ingo
