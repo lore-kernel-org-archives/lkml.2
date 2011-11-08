@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754189Ab1KHJ17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:27:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43551 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753731Ab1KHJ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:27:56 -0500
-Date: Tue, 8 Nov 2011 10:27:54 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH TRIVIAL] MAINTAINERS: Update KVM doc path
-In-Reply-To: <1320455660-20989-1-git-send-email-levinsasha928@gmail.com>
-Message-ID: <alpine.LNX.2.00.1111081027310.1964@pobox.suse.cz>
-References: <1320455660-20989-1-git-send-email-levinsasha928@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754310Ab1KHJ2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:28:33 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:33837 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753731Ab1KHJ2b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 04:28:31 -0500
+Subject: Re: [patch 1/3] sched: use jump labels to reduce overhead when
+ bandwidth control is inactive
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>
+Date: Tue, 08 Nov 2011 10:28:25 +0100
+References: <20111108042632.977080206@google.com>
+	 <20111108042736.560831357@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320744505.2244.7.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Nov 2011, Sasha Levin wrote:
-
-> Cc: Jiri Kosina <trivial@kernel.org>
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
->  MAINTAINERS |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Tue, 2011-11-08 at 10:26 +0100, Peter Zijlstra wrote:
+> On Mon, 2011-11-07 at 20:26 -0800, Paul Turner wrote:
+> > +static void account_cfs_bandwidth_used(int enabled, int was_enabled)
+> > +{
+> > +       /* only need to count groups transitioning between enabled/!enabled */
+> > +       if (enabled && !was_enabled)
+> > +               jump_label_inc(&__cfs_bandwidth_used);
+> > +       else if (!enabled && was_enabled)
+> > +               jump_label_dec(&__cfs_bandwidth_used);
+> > +} 
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 506fe49..0acdc78 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -3732,7 +3732,7 @@ M:	Marcelo Tosatti <mtosatti@redhat.com>
->  L:	kvm@vger.kernel.org
->  W:	http://kvm.qumranet.com
->  S:	Supported
-> -F:	Documentation/*/kvm.txt
-> +F:	Documentation/*/kvm/
+> Can't you use jump_label_enabled(&__cfs_bandwidth_used) to was_enabled ?
 
-By that you are dropping Documentation/ia64/kvm.txt and 
-Documentation/s390/kvm.txt from the pattern which I guess is not what you 
-want?
-
->  F:	arch/*/kvm/
->  F:	arch/*/include/asm/kvm*
->  F:	include/linux/kvm*
-> -- 
-> 1.7.7.2
-> 
-
--- 
-Jiri Kosina
-SUSE Labs
+n/m I'm not awake yet..
