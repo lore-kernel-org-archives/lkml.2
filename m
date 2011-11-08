@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab1KHS1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 13:27:43 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:30548 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab1KHS1m (ORCPT
+	id S1756286Ab1KHSaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 13:30:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42992 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab1KHSaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 13:27:42 -0500
-Date: Tue, 8 Nov 2011 13:27:28 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Dan Merillat <dan.merillat@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs pull request
-Message-ID: <20111108182728.GR4954@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Dan Merillat <dan.merillat@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20111106183851.GA4339@shiny>
- <CAPL5yKcDKnB+BaTdARSp80pGVr_W36cy9gNz=M-S8E3NyNDTQg@mail.gmail.com>
+	Tue, 8 Nov 2011 13:30:18 -0500
+Date: Tue, 8 Nov 2011 18:29:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, rmallon@gmail.com,
+        Nikolaus Voss <n.voss@weinmann.de>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Message-ID: <20111108182955.GH12913@n2100.arm.linux.org.uk>
+References: <cover.1320753142.git.n.voss@weinmann.de> <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de> <20111108144115.GH20728@legolas.emea.dhcp.ti.com> <4EB9477E.8070002@atmel.com> <20111108152343.GJ20728@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPL5yKcDKnB+BaTdARSp80pGVr_W36cy9gNz=M-S8E3NyNDTQg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4EB97498.0164,ss=1,re=0.000,fgs=0
+In-Reply-To: <20111108152343.GJ20728@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 12:55:40PM -0500, Dan Merillat wrote:
-> On Sun, Nov 6, 2011 at 1:38 PM, Chris Mason <chris.mason@oracle.com> wrote:
-> > Hi everyone,
-> >
-> > This pull request is pretty beefy, it ended up merging a number of long
-> > running projects and cleanup queues.  I've got btrfs patches in the new
-> > kernel.org btrfs repo.  There are two different branches with the same
-> > changes.  for-linus is against 3.1 and has also been tested against
-> > Linus' tree as of yesterday.
+On Tue, Nov 08, 2011 at 05:23:46PM +0200, Felipe Balbi wrote:
+> On Tue, Nov 08, 2011 at 04:15:10PM +0100, Nicolas Ferre wrote:
+> > -----BEGIN PGP SIGNED MESSAGE-----
+> > Hash: SHA1
+> > 
+> > On 11/08/2011 03:41 PM, Felipe Balbi :
+> > 
+> > >> +	if (cpu_is_at91rm9200()) {			/* AT91RM9200 Errata #22 */
+> > > 
+> > > I don't think you should be using cpu_is_* on drivers.
+> > 
+> > It is a common pattern in at91 drivers and has worked for ages.
+> > Do you think it is related to the need to be able to compile the
+> > driver for any SoC in the case of multi-SoC zImage support?
 > 
-> [91795.123286] device label ROOT devid 1 transid 3331 /dev/sdi2
-> [91795.123538] btrfs: open_ctree failed
-> 
-> FS created on 3.1 (x64), mounted once on 3.2-rc1 (i386), got that
-> whenI tried to mount on 3.1 (x64) again.  Format change in 3.2 or
-> 32/64 bit compatibility issues?
+> we have drivers compiling on multiple OMAP versions without those hacks.
+> Generally, we check the IP revision for that. Don't you have a Revision
+> register of some sort ?
 
-I'm trying to reproduce right now but I did many bounces between 3.2 and
-3.1 code before releasing.  I didn't try jumping between 32 and 64 bit.
+I'm not sure what your objection is - this is no different from what
+happens with OMAP when detecting OMAP1,2,3,4 etc.  E.g.:
 
-Are there any other messages in dmesg?  Could you please see what
-btrfs-debug-tree says?
+drivers/mfd/twl-core.c:     if (cpu_is_omap2430())
+drivers/media/video/omap3isp/isp.c: if (cpu_is_omap3630())
+drivers/media/video/omap/omap_vout.c:               if (cpu_is_omap24xx() || cpu_is_omap34xx())
+drivers/media/video/omap/omap_voutlib.c:    if (cpu_is_omap24xx()) {
+drivers/media/video/omap/omap_voutlib.c:    } else if (cpu_is_omap34xx()) {
+drivers/media/video/omap/omap_voutlib.c:    if (cpu_is_omap24xx()) {
 
--chris
-
+for a small selection.
