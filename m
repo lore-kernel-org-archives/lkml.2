@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581Ab1KHJQL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:16:11 -0500
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:58320 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab1KHJQG (ORCPT
+	id S1753677Ab1KHJUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:20:08 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35298 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111Ab1KHJUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:16:06 -0500
-Subject: [PATCH] [TRIVIAL] Documentation: cpufreq: Fix typo and outdated
- line
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Nov 2011 10:16:03 +0100
-Message-ID: <1320743763.14409.375.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Tue, 8 Nov 2011 04:20:01 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4EB8F434.6090003@jp.fujitsu.com>
+Date: Tue, 08 Nov 2011 18:19:48 +0900
+From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai.lu@oracle.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [RFC PATCH] pciehp: Wait for link get trained in pci_check_link_status()
+References: <4EB88238.4050409@oracle.com>
+In-Reply-To: <4EB88238.4050409@oracle.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'sampling_rate_max' was removed with commit ef598549 ("[...] Remove
-deprecated sysfs file sampling_rate_max"), so its line can be dropped
-from governors.txt. And 'show_sampling_rate_min' is a typo: the sysfs
-file is called 'sampling_rate_min'.
+(2011/11/08 10:13), Yinghai Lu wrote:
+> 
+> Found one PCI Express Modules has link training error after hotplug.
+> It turns out that after DLLLA is set, LT is still set for a while.
+> So pciehp will delcare that hotplug fail in 1s.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+I think DLLLA bit reads 1b means LT is completed. So I don't know why LT
+is still set on your platform.
+
+> 
+> HW guys say that pciehp is against PCI-e SPEC:
+>   From PCI Express Base Specification Revision 2.1, Section 6.7.3.3:
+>   Software must allow 1 second after the Data Link Layer Link Active bit reads 1b
+>   before it is permitted to determine that a hot plugged device which fails to
+>   return a Successful Completion for a Valid Configuration Request is a broken
+>   device (see section 6.6).
+> 
+> Try to wait for long enough by adding LT checking in 1s.
+
+The pciehp driver already have this 1 second wait in board_added().
+So I still don't understand what in pciehp is against PCIe spec clearly.
+Can you explain more about this?
+
+What about the patch below? I think it's much simpler and has less impact.
+
+Regards,
+Kenji Kaneshige
+
 ---
- Documentation/cpu-freq/governors.txt |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/pciehp_ctrl.c |    3 ---
+ drivers/pci/hotplug/pciehp_hpc.c  |   14 ++++++++++++++
+ 2 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/cpu-freq/governors.txt b/Documentation/cpu-freq/governors.txt
-index d221781..c7a2eb8 100644
---- a/Documentation/cpu-freq/governors.txt
-+++ b/Documentation/cpu-freq/governors.txt
-@@ -127,7 +127,7 @@ in the bash (as said, 1000 is default), do:
- echo `$(($(cat cpuinfo_transition_latency) * 750 / 1000)) \
-     >ondemand/sampling_rate
+Index: linux-3.1/drivers/pci/hotplug/pciehp_ctrl.c
+===================================================================
+--- linux-3.1.orig/drivers/pci/hotplug/pciehp_ctrl.c
++++ linux-3.1/drivers/pci/hotplug/pciehp_ctrl.c
+@@ -213,9 +213,6 @@ static int board_added(struct slot *p_sl
+ 		goto err_exit;
+ 	}
  
--show_sampling_rate_min:
-+sampling_rate_min:
- The sampling rate is limited by the HW transition latency:
- transition_latency * 100
- Or by kernel restrictions:
-@@ -140,8 +140,6 @@ HZ=100:  min=200000us (200ms)
- The highest value of kernel and HW latency restrictions is shown and
- used as the minimum sampling rate.
- 
--show_sampling_rate_max: THIS INTERFACE IS DEPRECATED, DON'T USE IT.
+-	/* Wait for 1 second after checking link training status */
+-	msleep(1000);
 -
- up_threshold: defines what the average CPU usage between the samplings
- of 'sampling_rate' needs to be for the kernel to make a decision on
- whether it should increase the frequency.  For example when it is set
--- 
-1.7.4.4
-
-
-
+ 	/* Check for a power fault */
+ 	if (ctrl->power_fault_detected || pciehp_query_power_fault(p_slot)) {
+ 		ctrl_err(ctrl, "Power fault on slot %s\n", slot_name(p_slot));
+Index: linux-3.1/drivers/pci/hotplug/pciehp_hpc.c
+===================================================================
+--- linux-3.1.orig/drivers/pci/hotplug/pciehp_hpc.c
++++ linux-3.1/drivers/pci/hotplug/pciehp_hpc.c
+@@ -280,6 +280,20 @@ int pciehp_check_link_status(struct cont
+         else
+                 msleep(1000);
+ 
++	/*
++	 * Need to wait for 1 second after the Data Link Layer Link
++	 * Active bit reads 1b before sending configuration request.
++	 * We also need additional 100 ms wait if the downstream port
++	 * supports Link speeds greater than 5.0 GT/s. We place this
++	 * wait before checking Link Training bit because Link
++	 * Training bit still is set even after Data Link Layer Link
++	 * Active bit is set on some platforms.
++	 */
++	if (ctrl->pcie->port->subordinate->max_bus_speed > PCIE_SPEED_5_0GT)
++		msleep(1100);
++	else
++		msleep(1000);
++
+ 	retval = pciehp_readw(ctrl, PCI_EXP_LNKSTA, &lnk_status);
+ 	if (retval) {
+ 		ctrl_err(ctrl, "Cannot read LNKSTATUS register\n");
