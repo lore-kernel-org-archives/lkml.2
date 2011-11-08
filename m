@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757679Ab1KJO1h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 09:27:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:45157 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752220Ab1KJO1g (ORCPT
+	id S934909Ab1KJO35 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 09:29:57 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.182]:18916 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934891Ab1KJO3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 09:27:36 -0500
-Date: Thu, 10 Nov 2011 08:27:24 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, richard@nod.at,
-        containers@lists.linux-foundation.org, oleg@redhat.com,
-        eparis@redhat.com, linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        ebiederm@xmission.com
-Subject: Re: [PATCH 1/6] user namespace: make signal.c respect user
- namespaces (v4)
-Message-ID: <20111110142723.GA7727@sergelap>
-References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
- <1320445482-8459-2-git-send-email-serge@hallyn.com>
- <20111108162216.1ffb3e9a.akpm@linux-foundation.org>
- <20111109141853.GB4010@sergelap>
- <20111110014114.GB26567@count0.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110014114.GB26567@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Nov 2011 09:29:53 -0500
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <5be1d13ab702dd22671575b224c7b973d4b855e8.1320934086.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1320934086.git.n.voss@weinmann.de>
+References: <cover.1320934086.git.n.voss@weinmann.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Tue, 8 Nov 2011 12:11:03 +0100
+Subject: [PATCH v5 4/4] G45 TWI: remove open drain setting for twi function
+ gpios
+To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: ben-linux@fluff.org, khali@linux-fr.org, nicolas.ferre@atmel.com,
+        rmallon@gmail.com, balbi@ti.com, linux@arm.linux.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Matt Helsley (matthltc@us.ibm.com):
-> On Wed, Nov 09, 2011 at 08:18:53AM -0600, Serge E. Hallyn wrote:
-> > Quoting Andrew Morton (akpm@linux-foundation.org):
-> > > On Fri,  4 Nov 2011 22:24:37 +0000
-> > > Serge Hallyn <serge@hallyn.com> wrote:
-> > > 
-> > > > +static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
-> 
-> nit: Seems like the function name itself needs a fixup. I can imagine a
-> user-ns-unaware kernel developer thinking this when they see code calling
-> this function:
-> 
-> <naive>
-> Gosh, why is the uid broken? I have no idea what this does or when it
-> would be needed. Why hasn't it been splatted all over the kernel? Who broke
-> it?
-> </naive>
-> 
-> You can't even tell from the name that it's for user namespaces.
+The G45 datasheets explicitly states that setting the open drain property
+on peripheral function gpios is not allowed. (How about other A91 chips?)
 
-Heh, my first reaction was that you're over-reacting, but you're probably
-right.  I don't want to conflict with the 'user_ns_map_uids' function,
-so how about userns_fixup_signal_uids()?  Pls let me know if you have a
-better name, otherwise I'll switch to this one.
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ arch/arm/mach-at91/at91sam9g45_devices.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-thanks,
--serge
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 000b5e1..e0f67e7 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -684,18 +684,12 @@ void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, in
+ 	/* pins used for TWI interface */
+ 	if (i2c_id == 0) {
+ 		at91_set_A_periph(AT91_PIN_PA20, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PA20, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PA21, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PA21, 1);
+ 
+ 		platform_device_register(&at91sam9g45_twi0_device);
+ 	} else {
+ 		at91_set_A_periph(AT91_PIN_PB10, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PB10, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PB11, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PB11, 1);
+ 
+ 		platform_device_register(&at91sam9g45_twi1_device);
+ 	}
+-- 
+1.7.5.4
+
