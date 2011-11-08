@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab1KHPat (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 10:30:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38717 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab1KHPar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 10:30:47 -0500
-Message-ID: <4EB94B25.3030108@suse.de>
-Date: Tue, 08 Nov 2011 16:30:45 +0100
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
+	id S932953Ab1KHPcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 10:32:12 -0500
+Received: from nm39-vm2.bullet.mail.bf1.yahoo.com ([72.30.239.146]:33819 "HELO
+	nm39-vm2.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751122Ab1KHPcI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 10:32:08 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 10:32:08 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 210568.37729.bm@omp1015.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=ioT2VpYDGgnnPTKfiVXM6Q1zwUow/yj4JODClw+haS4bxKtAH1wuNMdMdIgjBYr8wZZr2ytSmtByLJeTJ4b1AjYuR/HDxv/cJ2x0j4fSkqyKWAEH6KWMqLMqWYzrNlqbE2HcyOZfKR85Yjfo8TLT50CfVDhvagFD16v2FN5icW8=;
+X-YMail-OSG: ClkfdyYVM1lTwEVETw0UYCNof0uUBFr1.Z32d_EP4g19zow
+ A_knGr2JVI9GH0uhqaqt0chNGFfrsKwV43tN2RzD_82fvySnu.gVnfWhx_.6
+ N86WyoQP8nXVngsCiSEpjC_Sorb7OHCIzMnrjed6k8H5AAXWhsKYTkeRDsrO
+ 00K4F4JpWRofkHhBOy3iPBE926dn.sneDVVP.P5V4msCgL94bGW3jLajGHk9
+ 06myLNzkNaYKo3HKJUjGJ1Dwf6jZ6NRuUAZLq1OlwcMJCCn4vogoYDAanx5u
+ kCZOpUTiXfNBZCiyn7C3k8hx0YUSEfqIUQFDEFbpKVQE48RF2kVvv6fS7pnD
+ VMhAK7gadeojlooMf3_6V6mXz21Mk.nRKdN35chAY7q7FLG_vPbB8qpyRUQM
+ ZaC8biFFDps3qDuMBqFS1P53wL_cMi_rJawExpanWrnTyp.uD6g--
+X-Mailer: YahooMailWebService/0.8.115.325013
+Message-ID: <1320766015.85140.YahooMailNeo@web162006.mail.bf1.yahoo.com>
+Date: Tue, 8 Nov 2011 07:26:55 -0800 (PST)
+From: Pintu Agarwal <pintu_agarwal@yahoo.com>
+Reply-To: Pintu Agarwal <pintu_agarwal@yahoo.com>
+Subject: HELP :  Rss and Pss pages are always 0 for some drivers. Why?
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org
-Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
-References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>	<1320677484.1215.10.camel@dabdike.int.hansenpartnership.com> <20111108110300.e8494242e6c404142b1fe4c0@canb.auug.org.au>
-In-Reply-To: <20111108110300.e8494242e6c404142b1fe4c0@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 01:03 AM, Stephen Rothwell wrote:
-> Hi James,
->
-> On Mon, 07 Nov 2011 08:51:24 -0600 James Bottomley<James.Bottomley@HansenPartnership.com>  wrote:
->>
->> Actually, I don't think it's anything to do with this: it's Anton's
->> fault
->>
->> commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
->> Author: Anton Blanchard<anton@samba.org>
->> Date:   Thu Nov 3 08:56:22 2011 +1100
->>
->>      [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
->>
->> Doesn't completely do the teardown.  The true fix is to do a proper
->> teardown instead of hand rolling it.  Does this fix it for you?
->
-> I don't get the WARNING any more, but now get lots of:
->
-> scsi: killing requests for dead queue
->
-Yeah, that is really annoying.
-And what's more the printk is wrong, as it doesn't indicate
-that we've actually killed requests. It's just announcing that we 
-might start killing requests, provided the request_queue isn't empty.
-
-I'll be sending a patch.
-
-Cheers,
-
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Dear All,
+ 
+I have a problem regarding RSS and PSS pages always showing zero for some PID.
+ 
+We are using customized kernel2.6.36 (arm with no swap).
+ 
+We are having a menu-screen application (current PID 1939)
+ 
+When I do cat /proc/1939/smaps we are getting "Rss", "Pss" page as always zero for some of the modules  /dev/ump and /dev/mali.
+The output is as follows:-
+cat /proc/1936/smaps | grep -A 11 /dev/ump
+43698000-43810000 rw-s 0000e000 00:11 6751       /dev/ump
+Size:               1504 kB
+Rss:                   0 kB
+Pss:                   0 kB
+Shared_Clean:          0 kB
+Shared_Dirty:          0 kB
+Private_Clean:         0 kB
+Private_Dirty:         0 kB
+Referenced:            0 kB
+Swap:                  0 kB
+KernelPageSize:        4 kB
+MMUPageSize:           4 kB
+----------------------------------------------------------------------
+ 
+I wanted to understand why Rss and Pss pages information for only /dev/ump (similarly for /dev/mali) is not shown correctly by smaps.
+Where could be the problem and where I should debug?
+ 
+Any information on this will be a great help.
+ 
+ 
+ 
+Thanks, Regards,
+Pintu Kumar
