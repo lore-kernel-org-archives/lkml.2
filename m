@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933299Ab1KHUcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 15:32:06 -0500
-Received: from host171.canaca.com ([67.55.55.225]:38394 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab1KHUcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 15:32:04 -0500
-X-Greylist: delayed 2067 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 15:32:04 EST
-Message-ID: <ecb0ae9ca884c385bc6b0358b38e5605.squirrel@host171.canaca.com>
-In-Reply-To: <1320779660.8062.141.camel@localhost.localdomain>
-References: <1320779660.8062.141.camel@localhost.localdomain>
-Date: Tue, 8 Nov 2011 14:57:28 -0500
-Subject: Re: [PATCH] HID: hid-lg4ff: Casting (void *) value returned by
- kmalloc is useless
-From: simon@mungewell.org
-To: "Thomas Meyer" <thomas@m3y3r.de>
-Cc: "Jiri Kosina" <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.21
+	id S933241Ab1KHUgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 15:36:19 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58033 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755386Ab1KHUgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 15:36:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH 1/7] PM / Domains: Make it possible to use per-device start/stop routines
+Date: Tue, 8 Nov 2011 21:38:57 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        jean.pihet@newoldbits.com
+References: <201111070101.33960.rjw@sisk.pl> <201111070106.14607.rjw@sisk.pl> <Pine.LNX.4.64.1111080951040.10851@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1111080951040.10851@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111082138.57448.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No objection from me if this is the proper way to do things.
-Simon.
+On Tuesday, November 08, 2011, Guennadi Liakhovetski wrote:
+> Hi Rafael
+> 
+> On Mon, 7 Nov 2011, Rafael J. Wysocki wrote:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > 
+> > The current generic PM domains code requires that the same .stop()
+> > and .start() device callback routines be used for all devices in the
+> > given domain, which is inflexible and may not cover some specific use
+> > cases.  For this reason, make it possible to use device specific
+> > .start() and .stop() callback routines by adding corresponding
+> > callback pointers to struct generic_pm_domain_data.  Add a new helper
+> > routine, pm_genpd_register_callbacks(), that can be used to populate
+> > the new per-device callback pointers.
+> > 
+> > Modify the shmobile's power domains code to allow drivers to add
+> > their own code to be run during the device stop and start operations
+> > with the help of the new callback pointers.
+> > 
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > ---
+> 
+> [snip]
+> 
+> > Index: linux/drivers/base/power/domain.c
+> > ===================================================================
+> > --- linux.orig/drivers/base/power/domain.c
+> > +++ linux/drivers/base/power/domain.c
+> > @@ -29,6 +29,36 @@ static struct generic_pm_domain *dev_to_
+> >  	return pd_to_genpd(dev->pm_domain);
+> >  }
+> >  
+> > +static int genpd_stop_dev(struct generic_pm_domain *genpd, struct device *dev)
+> > +{
+> > +	int (*stop)(struct device *dev);
+> > +
+> > +	stop = genpd->stop_device;
+> > +	if (stop)
+> > +		return stop(dev);
+> > +
+> > +	stop = dev_gpd_data(dev)->ops.stop;
+> > +	if (stop)
+> > +		return stop(dev);
+> 
+> With this implementation your approach is: in your genpd_stop_dev() and 
+> genpd_start_dev() you first check for the pm-domain _common_ .start() and 
+> .stop(), and if they exist, the specific ones will not be called. Then in 
+> your sh7372 pm domain implementation you do the domain-common part - 
+> switch the PM clock on or off, and you _again_ check for device-specific 
+> domains, and this time you call both of them.
+> 
+> Do you have specific reasons to think, that calling both of them from 
+> genpd_stop_dev() / genpd_start_dev() might not fit some PM-domain 
+> implementations?
 
-> From: Thomas Meyer <thomas@m3y3r.de>
->
->  Casting (void *) value returned by kmalloc is useless
->  as mentioned in Documentation/CodingStyle, Chap 14.
->
->  The semantic patch that makes this change is available
->  in scripts/coccinelle/api/alloc/drop_kmalloc_cast.cocci.
->
->  More information about semantic patching is available at
->  http://coccinelle.lip6.fr/
->
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
->
-> diff -u -p a/drivers/hid/hid-lg4ff.c b/drivers/hid/hid-lg4ff.c
-> --- a/drivers/hid/hid-lg4ff.c 2011-11-07 19:37:44.816570939 +0100
-> +++ b/drivers/hid/hid-lg4ff.c 2011-11-08 09:03:29.394045138 +0100
-> @@ -430,7 +430,7 @@ int lg4ff_init(struct hid_device *hid)
->  	}
->
->  	/* Add the device to device_list */
-> -	entry = (struct lg4ff_device_entry *)kzalloc(sizeof(struct
-> lg4ff_device_entry), GFP_KERNEL);
-> +	entry = kzalloc(sizeof(struct lg4ff_device_entry), GFP_KERNEL);
->  	if (!entry) {
->  		hid_err(hid, "Cannot add device, insufficient memory.\n");
->  		return -ENOMEM;
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Not very specific, but the current way is more flexible, because it
+allows the PM domain to do something completely different from the
+default thing.
 
+Also that follows the strategy used in dd.c for .probe().
 
+Thanks,
+Rafael
