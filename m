@@ -1,35 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab1KRNdh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Nov 2011 08:33:37 -0500
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:47076 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756440Ab1KRNdc (ORCPT
+	id S1757868Ab1KRNdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Nov 2011 08:33:24 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:20134 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757783Ab1KRNdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Nov 2011 08:33:32 -0500
-Message-ID: <4EC66C07.9020009@br.ibm.com>
-Date: Fri, 18 Nov 2011 11:30:31 -0300
-From: Breno Leitao <brenohl@br.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Zac Storer <zac.3.14159@gmail.com>
-CC: leitao@linux.vnet.ibm.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-Subject: Re: [PATCH 29/29] Drivers: tty: serial: jsm: jsm_tty: fixed a brace
- coding style issue
-References: <1321596182-11031-1-git-send-email-zac.3.14159@gmail.com>
-In-Reply-To: <1321596182-11031-1-git-send-email-zac.3.14159@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11111813-8936-0000-0000-0000051C8467
+	Fri, 18 Nov 2011 08:33:20 -0500
+X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
+X-RZG-CLASS-ID: mo05
+Message-Id: <e5623281b6077aa35869b47896a6aee56adf08f5.1321616787.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1321616787.git.n.voss@weinmann.de>
+References: <cover.1321616787.git.n.voss@weinmann.de>
+From: Nikolaus Voss <n.voss@weinmann.de>
+Date: Tue, 8 Nov 2011 12:11:03 +0100
+Subject: [PATCH v6 4/5] G45 TWI: remove open drain setting for twi function
+ gpios
+To: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Cc: ben-linux@fluff.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2011 03:03 AM, Zac Storer wrote:
-> Fixed a brace coding style issue.
-> 
-> Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
-Acked-by: Breno Leitao <brenohl@br.ibm.com>
+The G45 datasheets explicitly states that setting the open drain property
+on peripheral function gpios is not allowed. (How about other A91 chips?)
+
+Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+---
+ arch/arm/mach-at91/at91sam9g45_devices.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
+index 09a16d6..8743b14 100644
+--- a/arch/arm/mach-at91/at91sam9g45_devices.c
++++ b/arch/arm/mach-at91/at91sam9g45_devices.c
+@@ -684,18 +684,12 @@ void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, in
+ 	/* pins used for TWI interface */
+ 	if (i2c_id == 0) {
+ 		at91_set_A_periph(AT91_PIN_PA20, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PA20, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PA21, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PA21, 1);
+ 
+ 		platform_device_register(&at91sam9g45_twi0_device);
+ 	} else {
+ 		at91_set_A_periph(AT91_PIN_PB10, 0);		/* TWD */
+-		at91_set_multi_drive(AT91_PIN_PB10, 1);
+-
+ 		at91_set_A_periph(AT91_PIN_PB11, 0);		/* TWCK */
+-		at91_set_multi_drive(AT91_PIN_PB11, 1);
+ 
+ 		platform_device_register(&at91sam9g45_twi1_device);
+ 	}
+-- 
+1.7.5.4
 
