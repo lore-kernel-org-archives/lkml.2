@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab1KHXJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 18:09:49 -0500
-Received: from smtp-out3.tiscali.nl ([195.241.79.178]:59929 "EHLO
-	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab1KHXJs (ORCPT
+	id S1756469Ab1KHXNY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 18:13:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:56343 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab1KHXNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 18:09:48 -0500
-Subject: [PATCH] misc/eeprom: Fix dependecy on 'PPC_MPC5200_GPIO'
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Anatolij Gustschin <agust@denx.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Nov 2011 00:09:39 +0100
-Message-ID: <1320793779.14409.415.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Tue, 8 Nov 2011 18:13:23 -0500
+Message-ID: <4EB9B731.9040804@windriver.com>
+Date: Tue, 8 Nov 2011 18:11:45 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: "George G. Davis" <gdavis@mvista.com>
+CC: Greg KH <greg@kroah.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <torvalds@linux-foundation.org>, <stable@kernel.org>,
+        <jason.wessel@windriver.com>, Andi Kleen <andi@firstfloor.org>,
+        <lwn@lwn.net>
+Subject: Re: Announcement: Plans for v2.6.34-longterm
+References: <20101203210719.GB21223@windriver.com> <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com>
+In-Reply-To: <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver for the DigsyMTC display configuration EEPROMs device got
-added by commit 469dded183 ("misc/eeprom: add eeprom access driver for
-digsy_mtc board"). Its Kconfig symbol depends on PPC_MPC5200_GPIO. But
-at the time that driver got added PPC_MPC5200_GPIO was already renamed
-to GPIO_MPC5200, by commit 6eae1ace68 ("gpio: Move mpc5200 gpio driver
-to drivers/gpio").
+On 11-11-08 05:14 PM, George G. Davis wrote:
+> Greetings,
+> 
 
-So make this driver depend on GPIO_MPC5200. And since GPIO_MPC5200 itself
-implies that GPIOLIB is set, that dependency can be dropped.
+[...]
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-0) Untested: I haven't got the hardware nor the PPC toolchain needed to
-build this. And it seems this needs (build) testing anyhow.
+> 
+> Are there any plans to continue maintenance of v2.6.34-longterm now that
+> kernel.org is back online?
 
-1) Sent to the people who wrote the two patches mentioned in the commit
-explanation and CC'd the non-authors who signed-off these patches.
+Yes,  in fact I have a queue ready for review shortly.  However I didn't
+want to overtax the kernel.org maintainers with nagging questions about
+longterm/stable directory layout & restoration -- as I'm sure they had more
+than their hands full with getting people back on the server and getting
+stuff functional for the merge window which just closed yesterday.
 
-2) It looks like the config tools do not complain about dependencies
-that cannot be met because of a Kconfig symbol that doesn't even exist.
-Is that correct? If so, shouldn't they be made to complain in that case?
+Paul.
 
- drivers/misc/eeprom/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/misc/eeprom/Kconfig b/drivers/misc/eeprom/Kconfig
-index 26cf12c..701edf6 100644
---- a/drivers/misc/eeprom/Kconfig
-+++ b/drivers/misc/eeprom/Kconfig
-@@ -85,7 +85,7 @@ config EEPROM_93XX46
- 
- config EEPROM_DIGSY_MTC_CFG
- 	bool "DigsyMTC display configuration EEPROMs device"
--	depends on PPC_MPC5200_GPIO && GPIOLIB && SPI_GPIO
-+	depends on GPIO_MPC5200 && SPI_GPIO
- 	help
- 	  This option enables access to display configuration EEPROMs
- 	  on digsy_mtc board. You have to additionally select Microwire
--- 
-1.7.4.4
-
+> 
+> TIA!
+> 
+> --
+> Regards,
+> George
