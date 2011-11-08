@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab1KHJL5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 04:11:57 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:40779 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab1KHJLy (ORCPT
+	id S1753305Ab1KHJNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 04:13:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49790 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab1KHJN0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 04:11:54 -0500
-Date: Tue, 8 Nov 2011 10:07:16 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] r8169: increase the delay parameter of pm_schedule_suspend
-Message-ID: <20111108090716.GA4885@electric-eye.fr.zoreil.com>
-References: <1320734677-1372-1-git-send-email-hayeswang@realtek.com>
-Mime-Version: 1.0
+	Tue, 8 Nov 2011 04:13:26 -0500
+Date: Tue, 8 Nov 2011 13:11:21 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Eric Paris <eparis@parisplace.org>,
+        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
+ /proc/interrupts
+Message-ID: <20111108091121.GA10198@albatros>
+References: <20111107192915.GA4690@albatros>
+ <CACLa4puR6W+15KxpZtzAt6c2fXUhM8gkLY9Zn5RNE8qbNpO_xQ@mail.gmail.com>
+ <4EB83674.3040207@zytor.com>
+ <20111107201120.GA5775@albatros>
+ <4EB843FF.5080201@zytor.com>
+ <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
+ <4EB84F05.1000704@zytor.com>
+ <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
+ <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
+ <20111107232750.GA4854@kroah.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320734677-1372-1-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+In-Reply-To: <20111107232750.GA4854@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-> The link down would occur when reseting PHY. And it would take about 2 ~ 5 seconds
-> from link down to link up. If the delay of pm_schedule_suspend is not long enough,
-> the device would enter runtime_suspend before link up. After link up, the device
-> would wake up and reset PHY again. Then, you would find the driver keep in a loop
-> of runtime_suspend and rumtime_resume.
+On Mon, Nov 07, 2011 at 15:27 -0800, Greg KH wrote:
+> So, what do we really need revoke() for these days?
 
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+revoke() of /proc/$PID/* descriptors would also solve the issue of
+keeping them across exec() of setuid/setgid binaries:
 
-So far the worst offender here is the 8111evl (RTL_GIGA_MAC_VER_34) with a
-max delay a bit below 4000 ms.
+https://lkml.org/lkml/2011/2/7/368
 
-[...]
-[ 4195.444121] r8169 0000:03:00.0: 8111e-vl-0: link up
-[ 4195.549396] r8169 0000:03:00.0: 8111e-vl-0: link down
-[ 4195.888002] r8169 0000:03:00.0: 8111e-vl-0: link up
-[ 4199.444120] r8169 0000:03:00.0: 8111e-vl-0: link up
-[ 4199.582073] r8169 0000:03:00.0: 8111e-vl-0: link down
+Currently there are explicit calls to lock_trace()/unlock_trace(), which
+(1) pollute the code and (2) significantly slow it down.
 
-[...]
-[ 4171.580422] r8169 0000:03:00.0: 8111e-vl-0: link down
-[ 4171.904002] r8169 0000:03:00.0: 8111e-vl-0: link up
-[ 4175.444131] r8169 0000:03:00.0: 8111e-vl-0: link up
-[ 4175.547453] r8169 0000:03:00.0: 8111e-vl-0: link down
 
-The 8168d-vb-gr (RTL_GIGA_MAC_VER_26) and the 8168b (RTL_GIGA_MAC_VER_12)
-worked out of the box without the patch - at least with a kernel including
-Rafael's recent changes - and the old PCI 8169 always worked.
+So, where are we now?  We tend to agree revoke() is needed, but what to
+do before it is implemented?  In the context of this thread I see the
+following problems:
 
-I have not tested the 8168f nor the 810x yet.
+/proc/{interrupts,stat} are 0444, which may be used by local attacker to
+learn statistical information about user's keystrokes, including the
+passwords.
 
-Increasing the delay over and over in the driver alone will not ensure
-that the system is always stable but it should send the stuff on a far
-enough orbit for some time.
+/dev/pts/* and /dev/tty* leak the same timing information in inode's
+atime and mtime.
+
+
+Do we want to restrict permissions of interrupts/stat and remove atime
+and mtime from ttys and relax these permissions when revoke() is introduced?
+
+
+Thanks,
 
 -- 
-Ueimor
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
