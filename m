@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab1KHDsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 22:48:43 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:36401 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753437Ab1KHDsm (ORCPT
+	id S1755499Ab1KHDtB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 22:49:01 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32076 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab1KHDsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 22:48:42 -0500
-Message-ID: <4EB8A68C.9070905@st.com>
-Date: Tue, 8 Nov 2011 09:18:28 +0530
-From: Viresh Kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rabin VINCENT <rabin.vincent@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Bhavna YADAV <bhavna.yadav@st.com>,
-        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] mfd/stmpe: Add support for irq over gpio pin
-References: <5366f62b74861af357a0aecdb4e27aa69ffd703b.1320312035.git.viresh.kumar@st.com> <CACRpkdY=uN9W26mE7=TyXGkhcWsfOeGOyTBGQ3WzabNNHqa_-w@mail.gmail.com>
-In-Reply-To: <CACRpkdY=uN9W26mE7=TyXGkhcWsfOeGOyTBGQ3WzabNNHqa_-w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Nov 2011 22:48:55 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6523"; a="135611801"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        Christine Chan <cschan@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv2 0/3] Catching del_timer_sync() on uninitialized timers
+Date: Mon,  7 Nov 2011 19:48:25 -0800
+Message-Id: <1320724108-20788-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.rc0.46.g5ae0f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/7/2011 5:59 PM, Linus Walleij wrote:
-> On Thu, Nov 3, 2011 at 10:26 AM, Viresh Kumar <viresh.kumar@st.com> wrote:
+These are an update for previous patches sent by Christine. I've
+reworked them to hopefully address Thomas' comments. The new
+patch is the first patch, which tries to actually use debugobjects
+code to print the warning instead of relying on users of the API
+to do so (as suggested by Thomas).
 
->> +free_gpio:
->> +       gpio_free(pdata->irq_gpio);
-> 
-> Will that work if you didn't request irq over GPIO?
-> 
-> If you did not request GPIO and stmpe_chip_init()
-> fails this will still be executed.
-> 
-> Maybe:
-> 
-> if (pdata->irq_over_gpio)
->    gpio_free(pdata->irq_gpio);
-> 
+Christine Chan (2):
+  debugobjects: Extend to assert that an object is initialized
+  kernel/timer.c: Use debugobjects to catch deletion of uninitialized
+    timers
 
-:(
-Silly mistake.
+Stephen Boyd (1):
+  debugobjects: Be smarter about static objects
 
->> diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
->> index be1af7c..7901351 100644
->> --- a/include/linux/mfd/stmpe.h
->> +++ b/include/linux/mfd/stmpe.h
->> @@ -76,6 +76,7 @@ struct stmpe {
->>        struct stmpe_variant_info *variant;
->>        const u8 *regs;
->>
->> +       int irq;
->>        int irq_base;
->>        int num_gpios;
->>        u8 ier[2];
->> @@ -194,6 +195,8 @@ struct stmpe_platform_data {
->>        unsigned int irq_trigger;
->>        bool irq_invert_polarity;
->>        bool autosleep;
->> +       bool irq_over_gpio;
->> +       int irq_gpio;
->>        int autosleep_timeout;
-> 
-> Please also update the kerneldoc for struct stmpe.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Christine Chan <cschan@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 
-Sure.
+ Documentation/DocBook/debugobjects.tmpl |   50 +++++++++++++++++++++++++
+ include/linux/debugobjects.h            |    6 +++
+ kernel/timer.c                          |   62 ++++++++++++++++++++++++++++---
+ lib/debugobjects.c                      |   53 ++++++++++++++++++++++++--
+ 4 files changed, 161 insertions(+), 10 deletions(-)
 
 -- 
-viresh
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
