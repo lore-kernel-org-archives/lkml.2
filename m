@@ -1,18 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757447Ab2HVHgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:36:52 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.182]:27795 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab2HVHgs (ORCPT
+	id S1751620Ab2H2IMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:12:06 -0400
+Received: from mail.steuer-voss.com ([85.183.17.159]:42011 "EHLO
+	mail.steuer-voss.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752875Ab2H2ILB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:36:48 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Wed, 22 Aug 2012 03:36:47 EDT
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <4f3dcfbf1e8eab3e251ab3558e9e1e9123643928.1345618760.git.n.voss@weinmann.de>
-In-Reply-To: <cover.1345618760.git.n.voss@weinmann.de>
-References: <cover.1345618760.git.n.voss@weinmann.de>
+	Wed, 29 Aug 2012 04:11:01 -0400
+Message-Id: <7aa7e481b184da54328b0bb21c2eeb59d25131ff.1346225321.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1346225321.git.n.voss@weinmann.de>
+References: <cover.1346225321.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
 Date: Tue, 8 Nov 2011 11:49:46 +0100
 Subject: [PATCH v11 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
@@ -42,6 +39,7 @@ Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
 Reviewed-by: Felipe Balbi <balbi@ti.com>
 Tested-by: Hubert Feurstein <h.feurstein@gmail.com>
 
+v12: - corrected wrong id_entry on sam9261 twi gpio pdev
 v11: - fix for flags persistency suggested by Carsten Behling
      - calc_twi_clock fix for sam9261 by Ludovic Desroches
 v10: - applied fix for RXRDY overrun bug submitted by Hubert Feurstein
@@ -95,11 +93,11 @@ index e6b7d05..2977a2d 100644
  	.num_resources	= ARRAY_SIZE(twi_resources),
  };
 diff --git a/arch/arm/mach-at91/at91sam9261_devices.c b/arch/arm/mach-at91/at91sam9261_devices.c
-index 9295e90..27fddc1 100644
+index 9295e90..aeb2eed 100644
 --- a/arch/arm/mach-at91/at91sam9261_devices.c
 +++ b/arch/arm/mach-at91/at91sam9261_devices.c
-@@ -283,9 +283,18 @@ static struct i2c_gpio_platform_data pdata = {
- 	.udelay			= 2,		/* ~100 kHz */
+@@ -316,9 +316,18 @@ static struct resource twi_resources[] = {
+ 	},
  };
  
 +static const struct platform_device_id twi_ip_type = {
@@ -111,12 +109,12 @@ index 9295e90..27fddc1 100644
 +};
 +
  static struct platform_device at91sam9261_twi_device = {
- 	.name			= "i2c-gpio",
- 	.id			= -1,
-+	.id_entry		= &twi_ip_type,
- 	.dev.platform_data	= &pdata,
+ 	.name		= "at91_i2c",
+ 	.id		= -1,
++	.id_entry	= &twi_ip_type,
+ 	.resource	= twi_resources,
+ 	.num_resources	= ARRAY_SIZE(twi_resources),
  };
- 
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
 index 7244c8b..6b74287 100644
 --- a/drivers/i2c/busses/Kconfig
