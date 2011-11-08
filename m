@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757104Ab2HVHat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Aug 2012 03:30:49 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:25323 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735Ab2HVHaq (ORCPT
+	id S1753173Ab2H2ILJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Aug 2012 04:11:09 -0400
+Received: from mail.steuer-voss.com ([85.183.17.159]:42012 "EHLO
+	mail.steuer-voss.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752868Ab2H2ILA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Aug 2012 03:30:46 -0400
-X-RZG-AUTH: :KXokZlStbvrPCC8w2n2KADUjx90tFpDbrwvi3rISAmCHBWiKTAoKIqY5gZEywA==
-X-RZG-CLASS-ID: mo05
-Message-Id: <6acdbd0f06cb9902efc510346564e10b07fa0b91.1345618760.git.n.voss@weinmann.de>
-In-Reply-To: <cover.1345618760.git.n.voss@weinmann.de>
-References: <cover.1345618760.git.n.voss@weinmann.de>
+	Wed, 29 Aug 2012 04:11:00 -0400
+Message-Id: <b56adb1bfd2c2188d759ee9cbd5f38208e561667.1346225321.git.n.voss@weinmann.de>
+In-Reply-To: <cover.1346225321.git.n.voss@weinmann.de>
+References: <cover.1346225321.git.n.voss@weinmann.de>
 From: Nikolaus Voss <n.voss@weinmann.de>
 Date: Tue, 8 Nov 2011 12:11:03 +0100
 Subject: [PATCH v11 4/4] G45 TWI: remove open drain setting for twi function
