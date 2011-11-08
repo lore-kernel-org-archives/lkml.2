@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab1KHVP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:15:58 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41303 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753536Ab1KHVP4 (ORCPT
+	id S933331Ab1KHVQv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:16:51 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59038 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab1KHVQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:15:56 -0500
-Date: Tue, 8 Nov 2011 21:16:56 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Subject: Staging clear up
-Message-ID: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Nov 2011 16:16:50 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org, len.brown@intel.com,
+        tglx@linutronix.de, jeremy@goop.org, hpa@zytor.com, bp@alien8.de,
+        tj@kernel.org, trenn@suse.de
+Cc: mingo@redhat.com, xen-devel@lists.xensource.com
+Subject: [PATCH] x86/acpi fixes for 3.2 (v1) impacting distributions.
+Date: Tue,  8 Nov 2011 16:15:11 -0500
+Message-Id: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4EB99BF8.00E2,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moorestown/Oaktrail has appeared only in the PC like form so the
-following bits of staging can be binned
+I am posting three patches that are impacting distributions (both Ubuntu
+and Fedora Core 16) when running the Linux v3.1 (or later) under Xen.
 
-drivers/staging/spectra
+The first one is a regression:
+ [PATCH 1/3] cpuidle: If disable_cpuidle() is called, set pm_idle to
 
-(not needed)
+In 3.1 we set pm_idle to something else besides the default_idle which
+is not good. We want to use the default_halt as it does a yield hypercall, while
+the other pm_idle do not. Worst yet, when we would migrate a guest we could
+be using the wrong pm_idle code (on AMD boxes).
 
-drivers/staging/intel_sst
+The two other ones are more controversial and I am not sure if the path
+I had choosen is the "best" to fix the corruption problem. The "Right Way"
+would be to wrap pte_flags with a pvops call, but that has serious performance
+drawback implications. Ad nauseum details are in the patch:
 
-This also appears on Medfield but there is an ASoC driver for the
-Medfield version and we no longer need to keep this. There were naughty
-bits of code peeking into staging for files but that should now be sorted
-(and if not they need to break and be forced to fix them)
+ [PATCH 2/3] x86/cpa: Use pte_attrs instead of pte_flags on
 
-I can send patches but they are enormous and rather boring...
+and the last one is not that important, but nonethless if somebody is running
+CONFIG_CPA_DEBUG and with a radeon or nouveau card they might get sporadic:
+"CPA (x) bad PTE" messages. This patch fixes that.
 
-I will be sending patches for other bits like the battery manager which
-in actual product is always ACPI handled.
+ [PATCH 3/3] x86/paravirt: Use pte_val instead of pte_flags on CPA
 
-Alan
+The patches are also located in 
+
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-x86
+
+ arch/x86/include/asm/pgtable.h |    5 +++++
+ arch/x86/kernel/process.c      |    5 +++++
+ arch/x86/mm/pageattr-test.c    |    6 +++++-
+ arch/x86/mm/pageattr.c         |    2 +-
+ include/linux/cpuidle.h        |    2 ++
+ 5 files changed, 18 insertions(+), 2 deletions(-)
