@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab1KHFq3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 00:46:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab1KHFqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 00:46:25 -0500
-Date: Tue, 8 Nov 2011 11:16:16 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] virtio-pci: fix use after free
-Message-ID: <20111108054616.GC2068@amit-x200.redhat.com>
-References: <20111107163703.GA10358@redhat.com>
+	id S1751917Ab1KHF5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 00:57:16 -0500
+Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:54332 "EHLO
+	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751234Ab1KHF5O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 00:57:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107163703.GA10358@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1319805325-24689-2-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
+	<1319805325-24689-2-git-send-email-heikki.krogerus@linux.intel.com>
+Date: Tue, 8 Nov 2011 11:27:12 +0530
+Message-ID: <CAAe_U6JnWLioK_NCz03uCGd3T0aV56-M3MFgRUdJVX4nB1uhbg@mail.gmail.com>
+Subject: Re: [PATCHv6 01/19] usb: otg: Rename otg_transceiver to usb_phy
+From: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Mon) 07 Nov 2011 [18:37:05], Michael S. Tsirkin wrote:
-> Commit 31a3ddda166cda86d2b5111e09ba4bda5239fae6 introduced
-> a use after free in virtio-pci. The main issue is
-> that the release method signals removal of the virtio device,
-> while remove signals removal of the pci device.
-> 
-> For example, on driver removal or hot-unplug,
-> virtio_pci_release_dev is called before virtio_pci_remove.
-> We then might get a crash as virtio_pci_remove tries to use the
-> device freed by virtio_pci_release_dev.
-> 
-> We allocate/free all resources together with the
-> pci device, so we can leave the release method empty.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Hi Heikki,
 
-Acked-by: Amit Shah <amit.shah@redhat.com>
+On Fri, Oct 28, 2011 at 6:05 PM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
+> This is the first step in separating USB transceivers from
+> USB OTG utilities.
+>
+> Includes fixes to IMX code from Sascha Hauer.
 
-(note: Adding CC: stable@kernel.org to the commit log is the way
-patches get automatically pulled from upstream when committed; CC'ing
-stable on submissions won't help with that.)
+I tend to defer with your opinion of renaming otg_transceiver to
+usb_phy. According to me otg_transceiver should program hardware
+mechanisms associated to VBUS, ID lines, etc.. and phy is responsible
+for transmitting data over differential data lines (with its own
+programming of phy_init, phy_shutdown, setting phy clocks etc..). So
+in my opinion otg_transceiver and usb_phy should be two different and
+separate entities.
 
-		Amit
+I would have preferred to rename otg_transceiver as usb_otg as the
+first step. (this differs from your implementation where you rename
+otg_transceiver to usb_phy and create a new structure usb_otg to
+separate otg members from usb_phy).
+
+But it should have been first  rename otg_transceiver as usb_otg. Then
+create a new structure usb_phy to move all the phy specific
+implementation there. This kind of implementation will also help when
+we want to have independent phy drivers.
+
+Thanks
+Kishon
