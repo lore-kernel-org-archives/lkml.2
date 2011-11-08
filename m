@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab1KHP5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 10:57:20 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4787 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755158Ab1KHP5R convert rfc822-to-8bit (ORCPT
+	id S1756095Ab1KHQAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:00:43 -0500
+Received: from 4.mo5.mail-out.ovh.net ([178.33.111.247]:40675 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755158Ab1KHQAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 10:57:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 08 Nov 2011 07:56:59 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Date: Tue, 8 Nov 2011 07:56:58 -0800
-Subject: RE: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Thread-Topic: [PATCH v3 0/8] Add support for tegra30 and cardhu
-Thread-Index: AcyeDNDHxUYCtn1eTfqw6gJYybWU2QAIgOrA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF173F9A5394@HQMAIL01.nvidia.com>
-References: <1320675617-20751-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF173F9A50F3@HQMAIL01.nvidia.com>
- <20111108114559.GT29978@tbergstrom-lnx.Nvidia.com>
- <20111108115153.GU29978@tbergstrom-lnx.Nvidia.com>
-In-Reply-To: <20111108115153.GU29978@tbergstrom-lnx.Nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Nov 2011 11:00:42 -0500
+X-Greylist: delayed 12661 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 11:00:41 EST
+Date: Tue, 8 Nov 2011 10:59:59 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Claudio Scordino <claudio@evidence.eu.com>,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, Mikael Starvik <mikael.starvik@axis.com>,
+        Darron Black <darron@griffin.net>, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some
+ variables
+Message-ID: <20111108095959.GB31737@game.jcrosoft.org>
+References: <4E492CFF.7040905@pwrnet.de>
+ <20110822211832.GA8023@kroah.com>
+ <4EB3A009.10502@evidence.eu.com>
+ <4EB8F6B9.6010008@atmel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB8F6B9.6010008@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 18295592012548647788
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -275
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfedvtddrvdduucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddmnehrthhsfeigucdlqdejhedm
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -275
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeftddrvddtucetggdotefuucfrrhhofhhilhgvmecuqfggjfenuceurghilhhouhhtmecufedttdenucesvcftvggtihhpihgvnhhtshculddquddttddmneculddquddttddmnehrthhsfeigucdlqdejhedm
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Tuesday, November 08, 2011 4:52 AM:
-> On Tue, Nov 08, 2011 at 12:45:59PM +0100, Peter De Schrijver wrote:
-> > On Mon, Nov 07, 2011 at 08:10:29PM +0100, Stephen Warren wrote:
-> > > Peter De Schrijver wrote at Monday, November 07, 2011 7:20 AM:
-> > > > This patchset adds support for the tegra30 SoC and the cardhu development
-> > > > board.
-> > > >
-> > > > Pathset is on top of Will Deacon's ARM reset work.
-> > >
-> > > A few minor issues:
-> > >
-> > > 1) If I enable just ARCH_TEGRA_3x_SOC, but not ARCH_TEGRA_2x_SOC, the
-> > > kernel fails to build because arch/arm/mach-tegra/include/mach/irqs.h
-> > > only defines NR_IRQS if ARCH_TEGRA_2x_SOC is defined.
-> > >
-> > > 2) All the Tegra20 boards don't depend on ARCH_TEGRA_2x_SOC, so they can
-> > > be enabled even if only Tegra30 support is enabled.
-> > >
-> >
-> > Indeed. I also noticed that MACH_VENTANA lacks select MACH_SEABOARD...
+On 10:30 Tue 08 Nov     , Nicolas Ferre wrote:
+> On 11/04/2011 09:19 AM, Claudio Scordino :
+> > Hi Alan, Hi Greg,
+> > 
+> > 	it seems that the crisv10.c and the atmel_serial.c serial
+> > drivers interpret the fields of the serial_rs485 structure in a different
+> > way.
+> > 
+> > In particular, it seems that crisv10.c uses SER_RS485_RTS_AFTER_SEND and
+> > SER_RS485_RTS_ON_SEND for the _logic value_ of the RTS pin;
+> > atmel_serial.c, instead, uses these values to know if a _delay_ must be
+> > set before and after sending.
 > 
-> I take that back. It's not needed.
+> It seems sensible, but, on the other hand, I fear that this is a big
+> change in the user interface: If people are already relying on this for
+> their application, this can be difficult to understand the change. Can't
+> we imagine an smoother migration path?
 > 
-> > Maybe I should submit a seperate patch to fix all this?
-> >
+> It seems from de6f86ce5 that 16C950 may also use rs485 mode (with
+> another signal that RTS BTW)...
 > 
-> I will make a patch to cleanup the ARCH_TEGRA_2x_SOC dependencies. Or do you
-> want this as part of the tegra30/cardhu series?
+> See comments online...
+> 
+> > This patch makes the usage of these variables consistent across all
+> > drivers and fixes the Documentation as well.
+> > In particular, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will
+> > be used to set the logic value of the RTS pin (as in the crisv10.c
+> > driver); the delay is understood by looking only at the value of
+> > delay_rts_before_send and delay_rts_after_send.
+> > 
+> > Best regards,
+> > 
+> > 	Claudio
+> > 
+> > 
+> > Subject: RS485: fix inconsistencies in the meaning of some variables
+> > From: Claudio Scordino <claudio@evidence.eu.com>
+> > 
+> > The crisv10.c and the atmel_serial.c serial drivers interpret the fields
+> > of the serial_rs485 structure in a different way.
+> > In particular, crisv10.c uses SER_RS485_RTS_AFTER_SEND and 
+> > SER_RS485_RTS_ON_SEND for the voltage of the RTS pin; atmel_serial.c, instead,
+> > uses these values to know if a delay must be set before and after sending.
+> > This patch makes the usage of these variables consistent across all drivers and
+> > fixes the Documentation as well.
+> >>From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to
+> > set the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
+> > understood by looking only at the value of delay_rts_before_send and 
+> > delay_rts_after_send.
+> 
+> Ok, but don't you think that the flags names are not so much
+> self-explanatory for this new meaning?
+> 
+> What about:
+> SER_RS485_RTS_LEVEL_DURING_SEND
+> SER_RS485_RTS_VALUE_DURING_SEND (maybe too vague?)
+> SER_RS485_RTS_LOGICAL_VALUE_DURING_SEND (maybe too long?)
+> 
+> Moreover, can't we just use one property for this? I mean, if RTS
+> logical value is high during the sending of data, can it mean that RTS
+> will be low before and after? And the other way around: if the signal is
+> low during data send, will it be high before and after?
+> 
+> Here again, changing the user interface is not a good idea, so I fear
+> that it can be a show stopper.
+agreed with nicolas
 
-It should be applied before/with the Tegra30/Cardhu series so that when
-Tegra30 support is there, all the correct dependencies are. So, since I
-think you're respinning the Tegra30/Cardhu series, you may as well include
-it in there somewhere, but no big deal if it's posted separately.
-
--- 
-nvpublic
-
+Best Regards,
+J.
