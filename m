@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab1KHUXC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 15:23:02 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:23563 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750769Ab1KHUXA (ORCPT
+	id S933269Ab1KHUXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 15:23:54 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58488 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1KHUXw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 15:23:00 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Tue, 08 Nov 2011 15:22:59 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: David Brown <davidb@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
-In-reply-to: <20111108195956.GA13998@huya.qualcomm.com>
-Message-id: <alpine.LFD.2.02.1111081521110.3307@xanadu.home>
-References: <1320777184-22446-1-git-send-email-sboyd@codeaurora.org>
- <1320777184-22446-3-git-send-email-sboyd@codeaurora.org>
- <alpine.LFD.2.02.1111081406220.3307@xanadu.home>
- <4EB97F83.3070509@codeaurora.org> <20111108195956.GA13998@huya.qualcomm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 8 Nov 2011 15:23:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111108145510.GA5142@elliptictech.com>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+ <20111108145510.GA5142@elliptictech.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Nov 2011 12:23:30 -0800
+X-Google-Sender-Auth: H_2B85jSzRljCAVekGTRd_IEMm4
+Message-ID: <CA+55aFwx5=T1piX5qPj2jCAbzdHAQX2gYJODZnQ40h9hiDjkbQ@mail.gmail.com>
+Subject: Re: Linux 3.2-rc1
+To: Nick Bowler <nbowler@elliptictech.com>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, Keith Packard <keithp@keithp.com>,
+        dri-devel@lists.freedesktop.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Nov 2011, David Brown wrote:
+Hmm, I don't know what caused this to trigger, but I'm adding both the
+i915 people and the HDA people to the cc, and they can fight to the
+death about this in the HDMI Thunderdome.
 
-> On Tue, Nov 08, 2011 at 11:14:11AM -0800, Stephen Boyd wrote:
-> > On 11/08/11 11:08, Nicolas Pitre wrote:
-> > > Independently from this patch, I was wondering about this code:
-> > >
-> > >> +	.macro	senduart, rd, rx
-> > >> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> > >> +	@ Write the 1 character to UARTDM_TF
-> > >> +	str	\rd, [\rx, #0x70]
-> > >> +#else
-> > >>  	teq	\rx, #0
-> > >>  	strne	\rd, [\rx, #0x0C]
-> > >> +#endif
-> > >>  	.endm
-> > > Why testing for zero in the #else part?  The upper level code should 
-> > > never call this macro with a null byte.
-> > 
-> > I was wondering the same thing, I don't know why that test for null is
-> > there. I will dust off the old 7201a (literally) and see what I can find
-> > out. It certainly looks unnecessary.
-> 
-> Perhaps this is a better fix?  Google removed the 7201a code from
-> their tree quite a while back.  I don't have any more working hardware
-> to test things with.
-> 
-> David
-> 
-> >From b4a76f1561d35d043f9266f8fe47725389ea7ba9 Mon Sep 17 00:00:00 2001
-> From: David Brown <davidb@codeaurora.org>
-> Date: Tue, 8 Nov 2011 11:44:05 -0800
-> Subject: [PATCH] ARM: msm: Mark 720x targets as broken
-> 
-> The 720x code is bitrotting.  These have only been compile tested for
-> quite some time.  Mark as broken now so they can be removed after a
-> while.
-> 
-> Signed-off-by: David Brown <davidb@codeaurora.org>
+Guys: One.. Two.. Three.. FIGHT!
 
-I certainly have no problem with that.  Keeping unused code in the tree 
-just increases maintenance costs for no gain.
+                 Linus
 
-
-Nicolas
+On Tue, Nov 8, 2011 at 6:55 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
+>
+> Mode switches are very noisy on an Intel G45 in 3.2-rc1:
+>
+>  HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+>  HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+>  HDMI: detected monitor W2253 at connection type HDMI
+>  HDMI: available speakers: FL/FR
+>  HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+>
+> These lines get printed every single switch; previously only a single
+> line was printed once at boot (the "HDMI status" line).
+>
+> Cheers,
+> --
+> Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+>
