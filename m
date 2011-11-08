@@ -1,107 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab1KHC4e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 21:56:34 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42986 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752544Ab1KHC4b convert rfc822-to-8bit (ORCPT
+	id S1753673Ab1KHC6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:58:09 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52793 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab1KHC6F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 21:56:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=o9eef+9SxzwUMosmr58
-	PxvLEiGYtmqU9BIEMdqVOut0gBpWV5t3jJe3XrpueZrPZEXTUTxBWrTlTGGoqE2q
-	Xj0lSxxeRJSD224fxHR0v9xEZWEDgqbuLUxuFC61tRj17yyVyoj1qhziAI50cK4m
-	hNJ6j2pt/Lo5UuM1E3FcftKc=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.8.rc1
-Date: Mon, 07 Nov 2011 18:56:28 -0800
-Message-ID: <7vwrbbz5ib.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 7 Nov 2011 21:58:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 41EFB69E-09B5-11E1-B48B-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <4EB8044B.7020403@windriver.com>
+References: <1320635954.10415.1.camel@phoenix> <1320636009.10415.2.camel@phoenix>
+ <4EB8044B.7020403@windriver.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 8 Nov 2011 10:57:43 +0800
+Message-ID: <CAF+7xWnQhfEzDMeWRAvrbxpUySEp6aUpO1BdAztcfH9Fuu=X_g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mfd: include linux/module.h for ab5500-debugfs
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mattias Wallin <mattias.wallin@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.8.rc1 is available for testing. Since rc0, we
-killed all known regressions. Because there won't be any more new feature
-merged until the 1.7.8 final, it is a good time for the coolest kids on
-the block to start using the upcoming release before others do.
+2011/11/8 Paul Gortmaker <paul.gortmaker@windriver.com>:
+> On 11-11-06 10:20 PM, Axel Lin wrote:
+>> Include linux/module.h to fix below build error:
+>>
+>> † CC † † †drivers/mfd/ab5500-debugfs.o
+>> drivers/mfd/ab5500-debugfs.c:571: error: 'THIS_MODULE' undeclared here (not in a function)
+>> make[2]: *** [drivers/mfd/ab5500-debugfs.o] Error 1
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>> †drivers/mfd/ab5500-debugfs.c | † †1 +
+>> †1 files changed, 1 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mfd/ab5500-debugfs.c b/drivers/mfd/ab5500-debugfs.c
+>> index 6be1fe6..b7b2d348 100644
+>> --- a/drivers/mfd/ab5500-debugfs.c
+>> +++ b/drivers/mfd/ab5500-debugfs.c
+>> @@ -4,6 +4,7 @@
+>> † * Debugfs support for the AB5500 MFD driver
+>> † */
+>>
+>> +#include <linux/module.h>
+>
+> This one looks incorrect. †I don't see any uses of MODULE_* or
+> module_* in the file, so I'll make a commit for it to use export.h
+> and retest.
+>
+hi Paul,
+drivers/mfd/ab8500-debugfs.c does use MODULE_AUTHOR, MODULE_DESCRIPTION, etc.
+I got below build error if only includes linux/export.h
 
-The release tarballs are found at:
+  CC      drivers/mfd/ab8500-debugfs.o
+drivers/mfd/ab8500-debugfs.c:632: error: expected declaration
+specifiers or '...' before string constant
+drivers/mfd/ab8500-debugfs.c:632: warning: data definition has no type
+or storage class
+drivers/mfd/ab8500-debugfs.c:632: warning: type defaults to 'int' in
+declaration of 'MODULE_AUTHOR'
+drivers/mfd/ab8500-debugfs.c:632: warning: function declaration isn't
+a prototype
+drivers/mfd/ab8500-debugfs.c:633: error: expected declaration
+specifiers or '...' before string constant
+drivers/mfd/ab8500-debugfs.c:633: warning: data definition has no type
+or storage class
+drivers/mfd/ab8500-debugfs.c:633: warning: type defaults to 'int' in
+declaration of 'MODULE_DESCRIPTION'
+drivers/mfd/ab8500-debugfs.c:633: warning: function declaration isn't
+a prototype
+drivers/mfd/ab8500-debugfs.c:634: error: expected declaration
+specifiers or '...' before string constant
+drivers/mfd/ab8500-debugfs.c:634: warning: data definition has no type
+or storage class
+drivers/mfd/ab8500-debugfs.c:634: warning: type defaults to 'int' in
+declaration of 'MODULE_LICENSE'
+drivers/mfd/ab8500-debugfs.c:634: warning: function declaration isn't
+a prototype
+make[2]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+make[1]: *** [drivers/mfd] Error 2
+make: *** [drivers] Error 2
 
-    http://code.google.com/p/git-core/downloads/list
+Well, I don't know why I don't see these errors when I build the code last time.
 
-and their SHA-1 checksums are:
-
-f35e5c4410b21710434cb591f4c89843e75bb793  git-1.7.8.rc1.tar.gz
-72e27cd397f5ae7b3c9d8bb030a76d7c99cdbb50  git-htmldocs-1.7.8.rc1.tar.gz
-95429858e879df3f9425cf1279e03cdec7832379  git-manpages-1.7.8.rc1.tar.gz
-
-Also the following public repositories all have a copy of the v1.7.8.rc1
-tag and the master branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-----------------------------------------------------------------
-
-Changes since v1.7.8-rc0 are as follows:
-
-Dan McGee (4):
-      pack-objects: mark add_to_write_order() as inline
-      pack-objects: use unsigned int for counter and offset values
-      pack-objects: rewrite add_descendants_to_write_order() iteratively
-      pack-objects: don't traverse objects unnecessarily
-
-Erik Faye-Lund (4):
-      mingw: move poll out of sys-folder
-      compat/win32/poll.c: upgrade from upstream
-      upload-archive: use start_command instead of fork
-      mingw: poll.h is no longer in sys/
-
-Johannes Sixt (1):
-      name-hash.c: always initialize dir_next pointer
-
-Junio C Hamano (5):
-      (squash) test for previous
-      Git 1.7.7.2
-      Update draft release notes to 1.7.8
-      receive-pack: do not expect object 0{40} to exist
-      Git 1.7.8-rc1
-
-Nguy·ªÖn Th√°i Ng·ªçc Duy (2):
-      pretty.c: free get_header() return value
-      pretty.c: use original commit message if reencoding fails
-
-Pat Thoyts (1):
-      t7511: avoid use of reserved filename on Windows.
-
-Pete Wyckoff (1):
-      git-p4: ignore apple filetype
-
-Sebastian Schuberth (2):
-      blame.c: Properly initialize strbuf after calling, textconv_object()
-      blame.c: Properly initialize strbuf after calling textconv_object(), again
-
-Stefan Naewe (2):
-      t3200: add test case for 'branch -m'
-      http: don't always prompt for password
-
-Tay Ray Chuan (1):
-      branch -m: handle no arg properly
-
-Ted Percival (1):
-      svn: Quote repository root in regex match
-
-√Üvar Arnfj√∂r√∞ Bjarmason (2):
-      t/t6030-bisect-porcelain.sh: use test_i18ngrep
-      t/t7508-status.sh: use test_i18ncmp
-
+Regards,
+Axel
