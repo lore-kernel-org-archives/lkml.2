@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab1KHIHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 03:07:30 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:45924 "EHLO
+	id S1753568Ab1KHIOn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 03:14:43 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:54662 "EHLO
 	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177Ab1KHIH1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753357Ab1KHIOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 03:07:27 -0500
+	Tue, 8 Nov 2011 03:14:42 -0500
+Date: Tue, 8 Nov 2011 16:14:33 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+Message-ID: <20111108081433.GA3746@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+ <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+ <1320669279.18053.29.camel@twins>
+ <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+ <1320682230.17809.11.camel@twins>
+ <20111108025847.GB11439@zhy>
+ <1320739015.2244.0.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <20111108043233.GA21171@gamma.logic.tuwien.ac.at>
-References: <20111021012442.GB26758@gamma.logic.tuwien.ac.at>
-	<alpine.DEB.2.00.1110231424500.17218@chino.kir.corp.google.com>
-	<20111026025014.GB24956@gamma.logic.tuwien.ac.at>
-	<1319601333.14693.19.camel@wwguy-ubuntu>
-	<20111026040332.GF24956@gamma.logic.tuwien.ac.at>
-	<20111102031345.GA10851@gamma.logic.tuwien.ac.at>
-	<1320204101.31823.140.camel@wwguy-huron>
-	<20111104045817.GA25778@gamma.logic.tuwien.ac.at>
-	<20111107123812.GB23508@gamma.logic.tuwien.ac.at>
-	<1320709047.31823.188.camel@wwguy-huron>
-	<20111108043233.GA21171@gamma.logic.tuwien.ac.at>
-Date: Tue, 8 Nov 2011 10:07:26 +0200
-Message-ID: <CANUX_P06ww42p6N1k_P-Y1KMKOd1QgR_DxVWe19qtsEX2rfWpw@mail.gmail.com>
-Subject: Re: iwlagn is getting very shaky
-From: Emmanuel Grumbach <egrumbach@gmail.com>
-To: Norbert Preining <preining@logic.at>
-Cc: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        David Rientjes <rientjes@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ipw3945-devel@lists.sourceforge.net" 
-	<ipw3945-devel@lists.sourceforge.net>,
-        "ilw@linux.intel.com" <ilw@linux.intel.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1320739015.2244.0.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> In short, this is the output of your patch:
-> [  215.872090] iwlwifi 0000:06:00.0: Queue 11 stuck for 10000 ms.
-> [  215.872101] iwlwifi 0000:06:00.0: Current SW read_ptr 105 write_ptr 115
-> [  215.872156] iwlwifi 0000:06:00.0: Current HW read_ptr 105 write_ptr 115
-> [  215.872164] iwlwifi 0000:06:00.0: On demand firmware reload
->
->
-Ok thanks for that. The HW and the SW agree then...
+On Tue, Nov 08, 2011 at 08:56:55AM +0100, Peter Zijlstra wrote:
+> On Tue, 2011-11-08 at 10:58 +0800, Yong Zhang wrote:
+> > >  struct lockdep_map {
+> > > +     const char                      *name;
+> > >       struct lock_class_key           *key;
+> > >       struct lock_class               *class_cache[NR_LOCKDEP_CACHING_CLASSES];
+> > > -     const char                      *name;
+> > >  #ifdef CONFIG_LOCK_STAT
+> > >       int                             cpu;
+> > >       unsigned long                   ip;
+> > > diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> > > index e69434b..81855cf 100644
+> > > --- a/kernel/lockdep.c
+> > > +++ b/kernel/lockdep.c
+> > > @@ -2948,7 +2948,8 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
+> > >  void lockdep_init_map(struct lockdep_map *lock, const char *name,
+> > >                     struct lock_class_key *key, int subclass)
+> > >  {
+> > > -     memset(lock, 0, sizeof(*lock));
+> > > +     kmemcheck_mark_initialized(lock, 2*sizeof(void *));
+> > > +     memset(&lock->class_cache[0], 0, sizeof(*lock)-2*sizeof(void *));
+> > 
+> > That means ->key have chance to be 0 at some time, right? 
+> 
+> How? We only memset from class_cache onwards, leaving name and key
+> untouched.
 
-I would like to see what happens in terms or power.
-Please set the power debug flag: modprobe iwlwifi debug=0x100
+Hmm, we don't touch key in your patch. My eyes was keeping on ->name.
+Sorry.
 
-Thanks.
+But how do we deal with ->class_cache? Always set it in
+loop_up_lock_class()?
+
+Thanks,
+Yong
