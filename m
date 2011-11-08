@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1KHV1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 16:27:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9442 "EHLO mx1.redhat.com"
+	id S1752002Ab1KHVZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 16:25:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50207 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab1KHV0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 16:26:32 -0500
+	id S1750899Ab1KHVZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 16:25:51 -0500
 From: Johannes Weiner <jweiner@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
@@ -18,196 +18,202 @@ Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Minchan Kim <minchan.kim@gmail.com>,
         Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch 10/10] mm: memcg: remove unused node/section info from pc->flags
-Date: Tue,  8 Nov 2011 22:23:28 +0100
-Message-Id: <1320787408-22866-11-git-send-email-jweiner@redhat.com>
+Subject: [patch 02/10] mm: vmscan: distinguish global reclaim from global LRU scanning
+Date: Tue,  8 Nov 2011 22:23:20 +0100
+Message-Id: <1320787408-22866-3-git-send-email-jweiner@redhat.com>
 In-Reply-To: <1320787408-22866-1-git-send-email-jweiner@redhat.com>
 References: <1320787408-22866-1-git-send-email-jweiner@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To find the page corresponding to a certain page_cgroup, the pc->flags
-encoded the node or section ID with the base array to compare the pc
-pointer to.
+The traditional zone reclaim code is scanning the per-zone LRU lists
+during direct reclaim and kswapd, and the per-zone per-memory cgroup
+LRU lists when reclaiming on behalf of a memory cgroup limit.
 
-Now that the per-memory cgroup LRU lists link page descriptors
-directly, there is no longer any code that knows the struct
-page_cgroup of a PFN but not the struct page.
+Subsequent patches will convert the traditional reclaim code to
+reclaim exclusively from the per-memory cgroup LRU lists.  As a
+result, using the predicate for which LRU list is scanned will no
+longer be appropriate to tell global reclaim from limit reclaim.
+
+This patch adds a global_reclaim() predicate to tell direct/kswapd
+reclaim from memory cgroup limit reclaim and substitutes it in all
+places where currently scanning_global_lru() is used for that.
 
 Signed-off-by: Johannes Weiner <jweiner@redhat.com>
 Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Reviewed-by: Michal Hocko <mhocko@suse.cz>
 Reviewed-by: Kirill A. Shutemov <kirill@shutemov.name>
 ---
- include/linux/page_cgroup.h |   33 -------------------------
- mm/page_cgroup.c            |   57 +++++-------------------------------------
- 2 files changed, 7 insertions(+), 83 deletions(-)
+ mm/vmscan.c |   62 +++++++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 37 insertions(+), 25 deletions(-)
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 5bae753..aaa60da 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -121,39 +121,6 @@ static inline void move_unlock_page_cgroup(struct page_cgroup *pc,
- 	local_irq_restore(*flags);
- }
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a1893c0..189597e 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -153,9 +153,25 @@ static LIST_HEAD(shrinker_list);
+ static DECLARE_RWSEM(shrinker_rwsem);
  
--#ifdef CONFIG_SPARSEMEM
--#define PCG_ARRAYID_WIDTH	SECTIONS_SHIFT
--#else
--#define PCG_ARRAYID_WIDTH	NODES_SHIFT
--#endif
--
--#if (PCG_ARRAYID_WIDTH > BITS_PER_LONG - NR_PCG_FLAGS)
--#error Not enough space left in pc->flags to store page_cgroup array IDs
--#endif
--
--/* pc->flags: ARRAY-ID | FLAGS */
--
--#define PCG_ARRAYID_MASK	((1UL << PCG_ARRAYID_WIDTH) - 1)
--
--#define PCG_ARRAYID_OFFSET	(BITS_PER_LONG - PCG_ARRAYID_WIDTH)
--/*
-- * Zero the shift count for non-existent fields, to prevent compiler
-- * warnings and ensure references are optimized away.
-- */
--#define PCG_ARRAYID_SHIFT	(PCG_ARRAYID_OFFSET * (PCG_ARRAYID_WIDTH != 0))
--
--static inline void set_page_cgroup_array_id(struct page_cgroup *pc,
--					    unsigned long id)
--{
--	pc->flags &= ~(PCG_ARRAYID_MASK << PCG_ARRAYID_SHIFT);
--	pc->flags |= (id & PCG_ARRAYID_MASK) << PCG_ARRAYID_SHIFT;
--}
--
--static inline unsigned long page_cgroup_array_id(struct page_cgroup *pc)
--{
--	return (pc->flags >> PCG_ARRAYID_SHIFT) & PCG_ARRAYID_MASK;
--}
--
- #else /* CONFIG_CGROUP_MEM_RES_CTLR */
- struct page_cgroup;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+-#define scanning_global_lru(sc)	(!(sc)->mem_cgroup)
++static bool global_reclaim(struct scan_control *sc)
++{
++	return !sc->mem_cgroup;
++}
++
++static bool scanning_global_lru(struct scan_control *sc)
++{
++	return !sc->mem_cgroup;
++}
+ #else
+-#define scanning_global_lru(sc)	(1)
++static bool global_reclaim(struct scan_control *sc)
++{
++	return true;
++}
++
++static bool scanning_global_lru(struct scan_control *sc)
++{
++	return true;
++}
+ #endif
  
-diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-index f59405a..a14655d 100644
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -11,12 +11,6 @@
- #include <linux/swapops.h>
- #include <linux/kmemleak.h>
+ static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
+@@ -1006,7 +1022,7 @@ keep_lumpy:
+ 	 * back off and wait for congestion to clear because further reclaim
+ 	 * will encounter the same problem
+ 	 */
+-	if (nr_dirty && nr_dirty == nr_congested && scanning_global_lru(sc))
++	if (nr_dirty && nr_dirty == nr_congested && global_reclaim(sc))
+ 		zone_set_flag(zone, ZONE_CONGESTED);
  
--static void __meminit init_page_cgroup(struct page_cgroup *pc, unsigned long id)
--{
--	pc->flags = 0;
--	set_page_cgroup_array_id(pc, id);
--	pc->mem_cgroup = NULL;
--}
- static unsigned long total_usage;
- 
- #if !defined(CONFIG_SPARSEMEM)
-@@ -41,24 +35,11 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
- 	return base + offset;
- }
- 
--struct page *lookup_cgroup_page(struct page_cgroup *pc)
--{
--	unsigned long pfn;
--	struct page *page;
--	pg_data_t *pgdat;
--
--	pgdat = NODE_DATA(page_cgroup_array_id(pc));
--	pfn = pc - pgdat->node_page_cgroup + pgdat->node_start_pfn;
--	page = pfn_to_page(pfn);
--	VM_BUG_ON(pc != lookup_page_cgroup(page));
--	return page;
--}
--
- static int __init alloc_node_page_cgroup(int nid)
- {
--	struct page_cgroup *base, *pc;
-+	struct page_cgroup *base;
- 	unsigned long table_size;
--	unsigned long start_pfn, nr_pages, index;
-+	unsigned long nr_pages;
- 
- 	start_pfn = NODE_DATA(nid)->node_start_pfn;
- 	nr_pages = NODE_DATA(nid)->node_spanned_pages;
-@@ -72,10 +53,6 @@ static int __init alloc_node_page_cgroup(int nid)
- 			table_size, PAGE_SIZE, __pa(MAX_DMA_ADDRESS));
- 	if (!base)
- 		return -ENOMEM;
--	for (index = 0; index < nr_pages; index++) {
--		pc = base + index;
--		init_page_cgroup(pc, nid);
--	}
- 	NODE_DATA(nid)->node_page_cgroup = base;
- 	total_usage += table_size;
- 	return 0;
-@@ -116,23 +93,10 @@ struct page_cgroup *lookup_page_cgroup(struct page *page)
- 	return section->page_cgroup + pfn;
- }
- 
--struct page *lookup_cgroup_page(struct page_cgroup *pc)
--{
--	struct mem_section *section;
--	struct page *page;
--	unsigned long nr;
--
--	nr = page_cgroup_array_id(pc);
--	section = __nr_to_section(nr);
--	page = pfn_to_page(pc - section->page_cgroup);
--	VM_BUG_ON(pc != lookup_page_cgroup(page));
--	return page;
--}
--
- static void *__meminit alloc_page_cgroup(size_t size, int nid)
- {
-+	gfp_t flags = GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN;
- 	void *addr = NULL;
--	gfp_t flags = GFP_KERNEL | __GFP_NOWARN;
- 
- 	addr = alloc_pages_exact_nid(nid, size, flags);
- 	if (addr) {
-@@ -141,9 +105,9 @@ static void *__meminit alloc_page_cgroup(size_t size, int nid)
- 	}
- 
- 	if (node_state(nid, N_HIGH_MEMORY))
--		addr = vmalloc_node(size, nid);
-+		addr = vzalloc_node(size, nid);
- 	else
--		addr = vmalloc(size);
-+		addr = vzalloc(size);
- 
- 	return addr;
- }
-@@ -166,14 +130,11 @@ static void free_page_cgroup(void *addr)
- 
- static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
- {
--	struct page_cgroup *base, *pc;
- 	struct mem_section *section;
-+	struct page_cgroup *base;
- 	unsigned long table_size;
--	unsigned long nr;
--	int index;
- 
--	nr = pfn_to_section_nr(pfn);
--	section = __nr_to_section(nr);
-+	section = __pfn_to_section(pfn);
- 
- 	if (section->page_cgroup)
+ 	free_page_list(&free_pages);
+@@ -1325,7 +1341,7 @@ static int too_many_isolated(struct zone *zone, int file,
+ 	if (current_is_kswapd())
  		return 0;
-@@ -193,10 +154,6 @@ static int __meminit init_section_page_cgroup(unsigned long pfn, int nid)
- 		return -ENOMEM;
+ 
+-	if (!scanning_global_lru(sc))
++	if (!global_reclaim(sc))
+ 		return 0;
+ 
+ 	if (file) {
+@@ -1503,6 +1519,12 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 	if (scanning_global_lru(sc)) {
+ 		nr_taken = isolate_pages_global(nr_to_scan, &page_list,
+ 			&nr_scanned, sc->order, reclaim_mode, zone, 0, file);
++	} else {
++		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
++			&nr_scanned, sc->order, reclaim_mode, zone,
++			sc->mem_cgroup, 0, file);
++	}
++	if (global_reclaim(sc)) {
+ 		zone->pages_scanned += nr_scanned;
+ 		if (current_is_kswapd())
+ 			__count_zone_vm_events(PGSCAN_KSWAPD, zone,
+@@ -1510,14 +1532,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 		else
+ 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+ 					       nr_scanned);
+-	} else {
+-		nr_taken = mem_cgroup_isolate_pages(nr_to_scan, &page_list,
+-			&nr_scanned, sc->order, reclaim_mode, zone,
+-			sc->mem_cgroup, 0, file);
+-		/*
+-		 * mem_cgroup_isolate_pages() keeps track of
+-		 * scanned pages on its own.
+-		 */
  	}
  
--	for (index = 0; index < PAGES_PER_SECTION; index++) {
--		pc = base + index;
--		init_page_cgroup(pc, nr);
--	}
- 	/*
- 	 * The passed "pfn" may not be aligned to SECTION.  For the calculation
- 	 * we need to apply a mask.
+ 	if (nr_taken == 0) {
+@@ -1658,18 +1672,16 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+ 						&pgscanned, sc->order,
+ 						reclaim_mode, zone,
+ 						1, file);
+-		zone->pages_scanned += pgscanned;
+ 	} else {
+ 		nr_taken = mem_cgroup_isolate_pages(nr_pages, &l_hold,
+ 						&pgscanned, sc->order,
+ 						reclaim_mode, zone,
+ 						sc->mem_cgroup, 1, file);
+-		/*
+-		 * mem_cgroup_isolate_pages() keeps track of
+-		 * scanned pages on its own.
+-		 */
+ 	}
+ 
++	if (global_reclaim(sc))
++		zone->pages_scanned += pgscanned;
++
+ 	reclaim_stat->recent_scanned[file] += nr_taken;
+ 
+ 	__count_zone_vm_events(PGREFILL, zone, pgscanned);
+@@ -1839,7 +1851,7 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+ 
+ static int vmscan_swappiness(struct scan_control *sc)
+ {
+-	if (scanning_global_lru(sc))
++	if (global_reclaim(sc))
+ 		return vm_swappiness;
+ 	return mem_cgroup_swappiness(sc->mem_cgroup);
+ }
+@@ -1874,9 +1886,9 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 	 * latencies, so it's better to scan a minimum amount there as
+ 	 * well.
+ 	 */
+-	if (scanning_global_lru(sc) && current_is_kswapd())
++	if (current_is_kswapd())
+ 		force_scan = true;
+-	if (!scanning_global_lru(sc))
++	if (!global_reclaim(sc))
+ 		force_scan = true;
+ 
+ 	/* If we have no swap space, do not bother scanning anon pages. */
+@@ -1893,7 +1905,7 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+ 	file  = zone_nr_lru_pages(zone, sc, LRU_ACTIVE_FILE) +
+ 		zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
+ 
+-	if (scanning_global_lru(sc)) {
++	if (global_reclaim(sc)) {
+ 		free  = zone_page_state(zone, NR_FREE_PAGES);
+ 		/* If we have very few page cache pages,
+ 		   force-scan anon pages. */
+@@ -2125,7 +2137,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
+ 		 * Take care memory controller reclaiming has small influence
+ 		 * to global LRU.
+ 		 */
+-		if (scanning_global_lru(sc)) {
++		if (global_reclaim(sc)) {
+ 			if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
+ 				continue;
+ 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
+@@ -2223,7 +2235,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 	get_mems_allowed();
+ 	delayacct_freepages_start();
+ 
+-	if (scanning_global_lru(sc))
++	if (global_reclaim(sc))
+ 		count_vm_event(ALLOCSTALL);
+ 
+ 	for (priority = DEF_PRIORITY; priority >= 0; priority--) {
+@@ -2237,7 +2249,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
+ 		 */
+-		if (scanning_global_lru(sc)) {
++		if (global_reclaim(sc)) {
+ 			unsigned long lru_pages = 0;
+ 			for_each_zone_zonelist(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask)) {
+@@ -2299,7 +2311,7 @@ out:
+ 		return 0;
+ 
+ 	/* top priority shrink_zones still had more to do? don't OOM, then */
+-	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
++	if (global_reclaim(sc) && !all_unreclaimable(zonelist, sc))
+ 		return 1;
+ 
+ 	return 0;
 -- 
 1.7.6.4
 
