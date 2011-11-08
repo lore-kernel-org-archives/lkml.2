@@ -1,99 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab1KHUAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 15:00:18 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10838 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280Ab1KHUAR (ORCPT
+	id S1756375Ab1KHUBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 15:01:25 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:15850 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab1KHUBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 15:00:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6524"; a="135833425"
-Date: Tue, 8 Nov 2011 11:59:56 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>, David Brown <davidb@codeaurora.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv3 2/2] msm: Support DEBUG_LL on MSM8660 and MSM8960
-Message-ID: <20111108195956.GA13998@huya.qualcomm.com>
-References: <1320777184-22446-1-git-send-email-sboyd@codeaurora.org>
- <1320777184-22446-3-git-send-email-sboyd@codeaurora.org>
- <alpine.LFD.2.02.1111081406220.3307@xanadu.home>
- <4EB97F83.3070509@codeaurora.org>
+	Tue, 8 Nov 2011 15:01:24 -0500
+Message-ID: <4EB98A8E.4060900@cavium.com>
+Date: Tue, 08 Nov 2011 12:01:18 -0800
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB97F83.3070509@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "manesoni@cisco.com" <manesoni@cisco.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "kamensky@cisco.com" <kamensky@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 2/4] MIPS Kprobes: Deny probes on ll/sc instructions
+References: <20111108170336.GA16526@cisco.com> <20111108170535.GC16526@cisco.com>
+In-Reply-To: <20111108170535.GC16526@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Nov 2011 20:01:23.0746 (UTC) FILETIME=[30EFC020:01CC9E51]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 11:14:11AM -0800, Stephen Boyd wrote:
-> On 11/08/11 11:08, Nicolas Pitre wrote:
-> > Independently from this patch, I was wondering about this code:
-> >
-> >> +	.macro	senduart, rd, rx
-> >> +#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-> >> +	@ Write the 1 character to UARTDM_TF
-> >> +	str	\rd, [\rx, #0x70]
-> >> +#else
-> >>  	teq	\rx, #0
-> >>  	strne	\rd, [\rx, #0x0C]
-> >> +#endif
-> >>  	.endm
-> > Why testing for zero in the #else part?  The upper level code should 
-> > never call this macro with a null byte.
-> 
-> I was wondering the same thing, I don't know why that test for null is
-> there. I will dust off the old 7201a (literally) and see what I can find
-> out. It certainly looks unnecessary.
+On 11/08/2011 09:05 AM, Maneesh Soni wrote:
+>
+> From: Maneesh Soni<manesoni@cisco.com>
+>
+> Deny probes on ll/sc instructions for MIPS kprobes
+>
+> As ll/sc instruction are for atomic read-modify-write operations, allowing
+> probes on top of these insturctions is a bad idea.
+>
 
-Perhaps this is a better fix?  Google removed the 7201a code from
-their tree quite a while back.  I don't have any more working hardware
-to test things with.
+s/insturctions/instructions/
 
-David
+Not only is it a bad idea, it will probably make them fail 100% of the time.
 
->From b4a76f1561d35d043f9266f8fe47725389ea7ba9 Mon Sep 17 00:00:00 2001
-From: David Brown <davidb@codeaurora.org>
-Date: Tue, 8 Nov 2011 11:44:05 -0800
-Subject: [PATCH] ARM: msm: Mark 720x targets as broken
+It is also an equally bad idea to place a probe between any LL and SC 
+instructions.  How do you prevent that?
 
-The 720x code is bitrotting.  These have only been compile tested for
-quite some time.  Mark as broken now so they can be removed after a
-while.
+If you cannot prevent probes between LL and SC, why bother with this at all?
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- arch/arm/mach-msm/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+David Daney
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 000ddf0..0ce4b33 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -81,6 +81,7 @@ menu "Qualcomm MSM Board Type"
- config MACH_HALIBUT
- 	depends on ARCH_MSM
- 	depends on ARCH_MSM7X00A
-+	depends on BROKEN
- 	bool "Halibut Board (QCT SURF7201A)"
- 	help
- 	  Support for the Qualcomm SURF7201A eval board.
-@@ -88,6 +89,7 @@ config MACH_HALIBUT
- config MACH_TROUT
- 	depends on ARCH_MSM
- 	depends on ARCH_MSM7X00A
-+	depends on BROKEN
- 	bool "HTC Dream (aka trout)"
- 	help
- 	  Support for the HTC Dream, T-Mobile G1, Android ADP1 devices.
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> Signed-off-by: Victor Kamensky<kamensky@cisco.com>
+> Signed-off-by: Maneesh Soni<manesoni@cisco.com>
+> ---
+>   arch/mips/kernel/kprobes.c |   31 +++++++++++++++++++++++++++++++
+>   1 files changed, 31 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/mips/kernel/kprobes.c b/arch/mips/kernel/kprobes.c
+> index 9fb1876..0ab1a5f 100644
+> --- a/arch/mips/kernel/kprobes.c
+> +++ b/arch/mips/kernel/kprobes.c
+> @@ -113,6 +113,30 @@ insn_ok:
+>   	return 0;
+>   }
+>
+> +/*
+> + * insn_has_ll_or_sc function checks whether instruction is ll or sc
+> + * one; putting breakpoint on top of atomic ll/sc pair is bad idea;
+> + * so we need to prevent it and refuse kprobes insertion for such
+> + * instructions; cannot do much about breakpoint in the middle of
+> + * ll/sc pair; it is upto user to avoid those places
+> + */
+> +static int __kprobes insn_has_ll_or_sc(union mips_instruction insn)
+> +{
+> +	int ret = 0;
+> +
+> +	switch (insn.i_format.opcode) {
+> +	case ll_op:
+> +	case lld_op:
+> +	case sc_op:
+> +	case scd_op:
+> +		ret = 1;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return ret;
+> +}
+> +
+>   int __kprobes arch_prepare_kprobe(struct kprobe *p)
+>   {
+>   	union mips_instruction insn;
+> @@ -121,6 +145,13 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+>
+>   	insn = p->addr[0];
+>
+> +	if (insn_has_ll_or_sc(insn)) {
+> +		pr_notice("Kprobes for ll and sc instructions are not"
+> +			  "supported\n");
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+>   	if (insn_has_delayslot(insn)) {
+>   		pr_notice("Kprobes for branch and jump instructions are not"
+>   			  "supported\n");
 
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
