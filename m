@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab1KHHsD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 02:48:03 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:44650 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751174Ab1KHHr7 (ORCPT
+	id S1753123Ab1KHHuA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 02:50:00 -0500
+Received: from emcscan.emc.com.tw ([192.72.220.5]:32700 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1KHHt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 02:47:59 -0500
-X-Authenticated: #7756412
-X-Provags-ID: V01U2FsdGVkX1+5ddx1MKS5TQ6SFsQBgO+X9r9hay5KHanWNJdn8M
-	HFtODrF7yKURj9
-Message-ID: <4EB8DEAC.7000906@gmx.net>
-Date: Tue, 08 Nov 2011 08:47:56 +0100
-From: Arne Jansen <sensille@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Tue, 8 Nov 2011 02:49:58 -0500
+From: JJ Ding <jj_ding@emc.com.tw>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        JJ Ding <dgdunix@gmail.com>
+Subject: Re: [PATCH v2] Input: convert obsolete strict_strtox to kstrtox
+In-Reply-To: <20111108062800.GA1837@core.coreip.homeip.net>
+References: <1320666890-29615-1-git-send-email-jj_ding@emc.com.tw> <20111108035930.GC21927@core.coreip.homeip.net> <20111108062800.GA1837@core.coreip.homeip.net>
+User-Agent: Notmuch/0.9 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 08 Nov 2011 15:47:36 +0800
+Message-ID: <87vcqv838n.fsf@emc.com.tw>
 MIME-Version: 1.0
-To: Andrea Gelmini <andrea.gelmini@gmail.com>
-CC: Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs pull request
-References: <20111106183851.GA4339@shiny> <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com> <4EB7A6CC.5030502@gmx.net> <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com> <4EB7D2D8.2060505@gmx.net> <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
-In-Reply-To: <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.11.2011 13:50, Andrea Gelmini wrote:
-> 2011/11/7 Arne Jansen <sensille@gmx.net>:
->> is it 32 or 64 bit?
+On Mon, 7 Nov 2011 22:28:01 -0800, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> On Mon, Nov 07, 2011 at 07:59:30PM -0800, Dmitry Torokhov wrote:
+> > On Mon, Nov 07, 2011 at 07:54:50PM +0800, JJ Ding wrote:
+> > > From: JJ Ding <dgdunix@gmail.com>
+> > > 
+> > > With commit 67d0a0754455f89ef3946946159d8ec9e45ce33a we mark strict_strtox
+> > > as obsolete. Convert all remaining such uses in drivers/input/.
+> > > 
+> > > Also change the data type from long to int as Dmitry sugguests, we now have
+> > > kstrtouint which suits these uses better.
+> > > 
+> > 
+> > Applied, thanks JJ.
+> > 
 > 
-> 64bit.
-> Please take a look at my other reply.
-
-Can you please have a look with strace to make sure it's
-really the ioctl the ENOMEM originates froM?
-
-Thanks,
-Arne
-
+> Sorry, I take it back...
 > 
-> Thanks a lot for your time,
-> Andrea
+> > -       if (strict_strtoul(buf, 10, &value) || value > 1)
+> > +       if (kstrtouint(buf, 10, &value) || value > 1)
+> >                 return -EINVAL;
+> 
+> This mangles error condition from kstrtouint and reporting conditions
+> beside -EINVAL was the reason for introducing new API IIRC. The proper
+> conversion should be:
+> 
+> 	err = kstrtouint(buf, 10, &value);
+> 	if (err)
+> 		return err;
+> 
+> 	if (value > 1)
+> 		return -EINVAL;
+> 
+> Thanks.
+> 
 
+Thanks, I get it. I'll fix and resend.
+
+jj
+
+> -- 
+> Dmitry
