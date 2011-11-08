@@ -1,150 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab1KHK3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 05:29:36 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:42581 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab1KHK3e (ORCPT
+	id S1754866Ab1KHKcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 05:32:53 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:36341 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab1KHKcw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 05:29:34 -0500
-From: tom.leiming@gmail.com
-To: tony@atomide.com, joerg.roedel@amd.com
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH] iommu: omap: fix compile failure
-Date: Tue,  8 Nov 2011 18:29:15 +0800
-Message-Id: <1320748155-18818-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 8 Nov 2011 05:32:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <1320744887.14409.379.camel@x61.thuisdomein>
+References: <1320673476.14409.367.camel@x61.thuisdomein>
+	<alpine.LNX.2.00.1111081025470.1964@pobox.suse.cz>
+	<1320744887.14409.379.camel@x61.thuisdomein>
+Date: Tue, 8 Nov 2011 11:32:51 +0100
+X-Google-Sender-Auth: Aa2D7tHh_mwRx9-DqKtFi1qza1g
+Message-ID: <CAMuHMdWTyQDJZ2LuQfdyH1U5SMFKu6YPPqnxwJdDQyoCkJqk=Q@mail.gmail.com>
+Subject: Re: [PATCH] [TRIVIAL] 8250_hp300: Fix warning typo 'CONFIG_8250'
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+On Tue, Nov 8, 2011 at 10:34, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Tue, 2011-11-08 at 10:26 +0100, Jiri Kosina wrote:
+>> On Mon, 7 Nov 2011, Paul Bolle wrote:
+>> > 1) If SERIAL_8250_HP300 is set but neither HPDCA nor HPAPCI are set we
+>> > end up with an elaborate nop, don't we? Initialization should always
+>> > fail in that case. So effectively SERIAL_8250_HP300 depends on HPDCA
+>> > and/or HPAPCI. Was there perhaps some problem in translating that
+>> > dependency into a Kconfig dependency?
+>
+> [...]
+>
+>> > --- a/drivers/tty/serial/8250_hp300.c
+>> > +++ b/drivers/tty/serial/8250_hp300.c
+>> > @@ -21,7 +21,7 @@
+>> >  #include "8250.h"
+>> >
+>> >  #if !defined(CONFIG_HPDCA) && !defined(CONFIG_HPAPCI)
+>> > -#warning CONFIG_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
+>> > +#warning CONFIG_SERIAL_8250 defined but neither CONFIG_HPDCA nor CONFIG_HPAPCI defined, are you sure?
+>> >  #endif
+>>
+>> What is the point of this warning anyway? Shouldn't everything necessary
+>> be taken care of by Kconfig rules?
+>
+> That's exactly what I'm trying to find out with my questions (aimed at
+> the m68k people, see 1) above).
 
-Fix the failure below:
+I already had that on my todo list...
 
-  CC      drivers/iommu/omap-iommu-debug.o
-drivers/iommu/omap-iommu-debug.c:416:20: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iommu-debug.c:416:1: warning: data definition has no
-type or storage class
-drivers/iommu/omap-iommu-debug.c:416:1: warning: type defaults to 'int'
-in declaration of 'MODULE_DESCRIPTION'
-drivers/iommu/omap-iommu-debug.c:416:20: warning: function declaration
-isn't a prototype
-drivers/iommu/omap-iommu-debug.c:417:15: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iommu-debug.c:417:1: warning: data definition has no
-type or storage class
-drivers/iommu/omap-iommu-debug.c:417:1: warning: type defaults to 'int'
-in declaration of 'MODULE_AUTHOR'
-drivers/iommu/omap-iommu-debug.c:417:15: warning: function declaration
-isn't a prototype
-drivers/iommu/omap-iommu-debug.c:418:16: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iommu-debug.c:418:1: warning: data definition has no
-type or storage class
-drivers/iommu/omap-iommu-debug.c:418:1: warning: type defaults to 'int'
-in declaration of 'MODULE_LICENSE'
-drivers/iommu/omap-iommu-debug.c:418:16: warning: function declaration
-isn't a prototype
-make[2]: *** [drivers/iommu/omap-iommu-debug.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
+Gr{oetje,eeting}s,
 
-drivers/iommu/omap-iovmm.c:247:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:247:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:247:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:369:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:369:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:369:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:620:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:620:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:620:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:645:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:645:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:645:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:696:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:696:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:696:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:717:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:717:1: warning: type defaults to 'int' in
-declaration of 'EXPORT_SYMBOL_GPL'
-drivers/iommu/omap-iovmm.c:717:1: warning: parameter names (without
-types) in function declaration
-drivers/iommu/omap-iovmm.c:740:20: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iovmm.c:740:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:740:1: warning: type defaults to 'int' in
-declaration of 'MODULE_DESCRIPTION'
-drivers/iommu/omap-iovmm.c:740:20: warning: function declaration isn't a
-prototype
-drivers/iommu/omap-iovmm.c:741:15: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iovmm.c:741:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:741:1: warning: type defaults to 'int' in
-declaration of 'MODULE_AUTHOR'
-drivers/iommu/omap-iovmm.c:741:15: warning: function declaration isn't a
-prototype
-drivers/iommu/omap-iovmm.c:742:16: error: expected declaration
-specifiers or '...' before string constant
-drivers/iommu/omap-iovmm.c:742:1: warning: data definition has no type
-or storage class
-drivers/iommu/omap-iovmm.c:742:1: warning: type defaults to 'int' in
-declaration of 'MODULE_LICENSE'
-drivers/iommu/omap-iovmm.c:742:16: warning: function declaration isn't a
-prototype
-make[2]: *** [drivers/iommu/omap-iovmm.o] Error 1
-make[1]: *** [drivers/iommu] Error 2
-make[1]: *** Waiting for unfinished jobs....
+                        Geert
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- drivers/iommu/omap-iommu-debug.c |    1 +
- drivers/iommu/omap-iovmm.c       |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-diff --git a/drivers/iommu/omap-iommu-debug.c b/drivers/iommu/omap-iommu-debug.c
-index 9c192e7..288da5c 100644
---- a/drivers/iommu/omap-iommu-debug.c
-+++ b/drivers/iommu/omap-iommu-debug.c
-@@ -10,6 +10,7 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/module.h>
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-diff --git a/drivers/iommu/omap-iovmm.c b/drivers/iommu/omap-iovmm.c
-index e8fdb88..46be456 100644
---- a/drivers/iommu/omap-iovmm.c
-+++ b/drivers/iommu/omap-iovmm.c
-@@ -10,6 +10,7 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/module.h>
- #include <linux/err.h>
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
--- 
-1.7.5.4
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
