@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab1KHCKZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 21:10:25 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61290 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab1KHCKY (ORCPT
+	id S1753248Ab1KHCWu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:22:50 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34601 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab1KHCWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 21:10:24 -0500
+	Mon, 7 Nov 2011 21:22:48 -0500
+Date: Tue, 8 Nov 2011 10:22:38 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Vegard Nossum <vegard.nossum@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        sergey.senozhatsky@gmail.com, bp@alien8.de,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
+Subject: Re: [PATCH 1/4] lockdep: lock_set_subclass() fix
+Message-ID: <20111108022238.GA11439@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <1320398790-21663-1-git-send-email-yong.zhang0@gmail.com>
+ <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
+ <1320669279.18053.29.camel@twins>
+ <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
 MIME-Version: 1.0
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 7 Nov 2011 18:10:02 -0800
-X-Google-Sender-Auth: hf7lVNXt2ROrsWk1_18frOK_GhQ
-Message-ID: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
-Subject: Linux 3.2-rc1
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So it's been two weeks since 3.1, and you know how it works by now.
+On Mon, Nov 07, 2011 at 04:28:19PM +0100, Vegard Nossum wrote:
+> 
+> 1. Initialise the thing completely before doing the copy, or
+> 2. Ignore the warning.
+> 
+> The memset() patch (f59de8992aa6dc85e81aadc26b0f69e17809721d) attempts
+> to do the first, i.e. to clear the whole struct in lockdep_init_map().
+> 
+> I think nr. 1 is the best way to go in principle, but I don't know
+> what it takes for this to work properly. The blanket-clear memset()
+> presumably doesn't work because it clears out something that was
+> already initialised by the caller (right?).
+> 
+> Yong Zhang, can you think of a way to avoid the race you described,
+> perhaps by memset()ing only the right/relevant parts of struct
+> lockdep_map in lockdep_init_map()?
 
-I have to say, this wasn't my favorite merge window ever. I really
-wanted to take only things that had been in -next, but verifying it
-was fairly painful, since a lot of the trees had been rebased, and the
-ones that hadn't been rebased often had some extra patches that still
-showed up when I did my "git log linux-next..FETCH_HEAD" thing.
+That could work, but we should take more care on the member 'class_cache',
+because under some condition (lock_set_subclass()) we don't need
+to initialise it for performance issue, but under other condtion (
+set a new valid key to a class) we need to initialise it since it's
+invalid anymore.
 
-On the whole, most of it was all good, and I didn't really end up
-complaining to people. I'm pretty sure that there were trees I
-shouldn't have let through, but the majority really had been in -next.
+Another option is always seting ->class_cache if lookup_lock_class()
+find the class. Will talk about it with Peter in another thread.
 
-The other point of irritation was that there really was a lot of stuff
-that came in yesterday and basically treated the merge window as some
-kind of high-tech limbo dance. If it hadn't been for a few trees I
-wanted to pull, I had actually planned to do the -rc1 release Sunday
-afternoon instead, just to cut those annoying last-minute pull
-requests off.
+> 
+> Peter Zijlstra, if you prefer, we can also just tell kmemcheck that
+> this particular copy is fine, but it means that kmemcheck will not be
+> able to detect any real bugs in this code. It can be done with
+> something like:
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index e69434b..08a2b1b 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -2948,7 +2948,7 @@ static int mark_lock(struct task_struct *curr,
+> struct held_lock *this,
+>  void lockdep_init_map(struct lockdep_map *lock, const char *name,
+>                       struct lock_class_key *key, int subclass)
+>  {
+> -       memset(lock, 0, sizeof(*lock));
+> +       kmemcheck_mark_initialized(lock, sizeof(*lock));
+> 
+>  #ifdef CONFIG_LOCK_STAT
+>         lock->cpu = raw_smp_processor_id();
+> 
+> Christian Casteyde, do you mind testing this patch as well?
+> 
+> (Yong Zhang, do you think this would still be vulnerable to the race
+> you described?)
 
-And some trees didn't get pulled. You know who you are, and you can
-try to appeal to my softer side if you think it was unfair. Of course,
-if you *do* find my softer side, please tell my wife and kids too,
-they'll be thrilled.
+No, this will work because we just retore the previous behavior except
+kmemcheck annotation, right?
 
-But the main reason some trees didn't get pulled was that they
-generated long flame-wars, and I just felt like I really didn't need
-the aggravation this time around, especially as I knew I had plenty
-other trees to pull.
-
-What *did* get pulled? A lot. The diffstat is huge, and is full of
-renames. The network drivers got re-organized, which is a big chunk of
-the renames, but there are architecture cleanups and re-organizations
-there too (UML and some arm sub-architectures, for example) adding
-their own set of renames. Along with some staging drivers that got
-upgraded to non-staging etc etc.
-
-Which brings me to a question I already asked on G+ - do people really
-need the old-fashioned patches? The -rc1 patch is about 22MB gzip-9'd,
-and part of the reason is that all those renames cause big
-delete/create diffs. We *could* use git rename patches, but then you'd
-have to apply them with "git apply" rather than the legacy "patch"
-executables. But as it is, the patch is almost a third of the size of
-the tar-ball, which makes me wonder if there's even any point to such
-a big patch?
-
-Apart from the re-organization, there is really just a lot of changes
-all over. It's about 75% drivers (and that's without the renames
-counted as big delete/create events - in the traditional diff, more
-than 90% is drivers), 15% arch, and 10% "rest" (mainly fs and net -
-with header file changes showing up in the statistics too).
-
-What doesn't even show up in the stats is the VM changes, although
-those may well be the most noticeable core stuff. It may be fairly
-small, but it's rather more core, and has the potential to affect
-everybody. People have been working on writeback tuning, and the whole
-IO-less dirty balancing. So now foreground writeback should be a thing
-of the past. Let's see how that all works out.
-
-Have fun, give it a good testing. There shouldn't be anything hugely
-scary in there, but there *is* a lot of stuff. The fact that 3.1
-dragged out did mean that this ended up being one of the bigger merge
-windows, but I'm not feeling *too* nervous about it.
-
-                 Linus
+Thanks,
+Yong
