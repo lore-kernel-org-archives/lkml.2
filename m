@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232Ab1KHTmV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:42:21 -0500
-Received: from www17.your-server.de ([213.133.104.17]:50337 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab1KHTmU (ORCPT
+	id S1756307Ab1KHTwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:52:04 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27135 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab1KHTwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:42:20 -0500
-Subject: [PATCH] Staging: line6: Use kmemdup rather than duplicating its
- implementation
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 08 Nov 2011 20:40:26 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1320781234.8062.156.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
+	Tue, 8 Nov 2011 14:52:01 -0500
+Date: Tue, 8 Nov 2011 20:57:27 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Andrei Warkentin <andreiw@vmware.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] include/log2.h: Fix rounddown_pow_of_two(1)
+In-Reply-To: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
+Message-ID: <alpine.LNX.2.00.1111082056510.5763@swampdragon.chaosbits.net>
+References: <1320779295-17111-1-git-send-email-andreiw@vmware.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+On Tue, 8 Nov 2011, Andrei Warkentin wrote:
 
- Use kmemdup rather than duplicating its implementation
+> 1 is a power of two, therefore rounddown_pow_of_two(1) should return 1. It does
+> in case the argument is a variable but in case it's a constant it behaves
+> wrong and returns 0. Probably nobody ever did it so this was never noticed,
+> however net/drivers/vmxnet3 with latest GCC does and breaks on unicpu systems.
+> 
+> Signed-off-by: Andrei Warkentin <andreiw@vmware.com>
+> ---
+>  include/linux/log2.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/log2.h b/include/linux/log2.h
+> index 25b8086..ccda848 100644
+> --- a/include/linux/log2.h
+> +++ b/include/linux/log2.h
+> @@ -185,7 +185,7 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
+>  #define rounddown_pow_of_two(n)			\
+>  (						\
+>  	__builtin_constant_p(n) ? (		\
+> -		(n == 1) ? 0 :			\
+> +		(n == 1) ? 1 :			\
+>  		(1UL << ilog2(n))) :		\
+>  	__rounddown_pow_of_two(n)		\
+>   )
+> 
 
- The semantic patch that makes this change is available
- in scripts/coccinelle/api/memdup.cocci.
+For what it's worth; looks good to me.
 
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-
-diff -u -p a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
---- a/drivers/staging/line6/midi.c 2011-11-07 19:38:11.240305613 +0100
-+++ b/drivers/staging/line6/midi.c 2011-11-08 10:52:27.890730177 +0100
-@@ -135,7 +135,7 @@ static int send_midi_async(struct usb_li
- 	line6_write_hexdump(line6, 'S', data, length);
- #endif
- 
--	transfer_buffer = kmalloc(length, GFP_ATOMIC);
-+	transfer_buffer = kmemdup(data, length, GFP_ATOMIC);
- 
- 	if (transfer_buffer == NULL) {
- 		usb_free_urb(urb);
-@@ -143,7 +143,6 @@ static int send_midi_async(struct usb_li
- 		return -ENOMEM;
- 	}
- 
--	memcpy(transfer_buffer, data, length);
- 	usb_fill_int_urb(urb, line6->usbdev,
- 			 usb_sndbulkpipe(line6->usbdev,
- 					 line6->ep_control_write),
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
