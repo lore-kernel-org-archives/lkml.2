@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1KHCjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 21:39:53 -0500
+	id S1754920Ab1KHCj6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:39:58 -0500
 Received: from mga14.intel.com ([143.182.124.37]:55308 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754583Ab1KHCjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 21:39:47 -0500
+	id S1754565Ab1KHCjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Nov 2011 21:39:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,473,1315206000"; 
-   d="scan'208";a="34288620"
+   d="scan'208";a="34288615"
 From: Huang Ying <ying.huang@intel.com>
 To: Len Brown <lenb@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
         ying.huang@intel.com, linux-acpi@vger.kernel.org
-Subject: [PATCH 6/9] ACPI, Add RAM mapping support to ACPI atomic IO support
-Date: Tue,  8 Nov 2011 10:39:31 +0800
-Message-Id: <1320719974-3598-7-git-send-email-ying.huang@intel.com>
+Subject: [PATCH 5/9] ACPI, APEI, EINJ, Fix resource conflict on some machine
+Date: Tue,  8 Nov 2011 10:39:30 +0800
+Message-Id: <1320719974-3598-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.7.1
 In-Reply-To: <1320719974-3598-1-git-send-email-ying.huang@intel.com>
 References: <1320719974-3598-1-git-send-email-ying.huang@intel.com>
@@ -23,110 +23,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one of our testing machine, the following EINJ command lines:
+Some APEI firmware implementation will access injected address
+specified in param1 to trigger the error when injecting memory error.
+This will cause resource conflict with RAM.
 
-  # echo 0x10000000 > param1
-  # echo 0xfffffffffffff000 > param2
-  # echo 0x8 > error_type
-  # echo 1 > error_inject
+On one of our testing machine, if injecting at memory address
+0x10000000, the following error will be reported in dmesg:
 
-Will get:
+  APEI: Can not request iomem region <0000000010000000-0000000010000008> for GARs.
 
-  echo: write error: Input/output error
-
-The EIO comes from:
-
-    rc = apei_exec_pre_map_gars(&trigger_ctx);
-
-The root cause is as follow.  Normally, ACPI atomic IO support is used
-to access IO memory.  But in EINJ of that machine, it is used to
-access RAM to trigger the injected error.  And the ioremap() called by
-apei_exec_pre_map_gars() can not map the RAM.
-
-This patch add RAM mapping support to ACPI atomic IO support to
-satisfy EINJ requirement.
+This patch removes the injecting memory address range from trigger
+table resources to avoid conflict.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Tested-by: Tony Luck <tony.luck@intel.com>
 ---
- drivers/acpi/atomicio.c |   34 ++++++++++++++++++++++++++++++----
- 1 file changed, 30 insertions(+), 4 deletions(-)
+ drivers/acpi/apei/apei-base.c     |   11 +++++++++++
+ drivers/acpi/apei/apei-internal.h |    3 +++
+ drivers/acpi/apei/einj.c          |   24 ++++++++++++++++++++++--
+ 3 files changed, 36 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/atomicio.c
-+++ b/drivers/acpi/atomicio.c
-@@ -32,6 +32,8 @@
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
-+#include <linux/highmem.h>
- #include <acpi/atomicio.h>
- 
- #define ACPI_PFX "ACPI: "
-@@ -97,6 +99,30 @@ static void __iomem *__acpi_try_ioremap(
- 		return NULL;
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -421,6 +421,17 @@ static int apei_resources_merge(struct a
+ 	return 0;
  }
  
-+static void __iomem *acpi_map(phys_addr_t pg_off, unsigned long pg_sz)
++int apei_resources_add(struct apei_resources *resources,
++		       unsigned long start, unsigned long size,
++		       bool iomem)
 +{
-+	unsigned long pfn;
-+
-+	pfn = pg_off >> PAGE_SHIFT;
-+	if (page_is_ram(pfn)) {
-+		if (pg_sz > PAGE_SIZE)
-+			return NULL;
-+		return (void __iomem __force *)kmap(pfn_to_page(pfn));
-+	} else
-+		return ioremap(pg_off, pg_sz);
-+}
-+
-+static void acpi_unmap(phys_addr_t pg_off, void __iomem *vaddr)
-+{
-+	unsigned long pfn;
-+
-+	pfn = pg_off >> PAGE_SHIFT;
-+	if (page_is_ram(pfn))
-+		kunmap(pfn_to_page(pfn));
++	if (iomem)
++		return apei_res_add(&resources->iomem, start, size);
 +	else
-+		iounmap(vaddr);
++		return apei_res_add(&resources->ioport, start, size);
 +}
++EXPORT_SYMBOL_GPL(apei_resources_add);
 +
  /*
-  * Used to pre-map the specified IO memory area. First try to find
-  * whether the area is already pre-mapped, if it is, increase the
-@@ -119,7 +145,7 @@ static void __iomem *acpi_pre_map(phys_a
- 
- 	pg_off = paddr & PAGE_MASK;
- 	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
--	vaddr = ioremap(pg_off, pg_sz);
-+	vaddr = acpi_map(pg_off, pg_sz);
- 	if (!vaddr)
- 		return NULL;
- 	map = kmalloc(sizeof(*map), GFP_KERNEL);
-@@ -135,7 +161,7 @@ static void __iomem *acpi_pre_map(phys_a
- 	vaddr = __acpi_try_ioremap(paddr, size);
- 	if (vaddr) {
- 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
--		iounmap(map->vaddr);
-+		acpi_unmap(pg_off, map->vaddr);
- 		kfree(map);
- 		return vaddr;
- 	}
-@@ -144,7 +170,7 @@ static void __iomem *acpi_pre_map(phys_a
- 
- 	return map->vaddr + (paddr - map->paddr);
- err_unmap:
--	iounmap(vaddr);
-+	acpi_unmap(pg_off, vaddr);
- 	return NULL;
+  * EINJ has two groups of GARs (EINJ table entry and trigger table
+  * entry), so common resources are subtracted from the trigger table
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -95,6 +95,9 @@ static inline void apei_resources_init(s
  }
  
-@@ -177,7 +203,7 @@ static void acpi_post_unmap(phys_addr_t
- 		return;
- 
- 	synchronize_rcu();
--	iounmap(map->vaddr);
-+	acpi_unmap(map->paddr, map->vaddr);
- 	kfree(map);
+ void apei_resources_fini(struct apei_resources *resources);
++int apei_resources_add(struct apei_resources *resources,
++		       unsigned long start, unsigned long size,
++		       bool iomem);
+ int apei_resources_sub(struct apei_resources *resources1,
+ 		       struct apei_resources *resources2);
+ int apei_resources_request(struct apei_resources *resources,
+--- a/drivers/acpi/apei/einj.c
++++ b/drivers/acpi/apei/einj.c
+@@ -195,7 +195,8 @@ static int einj_check_trigger_header(str
  }
  
+ /* Execute instructions in trigger error action table */
+-static int __einj_error_trigger(u64 trigger_paddr)
++static int __einj_error_trigger(u64 trigger_paddr, u32 type,
++				u64 param1, u64 param2)
+ {
+ 	struct acpi_einj_trigger *trigger_tab = NULL;
+ 	struct apei_exec_context trigger_ctx;
+@@ -256,6 +257,25 @@ static int __einj_error_trigger(u64 trig
+ 	rc = apei_resources_sub(&trigger_resources, &einj_resources);
+ 	if (rc)
+ 		goto out_fini;
++	/*
++	 * Some firmware will access target address specified in
++	 * param1 to trigger the error when injecting memory error.
++	 * This will cause resource conflict with regular memory.  So
++	 * remove it from trigger table resources.
++	 */
++	if (param_extension && (type & 0x0038) && param2) {
++		struct apei_resources addr_resources;
++		apei_resources_init(&addr_resources);
++		rc = apei_resources_add(&addr_resources,
++					param1 & param2,
++					~param2 + 1, true);
++		if (rc)
++			goto out_fini;
++		rc = apei_resources_sub(&trigger_resources, &addr_resources);
++		apei_resources_fini(&addr_resources);
++		if (rc)
++			goto out_fini;
++	}
+ 	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
+ 	if (rc)
+ 		goto out_fini;
+@@ -325,7 +345,7 @@ static int __einj_error_inject(u32 type,
+ 	if (rc)
+ 		return rc;
+ 	trigger_paddr = apei_exec_ctx_get_output(&ctx);
+-	rc = __einj_error_trigger(trigger_paddr);
++	rc = __einj_error_trigger(trigger_paddr, type, param1, param2);
+ 	if (rc)
+ 		return rc;
+ 	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
