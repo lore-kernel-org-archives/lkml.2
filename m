@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932303Ab1KHNlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 08:41:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64482 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751172Ab1KHNlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 08:41:22 -0500
-Message-ID: <4EB9315A.10806@redhat.com>
-Date: Tue, 08 Nov 2011 14:40:42 +0100
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Theodore Tso <tytso@mit.edu>, Ingo Molnar <mingo@elte.hu>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git	repository,
- tools/perf/ and tools/kvm/
-References: <20111106231953.GD4500@thunk.org> <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com> <20111107203255.GF24234@thunk.org> <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws> <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu> <20111108093225.GB32533@elte.hu> <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125609.GA14272@ghostprotocols.net>
-In-Reply-To: <20111108125609.GA14272@ghostprotocols.net>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932323Ab1KHNso (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 08:48:44 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37073 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751927Ab1KHNsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 08:48:42 -0500
+Date: Tue, 8 Nov 2011 13:48:04 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>,
+        Mikael Starvik <mikael.starvik@axis.com>,
+        Darron Black <darron@griffin.net>
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some
+ variables
+Message-ID: <20111108134804.07095c5d@lxorguk.ukuu.org.uk>
+In-Reply-To: <4EB90902.4030200@evidence.eu.com>
+References: <4E492CFF.7040905@pwrnet.de>
+	<20110822211832.GA8023@kroah.com>
+	<4EB3A009.10502@evidence.eu.com>
+	<4EB8F6B9.6010008@atmel.com>
+	<4EB90902.4030200@evidence.eu.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+> The modifications that I have proposed are very minimal, and most 
+> user-space code should continue to work without any difference. Any Cris 
+> user-space code will continue to work, because we didn't change the 
+> behavior of the driver. For Atmel user-space code, instead, the behavior 
+> of the driver changes only if flags are not set and delay variables 
+> contain a value different than 0 (which, hopefully, is not a very common 
+> situation). That's the reason why I preferred to not change the names of 
+> the variables, even if better names would be desirable.
 
-> Indeed, documentation is lacking, I think coming from a kernel
-> standpoint I relied too much in the "documentation is source code"
-> mantra of old days.
+We have inconsistency between implementations. We don't have a change in
+implementation. There isn't any way to resolve that except by fixing the
+deviating implementation and doing it promptly.
 
-Sorry for the shameless plug, but as you are speaking of lacking
-documentation:  Where the heck is the perf config file documented, other
-than source code?  Reading the parser to figure how the config file is
-supposed to look like really isn't fun :(
+With my tty hat on I'm quite happy with this patch. The sooner it is
+upstream the better.
 
-I'm looking for a way to disable the colors in the perf report tui.  Or
-configure them into something readable.  No, light green on light gray
-which is used by default isn't readable.
-
-thanks,
-  Gerd
+Alan
