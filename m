@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab1KHQgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 11:36:33 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42047
-	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	id S1755182Ab1KHQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 11:36:29 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42041
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753280Ab1KHQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752802Ab1KHQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Nov 2011 11:36:25 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,97 +13,152 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         James.Bottomley@HansenPartnership.com, hch@infradead.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 06/11] Staging: hv: storvsc: Use the unlocked version queuecommand
-Date: Tue,  8 Nov 2011 09:01:45 -0800
-Message-Id: <1320771710-29139-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 01/11] Staging: hv: storvsc: Use mempools to allocate struct storvsc_cmd_request
+Date: Tue,  8 Nov 2011 09:01:40 -0800
+Message-Id: <1320771710-29139-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1320771710-29139-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1320771677-29095-1-git-send-email-kys@microsoft.com>
 References: <1320771677-29095-1-git-send-email-kys@microsoft.com>
- <1320771710-29139-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the unlocked version queuecommand.
+We intend to use the storage driver to manage the root device.
+To avoid deadlocks, use mempools to allocate struct storvsc_cmd_request.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   19 +++++--------------
- 1 files changed, 5 insertions(+), 14 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   30 +++++++++++++++++++++++++-----
+ 1 files changed, 25 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index b21e85f..827bc68 100644
+index ae8c33e..6a255e9 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1137,11 +1137,10 @@ static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
- /*
-  * storvsc_queuecommand - Initiate command processing
-  */
--static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
--				void (*done)(struct scsi_cmnd *))
-+static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- {
- 	int ret;
--	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
-+	struct hv_host_device *host_dev = shost_priv(host);
- 	struct hv_device *dev = host_dev->dev;
- 	struct hv_storvsc_request *request;
- 	struct storvsc_cmd_request *cmd_request;
-@@ -1152,7 +1151,7 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 	struct vmscsi_request *vm_srb;
+@@ -32,6 +32,7 @@
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/hyperv.h>
++#include <linux/mempool.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <scsi/scsi_host.h>
+@@ -42,6 +43,7 @@
+ #include <scsi/scsi_dbg.h>
  
- 	if (storvsc_check_scsi_cmd(scmnd) == false) {
--		done(scmnd);
-+		scmnd->scsi_done(scmnd);
- 		return 0;
+ 
++#define STORVSC_MIN_BUF_NR				64
+ #define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
+ static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
+ 
+@@ -287,6 +289,7 @@ struct storvsc_device {
+ struct hv_host_device {
+ 	struct hv_device *dev;
+ 	struct kmem_cache *request_pool;
++	mempool_t *request_mempool;
+ 	unsigned int port;
+ 	unsigned char path;
+ 	unsigned char target;
+@@ -974,8 +977,10 @@ static int storvsc_remove(struct hv_device *dev)
+ 
+ 	storvsc_dev_remove(dev);
+ 	if (host_dev->request_pool) {
++		mempool_destroy(host_dev->request_mempool);
+ 		kmem_cache_destroy(host_dev->request_pool);
+ 		host_dev->request_pool = NULL;
++		host_dev->request_mempool = NULL;
  	}
+ 	return 0;
+ }
+@@ -1120,7 +1125,7 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
  
-@@ -1165,16 +1164,13 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 		goto retry_request;
- 	}
+ 	scsi_done_fn(scmnd);
  
--	scmnd->scsi_done = done;
--
- 	request_size = sizeof(struct storvsc_cmd_request);
- 
- 	cmd_request = mempool_alloc(host_dev->request_mempool,
- 				       GFP_ATOMIC);
--	if (!cmd_request) {
--		scmnd->scsi_done = NULL;
-+	if (!cmd_request)
- 		return SCSI_MLQUEUE_DEVICE_BUSY;
--	}
-+
- 	memset(cmd_request, 0, sizeof(struct storvsc_cmd_request));
- 
- 	/* Setup the cmd request */
-@@ -1227,7 +1223,6 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
- 				create_bounce_buffer(sgl, scsi_sg_count(scmnd),
- 						     scsi_bufflen(scmnd));
- 			if (!cmd_request->bounce_sgl) {
--				scmnd->scsi_done = NULL;
- 				scmnd->host_scribble = NULL;
- 				mempool_free(cmd_request,
- 						host_dev->request_mempool);
-@@ -1274,7 +1269,6 @@ retry_request:
- 
- 		mempool_free(cmd_request, host_dev->request_mempool);
- 
--		scmnd->scsi_done = NULL;
- 		scmnd->host_scribble = NULL;
- 
- 		ret = SCSI_MLQUEUE_DEVICE_BUSY;
-@@ -1283,9 +1277,6 @@ retry_request:
- 	return ret;
+-	kmem_cache_free(host_dev->request_pool, cmd_request);
++	mempool_free(cmd_request, host_dev->request_mempool);
  }
  
--static DEF_SCSI_QCMD(storvsc_queuecommand)
--
--
- /* Scsi driver */
- static struct scsi_host_template scsi_driver = {
- 	.module	=		THIS_MODULE,
+ static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
+@@ -1176,12 +1181,13 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 
+ 	request_size = sizeof(struct storvsc_cmd_request);
+ 
+-	cmd_request = kmem_cache_zalloc(host_dev->request_pool,
++	cmd_request = mempool_alloc(host_dev->request_mempool,
+ 				       GFP_ATOMIC);
+ 	if (!cmd_request) {
+ 		scmnd->scsi_done = NULL;
+ 		return SCSI_MLQUEUE_DEVICE_BUSY;
+ 	}
++	memset(cmd_request, 0, sizeof(struct storvsc_cmd_request));
+ 
+ 	/* Setup the cmd request */
+ 	cmd_request->bounce_sgl_count = 0;
+@@ -1235,8 +1241,8 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+ 			if (!cmd_request->bounce_sgl) {
+ 				scmnd->scsi_done = NULL;
+ 				scmnd->host_scribble = NULL;
+-				kmem_cache_free(host_dev->request_pool,
+-						cmd_request);
++				mempool_free(cmd_request,
++						host_dev->request_mempool);
+ 
+ 				return SCSI_MLQUEUE_HOST_BUSY;
+ 			}
+@@ -1278,7 +1284,7 @@ retry_request:
+ 			destroy_bounce_buffer(cmd_request->bounce_sgl,
+ 					cmd_request->bounce_sgl_count);
+ 
+-		kmem_cache_free(host_dev->request_pool, cmd_request);
++		mempool_free(cmd_request, host_dev->request_mempool);
+ 
+ 		scmnd->scsi_done = NULL;
+ 		scmnd->host_scribble = NULL;
+@@ -1348,6 +1354,7 @@ static int storvsc_probe(struct hv_device *device,
+ 			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	int ret;
++	int number = STORVSC_MIN_BUF_NR;
+ 	struct Scsi_Host *host;
+ 	struct hv_host_device *host_dev;
+ 	bool dev_is_ide = ((dev_id->driver_data == IDE_GUID) ? true : false);
+@@ -1376,8 +1383,19 @@ static int storvsc_probe(struct hv_device *device,
+ 		return -ENOMEM;
+ 	}
+ 
++	host_dev->request_mempool = mempool_create(number, mempool_alloc_slab,
++						mempool_free_slab,
++						host_dev->request_pool);
++
++	if (!host_dev->request_mempool) {
++		kmem_cache_destroy(host_dev->request_pool);
++		scsi_host_put(host);
++		return -ENOMEM;
++	}
++
+ 	stor_device = kzalloc(sizeof(struct storvsc_device), GFP_KERNEL);
+ 	if (!stor_device) {
++		mempool_destroy(host_dev->request_mempool);
+ 		kmem_cache_destroy(host_dev->request_pool);
+ 		scsi_host_put(host);
+ 		return -ENOMEM;
+@@ -1392,6 +1410,7 @@ static int storvsc_probe(struct hv_device *device,
+ 	stor_device->port_number = host->host_no;
+ 	ret = storvsc_connect_to_vsp(device, storvsc_ringbuffer_size);
+ 	if (ret) {
++		mempool_destroy(host_dev->request_mempool);
+ 		kmem_cache_destroy(host_dev->request_pool);
+ 		scsi_host_put(host);
+ 		kfree(stor_device);
+@@ -1431,6 +1450,7 @@ static int storvsc_probe(struct hv_device *device,
+ 
+ err_out:
+ 	storvsc_dev_remove(device);
++	mempool_destroy(host_dev->request_mempool);
+ 	kmem_cache_destroy(host_dev->request_pool);
+ 	scsi_host_put(host);
+ 	return -ENODEV;
 -- 
 1.7.4.1
 
