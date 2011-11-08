@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1KHB6b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 20:58:31 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:55172 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab1KHB63 (ORCPT
+	id S1752899Ab1KHCKZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 21:10:25 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61290 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab1KHCKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 20:58:29 -0500
-Date: Tue, 8 Nov 2011 12:58:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: linux-next: manual merge of the bluetooth tree with Linus tree
-Message-Id: <20111108125822.2dbe82c96523fc42b42e5893@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Nov_2011_12_58_22_+1100_wZgY6PQEH476JA4_"
+	Mon, 7 Nov 2011 21:10:24 -0500
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 7 Nov 2011 18:10:02 -0800
+X-Google-Sender-Auth: hf7lVNXt2ROrsWk1_18frOK_GhQ
+Message-ID: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+Subject: Linux 3.2-rc1
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Nov_2011_12_58_22_+1100_wZgY6PQEH476JA4_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So it's been two weeks since 3.1, and you know how it works by now.
 
-Hi Gustavo,
+I have to say, this wasn't my favorite merge window ever. I really
+wanted to take only things that had been in -next, but verifying it
+was fairly painful, since a lot of the trees had been rebased, and the
+ones that hadn't been rebased often had some extra patches that still
+showed up when I did my "git log linux-next..FETCH_HEAD" thing.
 
-Today's linux-next merge of the bluetooth tree got a conflict in
-net/bluetooth/mgmt.c between commit dafbde395ed5 ("Bluetooth: Set
-HCI_MGMT flag only in read_controller_info") from Linus' tree and commit
-e395042c2836 ("Bluetooth: Convert power off mechanism to use
-delayed_work") from the bluetooth tree.
+On the whole, most of it was all good, and I didn't really end up
+complaining to people. I'm pretty sure that there were trees I
+shouldn't have let through, but the majority really had been in -next.
 
-I fixed it up and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+The other point of irritation was that there really was a lot of stuff
+that came in yesterday and basically treated the merge window as some
+kind of high-tech limbo dance. If it hadn't been for a few trees I
+wanted to pull, I had actually planned to do the -rc1 release Sunday
+afternoon instead, just to cut those annoying last-minute pull
+requests off.
 
---Signature=_Tue__8_Nov_2011_12_58_22_+1100_wZgY6PQEH476JA4_
-Content-Type: application/pgp-signature
+And some trees didn't get pulled. You know who you are, and you can
+try to appeal to my softer side if you think it was unfair. Of course,
+if you *do* find my softer side, please tell my wife and kids too,
+they'll be thrilled.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+But the main reason some trees didn't get pulled was that they
+generated long flame-wars, and I just felt like I really didn't need
+the aggravation this time around, especially as I knew I had plenty
+other trees to pull.
 
-iQIcBAEBCAAGBQJOuIy+AAoJEECxmPOUX5FE52QQAIQ6iHhkiPZFLtkbH1uRKKzk
-e1Kcw6vEpNWtt3lHYzXcO1Pa1+mgDO6YPRzEXZDY25lCEqvIbCS5wtHJXNG2zU1f
-ADwqKHvGfSr8mEr7tOdw2NczxkitLGug4eWIFSdUcd3hRqFR2+mQeePIQu3JLVJH
-w6O9CTe3843CurK7okSHgPoAY8XvkiEQ9fcMflkkrJUYWp7P+T3GHCe3IKxXVYuW
-r/+ZZsgOD7TSZVo2dbyMI29TYKY6JZv4EckfbB/y5N9hgxvQOc0jZ0KYTC6ITOZF
-UUrjS4KUoPb+3YL0/cCmQMl26OxjWJFEetV1xu+EW/QGpI0IbsDHWgO81HnJLGsT
-aiWjebNBmQ5MUsfqIygVvFwzy2YAB1ETSHGcEJ+tf1TLkmfiVyhducdoaxF3izcL
-c+XFYzjbx9SQIBcNEZ5W0NtQTdbfmWlTnaTLx7mEQV5TlP9aD/NoUyVTnjIhCKGA
-pn0s6bq4/Oya8CESRVt0kXf/moBumYDQURpCWxLthJ0XVg3LOTRqvyi7f7F11iL2
-ktpkuMR1XC+9o2paPnxdCVrYFujv9Pg2LriHt7YeuGrkRdkigBW8A/RK/ERZiTkB
-aBMIj57oSjRZE9wGX3MyeRE+zkUQ3mNWvhoaqJntTK/NblHgR3b561kQfUUj+TXW
-e5s6hR8u94Jh517itOwI
-=4zL4
------END PGP SIGNATURE-----
+What *did* get pulled? A lot. The diffstat is huge, and is full of
+renames. The network drivers got re-organized, which is a big chunk of
+the renames, but there are architecture cleanups and re-organizations
+there too (UML and some arm sub-architectures, for example) adding
+their own set of renames. Along with some staging drivers that got
+upgraded to non-staging etc etc.
 
---Signature=_Tue__8_Nov_2011_12_58_22_+1100_wZgY6PQEH476JA4_--
+Which brings me to a question I already asked on G+ - do people really
+need the old-fashioned patches? The -rc1 patch is about 22MB gzip-9'd,
+and part of the reason is that all those renames cause big
+delete/create diffs. We *could* use git rename patches, but then you'd
+have to apply them with "git apply" rather than the legacy "patch"
+executables. But as it is, the patch is almost a third of the size of
+the tar-ball, which makes me wonder if there's even any point to such
+a big patch?
+
+Apart from the re-organization, there is really just a lot of changes
+all over. It's about 75% drivers (and that's without the renames
+counted as big delete/create events - in the traditional diff, more
+than 90% is drivers), 15% arch, and 10% "rest" (mainly fs and net -
+with header file changes showing up in the statistics too).
+
+What doesn't even show up in the stats is the VM changes, although
+those may well be the most noticeable core stuff. It may be fairly
+small, but it's rather more core, and has the potential to affect
+everybody. People have been working on writeback tuning, and the whole
+IO-less dirty balancing. So now foreground writeback should be a thing
+of the past. Let's see how that all works out.
+
+Have fun, give it a good testing. There shouldn't be anything hugely
+scary in there, but there *is* a lot of stuff. The fact that 3.1
+dragged out did mean that this ended up being one of the bigger merge
+windows, but I'm not feeling *too* nervous about it.
+
+                 Linus
