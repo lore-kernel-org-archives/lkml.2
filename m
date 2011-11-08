@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab1KHRLz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 12:11:55 -0500
-Received: from ams-iport-4.cisco.com ([144.254.224.147]:28272 "EHLO
-	ams-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754830Ab1KHRLm (ORCPT
+	id S1756168Ab1KHRMU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 12:12:20 -0500
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:16948 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754767Ab1KHRLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 12:11:42 -0500
+	Tue, 8 Nov 2011 12:11:41 -0500
 X-IronPort-AV: E=Sophos;i="4.69,477,1315180800"; 
-   d="scan'208";a="2658711"
-Date: Tue, 8 Nov 2011 22:37:11 +0530
+   d="scan'208";a="59436563"
+Date: Tue, 8 Nov 2011 22:38:26 +0530
 From: Maneesh Soni <manesoni@cisco.com>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: David Daney <david.daney@cavium.com>, ananth@in.ibm.com,
         kamensky@cisco.com, linux-kernel@vger.kernel.org,
         linux-mips@linux-mips.org
-Subject: [PATCH 3/4] MIPS Kprobes: Refactoring Branch emulation
-Message-ID: <20111108170711.GD16526@cisco.com>
+Subject: [PATCH 4/4] MIPS Kprobes: Support branch instructions probing - v2
+Message-ID: <20111108170826.GE16526@cisco.com>
 Reply-To: manesoni@cisco.com
 References: <20111108170336.GA16526@cisco.com>
 MIME-Version: 1.0
@@ -31,304 +31,263 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Maneesh Soni <manesoni@cisco.com>
 
-MIPS Refactoring Branch emulation
+MIPS Kprobes: Support branch instructions probing - v2
 
-This patch refactors MIPS branch emulation code so as to allow skipping delay
-slot instruction in case of branch likely instructions when branch is not
-taken. This is useful for keeping the code common for use cases like kprobes
-where one would like to handle the branch instructions keeping the delay slot
-instuction also in picture for branch likely instructions. Also allow
-emulation when instruction to be decoded is not at pt_regs->cp0_epc as in
-case of kprobes where pt_regs->cp0_epc points to the breakpoint instruction.
+This patch provides support for kprobes on branch instructions. The branch
+instruction at the probed address is actually emulated and not executed
+out-of-line like other normal instructions. Instead the delay-slot instruction
+is copied and single stepped out of line.
 
-The patch also exports the function for modules.
+At the time of probe hit, the original branch instruction is evaluated
+and the target cp0_epc is computed similar to compute_retrun_epc(). It
+is also checked if the delay slot instruction can be skipped, which is
+true if there is a NOP in delay slot or branch is taken in case of
+branch likely instructions. Once the delay slot instruction is single
+stepped the normal execution resume with the cp0_epc updated the earlier
+computed cp0_epc as per the branch instructions.
+
+o Changes from v1
+- added missing preempt_enable_no_reshced()
+- using refactored __compute_return_epc() to avoid missing instructions
 
 Signed-off-by: Maneesh Soni <manesoni@cisco.com>
 Signed-off-by: Victor Kamensky <kamensky@cisco.com>
 ---
- arch/mips/include/asm/branch.h |    5 ++
- arch/mips/kernel/branch.c      |  128 ++++++++++++++++++++++++++--------------
- arch/mips/math-emu/cp1emu.c    |    2 +-
- 3 files changed, 90 insertions(+), 45 deletions(-)
+ arch/mips/include/asm/kprobes.h |    5 ++
+ arch/mips/kernel/kprobes.c      |  145 ++++++++++++++++++++++++++++++---------
+ 2 files changed, 117 insertions(+), 33 deletions(-)
 
-diff --git a/arch/mips/include/asm/branch.h b/arch/mips/include/asm/branch.h
-index 37c6857..888766a 100644
---- a/arch/mips/include/asm/branch.h
-+++ b/arch/mips/include/asm/branch.h
-@@ -9,6 +9,7 @@
- #define _ASM_BRANCH_H
+diff --git a/arch/mips/include/asm/kprobes.h b/arch/mips/include/asm/kprobes.h
+index e6ea4d4..1fbbca0 100644
+--- a/arch/mips/include/asm/kprobes.h
++++ b/arch/mips/include/asm/kprobes.h
+@@ -74,6 +74,8 @@ struct prev_kprobe {
+ 		: MAX_JPROBES_STACK_SIZE)
+ 
+ 
++#define SKIP_DELAYSLOT 0x0001
++
+ /* per-cpu kprobe control block */
+ struct kprobe_ctlblk {
+ 	unsigned long kprobe_status;
+@@ -82,6 +84,9 @@ struct kprobe_ctlblk {
+ 	unsigned long kprobe_saved_epc;
+ 	unsigned long jprobe_saved_sp;
+ 	struct pt_regs jprobe_saved_regs;
++	/* Per-thread fields, used while emulating branches */
++	unsigned long flags;
++	unsigned long target_epc;
+ 	u8 jprobes_stack[MAX_JPROBES_STACK_SIZE];
+ 	struct prev_kprobe prev_kprobe;
+ };
+diff --git a/arch/mips/kernel/kprobes.c b/arch/mips/kernel/kprobes.c
+index 0ab1a5f..158467d 100644
+--- a/arch/mips/kernel/kprobes.c
++++ b/arch/mips/kernel/kprobes.c
+@@ -30,6 +30,7 @@
+ #include <linux/slab.h>
  
  #include <asm/ptrace.h>
-+#include <asm/inst.h>
++#include <asm/branch.h>
+ #include <asm/break.h>
+ #include <asm/inst.h>
  
- static inline int delay_slot(struct pt_regs *regs)
- {
-@@ -23,7 +24,11 @@ static inline unsigned long exception_epc(struct pt_regs *regs)
- 	return regs->cp0_epc + 4;
- }
- 
-+#define BRANCH_LIKELY_TAKEN 0x0001
-+
- extern int __compute_return_epc(struct pt_regs *regs);
-+extern int __compute_return_epc_for_insn(struct pt_regs *regs,
-+					 union mips_instruction insn);
- 
- static inline int compute_return_epc(struct pt_regs *regs)
- {
-diff --git a/arch/mips/kernel/branch.c b/arch/mips/kernel/branch.c
-index 32103cc..4d735d0 100644
---- a/arch/mips/kernel/branch.c
-+++ b/arch/mips/kernel/branch.c
-@@ -9,6 +9,7 @@
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/signal.h>
-+#include <linux/module.h>
- #include <asm/branch.h>
- #include <asm/cpu.h>
- #include <asm/cpu-features.h>
-@@ -17,28 +18,22 @@
- #include <asm/ptrace.h>
- #include <asm/uaccess.h>
- 
--/*
-- * Compute the return address and do emulate branch simulation, if required.
-+/**
-+ * __compute_return_epc_for_insn - Computes the return address and do emulate
-+ *				    branch simulation, if required.
-+ *
-+ * @regs:	Pointer to pt_regs
-+ * @insn:	branch instruction to decode
-+ * @returns:	-EFAULT on error and forces SIGBUS, and on success
-+ *		returns 0 or BRANCH_LIKELY_TAKEN as appropriate after
-+ *		evaluating the branch.
-  */
--int __compute_return_epc(struct pt_regs *regs)
-+int __compute_return_epc_for_insn(struct pt_regs *regs,
-+				   union mips_instruction insn)
- {
--	unsigned int __user *addr;
- 	unsigned int bit, fcr31, dspcontrol;
--	long epc;
--	union mips_instruction insn;
--
--	epc = regs->cp0_epc;
--	if (epc & 3)
--		goto unaligned;
--
--	/*
--	 * Read the instruction
--	 */
--	addr = (unsigned int __user *) epc;
--	if (__get_user(insn.word, addr)) {
--		force_sig(SIGSEGV, current);
--		return -EFAULT;
--	}
-+	long epc = regs->cp0_epc;
-+	int ret = 0;
- 
- 	switch (insn.i_format.opcode) {
- 	/*
-@@ -64,18 +59,22 @@ int __compute_return_epc(struct pt_regs *regs)
- 		switch (insn.i_format.rt) {
- 	 	case bltz_op:
- 		case bltzl_op:
--			if ((long)regs->regs[insn.i_format.rs] < 0)
-+			if ((long)regs->regs[insn.i_format.rs] < 0) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == bltzl_op)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
- 
- 		case bgez_op:
- 		case bgezl_op:
--			if ((long)regs->regs[insn.i_format.rs] >= 0)
-+			if ((long)regs->regs[insn.i_format.rs] >= 0) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == bgezl_op)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
-@@ -83,9 +82,11 @@ int __compute_return_epc(struct pt_regs *regs)
- 		case bltzal_op:
- 		case bltzall_op:
- 			regs->regs[31] = epc + 8;
--			if ((long)regs->regs[insn.i_format.rs] < 0)
-+			if ((long)regs->regs[insn.i_format.rs] < 0) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == bltzall_op)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
-@@ -93,12 +94,15 @@ int __compute_return_epc(struct pt_regs *regs)
- 		case bgezal_op:
- 		case bgezall_op:
- 			regs->regs[31] = epc + 8;
--			if ((long)regs->regs[insn.i_format.rs] >= 0)
-+			if ((long)regs->regs[insn.i_format.rs] >= 0) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == bgezall_op)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
-+
- 		case bposge32_op:
- 			if (!cpu_has_dsp)
- 				goto sigill;
-@@ -133,9 +137,11 @@ int __compute_return_epc(struct pt_regs *regs)
- 	case beq_op:
- 	case beql_op:
- 		if (regs->regs[insn.i_format.rs] ==
--		    regs->regs[insn.i_format.rt])
-+		    regs->regs[insn.i_format.rt]) {
- 			epc = epc + 4 + (insn.i_format.simmediate << 2);
--		else
-+			if (insn.i_format.rt == beql_op)
-+				ret = BRANCH_LIKELY_TAKEN;
-+		} else
- 			epc += 8;
- 		regs->cp0_epc = epc;
- 		break;
-@@ -143,9 +149,11 @@ int __compute_return_epc(struct pt_regs *regs)
- 	case bne_op:
- 	case bnel_op:
- 		if (regs->regs[insn.i_format.rs] !=
--		    regs->regs[insn.i_format.rt])
-+		    regs->regs[insn.i_format.rt]) {
- 			epc = epc + 4 + (insn.i_format.simmediate << 2);
--		else
-+			if (insn.i_format.rt == bnel_op)
-+				ret = BRANCH_LIKELY_TAKEN;
-+		} else
- 			epc += 8;
- 		regs->cp0_epc = epc;
- 		break;
-@@ -153,9 +161,11 @@ int __compute_return_epc(struct pt_regs *regs)
- 	case blez_op: /* not really i_format */
- 	case blezl_op:
- 		/* rt field assumed to be zero */
--		if ((long)regs->regs[insn.i_format.rs] <= 0)
-+		if ((long)regs->regs[insn.i_format.rs] <= 0) {
- 			epc = epc + 4 + (insn.i_format.simmediate << 2);
--		else
-+			if (insn.i_format.rt == bnel_op)
-+				ret = BRANCH_LIKELY_TAKEN;
-+		} else
- 			epc += 8;
- 		regs->cp0_epc = epc;
- 		break;
-@@ -163,9 +173,11 @@ int __compute_return_epc(struct pt_regs *regs)
- 	case bgtz_op:
- 	case bgtzl_op:
- 		/* rt field assumed to be zero */
--		if ((long)regs->regs[insn.i_format.rs] > 0)
-+		if ((long)regs->regs[insn.i_format.rs] > 0) {
- 			epc = epc + 4 + (insn.i_format.simmediate << 2);
--		else
-+			if (insn.i_format.rt == bnel_op)
-+				ret = BRANCH_LIKELY_TAKEN;
-+		} else
- 			epc += 8;
- 		regs->cp0_epc = epc;
- 		break;
-@@ -187,18 +199,22 @@ int __compute_return_epc(struct pt_regs *regs)
- 		switch (insn.i_format.rt & 3) {
- 		case 0:	/* bc1f */
- 		case 2:	/* bc1fl */
--			if (~fcr31 & (1 << bit))
-+			if (~fcr31 & (1 << bit)) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == 2)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
- 
- 		case 1:	/* bc1t */
- 		case 3:	/* bc1tl */
--			if (fcr31 & (1 << bit))
-+			if (fcr31 & (1 << bit)) {
- 				epc = epc + 4 + (insn.i_format.simmediate << 2);
--			else
-+				if (insn.i_format.rt == 3)
-+					ret = BRANCH_LIKELY_TAKEN;
-+			} else
- 				epc += 8;
- 			regs->cp0_epc = epc;
- 			break;
-@@ -239,15 +255,39 @@ int __compute_return_epc(struct pt_regs *regs)
- #endif
+@@ -152,13 +153,6 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 		goto out;
  	}
  
--	return 0;
-+	return ret;
+-	if (insn_has_delayslot(insn)) {
+-		pr_notice("Kprobes for branch and jump instructions are not"
+-			  "supported\n");
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+ 	if ((probe_kernel_read(&prev_insn, p->addr - 1,
+ 				sizeof(mips_instruction)) == 0) &&
+ 				insn_has_delayslot(prev_insn)) {
+@@ -178,9 +172,20 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	 * In the kprobe->ainsn.insn[] array we store the original
+ 	 * instruction at index zero and a break trap instruction at
+ 	 * index one.
++	 *
++	 * On MIPS arch if the instruction at probed address is a
++	 * branch instruction, we need to execute the instruction at
++	 * Branch Delayslot (BD) at the time of probe hit. As MIPS also
++	 * doesn't have single stepping support, the BD instruction can
++	 * not be executed in-line and it would be executed on SSOL slot
++	 * using a normal breakpoint instruction in the next slot.
++	 * So, read the instruction and save it for later execution.
+ 	 */
++	if (insn_has_delayslot(insn))
++		memcpy(&p->ainsn.insn[0], p->addr + 1, sizeof(kprobe_opcode_t));
++	else
++		memcpy(&p->ainsn.insn[0], p->addr, sizeof(kprobe_opcode_t));
  
--unaligned:
--	printk("%s: unaligned epc - sending SIGBUS.\n", current->comm);
-+sigill:
-+	printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
- 	force_sig(SIGBUS, current);
- 	return -EFAULT;
-+}
-+EXPORT_SYMBOL_GPL(__compute_return_epc_for_insn);
+-	memcpy(&p->ainsn.insn[0], p->addr, sizeof(kprobe_opcode_t));
+ 	p->ainsn.insn[1] = breakpoint2_insn;
+ 	p->opcode = *p->addr;
  
--sigill:
--	printk("%s: DSP branch but not DSP ASE - sending SIGBUS.\n", current->comm);
-+int __compute_return_epc(struct pt_regs *regs)
-+{
-+	unsigned int __user *addr;
+@@ -231,16 +236,96 @@ static void set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+ 	kcb->kprobe_saved_epc = regs->cp0_epc;
+ }
+ 
+-static void prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
++/**
++ * evaluate_branch_instrucion -
++ *
++ * Evaluate the branch instruction at probed address during probe hit. The
++ * result of evaluation would be the updated epc. The insturction in delayslot
++ * would actually be single stepped using a normal breakpoint) on SSOL slot.
++ *
++ * The result is also saved in the kprobe control block for later use,
++ * in case we need to execute the delayslot instruction. The latter will be
++ * false for NOP instruction in dealyslot and the branch-likely instructions
++ * when the branch is taken. And for those cases we set a flag as
++ * SKIP_DELAYSLOT in the kprobe control block
++ */
++static int evaluate_branch_instruction(struct kprobe *p, struct pt_regs *regs,
++					struct kprobe_ctlblk *kcb)
+ {
++	union mips_instruction insn = p->opcode;
 +	long epc;
-+	union mips_instruction insn;
++	int ret = 0;
 +
 +	epc = regs->cp0_epc;
 +	if (epc & 3)
 +		goto unaligned;
 +
-+	/*
-+	 * Read the instruction
-+	 */
-+	addr = (unsigned int __user *) epc;
-+	if (__get_user(insn.word, addr)) {
-+		force_sig(SIGSEGV, current);
-+		return -EFAULT;
-+	}
++	if (p->ainsn.insn->word == 0)
++		kcb->flags |= SKIP_DELAYSLOT;
++	else
++		kcb->flags &= ~SKIP_DELAYSLOT;
 +
-+	return __compute_return_epc_for_insn(regs, insn);
++	ret = __compute_return_epc_for_insn(regs, insn);
++	if (ret < 0)
++		return ret;
++
++	if (ret == BRANCH_LIKELY_TAKEN)
++		kcb->flags |= SKIP_DELAYSLOT;
++
++	kcb->target_epc = regs->cp0_epc;
++
++	return 0;
 +
 +unaligned:
-+	printk("%s: unaligned epc - sending SIGBUS.\n", current->comm);
- 	force_sig(SIGBUS, current);
- 	return -EFAULT;
++	pr_notice("%s: unaligned epc - sending SIGBUS.\n", current->comm);
++	force_sig(SIGBUS, current);
++	return -EFAULT;
 +
- }
-diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
-index dbf2f93..a03bf00 100644
---- a/arch/mips/math-emu/cp1emu.c
-+++ b/arch/mips/math-emu/cp1emu.c
-@@ -245,7 +245,7 @@ static int cop1Emulate(struct pt_regs *xcp, struct mips_fpu_struct *ctx,
- 		 */
- 		emulpc = xcp->cp0_epc + 4;	/* Snapshot emulation target */
++}
++
++static void prepare_singlestep(struct kprobe *p, struct pt_regs *regs,
++						struct kprobe_ctlblk *kcb)
++{
++	int ret = 0;
++
+ 	regs->cp0_status &= ~ST0_IE;
  
--		if (__compute_return_epc(xcp)) {
-+		if (__compute_return_epc(xcp) < 0) {
- #ifdef CP1DBG
- 			printk("failed to emulate branch at %p\n",
- 				(void *) (xcp->cp0_epc));
+ 	/* single step inline if the instruction is a break */
+ 	if (p->opcode.word == breakpoint_insn.word ||
+ 	    p->opcode.word == breakpoint2_insn.word)
+ 		regs->cp0_epc = (unsigned long)p->addr;
+-	else
+-		regs->cp0_epc = (unsigned long)&p->ainsn.insn[0];
++	else if (insn_has_delayslot(p->opcode)) {
++		ret = evaluate_branch_instruction(p, regs, kcb);
++		if (ret < 0) {
++			pr_notice("Kprobes: Error in evaluating branch\n");
++			return;
++		}
++	}
++	regs->cp0_epc = (unsigned long)&p->ainsn.insn[0];
++}
++
++/*
++ * Called after single-stepping.  p->addr is the address of the
++ * instruction whose first byte has been replaced by the "break 0"
++ * instruction.  To avoid the SMP problems that can occur when we
++ * temporarily put back the original opcode to single-step, we
++ * single-stepped a copy of the instruction.  The address of this
++ * copy is p->ainsn.insn.
++ *
++ * This function prepares to return from the post-single-step
++ * breakpoint trap. In case of branch instructions, the target
++ * epc to be restored.
++ */
++static void __kprobes resume_execution(struct kprobe *p,
++				       struct pt_regs *regs,
++				       struct kprobe_ctlblk *kcb)
++{
++	if (insn_has_delayslot(p->opcode))
++		regs->cp0_epc = kcb->target_epc;
++	else {
++		unsigned long orig_epc = kcb->kprobe_saved_epc;
++		regs->cp0_epc = orig_epc + 4;
++	}
+ }
+ 
+ static int __kprobes kprobe_handler(struct pt_regs *regs)
+@@ -279,8 +364,13 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 			save_previous_kprobe(kcb);
+ 			set_current_kprobe(p, regs, kcb);
+ 			kprobes_inc_nmissed_count(p);
+-			prepare_singlestep(p, regs);
++			prepare_singlestep(p, regs, kcb);
+ 			kcb->kprobe_status = KPROBE_REENTER;
++			if (kcb->flags & SKIP_DELAYSLOT) {
++				resume_execution(p, regs, kcb);
++				restore_previous_kprobe(kcb);
++				preempt_enable_no_resched();
++			}
+ 			return 1;
+ 		} else {
+ 			if (addr->word != breakpoint_insn.word) {
+@@ -324,8 +414,16 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+ 	}
+ 
+ ss_probe:
+-	prepare_singlestep(p, regs);
+-	kcb->kprobe_status = KPROBE_HIT_SS;
++	prepare_singlestep(p, regs, kcb);
++	if (kcb->flags & SKIP_DELAYSLOT) {
++		kcb->kprobe_status = KPROBE_HIT_SSDONE;
++		if (p->post_handler)
++			p->post_handler(p, regs, 0);
++		resume_execution(p, regs, kcb);
++		preempt_enable_no_resched();
++	} else
++		kcb->kprobe_status = KPROBE_HIT_SS;
++
+ 	return 1;
+ 
+ no_kprobe:
+@@ -334,25 +432,6 @@ no_kprobe:
+ 
+ }
+ 
+-/*
+- * Called after single-stepping.  p->addr is the address of the
+- * instruction whose first byte has been replaced by the "break 0"
+- * instruction.  To avoid the SMP problems that can occur when we
+- * temporarily put back the original opcode to single-step, we
+- * single-stepped a copy of the instruction.  The address of this
+- * copy is p->ainsn.insn.
+- *
+- * This function prepares to return from the post-single-step
+- * breakpoint trap.
+- */
+-static void __kprobes resume_execution(struct kprobe *p,
+-				       struct pt_regs *regs,
+-				       struct kprobe_ctlblk *kcb)
+-{
+-	unsigned long orig_epc = kcb->kprobe_saved_epc;
+-	regs->cp0_epc = orig_epc + 4;
+-}
+-
+ static inline int post_kprobe_handler(struct pt_regs *regs)
+ {
+ 	struct kprobe *cur = kprobe_running();
 -- 
 1.7.1
 
