@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab1KHTDS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:03:18 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:59402 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab1KHTDQ (ORCPT
+	id S933173Ab1KHTDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:03:10 -0500
+Received: from www17.your-server.de ([213.133.104.17]:33121 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932944Ab1KHTDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:03:16 -0500
-Date: Tue, 08 Nov 2011 14:03:12 -0500 (EST)
-Message-Id: <20111108.140312.2104080830131697151.davem@davemloft.net>
-To: kinwin2008@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tcp: Fix comments for Nagle algorithm
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320503003-5169-1-git-send-email-kinwin2008@gmail.com>
-References: <1320503003-5169-1-git-send-email-kinwin2008@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 8 Nov 2011 14:03:07 -0500
+Subject: [PATCH] usb: OHCI/EHCI Use resource_size function
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        "open list:USB OHCI DRIVER" <linux-usb@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Nov 2011 19:50:28 +0100
+Message-ID: <1320778228.8062.135.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 08 Nov 2011 11:03:14 -0800 (PST)
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng King <kinwin2008@gmail.com>
-Date: Sat,  5 Nov 2011 22:23:23 +0800
+From: Thomas Meyer <thomas@m3y3r.de>
 
-> TCP_NODELAY is weaker than TCP_CORK, when TCP_CORK was set, small
-> segments will always pass Nagle test regardless of TCP_NODELAY option.
-> 
-> Signed-off-by: Feng King <kinwin2008@gmail.com>
+ Use resource_size function on resource object
+ instead of explicit computation.
 
-Applied, thanks.
+ The semantic patch that makes this change is available
+ in scripts/coccinelle/api/resource_size.cocci.
+
+ More information about semantic patching is available at
+ http://coccinelle.lip6.fr/
+
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
+
+diff -u -p a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
+--- a/drivers/usb/host/ohci-xls.c 2011-11-07 19:38:15.467036480 +0100
++++ b/drivers/usb/host/ohci-xls.c 2011-11-08 12:13:16.922398086 +0100
+@@ -40,7 +40,7 @@ static int ohci_xls_probe_internal(const
+ 		goto err1;
+ 	}
+ 	hcd->rsrc_start = res->start;
+-	hcd->rsrc_len = res->end - res->start + 1;
++	hcd->rsrc_len = resource_size(res);
+ 
+ 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
+ 			driver->description)) {
+
+
