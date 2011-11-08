@@ -1,73 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab1KHAZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Nov 2011 19:25:22 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:37737 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab1KHAZV (ORCPT
+	id S1752669Ab1KHA3s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Nov 2011 19:29:48 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35481 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab1KHA3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Nov 2011 19:25:21 -0500
-Date: Tue, 8 Nov 2011 01:25:20 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Davidlohr Bueso <dave@gnu.org>,
-        Christoph Hellwig <hch@infradead.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [RFC PATCH] tmpfs: support user quotas
-Message-ID: <20111108002520.GB25769@tango.0pointer.de>
-References: <1320614101.3226.5.camel@offbook>
- <20111107112952.GB25130@tango.0pointer.de>
- <1320675607.2330.0.camel@offworld>
- <20111107135823.3a7cdc53@lxorguk.ukuu.org.uk>
- <CAPXgP117Wkgvf1kDukjWt9yOye8xArpyX29xx36NT++s8TS5Rw@mail.gmail.com>
- <20111107225314.0e3976a6@lxorguk.ukuu.org.uk>
- <20111107230712.GA25769@tango.0pointer.de>
- <20111107234337.1dc9d612@lxorguk.ukuu.org.uk>
+	Mon, 7 Nov 2011 19:29:47 -0500
+Message-ID: <4EB874C4.4010706@jp.fujitsu.com>
+Date: Mon, 07 Nov 2011 19:16:04 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107234337.1dc9d612@lxorguk.ukuu.org.uk>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+To: jweiner@redhat.com
+CC: khlebnikov@parallels.com, penberg@kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, kamezawa.hiroyu@jp.fujitsu.com,
+        hannes@cmpxchg.org, riel@redhat.com, mel@csn.ul.ie,
+        minchan.kim@gmail.com, gene.heskett@gmail.com
+Subject: Re: [rfc 1/3] mm: vmscan: never swap under low memory pressure
+References: <20110808110658.31053.55013.stgit@localhost6> <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com> <4E3FD403.6000400@parallels.com> <20111102163056.GG19965@redhat.com> <20111102163141.GH19965@redhat.com> <4EB183CF.6050300@jp.fujitsu.com> <20111103155127.GM19965@redhat.com>
+In-Reply-To: <20111103155127.GM19965@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07.11.11 23:43, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+Hi,
 
+Sorry for the delay. I had tripped San Jose in last week.
+
+
+> On Wed, Nov 02, 2011 at 10:54:23AM -0700, KOSAKI Motohiro wrote:
+>>> ---
+>>>  mm/vmscan.c |    2 ++
+>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>> index a90c603..39d3da3 100644
+>>> --- a/mm/vmscan.c
+>>> +++ b/mm/vmscan.c
+>>> @@ -831,6 +831,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>>>  		 * Try to allocate it some swap space here.l
+>>>  		 */
+>>>  		if (PageAnon(page) && !PageSwapCache(page)) {
+>>> +			if (priority >= DEF_PRIORITY - 2)
+>>> +				goto keep_locked;
+>>>  			if (!(sc->gfp_mask & __GFP_IO))
+>>>  				goto keep_locked;for
+>>>  			if (!add_to_swap(page))
+>>
+>> Hehe, i tried very similar way very long time ago. Unfortunately, it doesn't work.
+>> "DEF_PRIORITY - 2" is really poor indicator for reclaim pressure. example, if the
+>> machine have 1TB memory, DEF_PRIORITY-2 mean 1TB>>10 = 1GB. It't too big.
 > 
-> On Tue, 8 Nov 2011 00:07:12 +0100
-> Lennart Poettering <mzxreary@0pointer.de> wrote:
+> Do you remember what kind of tests you ran that demonstrated
+> misbehaviour?
 > 
-> > On Mon, 07.11.11 22:53, Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> > 
-> > > Per user would be quota, per process would be rlimit. Quite simple
-> > > really, nice standard interfaces we've had for years. Various systems
-> > 
-> > Uh, have you ever really looked at resource limits? Some of them are
-> > per-user, not per-process, i.e. RLIMIT_NPROC. And this would just be
-> > another one.
+> We can not reclaim anonymous pages without swapping, so the priority
+> cutoff applies only to inactive file pages.  If you had 1TB of
+> inactive file pages, the scanner would have to go through
 > 
-> NPROC is a bit of an oddity.
+> 	((1 << (40 - 12)) >> 12) +
+> 	((1 << (40 - 12)) >> 11) +
+> 	((1 << (40 - 12)) >> 10) = 1792MB
+> 
+> without reclaiming SWAP_CLUSTER_MAX before it considers swapping.
+> That's a lot of scanning but how likely is it that you have a TB of
+> unreclaimable inactive cache pages?
 
-And half of the other resource limits are "oddities" too?
-For  example RLIMIT_SIGPENDING is per-user and so is RLIMIT_MSGQUEUE,
-and others too.
+I meant, the affect of this protection strongly depend on system memory.
 
-> And the standards have no idea how a resource limit hit for an fs would
-> be reported, nor how an app installer would check for it. Quota on the
-> other hand is defined behaviour.
+ - system memory is plenty.
+	the protection virtually affect to disable swap-out completely.
+ - system memory is not plenty.
+	the protection slightly makes a bonus to avoid swap out.
 
-EDQUOT is POSIX, but afaik there is no POSIX standardized API for quota,
-is there? i.e. the reporting of the user hitting quota is defined, but
-how to set the quota is left open. Which is nice, since it gives us the
-flexibility to use resource limits here, since they so nicely apply to
-the problem.
+If people buy new machine and move-in their legacy workload into it, they
+might surprise a lot of behavior change. I'm worry about it.
 
-Lennart
+That's why I dislike DEF_PRIORITY based heuristic.
 
--- 
-Lennart Poettering - Red Hat, Inc.
+
+> Put into proportion, with a priority threshold of 10 a reclaimer will
+> look at 0.17% ((n >> 12) + (n >> 11) + (n >> 10) (excluding the list
+> balance bias) of inactive file pages without reclaiming
+> SWAP_CLUSTER_MAX before it considers swapping.
+
+Moreover, I think we need to make more precious analysis why unnecessary swapout
+was happen. Which factor is dominant and when occur.
+
+
+> Currently, the list balance biasing with each newly-added file page
+> has much higher resistance to scan anonymous pages initially.  But
+> once it shifted toward anon pages, all reclaimers will start swapping,
+> unlike the priority threshold that each reclaimer has to reach
+> individually.  Could this have been what was causing problems for you? 
+
+Um. Currently number of fulusher threads are controlled by kernel. But,
+number of swap-out threads aren't limited at all. So, our swapout often
+works too aggressively. I think we need fix it.
+
+
+
+
+
