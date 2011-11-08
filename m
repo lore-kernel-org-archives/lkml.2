@@ -1,246 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1KHPkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 10:40:25 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44310 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932065Ab1KHPkW convert rfc822-to-8bit (ORCPT
+	id S933034Ab1KHPnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 10:43:13 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46265 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab1KHPnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 10:40:22 -0500
+	Tue, 8 Nov 2011 10:43:08 -0500
+X-Authority-Analysis: v=2.0 cv=NJxXCjGg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wom5GMh1gUkA:10 a=CJuhWrxHYpQA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=qU_JxbGTJ8u0H1rP61AA:9 a=jRDU3Q7W_IMD6FwnxrsA:7 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Tue, 8 Nov 2011 10:43:04 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Theodore Tso <tytso@MIT.EDU>, Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
+ tools/perf/ and tools/kvm/
+Message-ID: <20111108154304.GA4510@home.goodmis.org>
+References: <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
+ <20111106231953.GD4500@thunk.org>
+ <alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
+ <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
+ <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>
+ <20111107203255.GF24234@thunk.org>
+ <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com>
+ <4EB85969.2010108@codemonkey.ws>
+ <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu>
+ <20111108093225.GB32533@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <1320719974-3598-4-git-send-email-ying.huang@intel.com>
-References: <1320719974-3598-1-git-send-email-ying.huang@intel.com> <1320719974-3598-4-git-send-email-ying.huang@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 8 Nov 2011 08:40:00 -0700
-Message-ID: <CAErSpo7XSi-xsLYmv7B0u2qmdjyGJ91gdOH7wPqFq5JYEo68OQ@mail.gmail.com>
-Subject: Re: [PATCH 3/9] ACPI, Record ACPI NVS regions
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, linux-acpi@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108093225.GB32533@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 7, 2011 at 7:39 PM, Huang Ying <ying.huang@intel.com> wrote:
-> Some firmware will access memory in ACPI NVS region via APEI.  That
-> is, instructions in APEI ERST/EINJ table will read/write ACPI NVS
-> region.  The original resource conflict checking in APEI code will
-> check memory/ioport accessed by APEI via general resource management
-> mechanism.  But ACPI NVS region is marked as busy already, so that the
-> false resource conflict will prevent APEI ERST/EINJ to work.
->
-> To fix this, this patch record ACPI NVS regions, so that we can avoid
-> request resources for memory region inside it.
+On Tue, Nov 08, 2011 at 10:32:25AM +0100, Ingo Molnar wrote:
+> 
+> None of the perf developers with whom i'm working complained about 
+> the shared repo so far - publicly or privately. By all means they are 
+> enjoying it and if you look at the stats and results you'll agree 
+> that they are highly productive working in that environment.
 
-I don't really like these patches (3 & 4), as I mentioned before:
-  https://lkml.org/lkml/2011/8/22/270
-  https://lkml.org/lkml/2011/9/19/397
+Just because you brought it up.
 
-To recap, e820 currently marks everything except E820_RESERVED areas
-as "BUSY" in the iomem_resource tree.  That basically means that RAM,
-ACPI, and NVS are marked as BUSY.  Later APEI attempts a
-request_mem_region() on a a resource, and it fails because e820 has
-already marked it BUSY.
+I personally find it awkward to work in the linux tools directory. Maybe
+this is the reason that I haven't been such a big contributor of perf. I
+only pushed ktest into the kernel tools directory because people
+convinced me to do so. Having it there didn't seem to bring in many
+other developers. Only one other person has contributed to me, and that
+was just some minor changes. I still find it awkward to work on ktest
+inside the kernel. I have a separate tree just for ktest, and that means
+I have all the kernel files sitting there doing nothing just to be able
+to work on 2 files.
 
-It makes sense for e820 to mark RAM as BUSY, because we we don't use
-iomem_resource to manage it; we pass it all off to memblock and
-eventually the regular memory allocator.  But from e820's point of
-view, everything else (RESERVED, ACPI, NVS, etc) is just a clue  that
-something uses that region and we shouldn't place anything else on top
-of it.
+Then there's the issue of waiting for Linus to pull from me. I posted my
+patch set on Oct 28th, and it didn't make it into the merge window. I
+don't know if Linus had an issue with it, or it just got lost in the
+noise, as Linus has a lot of other things to worry about. This brings up
+another question. Does Linus scale? Having more tools in the kernel
+repo requires Linus to pull from more sources. Or are we just going to
+have to have a "tools" maintainer. This will give a lot of control to
+that person who is the gate keeper of the tools directory.
 
-We normally mark something BUSY when a driver calls request_region()
-to indicate that it owns the region and any other requests for the
-same region should fail.  I think it's a mistake for e820 to mark
-things BUSY because it really is not the the owner of any of those
-regions (except for RAM, because in that case e820 *is* essentially
-taking ownership of RAM and passing it off to memblock).
+Now I've kept trace-cmd and kernelshark outside the kernel tree. I've
+received lots of patches from other developers for it and some nice new
+features. It requires me to think hard to keep a nice ABI, and it has
+been working nicely. The event parsing is working well and there's even
+a library. But I haven't pushed it too hard because I want this to apply
+to perf as well. But due to disagreements of where in the kernel tree it
+belongs, it has been over a year with no progress. Now we waste 4 bytes
+for every event recording a non existent big kernel lock counter. For
+recording a million events (which is actually low) that's 4Megs of
+wasted kernel memory. New tracepoints are going into the kernel all the
+time, and without a library, we are increasing the chance that more
+tools will break on changes, and tracepoints will lock down kernel
+inovation soon if something is not done.
 
-I think a better solution for the APEI problem would be to have e820
-leave non-RAM regions in iomem_resource, but not mark them BUSY, as in
-this patch from Yinghai:
+Anyway, I'm having surgery tomorrow and have other things to work on.
 
---- linux-2.6.orig/arch/x86/kernel/e820.c
-+++ linux-2.6/arch/x86/kernel/e820.c
-@@ -995,7 +995,8 @@ void __init e820_reserve_resources(void)
- 		 * pcibios_resource_survey()
- 		 */
- 		if (e820.map[i].type != E820_RESERVED || res->start < (1ULL<<20)) {
--			res->flags |= IORESOURCE_BUSY;
-+			if (e820.map[i].type != E820_NVS)
-+				res->flags |= IORESOURCE_BUSY;
- 			insert_resource(&iomem_resource, res);
- 		}
- 		res++;
+-- Steve
 
-That's much simpler than having e820 pretend to be the owner of NVS
-regions, building an extra list of the NVS regions, and subtracting
-them from the regions APEI needs to request ownership of.
 
-Bjorn
-
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  arch/x86/kernel/e820.c |    4 +--
->  drivers/acpi/Makefile  |    3 +-
->  drivers/acpi/nvs.c     |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-
->  include/linux/acpi.h   |   20 ++++++++++++------
->  4 files changed, 70 insertions(+), 10 deletions(-)
->
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -714,7 +714,7 @@ void __init e820_mark_nosave_regions(uns
->  }
->  #endif
->
-> -#ifdef CONFIG_HIBERNATION
-> +#ifdef CONFIG_ACPI
->  /**
->  * Mark ACPI NVS memory region, so that we can save/restore it during
->  * hibernation and the subsequent resume.
-> @@ -727,7 +727,7 @@ static int __init e820_mark_nvs_memory(v
->                struct e820entry *ei = &e820.map[i];
->
->                if (ei->type == E820_NVS)
-> -                       suspend_nvs_register(ei->addr, ei->size);
-> +                       acpi_nvs_register(ei->addr, ei->size);
->        }
->
->        return 0;
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -20,11 +20,12 @@ obj-y                               += acpi.o \
->  # All the builtin files are in the "acpi." module_param namespace.
->  acpi-y                         += osl.o utils.o reboot.o
->  acpi-y                         += atomicio.o
-> +acpi-y                         += nvs.o
->
->  # sleep related files
->  acpi-y                         += wakeup.o
->  acpi-y                         += sleep.o
-> -acpi-$(CONFIG_ACPI_SLEEP)      += proc.o nvs.o
-> +acpi-$(CONFIG_ACPI_SLEEP)      += proc.o
->
->
->  #
-> --- a/drivers/acpi/nvs.c
-> +++ b/drivers/acpi/nvs.c
-> @@ -15,6 +15,56 @@
->  #include <linux/acpi_io.h>
->  #include <acpi/acpiosxf.h>
->
-> +/* ACPI NVS regions, APEI may use it */
-> +
-> +struct nvs_region {
-> +       __u64 phys_start;
-> +       __u64 size;
-> +       struct list_head node;
-> +};
-> +
-> +static LIST_HEAD(nvs_region_list);
-> +
-> +#ifdef CONFIG_ACPI_SLEEP
-> +static int suspend_nvs_register(unsigned long start, unsigned long size);
-> +#else
-> +static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-> +{
-> +       return 0;
-> +}
-> +#endif
-> +
-> +int acpi_nvs_register(__u64 start, __u64 size)
-> +{
-> +       struct nvs_region *region;
-> +
-> +       region = kmalloc(sizeof(*region), GFP_KERNEL);
-> +       if (!region)
-> +               return -ENOMEM;
-> +       region->phys_start = start;
-> +       region->size = size;
-> +       list_add_tail(&region->node, &nvs_region_list);
-> +
-> +       return suspend_nvs_register(start, size);
-> +}
-> +
-> +int acpi_nvs_for_each_region(int (*func)(__u64 start, __u64 size, void *data),
-> +                            void *data)
-> +{
-> +       int rc;
-> +       struct nvs_region *region;
-> +
-> +       list_for_each_entry(region, &nvs_region_list, node) {
-> +               rc = func(region->phys_start, region->size, data);
-> +               if (rc)
-> +                       return rc;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +
-> +#ifdef CONFIG_ACPI_SLEEP
->  /*
->  * Platforms, like ACPI, may want us to save some memory used by them during
->  * suspend and to restore the contents of this memory during the subsequent
-> @@ -41,7 +91,7 @@ static LIST_HEAD(nvs_list);
->  *     things so that the data from page-aligned addresses in this region will
->  *     be copied into separate RAM pages.
->  */
-> -int suspend_nvs_register(unsigned long start, unsigned long size)
-> +static int suspend_nvs_register(unsigned long start, unsigned long size)
->  {
->        struct nvs_page *entry, *next;
->
-> @@ -159,3 +209,4 @@ void suspend_nvs_restore(void)
->                if (entry->data)
->                        memcpy(entry->kaddr, entry->data, entry->size);
->  }
-> +#endif
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -306,6 +306,11 @@ extern acpi_status acpi_pci_osc_control_
->                                             u32 *mask, u32 req);
->  extern void acpi_early_init(void);
->
-> +extern int acpi_nvs_register(__u64 start, __u64 size);
-> +
-> +extern int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-> +                                   void *data);
-> +
->  #else  /* !CONFIG_ACPI */
->
->  #define acpi_disabled 1
-> @@ -348,15 +353,18 @@ static inline int acpi_table_parse(char
->  {
->        return -1;
->  }
-> -#endif /* !CONFIG_ACPI */
->
-> -#ifdef CONFIG_ACPI_SLEEP
-> -int suspend_nvs_register(unsigned long start, unsigned long size);
-> -#else
-> -static inline int suspend_nvs_register(unsigned long a, unsigned long b)
-> +static inline int acpi_nvs_register(__u64 start, __u64 size)
->  {
->        return 0;
->  }
-> -#endif
-> +
-> +static inline int acpi_nvs_for_each_region(int (*func)(__u64, __u64, void *),
-> +                                          void *data)
-> +{
-> +       return 0;
-> +}
-> +
-> +#endif /* !CONFIG_ACPI */
->
->  #endif /*_LINUX_ACPI_H*/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
