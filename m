@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933173Ab1KHTDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 14:03:10 -0500
-Received: from www17.your-server.de ([213.133.104.17]:33121 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932944Ab1KHTDH (ORCPT
+	id S1756329Ab1KHTEJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 14:04:09 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51140 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418Ab1KHTEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 14:03:07 -0500
-Subject: [PATCH] usb: OHCI/EHCI Use resource_size function
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "open list:USB OHCI DRIVER" <linux-usb@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Nov 2011 19:50:28 +0100
-Message-ID: <1320778228.8062.135.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Tue, 8 Nov 2011 14:04:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <1320775737.2382.42.camel@deneb.redhat.com>
+References: <1320179267.14825.107.camel@deneb.redhat.com> <CA+55aFxXVwX6Y8Nw+V6k0niZ==fxAGfE=-FDYz8nCV4Pw9HEyw@mail.gmail.com>
+ <1320529182.14081.78.camel@deneb.redhat.com> <CA+55aFyypNAZAk0LQU7pFf+W2+6sdZwqQx5X8DLy0gWbfvjVsw@mail.gmail.com>
+ <1320775737.2382.42.camel@deneb.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Nov 2011 11:03:45 -0800
+X-Google-Sender-Auth: 4Q4WKMTUZQmdRbsvpY5uHnaDNMU
+Message-ID: <CA+55aFx_bjbpbY8wG11UqVmnK_-hNJBQTM_OhAAMjDyEyvbtUg@mail.gmail.com>
+Subject: Re: [PULL] Add support for Texas Instruments C6X architecture
+To: Mark Salter <msalter@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "JACQUIOT-XID, Aurelien" <a-jacquiot@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Meyer <thomas@m3y3r.de>
+On Tue, Nov 8, 2011 at 10:08 AM, Mark Salter <msalter@redhat.com> wrote:
+>
+> Having a little time to think about this some more, I'm going to take
+> another crack at it. Defining __pa/__va with PAGE_OFFSET as they are
+> currently creates a physical space which doesn't match the hardware
+> when PAGE_OFFSET is non-zero.
+>
+> For arches using device tree support, that means that the physical
+> addresses in the device tree are either linux-specific or early boot
+> code would have to go through the tree to fixup the "hardware physical"
+> addresses so that they are "linux physical" addresses for the kernel.
 
- Use resource_size function on resource object
- instead of explicit computation.
+Ok, that's actually a good argument - external interfaces defining
+what "physical" means.
 
- The semantic patch that makes this change is available
- in scripts/coccinelle/api/resource_size.cocci.
+Fair enough. I'll consider myself convinced.
 
- More information about semantic patching is available at
- http://coccinelle.lip6.fr/
-
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
-
-diff -u -p a/drivers/usb/host/ohci-xls.c b/drivers/usb/host/ohci-xls.c
---- a/drivers/usb/host/ohci-xls.c 2011-11-07 19:38:15.467036480 +0100
-+++ b/drivers/usb/host/ohci-xls.c 2011-11-08 12:13:16.922398086 +0100
-@@ -40,7 +40,7 @@ static int ohci_xls_probe_internal(const
- 		goto err1;
- 	}
- 	hcd->rsrc_start = res->start;
--	hcd->rsrc_len = res->end - res->start + 1;
-+	hcd->rsrc_len = resource_size(res);
- 
- 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len,
- 			driver->description)) {
-
-
+         Linus
