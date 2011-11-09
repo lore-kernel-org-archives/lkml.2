@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab1KIRiX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:38:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40740 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755592Ab1KIRiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:38:22 -0500
-Date: Wed, 9 Nov 2011 09:36:37 -0800
-From: Greg KH <gregkh@suse.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Alan Cox <alan@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
+	id S1755981Ab1KIRip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:38:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49771 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab1KIRio (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:38:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
+References: <20111109162512.GB1260@google.com> <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 9 Nov 2011 18:38:21 +0100
+Message-ID: <CAPXgP13x9vvZ3pfW7u=o5rEaTAg_xV7=RC_UFuhk_aRdB4G0vg@mail.gmail.com>
 Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute "alias"
  in gendisk"
-Message-ID: <20111109173637.GA5568@suse.de>
-References: <20111109162512.GB1260@google.com>
- <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 11:30:00AM -0600, James Bottomley wrote:
+On Wed, Nov 9, 2011 at 18:30, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
 > On Wed, 2011-11-09 at 08:25 -0800, Tejun Heo wrote:
-> > This reverts commit a72c5e5eb738033938ab30d6a634b74d1d060f10.
-> > 
-> > The commit introduced alias for block devices which is intended to be
-> > used during logging although actual usage hasn't been committed yet.
-> > This approach adds very limited benefit (raw log might be easier to
-> > follow) which can be trivially implemented in userland but has a lot
-> > of problems.
-> 
-> It has the specific benefit that on snipped logs we don't get a mismatch
-> between device name and actual device.
-> 
-> We already had this discussion at the kernel summit.  The structured
-> logging that might give us this facility in userspace isn't there yet
-> (and may not be for a while), so while users cut and paste logs it's
-> useful for the logs to show the device preferred name.
-> 
-> With just logs, we can't solve the cross reference problem, since the
-> cross references appear at different points in the log files.
 
-It's not just a log issue, it's a userspace tool issue, which is not
-addressed here at all.
-
-Actually I don't think this solves the log issue either, but that's
-a different point...
-
-> > It is much worse than netif renames because it doesn't rename the
-> > actual device but just adds conveninence name which isn't used
-> > universally or enforced.  Everything internal including device lookup
-> > and sysfs still uses the internal name and nothing prevents two
-> > devices from using conflicting alias - ie. sda can have sdb as its
-> > alias.
-> > 
-> > This has been nacked by people working on device driver core,
-> 
-> Which is why it went into gendisk rather than the driver core
-> 
-> > block
-> > layer and kernel-userland interface and shouldn't have been
-> > upstreamed.  Revert it.
-> 
 > No, I can't agree with this ... if you propose a working alternative,
+
+The solution to this problem is to let udev log the known symlinks to
+the log stream at device discovery time. That way you can log _all_
+kernel device messages to the currently know disk names. This works
+already even on old systems,
+
 > I'm listening, but in the absence of one, I think the hack fills a gap
+
+There is no gap.
+
 > we have in log analysis and tides us over until we have an agreed on
 > proper solution (at which point, I'm perfectly happy to pull the hack
 > back out).
 
-Once it becomes a userspace api, it's almost impossible to ever remove,
-you know that.
+Log analysis works just fine with the udev solution and provides the
+far better solution to this exact problem, so please revert it.
 
-And as you agree this is a hack, and it really doesn't provide the
-correct solution, why should it have been accepted?
+Such hacks are not supposed to get in, and its really hard to get them
+out again.
 
-Again, this is fixable in userspace, the author of the patch agrees with
-that, yet refuses to make the userspace changes despite having a few
-_years_ in which to so so.
-
-Also, you should have gotten this through the block layer maintainer...
-
-greg k-h
+Thanks,
+Kay
