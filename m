@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935982Ab1KJDk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:40:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44160 "EHLO mx2.suse.de"
+	id S965259Ab1KJDkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:40:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44190 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964941Ab1KJDkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:40:20 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:52 2011
-Message-Id: <20111109213152.791270706@clark.kroah.org>
+	id S1757086Ab1KJDke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:40:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:53 2011
+Message-Id: <20111109213153.097904561@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:33 -0800
+Date: Wed, 09 Nov 2011 13:32:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Beulich <jbeulich@suse.com>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [106/264] apic, i386/bigsmp: Fix false warnings regarding logical APIC ID mismatches
+        alan@lxorguk.ukuu.org.uk,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [109/264] ftrace/kprobes: Fix not to delete probes if in use
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,111 +29,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Beulich <JBeulich@suse.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-commit 838312be46f3abfbdc175f81c3e54a857994476d upstream.
+commit 02ca1521ad404cf566e0075848f80d064c0a0503 upstream.
 
-These warnings (generally one per CPU) are a result of
-initializing x86_cpu_to_logical_apicid while apic_default is
-still in use, but the check in setup_local_APIC() being done
-when apic_bigsmp was already used as an override in
-default_setup_apic_routing():
+Fix kprobe-tracer not to delete a probe if the probe is in use.
+In that case, delete operation will return -EBUSY.
 
- Overriding APIC driver with bigsmp
- Enabling APIC mode:  Physflat.  Using 5 I/O APICs
- ------------[ cut here ]------------
- WARNING: at .../arch/x86/kernel/apic/apic.c:1239
- ...
- CPU 1 irqstacks, hard=f1c9a000 soft=f1c9c000
- Booting Node   0, Processors  #1
- smpboot cpu 1: start_ip = 9e000
- Initializing CPU#1
- ------------[ cut here ]------------
- WARNING: at .../arch/x86/kernel/apic/apic.c:1239
- setup_local_APIC+0x137/0x46b() Hardware name: ...
- CPU1 logical APIC ID: 2 != 8
- ...
+This bug can cause a kernel panic if enabled probes are deleted
+during perf record.
 
-Fix this (for the time being, i.e. until
-x86_32_early_logical_apicid() will get removed again, as Tejun
-says ought to be possible) by overriding the previously stored
-values at the point where the APIC driver gets overridden.
+(Add some probes on functions)
+sh-4.2# perf probe --del probe:\*
+sh-4.2# exit
+(kernel panic)
 
-v2: Move this and the pre-existing override logic into
-    arch/x86/kernel/apic/bigsmp_32.c.
+This is originally reported on the fedora bugzilla:
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/4E835D16020000780005844C@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ https://bugzilla.redhat.com/show_bug.cgi?id=742383
+
+I've also checked that this problem doesn't happen on
+tracepoints when module removing because perf event
+locks target module.
+
+$ sudo ./perf record -e xfs:\* -aR sh
+sh-4.2# rmmod xfs
+ERROR: Module xfs is in use
+sh-4.2# exit
+[ perf record: Woken up 1 times to write data ]
+[ perf record: Captured and wrote 0.203 MB perf.data (~8862 samples) ]
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Frank Ch. Eigler <fche@redhat.com>
+Link: http://lkml.kernel.org/r/20111004104438.14591.6553.stgit@fedora15
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/apic.h      |    2 +-
- arch/x86/kernel/apic/bigsmp_32.c |   20 ++++++++++++++++----
- arch/x86/kernel/apic/probe_32.c  |   10 ++--------
- 3 files changed, 19 insertions(+), 13 deletions(-)
+ kernel/trace/trace_kprobe.c |   58 +++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 49 insertions(+), 9 deletions(-)
 
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -495,7 +495,7 @@ static inline void default_wait_for_init
- 	return;
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -836,11 +836,17 @@ static void __unregister_trace_probe(str
  }
  
--extern struct apic *generic_bigsmp_probe(void);
-+extern void generic_bigsmp_probe(void);
- 
- 
- #ifdef CONFIG_X86_LOCAL_APIC
---- a/arch/x86/kernel/apic/bigsmp_32.c
-+++ b/arch/x86/kernel/apic/bigsmp_32.c
-@@ -255,12 +255,24 @@ static struct apic apic_bigsmp = {
- 	.x86_32_early_logical_apicid	= bigsmp_early_logical_apicid,
- };
- 
--struct apic * __init generic_bigsmp_probe(void)
-+void __init generic_bigsmp_probe(void)
+ /* Unregister a trace_probe and probe_event: call with locking probe_lock */
+-static void unregister_trace_probe(struct trace_probe *tp)
++static int unregister_trace_probe(struct trace_probe *tp)
  {
--	if (probe_bigsmp())
--		return &apic_bigsmp;
-+	unsigned int cpu;
- 
--	return NULL;
-+	if (!probe_bigsmp())
-+		return;
++	/* Enabled event can not be unregistered */
++	if (trace_probe_is_enabled(tp))
++		return -EBUSY;
 +
-+	apic = &apic_bigsmp;
+ 	__unregister_trace_probe(tp);
+ 	list_del(&tp->list);
+ 	unregister_probe_event(tp);
 +
-+	for_each_possible_cpu(cpu) {
-+		if (early_per_cpu(x86_cpu_to_logical_apicid,
-+				  cpu) == BAD_APICID)
-+			continue;
-+		early_per_cpu(x86_cpu_to_logical_apicid, cpu) =
-+			bigsmp_early_logical_apicid(cpu);
-+	}
-+
-+	pr_info("Overriding APIC driver with %s\n", apic_bigsmp.name);
++	return 0;
  }
  
- apic_driver(apic_bigsmp);
---- a/arch/x86/kernel/apic/probe_32.c
-+++ b/arch/x86/kernel/apic/probe_32.c
-@@ -200,14 +200,8 @@ void __init default_setup_apic_routing(v
- 	 * - we find more than 8 CPUs in acpi LAPIC listing with xAPIC support
- 	 */
+ /* Register a trace_probe and probe_event */
+@@ -854,7 +860,9 @@ static int register_trace_probe(struct t
+ 	/* Delete old (same name) event if exist */
+ 	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
+ 	if (old_tp) {
+-		unregister_trace_probe(old_tp);
++		ret = unregister_trace_probe(old_tp);
++		if (ret < 0)
++			goto end;
+ 		free_trace_probe(old_tp);
+ 	}
  
--	if (!cmdline_apic && apic == &apic_default) {
--		struct apic *bigsmp = generic_bigsmp_probe();
--		if (bigsmp) {
--			apic = bigsmp;
--			printk(KERN_INFO "Overriding APIC driver with %s\n",
--			       apic->name);
--		}
--	}
-+	if (!cmdline_apic && apic == &apic_default)
-+		generic_bigsmp_probe();
- #endif
+@@ -892,6 +900,7 @@ static int trace_probe_module_callback(s
+ 	mutex_lock(&probe_lock);
+ 	list_for_each_entry(tp, &probe_list, list) {
+ 		if (trace_probe_within_module(tp, mod)) {
++			/* Don't need to check busy - this should have gone. */
+ 			__unregister_trace_probe(tp);
+ 			ret = __register_trace_probe(tp);
+ 			if (ret)
+@@ -1205,10 +1214,11 @@ static int create_trace_probe(int argc,
+ 			return -ENOENT;
+ 		}
+ 		/* delete an event */
+-		unregister_trace_probe(tp);
+-		free_trace_probe(tp);
++		ret = unregister_trace_probe(tp);
++		if (ret == 0)
++			free_trace_probe(tp);
+ 		mutex_unlock(&probe_lock);
+-		return 0;
++		return ret;
+ 	}
  
- 	if (apic->setup_apic_routing)
+ 	if (argc < 2) {
+@@ -1317,18 +1327,29 @@ error:
+ 	return ret;
+ }
+ 
+-static void release_all_trace_probes(void)
++static int release_all_trace_probes(void)
+ {
+ 	struct trace_probe *tp;
++	int ret = 0;
+ 
+ 	mutex_lock(&probe_lock);
++	/* Ensure no probe is in use. */
++	list_for_each_entry(tp, &probe_list, list)
++		if (trace_probe_is_enabled(tp)) {
++			ret = -EBUSY;
++			goto end;
++		}
+ 	/* TODO: Use batch unregistration */
+ 	while (!list_empty(&probe_list)) {
+ 		tp = list_entry(probe_list.next, struct trace_probe, list);
+ 		unregister_trace_probe(tp);
+ 		free_trace_probe(tp);
+ 	}
++
++end:
+ 	mutex_unlock(&probe_lock);
++
++	return ret;
+ }
+ 
+ /* Probes listing interfaces */
+@@ -1380,9 +1401,13 @@ static const struct seq_operations probe
+ 
+ static int probes_open(struct inode *inode, struct file *file)
+ {
+-	if ((file->f_mode & FMODE_WRITE) &&
+-	    (file->f_flags & O_TRUNC))
+-		release_all_trace_probes();
++	int ret;
++
++	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
++		ret = release_all_trace_probes();
++		if (ret < 0)
++			return ret;
++	}
+ 
+ 	return seq_open(file, &probes_seq_op);
+ }
+@@ -2055,6 +2080,21 @@ static __init int kprobe_trace_self_test
+ 
+ 	ret = target(1, 2, 3, 4, 5, 6);
+ 
++	/* Disable trace points before removing it */
++	tp = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
++	if (WARN_ON_ONCE(tp == NULL)) {
++		pr_warning("error on getting test probe.\n");
++		warn++;
++	} else
++		disable_trace_probe(tp, TP_FLAG_TRACE);
++
++	tp = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
++	if (WARN_ON_ONCE(tp == NULL)) {
++		pr_warning("error on getting 2nd test probe.\n");
++		warn++;
++	} else
++		disable_trace_probe(tp, TP_FLAG_TRACE);
++
+ 	ret = command_trace_probe("-:testprobe");
+ 	if (WARN_ON_ONCE(ret)) {
+ 		pr_warning("error on deleting a probe.\n");
 
 
