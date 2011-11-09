@@ -1,118 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab1KID3N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 22:29:13 -0500
-Received: from nox.prolixium.com ([64.16.214.60]:42486 "EHLO nox.prolixium.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab1KID3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 22:29:11 -0500
-X-Greylist: delayed 1099 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 22:29:11 EST
-From: Mark Kamichoff <prox@prolixium.com>
-To: oliver@neukum.name, gregkh@suse.de
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Kamichoff <prox@prolixium.com>
-Date: Tue,  8 Nov 2011 22:10:00 -0500
-Message-Id: <1320808200-28209-1-git-send-email-prox@prolixium.com>
-X-Mailer: git-send-email 1.7.5.4
-X-SA-Exim-Connect-IP: 2001:48c8:1:12e:202:bcff:fe56:cb1a
-X-SA-Exim-Mail-From: prox@adria.prolixium.com
-Subject: [PATCH] net/usb: Misc. fixes for the LG-VL600 LTE USB modem
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
-X-SA-Exim-Scanned: Yes (on nox.prolixium.com)
+	id S1754931Ab1KIEGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 23:06:05 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:58349 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204Ab1KIEGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 23:06:02 -0500
+Date: Wed, 9 Nov 2011 12:05:54 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Valdis.Kletnieks@vt.edu
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [PATCH][RESEND] fix typo in crypto/Kconfig
+Message-ID: <20111109040554.GA19702@gondor.apana.org.au>
+References: <21323.1320648711@turing-police.cc.vt.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <21323.1320648711@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add checking for valid magic values (needed for stability in the event
-corrupted packets are received) and remove some other unneeded checks.
-Also, fix flagging device as WWAN (Bugzilla bug #39952).
+On Mon, Nov 07, 2011 at 01:51:51AM -0500, Valdis.Kletnieks@vt.edu wrote:
+> (Sent this a while back, I don't see it in next-20111104, so resending)
+> 
+> Fix a typo in the Kconfig file help text.
+> 
+> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
-Signed-off-by: Mark Kamichoff <prox@prolixium.com>
----
- drivers/net/usb/cdc_ether.c |    2 +-
- drivers/net/usb/lg-vl600.c  |   30 ++++++++++++++----------------
- 2 files changed, 15 insertions(+), 17 deletions(-)
+Your patch still does not apply:
 
-diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index c924ea2..99ed6eb 100644
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -567,7 +567,7 @@ static const struct usb_device_id	products [] = {
- {
- 	USB_DEVICE_AND_INTERFACE_INFO(0x1004, 0x61aa, USB_CLASS_COMM,
- 			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
--	.driver_info = (unsigned long)&wwan_info,
-+	.driver_info = 0,
- },
- 
- /*
-diff --git a/drivers/net/usb/lg-vl600.c b/drivers/net/usb/lg-vl600.c
-index d43db32..b975a39 100644
---- a/drivers/net/usb/lg-vl600.c
-+++ b/drivers/net/usb/lg-vl600.c
-@@ -144,10 +144,11 @@ static int vl600_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 	}
- 
- 	frame = (struct vl600_frame_hdr *) buf->data;
--	/* NOTE: Should check that frame->magic == 0x53544448?
--	 * Otherwise if we receive garbage at the beginning of the frame
--	 * we may end up allocating a huge buffer and saving all the
--	 * future incoming data into it.  */
-+	/* Yes, check that frame->magic == 0x53544448 (or 0x44544d48),
-+	 * otherwise we may run out of memory w/a bad packet */
-+	if (ntohl(frame->magic) != 0x53544448 &&
-+			ntohl(frame->magic) != 0x44544d48)
-+		goto error;
- 
- 	if (buf->len < sizeof(*frame) ||
- 			buf->len != le32_to_cpup(&frame->len)) {
-@@ -209,8 +210,9 @@ static int vl600_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 			 * for IPv6 packets, and set the ethertype to IPv6
- 			 * (0x86dd) so Linux can understand it.
- 			 */
--			if ((buf->data[sizeof(*ethhdr)] & 0xf0) == 0x60)
--				ethhdr->h_proto = __constant_htons(ETH_P_IPV6);
-+			if ((buf->data[sizeof(*ethhdr)] & 0xf0) == 0x60) {
-+				ethhdr->h_proto = htons(ETH_P_IPV6);
-+			}
- 		}
- 
- 		if (count) {
-@@ -296,6 +298,11 @@ encapsulate:
- 	 * overwrite the remaining fields.
- 	 */
- 	packet = (struct vl600_pkt_hdr *) skb->data;
-+	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
-+	 * Since this modem only supports IPv4 and IPv6, just set all
-+	 * frames to 0x0800 (ETH_P_IP)
-+	 */
-+	packet->h_proto = htons(ETH_P_IP);
- 	memset(&packet->dummy, 0, sizeof(packet->dummy));
- 	packet->len = cpu_to_le32(orig_len);
- 
-@@ -308,21 +315,12 @@ encapsulate:
- 	if (skb->len < full_len) /* Pad */
- 		skb_put(skb, full_len - skb->len);
- 
--	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
--	 * Check if this is an IPv6 packet, and set the ethertype
--	 * to 0x800
--	 */
--	if ((skb->data[sizeof(struct vl600_pkt_hdr *) + 0x22] & 0xf0) == 0x60) {
--		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x20] = 0x08;
--		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x21] = 0;
--	}
--
- 	return skb;
- }
- 
- static const struct driver_info	vl600_info = {
- 	.description	= "LG VL600 modem",
--	.flags		= FLAG_ETHER | FLAG_RX_ASSEMBLE,
-+	.flags		= FLAG_RX_ASSEMBLE | FLAG_WWAN,
- 	.bind		= vl600_bind,
- 	.unbind		= vl600_unbind,
- 	.status		= usbnet_cdc_status,
+$ git apply ~/p
+error: patch failed: crypto/Kconfig:104
+error: crypto/Kconfig: patch does not apply
+$ 
+
+Thanks,
 -- 
-1.7.5.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
