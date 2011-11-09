@@ -1,101 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab1KINb2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 08:31:28 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35303 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab1KINb1 (ORCPT
+	id S1752838Ab1KINcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 08:32:51 -0500
+Received: from smtp.eu.citrix.com ([62.200.22.115]:29421 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1KINcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 08:31:27 -0500
-Message-ID: <4EBA80AC.30604@gmail.com>
-Date: Wed, 09 Nov 2011 07:31:24 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 6/8] of: add clock providers
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca> <20111109091328.GY16886@pengutronix.de>
-In-Reply-To: <20111109091328.GY16886@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Nov 2011 08:32:50 -0500
+X-IronPort-AV: E=Sophos;i="4.69,484,1315180800"; 
+   d="scan'208";a="8840177"
+Subject: Re: [Xen-devel] [PATCH 2/3] Grant tables v2 implementation.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: "annie.li@oracle.com" <annie.li@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>
+Date: Wed, 9 Nov 2011 13:32:48 +0000
+In-Reply-To: <1320826541-29398-1-git-send-email-annie.li@oracle.com>
+References: <4EBA35D3.3020506@oracle.com>
+	 <1320826541-29398-1-git-send-email-annie.li@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1320845568.955.134.camel@zakaz.uk.xensource.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 03:13 AM, Sascha Hauer wrote:
-> On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
->> Based on work by Ben Herrenschmidt and Jeremy Kerr, this patch adds an
->> of_clk_get function to allow platforms to retrieve clock data from the
->> device tree.
->>
->> Platform register a provider through of_clk_add_provider, which will be
->> called when a device references the provider's OF node for a clock
->> reference.
->>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> ---
->>  .../devicetree/bindings/clock/clock-bindings.txt   |  109 +++++++++++++++++
->>  drivers/of/Kconfig                                 |    6 +
->>  drivers/of/Makefile                                |    1 +
->>  drivers/of/clock.c                                 |  129 ++++++++++++++++++++
->>  include/linux/of_clk.h                             |   37 ++++++
->>  5 files changed, 282 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/clock/clock-bindings.txt
->>  create mode 100644 drivers/of/clock.c
->>  create mode 100644 include/linux/of_clk.h
->>
->> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> new file mode 100644
->> index 0000000..4770c7e
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
->> @@ -0,0 +1,109 @@
->> +This binding is a work-in-progress, and are based on some experimental
->> +work by benh[1].
->> +
->> +Sources of clock signal can be represented by any node in the device
->> +tree.  Those nodes are designated as clock providers.  Clock consumer
->> +nodes use a phandle and clock specifier pair to connect clock provider
->> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
->> +specifier is an array of one more more cells identifying the clock
->> +output on a device.  The length of a clock specifier is defined by the
->> +value of a #clock-cells property in the clock provider node.
->> +
->> +[1] http://patchwork.ozlabs.org/patch/31551/
->> +
->> +==Clock providers==
->> +
->> +Required properties:
->> +#clock-cells:	   Number of cells in a clock specifier; typically will be
->> +		   set to 1
->> +
->> +Optional properties:
->> +clock-output-name: Recommended to be a list of strings of clock output signal
->> +		   names indexed by the first cell in the clock specifier.
->> +		   However, the meaning of clock-output-names is domain
->> +		   specific to the clock provider, and is only provided to
->> +		   encourage using the same meaning for the majority of clock
->> +		   providers.  This format may not work for clock providers
->> +		   using a complex clock specifier format.  In those cases it
->> +		   is recommended to omit this property and create a binding
->> +		   specific names property.
+On Wed, 2011-11-09 at 08:15 +0000, annie.li@oracle.com wrote:
+> From: Annie Li <annie.li@oracle.com>
 > 
-> If the clock-output-name property is omitted, does this mean a clock
-> provider only has a single output or does it mean that it's not known
-> how many clock outputs a provider actually has?
+> Receiver-side copying of packets is based on this implementation, it gives
+> better performance and better CPU accounting. It totally supports three types:
+> full-page, sub-page and transitive grants.
+> 
+> However this patch does not cover sub-page and transitive grants, it mainly
+> focus on Full-page part and implements grant table V2 interfaces corresponding
+> to what already exists in grant table V1, such as: grant table V2
+> initialization, mapping, releasing and exported interfaces.
+> 
+> Each guest can only supports one type of grant table type, every entry in grant
+> table should be the same version. It is necessary to set V1 or V2 version before
+> initializing the grant table.
+> 
+> Grant table exported interfaces of V2 are same with those of V1, Xen is
+> responsible to judge what grant table version guests are using in every grant
+> operation.
+> 
+> V2 fulfills the same role of V1, and it is totally backwards compitable with V1.
+> If dom0 support grant table V2, the guests runing on it can run with either V1
+> or V2.
+> 
+> Signed-off-by: Annie Li <annie.li@oracle.com>
+> ---
+>  arch/x86/xen/grant-table.c |   34 ++++++++-
+>  drivers/xen/grant-table.c  |  194 +++++++++++++++++++++++++++++++++++++++++---
+>  include/xen/grant_table.h  |    6 +-
+>  3 files changed, 220 insertions(+), 14 deletions(-)
+> 
+> diff --git a/arch/x86/xen/grant-table.c b/arch/x86/xen/grant-table.c
+> index 65ce508..3e9f936 100644
+> --- a/arch/x86/xen/grant-table.c
+> +++ b/arch/x86/xen/grant-table.c
+> @@ -54,6 +54,17 @@ static int map_pte_fn(pte_t *pte, struct page *pmd_page,
+>         return 0;
+>  }
+> 
+> +/*32bits is not enough since Xen supports sparse physical memory*/
 
-Neither. It's similar to how interrupt bindings work. For a clock
-consumer, you have a phandle to the parent and some number of cells to
-describe the connection. Often this is just the index or local interrupt
-number. Obviously, interrupt numbers make more sense than clock numbers,
-so having names is more useful in the clocks case if you have many outputs.
+What does this mean?
 
-The name strings are just additional information. Keep in mind that the
-clock node name can also be used if you need to attach a name to a clock.
+> +static int map_pte_fn_status(pte_t *pte, struct page *pmd_page,
+> +                            unsigned long addr, void *data)
+> +{
+> +       uint64_t **frames = (uint64_t **)data;
+> +
+> +       set_pte_at(&init_mm, addr, pte, mfn_pte((*frames)[0], PAGE_KERNEL));
+> +       (*frames)++;
+> +       return 0;
+> +}
 
-Rob
+Isn't this function identical to map_pte_fn?
+
+> +
+>  static int unmap_pte_fn(pte_t *pte, struct page *pmd_page,
+>                         unsigned long addr, void *data)
+>  {
+
+> @@ -630,6 +756,44 @@ static int gnttab_map_status_v1(unsigned int nr_gframes)
+>         return 0;
+>  }
+> 
+> +static int gnttab_map_status_v2(unsigned int nr_gframes)
+> +{
+> +       uint64_t *sframes;
+> +       unsigned int nr_sframes;
+> +       struct gnttab_get_status_frames getframes;
+> +       int rc;
+> +
+> +       nr_sframes = nr_status_frames(nr_gframes);
+> +
+> +       /* No need for kzalloc as it is initialized in following hyercall
+
+                                                                   hypercall
+
+> +        * GNTTABOP_get_status_frames.
+> +        */
+> +       sframes = kmalloc(nr_sframes  * sizeof(uint64_t), GFP_ATOMIC);
+> +       if (!sframes)
+> +               return -ENOMEM;
+> +
+> +       getframes.dom        = DOMID_SELF;
+> +       getframes.nr_frames  = nr_sframes;
+> +       set_xen_guest_handle(getframes.frame_list, sframes);
+> +
+> +       rc = HYPERVISOR_grant_table_op(GNTTABOP_get_status_frames,
+> +                                      &getframes, 1);
+> +       if (rc == -ENOSYS) {
+> +               kfree(sframes);
+> +               return -ENOSYS;
+> +       }
+> +
+> +       BUG_ON(rc || getframes.status);
+> +
+> +       rc = arch_gnttab_map_status(sframes, nr_sframes,
+> +                                   nr_status_frames(gnttab_max_grant_frames()),
+> +                                   &grstatus);
+> +       BUG_ON(rc);
+> +       kfree(sframes);
+> +
+> +       return 0;
+> +}
+> +
+>  static int gnttab_map_status(unsigned int nr_gframes)
+>  {
+>         return gnttab_interface._gnttab_map_status(nr_gframes);
+> @@ -666,6 +830,9 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+>                 return rc;
+>         }
+> 
+> +       /* No need for kzalloc as it is initialized in following hyercall
+
+"hypercall" again
+
+Ian.
+
 
