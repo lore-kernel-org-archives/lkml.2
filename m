@@ -1,356 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab1KIFTG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 00:19:06 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:35808 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab1KIFTE (ORCPT
+	id S1751562Ab1KIF0J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 00:26:09 -0500
+Received: from ams-iport-3.cisco.com ([144.254.224.146]:43300 "EHLO
+	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab1KIF0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 00:19:04 -0500
-Message-ID: <4EBA0D3D.1090808@gmail.com>
-Date: Wed, 09 Nov 2011 13:18:53 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 9 Nov 2011 00:26:07 -0500
+X-IronPort-AV: E=Sophos;i="4.69,481,1315180800"; 
+   d="scan'208";a="2686989"
+Date: Wed, 9 Nov 2011 10:56:07 +0530
+From: Maneesh Soni <manesoni@cisco.com>
+To: David Daney <david.daney@cavium.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        "ananth@in.ibm.com" <ananth@in.ibm.com>,
+        "kamensky@cisco.com" <kamensky@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 1/4] MIPS Kprobes: Fix OOPS in arch_prepare_kprobe()
+Message-ID: <20111109052607.GA20317@cisco.com>
+Reply-To: manesoni@cisco.com
+References: <20111108170336.GA16526@cisco.com>
+ <20111108170454.GB16526@cisco.com>
+ <4EB989B9.2060904@cavium.com>
 MIME-Version: 1.0
-To: yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] cleanup: convert the int cnt to unsigned long in
- mm/memblock.c
-References: <4EB9DF0B.7050004@gmail.com>
-In-Reply-To: <4EB9DF0B.7050004@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB989B9.2060904@cavium.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011年11月09日 10:01, Wang Sheng-Hui wrote:
-> We have the following definition in memblock.h:
-> struct memblock_type {
->     unsigned long cnt;  /* number of regions */
->     unsigned long max;  /* size of the allocated array */
->     struct memblock_region *regions;
-> };
+On Tue, Nov 08, 2011 at 11:57:45AM -0800, David Daney wrote:
+> On 11/08/2011 09:04 AM, Maneesh Soni wrote:
+> [...]
+> >
+> >diff --git a/arch/mips/kernel/kprobes.c b/arch/mips/kernel/kprobes.c
+> >index ee28683..9fb1876 100644
+> >--- a/arch/mips/kernel/kprobes.c
+> >+++ b/arch/mips/kernel/kprobes.c
+> >@@ -25,6 +25,7 @@
+> >
+> >  #include<linux/kprobes.h>
+> >  #include<linux/preempt.h>
+> >+#include<linux/uaccess.h>
+> >  #include<linux/kdebug.h>
+> >  #include<linux/slab.h>
+> >
+> >@@ -118,11 +119,19 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+> >  	union mips_instruction prev_insn;
+> >  	int ret = 0;
+> >
+> >-	prev_insn = p->addr[-1];
+> >  	insn = p->addr[0];
+> >
+> >-	if (insn_has_delayslot(insn) || insn_has_delayslot(prev_insn)) {
+> >-		pr_notice("Kprobes for branch and jump instructions are not supported\n");
+> >+	if (insn_has_delayslot(insn)) {
+> >+		pr_notice("Kprobes for branch and jump instructions are not"
+> >+			  "supported\n");
 > 
-> But in memblock.c, some cnt/max vars are typed to int
-> instead of unsigned long.
-> This patch does the code cleanup.
+> Don't wrap these strings.
 > 
+> It is better to go a little bit over 80 columns, than have this.
 > 
-> Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
-> ---
->  mm/memblock.c |   38 +++++++++++++++++++++-----------------
->  1 files changed, 21 insertions(+), 17 deletions(-)
-> 
-> diff --git a/mm/memblock.c b/mm/memblock.c
-> index 4d4d5ee..3618241 100644
-> --- a/mm/memblock.c
-> +++ b/mm/memblock.c
-> @@ -52,13 +52,14 @@ static phys_addr_t __init_memblock memblock_align_up(phys_addr_t addr, phys_addr
->  	return (addr + (size - 1)) & ~(size - 1);
->  }
->  
-> -static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
-> -				       phys_addr_t base2, phys_addr_t size2)
-> +static int __init_memblock memblock_addrs_overlap(phys_addr_t base1,
-> +		phys_addr_t size1, phys_addr_t base2, phys_addr_t size2)
->  {
->  	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
->  }
->  
-> -long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-> +long __init_memblock memblock_overlaps_region(struct memblock_type *type,
-> +				       phys_addr_t base, phys_addr_t size)
->  {
->  	unsigned long i;
->  
-> @@ -111,7 +112,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
->  static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
->  			phys_addr_t align, phys_addr_t start, phys_addr_t end)
->  {
-> -	long i;
-> +	unsigned long i;
->  
->  	BUG_ON(0 == size);
->  
-> @@ -199,7 +200,8 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
->  static int __init_memblock memblock_double_array(struct memblock_type *type)
->  {
->  	struct memblock_region *new_array, *old_array;
-> -	phys_addr_t old_size, new_size, addr;
-> +	phys_addr_t addr;
-> +	unsigned long old_size, new_size;
->  	int use_slab = slab_is_available();
->  
->  	/* We don't allow resizing until we know about the reserved regions
-> @@ -277,7 +279,8 @@ static long __init_memblock memblock_add_region(struct memblock_type *type,
->  						phys_addr_t base, phys_addr_t size)
->  {
->  	phys_addr_t end = base + size;
-> -	int i, slot = -1;
-> +	long slot = -1;
-> +	unsigned long i;
->  
->  	/* First try and coalesce this MEMBLOCK with others */
->  	for (i = 0; i < type->cnt; i++) {
-> @@ -413,7 +416,7 @@ static long __init_memblock __memblock_remove(struct memblock_type *type,
->  					      phys_addr_t base, phys_addr_t size)
->  {
->  	phys_addr_t end = base + size;
-> -	int i;
-> +	unsigned long i;
->  
->  	/* Walk through the array for collisions */
->  	for (i = 0; i < type->cnt; i++) {
-> @@ -583,7 +586,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
->  phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
->  {
->  	struct memblock_type *mem = &memblock.memory;
-> -	int i;
-> +	unsigned long i;
->  
->  	BUG_ON(0 == size);
->  
-> @@ -628,7 +631,7 @@ phys_addr_t __init memblock_phys_mem_size(void)
->  
->  phys_addr_t __init_memblock memblock_end_of_DRAM(void)
->  {
-> -	int idx = memblock.memory.cnt - 1;
-> +	unsigned long idx = memblock.memory.cnt - 1;
->  
->  	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
->  }
-> @@ -674,12 +677,13 @@ void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
->  	}
->  }
->  
-> -static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
-> +static long __init_memblock memblock_search(struct memblock_type *type,
-> +					    phys_addr_t addr)
->  {
-> -	unsigned int left = 0, right = type->cnt;
-> +	unsigned long left = 0, right = type->cnt;
->  
->  	do {
-> -		unsigned int mid = (right + left) / 2;
-> +		unsigned long mid = (right + left) / 2;
->  
->  		if (addr < type->regions[mid].base)
->  			right = mid;
-> @@ -704,7 +708,7 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
->  
->  int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
->  {
-> -	int idx = memblock_search(&memblock.memory, base);
-> +	long idx = memblock_search(&memblock.memory, base);
->  
->  	if (idx == -1)
->  		return 0;
-> @@ -727,7 +731,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
->  static void __init_memblock memblock_dump(struct memblock_type *region, char *name)
->  {
->  	unsigned long long base, size;
-> -	int i;
-> +	unsigned long i;
->  
->  	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
->  
-> @@ -735,7 +739,7 @@ static void __init_memblock memblock_dump(struct memblock_type *region, char *na
->  		base = region->regions[i].base;
->  		size = region->regions[i].size;
->  
-> -		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes\n",
-> +		pr_info(" %s[%#lx]\t[%#016llx-%#016llx], %#llx bytes\n",
->  		    name, i, base, base + size - 1, size);
->  	}
->  }
-> @@ -754,7 +758,7 @@ void __init_memblock memblock_dump_all(void)
->  
->  void __init memblock_analyze(void)
->  {
-> -	int i;
-> +	unsigned long i;
->  
->  	/* Check marker in the unused last array entry */
->  	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
-> @@ -818,7 +822,7 @@ static int memblock_debug_show(struct seq_file *m, void *private)
->  {
->  	struct memblock_type *type = m->private;
->  	struct memblock_region *reg;
-> -	int i;
-> +	unsigned long i;
->  
->  	for (i = 0; i < type->cnt; i++) {
->  		reg = &type->regions[i];
+> David Daney
 
-Sorry, missed one line. Fixed it. New patch generated.
+Ok.. will keep that in mind for future patches. This line actually
+goes away in patch 4/4.
 
-
->From 35ba6e1cf87c670710282793025d5113865c4ef5 Mon Sep 17 00:00:00 2001
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-Date: Wed, 9 Nov 2011 13:15:54 +0800
-Subject: [PATCH 2/2] cleanup: convert the int cnt to unsigned long in mm/memblock.c
-
-We have the following definition in memblock.h:
-struct memblock_type {
-    unsigned long cnt;  /* number of regions */
-    unsigned long max;  /* size of the allocated array */
-    struct memblock_region *regions;
-};
-
-But in memblock.c, some cnt/max vars are typed to int
-instead of unsigned long.
-This patch does the code cleanup.
-
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- mm/memblock.c |   40 ++++++++++++++++++++++------------------
- 1 files changed, 22 insertions(+), 18 deletions(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 4d4d5ee..09ff05b 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -52,13 +52,14 @@ static phys_addr_t __init_memblock memblock_align_up(phys_addr_t addr, phys_addr
- 	return (addr + (size - 1)) & ~(size - 1);
- }
- 
--static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
--				       phys_addr_t base2, phys_addr_t size2)
-+static int __init_memblock memblock_addrs_overlap(phys_addr_t base1,
-+		phys_addr_t size1, phys_addr_t base2, phys_addr_t size2)
- {
- 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
- }
- 
--long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+long __init_memblock memblock_overlaps_region(struct memblock_type *type,
-+				       phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long i;
- 
-@@ -111,7 +112,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
- static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
- 			phys_addr_t align, phys_addr_t start, phys_addr_t end)
- {
--	long i;
-+	unsigned long i;
- 
- 	BUG_ON(0 == size);
- 
-@@ -199,7 +200,8 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
- static int __init_memblock memblock_double_array(struct memblock_type *type)
- {
- 	struct memblock_region *new_array, *old_array;
--	phys_addr_t old_size, new_size, addr;
-+	phys_addr_t addr;
-+	unsigned long old_size, new_size;
- 	int use_slab = slab_is_available();
- 
- 	/* We don't allow resizing until we know about the reserved regions
-@@ -277,7 +279,8 @@ static long __init_memblock memblock_add_region(struct memblock_type *type,
- 						phys_addr_t base, phys_addr_t size)
- {
- 	phys_addr_t end = base + size;
--	int i, slot = -1;
-+	long slot = -1;
-+	unsigned long i;
- 
- 	/* First try and coalesce this MEMBLOCK with others */
- 	for (i = 0; i < type->cnt; i++) {
-@@ -413,7 +416,7 @@ static long __init_memblock __memblock_remove(struct memblock_type *type,
- 					      phys_addr_t base, phys_addr_t size)
- {
- 	phys_addr_t end = base + size;
--	int i;
-+	unsigned long i;
- 
- 	/* Walk through the array for collisions */
- 	for (i = 0; i < type->cnt; i++) {
-@@ -583,7 +586,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
- phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
- {
- 	struct memblock_type *mem = &memblock.memory;
--	int i;
-+	unsigned long i;
- 
- 	BUG_ON(0 == size);
- 
-@@ -628,7 +631,7 @@ phys_addr_t __init memblock_phys_mem_size(void)
- 
- phys_addr_t __init_memblock memblock_end_of_DRAM(void)
- {
--	int idx = memblock.memory.cnt - 1;
-+	unsigned long idx = memblock.memory.cnt - 1;
- 
- 	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
- }
-@@ -674,12 +677,13 @@ void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
- 	}
- }
- 
--static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
-+static long __init_memblock memblock_search(struct memblock_type *type,
-+					    phys_addr_t addr)
- {
--	unsigned int left = 0, right = type->cnt;
-+	unsigned long left = 0, right = type->cnt;
- 
- 	do {
--		unsigned int mid = (right + left) / 2;
-+		unsigned long mid = (right + left) / 2;
- 
- 		if (addr < type->regions[mid].base)
- 			right = mid;
-@@ -704,7 +708,7 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
- 
- int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
- {
--	int idx = memblock_search(&memblock.memory, base);
-+	long idx = memblock_search(&memblock.memory, base);
- 
- 	if (idx == -1)
- 		return 0;
-@@ -727,7 +731,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- static void __init_memblock memblock_dump(struct memblock_type *region, char *name)
- {
- 	unsigned long long base, size;
--	int i;
-+	unsigned long i;
- 
- 	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
- 
-@@ -735,7 +739,7 @@ static void __init_memblock memblock_dump(struct memblock_type *region, char *na
- 		base = region->regions[i].base;
- 		size = region->regions[i].size;
- 
--		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes\n",
-+		pr_info(" %s[%#lx]\t[%#016llx-%#016llx], %#llx bytes\n",
- 		    name, i, base, base + size - 1, size);
- 	}
- }
-@@ -754,7 +758,7 @@ void __init_memblock memblock_dump_all(void)
- 
- void __init memblock_analyze(void)
- {
--	int i;
-+	unsigned long i;
- 
- 	/* Check marker in the unused last array entry */
- 	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
-@@ -818,11 +822,11 @@ static int memblock_debug_show(struct seq_file *m, void *private)
- {
- 	struct memblock_type *type = m->private;
- 	struct memblock_region *reg;
--	int i;
-+	unsigned long i;
- 
- 	for (i = 0; i < type->cnt; i++) {
- 		reg = &type->regions[i];
--		seq_printf(m, "%4d: ", i);
-+		seq_printf(m, "%4ld: ", i);
- 		if (sizeof(phys_addr_t) == 4)
- 			seq_printf(m, "0x%08lx..0x%08lx\n",
- 				   (unsigned long)reg->base,
--- 
-1.7.1
-
+Thanks
+Maneesh
