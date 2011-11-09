@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109Ab1KIVA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 16:00:58 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53995 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932781Ab1KIVA5 (ORCPT
+	id S1756778Ab1KIVBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 16:01:20 -0500
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:9185 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753104Ab1KIVBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 16:00:57 -0500
-Date: Wed, 9 Nov 2011 22:00:52 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: fix size decoding error on K8
-Message-ID: <20111109210052.GJ14181@aftab>
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
- <20111109144258.GD30472@aftab>
- <4EBA98A1.90902@ericsson.com>
- <20111109203546.GI14181@aftab>
- <CA+8MBbLuhhTZW9vB7GvLCd8Uu7bgfUqkO7wu4=Pt7EWyQx0LrQ@mail.gmail.com>
+	Wed, 9 Nov 2011 16:01:18 -0500
+Date: Wed, 9 Nov 2011 13:01:18 -0800 (PST)
+From: Andrei Warkentin <awarkentin@vmware.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Message-ID: <820243891.352129.1320872478210.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <51331881.351549.1320871450391.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+Subject: /dev/mem "unbounded?"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+8MBbLuhhTZW9vB7GvLCd8Uu7bgfUqkO7wu4=Pt7EWyQx0LrQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.113.61.162]
+X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 12:50:42PM -0800, Tony Luck wrote:
-> On Wed, Nov 9, 2011 at 12:35 PM, Borislav Petkov <bp@amd64.org> wrote:
-> > +               diff = cs_mode / 3 + (unsigned)(cs_mode > 5);
-> > +
-> > +               return 32 << (cs_mode - diff);
-> 
-> Code is correct - but looks like an entry for an obfuscated C
-> competition.
+Dear LKML,
 
-I know, right?! Especially casting the boolean to an unsigned int. Yuck!
-But it is compact the stupid thing.
+In the previous kernels, valid_phys_addr_range was not
+defined for x86, and used the static variant which
+returned 0 if access went above __pa(high_memory).
 
-> Perhaps it deserves a comment!
+Current behavior, though, relies on the x86 variant
+of valid_phys_addr_range, defined in arch/x86/include/asm/io.h,
+that always returns 1, hence, reading will never end since there
+won't be any condition (barring an MCE on physical hardware) that
+would say "Bad Address". Is this supposed to be by design?
 
-Sure it does, will do.
+How about exposing the "top" allocated resource address from 
+linux/kernel/resource.c? That way /dev/mem will know when
+all the "interesting" bits end, and can return -EFAULT for
+everything above that.
 
-Thanks.
+Thanks,
+A
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
