@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412Ab1KJDYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:24:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42054 "EHLO mx2.suse.de"
+	id S934477Ab1KJDY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:24:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42097 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933980Ab1KJDYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
-Message-Id: <20111109212709.441682153@clark.kroah.org>
+	id S933985Ab1KJDYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:54 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:07 2011
+Message-Id: <20111109212706.992069651@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:51 -0800
+Date: Wed, 09 Nov 2011 13:26:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ian Campbell <ian.campbell@citrix.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        xen-devel <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [089/262] genirq: Add IRQF_RESUME_EARLY and resume such IRQs earlier
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [066/262] xen-pcifront: Update warning comment to use e820_host option.
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,140 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit 9bab0b7fbaceec47d32db51cd9e59c82fb071f5a upstream.
+commit 917e3e65c35459d52f0d0b890aa5df0cad07a051 upstream.
 
-This adds a mechanism to resume selected IRQs during syscore_resume
-instead of dpm_resume_noirq.
+With Xen changeset 23428 "libxl: Add 'e820_host' option to config file"
+the E820 as seen from the host can now be passed into the guest.
+This means that a PV guest can now:
+ - Use the correct PCI I/O gap. Before these patches, Linux guest would
+   boot up and would tell:
+   [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:c0000000)
+   while in actuality the PCI I/O gap should have been:
+   [    0.000000] Allocating PCI resources starting at b0000000 (gap: b0000000:4c000000)
 
-Under Xen we need to resume IRQs associated with IPIs early enough
-that the resched IPI is unmasked and we can therefore schedule
-ourselves out of the stop_machine where the suspend/resume takes
-place.
+ - The PV domain with PCI devices was limited to 3GB. It now can be booted
+   with 4GB, 8GB, or whatever number you want. The PCI devices will now _not_ conflict
+   with System RAM. Meaning the drivers can load.
 
-This issue was introduced by 676dc3cf5bc3 "xen: Use IRQF_FORCE_RESUME".
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Cc: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Cc: xen-devel <xen-devel@lists.xensource.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1318713254.11016.52.camel@dagon.hellion.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org
+[v2: Made the string less broken up. Suggested by Joe Perches]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/events.c      |    2 -
- include/linux/interrupt.h |    3 ++
- kernel/irq/pm.c           |   48 +++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 45 insertions(+), 8 deletions(-)
+ drivers/pci/xen-pcifront.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1026,7 +1026,7 @@ int bind_ipi_to_irqhandler(enum ipi_vect
- 	if (irq < 0)
- 		return irq;
- 
--	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME;
-+	irqflags |= IRQF_NO_SUSPEND | IRQF_FORCE_RESUME | IRQF_EARLY_RESUME;
- 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
- 	if (retval != 0) {
- 		unbind_from_irq(irq);
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -59,6 +59,8 @@
-  * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-  * IRQF_FORCE_RESUME - Force enable it on resume even if IRQF_NO_SUSPEND is set
-  * IRQF_NO_THREAD - Interrupt cannot be threaded
-+ * IRQF_EARLY_RESUME - Resume IRQ early during syscore instead of at device
-+ *                resume time.
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
-@@ -72,6 +74,7 @@
- #define IRQF_NO_SUSPEND		0x00004000
- #define IRQF_FORCE_RESUME	0x00008000
- #define IRQF_NO_THREAD		0x00010000
-+#define IRQF_EARLY_RESUME	0x00020000
- 
- #define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND | IRQF_NO_THREAD)
- 
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -9,6 +9,7 @@
- #include <linux/irq.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
-+#include <linux/syscore_ops.h>
- 
- #include "internals.h"
- 
-@@ -39,25 +40,58 @@ void suspend_device_irqs(void)
- }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
- 
--/**
-- * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-- *
-- * Enable all interrupt lines previously disabled by suspend_device_irqs() that
-- * have the IRQS_SUSPENDED flag set.
-- */
--void resume_device_irqs(void)
-+static void resume_irqs(bool want_early)
- {
- 	struct irq_desc *desc;
- 	int irq;
- 
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
-+		bool is_early = desc->action &&
-+			desc->action->flags & IRQF_EARLY_RESUME;
-+
-+		if (is_early != want_early)
-+			continue;
- 
- 		raw_spin_lock_irqsave(&desc->lock, flags);
- 		__enable_irq(desc, irq, true);
- 		raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	}
- }
-+
-+/**
-+ * irq_pm_syscore_ops - enable interrupt lines early
-+ *
-+ * Enable all interrupt lines with %IRQF_EARLY_RESUME set.
-+ */
-+static void irq_pm_syscore_resume(void)
-+{
-+	resume_irqs(true);
-+}
-+
-+static struct syscore_ops irq_pm_syscore_ops = {
-+	.resume		= irq_pm_syscore_resume,
-+};
-+
-+static int __init irq_pm_init_ops(void)
-+{
-+	register_syscore_ops(&irq_pm_syscore_ops);
-+	return 0;
-+}
-+
-+device_initcall(irq_pm_init_ops);
-+
-+/**
-+ * resume_device_irqs - enable interrupt lines disabled by suspend_device_irqs()
-+ *
-+ * Enable all non-%IRQF_EARLY_RESUME interrupt lines previously
-+ * disabled by suspend_device_irqs() that have the IRQS_SUSPENDED flag
-+ * set as well as those with %IRQF_FORCE_RESUME.
-+ */
-+void resume_device_irqs(void)
-+{
-+	resume_irqs(false);
-+}
- EXPORT_SYMBOL_GPL(resume_device_irqs);
- 
- /**
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -400,9 +400,8 @@ static int pcifront_claim_resource(struc
+ 			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+ 				pci_name(dev), i);
+ 			if (pci_claim_resource(dev, i)) {
+-				dev_err(&pdev->xdev->dev, "Could not claim "
+-					"resource %s/%d! Device offline. Try "
+-					"giving less than 4GB to domain.\n",
++				dev_err(&pdev->xdev->dev, "Could not claim resource %s/%d! "
++					"Device offline. Try using e820_host=1 in the guest config.\n",
+ 					pci_name(dev), i);
+ 			}
+ 		}
 
 
