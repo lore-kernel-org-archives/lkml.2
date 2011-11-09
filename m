@@ -1,69 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541Ab1KIBPf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 20:15:35 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42495 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750816Ab1KIBPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 20:15:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	eLa1p5EUyv2fsK9X/z1oVRrBHsmQoC+lWaOkT8iCf/nLB0OptWccAlkjBgSz91wt
-	sNpjKABSoYqQUW0qfJfTB7Q6/+lb9RcNt4r8nI/qhU2F81Lj9aBH9nxtyPVnMaCo
-	RgkccoBUrlcrRlhJlvag162CEkpxKfYEtVyouNO2oxo=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.7.3
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Nov 2011 17:15:31 -0800
-Message-ID: <7vsjlyw0y4.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751717Ab1KIBRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 20:17:08 -0500
+Received: from claw.goop.org ([74.207.240.146]:56314 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab1KIBRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 20:17:06 -0500
+Message-ID: <4EB9D48F.5010201@goop.org>
+Date: Tue, 08 Nov 2011 17:17:03 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: 523E347E-0A70-11E1-9188-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>
+CC: the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [GIT PULL] More cleanups for atomic memory operations/spinlocks
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.7.3 is available.
+I forgot to push these for the just-closed merge window, but they're
+fine for the next one.  Could you find them a home in tip.git?
 
-The release tarballs are found at:
+Thanks,
+    J
 
-    http://code.google.com/p/git-core/downloads/list
+The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
 
-and their SHA-1 checksums are:
+  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
 
-382ee40da74a1b4a1875820c0f0a35c9ccd750f8  git-1.7.7.3.tar.gz
-bc0f89cb04e562e4a6d3b936382dbc8f593d861f  git-htmldocs-1.7.7.3.tar.gz
-cf1b0d35e2d242bc4cffce3b2bf5b3e32857b395  git-manpages-1.7.7.3.tar.gz
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/ticketlock-cleanup
 
-Also the following public repositories all have a copy of the v1.7.7.3
-tag and the maint branch that the tag points at:
+Jeremy Fitzhardinge (2):
+      x86/cmpxchg: add a locked add() helper
+      x86: consolidate xchg and xadd macros
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+ arch/x86/include/asm/cmpxchg.h  |  140 +++++++++++++++++++-------------------
+ arch/x86/include/asm/spinlock.h |   15 +----
+ 2 files changed, 71 insertions(+), 84 deletions(-)
 
-----------------------------------------------------------------
+diff --git a/arch/x86/include/asm/cmpxchg.h b/arch/x86/include/asm/cmpxchg.h
+index 5d3acdf..5488e10 100644
+--- a/arch/x86/include/asm/cmpxchg.h
++++ b/arch/x86/include/asm/cmpxchg.h
+@@ -14,6 +14,8 @@ extern void __cmpxchg_wrong_size(void)
+ 	__compiletime_error("Bad argument size for cmpxchg");
+ extern void __xadd_wrong_size(void)
+ 	__compiletime_error("Bad argument size for xadd");
++extern void __add_wrong_size(void)
++	__compiletime_error("Bad argument size for add");
+ 
+ /*
+  * Constants for operation sizes. On 32-bit, the 64-bit size it set to
+@@ -31,60 +33,47 @@ extern void __xadd_wrong_size(void)
+ #define	__X86_CASE_Q	-1		/* sizeof will never return -1 */
+ #endif
+ 
++/* 
++ * An exchange-type operation, which takes a value and a pointer, and
++ * returns a the old value.
++ */
++#define __xchg_op(ptr, arg, op, lock)					\
++	({								\
++	        __typeof__ (*(ptr)) __ret = (arg);			\
++		switch (sizeof(*(ptr))) {				\
++		case __X86_CASE_B:					\
++			asm volatile (lock #op "b %b0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_W:					\
++			asm volatile (lock #op "w %w0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_L:					\
++			asm volatile (lock #op "l %0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		case __X86_CASE_Q:					\
++			asm volatile (lock #op "q %q0, %1\n"		\
++				      : "+r" (__ret), "+m" (*(ptr))	\
++				      : : "memory", "cc");		\
++			break;						\
++		default:						\
++			__ ## op ## _wrong_size();			\
++		}							\
++		__ret;							\
++	})
++
+ /*
+  * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
+  * Since this is generally used to protect other memory information, we
+  * use "asm volatile" and "memory" clobbers to prevent gcc from moving
+  * information around.
+  */
+-#define __xchg(x, ptr, size)						\
+-({									\
+-	__typeof(*(ptr)) __x = (x);					\
+-	switch (size) {							\
+-	case __X86_CASE_B:						\
+-	{								\
+-		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
+-		asm volatile("xchgb %0,%1"				\
+-			     : "=q" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_W:						\
+-	{								\
+-		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
+-		asm volatile("xchgw %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_L:						\
+-	{								\
+-		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+-		asm volatile("xchgl %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	case __X86_CASE_Q:						\
+-	{								\
+-		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+-		asm volatile("xchgq %0,%1"				\
+-			     : "=r" (__x), "+m" (*__ptr)		\
+-			     : "0" (__x)				\
+-			     : "memory");				\
+-		break;							\
+-	}								\
+-	default:							\
+-		__xchg_wrong_size();					\
+-	}								\
+-	__x;								\
+-})
+-
+-#define xchg(ptr, v)							\
+-	__xchg((v), (ptr), sizeof(*ptr))
++#define xchg(ptr, v)	__xchg_op((ptr), (v), xchg, "")
+ 
+ /*
+  * Atomic compare and exchange.  Compare OLD with MEM, if identical,
+@@ -165,46 +154,57 @@ extern void __xadd_wrong_size(void)
+ 	__cmpxchg_local((ptr), (old), (new), sizeof(*ptr))
+ #endif
+ 
+-#define __xadd(ptr, inc, lock)						\
++/*
++ * xadd() adds "inc" to "*ptr" and atomically returns the previous
++ * value of "*ptr".
++ *
++ * xadd() is locked when multiple CPUs are online
++ * xadd_sync() is always locked
++ * xadd_local() is never locked
++ */
++#define __xadd(ptr, inc, lock)	__xchg_op((ptr), (inc), xadd, lock)
++#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
++#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
++#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
++
++#define __add(ptr, inc, lock)						\
+ 	({								\
+ 	        __typeof__ (*(ptr)) __ret = (inc);			\
+ 		switch (sizeof(*(ptr))) {				\
+ 		case __X86_CASE_B:					\
+-			asm volatile (lock "xaddb %b0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addb %b1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_W:					\
+-			asm volatile (lock "xaddw %w0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addw %w1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_L:					\
+-			asm volatile (lock "xaddl %0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addl %1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		case __X86_CASE_Q:					\
+-			asm volatile (lock "xaddq %q0, %1\n"		\
+-				      : "+r" (__ret), "+m" (*(ptr))	\
+-				      : : "memory", "cc");		\
++			asm volatile (lock "addq %1, %0\n"		\
++				      : "+m" (*(ptr)) : "ri" (inc)	\
++				      : "memory", "cc");		\
+ 			break;						\
+ 		default:						\
+-			__xadd_wrong_size();				\
++			__add_wrong_size();				\
+ 		}							\
+ 		__ret;							\
+ 	})
+ 
+ /*
+- * xadd() adds "inc" to "*ptr" and atomically returns the previous
+- * value of "*ptr".
++ * add_*() adds "inc" to "*ptr"
+  *
+- * xadd() is locked when multiple CPUs are online
+- * xadd_sync() is always locked
+- * xadd_local() is never locked
++ * __add() takes a lock prefix
++ * add_smp() is locked when multiple CPUs are online
++ * add_sync() is always locked
+  */
+-#define xadd(ptr, inc)		__xadd((ptr), (inc), LOCK_PREFIX)
+-#define xadd_sync(ptr, inc)	__xadd((ptr), (inc), "lock; ")
+-#define xadd_local(ptr, inc)	__xadd((ptr), (inc), "")
++#define add_smp(ptr, inc)	__add((ptr), (inc), LOCK_PREFIX)
++#define add_sync(ptr, inc)	__add((ptr), (inc), "lock; ")
+ 
+ #endif	/* ASM_X86_CMPXCHG_H */
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 972c260..a82c2bf 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -79,23 +79,10 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ 	return cmpxchg(&lock->head_tail, old.head_tail, new.head_tail) == old.head_tail;
+ }
+ 
+-#if (NR_CPUS < 256)
+ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ {
+-	asm volatile(UNLOCK_LOCK_PREFIX "incb %0"
+-		     : "+m" (lock->head_tail)
+-		     :
+-		     : "memory", "cc");
++	__add(&lock->tickets.head, 1, UNLOCK_LOCK_PREFIX);
+ }
+-#else
+-static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+-{
+-	asm volatile(UNLOCK_LOCK_PREFIX "incw %0"
+-		     : "+m" (lock->head_tail)
+-		     :
+-		     : "memory", "cc");
+-}
+-#endif
+ 
+ static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
+ {
 
-Changes since v1.7.7.2 are as follows:
-
-Dan McGee (4):
-      pack-objects: mark add_to_write_order() as inline
-      pack-objects: use unsigned int for counter and offset values
-      pack-objects: rewrite add_descendants_to_write_order() iteratively
-      pack-objects: don't traverse objects unnecessarily
-
-Jeff King (1):
-      docs: don't mention --quiet or --exit-code in git-log(1)
-
-Julien Muchembled (1):
-      gitweb: fix regression when filtering out forks
-
-Junio C Hamano (3):
-      branch -m/-M: remove undocumented RENAMED-REF
-      docs: Update install-doc-quick
-      Git 1.7.7.3
 
