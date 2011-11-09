@@ -1,105 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab1KIQPO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:15:14 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:41678 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751676Ab1KIQPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:15:10 -0500
-X-Sasl-enc: 7ajS23+re+mUziwI7Tf0xtEf18IWwxP+K+3ZxIOQ2/4L 1320855309
-Date: Wed, 9 Nov 2011 08:14:59 -0800
-From: Greg KH <greg@kroah.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Eric Paris <eparis@parisplace.org>,
-        kernel-hardening@lists.openwall.com, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [kernel-hardening] Re: [PATCH] proc: restrict access to
- /proc/interrupts
-Message-ID: <20111109161459.GD2557@kroah.com>
-References: <20111107201120.GA5775@albatros>
- <4EB843FF.5080201@zytor.com>
- <CA+55aFwYGivYFZTLprSB+oDm3E4MG0s3PEQabs166v6YRL5u-Q@mail.gmail.com>
- <4EB84F05.1000704@zytor.com>
- <CA+55aFxFNaRuTx-0vx+RhrkavrcNDiDh5jxcRyWPy8-QZHGD9A@mail.gmail.com>
- <20111107232132.2c6880a5@lxorguk.ukuu.org.uk>
- <20111107232750.GA4854@kroah.com>
- <4BA97845-BA47-47F3-A923-9B24AB7306E9@mit.edu>
- <20111107234546.GA5835@kroah.com>
- <20111108200735.GM24234@thunk.org>
+	id S1754901Ab1KIQRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:17:30 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:57941 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750783Ab1KIQR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:17:29 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+Organization: wh0rd.org
+To: "Lars-Peter Clausen" <lars@metafoo.de>, dhowells@redhat.com
+Subject: Re: What happened to vcoalesce?
+Date: Wed, 9 Nov 2011 11:17:26 -0500
+User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+References: <4EBA40E3.60203@metafoo.de>
+In-Reply-To: <4EBA40E3.60203@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111108200735.GM24234@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart20018144.HQBcaIqvjQ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111091117.27481.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 03:07:35PM -0500, Ted Ts'o wrote:
-> On Mon, Nov 07, 2011 at 03:45:46PM -0800, Greg KH wrote:
-> > > As I mentioned at the kernel summit, I'd like revoke along with a
-> > > formal notification from block devices that get ejected to the file
-> > > system layer, and the file system should be able to call a VFS library
-> > > function which revokes all open file descriptor on the ejected block
-> > > device.  It would result in much cleaner handling at the file system
-> > > level when a USB storage device gets pulled.
-> > 
-> > So you want revoke() on a block device to do what?  The same thing as
-> > disconnecting it from the hardware level?
-> 
-> No, what I meant is that a disconnect at the hardware level should
-> lead to notification to the file system via a call to struct super
-> operations function.  And then the file system can use that callback
-> (call it super->s_ops->device_ejected) to call revoke on all of the
-> open files on the file system.
-> 
-> If we were to implement a revoke(2) system call (as opposed to just
-> VFS functionality callable from kernel code), it should probably do
-> what revoke(2) does on other Unix systems:
-> 
->      The revoke() system call invalidates all current open file
->      descriptors in the system for the file named by path.  Subsequent
->      operations on any such descriptors fail, with the exceptions that
->      a read() from a character device file which has been revoked
->      returns a count of zero (end of file), and a close() system call
->      will succeed.  If the file is a special file for a device which
->      is open, the device close function is called as if all open
->      references to the file had been closed.
-> 
->      Access to a file may be revoked only by its owner or the super
->      user.  The revoke() system call is currently supported only for
->      block and character special device files.  It is normally used to
->      prepare a terminal device for a new login session, preventing any
->      access by a previous user of the terminal.
+--nextPart20018144.HQBcaIqvjQ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-What other Unix systems actually implement revoke() in this manner?  I
-looked at the BSDs a while ago, and they only do revoke() on a tty
-character device node.
+On Wednesday 09 November 2011 03:59:15 Lars-Peter Clausen wrote:
+> I'm using the kernel firmware loader on a blackfin board. And this
+> currently doesn't work with mainline since the firmware loader uses vmap.
+> In the ADI blackfin Linux tree there is a patch written by you, which
+> fixes this.
+>=20
+> What is the status of that patch in regard to going mainline? I found a
+> mailing-list post from January where you tried to submit it upstream, but
+> there was a minor bug in the patch and so the it was rejected. In March y=
+ou
+> posted the fixed up version and from than on I couldn't find references to
+> it anymore.
 
-So are there other examples of someone actually implementing this in a
-manner that works and is usable?  If so, pointers would be greatly
-appreciated, as well as the userspace side that takes advantage of such
-a system call.
+my patch had a bug in the MMU case, so when David pushed it to Linus, Linus=
+=20
+got grumpy and rejected them.  i think i need to re-convince David to push =
+the=20
+patches again now that i've fixed that bug.
 
-> The revoke functionality I was talking about is a way to disconnect a
-> file descriptor from the mounted file system, since when the device
-> that backed it has disappeared, the file system should disappear as
-> well.  What should be left are file descriptors that return an error
-> when read or written, and which are administratively managed by the
-> VFS layer, with all of the file system's refcounts appropriate
-> decremented, such that if it were loaded as a module, the fs module
-> could be safely unloaded.  
+David: could you comment ?
 
-That can be implemented today without the need for the userspace
-revoke() call to be added, right?  Just propagate around the device
-disconnect message that the disk controller driver already knows about.
+https://lkml.org/lkml/2011/3/24/386
+=2Dmike
 
-thanks,
+--nextPart20018144.HQBcaIqvjQ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-greg k-h
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQIcBAABAgAGBQJOuqeXAAoJEEFjO5/oN/WBe0gQAIr+LfEFyp7WSKamzgtXt1FA
+qegJULvJnFuEjGtRR3FjZQOG+cMkjQIJ570VpfHKugzIageANy0jaqT3ShrHY88+
+7vbND/snqk8/di0q7RA0MC/oVe6clgi6NFli1C8LE7mc1K2tTK3xS4NP6NhUzpj9
+IQdGY4MbSWMRtoh+3X75L7zJAWScZWh8+Az72L9mBjVMZA9ExblLwemVEU5QUIYe
+QdXkU/4kOC98nrQps8QEAnauTNoPnq+fx1bMqN3D+LpucpdAzk9keNdESKfEE+P9
+hdDzBwsZugLTivKDGZzegD+o4O6hV3p5de8yGWxjSVV4PvAqs346v+x5eA7N+W7W
+T8a39pPG5VJNPgrkmILdxM38ELddmg3pkLHHPCzO2CWUULDUx+Esfecn0zjm04Q8
+jX8DAionU2swSzpCh4f2Lh0xzIgQ1H8z8GB9Vfm0DKHhBKs68PrkP6yy2hPGdKT2
+p/jvXR4L+5DrDE1tfIGtff4jU5fUlidg0jKFD0ek4jIYqB0prp89MzjNmSBGJ8Xa
+Xq8zJYd8btKFUzgtcQ+qHtY/G552rGNLZEbSTph4+lGsvMBHScq1C2Hov12n90RE
+46CHEA4MVHgjNqHa+00azREJUmFpaDjmOXA60E60GtxaGBDAro2vVqWRZoTkHi40
+j6hLm3kD4JXIK5yeZBZH
+=8xWj
+-----END PGP SIGNATURE-----
+
+--nextPart20018144.HQBcaIqvjQ--
