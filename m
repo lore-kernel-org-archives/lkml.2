@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936321Ab1KJEXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:23:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44112 "EHLO mx2.suse.de"
+	id S965221Ab1KJEYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:24:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44091 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965221Ab1KJDkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:40:03 -0500
+	id S965199Ab1KJDj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:39:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:52 2011
-Message-Id: <20111109213152.299568674@clark.kroah.org>
+Message-Id: <20111109213152.078443331@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:28 -0800
+Date: Wed, 09 Nov 2011 13:32:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [101/264] mac80211: fix offchannel TX cookie matching
+        alan@lxorguk.ukuu.org.uk, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [099/264] rtnetlink: Add missing manual netlink notification in dev_change_net_namespaces
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 28a1bcdb57d50f3038a255741ecc83e391e5282e upstream.
+commit d2237d35748e7f448a9c2d9dc6a85ef637466e24 upstream.
 
-When I introduced in-kernel off-channel TX I
-introduced a bug -- the work can't be canceled
-again because the code clear the skb pointer.
-Fix this by keeping track separately of whether
-TX status has already been reported.
+Renato Westphal noticed that since commit a2835763e130c343ace5320c20d33c281e7097b7
+"rtnetlink: handle rtnl_link netlink notifications manually" was merged
+we no longer send a netlink message when a networking device is moved
+from one network namespace to another.
 
-Reported-by: Jouni Malinen <j@w1.fi>
-Tested-by: Jouni Malinen <j@w1.fi>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fix this by adding the missing manual notification in dev_change_net_namespaces.
+
+Since all network devices that are processed by dev_change_net_namspaces are
+in the initialized state the complicated tests that guard the manual
+rtmsg_ifinfo calls in rollback_registered and register_netdevice are
+unnecessary and we can just perform a plain notification.
+
+Tested-by: Renato Westphal <renatowestphal@gmail.com>
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/cfg.c         |    2 +-
- net/mac80211/ieee80211_i.h |    1 +
- net/mac80211/status.c      |    2 +-
- net/mac80211/work.c        |    2 +-
- 4 files changed, 4 insertions(+), 3 deletions(-)
+ net/core/dev.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/cfg.c
-+++ b/net/mac80211/cfg.c
-@@ -1821,7 +1821,7 @@ ieee80211_offchan_tx_done(struct ieee802
- 	 * so in that case userspace will have to deal with it.
- 	 */
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6115,6 +6115,7 @@ int dev_change_net_namespace(struct net_
+ 	*/
+ 	call_netdevice_notifiers(NETDEV_UNREGISTER, dev);
+ 	call_netdevice_notifiers(NETDEV_UNREGISTER_BATCH, dev);
++	rtmsg_ifinfo(RTM_DELLINK, dev, ~0U);
  
--	if (wk->offchan_tx.wait && wk->offchan_tx.frame)
-+	if (wk->offchan_tx.wait && !wk->offchan_tx.status)
- 		cfg80211_mgmt_tx_status(wk->sdata->dev,
- 					(unsigned long) wk->offchan_tx.frame,
- 					wk->ie, wk->ie_len, false, GFP_KERNEL);
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -345,6 +345,7 @@ struct ieee80211_work {
- 		struct {
- 			struct sk_buff *frame;
- 			u32 wait;
-+			bool status;
- 		} offchan_tx;
- 	};
- 
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -336,7 +336,7 @@ void ieee80211_tx_status(struct ieee8021
- 				continue;
- 			if (wk->offchan_tx.frame != skb)
- 				continue;
--			wk->offchan_tx.frame = NULL;
-+			wk->offchan_tx.status = true;
- 			break;
- 		}
- 		rcu_read_unlock();
---- a/net/mac80211/work.c
-+++ b/net/mac80211/work.c
-@@ -579,7 +579,7 @@ ieee80211_offchannel_tx(struct ieee80211
- 		/*
- 		 * After this, offchan_tx.frame remains but now is no
- 		 * longer a valid pointer -- we still need it as the
--		 * cookie for canceling this work.
-+		 * cookie for canceling this work/status matching.
- 		 */
- 		ieee80211_tx_skb(wk->sdata, wk->offchan_tx.frame);
- 
+ 	/*
+ 	 *	Flush the unicast and multicast chains
 
 
