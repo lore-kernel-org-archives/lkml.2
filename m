@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965083Ab1KJDis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:38:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43949 "EHLO mx2.suse.de"
+	id S965106Ab1KJDjB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:39:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43978 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965061Ab1KJDio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:44 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:48 2011
-Message-Id: <20111109213148.022787778@clark.kroah.org>
+	id S965093Ab1KJDi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:50 2011
+Message-Id: <20111109213150.244732281@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:46 -0800
+Date: Wed, 09 Nov 2011 13:32:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hakan Kvist <hakan.kvist@sonyericsson.com>,
-        Oskar Andero <oskar.andero@sonyericsson.com>
-Subject: [059/264] USB: ftdi_sio: add PID for Sony Ericsson Urban
+        alan@lxorguk.ukuu.org.uk, Stefan Beller <stefanbeller@googlemail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [081/264] platform: samsung_laptop: add dmi information for Samsung R700 laptops
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,47 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hakan Kvist <hakan.kvist@sonyericsson.com>
+From: Stefan Beller <stefanbeller@googlemail.com>
 
-commit 74bdf22b5c3858b06af46f19d05c23e76c40a3bb upstream.
+commit f87d02996f05ec1789ceecce9ec839f629b7aa80 upstream.
 
-Add PID 0xfc8a, 0xfc8b for device Sony Ericsson Urban
+My DMI model is this:
+>dmesg |grep DMI
+[    0.000000] DMI present.
+[    0.000000] DMI: SAMSUNG ELECTRONICS CO., LTD. SR700/SR700, BIOS
+04SR 02/20/2008
 
-Signed-off-by: Hakan Kvist <hakan.kvist@sonyericsson.com>
-Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+adding dmi information of Samsung R700 laptops
+This adds the dmi information of Samsungs R700 laptops.
+
+Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    6 ++++--
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/platform/x86/samsung-laptop.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -207,6 +207,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_640_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_642_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DSS20_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_0_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_URBAN_1_PID) },
- 	{ USB_DEVICE(FTDI_NF_RIC_VID, FTDI_NF_RIC_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_VNHCPCUSB_D_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_MTXORB_0_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -420,9 +420,11 @@
- #define PROTEGO_SPECIAL_4	0xFC73	/* special/unknown device */
- 
- /*
-- * DSS-20 Sync Station for Sony Ericsson P800
-+ * Sony Ericsson product ids
-  */
--#define FTDI_DSS20_PID          0xFC82
-+#define FTDI_DSS20_PID		0xFC82	/* DSS-20 Sync Station for Sony Ericsson P800 */
-+#define FTDI_URBAN_0_PID	0xFC8A	/* Sony Ericsson Urban, uart #0 */
-+#define FTDI_URBAN_1_PID	0xFC8B	/* Sony Ericsson Urban, uart #1 */
- 
- /* www.irtrans.de device */
- #define FTDI_IRTRANS_PID 0xFC60 /* Product Id */
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -641,6 +641,15 @@ static struct dmi_system_id __initdata s
+ 		.callback = dmi_check_cb,
+ 	},
+ 	{
++		.ident = "R700",
++		.matches = {
++		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		      DMI_MATCH(DMI_PRODUCT_NAME, "SR700"),
++		      DMI_MATCH(DMI_BOARD_NAME, "SR700"),
++		},
++		.callback = dmi_check_cb,
++	},
++	{
+ 		.ident = "R530/R730",
+ 		.matches = {
+ 		      DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
 
 
