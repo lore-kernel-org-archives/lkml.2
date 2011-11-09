@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966058Ab1KJDsy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:48:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45174 "EHLO mx2.suse.de"
+	id S966151Ab1KJDxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:53:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45198 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966042Ab1KJDsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:48:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:05 2011
-Message-Id: <20111109213205.149994835@clark.kroah.org>
+	id S966059Ab1KJDs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:48:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:08 2011
+Message-Id: <20111109213208.543628761@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:32 -0800
+Date: Wed, 09 Nov 2011 13:35:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [225/264] block: make gendisk hold a reference to its queue
+        alan@lxorguk.ukuu.org.uk, jeffbrown@android.com,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [258/264] HID: hid-multitouch: Add LG Display Multitouch device.
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,152 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Jeff Brown <jeffbrown@android.com>
 
-commit f992ae801a7dec34a4ed99a6598bbbbfb82af4fb upstream.
+commit c50bb1a4005630f47b5da26336f74a485033a515 upstream.
 
-The following command sequence triggers an oops.
+This panel is also known as the Dell ST2220Tc.
 
-# mount /dev/sdb1 /mnt
-# echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
-# umount /mnt
-
- general protection fault: 0000 [#1] PREEMPT SMP
- CPU 2
- Modules linked in:
-
- Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
- RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
-...
- Call Trace:
-  [<ffffffff810d2845>] lock_acquire+0x95/0x140
-  [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
-  [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
-  [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
-  [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
-  [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
-  [<ffffffff811c40df>] blkdev_put+0x5f/0x190
-  [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
-  [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
-  [<ffffffff8119003a>] deactivate_super+0x4a/0x70
-  [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
-  [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
-  [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
-
-This is because bdev holds on to disk but disk doesn't pin the
-associated queue.  If a SCSI device is removed while the device is
-still open, the sdev puts the base reference to the queue on release.
-When the bdev is finally released, the associated queue is already
-gone along with the bdi and bdev_inode_switch_bdi() ends up
-dereferencing already freed bdi.
-
-Even if it were not for this bug, disk not holding onto the associated
-queue is very unusual and error-prone.
-
-Fix it by making add_disk() take an extra reference to its queue and
-put it on disk_release() and ensuring that disk and its fops owner are
-put in that order after all accesses to the disk and queue are
-complete.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: jeffbrown@android.com
+Reviewed-By: Benjamin Tissoires <Benjamin_Tissoires@logitech.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/genhd.c  |    8 ++++++++
- fs/block_dev.c |   13 ++++++++-----
- 2 files changed, 16 insertions(+), 5 deletions(-)
+ drivers/hid/Kconfig          |    1 +
+ drivers/hid/hid-core.c       |    1 +
+ drivers/hid/hid-ids.h        |    3 +++
+ drivers/hid/hid-multitouch.c |    5 +++++
+ 4 files changed, 10 insertions(+)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -611,6 +611,12 @@ void add_disk(struct gendisk *disk)
- 	register_disk(disk);
- 	blk_register_queue(disk);
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -328,6 +328,7 @@ config HID_MULTITOUCH
+ 	  - Hanvon dual touch panels
+ 	  - Ilitek dual touch panels
+ 	  - IrTouch Infrared USB panels
++	  - LG Display panels (Dell ST2220Tc)
+ 	  - Lumio CrystalTouch panels
+ 	  - MosArt dual-touch panels
+ 	  - PenMount dual touch panels
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1399,6 +1399,7 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -426,6 +426,9 @@
+ #define USB_DEVICE_ID_LD_HYBRID		0x2090
+ #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
  
-+	/*
-+	 * Take an extra ref on queue which will be put on disk_release()
-+	 * so that it sticks around as long as @disk is there.
-+	 */
-+	WARN_ON_ONCE(blk_get_queue(disk->queue));
++#define USB_VENDOR_ID_LG		0x1fd2
++#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
 +
- 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
- 				   "bdi");
- 	WARN_ON(retval);
-@@ -1095,6 +1101,8 @@ static void disk_release(struct device *
- 	disk_replace_part_tbl(disk, NULL);
- 	free_part_stats(&disk->part0);
- 	free_part_info(&disk->part0);
-+	if (disk->queue)
-+		blk_put_queue(disk->queue);
- 	kfree(disk);
- }
- struct class block_class = {
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1085,6 +1085,7 @@ static int __blkdev_put(struct block_dev
- static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- {
- 	struct gendisk *disk;
-+	struct module *owner;
- 	int ret;
- 	int partno;
- 	int perm = 0;
-@@ -1110,6 +1111,7 @@ static int __blkdev_get(struct block_dev
- 	disk = get_gendisk(bdev->bd_dev, &partno);
- 	if (!disk)
- 		goto out;
-+	owner = disk->fops->owner;
+ #define USB_VENDOR_ID_LOGITECH		0x046d
+ #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
+ #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
+--- a/drivers/hid/hid-multitouch.c
++++ b/drivers/hid/hid-multitouch.c
+@@ -672,6 +672,11 @@ static const struct hid_device_id mt_dev
+ 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
+ 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
  
- 	disk_block_events(disk);
- 	mutex_lock_nested(&bdev->bd_mutex, for_part);
-@@ -1137,8 +1139,8 @@ static int __blkdev_get(struct block_dev
- 					bdev->bd_disk = NULL;
- 					mutex_unlock(&bdev->bd_mutex);
- 					disk_unblock_events(disk);
--					module_put(disk->fops->owner);
- 					put_disk(disk);
-+					module_put(owner);
- 					goto restart;
- 				}
- 			}
-@@ -1194,8 +1196,8 @@ static int __blkdev_get(struct block_dev
- 				goto out_unlock_bdev;
- 		}
- 		/* only one opener holds refs to the module and disk */
--		module_put(disk->fops->owner);
- 		put_disk(disk);
-+		module_put(owner);
- 	}
- 	bdev->bd_openers++;
- 	if (for_part)
-@@ -1215,8 +1217,8 @@ static int __blkdev_get(struct block_dev
-  out_unlock_bdev:
- 	mutex_unlock(&bdev->bd_mutex);
- 	disk_unblock_events(disk);
--	module_put(disk->fops->owner);
- 	put_disk(disk);
-+	module_put(owner);
-  out:
- 	bdput(bdev);
- 
-@@ -1442,14 +1444,15 @@ static int __blkdev_put(struct block_dev
- 	if (!bdev->bd_openers) {
- 		struct module *owner = disk->fops->owner;
- 
--		put_disk(disk);
--		module_put(owner);
- 		disk_put_part(bdev->bd_part);
- 		bdev->bd_part = NULL;
- 		bdev->bd_disk = NULL;
- 		if (bdev != bdev->bd_contains)
- 			victim = bdev->bd_contains;
- 		bdev->bd_contains = NULL;
++	/* LG Display panels */
++	{ .driver_data = MT_CLS_DEFAULT,
++		HID_USB_DEVICE(USB_VENDOR_ID_LG,
++			USB_DEVICE_ID_LG_MULTITOUCH) },
 +
-+		put_disk(disk);
-+		module_put(owner);
- 	}
- 	mutex_unlock(&bdev->bd_mutex);
- 	bdput(bdev);
+ 	/* Lumio panels */
+ 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
+ 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
 
 
