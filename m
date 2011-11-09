@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab1KJDVn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:21:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41763 "EHLO mx2.suse.de"
+	id S1757345Ab1KJFZs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:25:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41770 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933913Ab1KJDVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:21:40 -0500
+	id S933946Ab1KJDVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:21:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:04 2011
-Message-Id: <20111109212704.735144394@clark.kroah.org>
+Message-Id: <20111109212704.840788762@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:06 -0800
+Date: Wed, 09 Nov 2011 13:26:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fabian Godehardt <fg@emlix.com>
-Subject: [044/262] USB: g_printer: fix bug in unregistration
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
+        Matthias Dellweg <2500@gmx.de>
+Subject: [045/262] usb/core/devio.c: Check for printer class specific request
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabian Godehardt <fg@emlix.com>
+From: Matthias Dellweg <2500@gmx.de>
 
-commit 8582d86143c690c68cc42f996def466a035bee34 upstream.
+commit 393cbb5151ecda9f9e14e3082d048dd27a1ff9f6 upstream.
 
-The allocated chardevice region range is only 1 device but on
-unregister it currently tries to deregister 2.
+In the usb printer class specific request get_device_id the value of
+wIndex is (interface << 8 | altsetting) instead of just interface.
+This enables the detection of some printers with libusb.
 
-Found this while doing a insmod/rmmod/insmod/rm... of the module
-which seemed to eat major numbers.
-
-Signed-off-by: Fabian Godehardt <fg@emlix.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Matthias Dellweg <2500@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/printer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/devio.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -1602,7 +1602,7 @@ cleanup(void)
- 	if (status)
- 		ERROR(dev, "usb_gadget_unregister_driver %x\n", status);
- 
--	unregister_chrdev_region(g_printer_devno, 2);
-+	unregister_chrdev_region(g_printer_devno, 1);
- 	class_destroy(usb_gadget_class);
- 	mutex_unlock(&usb_printer_gadget.lock_printer_io);
+--- a/drivers/usb/core/devio.c
++++ b/drivers/usb/core/devio.c
+@@ -607,9 +607,10 @@ static int findintfep(struct usb_device
  }
+ 
+ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
+-			   unsigned int index)
++			   unsigned int request, unsigned int index)
+ {
+ 	int ret = 0;
++	struct usb_host_interface *alt_setting;
+ 
+ 	if (ps->dev->state != USB_STATE_UNAUTHENTICATED
+ 	 && ps->dev->state != USB_STATE_ADDRESS
+@@ -618,6 +619,19 @@ static int check_ctrlrecip(struct dev_st
+ 	if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
+ 		return 0;
+ 
++	/*
++	 * check for the special corner case 'get_device_id' in the printer
++	 * class specification, where wIndex is (interface << 8 | altsetting)
++	 * instead of just interface
++	 */
++	if (requesttype == 0xa1 && request == 0) {
++		alt_setting = usb_find_alt_setting(ps->dev->actconfig,
++						   index >> 8, index & 0xff);
++		if (alt_setting
++		 && alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER)
++			index >>= 8;
++	}
++
+ 	index &= 0xff;
+ 	switch (requesttype & USB_RECIP_MASK) {
+ 	case USB_RECIP_ENDPOINT:
+@@ -770,7 +784,8 @@ static int proc_control(struct dev_state
+ 
+ 	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+ 		return -EFAULT;
+-	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
++	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
++			      ctrl.wIndex);
+ 	if (ret)
+ 		return ret;
+ 	wLength = ctrl.wLength;		/* To suppress 64k PAGE_SIZE warning */
+@@ -1100,7 +1115,7 @@ static int proc_do_submiturb(struct dev_
+ 			kfree(dr);
+ 			return -EINVAL;
+ 		}
+-		ret = check_ctrlrecip(ps, dr->bRequestType,
++		ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
+ 				      le16_to_cpup(&dr->wIndex));
+ 		if (ret) {
+ 			kfree(dr);
 
 
