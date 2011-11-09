@@ -1,98 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756474Ab1KISe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 13:34:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63064 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab1KISey (ORCPT
+	id S1756489Ab1KISj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 13:39:57 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48041 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab1KISj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 13:34:54 -0500
-Date: Wed, 9 Nov 2011 10:34:47 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
-Message-ID: <20111109183447.GG1260@google.com>
-References: <1320766151-2619-2-git-send-email-aarcange@redhat.com>
- <4EB98A83.3040101@linux.vnet.ibm.com>
- <4EBA75F2.4080800@linux.vnet.ibm.com>
- <20111109155342.GA1260@google.com>
- <20111109165201.GI5075@redhat.com>
- <20111109165925.GC1260@google.com>
- <20111109170248.GD1260@google.com>
- <20111109172942.GJ5075@redhat.com>
- <20111109180900.GF1260@google.com>
- <20111109181925.GN5075@redhat.com>
+	Wed, 9 Nov 2011 13:39:56 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX180R9nUb4cbSp7/AmR/nki5
+Date: Wed, 9 Nov 2011 10:39:45 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 6/8] of: add clock providers
+Message-ID: <20111109183945.GL31337@atomide.com>
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
+ <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111109181925.GN5075@redhat.com>
+In-Reply-To: <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrea.
+* Grant Likely <grant.likely@secretlab.ca> [111108 16:51]:
+> +
+> +    /* external oscillator */
+> +    osc: oscillator {
+> +        compatible = "fixed-clock";
+> +        #clock-cells = <1>;
+> +        frequency  = <32678>;
+> +        clock-output-name = "osc";
+> +    };
+> +
+> +    /* phase-locked-loop device, generates a higher frequency clock
+> +     * from the external oscillator reference */
+> +    pll: pll {
+> +        compatible = "some-pll-interface"
+> +        #clock-cells = <1>;
+> +        clock-input = <&osc 0>;
+> +        clock-input-name = "ref";
+> +        reg = <0x4c000 0x1000>;
+> +        clock-output-name = "pll", "pll-switched";
+> +    };
 
-On Wed, Nov 09, 2011 at 07:19:25PM +0100, Andrea Arcangeli wrote:
-> On Wed, Nov 09, 2011 at 10:09:00AM -0800, Tejun Heo wrote:
-> > I'm confused.  You're doing add_wait_queue() before
-> > schedule_timeout_interruptible().  prepare_to_wait() is essentially
-> > add_wait_queue() + set_current_state().  What am I missing?  ie. why
-> > not do the following?
-> 
-> Ah the reason of the waitqueue is the sysfs store, to get out of there
-> if somebody decreases the wait time from 1min to 10sec or
-> similar. It's not really needed for other things, in theory it could
-> be a separate waitqueue just for sysfs but probably not worth it.
+I think for the clocks we need something describing which bits
+in the clock register the "pll" and "pll-switched" belong to.
 
-Oh I see.
+Otherwise we'll end up having to map all that data in the clock
+driver for various SoC variants.
 
-> I have no "event" to wait other than the wakeup itself, this in the
-> end is the only reason it isn't already using
-> wait_event_freezable_timeout. Of course I can pass "false" as the
-> event.
+> +    /* UART, using the low frequency oscillator for the baud clock,
+> +     * and the high frequency switched PLL output for register
+> +     * clocking */
+> +    uart {
+> +        compatible = "fsl,imx-uart";
+> +        reg = <0xa000 0x1000>;
+> +        interrupts = <33>;
+> +        clock-input = <&osc 0>, <&pll 1>;
+> +        clock-input-name = "baud", "register";
+> +    };
+> +
 
-I think, for this specific case, wait_event_freezable_timeout() w/
-false is the simplest thing to do.
+Here I think we need a better solution for finding the
+clocks by name. Doing clock-input = <&osc 0>, <&pll 1> means
+that we have redefine the uart for similar SoC many times.
 
-> > Hmmm... I don't know.  I really hope all freezable tasks stick to
-> > higher level interface.  It's way too easy to get things wrong and eat
-> > either freezing or actual wakeup condition.
-> 
-> Well you've just to tell me if I have to pass "false" and if
-> add_wait_queue+schedule_timeout_interruptible is obsoleted. If it's
-> not obsoleted the patch I posted should already be ok. It also will be
-> useful if others need to wait for a long time (> the freezer max wait)
-> without a waitqueue which I don't think is necessarily impossible. It
-> wasn't the case here just because I need to promptly react to the
-> sysfs writes (or setting the wait time to 1 day would then require 1
-> day before sysfs new value becomes meaningful, well unless somebody
-> doess killall khugepaged.. :)
+How about using source + option in the name instead:
 
-I agree that there can be use cases where freezable interruptible
-sleep is useful.  Thanks to the the inherently racy nature of
-schedule_interruptible_timeout() w.r.t. non-persistent interruptible
-wakeups (ie. everything other than signal), race conditions introduced
-by try_to_freeze() should be okay
+	   clock-source-name = "osc.osc", "pll.pll-switched";
 
-The biggest problem I have with schedule_timeout_freezable() is that
-it doesn't advertise that it's racy - ie. it doesn't have sleep
-condition in the function name.  Its wait counterpart
-wait_event_freezable() isn't racy thanks to the explicit wait
-condition and doesn't have such problem.
+This same solution would also work for the pinctrl names:
 
-Maybe my concern is just paraonia and people wouldn't assume it's
-schedule_timeout() with magic freezer support.  Or we can name it
-schedule_timeout_interruptible_freezable() (urgh........).  I don't
-know.  My instinct tells me to strongly recommend use of
-wait_event_freezable_timeout() and run away.  :)
+	   pinctrl-source-name = "uart1_rx.uart1_rx", "dss_data7.uart1_tx";
 
-Thanks.
+The reason I'm worried here is that just for omap2/3/4 we already
+have 3 options for uart1 clock and 19 options for uart1_rx pin!
 
--- 
-tejun
+Using the signal names for both clocks and pinctrl would
+allow defining the uart entry for for each reg address instead
+of for each clock and pinctrl option.
+
+Regards,
+
+Tony
