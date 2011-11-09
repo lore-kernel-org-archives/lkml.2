@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965259Ab1KJDkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:40:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44190 "EHLO mx2.suse.de"
+	id S965277Ab1KJDlE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:41:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44235 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757086Ab1KJDke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:40:34 -0500
+	id S936013Ab1KJDk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:40:57 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:53 2011
-Message-Id: <20111109213153.097904561@clark.kroah.org>
+Message-Id: <20111109213153.780726610@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:36 -0800
+Date: Wed, 09 Nov 2011 13:32:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [109/264] ftrace/kprobes: Fix not to delete probes if in use
+        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [116/264] nfsd4: permit read opens of executable-only files
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,173 +24,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 02ca1521ad404cf566e0075848f80d064c0a0503 upstream.
+commit a043226bc140a2c1dde162246d68a67e5043e6b2 upstream.
 
-Fix kprobe-tracer not to delete a probe if the probe is in use.
-In that case, delete operation will return -EBUSY.
+A client that wants to execute a file must be able to read it.  Read
+opens over nfs are therefore implicitly allowed for executable files
+even when those files are not readable.
 
-This bug can cause a kernel panic if enabled probes are deleted
-during perf record.
+NFSv2/v3 get this right by using a passed-in NFSD_MAY_OWNER_OVERRIDE on
+read requests, but NFSv4 has gotten this wrong ever since
+dc730e173785e29b297aa605786c94adaffe2544 "nfsd4: fix owner-override on
+open", when we realized that the file owner shouldn't override
+permissions on non-reclaim NFSv4 opens.
 
-(Add some probes on functions)
-sh-4.2# perf probe --del probe:\*
-sh-4.2# exit
-(kernel panic)
+So we can't use NFSD_MAY_OWNER_OVERRIDE to tell nfsd_permission to allow
+reads of executable files.
 
-This is originally reported on the fedora bugzilla:
+So, do the same thing we do whenever we encounter another weird NFS
+permission nit: define yet another NFSD_MAY_* flag.
 
- https://bugzilla.redhat.com/show_bug.cgi?id=742383
+The industry's future standardization on 128-bit processors will be
+motivated primarily by the need for integers with enough bits for all
+the NFSD_MAY_* flags.
 
-I've also checked that this problem doesn't happen on
-tracepoints when module removing because perf event
-locks target module.
-
-$ sudo ./perf record -e xfs:\* -aR sh
-sh-4.2# rmmod xfs
-ERROR: Module xfs is in use
-sh-4.2# exit
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.203 MB perf.data (~8862 samples) ]
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Frank Ch. Eigler <fche@redhat.com>
-Link: http://lkml.kernel.org/r/20111004104438.14591.6553.stgit@fedora15
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Leonardo Borda <leonardoborda@gmail.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace_kprobe.c |   58 +++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 49 insertions(+), 9 deletions(-)
+ fs/nfsd/nfs4proc.c |    2 ++
+ fs/nfsd/vfs.c      |    3 ++-
+ fs/nfsd/vfs.h      |    1 +
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -836,11 +836,17 @@ static void __unregister_trace_probe(str
- }
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -156,6 +156,8 @@ do_open_permission(struct svc_rqst *rqst
+ 		!(open->op_share_access & NFS4_SHARE_ACCESS_WRITE))
+ 		return nfserr_inval;
  
- /* Unregister a trace_probe and probe_event: call with locking probe_lock */
--static void unregister_trace_probe(struct trace_probe *tp)
-+static int unregister_trace_probe(struct trace_probe *tp)
- {
-+	/* Enabled event can not be unregistered */
-+	if (trace_probe_is_enabled(tp))
-+		return -EBUSY;
++	accmode |= NFSD_MAY_READ_IF_EXEC;
 +
- 	__unregister_trace_probe(tp);
- 	list_del(&tp->list);
- 	unregister_probe_event(tp);
-+
-+	return 0;
- }
+ 	if (open->op_share_access & NFS4_SHARE_ACCESS_READ)
+ 		accmode |= NFSD_MAY_READ;
+ 	if (open->op_share_access & NFS4_SHARE_ACCESS_WRITE)
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -2114,7 +2114,8 @@ nfsd_permission(struct svc_rqst *rqstp,
  
- /* Register a trace_probe and probe_event */
-@@ -854,7 +860,9 @@ static int register_trace_probe(struct t
- 	/* Delete old (same name) event if exist */
- 	old_tp = find_trace_probe(tp->call.name, tp->call.class->system);
- 	if (old_tp) {
--		unregister_trace_probe(old_tp);
-+		ret = unregister_trace_probe(old_tp);
-+		if (ret < 0)
-+			goto end;
- 		free_trace_probe(old_tp);
- 	}
+ 	/* Allow read access to binaries even when mode 111 */
+ 	if (err == -EACCES && S_ISREG(inode->i_mode) &&
+-	    acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE))
++	     (acc == (NFSD_MAY_READ | NFSD_MAY_OWNER_OVERRIDE) ||
++	      acc == (NFSD_MAY_READ | NFSD_MAY_READ_IF_EXEC)))
+ 		err = inode_permission(inode, MAY_EXEC);
  
-@@ -892,6 +900,7 @@ static int trace_probe_module_callback(s
- 	mutex_lock(&probe_lock);
- 	list_for_each_entry(tp, &probe_list, list) {
- 		if (trace_probe_within_module(tp, mod)) {
-+			/* Don't need to check busy - this should have gone. */
- 			__unregister_trace_probe(tp);
- 			ret = __register_trace_probe(tp);
- 			if (ret)
-@@ -1205,10 +1214,11 @@ static int create_trace_probe(int argc,
- 			return -ENOENT;
- 		}
- 		/* delete an event */
--		unregister_trace_probe(tp);
--		free_trace_probe(tp);
-+		ret = unregister_trace_probe(tp);
-+		if (ret == 0)
-+			free_trace_probe(tp);
- 		mutex_unlock(&probe_lock);
--		return 0;
-+		return ret;
- 	}
+ 	return err? nfserrno(err) : 0;
+--- a/fs/nfsd/vfs.h
++++ b/fs/nfsd/vfs.h
+@@ -25,6 +25,7 @@
+ #define NFSD_MAY_BYPASS_GSS_ON_ROOT 256
+ #define NFSD_MAY_NOT_BREAK_LEASE 512
+ #define NFSD_MAY_BYPASS_GSS	1024
++#define NFSD_MAY_READ_IF_EXEC	2048
  
- 	if (argc < 2) {
-@@ -1317,18 +1327,29 @@ error:
- 	return ret;
- }
- 
--static void release_all_trace_probes(void)
-+static int release_all_trace_probes(void)
- {
- 	struct trace_probe *tp;
-+	int ret = 0;
- 
- 	mutex_lock(&probe_lock);
-+	/* Ensure no probe is in use. */
-+	list_for_each_entry(tp, &probe_list, list)
-+		if (trace_probe_is_enabled(tp)) {
-+			ret = -EBUSY;
-+			goto end;
-+		}
- 	/* TODO: Use batch unregistration */
- 	while (!list_empty(&probe_list)) {
- 		tp = list_entry(probe_list.next, struct trace_probe, list);
- 		unregister_trace_probe(tp);
- 		free_trace_probe(tp);
- 	}
-+
-+end:
- 	mutex_unlock(&probe_lock);
-+
-+	return ret;
- }
- 
- /* Probes listing interfaces */
-@@ -1380,9 +1401,13 @@ static const struct seq_operations probe
- 
- static int probes_open(struct inode *inode, struct file *file)
- {
--	if ((file->f_mode & FMODE_WRITE) &&
--	    (file->f_flags & O_TRUNC))
--		release_all_trace_probes();
-+	int ret;
-+
-+	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC)) {
-+		ret = release_all_trace_probes();
-+		if (ret < 0)
-+			return ret;
-+	}
- 
- 	return seq_open(file, &probes_seq_op);
- }
-@@ -2055,6 +2080,21 @@ static __init int kprobe_trace_self_test
- 
- 	ret = target(1, 2, 3, 4, 5, 6);
- 
-+	/* Disable trace points before removing it */
-+	tp = find_trace_probe("testprobe", KPROBE_EVENT_SYSTEM);
-+	if (WARN_ON_ONCE(tp == NULL)) {
-+		pr_warning("error on getting test probe.\n");
-+		warn++;
-+	} else
-+		disable_trace_probe(tp, TP_FLAG_TRACE);
-+
-+	tp = find_trace_probe("testprobe2", KPROBE_EVENT_SYSTEM);
-+	if (WARN_ON_ONCE(tp == NULL)) {
-+		pr_warning("error on getting 2nd test probe.\n");
-+		warn++;
-+	} else
-+		disable_trace_probe(tp, TP_FLAG_TRACE);
-+
- 	ret = command_trace_probe("-:testprobe");
- 	if (WARN_ON_ONCE(ret)) {
- 		pr_warning("error on deleting a probe.\n");
+ #define NFSD_MAY_CREATE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE)
+ #define NFSD_MAY_REMOVE		(NFSD_MAY_EXEC|NFSD_MAY_WRITE|NFSD_MAY_TRUNC)
 
 
