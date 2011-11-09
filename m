@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933981Ab1KJFQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:16:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42103 "EHLO mx2.suse.de"
+	id S934486Ab1KJFQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:16:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42094 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934466Ab1KJDY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:07 2011
-Message-Id: <20111109212707.103679751@clark.kroah.org>
+	id S933980Ab1KJDYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
+Message-Id: <20111109212706.895786542@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:29 -0800
+Date: Wed, 09 Nov 2011 13:26:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [067/262] xen-swiotlb: Fix wrong panic.
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>
+Subject: [065/262] Update email address for stable patch submission
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit ab2a47bd242d6cdcf6b2b64797f271c6f0a6d338 upstream.
+commit 5fa224295f0e0358c8bc0e5390702338df889def upstream.
 
-Propagate the baremetal git commit "swiotlb: fix wrong panic"
-(fba99fa38b023224680308a482e12a0eca87e4e1) in the Xen-SWIOTLB version.
-wherein swiotlb's map_page wrongly calls panic() when it can't find
-a buffer fit for device's dma mask.  It should return an error instead.
+The stable@kernel.org email address has been replaced with the
+stable@vger.kernel.org mailing list.  Change the stable kernel rules to
+reference the new list instead of the semi-defunct email alias.
 
-Devices with an odd dma mask (i.e.  under 4G) like b44 network card hit
-this bug (the system crashes):
-
-http://marc.info/?l=linux-kernel&m=129648943830106&w=2
-
-If xen-swiotlb returns an error, b44 driver can use the own bouncing
-mechanism.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/xen/swiotlb-xen.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ Documentation/stable_kernel_rules.txt |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -278,9 +278,10 @@ dma_addr_t xen_swiotlb_map_page(struct d
- 	/*
- 	 * Ensure that the address returned is DMA'ble
- 	 */
--	if (!dma_capable(dev, dev_addr, size))
--		panic("map_single: bounce buffer is not DMA'ble");
--
-+	if (!dma_capable(dev, dev_addr, size)) {
-+		swiotlb_tbl_unmap_single(dev, map, size, dir);
-+		dev_addr = 0;
-+	}
- 	return dev_addr;
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_map_page);
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -24,10 +24,10 @@ Rules on what kind of patches are accept
+ Procedure for submitting patches to the -stable tree:
+ 
+  - Send the patch, after verifying that it follows the above rules, to
+-   stable@kernel.org.  You must note the upstream commit ID in the changelog
+-   of your submission.
++   stable@vger.kernel.org.  You must note the upstream commit ID in the
++   changelog of your submission.
+  - To have the patch automatically included in the stable tree, add the tag
+-     Cc: stable@kernel.org
++     Cc: stable@vger.kernel.org
+    in the sign-off area. Once the patch is merged it will be applied to
+    the stable tree without anything else needing to be done by the author
+    or subsystem maintainer.
+@@ -35,10 +35,10 @@ Procedure for submitting patches to the
+    cherry-picked than this can be specified in the following format in
+    the sign-off area:
+ 
+-     Cc: <stable@kernel.org> # .32.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@kernel.org> # .32.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@kernel.org> # .32.x
++     Cc: <stable@vger.kernel.org> # .32.x: a1f84a3: sched: Check for idle
++     Cc: <stable@vger.kernel.org> # .32.x: 1b9508f: sched: Rate-limit newidle
++     Cc: <stable@vger.kernel.org> # .32.x: fd21073: sched: Fix affinity logic
++     Cc: <stable@vger.kernel.org> # .32.x
+     Signed-off-by: Ingo Molnar <mingo@elte.hu>
+ 
+    The tag sequence has the meaning of:
 
 
