@@ -1,90 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab1KIMS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:18:27 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:44486 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab1KIMS0 (ORCPT
+	id S1754835Ab1KIMT5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 07:19:57 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:37768 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753197Ab1KIMTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 07:18:26 -0500
-X-IronPort-AV: E=Sophos;i="4.69,484,1315180800"; 
-   d="scan'208";a="8838359"
-Subject: Re: [Xen-devel] RE: [PATCH 3/3] code clean up
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: "annie.li@oracle.com" <annie.li@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+	Wed, 9 Nov 2011 07:19:55 -0500
+Date: Wed, 9 Nov 2011 14:19:52 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
-Date: Wed, 9 Nov 2011 12:18:23 +0000
-In-Reply-To: <291EDFCB1E9E224A99088639C4762022B4543AB1BE@LONPMAILBOX01.citrite.net>
-References: <4EBA35D3.3020506@oracle.com>
-	 <1320826574-29427-1-git-send-email-annie.li@oracle.com>
-	 <291EDFCB1E9E224A99088639C4762022B4543AB1BE@LONPMAILBOX01.citrite.net>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1320841103.955.120.camel@zakaz.uk.xensource.com>
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "eric.miao@linaro.org" <eric.miao@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "david-b@pacbell.net" <david-b@pacbell.net>
+Subject: Re: Adding USB charge current property in the Linux Battery core
+Message-ID: <20111109121950.GB16315@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1320826417.1160.8.camel@L-0761.kpit.com>
+ <20111109082005.GH23337@legolas.emea.dhcp.ti.com>
+ <C3AE124F08223B42BC95AEB82F0F6CED1F9BF3F4@KCHJEXMB02.kpit.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NU0Ex4SbNnrxsi6C"
+Content-Disposition: inline
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED1F9BF3F4@KCHJEXMB02.kpit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 11:15 +0000, Paul Durrant wrote:
-> Annie,
-> 
->   Why was this split out as a separate patch? Can it not be folded into patch 2 since the line it re-formats was introduced there?
 
-It is not generally necessary to split string constants in order to meet
-the 80 column (soft) limit in Linux code. Some people frown on it
-because it breaks grep'ability.
+--NU0Ex4SbNnrxsi6C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ian.
-
-> 
->   Paul
-> 
+On Wed, Nov 09, 2011 at 12:13:14PM +0000, Ashish Jangam wrote:
+>=20
 > > -----Original Message-----
-> > From: annie.li@oracle.com [mailto:annie.li@oracle.com]
-> > Sent: 09 November 2011 08:16
-> > To: xen-devel@lists.xensource.com; linux-kernel@vger.kernel.org;
-> > konrad.wilk@oracle.com; jeremy@goop.org
-> > Cc: kurt.hackel@oracle.com; Paul Durrant; annie.li@oracle.com
-> > Subject: [PATCH 3/3] code clean up
-> > 
-> > From: Annie Li <annie.li@oracle.com>
-> > 
-> > Signed-off-by: Annie Li <annie.li@oracle.com>
-> > ---
-> >  drivers/xen/grant-table.c |    3 ++-
-> >  1 files changed, 2 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index a3294a26..458c00d 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -708,7 +708,8 @@ static void gnttab_request_version(void)  {
-> >  	int rc;
-> >  	struct gnttab_set_version gsv;
-> > -	const char *str = "we need grant tables version 2, but only
-> > version 1 is available\n";
-> > +	const char *str = "we need grant tables version 2, "
-> > +					"but only version 1 is
-> > available\n";
-> > 
-> >  	gsv.version = 2;
-> >  	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version, &gsv,
-> > 1);
-> > --
-> > 1.7.6
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Wednesday, November 09, 2011 1:50 PM
+> > To: Ashish Jangam
+> > Cc: linaro-dev@lists.linaro.org; linux-kernel@vger.kernel.org;
+> > arnd@arndb.de; eric.miao@linaro.org; Mark Brown
+> > Subject: Re: Adding USB charge current property in the Linux Battery co=
+re
+> >=20
+> > Hi,
+> >=20
+> > On Wed, Nov 09, 2011 at 01:43:37PM +0530, ashishj3 wrote:
+> > > For a better performance in USB charging operation, the DA9052/53
+> > charging
+> > > current can be configured in accordance with the USB host current
+> > > delivering capacity (known through USB drivers negotiation).
+> > >
+> > > To implement this useful feature, a new writable property "USB charge
+> > current"
+> > > needs to be added in the Linux battery core.
+> > >
+> > > Let me know your views on it.
+> >=20
+> > that's the wrong way to do it. What we need is to use the transceiver
+> > notifications to notify every time someone calls usb_gadget_vbus_draw()
+> > and pass the mA parameter as argument to the event notification.
+> >=20
+>=20
+> This means that we need to modify the function usb_gadget_vbus_draw()
+> to add a call like blocking_notifier_call_chain() but will this be fine w=
+ith
+> the usb gadget driver maintainers?
 
+I am the USB gadget driver maintainer and I have plans to do that
+myself. First thing we need to do is convert the final UDC drivers to
+the udc Class which I wrote and Sebastian helped brushing it up, then we
+uninline the usb_gadget_* wrappers and move them to
+drivers/usb/gadget/udc-core.c, then we can move the transceiver notifier
+to the UDC as it makes more sense, and convert blocking into atomic
+notifier.
 
+After that we can add notifications to all gadget events/API/etc...
+
+--=20
+balbi
+
+--NU0Ex4SbNnrxsi6C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJOum/mAAoJEIaOsuA1yqREmI8P/j4dj0xPCLfNS/1YX8l09hy1
+bdC/g01blAIy16gj08EmodXQ8vgAap6CCHbPA/lw+1yQxve1S5IB1C97qriadAyx
+H2XE93IENroMaHGKRWZhtyyNPw3WKQmXFbIiW/2edCjiH/bATj+1US3XMqHA/G++
+MObir+LocY4YYT/JrYEtYXi3PskBLrY3EXmZHMhW3Pox1ylOo8SaDXV/+CrGLhFu
+UaHmoLy4n5rXx+h+MmCrRL4CGYC3wAV0bg9akDz2lOZLy6evgLxkrJUR83VdlERe
+JJQmteKDecFmLUh+guFTc3M7So/+d5TA5/5LF9YffgQRyw2Bn6JcKp7sQTb55A8b
+RSdiM3VifZvxZWH7fci+VyI1qeR2ZZqYHgorsVMb8pecaZHwubPMMmLIv4w11z1F
+Ba9aCReNfEqgilsYP7SYEW1oCGuOo4jZLJ4e8idLuB3y2asr9u1vO8UbrKcUQyuq
+yxApjjPAmgrW4qcquaIPAw3FUif35xjnMs8obL4GfrMqvaOMBm4v6lbf+NYYUtuS
+RvjGJ2OV0onZ9iFA63Dz88u8L8LdRijG+lcG/evDEGKrloAx85foVcZI+mJDEBX1
+3y8/xkgabw0xQNZXPL3T+ozBwYFlCZfNmGGIl8c7cj9Y88GjZ1Remn7WtHEcViSk
+X6PjgxuuBybshG+/7NZZ
+=xY+4
+-----END PGP SIGNATURE-----
+
+--NU0Ex4SbNnrxsi6C--
