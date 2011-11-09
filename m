@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597Ab1KJDZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:25:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42181 "EHLO mx2.suse.de"
+	id S934558Ab1KJDZa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:25:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42154 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934557Ab1KJDZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:44 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
-Message-Id: <20111109212709.759490714@clark.kroah.org>
+	id S934015Ab1KJDZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:24 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
+Message-Id: <20111109212711.185660254@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:54 -0800
+Date: Wed, 09 Nov 2011 13:27:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [092/262] nfsd4: stop using nfserr_resource for transitory errors
+        alan@lxorguk.ukuu.org.uk,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [105/262] ASoC: Remove direct register cache accesses from WM8962 driver
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,104 +25,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-commit 3e77246393c0a433247631a1f0e9ec98d3d78a1c upstream.
+commit 38f3f31a0a797bdbcc0cdb12553bbecc2f9a91c4 upstream.
 
-The server is returning nfserr_resource for both permanent errors and
-for errors (like allocation failures) that might be resolved by retrying
-later.  Save nfserr_resource for the former and use delay/jukebox for
-the latter.
+Also fix return values for speaker switch updates.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4proc.c    |    2 +-
- fs/nfsd/nfs4recover.c |    2 +-
- fs/nfsd/nfs4state.c   |   14 +++++++-------
- 3 files changed, 9 insertions(+), 9 deletions(-)
+ sound/soc/codecs/wm8962.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -921,7 +921,7 @@ _nfsd4_verify(struct svc_rqst *rqstp, st
- 	count = 4 + (verify->ve_attrlen >> 2);
- 	buf = kmalloc(count << 2, GFP_KERNEL);
- 	if (!buf)
--		return nfserr_resource;
-+		return nfserr_jukebox;
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2018,7 +2018,6 @@ static int wm8962_put_spk_sw(struct snd_
+ 			    struct snd_ctl_elem_value *ucontrol)
+ {
+ 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-	u16 *reg_cache = codec->reg_cache;
+ 	int ret;
  
- 	status = nfsd4_encode_fattr(&cstate->current_fh,
- 				    cstate->current_fh.fh_export,
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -88,7 +88,7 @@ nfs4_make_rec_clidname(char *dname, stru
- 	struct xdr_netobj cksum;
- 	struct hash_desc desc;
- 	struct scatterlist sg;
--	__be32 status = nfserr_resource;
-+	__be32 status = nfserr_jukebox;
+ 	/* Apply the update (if any) */
+@@ -2027,16 +2026,19 @@ static int wm8962_put_spk_sw(struct snd_
+ 		return 0;
  
- 	dprintk("NFSD: nfs4_make_rec_clidname for %.*s\n",
- 			clname->len, clname->data);
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1903,7 +1903,7 @@ nfsd4_setclientid(struct svc_rqst *rqstp
- 	 * of 5 bullet points, labeled as CASE0 - CASE4 below.
- 	 */
- 	unconf = find_unconfirmed_client_by_str(dname, strhashval);
--	status = nfserr_resource;
-+	status = nfserr_jukebox;
- 	if (!conf) {
- 		/*
- 		 * RFC 3530 14.2.33 CASE 4:
-@@ -2440,7 +2440,7 @@ renew:
- 	if (open->op_stateowner == NULL) {
- 		sop = alloc_init_open_stateowner(strhashval, clp, open);
- 		if (sop == NULL)
--			return nfserr_resource;
-+			return nfserr_jukebox;
- 		open->op_stateowner = sop;
- 	}
- 	list_del_init(&sop->so_close_lru);
-@@ -2576,7 +2576,7 @@ nfs4_new_open(struct svc_rqst *rqstp, st
+ 	/* If the left PGA is enabled hit that VU bit... */
+-	if (reg_cache[WM8962_PWR_MGMT_2] & WM8962_SPKOUTL_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_SPKOUTL_VOLUME,
+-				     reg_cache[WM8962_SPKOUTL_VOLUME]);
++	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
++	if (ret & WM8962_SPKOUTL_PGA_ENA) {
++		snd_soc_write(codec, WM8962_SPKOUTL_VOLUME,
++			      snd_soc_read(codec, WM8962_SPKOUTL_VOLUME));
++		return 1;
++	}
  
- 	stp = nfs4_alloc_stateid();
- 	if (stp == NULL)
--		return nfserr_resource;
-+		return nfserr_jukebox;
+ 	/* ...otherwise the right.  The VU is stereo. */
+-	if (reg_cache[WM8962_PWR_MGMT_2] & WM8962_SPKOUTR_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_SPKOUTR_VOLUME,
+-				     reg_cache[WM8962_SPKOUTR_VOLUME]);
++	if (ret & WM8962_SPKOUTR_PGA_ENA)
++		snd_soc_write(codec, WM8962_SPKOUTR_VOLUME,
++			      snd_soc_read(codec, WM8962_SPKOUTR_VOLUME));
  
- 	status = nfs4_get_vfs_file(rqstp, fp, cur_fh, open);
- 	if (status) {
-@@ -2807,7 +2807,7 @@ nfsd4_process_open2(struct svc_rqst *rqs
- 		status = nfserr_bad_stateid;
- 		if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEGATE_CUR)
- 			goto out;
--		status = nfserr_resource;
-+		status = nfserr_jukebox;
- 		fp = alloc_init_file(ino);
- 		if (fp == NULL)
- 			goto out;
-@@ -3840,7 +3840,7 @@ nfsd4_lock(struct svc_rqst *rqstp, struc
- 		/* XXX: Do we need to check for duplicate stateowners on
- 		 * the same file, or should they just be allowed (and
- 		 * create new stateids)? */
--		status = nfserr_resource;
-+		status = nfserr_jukebox;
- 		lock_sop = alloc_init_lock_stateowner(strhashval,
- 				open_sop->so_client, open_stp, lock);
- 		if (lock_sop == NULL)
-@@ -3924,9 +3924,9 @@ nfsd4_lock(struct svc_rqst *rqstp, struc
- 	case (EDEADLK):
- 		status = nfserr_deadlock;
- 		break;
--	default:        
-+	default:
- 		dprintk("NFSD: nfsd4_lock: vfs_lock_file() failed! status %d\n",err);
--		status = nfserr_resource;
-+		status = nfserrno(err);
- 		break;
- 	}
- out:
+-	return 0;
++	return 1;
+ }
+ 
+ static const char *cap_hpf_mode_text[] = {
+@@ -2336,7 +2338,6 @@ static int out_pga_event(struct snd_soc_
+ 			 struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+-	u16 *reg_cache = codec->reg_cache;
+ 	int reg;
+ 
+ 	switch (w->shift) {
+@@ -2359,7 +2360,7 @@ static int out_pga_event(struct snd_soc_
+ 
+ 	switch (event) {
+ 	case SND_SOC_DAPM_POST_PMU:
+-		return snd_soc_write(codec, reg, reg_cache[reg]);
++		return snd_soc_write(codec, reg, snd_soc_read(codec, reg));
+ 	default:
+ 		BUG();
+ 		return -EINVAL;
 
 
