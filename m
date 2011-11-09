@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934653Ab1KJD0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:26:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42209 "EHLO mx2.suse.de"
+	id S934627Ab1KJFNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:13:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42175 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934639Ab1KJD0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:26:01 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:12 2011
-Message-Id: <20111109212712.112140448@clark.kroah.org>
+	id S934025Ab1KJDZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
+Message-Id: <20111109212711.697583037@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:16 -0800
+Date: Wed, 09 Nov 2011 13:27:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Herton Ronaldo Krzesinski <herton@mandriva.com.br>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: [114/262] fb: avoid possible deadlock caused by fb_set_suspend
+        alan@lxorguk.ukuu.org.uk, Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [110/262] [S390] ccwgroup: move attributes to attribute group
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,150 +25,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit 9e769ff3f585db8f978f9113be83d36c7e3965dd upstream.
+commit dbdf1afcaaabe83dea15a3cb9b9013e73ae3b1ad upstream.
 
-A lock ordering issue can cause deadlocks: in framebuffer/console code,
-all needed struct fb_info locks are taken before acquire_console_sem(),
-in places which need to take console semaphore.
+Put sysfs attributes of ccwgroup devices in an attribute group to
+ensure that these attributes are actually present when userspace
+is notified via uevents.
 
-But fb_set_suspend is always called with console semaphore held, and
-inside it we call lock_fb_info which gets the fb_info lock, inverse
-locking order of what the rest of the code does. This causes a real
-deadlock issue, when we write to state fb sysfs attribute (which calls
-fb_set_suspend) while a framebuffer is being unregistered by
-remove_conflicting_framebuffers, as can be shown by following show
-blocked state trace on a test program which loads i915 and runs another
-forked processes writing to state attribute:
-
-Test process with semaphore held and trying to get fb_info lock:
-..
-fb-test2      D 0000000000000000     0   237    228 0x00000000
- ffff8800774f3d68 0000000000000082 00000000000135c0 00000000000135c0
- ffff880000000000 ffff8800774f3fd8 ffff8800774f3fd8 ffff880076ee4530
- 00000000000135c0 ffff8800774f3fd8 ffff8800774f2000 00000000000135c0
-Call Trace:
- [<ffffffff8141287a>] __mutex_lock_slowpath+0x11a/0x1e0
- [<ffffffff814142f2>] ? _raw_spin_lock_irq+0x22/0x40
- [<ffffffff814123d3>] mutex_lock+0x23/0x50
- [<ffffffff8125dfc5>] lock_fb_info+0x25/0x60
- [<ffffffff8125e3f0>] fb_set_suspend+0x20/0x80
- [<ffffffff81263e2f>] store_fbstate+0x4f/0x70
- [<ffffffff812e7f70>] dev_attr_store+0x20/0x30
- [<ffffffff811c46b4>] sysfs_write_file+0xd4/0x160
- [<ffffffff81155a26>] vfs_write+0xc6/0x190
- [<ffffffff81155d51>] sys_write+0x51/0x90
- [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-..
-modprobe process stalled because has the fb_info lock (got inside
-unregister_framebuffer) but waiting for the semaphore held by the
-test process which is waiting to get the fb_info lock:
-..
-modprobe      D 0000000000000000     0   230    218 0x00000000
- ffff880077a4d618 0000000000000082 0000000000000001 0000000000000001
- ffff880000000000 ffff880077a4dfd8 ffff880077a4dfd8 ffff8800775a2e20
- 00000000000135c0 ffff880077a4dfd8 ffff880077a4c000 00000000000135c0
-Call Trace:
- [<ffffffff81411fe5>] schedule_timeout+0x215/0x310
- [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
- [<ffffffff814130dd>] __down+0x6d/0xb0
- [<ffffffff81089f71>] down+0x41/0x50
- [<ffffffff810629ac>] acquire_console_sem+0x2c/0x50
- [<ffffffff812ca53d>] unbind_con_driver+0xad/0x2d0
- [<ffffffff8126f5f7>] fbcon_event_notify+0x457/0x890
- [<ffffffff814144ff>] ? _raw_spin_unlock_irqrestore+0x1f/0x50
- [<ffffffff81058051>] ? get_parent_ip+0x11/0x50
- [<ffffffff8141836d>] notifier_call_chain+0x4d/0x70
- [<ffffffff8108a3b8>] __blocking_notifier_call_chain+0x58/0x80
- [<ffffffff8108a3f6>] blocking_notifier_call_chain+0x16/0x20
- [<ffffffff8125dabb>] fb_notifier_call_chain+0x1b/0x20
- [<ffffffff8125e6ac>] unregister_framebuffer+0x7c/0x130
- [<ffffffff8125e8b3>] remove_conflicting_framebuffers+0x153/0x180
- [<ffffffff8125eef3>] register_framebuffer+0x93/0x2c0
- [<ffffffffa0331112>] drm_fb_helper_single_fb_probe+0x252/0x2f0 [drm_kms_helper]
- [<ffffffffa03314a3>] drm_fb_helper_initial_config+0x2f3/0x6d0 [drm_kms_helper]
- [<ffffffffa03318dd>] ? drm_fb_helper_single_add_all_connectors+0x5d/0x1c0 [drm_kms_helper]
- [<ffffffffa037b588>] intel_fbdev_init+0xa8/0x160 [i915]
- [<ffffffffa0343d74>] i915_driver_load+0x854/0x12b0 [i915]
- [<ffffffffa02f0e7e>] drm_get_pci_dev+0x19e/0x360 [drm]
- [<ffffffff8141821d>] ? sub_preempt_count+0x9d/0xd0
- [<ffffffffa0386f91>] i915_pci_probe+0x15/0x17 [i915]
- [<ffffffff8124481f>] local_pci_probe+0x5f/0xd0
- [<ffffffff81244f89>] pci_device_probe+0x119/0x120
- [<ffffffff812eccaa>] ? driver_sysfs_add+0x7a/0xb0
- [<ffffffff812ed003>] driver_probe_device+0xa3/0x290
- [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
- [<ffffffff812ed29b>] __driver_attach+0xab/0xb0
- [<ffffffff812ed1f0>] ? __driver_attach+0x0/0xb0
- [<ffffffff812ebd3e>] bus_for_each_dev+0x5e/0x90
- [<ffffffff812ecc2e>] driver_attach+0x1e/0x20
- [<ffffffff812ec6f2>] bus_add_driver+0xe2/0x320
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffff812ed536>] driver_register+0x76/0x140
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffff81245216>] __pci_register_driver+0x56/0xd0
- [<ffffffffa02f1264>] drm_pci_init+0xe4/0xf0 [drm]
- [<ffffffffa03aa000>] ? i915_init+0x0/0x96 [i915]
- [<ffffffffa02e84a8>] drm_init+0x58/0x70 [drm]
- [<ffffffffa03aa094>] i915_init+0x94/0x96 [i915]
- [<ffffffff81002194>] do_one_initcall+0x44/0x190
- [<ffffffff810a066b>] sys_init_module+0xcb/0x210
- [<ffffffff8100c012>] system_call_fastpath+0x16/0x1b
-..
-
-fb-test2 which reproduces above is available on kernel.org bug #26232.
-To solve this issue, avoid calling lock_fb_info inside fb_set_suspend,
-and move it out to where needed (callers of fb_set_suspend must call
-lock_fb_info before if needed). So far, the only place which needs to
-call lock_fb_info is store_fbstate, all other places which calls
-fb_set_suspend are suspend/resume hooks that should not need the lock as
-they should be run only when processes are already frozen in
-suspend/resume.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=26232
-Signed-off-by: Herton Ronaldo Krzesinski <herton@mandriva.com.br>
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/fbmem.c   |    3 ---
- drivers/video/fbsysfs.c |    3 +++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/s390/cio/ccwgroup.c |   42 ++++++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1738,8 +1738,6 @@ void fb_set_suspend(struct fb_info *info
- {
- 	struct fb_event event;
- 
--	if (!lock_fb_info(info))
--		return;
- 	event.info = info;
- 	if (state) {
- 		fb_notifier_call_chain(FB_EVENT_SUSPEND, &event);
-@@ -1748,7 +1746,6 @@ void fb_set_suspend(struct fb_info *info
- 		info->state = FBINFO_STATE_RUNNING;
- 		fb_notifier_call_chain(FB_EVENT_RESUME, &event);
+--- a/drivers/s390/cio/ccwgroup.c
++++ b/drivers/s390/cio/ccwgroup.c
+@@ -87,6 +87,12 @@ static void __ccwgroup_remove_cdev_refs(
  	}
--	unlock_fb_info(info);
  }
  
- /**
---- a/drivers/video/fbsysfs.c
-+++ b/drivers/video/fbsysfs.c
-@@ -399,9 +399,12 @@ static ssize_t store_fbstate(struct devi
- 
- 	state = simple_strtoul(buf, &last, 0);
- 
-+	if (!lock_fb_info(fb_info))
-+		return -ENODEV;
- 	console_lock();
- 	fb_set_suspend(fb_info, (int)state);
- 	console_unlock();
-+	unlock_fb_info(fb_info);
- 
- 	return count;
++static ssize_t ccwgroup_online_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count);
++static ssize_t ccwgroup_online_show(struct device *dev,
++				    struct device_attribute *attr,
++				    char *buf);
+ /*
+  * Provide an 'ungroup' attribute so the user can remove group devices no
+  * longer needed or accidentially created. Saves memory :)
+@@ -134,6 +140,20 @@ out:
  }
+ 
+ static DEVICE_ATTR(ungroup, 0200, NULL, ccwgroup_ungroup_store);
++static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
++
++static struct attribute *ccwgroup_attrs[] = {
++	&dev_attr_online.attr,
++	&dev_attr_ungroup.attr,
++	NULL,
++};
++static struct attribute_group ccwgroup_attr_group = {
++	.attrs = ccwgroup_attrs,
++};
++static const struct attribute_group *ccwgroup_attr_groups[] = {
++	&ccwgroup_attr_group,
++	NULL,
++};
+ 
+ static void
+ ccwgroup_release (struct device *dev)
+@@ -293,25 +313,17 @@ int ccwgroup_create_from_string(struct d
+ 	}
+ 
+ 	dev_set_name(&gdev->dev, "%s", dev_name(&gdev->cdev[0]->dev));
+-
++	gdev->dev.groups = ccwgroup_attr_groups;
+ 	rc = device_add(&gdev->dev);
+ 	if (rc)
+ 		goto error;
+ 	get_device(&gdev->dev);
+-	rc = device_create_file(&gdev->dev, &dev_attr_ungroup);
+-
+-	if (rc) {
+-		device_unregister(&gdev->dev);
+-		goto error;
+-	}
+-
+ 	rc = __ccwgroup_create_symlinks(gdev);
+ 	if (!rc) {
+ 		mutex_unlock(&gdev->reg_mutex);
+ 		put_device(&gdev->dev);
+ 		return 0;
+ 	}
+-	device_remove_file(&gdev->dev, &dev_attr_ungroup);
+ 	device_unregister(&gdev->dev);
+ error:
+ 	for (i = 0; i < num_devices; i++)
+@@ -423,7 +435,7 @@ ccwgroup_online_store (struct device *de
+ 	int ret;
+ 
+ 	if (!dev->driver)
+-		return -ENODEV;
++		return -EINVAL;
+ 
+ 	gdev = to_ccwgroupdev(dev);
+ 	gdrv = to_ccwgroupdrv(dev->driver);
+@@ -456,8 +468,6 @@ ccwgroup_online_show (struct device *dev
+ 	return sprintf(buf, online ? "1\n" : "0\n");
+ }
+ 
+-static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
+-
+ static int
+ ccwgroup_probe (struct device *dev)
+ {
+@@ -469,12 +479,7 @@ ccwgroup_probe (struct device *dev)
+ 	gdev = to_ccwgroupdev(dev);
+ 	gdrv = to_ccwgroupdrv(dev->driver);
+ 
+-	if ((ret = device_create_file(dev, &dev_attr_online)))
+-		return ret;
+-
+ 	ret = gdrv->probe ? gdrv->probe(gdev) : -ENODEV;
+-	if (ret)
+-		device_remove_file(dev, &dev_attr_online);
+ 
+ 	return ret;
+ }
+@@ -485,9 +490,6 @@ ccwgroup_remove (struct device *dev)
+ 	struct ccwgroup_device *gdev;
+ 	struct ccwgroup_driver *gdrv;
+ 
+-	device_remove_file(dev, &dev_attr_online);
+-	device_remove_file(dev, &dev_attr_ungroup);
+-
+ 	if (!dev->driver)
+ 		return 0;
+ 
 
 
