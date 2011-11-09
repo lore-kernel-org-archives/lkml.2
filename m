@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab1KILhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 06:37:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57606 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1KILhf (ORCPT
+	id S1752361Ab1KILjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 06:39:47 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65266 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751207Ab1KILjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 06:37:35 -0500
-Message-ID: <4EBA65FA.1010605@gmail.com>
-Date: Wed, 09 Nov 2011 19:37:30 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Wed, 9 Nov 2011 06:39:45 -0500
 MIME-Version: 1.0
-To: yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mm/memblock.c: eliminate potential memleak in memblock_double_array
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1320836793.3259.151.camel@hornet.cambridge.arm.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+	<20111101114542.GA13434@redhat.com>
+	<1320150813.3847.24.camel@lappy>
+	<20111101124223.GA14060@redhat.com>
+	<8739e7uy87.fsf@rustcorp.com.au>
+	<20111102233110.GA20289@redhat.com>
+	<20111108214021.GA4538@redhat.com>
+	<1320832502.31056.22.camel@lappy>
+	<20111109101814.GC20612@redhat.com>
+	<1320834017.31056.26.camel@lappy>
+	<1320835653.3259.138.camel@hornet.cambridge.arm.com>
+	<1320836144.31056.35.camel@lappy>
+	<1320836793.3259.151.camel@hornet.cambridge.arm.com>
+Date: Wed, 9 Nov 2011 11:39:44 +0000
+Message-ID: <CAFEAcA8Ci1_t=qruaAwU_NeR=_WD=7NUsDwqL_qMTyDb4HVBxA@mail.gmail.com>
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+From: Peter Maydell <peter.maydell@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Wang Sheng-Hui <shhuiw@gmail.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "avi@redhat.com" <avi@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In memblock_double_array, we don't deal with old_array if we use
-slab for new_array. So the memory used by old_array may be lost.
-Add logic to try to free old_array when using slab for new_array.
+On 9 November 2011 11:06, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Wed, 2011-11-09 at 10:55 +0000, Sasha Levin wrote:
+>> On Wed, 2011-11-09 at 10:47 +0000, Pawel Moll wrote:
+>> > Yep, it's actually already in 3.2-rc1 (drivers/virtio/virtio_mmio.c) and
+>> > in the spec (see Appendix X). And actually the control registers layout
+>> > I used was originally based on the PCI "legacy" headers (slightly
+>> > simplified), but evolved a bit since. My understanding is that the
+>> > changes Michael is proposing affect the PCI device interface only so
+>> > they shouldn't affect "my" interface.
+>>
+>> I didn't know it's in already, might be interesting adding support to it
+>> to x86 userspace tools.
+>
+> Do you mean the qemu or the (non-qemu) KVM tools I know nothing
+> about? ;-)
+>
+> If qemu, Peter got it already running with virtio_mmio on ARM models
+> (not upstream yet as far as I know), but I presume the code would we
+> mostly non-ARM specific.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- mm/memblock.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+The QEMU code is completely non-ARM-specific (apart from the line
+in the relevant ARM board models where we instantiate the devices).
+I haven't submitted it upstream yet though because really the
+virtio transport layer in QEMU needs to be refactored as a qdev
+bus first.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 09ff05b..0e4248f 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -250,13 +250,17 @@ static int __init_memblock memblock_double_array(struct memblock_type *type)
- 	type->regions = new_array;
- 	type->max <<= 1;
- 
--	/* If we use SLAB that's it, we are done */
--	if (use_slab)
-+	if (use_slab) {
-+		if (memblock_is_region_reserved(__pa(old_array), old_size))
-+			goto old_memblock;
-+		kfree(old_array);
- 		return 0;
-+	}
- 
- 	/* Add the new reserved region now. Should not fail ! */
- 	BUG_ON(memblock_add_region(&memblock.reserved, addr, new_size));
- 
-+old_memblock:
- 	/* If the array wasn't our static init one, then free it. We only do
- 	 * that before SLAB is available as later on, we don't know whether
- 	 * to use kfree or free_bootmem_pages(). Shouldn't be a big deal
--- 
-1.7.1
-
+-- PMM
