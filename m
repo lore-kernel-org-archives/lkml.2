@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934612Ab1KJDZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:25:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42189 "EHLO mx2.suse.de"
+	id S934625Ab1KJDZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:25:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42193 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934557Ab1KJDZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:49 -0500
+	id S934611Ab1KJDZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
-Message-Id: <20111109212711.805799928@clark.kroah.org>
+Message-Id: <20111109212711.906004641@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:13 -0800
+Date: Wed, 09 Nov 2011 13:27:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@mail.ru>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [111/262] WMI: properly cleanup devices to avoid crashes
+        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [112/262] iommu/amd: Fix wrong shift direction
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +24,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 023b9565972a4a5e0f01b9aa32680af6e9b5c388 upstream.
+commit fcd0861db1cf4e6ed99f60a815b7b72c2ed36ea4 upstream.
 
-We need to remove devices that we destroy from the list, otherwise
-we'll crash if there are more than one "_WDG" methods in DSDT.
+The shift direction was wrong because the function takes a
+page number and i is the address is the loop.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=32052
-
-Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/wmi.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ arch/x86/kernel/amd_iommu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -754,9 +754,13 @@ static void wmi_free_devices(void)
- 	struct wmi_block *wblock, *next;
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -1203,7 +1203,7 @@ static int alloc_new_range(struct dma_op
+ 		if (!pte || !IOMMU_PTE_PRESENT(*pte))
+ 			continue;
  
- 	/* Delete devices for all the GUIDs */
--	list_for_each_entry_safe(wblock, next, &wmi_block_list, list)
-+	list_for_each_entry_safe(wblock, next, &wmi_block_list, list) {
-+		list_del(&wblock->list);
- 		if (wblock->dev.class)
- 			device_unregister(&wblock->dev);
-+		else
-+			kfree(wblock);
-+	}
- }
+-		dma_ops_reserve_addresses(dma_dom, i << PAGE_SHIFT, 1);
++		dma_ops_reserve_addresses(dma_dom, i >> PAGE_SHIFT, 1);
+ 	}
  
- static bool guid_already_parsed(const char *guid_string)
+ 	update_domain(&dma_dom->domain);
 
 
