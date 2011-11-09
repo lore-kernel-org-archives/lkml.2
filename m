@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935920Ab1KJEcr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:32:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43831 "EHLO mx2.suse.de"
+	id S965050Ab1KJEcp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:32:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43843 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964981Ab1KJDhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:37:33 -0500
+	id S935920Ab1KJDhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:37:40 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:47 2011
-Message-Id: <20111109213147.618416390@clark.kroah.org>
+Message-Id: <20111109213147.820962022@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:42 -0800
+Date: Wed, 09 Nov 2011 13:31:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Serge Hallyn <serge.hallyn@canonical.com>
-Subject: [055/264] USB: pid_ns: ensure pid is not freed during kill_pid_info_as_uid
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [057/264] USB: add RESET_RESUME for webcams shown to be quirky
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +24,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Serge Hallyn <serge.hallyn@canonical.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit aec01c5895051849ed842dc5b8794017a7751f28 upstream.
+commit 2394d67e446bf616a0885167d5f0d397bdacfdfc upstream.
 
-Alan Stern points out that after spin_unlock(&ps->lock) there is no
-guarantee that ps->pid won't be freed.  Since kill_pid_info_as_uid() is
-called after the spin_unlock(), the pid passed to it must be pinned.
+The new runtime PM code has shown that many webcams suffer
+from a race condition that may crash them upon resume.
+Runtime PM is especially prone to show the problem because
+it retains power to the cameras at all times. However
+system suspension may also crash the devices and retain
+power to the devices.
+The only way to solve this problem without races is in
+usbcore with the RESET_RESUME quirk.
 
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/devio.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/usb/core/quirks.c |   21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -407,7 +407,7 @@ static void async_completed(struct urb *
- 		sinfo.si_errno = as->status;
- 		sinfo.si_code = SI_ASYNCIO;
- 		sinfo.si_addr = as->userurb;
--		pid = as->pid;
-+		pid = get_pid(as->pid);
- 		uid = as->uid;
- 		euid = as->euid;
- 		secid = as->secid;
-@@ -422,9 +422,11 @@ static void async_completed(struct urb *
- 		cancel_bulk_urbs(ps, as->bulk_addr);
- 	spin_unlock(&ps->lock);
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -38,6 +38,24 @@ static const struct usb_device_id usb_qu
+ 	/* Creative SB Audigy 2 NX */
+ 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
  
--	if (signr)
-+	if (signr) {
- 		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
- 				      euid, secid);
-+		put_pid(pid);
-+	}
++	/* Logitech Webcam C200 */
++	{ USB_DEVICE(0x046d, 0x0802), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam C250 */
++	{ USB_DEVICE(0x046d, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam B/C500 */
++	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam Pro 9000 */
++	{ USB_DEVICE(0x046d, 0x0809), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam C310 */
++	{ USB_DEVICE(0x046d, 0x081b), .driver_info = USB_QUIRK_RESET_RESUME },
++
++	/* Logitech Webcam C270 */
++	{ USB_DEVICE(0x046d, 0x0825), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Harmony 700-series */
+ 	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
  
- 	wake_up(&ps->wait);
- }
+@@ -69,6 +87,9 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
+ 
++	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
