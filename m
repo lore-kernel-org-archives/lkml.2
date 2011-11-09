@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab1KIRUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:20:07 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:52009 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754391Ab1KIRUE (ORCPT
+	id S932414Ab1KIRUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:20:36 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:59412 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755603Ab1KIRUG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:20:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAAy2uk4Y9geI/2dsb2JhbAAMNoR9ow6FEAEBAQEDIwRRARALDgoCAgUWCwICCQMCAQIBRQYNAQcBAa1bkjyBMIc5gRYEiAyeKQ
-X-IronPort-AV: E=Sophos;i="4.69,484,1315195200"; 
-   d="scan'208";a="147180117"
-Message-ID: <4EBAB643.8020603@teksavvy.com>
-Date: Wed, 09 Nov 2011 12:20:03 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 9 Nov 2011 12:20:06 -0500
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-References: <4EA89972.5060101@teksavvy.com>   <20111026.194045.2019668159403582571.davem@davemloft.net>   <4EA8B283.3010105@teksavvy.com>   <20111026.221719.2216112919297458522.davem@davemloft.net>   <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye> <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>
-In-Reply-To: <4EBAB0EA.1050102@teksavvy.com>
+In-Reply-To: <20111109165330.GA13326@suse.de>
+References: <20111109162512.GB1260@google.com> <20111109165330.GA13326@suse.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 9 Nov 2011 18:19:43 +0100
+Message-ID: <CAPXgP109AAzi3z0-87jCs+b21p1eo3fCV7StToksm_GYSax8_A@mail.gmail.com>
+Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute "alias"
+ in gendisk"
+To: Greg KH <gregkh@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "James E.J. Bottomley" <James.Bottomley@hansenpartnership.com>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        Alan Cox <alan@linux.intel.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-09 11:57 AM, Mark Lord wrote:
-> On 11-11-09 11:47 AM, Mark Lord wrote:
-> ..
->> Note:  I'm looking at smsc95xx.c and smsc75xx.c for examples,
->> and they both have the same problem I'll have here:
+On Wed, Nov 9, 2011 at 17:53, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Nov 09, 2011 at 08:25:12AM -0800, Tejun Heo wrote:
+>> This reverts commit a72c5e5eb738033938ab30d6a634b74d1d060f10.
 >>
->> How to update the csum settings atomically.
->> A spinlock is no good, because config register access is over USB.
-> 
-> Nevermind.. a slight change in the logic and all is well again.
-..
+>> The commit introduced alias for block devices which is intended to be
+>> used during logging although actual usage hasn't been committed yet.
+>> This approach adds very limited benefit (raw log might be easier to
+>> follow) which can be trivially implemented in userland but has a lot
+>> of problems.
+>>
+>> It is much worse than netif renames because it doesn't rename the
+>> actual device but just adds conveninence name which isn't used
+>> universally or enforced.  Everything internal including device lookup
+>> and sysfs still uses the internal name and nothing prevents two
+>> devices from using conflicting alias - ie. sda can have sdb as its
+>> alias.
+>>
+>> This has been nacked by people working on device driver core, block
+>> layer and kernel-userland interface and shouldn't have been
+>> upstreamed.  Revert it.
+>>
+>>  http://thread.gmane.org/gmane.linux.kernel/1155104
+>>  http://thread.gmane.org/gmane.linux.scsi/68632
+>>  http://thread.gmane.org/gmane.linux.scsi/69776
+>>
+>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>> Cc: Jens Axboe <axboe@kernel.dk>
+>> Cc: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>
+>> Cc: Nao Nishijima <nao.nishijima.xt@hitachi.com>
+>> Cc: Kay Sievers <kay.sievers@vrfy.org>
+>> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Or even simpler (below).  I don't think this method requires any
-extra locking, but I'm still open to persuasion.  :)
+ Acked-by: Kay Sievers <kay.sievers@vrfy.org>
 
-
-static int ax88772b_set_features(struct net_device *netdev, u32 features)
-{
-        struct usbnet *dev = netdev_priv(netdev);
-        struct ax88772b_data *priv = (struct ax88772b_data *)dev->driver_priv;
-        u16 tx_csum = 0, rx_csum = 0;
-
-        priv->features = features & (NETIF_F_HW_CSUM | NETIF_F_RXCSUM);
-        if (features & NETIF_F_HW_CSUM)
-                tx_csum = AX_TXCOE_DEF_CSUM;
-        if (features & NETIF_F_RXCSUM)
-                rx_csum = AX_RXCOE_DEF_CSUM;
-        ax8817x_write_cmd(dev, AX_CMD_WRITE_RXCOE_CTL, rx_csum, 0, 0, NULL);
-        ax8817x_write_cmd(dev, AX_CMD_WRITE_TXCOE_CTL, tx_csum, 0, 0, NULL);
-        return 0;
-}
-
+Thanks,
+Kay
