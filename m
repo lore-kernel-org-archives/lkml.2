@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965339Ab1KJEKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:10:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44613 "EHLO mx2.suse.de"
+	id S936073Ab1KJEKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:10:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44606 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936033Ab1KJDoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:17 -0500
+	id S935979Ab1KJDoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:14 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:59 2011
-Message-Id: <20111109213159.720755118@clark.kroah.org>
+Message-Id: <20111109213159.622872809@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:41 -0800
+Date: Wed, 09 Nov 2011 13:33:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [174/264] usb_storage: Dont freeze in usb-stor-scan
+        alan@lxorguk.ukuu.org.uk, Eric Sandeen <sandeen@redhat.com>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [173/264] ext4: fix race in xattr block allocation path
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit f02fe890ece7d695a5744b20525d45312382e6e4 upstream.
+commit 6d6a435190bdf2e04c9465cde5bdc3ac68cf11a4 upstream.
 
-Scanning cannot be run during suspend or hibernation, but if
-usb-stor-scan freezes another thread waiting on scanning to
-complete may fail to freeze.
+Ceph users reported that when using Ceph on ext4, the filesystem
+would often become corrupted, containing inodes with incorrect
+i_blocks counters.
 
-However, if usb-stor-scan is left freezable without ever actually
-freezing then the freezer will wait on it to exit, and threads
-waiting for scanning to finish will no longer be blocked. One
-problem with this approach is that usb-stor-scan has a delay to
-wait for devices to settle (which is currently the only point where
-it can freeze). To work around this we can request that the freezer
-send a fake signal when freezing, then use interruptible sleep to
-wake the thread early when freezing happens.
+I managed to reproduce this with a very hacked-up "streamtest"
+binary from the Ceph tree.
 
-To make this happen, the following changes are made to
-usb-stor-scan:
+Ceph is doing a lot of xattr writes, to out-of-inode blocks.
+There is also another thread which does sync_file_range and close,
+of the same files.  The problem appears to happen due to this race:
 
- * Use set_freezable_with_signal() instead of set_freezable() to
-   request a fake signal when freezing
+sync/flush thread               xattr-set thread
+-----------------               ----------------
 
- * Use wait_event_interruptible_timeout() instead of
-   wait_event_freezable_timeout() to avoid freezing
+do_writepages                   ext4_xattr_set
+ext4_da_writepages              ext4_xattr_set_handle
+mpage_da_map_blocks             ext4_xattr_block_set
+        set DELALLOC_RESERVE
+                                ext4_new_meta_blocks
+                                        ext4_mb_new_blocks
+                                                if (!i_delalloc_reserved_flag)
+                                                        vfs_dq_alloc_block
+ext4_get_blocks
+	down_write(i_data_sem)
+        set i_delalloc_reserved_flag
+	...
+	up_write(i_data_sem)
+                                        if (i_delalloc_reserved_flag)
+                                                vfs_dq_alloc_block_nofail
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
+In other words, the sync/flush thread pops in and sets
+i_delalloc_reserved_flag on the inode, which makes the xattr thread
+think that it's in a delalloc path in ext4_new_meta_blocks(),
+and add the block for a second time, after already having added
+it once in the !i_delalloc_reserved_flag case in ext4_mb_new_blocks
+
+The real problem is that we shouldn't be using the DELALLOC_RESERVED
+state flag, and instead we should be passing
+EXT4_GET_BLOCKS_DELALLOC_RESERVE down to ext4_map_blocks() instead of
+using an inode state flag.  We'll fix this for now with using
+i_data_sem to prevent this race, but this is really not the right way
+to fix things.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/storage/usb.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ fs/ext4/xattr.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -831,12 +831,22 @@ static int usb_stor_scan_thread(void * _
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -820,8 +820,14 @@ inserted:
+ 			if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)))
+ 				goal = goal & EXT4_MAX_BLOCK_FILE_PHYS;
  
- 	dev_dbg(dev, "device found\n");
++			/*
++			 * take i_data_sem because we will test
++			 * i_delalloc_reserved_flag in ext4_mb_new_blocks
++			 */
++			down_read((&EXT4_I(inode)->i_data_sem));
+ 			block = ext4_new_meta_blocks(handle, inode, goal, 0,
+ 						     NULL, &error);
++			up_read((&EXT4_I(inode)->i_data_sem));
+ 			if (error)
+ 				goto cleanup;
  
--	set_freezable();
--	/* Wait for the timeout to expire or for a disconnect */
-+	set_freezable_with_signal();
-+	/*
-+	 * Wait for the timeout to expire or for a disconnect
-+	 *
-+	 * We can't freeze in this thread or we risk causing khubd to
-+	 * fail to freeze, but we can't be non-freezable either. Nor can
-+	 * khubd freeze while waiting for scanning to complete as it may
-+	 * hold the device lock, causing a hang when suspending devices.
-+	 * So we request a fake signal when freezing and use
-+	 * interruptible sleep to kick us out of our wait early when
-+	 * freezing happens.
-+	 */
- 	if (delay_use > 0) {
- 		dev_dbg(dev, "waiting for device to settle "
- 				"before scanning\n");
--		wait_event_freezable_timeout(us->delay_wait,
-+		wait_event_interruptible_timeout(us->delay_wait,
- 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
- 				delay_use * HZ);
- 	}
 
 
