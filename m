@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934826Ab1KJFIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:08:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42380 "EHLO mx2.suse.de"
+	id S934866Ab1KJFIg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:08:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42375 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934808Ab1KJD1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:19 -0500
+	id S934800Ab1KJD1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:14 2011
-Message-Id: <20111109212714.505840026@clark.kroah.org>
+Message-Id: <20111109212714.392985008@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:40 -0800
+Date: Wed, 09 Nov 2011 13:27:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Oliver Hartkopp <socketcan@hartkopp.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [138/262] ipv4: fix ipsec forward performance regression
+Subject: [137/262] can bcm: fix tx_setup off-by-one errors
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,44 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-[ Upstream commit b73233960a59ee66e09d642f13d0592b13651e94 ]
+[ Upstream commit aabdcb0b553b9c9547b1a506b34d55a764745870 ]
 
-There is bug in commit 5e2b61f(ipv4: Remove flowi from struct rtable).
-It makes xfrm4_fill_dst() modify wrong data structure.
+This patch fixes two off-by-one errors that canceled each other out.
+Checking for the same condition two times in bcm_tx_timeout_tsklet() reduced
+the count of frames to be sent by one. This did not show up the first time
+tx_setup is invoked as an additional frame is sent due to TX_ANNONCE.
+Invoking a second tx_setup on the same item led to a reduced (by 1) number of
+sent frames.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Reported-by: Kim Phillips <kim.phillips@freescale.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reported-by: Andre Naujoks <nautsch@gmail.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/xfrm4_policy.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/can/bcm.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/net/ipv4/xfrm4_policy.c
-+++ b/net/ipv4/xfrm4_policy.c
-@@ -79,13 +79,13 @@ static int xfrm4_fill_dst(struct xfrm_ds
- 	struct rtable *rt = (struct rtable *)xdst->route;
- 	const struct flowi4 *fl4 = &fl->u.ip4;
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -364,9 +364,6 @@ static void bcm_tx_timeout_tsklet(unsign
  
--	rt->rt_key_dst = fl4->daddr;
--	rt->rt_key_src = fl4->saddr;
--	rt->rt_key_tos = fl4->flowi4_tos;
--	rt->rt_route_iif = fl4->flowi4_iif;
--	rt->rt_iif = fl4->flowi4_iif;
--	rt->rt_oif = fl4->flowi4_oif;
--	rt->rt_mark = fl4->flowi4_mark;
-+	xdst->u.rt.rt_key_dst = fl4->daddr;
-+	xdst->u.rt.rt_key_src = fl4->saddr;
-+	xdst->u.rt.rt_key_tos = fl4->flowi4_tos;
-+	xdst->u.rt.rt_route_iif = fl4->flowi4_iif;
-+	xdst->u.rt.rt_iif = fl4->flowi4_iif;
-+	xdst->u.rt.rt_oif = fl4->flowi4_oif;
-+	xdst->u.rt.rt_mark = fl4->flowi4_mark;
+ 			bcm_send_to_user(op, &msg_head, NULL, 0);
+ 		}
+-	}
+-
+-	if (op->kt_ival1.tv64 && (op->count > 0)) {
  
- 	xdst->u.dst.dev = dev;
- 	dev_hold(dev);
+ 		/* send (next) frame */
+ 		bcm_can_tx(op);
+@@ -969,8 +966,9 @@ static int bcm_tx_setup(struct bcm_msg_h
+ 		/* spec: send can_frame when starting timer */
+ 		op->flags |= TX_ANNOUNCE;
+ 
+-		if (op->kt_ival1.tv64 && (op->count > 0)) {
+-			/* op->count-- is done in bcm_tx_timeout_handler */
++		/* only start timer when having more frames than sent below */
++		if (op->kt_ival1.tv64 && (op->count > 1)) {
++			/* op->count-- is done in bcm_tx_timeout_tsklet */
+ 			hrtimer_start(&op->timer, op->kt_ival1,
+ 				      HRTIMER_MODE_REL);
+ 		} else
+@@ -978,8 +976,11 @@ static int bcm_tx_setup(struct bcm_msg_h
+ 				      HRTIMER_MODE_REL);
+ 	}
+ 
+-	if (op->flags & TX_ANNOUNCE)
++	if (op->flags & TX_ANNOUNCE) {
+ 		bcm_can_tx(op);
++		if (op->kt_ival1.tv64 && (op->count > 0))
++			op->count--;
++	}
+ 
+ 	return msg_head->nframes * CFSIZ + MHSIZ;
+ }
 
 
