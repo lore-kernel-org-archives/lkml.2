@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab1KISTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 13:19:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24857 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab1KISTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 13:19:44 -0500
-Date: Wed, 9 Nov 2011 19:19:25 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
-Message-ID: <20111109181925.GN5075@redhat.com>
-References: <1320766151-2619-1-git-send-email-aarcange@redhat.com>
- <1320766151-2619-2-git-send-email-aarcange@redhat.com>
- <4EB98A83.3040101@linux.vnet.ibm.com>
- <4EBA75F2.4080800@linux.vnet.ibm.com>
- <20111109155342.GA1260@google.com>
- <20111109165201.GI5075@redhat.com>
- <20111109165925.GC1260@google.com>
- <20111109170248.GD1260@google.com>
- <20111109172942.GJ5075@redhat.com>
- <20111109180900.GF1260@google.com>
+	id S1756461Ab1KISW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 13:22:29 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:14663 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751010Ab1KISW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 13:22:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAPLDuk4Y9geI/2dsb2JhbAAMNoR9ow6FEAEBAQEDIwRSEAsOCgICBSECAg8CRgYNAQcBAa1EkkSBMIc5gRYEiAyeKQ
+X-IronPort-AV: E=Sophos;i="4.69,484,1315195200"; 
+   d="scan'208";a="147200048"
+Message-ID: <4EBAC4E2.70808@teksavvy.com>
+Date: Wed, 09 Nov 2011 13:22:26 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109180900.GF1260@google.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>  <4EBABAFD.6050604@teksavvy.com> <1320860895.2781.6.camel@bwh-desktop>
+In-Reply-To: <1320860895.2781.6.camel@bwh-desktop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 10:09:00AM -0800, Tejun Heo wrote:
-> I'm confused.  You're doing add_wait_queue() before
-> schedule_timeout_interruptible().  prepare_to_wait() is essentially
-> add_wait_queue() + set_current_state().  What am I missing?  ie. why
-> not do the following?
-
-Ah the reason of the waitqueue is the sysfs store, to get out of there
-if somebody decreases the wait time from 1min to 10sec or
-similar. It's not really needed for other things, in theory it could
-be a separate waitqueue just for sysfs but probably not worth it.
-
-> 	prepare_to_wait(INTERRUPTIBLE);
-> 	try_to_freeze();
-> 	schedule_timeout();
-> 	try_to_freeze();
-> 	finish_wait();
+On 11-11-09 12:48 PM, Ben Hutchings wrote:
+> On Wed, 2011-11-09 at 12:40 -0500, Mark Lord wrote:
+>> On 11-11-09 12:31 PM, Ben Hutchings wrote:
+>>> On Wed, 2011-11-09 at 12:20 -0500, Mark Lord wrote:
+>>>> On 11-11-09 11:57 AM, Mark Lord wrote:
+>>>>> On 11-11-09 11:47 AM, Mark Lord wrote:
+>>>>> ..
+>>>>>> Note:  I'm looking at smsc95xx.c and smsc75xx.c for examples,
+>>>>>> and they both have the same problem I'll have here:
+>>>>>>
+>>>>>> How to update the csum settings atomically.
+>>>>>> A spinlock is no good, because config register access is over USB.
+>>>>>
+>>>>> Nevermind.. a slight change in the logic and all is well again.
+>>>> ..
+>>>>
+>>>> Or even simpler (below).  I don't think this method requires any
+>>>> extra locking, but I'm still open to persuasion.  :)
+>>>
+>>> Looks reasonable, but...
+>>>
+>>>> static int ax88772b_set_features(struct net_device *netdev, u32 features)
+>>>> {
+>>>>         struct usbnet *dev = netdev_priv(netdev);
+>>>>         struct ax88772b_data *priv = (struct ax88772b_data *)dev->driver_priv;
+>>>>         u16 tx_csum = 0, rx_csum = 0;
+>>>>
+>>>>         priv->features = features & (NETIF_F_HW_CSUM | NETIF_F_RXCSUM);
+>>>
+>>> ...why do you need priv->features at all?
+>>
+>>
+>> There's code elsewhere that takes action under some conditions
+>> based on the current setting of the NETIF_F_RXCSUM flag.
+>>
+>> I don't claim to fully understand what's going on,
+>> but it doesn't care much about races on set/clear of the flag.
 > 
-> or even simpler,
-> 
-> 	wait_event_freezable_timeout(wq, false, timeout);
-> 
-> In terms of overhead, there is no appreciable difference from
-> 
-> 	add_wait_queue();
-> 	schedule_timeout_interruptible();
-> 	remove_wait_queue()
-> 
-> Or is the logic there scheduled to change?
+> And it can use dev->features.
 
-I have no "event" to wait other than the wakeup itself, this in the
-end is the only reason it isn't already using
-wait_event_freezable_timeout. Of course I can pass "false" as the
-event.
+Oh, is that kosher?    Looks great to me!
 
-> Hmmm... I don't know.  I really hope all freezable tasks stick to
-> higher level interface.  It's way too easy to get things wrong and eat
-> either freezing or actual wakeup condition.
 
-Well you've just to tell me if I have to pass "false" and if
-add_wait_queue+schedule_timeout_interruptible is obsoleted. If it's
-not obsoleted the patch I posted should already be ok. It also will be
-useful if others need to wait for a long time (> the freezer max wait)
-without a waitqueue which I don't think is necessarily impossible. It
-wasn't the case here just because I need to promptly react to the
-sysfs writes (or setting the wait time to 1 day would then require 1
-day before sysfs new value becomes meaningful, well unless somebody
-doess killall khugepaged.. :)
