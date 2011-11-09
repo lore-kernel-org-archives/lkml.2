@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab1KIWK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:10:26 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:38009 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab1KIWKW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:10:22 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
-	references:in-reply-to:references:organization:x-system-of-record;
-	b=DBJha+sT10kDTI8mX1uYX29pP0NjwgUs9UsgsYJUdv+dN33WVsUrNebz5jzOq3/4v
-	k5OhCLa+X8XZ3Nst+mV3w==
-From: David Decotigny <david.decotigny@google.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Sameer Nanda <snanda@google.com>,
-        David Decotigny <david.decotigny@google.com>
-Subject: [PATCH net-next v1 7/9] forcedeth: new ethtool stat counter for TX timeouts
-Date: Wed,  9 Nov 2011 14:09:21 -0800
-Message-Id: <ab1c51e8efa9ecc5071a9460d79c98698bf6e7c5.1320875577.git.david.decotigny@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <cover.1320875577.git.david.decotigny@google.com>
-References: <cover.1320875577.git.david.decotigny@google.com>
-In-Reply-To: <cover.1320875577.git.david.decotigny@google.com>
-References: <cover.1320875577.git.david.decotigny@google.com>
-Organization: Google, Inc.
-X-System-Of-Record: true
+	id S1752354Ab1KIWSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:18:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36170 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab1KIWSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 17:18:33 -0500
+Message-ID: <4EBAFC33.5080605@zytor.com>
+Date: Wed, 09 Nov 2011 14:18:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+MIME-Version: 1.0
+To: Andrei Warkentin <awarkentin@vmware.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: /dev/mem "unbounded?"
+References: <820243891.352129.1320872478210.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+In-Reply-To: <820243891.352129.1320872478210.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sameer Nanda <snanda@google.com>
+On 11/09/2011 01:01 PM, Andrei Warkentin wrote:
+> Dear LKML,
+> 
+> In the previous kernels, valid_phys_addr_range was not
+> defined for x86, and used the static variant which
+> returned 0 if access went above __pa(high_memory).
+> 
+> Current behavior, though, relies on the x86 variant
+> of valid_phys_addr_range, defined in arch/x86/include/asm/io.h,
+> that always returns 1, hence, reading will never end since there
+> won't be any condition (barring an MCE on physical hardware) that
+> would say "Bad Address". Is this supposed to be by design?
+> 
+> How about exposing the "top" allocated resource address from 
+> linux/kernel/resource.c? That way /dev/mem will know when
+> all the "interesting" bits end, and can return -EFAULT for
+> everything above that.
+> 
 
-This change publishes a new ethtool stats: tx_timeout that counts the
-number of times the tx_timeout callback was triggered.
+That would be incorrect behavior, though, except perhaps for the range
+that cannot be addressed by the processor.  It is explicitly permitted
+to address ranges that does not have addresses mapped to it.
 
+-EFAULT would also be wrong.  If anything it should be -EIO.
 
-
-Signed-off-by: David Decotigny <david.decotigny@google.com>
----
- drivers/net/ethernet/nvidia/forcedeth.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 85e34b6c..6a6604a 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -633,6 +633,7 @@ static const struct nv_ethtool_str nv_estats_str[] = {
- 	{ "rx_packets" },
- 	{ "rx_errors_total" },
- 	{ "tx_errors_total" },
-+	{ "tx_timeout" },
- 
- 	/* version 2 stats */
- 	{ "tx_deferral" },
-@@ -673,6 +674,7 @@ struct nv_ethtool_stats {
- 	u64 rx_packets;
- 	u64 rx_errors_total;
- 	u64 tx_errors_total;
-+	u64 tx_timeout;
- 
- 	/* version 2 stats */
- 	u64 tx_deferral;
-@@ -842,6 +844,7 @@ struct fe_priv {
- 	struct nv_skb_map *tx_end_flip;
- 	int tx_stop;
- 	struct nv_driver_stat stat_tx_dropped;
-+	atomic_t stat_tx_timeout;  /* TX timeouts since last nv_update_stats */
- 
- 	/* msi/msi-x fields */
- 	u32 msi_flags;
-@@ -1728,6 +1731,7 @@ static void nv_update_stats(struct net_device *dev)
- 	}
- 
- 	/* update software stats */
-+	np->estats.tx_timeout += atomic_xchg(&np->stat_tx_timeout, 0);
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_dropped);
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_tx_dropped);
- 	NV_DRIVER_STAT_UPDATE_TOTAL(&np->stat_rx_missed_errors);
-@@ -2590,6 +2594,8 @@ static void nv_tx_timeout(struct net_device *dev)
- 		}
- 	}
- 
-+	atomic_inc(&np->stat_tx_timeout);
-+
- 	spin_lock_irq(&np->lock);
- 
- 	/* 1) stop tx engine */
--- 
-1.7.3.1
+	-hpa
 
