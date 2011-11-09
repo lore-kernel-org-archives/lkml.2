@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936049Ab1KJDtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:49:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45216 "EHLO mx2.suse.de"
+	id S966129Ab1KJDtc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:49:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45261 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966081Ab1KJDtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:49:06 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:08 2011
-Message-Id: <20111109213208.847764464@clark.kroah.org>
+	id S966012Ab1KJDt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:49:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:07 2011
+Message-Id: <20111109213207.695789276@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:35:08 -0800
+Date: Wed, 09 Nov 2011 13:34:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?ISO-8859-15?q?G=C3=B6k=C3=A7en=20Eraslan?= <gokcen@pardus.org.tr>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: [261/264] HID: Add device IDs for Macbook Pro 8 keyboards
+        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [250/264] PM / Suspend: Off by one in pm_suspend()
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gökçen Eraslan <gokcen@pardus.org.tr>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 213f9da80533940560bef8fa43b10c590895459c upstream.
+commit 528f7ce6e439edeac38f6b3f8561f1be129b5e91 upstream.
 
-This patch adds keyboard support for Macbook Pro 8 models which has
-WELLSPRING5A model name and 0x0252, 0x0253 and 0x0254 USB IDs. Trackpad
-support for those models are added to bcm5974 in
-c331eb580a0a7906c0cdb8dbae3cfe99e3c0e555 ("Input: bcm5974 - Add
-support for newer MacBookPro8,2).
+In enter_state() we use "state" as an offset for the pm_states[]
+array.  The pm_states[] array only has PM_SUSPEND_MAX elements so
+this test is off by one.
 
-Signed-off-by: Gökçen Eraslan <gokcen@pardus.org.tr>
-Acked-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/hid/hid-apple.c |    6 ++++++
- drivers/hid/hid-core.c  |    6 ++++++
- drivers/hid/hid-ids.h   |    3 +++
- 3 files changed, 15 insertions(+)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -533,6 +533,12 @@ static const struct hid_device_id apple_
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI),
-+		.driver_data = APPLE_HAS_FN },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO),
-+		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
-+		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1340,6 +1340,9 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS) },
-@@ -1899,6 +1902,9 @@ static const struct hid_device_id hid_mo
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
- 	{ }
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -118,6 +118,9 @@
- #define USB_DEVICE_ID_APPLE_ALU_REVB_ANSI	0x024f
- #define USB_DEVICE_ID_APPLE_ALU_REVB_ISO	0x0250
- #define USB_DEVICE_ID_APPLE_ALU_REVB_JIS	0x0251
-+#define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
-+#define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
-+#define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
+---
+ kernel/power/suspend.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/kernel/power/suspend.c
++++ b/kernel/power/suspend.c
+@@ -315,7 +315,7 @@ int enter_state(suspend_state_t state)
+  */
+ int pm_suspend(suspend_state_t state)
+ {
+-	if (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX)
++	if (state > PM_SUSPEND_ON && state < PM_SUSPEND_MAX)
+ 		return enter_state(state);
+ 	return -EINVAL;
+ }
 
 
