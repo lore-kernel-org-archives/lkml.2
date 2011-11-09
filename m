@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965410Ab1KJDmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:42:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44370 "EHLO mx2.suse.de"
+	id S965436Ab1KJDmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:42:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44393 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935959Ab1KJDmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:42:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:55 2011
-Message-Id: <20111109213155.808013653@clark.kroah.org>
+	id S965412Ab1KJDmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:42:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:56 2011
+Message-Id: <20111109213156.235950581@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:03 -0800
+Date: Wed, 09 Nov 2011 13:33:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <jdelvare@suse.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Sebastian Siewior <bigeasy@linutronix.de>
-Subject: [136/264] carminefb: Fix module parameters permissions
+        alan@lxorguk.ukuu.org.uk,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [140/264] viafb: improve pitch handling
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +25,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-commit c84c14224bbca6ec60d5851fcc87be0e34df2f44 upstream.
+commit 936a3f770b8de7042d793272f008ef1bb08522e9 upstream.
 
-The third parameter of module_param is supposed to be an octal value.
-The missing leading "0" causes the following:
+This patch adds checks for minimum and maximum pitch size to prevent
+invalid settings which could otherwise crash the machine. Also the
+alignment is done in a slightly more readable way.
 
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_displays
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode_str
-
-After fixing the perm parameter, we get the expected:
-
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_displays
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode_str
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Sebastian Siewior <bigeasy@linutronix.de>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/carminefb.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/video/via/via_modesetting.h |    5 +++++
+ drivers/video/via/viafbdev.c        |   11 ++++++++---
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/video/carminefb.c
-+++ b/drivers/video/carminefb.c
-@@ -32,11 +32,11 @@
- #define CARMINEFB_DEFAULT_VIDEO_MODE	1
+--- a/drivers/video/via/via_modesetting.h
++++ b/drivers/video/via/via_modesetting.h
+@@ -28,6 +28,11 @@
  
- static unsigned int fb_mode = CARMINEFB_DEFAULT_VIDEO_MODE;
--module_param(fb_mode, uint, 444);
-+module_param(fb_mode, uint, 0444);
- MODULE_PARM_DESC(fb_mode, "Initial video mode as integer.");
+ #include <linux/types.h>
  
- static char *fb_mode_str;
--module_param(fb_mode_str, charp, 444);
-+module_param(fb_mode_str, charp, 0444);
- MODULE_PARM_DESC(fb_mode_str, "Initial video mode in characters.");
++
++#define VIA_PITCH_SIZE	(1<<3)
++#define VIA_PITCH_MAX	0x3FF8
++
++
+ void via_set_primary_address(u32 addr);
+ void via_set_secondary_address(u32 addr);
+ void via_set_primary_pitch(u32 pitch);
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -151,7 +151,8 @@ static void viafb_update_fix(struct fb_i
  
- /*
-@@ -46,7 +46,7 @@ MODULE_PARM_DESC(fb_mode_str, "Initial v
-  * 0b010 Display 1
-  */
- static int fb_displays = CARMINE_USE_DISPLAY0 | CARMINE_USE_DISPLAY1;
--module_param(fb_displays, int, 444);
-+module_param(fb_displays, int, 0444);
- MODULE_PARM_DESC(fb_displays, "Bit mode, which displays are used");
+ 	info->fix.visual =
+ 		bpp == 8 ? FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
+-	info->fix.line_length = (info->var.xres_virtual * bpp / 8 + 7) & ~7;
++	info->fix.line_length = ALIGN(info->var.xres_virtual * bpp / 8,
++		VIA_PITCH_SIZE);
+ }
  
- struct carmine_hw {
+ static void viafb_setup_fixinfo(struct fb_fix_screeninfo *fix,
+@@ -238,8 +239,12 @@ static int viafb_check_var(struct fb_var
+ 		depth = 24;
+ 
+ 	viafb_fill_var_color_info(var, depth);
+-	line = (var->xres_virtual * var->bits_per_pixel / 8 + 7) & ~7;
+-	if (line * var->yres_virtual > ppar->memsize)
++	if (var->xres_virtual < var->xres)
++		var->xres_virtual = var->xres;
++
++	line = ALIGN(var->xres_virtual * var->bits_per_pixel / 8,
++		VIA_PITCH_SIZE);
++	if (line > VIA_PITCH_MAX || line * var->yres_virtual > ppar->memsize)
+ 		return -EINVAL;
+ 
+ 	/* Based on var passed in to calculate the refresh,
 
 
