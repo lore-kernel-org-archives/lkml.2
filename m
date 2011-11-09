@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934149Ab1KJDXD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:23:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41873 "EHLO mx2.suse.de"
+	id S934138Ab1KJDXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:23:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41877 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934120Ab1KJDWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:53 -0500
+	id S934113Ab1KJDW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:22:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
-Message-Id: <20111109212703.511468929@clark.kroah.org>
+Message-Id: <20111109212703.614595237@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:54 -0800
+Date: Wed, 09 Nov 2011 13:25:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [032/262] [SCSI] isci: fix missed unlock in apc_agent_timeout()
+        alan@lxorguk.ukuu.org.uk, Charles Chin <Charles.Chin@idt.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [033/262] ALSA: hda - Remove bad code for IDT 92HD83 family patch
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+From: Charles Chin <Charles.Chin@idt.com>
 
-commit 983d3fdd332742167d0482c06fd29cf4b8a687c0 upstream.
+commit 6c5c04e509b7000617b09d4301f0b9b6d171d1e6 upstream.
 
-Needed to jump to scic_lock unlock.
+The purpose of this patch is to remove a section of "bad" code that
+assigns the last DAC to ports E or F in order to support notebooks
+with docking in earlier days, around ALSA 1.0.19 - 21.  This is not
+necessary now and actually breaks some configurations that use these
+ports as other devices.  This have been tested on several different
+configurations to make sure that it is working for different combinations.
 
-Also spotted by coccicheck.
-
-Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Charles Chin <Charles.Chin@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/isci/port_config.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |   18 ------------------
+ 1 file changed, 18 deletions(-)
 
---- a/drivers/scsi/isci/port_config.c
-+++ b/drivers/scsi/isci/port_config.c
-@@ -678,7 +678,7 @@ static void apc_agent_timeout(unsigned l
- 	configure_phy_mask = ~port_agent->phy_configured_mask & port_agent->phy_ready_mask;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -5425,9 +5425,7 @@ static void stac92hd8x_fill_auto_spec(st
+ static int patch_stac92hd83xxx(struct hda_codec *codec)
+ {
+ 	struct sigmatel_spec *spec;
+-	hda_nid_t conn[STAC92HD83_DAC_COUNT + 1];
+ 	int err;
+-	int num_dacs;
  
- 	if (!configure_phy_mask)
--		return;
-+		goto done;
+ 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
+ 	if (spec == NULL)
+@@ -5522,22 +5520,6 @@ again:
+ 		return err;
+ 	}
  
- 	for (index = 0; index < SCI_MAX_PHYS; index++) {
- 		if ((configure_phy_mask & (1 << index)) == 0)
+-	/* docking output support */
+-	num_dacs = snd_hda_get_connections(codec, 0xF,
+-				conn, STAC92HD83_DAC_COUNT + 1) - 1;
+-	/* skip non-DAC connections */
+-	while (num_dacs >= 0 &&
+-			(get_wcaps_type(get_wcaps(codec, conn[num_dacs]))
+-					!= AC_WID_AUD_OUT))
+-		num_dacs--;
+-	/* set port E and F to select the last DAC */
+-	if (num_dacs >= 0) {
+-		snd_hda_codec_write_cache(codec, 0xE, 0,
+-			AC_VERB_SET_CONNECT_SEL, num_dacs);
+-		snd_hda_codec_write_cache(codec, 0xF, 0,
+-			AC_VERB_SET_CONNECT_SEL, num_dacs);
+-	}
+-
+ 	codec->proc_widget_hook = stac92hd_proc_hook;
+ 
+ 	return 0;
 
 
