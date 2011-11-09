@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934863Ab1KJD1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:27:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42412 "EHLO mx2.suse.de"
+	id S934903Ab1KJD14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:27:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42446 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934074Ab1KJD1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:36 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:14 2011
-Message-Id: <20111109212714.899181185@clark.kroah.org>
+	id S934856Ab1KJD1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:52 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
+Message-Id: <20111109212715.398190361@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:44 -0800
+Date: Wed, 09 Nov 2011 13:27:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
+        alan@lxorguk.ukuu.org.uk, David Vrabel <david.vrabel@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [142/262] tcp: properly handle md5sig_pool references
+Subject: [147/262] net: xen-netback: correctly restart Tx after a VM restore/migrate
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+From: David Vrabel <david.vrabel@citrix.com>
 
-[ Upstream commit 260fcbeb1ae9e768a44c9925338fbacb0d7e5ba9 ]
+[ Upstream commit d0e5d83284dac15c015bb48115b6780f5a6413cd ]
 
-tcp_v4_clear_md5_list() assumes that multiple tcp md5sig peers
-only hold one reference to md5sig_pool. but tcp_v4_md5_do_add()
-increases use count of md5sig_pool for each peer. This patch
-makes tcp_v4_md5_do_add() only increases use count for the first
-tcp md5sig peer.
+If a VM is saved and restored (or migrated) the netback driver will no
+longer process any Tx packets from the frontend.  xenvif_up() does not
+schedule the processing of any pending Tx requests from the front end
+because the carrier is off.  Without this initial kick the frontend
+just adds Tx requests to the ring without raising an event (until the
+ring is full).
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+This was caused by 47103041e91794acdbc6165da0ae288d844c820b (net:
+xen-netback: convert to hw_features) which reordered the calls to
+xenvif_up() and netif_carrier_on() in xenvif_connect().
+
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp_ipv4.c |   11 +++++++----
- net/ipv6/tcp_ipv6.c |    8 +++++---
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/net/xen-netback/interface.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -909,18 +909,21 @@ int tcp_v4_md5_do_add(struct sock *sk, _
- 			}
- 			sk_nocaps_add(sk, NETIF_F_GSO_MASK);
- 		}
--		if (tcp_alloc_md5sig_pool(sk) == NULL) {
-+
-+		md5sig = tp->md5sig_info;
-+		if (md5sig->entries4 == 0 &&
-+		    tcp_alloc_md5sig_pool(sk) == NULL) {
- 			kfree(newkey);
- 			return -ENOMEM;
- 		}
--		md5sig = tp->md5sig_info;
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -327,12 +327,12 @@ int xenvif_connect(struct xenvif *vif, u
+ 	xenvif_get(vif);
  
- 		if (md5sig->alloced4 == md5sig->entries4) {
- 			keys = kmalloc((sizeof(*keys) *
- 					(md5sig->entries4 + 1)), GFP_ATOMIC);
- 			if (!keys) {
- 				kfree(newkey);
--				tcp_free_md5sig_pool();
-+				if (md5sig->entries4 == 0)
-+					tcp_free_md5sig_pool();
- 				return -ENOMEM;
- 			}
+ 	rtnl_lock();
+-	if (netif_running(vif->dev))
+-		xenvif_up(vif);
+ 	if (!vif->can_sg && vif->dev->mtu > ETH_DATA_LEN)
+ 		dev_set_mtu(vif->dev, ETH_DATA_LEN);
+ 	netdev_update_features(vif->dev);
+ 	netif_carrier_on(vif->dev);
++	if (netif_running(vif->dev))
++		xenvif_up(vif);
+ 	rtnl_unlock();
  
-@@ -964,6 +967,7 @@ int tcp_v4_md5_do_del(struct sock *sk, _
- 				kfree(tp->md5sig_info->keys4);
- 				tp->md5sig_info->keys4 = NULL;
- 				tp->md5sig_info->alloced4 = 0;
-+				tcp_free_md5sig_pool();
- 			} else if (tp->md5sig_info->entries4 != i) {
- 				/* Need to do some manipulation */
- 				memmove(&tp->md5sig_info->keys4[i],
-@@ -971,7 +975,6 @@ int tcp_v4_md5_do_del(struct sock *sk, _
- 					(tp->md5sig_info->entries4 - i) *
- 					 sizeof(struct tcp4_md5sig_key));
- 			}
--			tcp_free_md5sig_pool();
- 			return 0;
- 		}
- 	}
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -605,7 +605,8 @@ static int tcp_v6_md5_do_add(struct sock
- 			}
- 			sk_nocaps_add(sk, NETIF_F_GSO_MASK);
- 		}
--		if (tcp_alloc_md5sig_pool(sk) == NULL) {
-+		if (tp->md5sig_info->entries6 == 0 &&
-+			tcp_alloc_md5sig_pool(sk) == NULL) {
- 			kfree(newkey);
- 			return -ENOMEM;
- 		}
-@@ -614,8 +615,9 @@ static int tcp_v6_md5_do_add(struct sock
- 				       (tp->md5sig_info->entries6 + 1)), GFP_ATOMIC);
- 
- 			if (!keys) {
--				tcp_free_md5sig_pool();
- 				kfree(newkey);
-+				if (tp->md5sig_info->entries6 == 0)
-+					tcp_free_md5sig_pool();
- 				return -ENOMEM;
- 			}
- 
-@@ -661,6 +663,7 @@ static int tcp_v6_md5_do_del(struct sock
- 				kfree(tp->md5sig_info->keys6);
- 				tp->md5sig_info->keys6 = NULL;
- 				tp->md5sig_info->alloced6 = 0;
-+				tcp_free_md5sig_pool();
- 			} else {
- 				/* shrink the database */
- 				if (tp->md5sig_info->entries6 != i)
-@@ -669,7 +672,6 @@ static int tcp_v6_md5_do_del(struct sock
- 						(tp->md5sig_info->entries6 - i)
- 						* sizeof (tp->md5sig_info->keys6[0]));
- 			}
--			tcp_free_md5sig_pool();
- 			return 0;
- 		}
- 	}
+ 	return 0;
 
 
