@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935916Ab1KJDh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:37:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43812 "EHLO mx2.suse.de"
+	id S964999Ab1KJDhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:37:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964973Ab1KJDhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:37:23 -0500
+	id S935918Ab1KJDhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:37:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:47 2011
-Message-Id: <20111109213147.414371042@clark.kroah.org>
+Message-Id: <20111109213147.723057849@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:40 -0800
+Date: Wed, 09 Nov 2011 13:31:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Fabian Godehardt <fg@emlix.com>
-Subject: [053/264] USB: g_printer: fix bug in unregistration
+        alan@lxorguk.ukuu.org.uk, Denis Pershin <dyp@perchine.com>
+Subject: [056/264] usb: cdc-acm: Owen SI-30 support
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,33 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabian Godehardt <fg@emlix.com>
+From: Denis Pershin <dyp@perchine.com>
 
-commit 8582d86143c690c68cc42f996def466a035bee34 upstream.
+commit 65e52f41fa944cef2e6d4222b8c54f46cc575214 upstream.
 
-The allocated chardevice region range is only 1 device but on
-unregister it currently tries to deregister 2.
+here is the patch to support Owen SI-30 device.
+This is a pulse counter controller.
+http://www.owen.ru/en/catalog/93788515
 
-Found this while doing a insmod/rmmod/insmod/rm... of the module
-which seemed to eat major numbers.
+usb-drivers output:
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  4 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=02(commc) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+P:  Vendor=03eb ProdID=0030 Rev=01.01
+C:  #Ifs= 2 Cfg#= 1 Atr=c0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 1 Cls=02(commc) Sub=02 Prot=00 Driver=cdc_acm
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=0a(data ) Sub=00 Prot=00 Driver=cdc_acm
 
-Signed-off-by: Fabian Godehardt <fg@emlix.com>
+This patch is installed on my home system which receives data from this
+controller connected to cold water counter.
+
+Signed-off-by: Denis Pershin <dyp@perchine.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/printer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/class/cdc-acm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -1611,7 +1611,7 @@ cleanup(void)
- 	if (status)
- 		ERROR(dev, "usb_gadget_unregister_driver %x\n", status);
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1534,6 +1534,9 @@ static const struct usb_device_id acm_id
+ 	{ NOKIA_PCSUITE_ACM_INFO(0x03cd), }, /* Nokia C7 */
+ 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
  
--	unregister_chrdev_region(g_printer_devno, 2);
-+	unregister_chrdev_region(g_printer_devno, 1);
- 	class_destroy(usb_gadget_class);
- 	mutex_unlock(&usb_printer_gadget.lock_printer_io);
- }
++	/* Support for Owen devices */
++	{ USB_DEVICE(0x03eb, 0x0030), }, /* Owen SI30 */
++
+ 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
+ 
+ 	/* Support Lego NXT using pbLua firmware */
 
 
