@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab1KJDra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:47:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45020 "EHLO mx2.suse.de"
+	id S936094Ab1KJDrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:47:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965910Ab1KJDrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:47:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:05 2011
-Message-Id: <20111109213205.748018749@clark.kroah.org>
+	id S933796Ab1KJDrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:47:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:06 2011
+Message-Id: <20111109213205.941095162@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:38 -0800
+Date: Wed, 09 Nov 2011 13:34:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [231/264] VFS: we need to set LOOKUP_JUMPED on mountpoint crossing
+        alan@lxorguk.ukuu.org.uk, Joern Engel <joern@logfs.org>,
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [233/264] target: Fix wrong se_tmr being added to drain_tmr_list
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,108 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Joern Engel <joern@logfs.org>
 
-commit a3fbbde70a0cec017f2431e8f8de208708c76acc upstream.
+commit 6eb40b2af4908e9aee71e43e7a384243128c56dd upstream.
 
-Mountpoint crossing is similar to following procfs symlinks - we do
-not get ->d_revalidate() called for dentry we have arrived at, with
-unpleasant consequences for NFS4.
+This patch fixes another bug from LUN_RESET re-org fallout in
+core_tmr_drain_tmr_list() that was adding the wrong se_tmr_req
+into the local drain_tmr_list to be walked + released.
 
-Simple way to reproduce the problem in mainline:
-
-    cat >/tmp/a.c <<'EOF'
-    #include <unistd.h>
-    #include <fcntl.h>
-    #include <stdio.h>
-    main()
-    {
-            struct flock fl = {.l_type = F_RDLCK, .l_whence = SEEK_SET, .l_len = 1};
-            if (fcntl(0, F_SETLK, &fl))
-                    perror("setlk");
-    }
-    EOF
-    cc /tmp/a.c -o /tmp/test
-
-then on nfs4:
-
-    mount --bind file1 file2
-    /tmp/test < file1		# ok
-    /tmp/test < file2		# spews "setlk: No locks available"...
-
-What happens is the missing call of ->d_revalidate() after mountpoint
-crossing and that's where NFS4 would issue OPEN request to server.
-
-The fix is simple - treat mountpoint crossing the same way we deal with
-following procfs-style symlinks.  I.e.  set LOOKUP_JUMPED...
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Joern Engel <joern@logfs.org>
+Cc: Joern Engel <joern@logfs.org>
+Reviewed-by: Roland Dreier <roland@purestorage.com>
+Cc: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/namei.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/target/target_core_tmr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -852,7 +852,7 @@ static int follow_managed(struct path *p
- 		mntput(path->mnt);
- 	if (ret == -EISDIR)
- 		ret = 0;
--	return ret;
-+	return ret < 0 ? ret : need_mntput;
- }
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -148,7 +148,7 @@ static void core_tmr_drain_tmr_list(
+ 		}
+ 		spin_unlock(&cmd->t_state_lock);
  
- int follow_down_one(struct path *path)
-@@ -900,6 +900,7 @@ static bool __follow_mount_rcu(struct na
- 			break;
- 		path->mnt = mounted;
- 		path->dentry = mounted->mnt_root;
-+		nd->flags |= LOOKUP_JUMPED;
- 		nd->seq = read_seqcount_begin(&path->dentry->d_seq);
- 		/*
- 		 * Update the inode too. We don't need to re-check the
-@@ -1213,6 +1214,8 @@ retry:
- 		path_put_conditional(path, nd);
- 		return err;
+-		list_move_tail(&tmr->tmr_list, &drain_tmr_list);
++		list_move_tail(&tmr_p->tmr_list, &drain_tmr_list);
  	}
-+	if (err)
-+		nd->flags |= LOOKUP_JUMPED;
- 	*inode = path->dentry->d_inode;
- 	return 0;
- }
-@@ -2149,6 +2152,10 @@ static struct file *do_last(struct namei
- 	}
+ 	spin_unlock_irqrestore(&dev->se_tmr_lock, flags);
  
- 	/* create side of things */
-+	/*
-+	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
-+	 * cleared when we got to the last component we are about to look up
-+	 */
- 	error = complete_walk(nd);
- 	if (error)
- 		return ERR_PTR(error);
-@@ -2217,6 +2224,9 @@ static struct file *do_last(struct namei
- 	if (error < 0)
- 		goto exit_dput;
- 
-+	if (error)
-+		nd->flags |= LOOKUP_JUMPED;
-+
- 	error = -ENOENT;
- 	if (!path->dentry->d_inode)
- 		goto exit_dput;
-@@ -2226,6 +2236,10 @@ static struct file *do_last(struct namei
- 
- 	path_to_nameidata(path, nd);
- 	nd->inode = path->dentry->d_inode;
-+	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
-+	error = complete_walk(nd);
-+	if (error)
-+		goto exit;
- 	error = -EISDIR;
- 	if (S_ISDIR(nd->inode->i_mode))
- 		goto exit;
 
 
