@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935288Ab1KJDbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:31:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42823 "EHLO mx2.suse.de"
+	id S935301Ab1KJDbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:31:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42836 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934631Ab1KJDbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:31:09 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:19 2011
-Message-Id: <20111109212719.286514766@clark.kroah.org>
+	id S934631Ab1KJDbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:31:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:21 2011
+Message-Id: <20111109212721.307244290@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:28 -0800
+Date: Wed, 09 Nov 2011 13:28:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [186/262] powerpc: gup_hugepte() avoid freeing the head page too many times
+        alan@lxorguk.ukuu.org.uk,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [206/262] kbuild: Fix help text not displayed in choice option.
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,43 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-commit 8596468487e2062cae2aad56e973784e03959245 upstream.
+commit 3f198dfee49d2e9c30583c62b0c79286c78c7b44 upstream.
 
-We only taken "refs" pins on the head page not "*nr" pins.
+Help text under choice menu is never displayed because it does not have
+symbol name associated with it, however many kconfigs have help text
+under choice, assuming that it will be displayed when user selects help.
+for example in Kconfig if we have:
+choice
+        prompt "Choice"
+        ---help---
+           HELP TEXT ...
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+config A
+        bool "A"
+
+config B
+        bool "B"
+
+endchoice
+
+Without this patch "HELP TEXT" is not displayed when user selects help
+option when "Choice" is highlighted from menuconfig or xconfig or
+gconfig.
+
+This patch changes the logic in menu_get_ext_help to display help for
+cases which dont have symbol names like choice.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Reviewed-by: Stuart Menefy <stuart.menefy@st.com>
+Reviewed-by: Arnaud Lacombe <lacombar@gmail.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/hugetlbpage.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ scripts/kconfig/menu.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -428,10 +428,9 @@ static noinline int gup_hugepte(pte_t *p
+--- a/scripts/kconfig/menu.c
++++ b/scripts/kconfig/menu.c
+@@ -596,11 +596,10 @@ void menu_get_ext_help(struct menu *menu
+ 	struct symbol *sym = menu->sym;
  
- 	if (unlikely(pte_val(pte) != pte_val(*ptep))) {
- 		/* Could be optimized better */
--		while (*nr) {
-+		*nr -= refs;
-+		while (refs--)
- 			put_page(head);
--			(*nr)--;
+ 	if (menu_has_help(menu)) {
+-		if (sym->name) {
++		if (sym->name)
+ 			str_printf(help, "%s%s:\n\n", CONFIG_, sym->name);
+-			str_append(help, _(menu_get_help(menu)));
+-			str_append(help, "\n");
 -		}
++		str_append(help, _(menu_get_help(menu)));
++		str_append(help, "\n");
+ 	} else {
+ 		str_append(help, nohelp_text);
  	}
- 
- 	return 1;
 
 
