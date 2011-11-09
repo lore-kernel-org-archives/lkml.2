@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965711Ab1KJDpv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:45:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44803 "EHLO mx2.suse.de"
+	id S936240Ab1KJEEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:04:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44795 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965430Ab1KJDpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:45:45 -0500
+	id S965693Ab1KJDpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:45:42 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:02 2011
-Message-Id: <20111109213202.595600514@clark.kroah.org>
+Message-Id: <20111109213202.477673766@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:08 -0800
+Date: Wed, 09 Nov 2011 13:34:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [201/264] drm/radeon/kms: add MSI module parameter
+Subject: [200/264] drm/radeon/kms: Add MSI quirk for Dell RS690
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,18 +27,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit a18cee15ed4c8b6a35f96b7b26a46bac32e04bd9 upstream.
+commit 01e718ec194e30b3e8eb3858c742c13649757efc upstream.
 
-Allow the user to override whether MSIs are enabled
-or not on supported ASICs.  MSIs are disabled by default
-on IGP chips as they tend not to work.  However certain
-IGP chips only seem to work with MSIs enabled.
+Some Dell laptops only seem to work with MSIs.  This
+looks like a platform/bios bug.
 
-I suspect this is a chipset or bios issue, but I'm not sure
-what the proper fix is.  This will at least make diagnosing
-and working around the problem much easier.
-
-See:
+Fixes:
 https://bugs.freedesktop.org/show_bug.cgi?id=37679
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
@@ -46,55 +40,23 @@ Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon.h         |    1 +
- drivers/gpu/drm/radeon/radeon_drv.c     |    4 ++++
  drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
- 3 files changed, 11 insertions(+)
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -93,6 +93,7 @@ extern int radeon_audio;
- extern int radeon_disp_priority;
- extern int radeon_hw_i2c;
- extern int radeon_pcie_gen2;
-+extern int radeon_msi;
- 
- /*
-  * Copy from radeon_drv.h so we don't have to include both and have conflicting
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -118,6 +118,7 @@ int radeon_audio = 0;
- int radeon_disp_priority = 0;
- int radeon_hw_i2c = 0;
- int radeon_pcie_gen2 = 0;
-+int radeon_msi = -1;
- 
- MODULE_PARM_DESC(no_wb, "Disable AGP writeback for scratch registers");
- module_param_named(no_wb, radeon_no_wb, int, 0444);
-@@ -164,6 +165,9 @@ module_param_named(hw_i2c, radeon_hw_i2c
- MODULE_PARM_DESC(pcie_gen2, "PCIE Gen2 mode (1 = enable)");
- module_param_named(pcie_gen2, radeon_pcie_gen2, int, 0444);
- 
-+MODULE_PARM_DESC(msi, "MSI support (1 = enable, 0 = disable, -1 = auto)");
-+module_param_named(msi, radeon_msi, int, 0444);
-+
- static int radeon_suspend(struct drm_device *dev, pm_message_t state)
- {
- 	drm_radeon_private_t *dev_priv = dev->dev_private;
 --- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
 +++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -118,6 +118,12 @@ static bool radeon_msi_ok(struct radeon_
- 	if (rdev->flags & RADEON_IS_AGP)
- 		return false;
+@@ -125,6 +125,12 @@ static bool radeon_msi_ok(struct radeon_
+ 	    (rdev->pdev->subsystem_device == 0x30c2))
+ 		return true;
  
-+	/* force MSI on */
-+	if (radeon_msi == 1)
++	/* Dell RS690 only seems to work with MSIs. */
++	if ((rdev->pdev->device == 0x791f) &&
++	    (rdev->pdev->subsystem_vendor == 0x1028) &&
++	    (rdev->pdev->subsystem_device == 0x01fd))
 +		return true;
-+	else if (radeon_msi == 0)
-+		return false;
 +
- 	/* Quirks */
- 	/* HP RS690 only seems to work with MSIs. */
- 	if ((rdev->pdev->device == 0x791f) &&
+ 	if (rdev->flags & RADEON_IS_IGP) {
+ 		/* APUs work fine with MSIs */
+ 		if (rdev->family >= CHIP_PALM)
 
 
