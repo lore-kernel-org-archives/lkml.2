@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab1KIPwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 10:52:07 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39827 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1KIPwE (ORCPT
+	id S1754739Ab1KIPxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 10:53:50 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51049 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab1KIPxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 10:52:04 -0500
-Message-ID: <4EBAA124.6060903@gmail.com>
-Date: Wed, 09 Nov 2011 23:49:56 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	Wed, 9 Nov 2011 10:53:49 -0500
+Date: Wed, 9 Nov 2011 07:53:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, "Rafael J. Wysocki" <rjw@suse.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
+Message-ID: <20111109155342.GA1260@google.com>
+References: <4EB8E969.6010502@suse.cz>
+ <1320766151-2619-1-git-send-email-aarcange@redhat.com>
+ <1320766151-2619-2-git-send-email-aarcange@redhat.com>
+ <4EB98A83.3040101@linux.vnet.ibm.com>
+ <4EBA75F2.4080800@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: NUC900: fix a building WARNING 'Found 1 section mismatch'.
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBA75F2.4080800@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to fix a WARNING which is the "modpost: Found 1 section
-mismatch(es)" for nuc900 platform.
+Hello, Andrea, Srivatsa.
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+On Wed, Nov 09, 2011 at 06:15:38PM +0530, Srivatsa S. Bhat wrote:
+> >> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> >> index 4298aba..67311d1 100644
+> >> --- a/mm/huge_memory.c
+> >> +++ b/mm/huge_memory.c
+> >> @@ -2277,6 +2277,7 @@ static struct page *khugepaged_alloc_hugepage(void)
+> >>  		if (!hpage) {
+> >>  			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+> >>  			khugepaged_alloc_sleep();
+> >> +			try_to_freeze();
+> >>  		} else
+> >>  			count_vm_event(THP_COLLAPSE_ALLOC);
+> >>  	} while (unlikely(!hpage) &&
+> >> @@ -2331,7 +2332,7 @@ static int khugepaged(void *none)
+> >>  {
+> >>  	struct mm_slot *mm_slot;
+> >>
+> >> -	set_freezable();
+> >> +	set_freezable_with_signal();
+> >>  	set_user_nice(current, 19);
 
----
- arch/arm/mach-w90x900/dev.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Oooh, please don't do that.  It's already gone in the pm tree.  It
+would be best if wait_event_freezable_timeout() can be used
+(ie. wakeup condition should be set somewhere) but, if not, something
+like the following sould work.
 
-diff --git a/arch/arm/mach-w90x900/dev.c b/arch/arm/mach-w90x900/dev.c
-index 7a1fa6a..5b0c38a 100644
---- a/arch/arm/mach-w90x900/dev.c
-+++ b/arch/arm/mach-w90x900/dev.c
-@@ -422,7 +422,7 @@ struct platform_device nuc900_device_kpi = {
+static void khugepaged_alloc_sleep(void)
+{
+	DEFINE_WAIT(wait);
+	add_wait_queue(&khugepaged_wait, &wait);
+	try_to_freeze();
+	schedule_timeout_interruptible(
+			msecs_to_jiffies(
+				khugepaged_alloc_sleep_millisecs));
+	try_to_freeze();
+	remove_wait_queue(&khugepaged_wait, &wait);
+}
+												
+Thanks.
 
- /* LCD controller*/
-
--static struct nuc900fb_display __initdata nuc900_lcd_info[] = {
-+static struct nuc900fb_display nuc900_lcd_info[] = {
- 	/* Giantplus Technology GPM1040A0 320x240 Color TFT LCD */
- 	[0] = {
- 		.type		= LCM_DCCS_VA_SRC_RGB565,
-@@ -445,7 +445,7 @@ static struct nuc900fb_display __initdata
-nuc900_lcd_info[] = {
- 	},
- };
-
--static struct nuc900fb_mach_info nuc900_fb_info __initdata = {
-+static struct nuc900fb_mach_info nuc900_fb_info = {
- #if defined(CONFIG_GPM1040A0_320X240)
- 	.displays		= &nuc900_lcd_info[0],
- #else
 -- 
-1.7.0.4
+tejun
