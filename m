@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab1KJFGB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:06:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42466 "EHLO mx2.suse.de"
+	id S934877Ab1KJD1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:27:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42431 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934235Ab1KJD2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:28:03 -0500
+	id S934074Ab1KJD1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:42 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.605529323@clark.kroah.org>
+Message-Id: <20111109212715.109729003@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:51 -0800
+Date: Wed, 09 Nov 2011 13:27:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
-        Ingo Molnar <mingo@elte.hu>, Russell King <rmk@arm.linux.org.uk>,
-        "H.J. Lu" <hongjiu.lu@intel.com>, <stable@kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: [149/262] binfmt_elf: fix PIE execution with randomization disabled
+        alan@lxorguk.ukuu.org.uk, Jiri Pirko <jpirko@redhat.com>,
+        Matt Carlson <mcarlson@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [144/262] tg3: negate USE_PHYLIB flag check
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Kosina <jkosina@suse.cz>
 
-commit a3defbe5c337dbc6da911f8cc49ae3cc3b49b453 upstream.
+From: Jiri Pirko <jpirko@redhat.com>
 
-The case of address space randomization being disabled in runtime through
-randomize_va_space sysctl is not treated properly in load_elf_binary(),
-resulting in SIGKILL coming at exec() time for certain PIE-linked binaries
-in case the randomization has been disabled at runtime prior to calling
-exec().
+[ Upstream commit e730c82347b9dc75914da998c44c3f348965db41 ]
 
-Handle the randomize_va_space == 0 case the same way as if we were not
-supporting .text randomization at all.
+USE_PHYLIB flag in tg3_remove_one() is being checked incorrectly. This
+results tg3_phy_fini->phy_disconnect is never called and when tg3 module
+is removed.
 
-Based on original patch by H.J. Lu and Josh Boyer.
+In my case this resulted in panics in phy_state_machine calling function
+phydev->adjust_link.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Russell King <rmk@arm.linux.org.uk>
-Cc: H.J. Lu <hongjiu.lu@intel.com>
-Cc: <stable@kernel.org>
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+So correct this check.
+
+Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+Acked-by: Matt Carlson <mcarlson@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- fs/binfmt_elf.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/net/tg3.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -796,7 +796,16 @@ static int load_elf_binary(struct linux_
- 			 * might try to exec.  This is because the brk will
- 			 * follow the loader, and is not movable.  */
- #if defined(CONFIG_X86) || defined(CONFIG_ARM)
--			load_bias = 0;
-+			/* Memory randomization might have been switched off
-+			 * in runtime via sysctl.
-+			 * If that is the case, retain the original non-zero
-+			 * load_bias value in order to establish proper
-+			 * non-randomized mappings.
-+			 */
-+			if (current->flags & PF_RANDOMIZE)
-+				load_bias = 0;
-+			else
-+				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
- #else
- 			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
- #endif
+--- a/drivers/net/tg3.c
++++ b/drivers/net/tg3.c
+@@ -15278,7 +15278,7 @@ static void __devexit tg3_remove_one(str
+ 
+ 		cancel_work_sync(&tp->reset_task);
+ 
+-		if (!tg3_flag(tp, USE_PHYLIB)) {
++		if (tg3_flag(tp, USE_PHYLIB)) {
+ 			tg3_phy_fini(tp);
+ 			tg3_mdio_fini(tp);
+ 		}
 
 
