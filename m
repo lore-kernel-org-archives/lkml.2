@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965668Ab1KJDp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:45:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44759 "EHLO mx2.suse.de"
+	id S965657Ab1KJDpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:45:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44752 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965430Ab1KJDpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:45:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:57 2011
-Message-Id: <20111109213157.604304845@clark.kroah.org>
+	id S965621Ab1KJDpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:45:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:58 2011
+Message-Id: <20111109213158.509125145@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:20 -0800
+Date: Wed, 09 Nov 2011 13:33:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andy Whitcroft <apw@canonical.com>,
-        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [153/264] readlinkat: ensure we return ENOENT for the empty pathname for normal lookups
+        alan@lxorguk.ukuu.org.uk, Chris Vine <chris@cvine.freeserve.co.uk>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [162/264] ALSA: hda - Add missing static ADC tables for ALC269 quirks
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,133 +25,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Whitcroft <apw@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1fa1e7f615f4d3ae436fa319af6e4eebdd4026a8 upstream.
+[There is no upstream commit for this patch since the corresponding
+code was removed from 3.2 kernel.  This is a regression found only in
+3.1 kernel, so please apply this only to 3.1.x series.]
 
-Since the commit below which added O_PATH support to the *at() calls, the
-error return for readlink/readlinkat for the empty pathname has switched
-from ENOENT to EINVAL:
+Some ALC269 quirks define their own .cap_mixer field but without the
+static adc_nids[].  This resulted in the mismatch of ADC because ALC269
+may have the widget 0x07 for another audio-in, and the auto-parser picks
+this up instead.
 
-  commit 65cfc6722361570bfe255698d9cd4dccaf47570d
-  Author: Al Viro <viro@zeniv.linux.org.uk>
-  Date:   Sun Mar 13 15:56:26 2011 -0400
+This patch fixes the problem by adding the static adc_nids[] and co
+again to these entries.
 
-    readlinkat(), fchownat() and fstatat() with empty relative pathnames
-
-This is both unexpected for userspace and makes readlink/readlinkat
-inconsistant with all other interfaces; and inconsistant with our stated
-return for these pathnames.
-
-As the readlinkat call does not have a flags parameter we cannot use the
-AT_EMPTY_PATH approach used in the other calls.  Therefore expose whether
-the original path is infact entry via a new user_path_at_empty() path
-lookup function.  Use this to determine whether to default to EINVAL or
-ENOENT for failures.
-
-Addresses http://bugs.launchpad.net/bugs/817187
-
-[akpm@linux-foundation.org: remove unused getname_flags()]
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Tested-by: Chris Vine <chris@cvine.freeserve.co.uk>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/namei.c            |   18 +++++++++++++-----
- fs/stat.c             |    5 +++--
- include/linux/namei.h |    1 +
- 3 files changed, 17 insertions(+), 7 deletions(-)
+ sound/pci/hda/alc269_quirks.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -137,7 +137,7 @@ static int do_getname(const char __user
- 	return retval;
- }
- 
--static char *getname_flags(const char __user * filename, int flags)
-+static char *getname_flags(const char __user *filename, int flags, int *empty)
- {
- 	char *tmp, *result;
- 
-@@ -148,6 +148,8 @@ static char *getname_flags(const char __
- 
- 		result = tmp;
- 		if (retval < 0) {
-+			if (retval == -ENOENT && empty)
-+				*empty = 1;
- 			if (retval != -ENOENT || !(flags & LOOKUP_EMPTY)) {
- 				__putname(tmp);
- 				result = ERR_PTR(retval);
-@@ -160,7 +162,7 @@ static char *getname_flags(const char __
- 
- char *getname(const char __user * filename)
- {
--	return getname_flags(filename, 0);
-+	return getname_flags(filename, 0, 0);
- }
- 
- #ifdef CONFIG_AUDITSYSCALL
-@@ -1798,11 +1800,11 @@ struct dentry *lookup_one_len(const char
- 	return __lookup_hash(&this, base, NULL);
- }
- 
--int user_path_at(int dfd, const char __user *name, unsigned flags,
--		 struct path *path)
-+int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
-+		 struct path *path, int *empty)
- {
- 	struct nameidata nd;
--	char *tmp = getname_flags(name, flags);
-+	char *tmp = getname_flags(name, flags, empty);
- 	int err = PTR_ERR(tmp);
- 	if (!IS_ERR(tmp)) {
- 
-@@ -1816,6 +1818,12 @@ int user_path_at(int dfd, const char __u
- 	return err;
- }
- 
-+int user_path_at(int dfd, const char __user *name, unsigned flags,
-+		 struct path *path)
-+{
-+	return user_path_at_empty(dfd, name, flags, path, 0);
-+}
-+
- static int user_path_parent(int dfd, const char __user *path,
- 			struct nameidata *nd, char **name)
- {
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -294,15 +294,16 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, co
- {
- 	struct path path;
- 	int error;
-+	int empty = 0;
- 
- 	if (bufsiz <= 0)
- 		return -EINVAL;
- 
--	error = user_path_at(dfd, pathname, LOOKUP_EMPTY, &path);
-+	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
- 	if (!error) {
- 		struct inode *inode = path.dentry->d_inode;
- 
--		error = -EINVAL;
-+		error = empty ? -ENOENT : -EINVAL;
- 		if (inode->i_op->readlink) {
- 			error = security_inode_readlink(path.dentry);
- 			if (!error) {
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -67,6 +67,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LA
- #define LOOKUP_EMPTY		0x4000
- 
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
-+extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
- 
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+--- a/sound/pci/hda/alc269_quirks.c
++++ b/sound/pci/hda/alc269_quirks.c
+@@ -577,6 +577,9 @@ static const struct alc_config_preset al
+ 				alc269_laptop_amic_init_verbs },
+ 		.num_dacs = ARRAY_SIZE(alc269_dac_nids),
+ 		.dac_nids = alc269_dac_nids,
++		.adc_nids = alc269_adc_nids,
++		.capsrc_nids = alc269_capsrc_nids,
++		.num_adc_nids = ARRAY_SIZE(alc269_adc_nids),
+ 		.hp_nid = 0x03,
+ 		.num_channel_mode = ARRAY_SIZE(alc269_modes),
+ 		.channel_mode = alc269_modes,
+@@ -591,6 +594,9 @@ static const struct alc_config_preset al
+ 				alc269_laptop_dmic_init_verbs },
+ 		.num_dacs = ARRAY_SIZE(alc269_dac_nids),
+ 		.dac_nids = alc269_dac_nids,
++		.adc_nids = alc269_adc_nids,
++		.capsrc_nids = alc269_capsrc_nids,
++		.num_adc_nids = ARRAY_SIZE(alc269_adc_nids),
+ 		.hp_nid = 0x03,
+ 		.num_channel_mode = ARRAY_SIZE(alc269_modes),
+ 		.channel_mode = alc269_modes,
+@@ -605,6 +611,9 @@ static const struct alc_config_preset al
+ 				alc269vb_laptop_amic_init_verbs },
+ 		.num_dacs = ARRAY_SIZE(alc269_dac_nids),
+ 		.dac_nids = alc269_dac_nids,
++		.adc_nids = alc269vb_adc_nids,
++		.capsrc_nids = alc269vb_capsrc_nids,
++		.num_adc_nids = ARRAY_SIZE(alc269vb_adc_nids),
+ 		.hp_nid = 0x03,
+ 		.num_channel_mode = ARRAY_SIZE(alc269_modes),
+ 		.channel_mode = alc269_modes,
+@@ -619,6 +628,9 @@ static const struct alc_config_preset al
+ 				alc269vb_laptop_dmic_init_verbs },
+ 		.num_dacs = ARRAY_SIZE(alc269_dac_nids),
+ 		.dac_nids = alc269_dac_nids,
++		.adc_nids = alc269vb_adc_nids,
++		.capsrc_nids = alc269vb_capsrc_nids,
++		.num_adc_nids = ARRAY_SIZE(alc269vb_adc_nids),
+ 		.hp_nid = 0x03,
+ 		.num_channel_mode = ARRAY_SIZE(alc269_modes),
+ 		.channel_mode = alc269_modes,
+@@ -633,6 +645,8 @@ static const struct alc_config_preset al
+ 				alc269_laptop_dmic_init_verbs },
+ 		.num_dacs = ARRAY_SIZE(alc269_dac_nids),
+ 		.dac_nids = alc269_dac_nids,
++		.adc_nids = alc269_adc_nids,
++		.capsrc_nids = alc269_capsrc_nids,
+ 		.hp_nid = 0x03,
+ 		.num_channel_mode = ARRAY_SIZE(alc269_modes),
+ 		.channel_mode = alc269_modes,
 
 
