@@ -1,205 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab1KICI6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 21:08:58 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:50470 "EHLO e2.ny.us.ibm.com"
+	id S1752309Ab1KICcU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 21:32:20 -0500
+Received: from smtp24.mail.ru ([94.100.176.177]:35610 "EHLO smtp24.mail.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750774Ab1KICI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 21:08:57 -0500
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        David Daney <ddaney.cavm@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Chen Jie <chenj@lemote.com>,
-        zhangfx <zhangfx@lemote.com>
-Subject: [PATCH] clocksource: Avoid selecting mult values that might overflow when adjusted
-Date: Tue,  8 Nov 2011 18:08:13 -0800
-Message-Id: <1320804493-25488-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.3.2.146.gca209
-x-cbid: 11110902-5112-0000-0000-000001D5CA87
+	id S1751141Ab1KICcS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 21:32:18 -0500
+Date: Wed, 9 Nov 2011 10:32:07 +0800
+From: Daniil Stolnikov <danila.st@mail.ru>
+Reply-To: Daniil Stolnikov <danila.st@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <552673196.20111109103207@mail.ru>
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        <linux-crypto@vger.kernel.org>,
+        <linux-security-module@vger.kernel.org>, <davem@davemloft.net>,
+        <adobriyan@gmail.com>, <peter.p.waskiewicz.jr@intel.com>,
+        <herbert@gondor.hengli.com.au>
+Subject: Re: Add IPSec IP Range in Linux kernel
+In-Reply-To: <20111108.204253.891598837549584662.davem@davemloft.net>
+References: <CACVxJT887ATwt97iw7mPEkH+KXgy1WbsP_aUB_X-8uLQ+6YsLQ@mail.gmail.com> <20111108.121620.2044664919065812135.davem@davemloft.net> <1289495586.20111109093607@mail.ru> <20111108.204253.891598837549584662.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=windows-1251
+Content-Transfer-Encoding: 8BIT
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For some frequencies, the clocks_calc_mult_shift() function will
-unfortunately select mult values very close to 0xffffffff.  This
-has the potential to overflow when NTP adjusts the clock, adding
-to the mult value.
+> Like I said, if you want address ranges, ask the userland IPSEC daemon
+> authors to synthesize it.
 
-This patch adds a clocksource.maxadj value, which provides
-an approximation of an 11% adjustment(NTP limits adjustments to
-500ppm and the tick adjustment is limited to 10%), which could
-be made to the clocksource.mult value. This is then used to both
-check that the current mult value won't overflow/underflow, as
-well as warning us if the timekeeping_adjust() code pushes over
-that 11% boundary.
-
-v2: Fix max_adjustment calculation, and improve WARN_ONCE
-messages.
-
-v3: Don't warn before maxadj has actually been set
-
-CC: Yong Zhang <yong.zhang0@gmail.com>
-CC: David Daney <ddaney.cavm@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Chen Jie <chenj@lemote.com>
-CC: zhangfx <zhangfx@lemote.com>
-Reported-by: Chen Jie <chenj@lemote.com>
-Reported-by: zhangfx <zhangfx@lemote.com>
-Tested-by: Yong Zhang <yong.zhang0@gmail.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/clocksource.h |    3 +-
- kernel/time/clocksource.c   |   58 +++++++++++++++++++++++++++++++++++-------
- kernel/time/timekeeping.c   |    7 +++++
- 3 files changed, 57 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 139c4db..c86c940 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -156,6 +156,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
-  * @mult:		cycle to nanosecond multiplier
-  * @shift:		cycle to nanosecond divisor (power of two)
-  * @max_idle_ns:	max idle time permitted by the clocksource (nsecs)
-+ * @maxadj		maximum adjustment value to mult (~11%)
-  * @flags:		flags describing special properties
-  * @archdata:		arch-specific data
-  * @suspend:		suspend function for the clocksource, if necessary
-@@ -172,7 +173,7 @@ struct clocksource {
- 	u32 mult;
- 	u32 shift;
- 	u64 max_idle_ns;
--
-+	u32 maxadj;
- #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
- 	struct arch_clocksource_data archdata;
- #endif
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index cf52fda..cfc65e1 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -492,6 +492,22 @@ void clocksource_touch_watchdog(void)
- }
- 
- /**
-+ * clocksource_max_adjustment- Returns max adjustment amount
-+ * @cs:         Pointer to clocksource
-+ *
-+ */
-+static u32 clocksource_max_adjustment(struct clocksource *cs)
-+{
-+	u64 ret;
-+	/*
-+	 * We won't try to correct for more then 11% adjustments (110,000 ppm),
-+	 */
-+	ret = (u64)cs->mult * 11;
-+	do_div(ret,100);
-+	return (u32)ret;
-+}
-+
-+/**
-  * clocksource_max_deferment - Returns max time the clocksource can be deferred
-  * @cs:         Pointer to clocksource
-  *
-@@ -503,25 +519,28 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
- 	/*
- 	 * Calculate the maximum number of cycles that we can pass to the
- 	 * cyc2ns function without overflowing a 64-bit signed result. The
--	 * maximum number of cycles is equal to ULLONG_MAX/cs->mult which
--	 * is equivalent to the below.
--	 * max_cycles < (2^63)/cs->mult
--	 * max_cycles < 2^(log2((2^63)/cs->mult))
--	 * max_cycles < 2^(log2(2^63) - log2(cs->mult))
--	 * max_cycles < 2^(63 - log2(cs->mult))
--	 * max_cycles < 1 << (63 - log2(cs->mult))
-+	 * maximum number of cycles is equal to ULLONG_MAX/(cs->mult+cs->maxadj)
-+	 * which is equivalent to the below.
-+	 * max_cycles < (2^63)/(cs->mult + cs->maxadj)
-+	 * max_cycles < 2^(log2((2^63)/(cs->mult + cs->maxadj)))
-+	 * max_cycles < 2^(log2(2^63) - log2(cs->mult + cs->maxadj))
-+	 * max_cycles < 2^(63 - log2(cs->mult + cs->maxadj))
-+	 * max_cycles < 1 << (63 - log2(cs->mult + cs->maxadj))
- 	 * Please note that we add 1 to the result of the log2 to account for
- 	 * any rounding errors, ensure the above inequality is satisfied and
- 	 * no overflow will occur.
- 	 */
--	max_cycles = 1ULL << (63 - (ilog2(cs->mult) + 1));
-+	max_cycles = 1ULL << (63 - (ilog2(cs->mult + cs->maxadj) + 1));
- 
- 	/*
- 	 * The actual maximum number of cycles we can defer the clocksource is
- 	 * determined by the minimum of max_cycles and cs->mask.
-+	 * Note: Here we subtract the maxadj to make sure we don't sleep for
-+	 * too long if there's a large negative adjustment.
- 	 */
- 	max_cycles = min_t(u64, max_cycles, (u64) cs->mask);
--	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult, cs->shift);
-+	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult - cs->maxadj,
-+					cs->shift);
- 
- 	/*
- 	 * To ensure that the clocksource does not wrap whilst we are idle,
-@@ -640,7 +659,6 @@ static void clocksource_enqueue(struct clocksource *cs)
- void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- {
- 	u64 sec;
--
- 	/*
- 	 * Calc the maximum number of seconds which we can run before
- 	 * wrapping around. For clocksources which have a mask > 32bit
-@@ -661,6 +679,20 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
- 
- 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
- 			       NSEC_PER_SEC / scale, sec * scale);
-+
-+	/*
-+	 * for clocksources that have large mults, to avoid overflow.
-+	 * Since mult may be adjusted by ntp, add an safety extra margin
-+	 *
-+	 */
-+	cs->maxadj = clocksource_max_adjustment(cs);
-+	while ((cs->mult + cs->maxadj < cs->mult)
-+		|| (cs->mult - cs->maxadj > cs->mult)) {
-+		cs->mult >>= 1;
-+		cs->shift--;
-+		cs->maxadj = clocksource_max_adjustment(cs);
-+	}
-+
- 	cs->max_idle_ns = clocksource_max_deferment(cs);
- }
- EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
-@@ -701,6 +733,12 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
-  */
- int clocksource_register(struct clocksource *cs)
- {
-+	/* calculate max adjustment for given mult/shift */
-+	cs->maxadj = clocksource_max_adjustment(cs);
-+	WARN_ONCE(cs->mult + cs->maxadj < cs->mult,
-+		"Clocksource %s might overflow on 11%% adjustment\n",
-+		cs->name);
-+
- 	/* calculate max idle time permitted for this clocksource */
- 	cs->max_idle_ns = clocksource_max_deferment(cs);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 2b021b0e..e65ff31 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -820,6 +820,13 @@ static void timekeeping_adjust(s64 offset)
- 	} else
- 		return;
- 
-+	WARN_ONCE(timekeeper.clock->maxadj &&
-+			(timekeeper.mult + adj > timekeeper.clock->mult +
-+						timekeeper.clock->maxadj),
-+			"Adjusting %s more then 11%% (%ld vs %ld)\n",
-+			timekeeper.clock->name, (long)timekeeper.mult + adj,
-+			(long)timekeeper.clock->mult +
-+				timekeeper.clock->maxadj);
- 	timekeeper.mult += adj;
- 	timekeeper.xtime_interval += interval;
- 	timekeeper.xtime_nsec -= offset;
--- 
-1.7.3.2.146.gca209
+In this letter, the mailing list http://marc.info/?l=strongswan-users&m=130613736616488&w=4 strongswan-users say that their product has support for IP ranges, but the stack of Linux is based on network masks. So I do not understand how this would work without the support at the kernel level? How will coordination of policies?
 
