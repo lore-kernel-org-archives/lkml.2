@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab1KIKGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:06:05 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56018 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753979Ab1KIKGD convert rfc822-to-8bit (ORCPT
+	id S1756602Ab1KIKLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:11:20 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59139
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754149Ab1KIKLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:06:03 -0500
-Subject: Re: [F.A.Q.] perf ABI backwards and forwards compatibility
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Frank Ch. Eigler" <fche@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Vince Weaver <vince@deater.net>, Pekka Enberg <penberg@kernel.org>,
-        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Wed, 09 Nov 2011 11:05:29 +0100
-In-Reply-To: <20111108125932.GC1022@elte.hu>
-References: <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
-	 <20111107175942.GA9395@elte.hu> <y0mpqh3og3v.fsf@fche.csb>
-	 <alpine.LFD.2.02.1111072204370.3082@tux.localdomain>
-	 <20111107203514.GG24234@thunk.org> <20111108102235.GA1241@elte.hu>
-	 <20111108113150.GA13195@redhat.com>
-	 <alpine.LFD.2.02.1111081336410.18135@tux.localdomain>
-	 <20111108121501.GA1022@elte.hu> <1320754825.11519.0.camel@twins>
-	 <20111108125932.GC1022@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320833129.13360.9.camel@twins>
-Mime-Version: 1.0
+	Wed, 9 Nov 2011 05:11:18 -0500
+Date: Wed, 9 Nov 2011 05:11:14 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Arne Jansen <sensille@gmx.net>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>,
+        Andrea Gelmini <andrea.gelmini@gmail.com>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs pull request
+Message-ID: <20111109101114.GA20506@infradead.org>
+References: <20111106183851.GA4339@shiny>
+ <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
+ <4EB7A6CC.5030502@gmx.net>
+ <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
+ <4EB7D2D8.2060505@gmx.net>
+ <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
+ <4EB8DEAC.7000906@gmx.net>
+ <20111109010701.GI4149@shiny>
+ <20111109074847.GA16742@infradead.org>
+ <4EBA42AF.3000501@gmx.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBA42AF.3000501@gmx.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 13:59 +0100, Ingo Molnar wrote:
-> 
-> > Also the self monitor stuff, perf-tool doesn't use that for obvious 
-> > reasons.
-> 
-> Indeed, and that's PAPI's strong point.
-> 
-> We could try to utilize it via some clever LD_PRELOAD trickery?
+On Wed, Nov 09, 2011 at 10:06:55AM +0100, Arne Jansen wrote:
+> That's... unexpected. I guess this won't change with 3.3? For 3.3 I have
+> to rework that part from scrub to account for Chris' bigblocks. If it can
+> wait that long I'd prefer to fix both at once. Chris?
 
-Wouldn't be really meaningful, a perf-test case that covers it would be
-much saner.
+device mapper has always been like that.  It makes splitting requests
+over multiple targets a lot easier for them.  With increasin I/O sizes
+that is something which will have to be fixed sooner or later, though.
+
