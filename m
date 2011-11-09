@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab1KJDXL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:23:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41890 "EHLO mx2.suse.de"
+	id S934271Ab1KJFV7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:21:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41907 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934148Ab1KJDXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:23:03 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
-Message-Id: <20111109212703.799279408@clark.kroah.org>
+	id S934173Ab1KJDXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:23:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:04 2011
+Message-Id: <20111109212704.013018201@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:57 -0800
+Date: Wed, 09 Nov 2011 13:25:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: [035/262] target: Fix REPORT TARGET PORT GROUPS handling with small allocation length
+        alan@lxorguk.ukuu.org.uk, Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: [037/262] x86: Fix compilation bug in kprobes twobyte_is_boostable
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Josh Stone <jistone@redhat.com>
 
-commit 6b20fa9aaf0c2f69ee6f9648e20ab2be0206705e upstream.
+commit 315eb8a2a1b7f335d40ceeeb11b9e067475eb881 upstream.
 
-This patch fixes a bug with the handling of REPORT TARGET PORT GROUPS
-containing a smaller allocation length than the payload requires causing
-memory writes beyond the end of the buffer.  This patch checks for the
-minimum 4 byte length for the response payload length, and also checks
-upon each loop of T10_ALUA(su_dev)->tg_pt_gps_list to ensure the Target
-port group and Target port descriptor list is able to fit into the
-remaining allocation length.
+When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
+noticed a warning about the asm operand for test_bit in kprobes'
+can_boost.  I discovered that this caused only the first long of
+twobyte_is_boostable[] to be output.
 
-If the response payload exceeds the allocation length length, then rd_len
-is still increments to indicate to the initiator that the payload has
-been truncated.
+Jakub filed and fixed gcc PR50571 to correct the warning and this output
+issue.  But to solve it for less current gcc, we can make kprobes'
+twobyte_is_boostable[] non-const, and it won't be optimized out.
 
-Reported-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
+Before:
+
+    CC      arch/x86/kernel/kprobes.o
+  In file included from include/linux/bitops.h:22:0,
+                   from include/linux/kernel.h:17,
+                   from [...]/arch/x86/include/asm/percpu.h:44,
+                   from [...]/arch/x86/include/asm/current.h:5,
+                   from [...]/arch/x86/include/asm/processor.h:15,
+                   from [...]/arch/x86/include/asm/atomic.h:6,
+                   from include/linux/atomic.h:4,
+                   from include/linux/mutex.h:18,
+                   from include/linux/notifier.h:13,
+                   from include/linux/kprobes.h:34,
+                   from arch/x86/kernel/kprobes.c:43:
+  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
+  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input
+        without lvalue in asm operand 1 is deprecated [enabled by default]
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
+                          554: R_386_32	.rodata.cst4
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+  Contents of section .rodata.cst4:
+   0000 4c030000                             L...
+
+Only a single long of twobyte_is_boostable[] is in the object file.
+
+After, without the const on twobyte_is_boostable:
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
+                          554: R_386_32	.data
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+   0010 00000000 00000000 00000000 00000000  ................
+   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
+   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
+
+Now all 32 bytes are output into .data instead.
+
+Signed-off-by: Josh Stone <jistone@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_alua.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ arch/x86/kernel/kprobes.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -60,11 +60,31 @@ int core_emulate_report_target_port_grou
- 	unsigned char *buf = (unsigned char *)T_TASK(cmd)->t_task_buf;
- 	u32 rd_len = 0, off = 4; /* Skip over RESERVED area to first
- 				    Target port group descriptor */
-+	/*
-+	 * Need at least 4 bytes of response data or else we can't
-+	 * even fit the return data length.
-+	 */
-+	if (cmd->data_length < 4) {
-+		pr_warn("REPORT TARGET PORT GROUPS allocation length %u"
-+			" too small\n", cmd->data_length);
-+		return -EINVAL;
-+	}
- 
- 	spin_lock(&T10_ALUA(su_dev)->tg_pt_gps_lock);
- 	list_for_each_entry(tg_pt_gp, &T10_ALUA(su_dev)->tg_pt_gps_list,
- 			tg_pt_gp_list) {
- 		/*
-+		 * Check if the Target port group and Target port descriptor list
-+		 * based on tg_pt_gp_members count will fit into the response payload.
-+		 * Otherwise, bump rd_len to let the initiator know we have exceeded
-+		 * the allocation length and the response is truncated.
-+		 */
-+		if ((off + 8 + (tg_pt_gp->tg_pt_gp_members * 4)) >
-+		     cmd->data_length) {
-+			rd_len += 8 + (tg_pt_gp->tg_pt_gp_members * 4);
-+			continue;
-+		}
-+		/*
- 		 * PREF: Preferred target port bit, determine if this
- 		 * bit should be set for port group.
- 		 */
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kpr
+ 	/*
+ 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
+ 	 * Groups, and some special opcodes can not boost.
++	 * This is non-const to keep gcc from statically optimizing it out, as
++	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
+ 	 */
+-static const u32 twobyte_is_boostable[256 / 32] = {
++static u32 twobyte_is_boostable[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
+ 	/*      ----------------------------------------------          */
+ 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
 
 
