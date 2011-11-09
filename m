@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935963Ab1KJDiR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:38:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43897 "EHLO mx2.suse.de"
+	id S965063Ab1KJDih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:38:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43930 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935783Ab1KJDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:10 -0500
+	id S965055Ab1KJDib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:31 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:49 2011
-Message-Id: <20111109213148.944547180@clark.kroah.org>
+Message-Id: <20111109213149.529516578@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:55 -0800
+Date: Wed, 09 Nov 2011 13:32:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, s.kirste@avm.de, d.friedel@avm.de,
-        Martin Walter <m.walter@avm.de>,
-        Peter Grabienski <pgrabien@qca.qualcomm.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [068/264] ath9k_htc: add AVM FRITZ!WLAN 11N v2 support
+        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [074/264] ARM: smp: fix clipping of number of CPUs
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +24,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 8c34559b4a6df32e4af1b073397fa4dc189a5485 upstream.
+commit a06f916b7a9b57447ceb875eb0a89f1a66b31bca upstream.
 
-This was reported and tested by Martin Walter over at AVM GmbH Berlin.
-This also applies to 3.0.1 so sendint to stable.
+Rather than clipping the number of CPUs using the compile-time NR_CPUS
+constant, use the runtime nr_cpu_ids value instead.  This allows the
+nr_cpus command line option to work as expected.
 
-Cc: s.kirste@avm.de
-Cc: d.friedel@avm.de
-Cc: Martin Walter <m.walter@avm.de>
-Cc: Peter Grabienski <pgrabien@qca.qualcomm.com>
-Tested-by: Martin Walter <m.walter@avm.de>
-Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-exynos4/platsmp.c   |   10 ++++------
+ arch/arm/mach-msm/platsmp.c       |    6 ++++++
+ arch/arm/mach-omap2/omap-smp.c    |   10 ++++------
+ arch/arm/mach-realview/platsmp.c  |   10 ++++------
+ arch/arm/mach-shmobile/platsmp.c  |    6 ++++++
+ arch/arm/mach-tegra/platsmp.c     |    8 ++++----
+ arch/arm/mach-ux500/platsmp.c     |   10 ++++------
+ arch/arm/mach-vexpress/ct-ca9x4.c |    6 ++++++
+ 8 files changed, 38 insertions(+), 28 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -38,6 +38,7 @@ static struct usb_device_id ath9k_hif_us
- 	{ USB_DEVICE(0x04CA, 0x4605) }, /* Liteon */
- 	{ USB_DEVICE(0x040D, 0x3801) }, /* VIA */
- 	{ USB_DEVICE(0x0cf3, 0xb003) }, /* Ubiquiti WifiStation Ext */
-+	{ USB_DEVICE(0x057c, 0x8403) }, /* AVM FRITZ!WLAN 11N v2 USB */
+--- a/arch/arm/mach-exynos4/platsmp.c
++++ b/arch/arm/mach-exynos4/platsmp.c
+@@ -193,12 +193,10 @@ void __init smp_init_cpus(void)
+ 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
  
- 	{ USB_DEVICE(0x0cf3, 0x7015),
- 	  .driver_info = AR9287_USB },  /* Atheros */
+ 	/* sanity check */
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "EXYNOS4: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
+ 	}
+ 
+ 	for (i = 0; i < ncores; i++)
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -156,6 +156,12 @@ void __init smp_init_cpus(void)
+ {
+ 	unsigned int i, ncores = get_core_count();
+ 
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
++	}
++
+ 	for (i = 0; i < ncores; i++)
+ 		set_cpu_possible(i, true);
+ 
+--- a/arch/arm/mach-omap2/omap-smp.c
++++ b/arch/arm/mach-omap2/omap-smp.c
+@@ -109,12 +109,10 @@ void __init smp_init_cpus(void)
+ 	ncores = scu_get_core_count(scu_base);
+ 
+ 	/* sanity check */
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "OMAP4: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
+ 	}
+ 
+ 	for (i = 0; i < ncores; i++)
+--- a/arch/arm/mach-realview/platsmp.c
++++ b/arch/arm/mach-realview/platsmp.c
+@@ -52,12 +52,10 @@ void __init smp_init_cpus(void)
+ 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
+ 	/* sanity check */
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "Realview: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
+ 	}
+ 
+ 	for (i = 0; i < ncores; i++)
+--- a/arch/arm/mach-shmobile/platsmp.c
++++ b/arch/arm/mach-shmobile/platsmp.c
+@@ -56,6 +56,12 @@ void __init smp_init_cpus(void)
+ 	unsigned int ncores = shmobile_smp_get_core_count();
+ 	unsigned int i;
+ 
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
++	}
++
+ 	for (i = 0; i < ncores; i++)
+ 		set_cpu_possible(i, true);
+ 
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@ -114,10 +114,10 @@ void __init smp_init_cpus(void)
+ {
+ 	unsigned int i, ncores = scu_get_core_count(scu_base);
+ 
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_ERR "Tegra: no. of cores (%u) greater than configured (%u), clipping\n",
+-			ncores, NR_CPUS);
+-		ncores = NR_CPUS;
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
+ 	}
+ 
+ 	for (i = 0; i < ncores; i++)
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -156,12 +156,10 @@ void __init smp_init_cpus(void)
+ 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
+ 
+ 	/* sanity check */
+-	if (ncores > NR_CPUS) {
+-		printk(KERN_WARNING
+-		       "U8500: no. of cores (%d) greater than configured "
+-		       "maximum of %d - clipping\n",
+-		       ncores, NR_CPUS);
+-		ncores = NR_CPUS;
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
+ 	}
+ 
+ 	for (i = 0; i < ncores; i++)
+--- a/arch/arm/mach-vexpress/ct-ca9x4.c
++++ b/arch/arm/mach-vexpress/ct-ca9x4.c
+@@ -221,6 +221,12 @@ static void ct_ca9x4_init_cpu_map(void)
+ {
+ 	int i, ncores = scu_get_core_count(MMIO_P2V(A9_MPCORE_SCU));
+ 
++	if (ncores > nr_cpu_ids) {
++		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
++			ncores, nr_cpu_ids);
++		ncores = nr_cpu_ids;
++	}
++
+ 	for (i = 0; i < ncores; ++i)
+ 		set_cpu_possible(i, true);
+ 
 
 
