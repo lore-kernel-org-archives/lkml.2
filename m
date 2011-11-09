@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1KIByU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 20:54:20 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:35897 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751298Ab1KIByS (ORCPT
+	id S1754473Ab1KICBk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 21:01:40 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44183 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab1KICBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 20:54:18 -0500
-Date: Wed, 9 Nov 2011 09:54:06 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: David Miller <davem@davemloft.net>
-Cc: danila.st@mail.ru, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
-        adobriyan@gmail.com, peter.p.waskiewicz.jr@intel.com
-Subject: Re: Add IPSec IP Range in Linux kernel
-Message-ID: <20111109015406.GA10800@gondor.apana.org.au>
+	Tue, 8 Nov 2011 21:01:39 -0500
+Message-ID: <4EB9DEF6.4080905@gmail.com>
+Date: Wed, 09 Nov 2011 10:01:26 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111108.204253.891598837549584662.davem@davemloft.net>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel,apa
-	na.lists.os.linux.netdev
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] mm/memblock.c: return -ENOMEM instead of -ENXIO on failure
+ of debugfs_create_dir in memblock_init_debugfs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> wrote:
->
-> Like I said, if you want address ranges, ask the userland IPSEC daemon
-> authors to synthesize it.
+On the failure of debugfs_create_dir, we should return -ENOMEM
+instead of -ENXIO.
 
-Alternatively you can do this with marking and use netfilter
-to set the mark.
+The patch is against 3.1.
 
-Cheers,
+
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ mm/memblock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index ccbf973..4d4d5ee 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -852,7 +852,7 @@ static int __init memblock_init_debugfs(void)
+ {
+ 	struct dentry *root = debugfs_create_dir("memblock", NULL);
+ 	if (!root)
+-		return -ENXIO;
++		return -ENOMEM;
+ 	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
+ 	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.1
+
