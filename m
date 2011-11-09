@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935819Ab1KJDfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:35:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43450 "EHLO mx2.suse.de"
+	id S935829Ab1KJDfp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:35:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43485 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935810Ab1KJDf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:35:28 -0500
+	id S935748Ab1KJDfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:35:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:44 2011
-Message-Id: <20111109213144.114151744@clark.kroah.org>
+Message-Id: <20111109213144.306756044@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:07 -0800
+Date: Wed, 09 Nov 2011 13:31:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@amd.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [020/264] xHCI: AMD isoc link TRB chain bit quirk
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Keith Packard <keithp@keithp.com>
+Subject: [022/264] drm/i915/panel: Always record the backlight level again (but cleverly)
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,392 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 7e393a834b41001174a8fb3ae3bc23a749467760 upstream.
+commit f52c619a590fa75276c07dfcaf380dee53e4ea4c upstream.
 
-Setting the chain (CH) bit in the link TRB of isochronous transfer rings
-is required by AMD 0.96 xHCI host controller to successfully transverse
-multi-TRB TD that span through different memory segments.
+The commit 47356eb67285014527a5ab87543ba1fae3d1e10a introduced a
+mechanism to record the backlight level only at disabling time, but it
+also introduced a regression.  Since intel_lvds_enable() may be called
+without disabling (e.g. intel_lvds_commit() calls it unconditionally),
+the backlight gets back to the last recorded value.  For example, this
+happens when you dim the backlight, close the lid and open the lid,
+then the backlight suddenly goes to the brightest.
 
-When a Missed Service Error event occurs, if the chain bit is not set in
-the link TRB and the host skips TDs which just across a link TRB, the
-host may falsely recognize the link TRB as a normal TRB. You can see
-this may cause big trouble - the host does not jump to the right address
-which is pointed by the link TRB, but continue fetching the memory which
-is after the link TRB address, which may not even belong to the host,
-and the result cannot be predicted.
+This patch fixes the bug by recording the backlight level always
+when changed via intel_panel_set_backlight().  And,
+intel_panel_{enable|disable}_backlight() call the internal function not
+to update the recorded level wrongly.
 
-This causes some big problems. Without the former patch I sent: "xHCI:
-prevent infinite loop when processing MSE event", the system may hang.
-With that patch applied, system does not hang, but the host still access
-wrong memory address and isoc transfer will fail. With this patch,
-isochronous transfer works as expected.
-
-This patch should be applied to kernels as old as 2.6.36, which was when
-the first isochronous support was added for the xHCI host controller.
-
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reviewed-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c  |   32 ++++++++++++++-----------
- drivers/usb/host/xhci-pci.c  |    3 ++
- drivers/usb/host/xhci-ring.c |   53 +++++++++++++++++++++++--------------------
- drivers/usb/host/xhci.h      |    1 
- 4 files changed, 51 insertions(+), 38 deletions(-)
+ drivers/gpu/drm/i915/intel_panel.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -81,7 +81,7 @@ static void xhci_segment_free(struct xhc
-  * related flags, such as End TRB, Toggle Cycle, and no snoop.
-  */
- static void xhci_link_segments(struct xhci_hcd *xhci, struct xhci_segment *prev,
--		struct xhci_segment *next, bool link_trbs)
-+		struct xhci_segment *next, bool link_trbs, bool isoc)
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -226,7 +226,7 @@ static void intel_pch_panel_set_backligh
+ 	I915_WRITE(BLC_PWM_CPU_CTL, val | level);
+ }
+ 
+-void intel_panel_set_backlight(struct drm_device *dev, u32 level)
++static void intel_panel_actually_set_backlight(struct drm_device *dev, u32 level)
  {
- 	u32 val;
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 tmp;
+@@ -254,16 +254,21 @@ void intel_panel_set_backlight(struct dr
+ 	I915_WRITE(BLC_PWM_CTL, tmp | level);
+ }
  
-@@ -97,7 +97,9 @@ static void xhci_link_segments(struct xh
- 		val &= ~TRB_TYPE_BITMASK;
- 		val |= TRB_TYPE(TRB_LINK);
- 		/* Always set the chain bit with 0.95 hardware */
--		if (xhci_link_trb_quirk(xhci))
-+		/* Set chain bit for isoc rings on AMD 0.96 host */
-+		if (xhci_link_trb_quirk(xhci) ||
-+				(isoc && (xhci->quirks & XHCI_AMD_0x96_HOST)))
- 			val |= TRB_CHAIN;
- 		prev->trbs[TRBS_PER_SEGMENT-1].link.control = cpu_to_le32(val);
- 	}
-@@ -154,7 +156,7 @@ static void xhci_initialize_ring_info(st
-  * See section 4.9.1 and figures 15 and 16.
-  */
- static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
--		unsigned int num_segs, bool link_trbs, gfp_t flags)
-+		unsigned int num_segs, bool link_trbs, bool isoc, gfp_t flags)
+-void intel_panel_disable_backlight(struct drm_device *dev)
++void intel_panel_set_backlight(struct drm_device *dev, u32 level)
  {
- 	struct xhci_ring	*ring;
- 	struct xhci_segment	*prev;
-@@ -180,12 +182,12 @@ static struct xhci_ring *xhci_ring_alloc
- 		next = xhci_segment_alloc(xhci, flags);
- 		if (!next)
- 			goto fail;
--		xhci_link_segments(xhci, prev, next, link_trbs);
-+		xhci_link_segments(xhci, prev, next, link_trbs, isoc);
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
  
- 		prev = next;
- 		num_segs--;
- 	}
--	xhci_link_segments(xhci, prev, ring->first_seg, link_trbs);
-+	xhci_link_segments(xhci, prev, ring->first_seg, link_trbs, isoc);
- 
- 	if (link_trbs) {
- 		/* See section 4.9.2.1 and 6.4.4.1 */
-@@ -231,14 +233,14 @@ void xhci_free_or_cache_endpoint_ring(st
-  * pointers to the beginning of the ring.
-  */
- static void xhci_reinit_cached_ring(struct xhci_hcd *xhci,
--		struct xhci_ring *ring)
-+		struct xhci_ring *ring, bool isoc)
- {
- 	struct xhci_segment	*seg = ring->first_seg;
- 	do {
- 		memset(seg->trbs, 0,
- 				sizeof(union xhci_trb)*TRBS_PER_SEGMENT);
- 		/* All endpoint rings have link TRBs */
--		xhci_link_segments(xhci, seg, seg->next, 1);
-+		xhci_link_segments(xhci, seg, seg->next, 1, isoc);
- 		seg = seg->next;
- 	} while (seg != ring->first_seg);
- 	xhci_initialize_ring_info(ring);
-@@ -542,7 +544,7 @@ struct xhci_stream_info *xhci_alloc_stre
- 	 */
- 	for (cur_stream = 1; cur_stream < num_streams; cur_stream++) {
- 		stream_info->stream_rings[cur_stream] =
--			xhci_ring_alloc(xhci, 1, true, mem_flags);
-+			xhci_ring_alloc(xhci, 1, true, false, mem_flags);
- 		cur_ring = stream_info->stream_rings[cur_stream];
- 		if (!cur_ring)
- 			goto cleanup_rings;
-@@ -767,7 +769,7 @@ int xhci_alloc_virt_device(struct xhci_h
- 	}
- 
- 	/* Allocate endpoint 0 ring */
--	dev->eps[0].ring = xhci_ring_alloc(xhci, 1, true, flags);
-+	dev->eps[0].ring = xhci_ring_alloc(xhci, 1, true, false, flags);
- 	if (!dev->eps[0].ring)
- 		goto fail;
- 
-@@ -1177,10 +1179,10 @@ int xhci_endpoint_init(struct xhci_hcd *
- 	 */
- 	if (usb_endpoint_xfer_isoc(&ep->desc))
- 		virt_dev->eps[ep_index].new_ring =
--			xhci_ring_alloc(xhci, 8, true, mem_flags);
-+			xhci_ring_alloc(xhci, 8, true, true, mem_flags);
- 	else
- 		virt_dev->eps[ep_index].new_ring =
--			xhci_ring_alloc(xhci, 1, true, mem_flags);
-+			xhci_ring_alloc(xhci, 1, true, false, mem_flags);
- 	if (!virt_dev->eps[ep_index].new_ring) {
- 		/* Attempt to use the ring cache */
- 		if (virt_dev->num_rings_cached == 0)
-@@ -1189,7 +1191,8 @@ int xhci_endpoint_init(struct xhci_hcd *
- 			virt_dev->ring_cache[virt_dev->num_rings_cached];
- 		virt_dev->ring_cache[virt_dev->num_rings_cached] = NULL;
- 		virt_dev->num_rings_cached--;
--		xhci_reinit_cached_ring(xhci, virt_dev->eps[ep_index].new_ring);
-+		xhci_reinit_cached_ring(xhci, virt_dev->eps[ep_index].new_ring,
-+			usb_endpoint_xfer_isoc(&ep->desc) ? true : false);
- 	}
- 	virt_dev->eps[ep_index].skip = false;
- 	ep_ring = virt_dev->eps[ep_index].new_ring;
-@@ -2003,7 +2006,7 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 		goto fail;
- 
- 	/* Set up the command ring to have one segments for now. */
--	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, true, flags);
-+	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, true, false, flags);
- 	if (!xhci->cmd_ring)
- 		goto fail;
- 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
-@@ -2034,7 +2037,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	 * the event ring segment table (ERST).  Section 4.9.3.
- 	 */
- 	xhci_dbg(xhci, "// Allocating event ring\n");
--	xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, false, flags);
-+	xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, false, false,
-+						flags);
- 	if (!xhci->event_ring)
- 		goto fail;
- 	if (xhci_check_trb_in_td_math(xhci, flags) < 0)
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -128,6 +128,9 @@ static int xhci_pci_setup(struct usb_hcd
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
- 		xhci->quirks |= XHCI_NEC_HOST;
- 
-+	if (pdev->vendor == PCI_VENDOR_ID_AMD && xhci->hci_version == 0x96)
-+		xhci->quirks |= XHCI_AMD_0x96_HOST;
+-	if (dev_priv->backlight_enabled) {
+-		dev_priv->backlight_level = intel_panel_get_backlight(dev);
+-		dev_priv->backlight_enabled = false;
+-	}
++	dev_priv->backlight_level = level;
++	if (dev_priv->backlight_enabled)
++		intel_panel_actually_set_backlight(dev, level);
++}
 +
- 	/* AMD PLL quirk */
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
- 		xhci->quirks |= XHCI_AMD_PLL_FIX;
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -185,7 +185,7 @@ static void inc_deq(struct xhci_hcd *xhc
-  *			prepare_transfer()?
-  */
- static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,
--		bool consumer, bool more_trbs_coming)
-+		bool consumer, bool more_trbs_coming, bool isoc)
- {
- 	u32 chain;
- 	union xhci_trb *next;
-@@ -212,11 +212,13 @@ static void inc_enq(struct xhci_hcd *xhc
- 				if (!chain && !more_trbs_coming)
- 					break;
++void intel_panel_disable_backlight(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
  
--				/* If we're not dealing with 0.95 hardware,
-+				/* If we're not dealing with 0.95 hardware or
-+				 * isoc rings on AMD 0.96 host,
- 				 * carry over the chain bit of the previous TRB
- 				 * (which may mean the chain bit is cleared).
- 				 */
--				if (!xhci_link_trb_quirk(xhci)) {
-+				if (!(isoc && (xhci->quirks & XHCI_AMD_0x96_HOST))
-+						&& !xhci_link_trb_quirk(xhci)) {
- 					next->link.control &=
- 						cpu_to_le32(~TRB_CHAIN);
- 					next->link.control |=
-@@ -2409,7 +2411,7 @@ irqreturn_t xhci_msi_irq(int irq, struct
-  *			prepare_transfer()?
-  */
- static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
--		bool consumer, bool more_trbs_coming,
-+		bool consumer, bool more_trbs_coming, bool isoc,
- 		u32 field1, u32 field2, u32 field3, u32 field4)
- {
- 	struct xhci_generic_trb *trb;
-@@ -2419,7 +2421,7 @@ static void queue_trb(struct xhci_hcd *x
- 	trb->field[1] = cpu_to_le32(field2);
- 	trb->field[2] = cpu_to_le32(field3);
- 	trb->field[3] = cpu_to_le32(field4);
--	inc_enq(xhci, ring, consumer, more_trbs_coming);
-+	inc_enq(xhci, ring, consumer, more_trbs_coming, isoc);
+-	intel_panel_set_backlight(dev, 0);
++	dev_priv->backlight_enabled = false;
++	intel_panel_actually_set_backlight(dev, 0);
  }
  
- /*
-@@ -2427,7 +2429,7 @@ static void queue_trb(struct xhci_hcd *x
-  * FIXME allocate segments if the ring is full.
-  */
- static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
--		u32 ep_state, unsigned int num_trbs, gfp_t mem_flags)
-+		u32 ep_state, unsigned int num_trbs, bool isoc, gfp_t mem_flags)
- {
- 	/* Make sure the endpoint has been added to xHC schedule */
- 	switch (ep_state) {
-@@ -2469,10 +2471,11 @@ static int prepare_ring(struct xhci_hcd
- 		next = ring->enqueue;
+ void intel_panel_enable_backlight(struct drm_device *dev)
+@@ -273,8 +278,8 @@ void intel_panel_enable_backlight(struct
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
  
- 		while (last_trb(xhci, ring, ring->enq_seg, next)) {
--			/* If we're not dealing with 0.95 hardware,
--			 * clear the chain bit.
-+			/* If we're not dealing with 0.95 hardware or isoc rings
-+			 * on AMD 0.96 host, clear the chain bit.
- 			 */
--			if (!xhci_link_trb_quirk(xhci))
-+			if (!xhci_link_trb_quirk(xhci) && !(isoc &&
-+					(xhci->quirks & XHCI_AMD_0x96_HOST)))
- 				next->link.control &= cpu_to_le32(~TRB_CHAIN);
- 			else
- 				next->link.control |= cpu_to_le32(TRB_CHAIN);
-@@ -2505,6 +2508,7 @@ static int prepare_transfer(struct xhci_
- 		unsigned int num_trbs,
- 		struct urb *urb,
- 		unsigned int td_index,
-+		bool isoc,
- 		gfp_t mem_flags)
- {
- 	int ret;
-@@ -2522,7 +2526,7 @@ static int prepare_transfer(struct xhci_
- 
- 	ret = prepare_ring(xhci, ep_ring,
- 			   le32_to_cpu(ep_ctx->ep_info) & EP_STATE_MASK,
--			   num_trbs, mem_flags);
-+			   num_trbs, isoc, mem_flags);
- 	if (ret)
- 		return ret;
- 
-@@ -2745,7 +2749,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (trb_buff_len < 0)
- 		return trb_buff_len;
- 
-@@ -2840,7 +2844,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 			more_trbs_coming = true;
- 		else
- 			more_trbs_coming = false;
--		queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+		queue_trb(xhci, ep_ring, false, more_trbs_coming, false,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -2931,7 +2935,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 
- 	ret = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -3003,7 +3007,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 			more_trbs_coming = true;
- 		else
- 			more_trbs_coming = false;
--		queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+		queue_trb(xhci, ep_ring, false, more_trbs_coming, false,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -3063,7 +3067,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		num_trbs++;
- 	ret = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -3096,7 +3100,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		}
- 	}
- 
--	queue_trb(xhci, ep_ring, false, true,
-+	queue_trb(xhci, ep_ring, false, true, false,
- 		  setup->bRequestType | setup->bRequest << 8 | le16_to_cpu(setup->wValue) << 16,
- 		  le16_to_cpu(setup->wIndex) | le16_to_cpu(setup->wLength) << 16,
- 		  TRB_LEN(8) | TRB_INTR_TARGET(0),
-@@ -3116,7 +3120,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 	if (urb->transfer_buffer_length > 0) {
- 		if (setup->bRequestType & USB_DIR_IN)
- 			field |= TRB_DIR_IN;
--		queue_trb(xhci, ep_ring, false, true,
-+		queue_trb(xhci, ep_ring, false, true, false,
- 				lower_32_bits(urb->transfer_dma),
- 				upper_32_bits(urb->transfer_dma),
- 				length_field,
-@@ -3132,7 +3136,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		field = 0;
- 	else
- 		field = TRB_DIR_IN;
--	queue_trb(xhci, ep_ring, false, false,
-+	queue_trb(xhci, ep_ring, false, false, false,
- 			0,
- 			0,
- 			TRB_INTR_TARGET(0),
-@@ -3281,7 +3285,8 @@ static int xhci_queue_isoc_tx(struct xhc
- 		trbs_per_td = count_isoc_trbs_needed(xhci, urb, i);
- 
- 		ret = prepare_transfer(xhci, xhci->devs[slot_id], ep_index,
--				urb->stream_id, trbs_per_td, urb, i, mem_flags);
-+				urb->stream_id, trbs_per_td, urb, i, true,
-+				mem_flags);
- 		if (ret < 0) {
- 			if (i == 0)
- 				return ret;
-@@ -3351,7 +3356,7 @@ static int xhci_queue_isoc_tx(struct xhc
- 				remainder |
- 				TRB_INTR_TARGET(0);
- 
--			queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+			queue_trb(xhci, ep_ring, false, more_trbs_coming, true,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -3433,7 +3438,7 @@ int xhci_queue_isoc_tx_prepare(struct xh
- 	 * Do not insert any td of the urb to the ring if the check failed.
- 	 */
- 	ret = prepare_ring(xhci, ep_ring, le32_to_cpu(ep_ctx->ep_info) & EP_STATE_MASK,
--			   num_trbs, mem_flags);
-+			   num_trbs, true, mem_flags);
- 	if (ret)
- 		return ret;
- 
-@@ -3492,7 +3497,7 @@ static int queue_command(struct xhci_hcd
- 		reserved_trbs++;
- 
- 	ret = prepare_ring(xhci, xhci->cmd_ring, EP_STATE_RUNNING,
--			reserved_trbs, GFP_ATOMIC);
-+			reserved_trbs, false, GFP_ATOMIC);
- 	if (ret < 0) {
- 		xhci_err(xhci, "ERR: No room for command on command ring\n");
- 		if (command_must_succeed)
-@@ -3500,8 +3505,8 @@ static int queue_command(struct xhci_hcd
- 					"unfailable commands failed.\n");
- 		return ret;
- 	}
--	queue_trb(xhci, xhci->cmd_ring, false, false, field1, field2, field3,
--			field4 | xhci->cmd_ring->cycle_state);
-+	queue_trb(xhci, xhci->cmd_ring, false, false, false, field1, field2,
-+			field3,	field4 | xhci->cmd_ring->cycle_state);
- 	return 0;
+-	intel_panel_set_backlight(dev, dev_priv->backlight_level);
+ 	dev_priv->backlight_enabled = true;
++	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
  }
  
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1318,6 +1318,7 @@ struct xhci_hcd {
- #define XHCI_EP_LIMIT_QUIRK	(1 << 5)
- #define XHCI_BROKEN_MSI		(1 << 6)
- #define XHCI_RESET_ON_RESUME	(1 << 7)
-+#define XHCI_AMD_0x96_HOST	(1 << 9)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ static void intel_panel_init_backlight(struct drm_device *dev)
 
 
