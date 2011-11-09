@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867Ab1KIK2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:28:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46781 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab1KIK2C (ORCPT
+	id S1756573Ab1KIKeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:34:18 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59231
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751700Ab1KIKeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:28:02 -0500
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com, penberg@cs.helsinki.fi
-In-Reply-To: <20111109101318.GB20612@redhat.com>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
-	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
-	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
-	 <20111102233110.GA20289@redhat.com> <20111108214021.GA4538@redhat.com>
-	 <1320828366.31056.16.camel@lappy>  <20111109101318.GB20612@redhat.com>
-Content-Type: text/plain; charset="iso-8859-13"
-Date: Wed, 09 Nov 2011 12:26:08 +0200
-Message-ID: <1320834368.31056.31.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 9 Nov 2011 05:34:16 -0500
+Date: Wed, 9 Nov 2011 05:34:15 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Schmidt <list.btrfs@jan-o-sch.net>
+Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Chris Mason <chris.mason@oracle.com>, Arne Jansen <sensille@gmx.net>,
+        Andrea Gelmini <andrea.gelmini@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Btrfs pull request
+Message-ID: <20111109103415.GA11064@infradead.org>
+References: <20111106183851.GA4339@shiny>
+ <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
+ <4EB7A6CC.5030502@gmx.net>
+ <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
+ <4EB7D2D8.2060505@gmx.net>
+ <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
+ <4EB8DEAC.7000906@gmx.net>
+ <20111109010701.GI4149@shiny>
+ <20111109074847.GA16742@infradead.org>
+ <4EBA560B.1070509@jan-o-sch.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBA560B.1070509@jan-o-sch.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 12:13 +0200, Michael S. Tsirkin wrote:
-> On Wed, Nov 09, 2011 at 10:46:06AM +0200, Sasha Levin wrote:
-> > The device initialization sequence might use an update as well.
+On Wed, Nov 09, 2011 at 11:29:31AM +0100, Jan Schmidt wrote:
+> Am 09.11.2011 08:48, schrieb Christoph Hellwig:
+> >On Tue, Nov 08, 2011 at 08:07:01PM -0500, Chris Mason wrote:
+> >>Looks like bio_add_page() is failing and we're getting the enomem from
+> >>there.  LVM is only letting us put one page in each bio.
+> >
+> >Yes, at the moment all bio based DM targets only allow single page I/O.
 > 
-> What is needed? Add an item where the driver scans the PCI capability
-> list to detect the layout?
+> Wait. If I got that correctly, each bio_add_page needs special
+> ENOMEM treatment (assuming the target could always be a device
+> mapper target), right?
 
-Yup, something similar like that - just to make it obvious.
+Each bio_add_page caller needs to expect it can't add more than a
+page worth of data.  If you look at callers what write large amounts
+of data (XFS, mpage code) you'll always see a pattern of:
 
-> > Maybe
-> > also a description of how device handles missing structure IDs.
-> > 
-> > [snip]
-> 
-> Hmm. I just have
-> 'Drivers should fall back on this legacy structure if a
->  Virtio Structure capability is missing in the PCI capability
->  list'. 
-> 
-> What else would be helpful? An example? 
+	bio = bio_alloc();
 
-I just remembered from your patch that you could define some structure
-IDs, but not necessarily all of them, if it's not longer the case then
-ignore me. If it is, then the scenario of a missing structure should be
-specified (For example, if the ISR structure wasn't defined, fall back
-to...).
-
-> > I'm not sure what capability length is, can't find it in the spec
-> > either.
-> > 
-> > [snip]
-> 
-> It's the legth of the vendor specific capability structure in bytes.
-> 'the byte immediately following the ´Next¡
->  pointer in the capability structure is defined to be a length field'
-> It's on page 330 in my copy.
-
-Right, I was looking only at the regular cap definition.
-
--- 
-
-Sasha.
+	while (bytes_left) {
+		len = min(bytes_left, PAGE_SIZE);
+		bytes = bio_add_page(io, ..., len);
+		if (bytes < len) {
+			submit_bio(bio);
+			bio = bio_alloc();
+		}
+		update_indices();
+	}
+	submit_bio(bio);
 
