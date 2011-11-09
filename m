@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab1KICyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 21:54:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60111 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1KICyJ (ORCPT
+	id S1754162Ab1KIC40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 21:56:26 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37153 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752756Ab1KIC4Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 21:54:09 -0500
-Date: Wed, 9 Nov 2011 13:53:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: linux-next: manual merge of the akpm tree with the v4l-dvb tree
-Message-Id: <20111109135353.69057bcd2463a6ea009b898e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__9_Nov_2011_13_53_53_+1100_E2aD1grJ_2J0plde"
+	Tue, 8 Nov 2011 21:56:25 -0500
+Message-ID: <4EB9EBD7.5060700@dsn.lapis-semi.com>
+Date: Wed, 09 Nov 2011 11:56:23 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Takashi Iwai <tiwai@suse.de>, perex@perex.cz, linux-kernel@vger.kernel.org,
+        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Clark, Joel" <joel.clark@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>, Liam Girdwood <lrg@ti.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
+References: <70D251FDDC55405882A8447CC455D56E@hacdom.okisemi.com> <8486F61FC3B94B908BFE654234DD6C97@hacdom.okisemi.com> <4E9BAEF7.1080406@dsn.lapis-semi.com> <s5h7h3ysa4l.wl%tiwai@suse.de> <4EA5563A.10703@dsn.lapis-semi.com> <20111024122015.GA26033@opensource.wolfsonmicro.com> <4EB8F079.9080703@dsn.lapis-semi.com> <20111108103939.GB25591@opensource.wolfsonmicro.com>
+In-Reply-To: <20111108103939.GB25591@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Nov_2011_13_53_53_+1100_E2aD1grJ_2J0plde
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2011/11/08 19:39), Mark Brown wrote:
+> On Tue, Nov 08, 2011 at 06:03:53PM +0900, Tomoya MORINAGA wrote:
+>
+>> Though roughly, we re-created 3 files codec driver, platform drive
+>> and machine driver. (Not debugged/tested)
+>> Could you check these files ?
+>
+> Please send patches for review using the standard kernel review process
+> - see Documentation/SubmittingPatches.  Sending a single enormous review
+> makes it much more difficult for people to review as there's so much
+> code in the one mail and attachments don't work with people's normal
+> workflows.
+>
+OK, I will post our patches.
 
-Hi Andrew,
-
-Today's linux-next merge of the akpm tree got a conflict between commit
-"poll: add poll_requested_events() function" the v4l-dvb and akpm trees.
-It was very similar (but not identical), so I dropeed it from the akpm
-tree.
-
-BTW Mauro, that commit in v4l-dvb comes from a branch that contains a
-series of patches that have various Signed-off-by's but not yours ... it
-looks like they were imported from patchwork, but you forgot to add your
-SOB line.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__9_Nov_2011_13_53_53_+1100_E2aD1grJ_2J0plde
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJOuetBAAoJEECxmPOUX5FEDFoP/iblIKVC/o/L/Qr1Vcj7WY0L
-N8gNtNFU0xPdUvJPl6DSKzNpm6ivILmM4ssx3aEYl122CT/xUCUxUFv1eKGVBX/8
-3GyY63N2loqbW33UzCgva4S5g9sssfv/RIQS2iLG45AXvBdwBOCC5tT8mPVE0Iyi
-r8c8xywGp7bU9cqQq8TN+Jyz5U/dB6+sISWu/GgbuMK8O1BQPceO9Z3FCyMyU15z
-cr5YdQZHf+MGjcrJsgOxuCIapfsyoRNRwNeWmwikL/A2DAt947yw7k2CD0z70zK0
-jFPqzuAjgYOvsGGws/EamvYVCDjqw+lw822EfjWFRB1uEm0XG1j3FkyiVx0k9Hp2
-yVSHeT56pbqEtkRBYwaONW+UYcnc5bMrzg2YMHCsGxdnVqB+2pW0swztEpVvC6NY
-Hak9iTBYQWQ/WNbYvU5nLP8DoGIx8Nmkoes9lj3P+6QYdYmk7IgVa8hFLvs3UFYF
-kJFmEzeuInEr0bOwI2eTwKTlV7vdW3wmOysMSE4PNWYzpu2IRodQ1UvfwFZYzMlq
-JA41waFGJOQ+a7h04aKF3Tfi87FD654xSUHISoFId4lBoa75ArUY2zGJHvAmHpFI
-xRUm8cFhHC2tymnmWHkZipJPvYGZqxzc7R7ksgnT872FHupWVmO51oMrd1mXhAGF
-UE4mj+RSwo9xfpSRQ8Su
-=CgUD
------END PGP SIGNATURE-----
-
---Signature=_Wed__9_Nov_2011_13_53_53_+1100_E2aD1grJ_2J0plde--
+Thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
