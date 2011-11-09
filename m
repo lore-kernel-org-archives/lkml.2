@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933948Ab1KJDwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:52:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45254 "EHLO mx2.suse.de"
+	id S936169Ab1KJDwf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:52:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45233 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966111Ab1KJDtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:49:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:07 2011
-Message-Id: <20111109213207.600028850@clark.kroah.org>
+	id S966104Ab1KJDtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:49:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:09 2011
+Message-Id: <20111109213209.154941825@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:56 -0800
+Date: Wed, 09 Nov 2011 13:35:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Daniel Mack <zonque@gmail.com>,
-        Lei Wen <leiwen@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [249/264] mtd: pxa3xx_nand: Fix blank page ECC mismatch
+        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
+        Joshua V Dillon <jvdillon@gmail.com>,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: [264/264] hid/apple: modern macbook airs use the standard apple function key translations
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,39 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <zonque@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 543e32d5ff165d0d68deedb0e3557478c7c36a4a upstream.
+commit 21404b772a1c65f7b935b8c0fddc388a949f4e31 upstream.
 
-This bug was introduced in f8155a40 ("mtd: pxa3xx_nand: rework irq
-logic") and causes the PXA3xx NAND controller fail to operate with NAND
-flash that has empty pages. According to the comment in this block, the
-hardware controller will report a double-bit error for empty pages,
-which can and must be ignored.
+This removes the use of the special "macbookair_fn_keys" keyboard
+translation table for the MacBookAir4,x models (ie the 2011 refresh).
+They use the standard apple_fn_keys[] translation.  Apparently only the
+old MacBook Air's need a different translation table.
 
-This patch restores the original behaviour of the driver.
+This mirrors the change that commit da617c7cb915 ("HID: consolidate
+MacbookAir 4,1 mappings") did for the WELLSPRING6A ones, but does it for
+the WELLSPRING6 model used on the MacBookAir4,2.
 
-Signed-off-by: Daniel Mack <zonque@gmail.com>
-Acked-by: Lei Wen <leiwen@marvell.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reported-and-tested-by: Dirk Hohndel <hohndel@infradead.org>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Joshua V Dillon <jvdillon@gmail.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/mtd/nand/pxa3xx_nand.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/mtd/nand/pxa3xx_nand.c
-+++ b/drivers/mtd/nand/pxa3xx_nand.c
-@@ -685,6 +685,8 @@ static int pxa3xx_nand_read_page_hwecc(s
- 		 * OOB, ignore such double bit errors
- 		 */
- 		if (is_buf_blank(buf, mtd->writesize))
-+			info->retcode = ERR_NONE;
-+		else
- 			mtd->ecc_stats.failed++;
- 	}
- 
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -183,9 +183,6 @@ static int hidinput_apple_event(struct hid_device *hid, struct input_dev *input,
+ 		if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING4_ANSI &&
+ 				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING4A_JIS)
+ 			table = macbookair_fn_keys;
+-		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
+-				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
+-			table = macbookair_fn_keys;
+ 		else if (hid->product < 0x21d || hid->product >= 0x300)
+ 			table = powerbook_fn_keys;
+ 		else
 
 
