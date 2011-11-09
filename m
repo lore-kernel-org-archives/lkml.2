@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965269Ab1KJEYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:24:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44086 "EHLO mx2.suse.de"
+	id S965174Ab1KJDjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:39:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44052 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965161Ab1KJDjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:39:53 -0500
+	id S965138Ab1KJDjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:39:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:48 2011
-Message-Id: <20111109213147.925979780@clark.kroah.org>
+Message-Id: <20111109213148.446756263@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:45 -0800
+Date: Wed, 09 Nov 2011 13:31:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Benoit <eric@ecks.ca>
-Subject: [058/264] USB: pl2303: add id for SMART device
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
+Subject: [063/264] USB: option: add ZTE product 0x0037 to sendsetup blacklist
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Benoit <eric@ecks.ca>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 598f0b703506da841d3459dc0c48506be14d1778 upstream.
+commit eb05ce567a81c592c58f4bdb96eb91ce96661c30 upstream.
 
-Add vendor and product ID for the SMART USB to serial adapter. These
-were meant to be used with their SMART Board whiteboards, but can be
-re-purposed for other tasks. Tested and working (at at least 9600 bps).
-
-Signed-off-by: Eric Benoit <eric@ecks.ca>
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/pl2303.c |    1 +
- drivers/usb/serial/pl2303.h |    5 +++++
- 2 files changed, 6 insertions(+)
+ drivers/usb/serial/option.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -92,6 +92,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
- 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
- 	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
-+	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -491,6 +491,10 @@ static const struct option_blacklist_inf
+ 	.sendsetup = BIT(0) | BIT(1),
  };
  
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -148,3 +148,8 @@
- /* WinChipHead USB->RS 232 adapter */
- #define WINCHIPHEAD_VENDOR_ID		0x4348
- #define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
++static const struct option_blacklist_info zte_0037_blacklist = {
++	.sendsetup = BIT(0) | BIT(1),
++};
 +
-+/* SMART USB Serial Adapter */
-+#define SMART_VENDOR_ID	0x0b8c
-+#define SMART_PRODUCT_ID	0x2303
-+
+ static const struct option_blacklist_info zte_k3765_z_blacklist = {
+ 	.sendsetup = BIT(0) | BIT(1) | BIT(2),
+ };
+@@ -743,7 +747,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&zte_0037_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0038, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0039, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0040, 0xff, 0xff, 0xff) },
 
 
