@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab1KIIqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:46:45 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39027 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab1KIIqo convert rfc822-to-8bit (ORCPT
+	id S1756174Ab1KIIrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:47:37 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:46831 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306Ab1KIIrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:46:44 -0500
+	Wed, 9 Nov 2011 03:47:35 -0500
+X-Greylist: delayed 3133 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Nov 2011 03:47:35 EST
+Date: Tue, 8 Nov 2011 23:55:10 -0800
+From: Joel Becker <jlbec@evilplan.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Valdis.Kletnieks@vt.edu, mfasheh@suse.com, ocfs2-devel@oss.oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: OCFS2 1.6.0 for mainline?
+Message-ID: <20111109075508.GA331@noexit.corp.google.com>
+Mail-Followup-To: Richard Weinberger <richard@nod.at>,
+	Valdis.Kletnieks@vt.edu, mfasheh@suse.com,
+	ocfs2-devel@oss.oracle.com,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <4E99A8F3.50206@nod.at>
+ <30236.1318700758@turing-police.cc.vt.edu>
+ <4E99C7B7.5060405@nod.at>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <1320827885.6708.1.camel@phoenix>
-References: <1320827885.6708.1.camel@phoenix>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 9 Nov 2011 16:46:22 +0800
-Message-ID: <CAF+7xW=uozfkCEfozZFmVzkbC+6S5UX-9n2woF9CCGxj5_tmFA@mail.gmail.com>
-Subject: Re: [PATCH v3] ASoC: wm9081: Use snd_soc_update_bits for read-modify-write
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E99C7B7.5060405@nod.at>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->                        /* VMID 2*4k; Soft VMID ramp enable */
-> -                       reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
-> -                       reg |= WM9081_VMID_RAMP | 0x6;
-> -                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-> +                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-> +                                           WM9081_VMID_RAMP |
-> +                                           WM9081_VMID_SEL_MASK,
-> +                                           WM9081_VMID_RAMP | 0x6);
->
->                        mdelay(100);
->
->                        /* Normal bias enable & soft start off */
-> -                       reg &= ~WM9081_VMID_RAMP;
-> -                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
-> +                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
-> +                                           WM9081_VMID_RAMP |
-> +                                           WM9081_VMID_SEL_MASK, 0);
->
-It's probably not trival why we need to clear WM9081_VMID_SEL_MASK bits here by
-looking at the patch.  Looking at original code, you will know current code
-indeed clear WM9081_VMID_SEL_MASK bit here.
+On Sat, Oct 15, 2011 at 07:49:43PM +0200, Richard Weinberger wrote:
+> Am 15.10.2011 19:45, schrieb Valdis.Kletnieks@vt.edu:
+> > On Sat, 15 Oct 2011 17:38:27 +0200, Richard Weinberger said:
+> > 
+> >> http://oss.oracle.com/projects/ocfs2/source.html states:
+> >> "Active development on OCFS2 happens in the mainline kernel."
+> >>
+> >> But the mainline kernel seems to contain only version 1.5.0.
+> >>
+> >> Also the linux-next ocfs2 branch has only 1.5.0.
+> >> git://oss.oracle.com/git/jlbec/linux-2.6.git linux-next
+> >>
+> >> Where can I get 1.6.0?
+> > 
+> > Presumably, it's GPL, so you should be able to get a copy from the
+> > person that told you that 1.6.0 exists. ;)
+> > 
+> > Put differently, why do you think 1.6.0 is available?
+> 
+> http://oss.oracle.com/projects/ocfs2/
+> 
+> "OCFS2 1.6 RELEASE
+> 
+> OCFS2 1.6.3-1 and OCFS2 Tools 1.6.3-1 are the latest versions. The new
+> features available in this release include Extended Attributes, POSIX
+> ACLs, REFLINKs, Indexed Directories, Allocation Reservation, Metadata
+> Checksums and User/Group Quotas."
+> 
+> Looks like it's only available for "Unbreakable Linux" subscribers.
+> The development seems to be detached from mainline. :-(
 
-What current code does:
-        1. read WM9081_VMID_CONTROL register
-        2. write to WM9081_VMID_CONTROL register with setting WM9081_VMID_RAMP
-           bit and setting WM9081_VMID_SEL_MASK bits to 0x6 (VMID
-2*4k; Soft VMID
-           ramp enable)
-        3. mdelay(100)
-        4. write to WM9081_VMID_CONTROL register with clearing
-WM9081_VMID_RAMP bit.
-           Note: In this write, we do also clear WM9081_VMID_SEL_MASK
-bits because the register
-           value of WM9081_VMID_SEL_MASK bits are clear when we read
-in "step1".
-           In this case, the WM9081_VMID_SEL_MASK bits are clear
-           because we clear WM9081_VMID_SEL_MASK bits in SND_SOC_BIAS_OFF.
-           ( The default value is also zero for WM9081_VMID_SEL_MASK bits. )
+Hello Folks,
+	Sorry I'm late to this game, but it's worth repeating.
+	Thankfully, you're just confused by shoddy version numbers.  ALL
+ocfs2 development happens in mainline.  Any code that is in the 1.6.0
+release, or any RPM release, started in mainline.
+	We don't really pay any attention to the version number reported
+in the mainline code.  It's said 1.5.0 for years now.  Mainline is
+versioned by the kernel release.
+	To repeat, ALL of the code in the 1.6.x RPM (or any RPM put out
+by Oracle or SuSE) started in mainline, with the possible exception of
+any trivial compatability fixes.  If you have the latest Linus code, you
+have the latest ocfs2 code.
 
-While converting to snd_soc_update_bits here we actually do one more read.
-For the second call of snd_soc_update_bits, we need to explictly clear
-WM9081_VMID_SEL_MASK bits.
+Joel
 
-Regards,
-Axel
+-- 
+
+"Same dancers in the same old shoes.
+ You get too careful with the steps you choose.
+ You don't care about winning but you don't want to lose
+ After the thrill is gone."
+
+			http://www.jlbec.org/
+			jlbec@evilplan.org
