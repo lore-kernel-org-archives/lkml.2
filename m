@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935482Ab1KJDd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:33:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43166 "EHLO mx2.suse.de"
+	id S935627Ab1KJDdi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:33:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43187 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935571Ab1KJDd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:26 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:25 2011
-Message-Id: <20111109212725.240410863@clark.kroah.org>
+	id S935616Ab1KJDdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:36 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:22 2011
+Message-Id: <20111109212722.613365502@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:27 -0800
+Date: Wed, 09 Nov 2011 13:29:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jiaying Zhang <jiayingz@google.com>,
-        "Theodore Tso" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [245/262] ext4: remove i_mutex lock in ext4_evict_inode to fix lockdep complaining
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [219/262] ASoC: wm8711: Fix wrong mask for setting input audio data bit length select
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,95 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiaying Zhang <jiayingz@google.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 8c0bec2151a47906bf779c6715a10ce04453ab77 upstream.
+commit 04c57163c8edfbc50e022737014069998ba4fc5f upstream.
 
-The i_mutex lock and flush_completed_IO() added by commit 2581fdc810
-in ext4_evict_inode() causes lockdep complaining about potential
-deadlock in several places.  In most/all of these LOCKDEP complaints
-it looks like it's a false positive, since many of the potential
-circular locking cases can't take place by the time the
-ext4_evict_inode() is called; but since at the very least it may mask
-real problems, we need to address this.
+The Input Audio Data Bit Length Select is controlled by BIT[3:2] of
+WM8711_IFACE(07h) register.
+Current code incorrectly masks BIT[1:0] which is for Audio Data Format Select.
 
-This change removes the flush_completed_IO() and i_mutex lock in
-ext4_evict_inode().  Instead, we take a different approach to resolve
-the software lockup that commit 2581fdc810 intends to fix.  Rather
-than having ext4-dio-unwritten thread wait for grabing the i_mutex
-lock of an inode, we use mutex_trylock() instead, and simply requeue
-the work item if we fail to grab the inode's i_mutex lock.
-
-This should speed up work queue processing in general and also
-prevents the following deadlock scenario: During page fault,
-shrink_icache_memory is called that in turn evicts another inode B.
-Inode B has some pending io_end work so it calls ext4_ioend_wait()
-that waits for inode B's i_ioend_count to become zero.  However, inode
-B's ioend work was queued behind some of inode A's ioend work on the
-same cpu's ext4-dio-unwritten workqueue.  As the ext4-dio-unwritten
-thread on that cpu is processing inode A's ioend work, it tries to
-grab inode A's i_mutex lock.  Since the i_mutex lock of inode A is
-still hold before the page fault happened, we enter a deadlock.
-
-Signed-off-by: Jiaying Zhang <jiayingz@google.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/ext4.h    |    1 +
- fs/ext4/inode.c   |    3 ---
- fs/ext4/page-io.c |   18 +++++++++++++++++-
- 3 files changed, 18 insertions(+), 4 deletions(-)
+ sound/soc/codecs/wm8711.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -175,6 +175,7 @@ struct mpage_da_data {
-  */
- #define	EXT4_IO_END_UNWRITTEN	0x0001
- #define EXT4_IO_END_ERROR	0x0002
-+#define EXT4_IO_END_QUEUED	0x0004
- 
- struct ext4_io_page {
- 	struct page	*p_page;
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -190,9 +190,6 @@ void ext4_evict_inode(struct inode *inod
- 
- 	trace_ext4_evict_inode(inode);
- 
--	mutex_lock(&inode->i_mutex);
--	ext4_flush_completed_IO(inode);
--	mutex_unlock(&inode->i_mutex);
- 	ext4_ioend_wait(inode);
- 
- 	if (inode->i_nlink) {
---- a/fs/ext4/page-io.c
-+++ b/fs/ext4/page-io.c
-@@ -142,7 +142,23 @@ static void ext4_end_io_work(struct work
- 	unsigned long		flags;
- 	int			ret;
- 
--	mutex_lock(&inode->i_mutex);
-+	if (!mutex_trylock(&inode->i_mutex)) {
-+		/*
-+		 * Requeue the work instead of waiting so that the work
-+		 * items queued after this can be processed.
-+		 */
-+		queue_work(EXT4_SB(inode->i_sb)->dio_unwritten_wq, &io->work);
-+		/*
-+		 * To prevent the ext4-dio-unwritten thread from keeping
-+		 * requeueing end_io requests and occupying cpu for too long,
-+		 * yield the cpu if it sees an end_io request that has already
-+		 * been requeued.
-+		 */
-+		if (io->flag & EXT4_IO_END_QUEUED)
-+			yield();
-+		io->flag |= EXT4_IO_END_QUEUED;
-+		return;
-+	}
- 	ret = ext4_end_io_nolock(io);
- 	if (ret < 0) {
- 		mutex_unlock(&inode->i_mutex);
+--- a/sound/soc/codecs/wm8711.c
++++ b/sound/soc/codecs/wm8711.c
+@@ -150,7 +150,7 @@ static int wm8711_hw_params(struct snd_p
+ {
+ 	struct snd_soc_codec *codec = dai->codec;
+ 	struct wm8711_priv *wm8711 =  snd_soc_codec_get_drvdata(codec);
+-	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0xfffc;
++	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0xfff3;
+ 	int i = get_coeff(wm8711->sysclk, params_rate(params));
+ 	u16 srate = (coeff_div[i].sr << 2) |
+ 		(coeff_div[i].bosr << 1) | coeff_div[i].usb;
 
 
