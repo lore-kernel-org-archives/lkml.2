@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab1KJFYt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:24:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41798 "EHLO mx2.suse.de"
+	id S1757320Ab1KJFZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:25:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41794 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933995Ab1KJDWH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:07 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
-Message-Id: <20111109212703.283281085@clark.kroah.org>
+	id S933735Ab1KJDWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:22:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:05 2011
+Message-Id: <20111109212705.226566870@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:52 -0800
+Date: Wed, 09 Nov 2011 13:26:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jack Wang <jack_wang@usish.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [030/262] [SCSI] libsas: set sas_address and device type of rphy
+        alan@lxorguk.ukuu.org.uk, Jon Levell <linuxusb@coralbark.net>
+Subject: [049/262] USB: add quirk for Logitech C300 web cam
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Wang <jack_wang@usish.com>
+From: Jon Levell <linuxusb@coralbark.net>
 
-commit bb041a0e9c31229071b6e56e1d0d8374af0d2038 upstream.
+commit 5b253d88cc6c65a23cefc457a5a4ef139913c5fc upstream.
 
-Libsas forget to set the sas_address and device type of rphy lead to file
-under /sys/class/sas_x show wrong value, fix that.
+My webcam is a Logitech C300 and I get "chipmunk"ed squeaky sound.
+The following trivial patch fixes it.
 
-Signed-off-by: Jack Wang <jack_wang@usish.com>
-Tested-by: Crystal Yu <crystal_yu@usish.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Jon Levell <linuxusb@coralbark.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_expander.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/core/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -199,6 +199,8 @@ static void sas_set_ex_phy(struct domain
- 	phy->virtual = dr->virtual;
- 	phy->last_da_index = -1;
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -44,6 +44,9 @@ static const struct usb_device_id usb_qu
+ 	/* Logitech Webcam C250 */
+ 	{ USB_DEVICE(0x046d, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
  
-+	phy->phy->identify.sas_address = SAS_ADDR(phy->attached_sas_addr);
-+	phy->phy->identify.device_type = phy->attached_dev_type;
- 	phy->phy->identify.initiator_port_protocols = phy->attached_iproto;
- 	phy->phy->identify.target_port_protocols = phy->attached_tproto;
- 	phy->phy->identify.phy_identifier = phy_id;
++	/* Logitech Webcam C300 */
++	{ USB_DEVICE(0x046d, 0x0805), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* Logitech Webcam B/C500 */
+ 	{ USB_DEVICE(0x046d, 0x0807), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
