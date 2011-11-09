@@ -1,182 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756134Ab1KICB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 21:01:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44183 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752718Ab1KICBy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 21:01:54 -0500
-Message-ID: <4EB9DF0B.7050004@gmail.com>
-Date: Wed, 09 Nov 2011 10:01:47 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] cleanup: convert the int cnt to unsigned long in mm/memblock.c
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751687Ab1KICI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 21:08:58 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:50470 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750774Ab1KICI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 21:08:57 -0500
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        David Daney <ddaney.cavm@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Chen Jie <chenj@lemote.com>,
+        zhangfx <zhangfx@lemote.com>
+Subject: [PATCH] clocksource: Avoid selecting mult values that might overflow when adjusted
+Date: Tue,  8 Nov 2011 18:08:13 -0800
+Message-Id: <1320804493-25488-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.7.3.2.146.gca209
+x-cbid: 11110902-5112-0000-0000-000001D5CA87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have the following definition in memblock.h:
-struct memblock_type {
-    unsigned long cnt;  /* number of regions */
-    unsigned long max;  /* size of the allocated array */
-    struct memblock_region *regions;
-};
+For some frequencies, the clocks_calc_mult_shift() function will
+unfortunately select mult values very close to 0xffffffff.  This
+has the potential to overflow when NTP adjusts the clock, adding
+to the mult value.
 
-But in memblock.c, some cnt/max vars are typed to int
-instead of unsigned long.
-This patch does the code cleanup.
+This patch adds a clocksource.maxadj value, which provides
+an approximation of an 11% adjustment(NTP limits adjustments to
+500ppm and the tick adjustment is limited to 10%), which could
+be made to the clocksource.mult value. This is then used to both
+check that the current mult value won't overflow/underflow, as
+well as warning us if the timekeeping_adjust() code pushes over
+that 11% boundary.
 
+v2: Fix max_adjustment calculation, and improve WARN_ONCE
+messages.
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+v3: Don't warn before maxadj has actually been set
+
+CC: Yong Zhang <yong.zhang0@gmail.com>
+CC: David Daney <ddaney.cavm@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Chen Jie <chenj@lemote.com>
+CC: zhangfx <zhangfx@lemote.com>
+Reported-by: Chen Jie <chenj@lemote.com>
+Reported-by: zhangfx <zhangfx@lemote.com>
+Tested-by: Yong Zhang <yong.zhang0@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- mm/memblock.c |   38 +++++++++++++++++++++-----------------
- 1 files changed, 21 insertions(+), 17 deletions(-)
+ include/linux/clocksource.h |    3 +-
+ kernel/time/clocksource.c   |   58 +++++++++++++++++++++++++++++++++++-------
+ kernel/time/timekeeping.c   |    7 +++++
+ 3 files changed, 57 insertions(+), 11 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 4d4d5ee..3618241 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -52,13 +52,14 @@ static phys_addr_t __init_memblock memblock_align_up(phys_addr_t addr, phys_addr
- 	return (addr + (size - 1)) & ~(size - 1);
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 139c4db..c86c940 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -156,6 +156,7 @@ extern u64 timecounter_cyc2time(struct timecounter *tc,
+  * @mult:		cycle to nanosecond multiplier
+  * @shift:		cycle to nanosecond divisor (power of two)
+  * @max_idle_ns:	max idle time permitted by the clocksource (nsecs)
++ * @maxadj		maximum adjustment value to mult (~11%)
+  * @flags:		flags describing special properties
+  * @archdata:		arch-specific data
+  * @suspend:		suspend function for the clocksource, if necessary
+@@ -172,7 +173,7 @@ struct clocksource {
+ 	u32 mult;
+ 	u32 shift;
+ 	u64 max_idle_ns;
+-
++	u32 maxadj;
+ #ifdef CONFIG_ARCH_CLOCKSOURCE_DATA
+ 	struct arch_clocksource_data archdata;
+ #endif
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index cf52fda..cfc65e1 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -492,6 +492,22 @@ void clocksource_touch_watchdog(void)
  }
  
--static unsigned long __init_memblock memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
--				       phys_addr_t base2, phys_addr_t size2)
-+static int __init_memblock memblock_addrs_overlap(phys_addr_t base1,
-+		phys_addr_t size1, phys_addr_t base2, phys_addr_t size2)
+ /**
++ * clocksource_max_adjustment- Returns max adjustment amount
++ * @cs:         Pointer to clocksource
++ *
++ */
++static u32 clocksource_max_adjustment(struct clocksource *cs)
++{
++	u64 ret;
++	/*
++	 * We won't try to correct for more then 11% adjustments (110,000 ppm),
++	 */
++	ret = (u64)cs->mult * 11;
++	do_div(ret,100);
++	return (u32)ret;
++}
++
++/**
+  * clocksource_max_deferment - Returns max time the clocksource can be deferred
+  * @cs:         Pointer to clocksource
+  *
+@@ -503,25 +519,28 @@ static u64 clocksource_max_deferment(struct clocksource *cs)
+ 	/*
+ 	 * Calculate the maximum number of cycles that we can pass to the
+ 	 * cyc2ns function without overflowing a 64-bit signed result. The
+-	 * maximum number of cycles is equal to ULLONG_MAX/cs->mult which
+-	 * is equivalent to the below.
+-	 * max_cycles < (2^63)/cs->mult
+-	 * max_cycles < 2^(log2((2^63)/cs->mult))
+-	 * max_cycles < 2^(log2(2^63) - log2(cs->mult))
+-	 * max_cycles < 2^(63 - log2(cs->mult))
+-	 * max_cycles < 1 << (63 - log2(cs->mult))
++	 * maximum number of cycles is equal to ULLONG_MAX/(cs->mult+cs->maxadj)
++	 * which is equivalent to the below.
++	 * max_cycles < (2^63)/(cs->mult + cs->maxadj)
++	 * max_cycles < 2^(log2((2^63)/(cs->mult + cs->maxadj)))
++	 * max_cycles < 2^(log2(2^63) - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 2^(63 - log2(cs->mult + cs->maxadj))
++	 * max_cycles < 1 << (63 - log2(cs->mult + cs->maxadj))
+ 	 * Please note that we add 1 to the result of the log2 to account for
+ 	 * any rounding errors, ensure the above inequality is satisfied and
+ 	 * no overflow will occur.
+ 	 */
+-	max_cycles = 1ULL << (63 - (ilog2(cs->mult) + 1));
++	max_cycles = 1ULL << (63 - (ilog2(cs->mult + cs->maxadj) + 1));
+ 
+ 	/*
+ 	 * The actual maximum number of cycles we can defer the clocksource is
+ 	 * determined by the minimum of max_cycles and cs->mask.
++	 * Note: Here we subtract the maxadj to make sure we don't sleep for
++	 * too long if there's a large negative adjustment.
+ 	 */
+ 	max_cycles = min_t(u64, max_cycles, (u64) cs->mask);
+-	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult, cs->shift);
++	max_nsecs = clocksource_cyc2ns(max_cycles, cs->mult - cs->maxadj,
++					cs->shift);
+ 
+ 	/*
+ 	 * To ensure that the clocksource does not wrap whilst we are idle,
+@@ -640,7 +659,6 @@ static void clocksource_enqueue(struct clocksource *cs)
+ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
  {
- 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+ 	u64 sec;
+-
+ 	/*
+ 	 * Calc the maximum number of seconds which we can run before
+ 	 * wrapping around. For clocksources which have a mask > 32bit
+@@ -661,6 +679,20 @@ void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 
+ 	clocks_calc_mult_shift(&cs->mult, &cs->shift, freq,
+ 			       NSEC_PER_SEC / scale, sec * scale);
++
++	/*
++	 * for clocksources that have large mults, to avoid overflow.
++	 * Since mult may be adjusted by ntp, add an safety extra margin
++	 *
++	 */
++	cs->maxadj = clocksource_max_adjustment(cs);
++	while ((cs->mult + cs->maxadj < cs->mult)
++		|| (cs->mult - cs->maxadj > cs->mult)) {
++		cs->mult >>= 1;
++		cs->shift--;
++		cs->maxadj = clocksource_max_adjustment(cs);
++	}
++
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
  }
- 
--long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+long __init_memblock memblock_overlaps_region(struct memblock_type *type,
-+				       phys_addr_t base, phys_addr_t size)
+ EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
+@@ -701,6 +733,12 @@ EXPORT_SYMBOL_GPL(__clocksource_register_scale);
+  */
+ int clocksource_register(struct clocksource *cs)
  {
- 	unsigned long i;
++	/* calculate max adjustment for given mult/shift */
++	cs->maxadj = clocksource_max_adjustment(cs);
++	WARN_ONCE(cs->mult + cs->maxadj < cs->mult,
++		"Clocksource %s might overflow on 11%% adjustment\n",
++		cs->name);
++
+ 	/* calculate max idle time permitted for this clocksource */
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
  
-@@ -111,7 +112,7 @@ static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_
- static phys_addr_t __init_memblock memblock_find_base(phys_addr_t size,
- 			phys_addr_t align, phys_addr_t start, phys_addr_t end)
- {
--	long i;
-+	unsigned long i;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 2b021b0e..e65ff31 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -820,6 +820,13 @@ static void timekeeping_adjust(s64 offset)
+ 	} else
+ 		return;
  
- 	BUG_ON(0 == size);
- 
-@@ -199,7 +200,8 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
- static int __init_memblock memblock_double_array(struct memblock_type *type)
- {
- 	struct memblock_region *new_array, *old_array;
--	phys_addr_t old_size, new_size, addr;
-+	phys_addr_t addr;
-+	unsigned long old_size, new_size;
- 	int use_slab = slab_is_available();
- 
- 	/* We don't allow resizing until we know about the reserved regions
-@@ -277,7 +279,8 @@ static long __init_memblock memblock_add_region(struct memblock_type *type,
- 						phys_addr_t base, phys_addr_t size)
- {
- 	phys_addr_t end = base + size;
--	int i, slot = -1;
-+	long slot = -1;
-+	unsigned long i;
- 
- 	/* First try and coalesce this MEMBLOCK with others */
- 	for (i = 0; i < type->cnt; i++) {
-@@ -413,7 +416,7 @@ static long __init_memblock __memblock_remove(struct memblock_type *type,
- 					      phys_addr_t base, phys_addr_t size)
- {
- 	phys_addr_t end = base + size;
--	int i;
-+	unsigned long i;
- 
- 	/* Walk through the array for collisions */
- 	for (i = 0; i < type->cnt; i++) {
-@@ -583,7 +586,7 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
- phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
- {
- 	struct memblock_type *mem = &memblock.memory;
--	int i;
-+	unsigned long i;
- 
- 	BUG_ON(0 == size);
- 
-@@ -628,7 +631,7 @@ phys_addr_t __init memblock_phys_mem_size(void)
- 
- phys_addr_t __init_memblock memblock_end_of_DRAM(void)
- {
--	int idx = memblock.memory.cnt - 1;
-+	unsigned long idx = memblock.memory.cnt - 1;
- 
- 	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
- }
-@@ -674,12 +677,13 @@ void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
- 	}
- }
- 
--static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
-+static long __init_memblock memblock_search(struct memblock_type *type,
-+					    phys_addr_t addr)
- {
--	unsigned int left = 0, right = type->cnt;
-+	unsigned long left = 0, right = type->cnt;
- 
- 	do {
--		unsigned int mid = (right + left) / 2;
-+		unsigned long mid = (right + left) / 2;
- 
- 		if (addr < type->regions[mid].base)
- 			right = mid;
-@@ -704,7 +708,7 @@ int __init_memblock memblock_is_memory(phys_addr_t addr)
- 
- int __init_memblock memblock_is_region_memory(phys_addr_t base, phys_addr_t size)
- {
--	int idx = memblock_search(&memblock.memory, base);
-+	long idx = memblock_search(&memblock.memory, base);
- 
- 	if (idx == -1)
- 		return 0;
-@@ -727,7 +731,7 @@ void __init_memblock memblock_set_current_limit(phys_addr_t limit)
- static void __init_memblock memblock_dump(struct memblock_type *region, char *name)
- {
- 	unsigned long long base, size;
--	int i;
-+	unsigned long i;
- 
- 	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
- 
-@@ -735,7 +739,7 @@ static void __init_memblock memblock_dump(struct memblock_type *region, char *na
- 		base = region->regions[i].base;
- 		size = region->regions[i].size;
- 
--		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes\n",
-+		pr_info(" %s[%#lx]\t[%#016llx-%#016llx], %#llx bytes\n",
- 		    name, i, base, base + size - 1, size);
- 	}
- }
-@@ -754,7 +758,7 @@ void __init_memblock memblock_dump_all(void)
- 
- void __init memblock_analyze(void)
- {
--	int i;
-+	unsigned long i;
- 
- 	/* Check marker in the unused last array entry */
- 	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
-@@ -818,7 +822,7 @@ static int memblock_debug_show(struct seq_file *m, void *private)
- {
- 	struct memblock_type *type = m->private;
- 	struct memblock_region *reg;
--	int i;
-+	unsigned long i;
- 
- 	for (i = 0; i < type->cnt; i++) {
- 		reg = &type->regions[i];
++	WARN_ONCE(timekeeper.clock->maxadj &&
++			(timekeeper.mult + adj > timekeeper.clock->mult +
++						timekeeper.clock->maxadj),
++			"Adjusting %s more then 11%% (%ld vs %ld)\n",
++			timekeeper.clock->name, (long)timekeeper.mult + adj,
++			(long)timekeeper.clock->mult +
++				timekeeper.clock->maxadj);
+ 	timekeeper.mult += adj;
+ 	timekeeper.xtime_interval += interval;
+ 	timekeeper.xtime_nsec -= offset;
 -- 
-1.7.1
+1.7.3.2.146.gca209
 
