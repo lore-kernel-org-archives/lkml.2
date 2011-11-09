@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab1KIQpl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:45:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36627 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751870Ab1KIQpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:45:40 -0500
-Date: Wed, 9 Nov 2011 17:45:37 +0100
-From: Jan Kara <jack@suse.cz>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: write_cache_pages inefficiency
-Message-ID: <20111109164537.GA7495@quack.suse.cz>
-References: <4EB700B1.3050205@cfl.rr.com>
+	id S1755396Ab1KIQrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:47:35 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:48228 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751201Ab1KIQre (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:47:34 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqMBAN2tuk4Y9geI/2dsb2JhbAAMHBqEfaN6hB4BAQEBAyNVARALDgoCAgUWCwICCQMCAQIBRQYNAQcBAYgGI6Uykj+BMIc5gRYEiAyeKU4
+X-IronPort-AV: E=Sophos;i="4.69,484,1315195200"; 
+   d="scan'208";a="147172054"
+Message-ID: <4EBAAEA5.1060408@teksavvy.com>
+Date: Wed, 09 Nov 2011 11:47:33 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB700B1.3050205@cfl.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>   <20111026.194045.2019668159403582571.davem@davemloft.net>   <4EA8B283.3010105@teksavvy.com>   <20111026.221719.2216112919297458522.davem@davemloft.net>   <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>
+In-Reply-To: <1320856444.18929.78.camel@deadeye>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 06-11-11 16:48:33, Phillip Susi wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On 11-11-09 11:34 AM, Ben Hutchings wrote:
+> On Wed, 2011-11-09 at 11:25 -0500, Mark Lord wrote:
+>> On 11-11-02 04:42 PM, Ben Hutchings wrote:
+>>> On Wed, 2011-11-02 at 15:36 -0400, Mark Lord wrote:
+>>> [...]
+>>>> First cut (for review) at updating the in-kernel asix usb/network driver
+>>>> from the latest vendor GPL version of the driver, obtained from here:
+>>>>
+>>>>   http://www.asix.com.tw/download.php?sub=searchresult&PItemID=84&download=driver
+>> ..
+>>>> --- linux-3.0/drivers/net/usb/asix.c	2011-10-12 17:59:03.000000000 -0400
+>>>> +++ linux/drivers/net/usb/asix.c	2011-11-01 19:00:50.051289683 -0400
+>>> [...]
+>> ...
+>>>> +	.set_tx_csum		= ax88772b_set_tx_csum,
+>>>> +	.get_tx_csum		= ax88772b_get_tx_csum,
+>>>> +	.get_rx_csum		= ax88772b_get_rx_csum,
+>>>> +	.set_rx_csum		= ax88772b_set_rx_csum,
+>>>> +};
+>>>
+>>> The various ethtool operations for offload flags are being (or have
+>>> been) removed.  The driver must set net_device::hw_features and
+>>> implement net_device_ops::ndo_set_features instead.
+>>
+>> Okay, I see what to do for the rx_csum stuff, based on other drivers.
+>>
+>> But is there anything to replace the tx_csum stuff,
+>> or should I just remove it entirely without a substitute?
 > 
-> I've read over write_cache_pages() in page-writeback.c, and related
-> writepages() functions, and it seems to me that it suffers from a
-> performance problem whenever an fsync is done on a file and some of
-> its pages have already begun writeback.  The comment in the code says:
-> 
->  * If a page is already under I/O, write_cache_pages() skips it, even
->  * if it's dirty.  This is desirable behaviour for memory-cleaning
-> writeback,
->  * but it is INCORRECT for data-integrity system calls such as
-> fsync().  fsync()
->  * and msync() need to guarantee that all the data which was dirty at
-> the time
->  * the call was made get new I/O started against them.  If
-> wbc->sync_mode is
->  * WB_SYNC_ALL then we were called for data integrity and we must wait for
->  * existing IO to complete.
-> 
-> Based on this, I would expect the function to wait for an existing
-> write to complete only if the page is also dirty.  Instead, it waits
-> for existing page writes to complete regardless of the dirty bit.
-  Are you sure? I can see in the code:
-                        lock_page(page);
-                        if (unlikely(page->mapping != mapping)) {
-continue_unlock:
-                                unlock_page(page);
-                                continue;
-                        }
-                        if (!PageDirty(page)) {
-                                /* someone wrote it for us */
-                                goto continue_unlock;
-                        }
-                        if (PageWriteback(page)) {
-                                if (wbc->sync_mode != WB_SYNC_NONE)
-                                        wait_on_page_writeback(page);
-                                else
-                                        goto continue_unlock;
-                        }
-  So we skip clean pages...
+> If TX checksum offload only needs to be requested in TX descriptors and
+> not in a configuration register, then you don't need to do anything when
+> it's enabled or disabled.
 
-> Additionally, it does each wait serially, so if you are trying to
-> fsync 1000 dirty pages, and the first 10 are already being written
-> out, the thread will block on each of those 10 pages write completion
-> before it begins queuing any new writes.
-  Yes, this is correct.
+It's in a config register too.  But I've now just noticed "NETIF_F_HW_CSUM",
+which seems to be what I was missing earlier.
 
-> Instead, shouldn't it go ahead and initiate pagewrite on all pages not
-> already being written, and then come back and wait on those that were
-> already in flight to complete, then initiate a second write on them if
-> they are dirty?
-  Well, if you can *demonstrate* with real numbers it has performance benefit
-we could do it. But it's not clear there will be any benefit - skipping
-pages which need writing can introduce additional seeks to the IO stream
-and that is costly - sometimes much more costly than just waiting for IO to
-complete...
+So I can now treat the tx_csums similarly to the rx_csums again.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Note:  I'm looking at smsc95xx.c and smsc75xx.c for examples,
+and they both have the same problem I'll have here:
+
+How to update the csum settings atomically.
+A spinlock is no good, because config register access is over USB.
+
+Is it safe to use a mutex in set_features, or can that be invoked
+from atomic code?  Or perhaps just not worry about it, since its only
+an issue when somebody plays with two instances of ethtool simultaneously
+on the same device?
+
+Thanks for your help.
