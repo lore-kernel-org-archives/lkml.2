@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932385Ab1KIRM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:12:59 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33510 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab1KIRM6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:12:58 -0500
-Subject: Re: Announcement: Plans for v2.6.34-longterm
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: "George G. Davis" <gdavis@mvista.com>
-In-Reply-To: <4EB9B731.9040804@windriver.com>
-Date: Wed, 9 Nov 2011 12:12:52 -0500
-Cc: "George G. Davis" <gdavis@mvista.com>, Greg KH <greg@kroah.com>,
-        <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        <torvalds@linux-foundation.org>, <stable@kernel.org>,
-        <jason.wessel@windriver.com>, Andi Kleen <andi@firstfloor.org>,
-        <lwn@lwn.net>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8B0F3AB3-1372-46EA-8607-8374CADE301C@mvista.com>
-References: <20101203210719.GB21223@windriver.com> <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com> <4EB9B731.9040804@windriver.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-X-Mailer: Apple Mail (2.1084)
+	id S1755555Ab1KIRRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:17:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9109 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752512Ab1KIRQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:16:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,484,1315206000"; 
+   d="scan'208";a="88060224"
+Subject: Re: Staging clear up
+From: Vinod Koul <vinod.koul@intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, greg@kroah.com,
+        linux-kernel@vger.kernel.org, dp@opensource.wolfsonmicro.com
+In-Reply-To: <20111109170819.GD4016@opensource.wolfsonmicro.com>
+References: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
+	 <20111109121329.GC21630@sirena.org.uk>
+	 <1320854413.32205.948.camel@vkoul-udesk3>
+	 <20111109164211.GA4016@opensource.wolfsonmicro.com>
+	 <1320857261.32205.1051.camel@vkoul-udesk3>
+	 <20111109165316.GB4016@opensource.wolfsonmicro.com>
+	 <1320858181.32205.1087.camel@vkoul-udesk3>
+	 <20111109170819.GD4016@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Nov 2011 22:42:34 +0530
+Message-ID: <1320858754.32205.1110.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 8, 2011, at 6:11 PM, Paul Gortmaker wrote:
-
-> On 11-11-08 05:14 PM, George G. Davis wrote:
->> Greetings,
->> 
+On Wed, 2011-11-09 at 17:08 +0000, Mark Brown wrote:
+> On Wed, Nov 09, 2011 at 10:33:01PM +0530, Vinod Koul wrote:
 > 
-> [...]
+> > Offtopic: I am ready with v2 of compressed API, testing stuff out. If
+> > you/Dimitris have stuff to add, please drop me a note. I didn't see any
+> > update after I published the tree
 > 
->> 
->> Are there any plans to continue maintenance of v2.6.34-longterm now that
->> kernel.org is back online?
-> 
-> Yes,  in fact I have a queue ready for review shortly.
+> I'm pretty sure Dimitris has some stuff.
+Care to send me?
 
-Cool, thanks!
+I will push my updates worst case by week end. Fixed some usual misses
+found in testing and reworked the avail calculation.
 
-> However I didn't
-> want to overtax the kernel.org maintainers with nagging questions about
-> longterm/stable directory layout & restoration -- as I'm sure they had more
-> than their hands full with getting people back on the server and getting
-> stuff functional for the merge window which just closed yesterday.
-
-I'll try to pick out and submit ARM-centric stable updates for future v2.6.34-longterm updates.
-
-Thanks again!
-
---
-Regards,
-George
-
-> Paul.
-> 
->> 
->> TIA!
->> 
->> --
->> Regards,
->> George
+-- 
+~Vinod
 
