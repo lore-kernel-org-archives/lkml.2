@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933794Ab1KJDUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:20:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41650 "EHLO mx2.suse.de"
+	id S933835Ab1KJDVE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:21:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41672 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933777Ab1KJDUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
-Message-Id: <20111109212703.085963289@clark.kroah.org>
+	id S933816Ab1KJDVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:21:00 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:00 2011
+Message-Id: <20111109212700.811148061@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:50 -0800
+Date: Wed, 09 Nov 2011 13:25:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Adam Radford <aradford@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [028/262] [SCSI] megaraid_sas: Fix instance access in megasas_reset_timer
+        alan@lxorguk.ukuu.org.uk, Jiri Slaby <jslaby@suse.cz>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [005/262] TTY: make tty_add_file non-failing
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,223 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: adam radford <aradford@gmail.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit f575c5d3ebdca3b0482847d8fcba971767754a9e upstream.
+commit fa90e1c935472281de314e6d7c9a37db9cbc2e4e upstream.
 
-The following patch for megaraid_sas will fix a potential bad pointer access
-in megasas_reset_timer(), when a MegaRAID 9265/9285 or 9360/9380 gets a
-timeout.  megasas_build_io_fusion() sets SCp.ptr to be a struct
-megasas_cmd_fusion *, but then megasas_reset_timer() was casting SCp.ptr to be
-a struct megasas_cmd *, then trying to access cmd->instance, which is invalid.
+If tty_add_file fails at the point it is now, we have to revert all
+the changes we did to the tty. It means either decrease all refcounts
+if this was a tty reopen or delete the tty if it was newly allocated.
 
-Just loading instance from scmd->device->host->hostdata in
-megasas_reset_timer() fixes the issue.
+There was a try to fix this in v3.0-rc2 using tty_release in 0259894c7
+(TTY: fix fail path in tty_open). But instead it introduced a NULL
+dereference. It's because tty_release dereferences
+filp->private_data, but that one is set even in our tty_add_file. And
+when tty_add_file fails, it's still NULL/garbage. Hence tty_release
+cannot be called there.
 
-Signed-off-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+To circumvent the original leak (and the current NULL deref) we split
+tty_add_file into two functions, making the latter non-failing. In
+that case we may do the former early in open, where handling failures
+is easy. The latter stays as it is now. So there is no change in
+functionality.
+
+The original bug (leak) was introduced by f573bd176 (tty: Remove
+__GFP_NOFAIL from tty_add_file()). Thanks Dan for reporting this.
+
+Later, we may split tty_release into more functions and call only some
+of them in this fail path instead. (If at all possible.)
+
+Introduced-in: v2.6.37-rc2
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Pekka Enberg <penberg@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/tty/pty.c    |   16 +++++++++++-----
+ drivers/tty/tty_io.c |   47 +++++++++++++++++++++++++++++++++++------------
+ include/linux/tty.h  |    4 +++-
+ 3 files changed, 49 insertions(+), 18 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -1906,7 +1906,6 @@ static int megasas_generic_reset(struct
- static enum
- blk_eh_timer_return megasas_reset_timer(struct scsi_cmnd *scmd)
- {
--	struct megasas_cmd *cmd = (struct megasas_cmd *)scmd->SCp.ptr;
- 	struct megasas_instance *instance;
- 	unsigned long flags;
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -670,12 +670,18 @@ static int ptmx_open(struct inode *inode
  
-@@ -1915,7 +1914,7 @@ blk_eh_timer_return megasas_reset_timer(
- 		return BLK_EH_NOT_HANDLED;
+ 	nonseekable_open(inode, filp);
+ 
++	retval = tty_alloc_file(filp);
++	if (retval)
++		return retval;
++
+ 	/* find a device that is not in use. */
+ 	tty_lock();
+ 	index = devpts_new_index(inode);
+ 	tty_unlock();
+-	if (index < 0)
+-		return index;
++	if (index < 0) {
++		retval = index;
++		goto err_file;
++	}
+ 
+ 	mutex_lock(&tty_mutex);
+ 	tty_lock();
+@@ -689,9 +695,7 @@ static int ptmx_open(struct inode *inode
+ 
+ 	set_bit(TTY_PTY_LOCK, &tty->flags); /* LOCK THE SLAVE */
+ 
+-	retval = tty_add_file(tty, filp);
+-	if (retval)
+-		goto out;
++	tty_add_file(tty, filp);
+ 
+ 	retval = devpts_pty_new(inode, tty->link);
+ 	if (retval)
+@@ -710,6 +714,8 @@ out2:
+ out:
+ 	devpts_kill_index(inode, index);
+ 	tty_unlock();
++err_file:
++	tty_free_file(filp);
+ 	return retval;
+ }
+ 
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -193,8 +193,7 @@ static inline struct tty_struct *file_tt
+ 	return ((struct tty_file_private *)file->private_data)->tty;
+ }
+ 
+-/* Associate a new file with the tty structure */
+-int tty_add_file(struct tty_struct *tty, struct file *file)
++int tty_alloc_file(struct file *file)
+ {
+ 	struct tty_file_private *priv;
+ 
+@@ -202,15 +201,36 @@ int tty_add_file(struct tty_struct *tty,
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
++	file->private_data = priv;
++
++	return 0;
++}
++
++/* Associate a new file with the tty structure */
++void tty_add_file(struct tty_struct *tty, struct file *file)
++{
++	struct tty_file_private *priv = file->private_data;
++
+ 	priv->tty = tty;
+ 	priv->file = file;
+-	file->private_data = priv;
+ 
+ 	spin_lock(&tty_files_lock);
+ 	list_add(&priv->list, &tty->tty_files);
+ 	spin_unlock(&tty_files_lock);
++}
+ 
+-	return 0;
++/**
++ * tty_free_file - free file->private_data
++ *
++ * This shall be used only for fail path handling when tty_add_file was not
++ * called yet.
++ */
++void tty_free_file(struct file *file)
++{
++	struct tty_file_private *priv = file->private_data;
++
++	file->private_data = NULL;
++	kfree(priv);
+ }
+ 
+ /* Delete file from its tty */
+@@ -221,8 +241,7 @@ void tty_del_file(struct file *file)
+ 	spin_lock(&tty_files_lock);
+ 	list_del(&priv->list);
+ 	spin_unlock(&tty_files_lock);
+-	file->private_data = NULL;
+-	kfree(priv);
++	tty_free_file(file);
+ }
+ 
+ 
+@@ -1811,6 +1830,10 @@ static int tty_open(struct inode *inode,
+ 	nonseekable_open(inode, filp);
+ 
+ retry_open:
++	retval = tty_alloc_file(filp);
++	if (retval)
++		return -ENOMEM;
++
+ 	noctty = filp->f_flags & O_NOCTTY;
+ 	index  = -1;
+ 	retval = 0;
+@@ -1823,6 +1846,7 @@ retry_open:
+ 		if (!tty) {
+ 			tty_unlock();
+ 			mutex_unlock(&tty_mutex);
++			tty_free_file(filp);
+ 			return -ENXIO;
+ 		}
+ 		driver = tty_driver_kref_get(tty->driver);
+@@ -1855,6 +1879,7 @@ retry_open:
+ 		}
+ 		tty_unlock();
+ 		mutex_unlock(&tty_mutex);
++		tty_free_file(filp);
+ 		return -ENODEV;
  	}
  
--	instance = cmd->instance;
-+	instance = (struct megasas_instance *)scmd->device->host->hostdata;
- 	if (!(instance->flag & MEGASAS_FW_BUSY)) {
- 		/* FW is busy, throttle IO */
- 		spin_lock_irqsave(instance->host->host_lock, flags);
+@@ -1862,6 +1887,7 @@ retry_open:
+ 	if (!driver) {
+ 		tty_unlock();
+ 		mutex_unlock(&tty_mutex);
++		tty_free_file(filp);
+ 		return -ENODEV;
+ 	}
+ got_driver:
+@@ -1873,6 +1899,7 @@ got_driver:
+ 			tty_unlock();
+ 			mutex_unlock(&tty_mutex);
+ 			tty_driver_kref_put(driver);
++			tty_free_file(filp);
+ 			return PTR_ERR(tty);
+ 		}
+ 	}
+@@ -1888,15 +1915,11 @@ got_driver:
+ 	tty_driver_kref_put(driver);
+ 	if (IS_ERR(tty)) {
+ 		tty_unlock();
++		tty_free_file(filp);
+ 		return PTR_ERR(tty);
+ 	}
+ 
+-	retval = tty_add_file(tty, filp);
+-	if (retval) {
+-		tty_unlock();
+-		tty_release(inode, filp);
+-		return retval;
+-	}
++	tty_add_file(tty, filp);
+ 
+ 	check_tty_count(tty, "tty_open");
+ 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -472,7 +472,9 @@ extern void proc_clear_tty(struct task_s
+ extern struct tty_struct *get_current_tty(void);
+ extern void tty_default_fops(struct file_operations *fops);
+ extern struct tty_struct *alloc_tty_struct(void);
+-extern int tty_add_file(struct tty_struct *tty, struct file *file);
++extern int tty_alloc_file(struct file *file);
++extern void tty_add_file(struct tty_struct *tty, struct file *file);
++extern void tty_free_file(struct file *file);
+ extern void free_tty_struct(struct tty_struct *tty);
+ extern void initialize_tty_struct(struct tty_struct *tty,
+ 		struct tty_driver *driver, int idx);
 
 
