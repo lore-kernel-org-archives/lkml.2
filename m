@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935610Ab1KJEsZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:48:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43107 "EHLO mx2.suse.de"
+	id S935570Ab1KJEsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:48:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43121 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935547Ab1KJDdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:03 -0500
+	id S935136Ab1KJDdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:09 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:24 2011
-Message-Id: <20111109212724.527336663@clark.kroah.org>
+Message-Id: <20111109212724.726635542@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:20 -0800
+Date: Wed, 09 Nov 2011 13:29:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eliad Peller <eliad@wizery.com>,
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [238/262] mac80211: fix remain_off_channel regression
+Subject: [240/262] mac80211: disable powersave for broken APs
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eliad Peller <eliad@wizery.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit eaa7af2ae582c9a8c51b374c48d5970b748a5ce2 upstream.
+commit 05cb91085760ca378f28fc274fbf77fc4fd9886c upstream.
 
-The offchannel code is currently broken - we should
-remain_off_channel if the work was started, and
-the work's channel and channel_type are the same
-as local->tmp_channel and local->tmp_channel_type.
+Only AID values 1-2007 are valid, but some APs have been
+found to send random bogus values, in the reported case an
+AP that was sending the AID field value 0xffff, an AID of
+0x3fff (16383).
 
-However, if wk->chan_type and local->tmp_channel_type
-coexist (e.g. have the same channel type), we won't
-remain_off_channel.
+There isn't much we can do but disable powersave since
+there's no way it can work properly in this case.
 
-This behavior was introduced by commit da2fd1f
-("mac80211: Allow work items to use existing
-channel type.")
-
-Tested-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Eliad Peller <eliad@wizery.com>
+Reported-by: Bill C Riemers <briemers@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/mac80211/work.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/ieee80211_i.h |    1 +
+ net/mac80211/mlme.c        |   18 ++++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/net/mac80211/work.c
-+++ b/net/mac80211/work.c
-@@ -1060,8 +1060,8 @@ static void ieee80211_work_work(struct w
- 			continue;
- 		if (wk->chan != local->tmp_channel)
- 			continue;
--		if (ieee80211_work_ct_coexists(wk->chan_type,
--					       local->tmp_channel_type))
-+		if (!ieee80211_work_ct_coexists(wk->chan_type,
-+						local->tmp_channel_type))
- 			continue;
- 		remain_off_channel = true;
- 	}
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -373,6 +373,7 @@ struct ieee80211_if_managed {
+ 
+ 	unsigned long timers_running; /* used for quiesce/restart */
+ 	bool powersave; /* powersave requested for this iface */
++	bool broken_ap; /* AP is broken -- turn off powersave */
+ 	enum ieee80211_smps_mode req_smps, /* requested smps mode */
+ 				 ap_smps, /* smps mode AP thinks we're in */
+ 				 driver_smps_mode; /* smps mode request */
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -613,6 +613,9 @@ static bool ieee80211_powersave_allowed(
+ 	if (!mgd->powersave)
+ 		return false;
+ 
++	if (mgd->broken_ap)
++		return false;
++
+ 	if (!mgd->associated)
+ 		return false;
+ 
+@@ -1450,10 +1453,21 @@ static bool ieee80211_assoc_success(stru
+ 	capab_info = le16_to_cpu(mgmt->u.assoc_resp.capab_info);
+ 
+ 	if ((aid & (BIT(15) | BIT(14))) != (BIT(15) | BIT(14)))
+-		printk(KERN_DEBUG "%s: invalid aid value %d; bits 15:14 not "
+-		       "set\n", sdata->name, aid);
++		printk(KERN_DEBUG
++		       "%s: invalid AID value 0x%x; bits 15:14 not set\n",
++		       sdata->name, aid);
+ 	aid &= ~(BIT(15) | BIT(14));
+ 
++	ifmgd->broken_ap = false;
++
++	if (aid == 0 || aid > IEEE80211_MAX_AID) {
++		printk(KERN_DEBUG
++		       "%s: invalid AID value %d (out of range), turn off PS\n",
++		       sdata->name, aid);
++		aid = 0;
++		ifmgd->broken_ap = true;
++	}
++
+ 	pos = mgmt->u.assoc_resp.variable;
+ 	ieee802_11_parse_elems(pos, len - (pos - (u8 *) mgmt), &elems);
+ 
 
 
