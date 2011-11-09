@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935180Ab1KJDd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:33:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43215 "EHLO mx2.suse.de"
+	id S935693Ab1KJDeA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:34:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43219 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935669Ab1KJDdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:53 -0500
+	id S935655Ab1KJDd4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:23 2011
-Message-Id: <20111109212723.118204274@clark.kroah.org>
+Message-Id: <20111109212723.217993801@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:06 -0800
+Date: Wed, 09 Nov 2011 13:29:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [224/262] NFS/sunrpc: dont use a credential with extra groups.
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [225/262] block: make gendisk hold a reference to its queue
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Tejun Heo <tj@kernel.org>
 
-commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
+commit f992ae801a7dec34a4ed99a6598bbbbfb82af4fb upstream.
 
-The sunrpc layer keeps a cache of recently used credentials and
-'unx_match' is used to find the credential which matches the current
-process.
+The following command sequence triggers an oops.
 
-However unx_match allows a match when the cached credential has extra
-groups at the end of uc_gids list which are not in the process group list.
+# mount /dev/sdb1 /mnt
+# echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
+# umount /mnt
 
-So if a process with a list of (say) 4 group accesses a file and gains
-access because of the last group in the list, then another process
-with the same uid and gid, and a gid list being the first tree of the
-gids of the original process tries to access the file, it will be
-granted access even though it shouldn't as the wrong rpc credential
-will be used.
+ general protection fault: 0000 [#1] PREEMPT SMP
+ CPU 2
+ Modules linked in:
 
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+ Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
+ RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
+...
+ Call Trace:
+  [<ffffffff810d2845>] lock_acquire+0x95/0x140
+  [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
+  [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
+  [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
+  [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
+  [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
+  [<ffffffff811c40df>] blkdev_put+0x5f/0x190
+  [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
+  [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
+  [<ffffffff8119003a>] deactivate_super+0x4a/0x70
+  [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
+  [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
+  [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
+
+This is because bdev holds on to disk but disk doesn't pin the
+associated queue.  If a SCSI device is removed while the device is
+still open, the sdev puts the base reference to the queue on release.
+When the bdev is finally released, the associated queue is already
+gone along with the bdi and bdev_inode_switch_bdi() ends up
+dereferencing already freed bdi.
+
+Even if it were not for this bug, disk not holding onto the associated
+queue is very unusual and error-prone.
+
+Fix it by making add_disk() take an extra reference to its queue and
+put it on disk_release() and ensuring that disk and its fops owner are
+put in that order after all accesses to the disk and queue are
+complete.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/sunrpc/auth_unix.c |    3 +++
- 1 file changed, 3 insertions(+)
+ block/genhd.c  |    8 ++++++++
+ fs/block_dev.c |   13 ++++++++-----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
---- a/net/sunrpc/auth_unix.c
-+++ b/net/sunrpc/auth_unix.c
-@@ -129,6 +129,9 @@ unx_match(struct auth_cred *acred, struc
- 	for (i = 0; i < groups ; i++)
- 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
- 			return 0;
-+	if (groups < NFS_NGROUPS &&
-+	    cred->uc_gids[groups] != NOGROUP)
-+		return 0;
- 	return 1;
- }
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -611,6 +611,12 @@ void add_disk(struct gendisk *disk)
+ 	register_disk(disk);
+ 	blk_register_queue(disk);
  
++	/*
++	 * Take an extra ref on queue which will be put on disk_release()
++	 * so that it sticks around as long as @disk is there.
++	 */
++	WARN_ON_ONCE(blk_get_queue(disk->queue));
++
+ 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
+ 				   "bdi");
+ 	WARN_ON(retval);
+@@ -1103,6 +1109,8 @@ static void disk_release(struct device *
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
++	if (disk->queue)
++		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+ struct class block_class = {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1075,6 +1075,7 @@ static int __blkdev_put(struct block_dev
+ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ {
+ 	struct gendisk *disk;
++	struct module *owner;
+ 	int ret;
+ 	int partno;
+ 	int perm = 0;
+@@ -1100,6 +1101,7 @@ static int __blkdev_get(struct block_dev
+ 	disk = get_gendisk(bdev->bd_dev, &partno);
+ 	if (!disk)
+ 		goto out;
++	owner = disk->fops->owner;
+ 
+ 	disk_block_events(disk);
+ 	mutex_lock_nested(&bdev->bd_mutex, for_part);
+@@ -1127,8 +1129,8 @@ static int __blkdev_get(struct block_dev
+ 					bdev->bd_disk = NULL;
+ 					mutex_unlock(&bdev->bd_mutex);
+ 					disk_unblock_events(disk);
+-					module_put(disk->fops->owner);
+ 					put_disk(disk);
++					module_put(owner);
+ 					goto restart;
+ 				}
+ 			}
+@@ -1184,8 +1186,8 @@ static int __blkdev_get(struct block_dev
+ 				goto out_unlock_bdev;
+ 		}
+ 		/* only one opener holds refs to the module and disk */
+-		module_put(disk->fops->owner);
+ 		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	bdev->bd_openers++;
+ 	if (for_part)
+@@ -1205,8 +1207,8 @@ static int __blkdev_get(struct block_dev
+  out_unlock_bdev:
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	disk_unblock_events(disk);
+-	module_put(disk->fops->owner);
+ 	put_disk(disk);
++	module_put(owner);
+  out:
+ 	bdput(bdev);
+ 
+@@ -1432,14 +1434,15 @@ static int __blkdev_put(struct block_dev
+ 	if (!bdev->bd_openers) {
+ 		struct module *owner = disk->fops->owner;
+ 
+-		put_disk(disk);
+-		module_put(owner);
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
++
++		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
 
 
