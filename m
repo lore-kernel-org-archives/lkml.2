@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965034Ab1KJDh6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:37:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43854 "EHLO mx2.suse.de"
+	id S935862Ab1KJDiI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:38:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43885 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935922Ab1KJDhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:37:47 -0500
+	id S935939Ab1KJDiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:45 2011
-Message-Id: <20111109213144.918609156@clark.kroah.org>
+Message-Id: <20111109213145.436353890@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:15 -0800
+Date: Wed, 09 Nov 2011 13:31:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Andrei Warkentin <andrey.warkentin@gmail.com>,
-        Philip Rakity <prakity@marvell.com>, Chris Ball <cjb@laptop.org>
-Subject: [028/264] mmc: core: ext_csd.raw_* used in comparison but never set
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [033/264] [SCSI] isci: fix support for large smp requests
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrei Warkentin <andrey.warkentin@gmail.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit 5238acbe36dd5100fb6b035a995ae5fc89dd0708 upstream.
+commit 54b5e3a4bfa3452bc10cd4da672099ccc46b8c09 upstream.
 
-f39b2dd9d ("mmc: core: Bus width testing needs to handle suspend/resume")
-added code to only compare read-only ext_csd fields in bus width testing
-code, yet it's comparing some fields that are never set.
+Kill the local smp response buffer.
 
-The affected fields are ext_csd.raw_erased_mem_count and
-ext_csd.raw_partition_support.
+Besides being unnecessary, it is too small (currently truncates
+responses to 60 bytes).  The mid-layer will have already allocated a
+sufficiently sized buffer, just kmap and copy into it directly.
 
-Signed-off-by: Andrei Warkentin <andrey.warkentin@gmail.com>
-Acked-by: Philip Rakity <prakity@marvell.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Reported-by: Derick Marks <derick.w.marks@intel.com>
+Tested-by: Derick Marks <derick.w.marks@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/core/mmc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/isci/isci.h    |    2 -
+ drivers/scsi/isci/request.c |   49 +++++++++++++++++---------------------------
+ drivers/scsi/isci/request.h |    3 --
+ drivers/scsi/isci/sas.h     |    2 -
+ 4 files changed, 21 insertions(+), 35 deletions(-)
 
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -359,6 +359,7 @@ static int mmc_read_ext_csd(struct mmc_c
- 		 * card has the Enhanced area enabled.  If so, export enhanced
- 		 * area offset and size to user by adding sysfs interface.
- 		 */
-+		card->ext_csd.raw_partition_support = ext_csd[EXT_CSD_PARTITION_SUPPORT];
- 		if ((ext_csd[EXT_CSD_PARTITION_SUPPORT] & 0x2) &&
- 		    (ext_csd[EXT_CSD_PARTITION_ATTRIBUTE] & 0x1)) {
- 			u8 hc_erase_grp_sz =
-@@ -405,6 +406,7 @@ static int mmc_read_ext_csd(struct mmc_c
- 	if (card->ext_csd.rev >= 5)
- 		card->ext_csd.rel_param = ext_csd[EXT_CSD_WR_REL_PARAM];
+--- a/drivers/scsi/isci/isci.h
++++ b/drivers/scsi/isci/isci.h
+@@ -97,7 +97,7 @@
+ #define SCU_MAX_COMPLETION_QUEUE_SHIFT	  (ilog2(SCU_MAX_COMPLETION_QUEUE_ENTRIES))
  
-+	card->ext_csd.raw_erased_mem_count = ext_csd[EXT_CSD_ERASED_MEM_CONT];
- 	if (ext_csd[EXT_CSD_ERASED_MEM_CONT])
- 		card->erased_byte = 0xFF;
- 	else
+ #define SCU_ABSOLUTE_MAX_UNSOLICITED_FRAMES (4096)
+-#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024)
++#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024U)
+ #define SCU_INVALID_FRAME_INDEX             (0xFFFF)
+ 
+ #define SCU_IO_REQUEST_MAX_SGE_SIZE         (0x00FFFFFF)
+--- a/drivers/scsi/isci/request.c
++++ b/drivers/scsi/isci/request.c
+@@ -1490,29 +1490,30 @@ sci_io_request_frame_handler(struct isci
+ 		return SCI_SUCCESS;
+ 
+ 	case SCI_REQ_SMP_WAIT_RESP: {
+-		struct smp_resp *rsp_hdr = &ireq->smp.rsp;
+-		void *frame_header;
++		struct sas_task *task = isci_request_access_task(ireq);
++		struct scatterlist *sg = &task->smp_task.smp_resp;
++		void *frame_header, *kaddr;
++		u8 *rsp;
+ 
+ 		sci_unsolicited_frame_control_get_header(&ihost->uf_control,
+-							      frame_index,
+-							      &frame_header);
+-
+-		/* byte swap the header. */
+-		word_cnt = SMP_RESP_HDR_SZ / sizeof(u32);
+-		sci_swab32_cpy(rsp_hdr, frame_header, word_cnt);
++							 frame_index,
++							 &frame_header);
++		kaddr = kmap_atomic(sg_page(sg), KM_IRQ0);
++		rsp = kaddr + sg->offset;
++		sci_swab32_cpy(rsp, frame_header, 1);
+ 
+-		if (rsp_hdr->frame_type == SMP_RESPONSE) {
++		if (rsp[0] == SMP_RESPONSE) {
+ 			void *smp_resp;
+ 
+ 			sci_unsolicited_frame_control_get_buffer(&ihost->uf_control,
+-								      frame_index,
+-								      &smp_resp);
+-
+-			word_cnt = (sizeof(struct smp_resp) - SMP_RESP_HDR_SZ) /
+-				sizeof(u32);
++								 frame_index,
++								 &smp_resp);
+ 
+-			sci_swab32_cpy(((u8 *) rsp_hdr) + SMP_RESP_HDR_SZ,
+-				       smp_resp, word_cnt);
++			word_cnt = (sg->length/4)-1;
++			if (word_cnt > 0)
++				word_cnt = min_t(unsigned int, word_cnt,
++						 SCU_UNSOLICITED_FRAME_BUFFER_SIZE/4);
++			sci_swab32_cpy(rsp + 4, smp_resp, word_cnt);
+ 
+ 			ireq->scu_status = SCU_TASK_DONE_GOOD;
+ 			ireq->sci_status = SCI_SUCCESS;
+@@ -1528,12 +1529,13 @@ sci_io_request_frame_handler(struct isci
+ 				__func__,
+ 				ireq,
+ 				frame_index,
+-				rsp_hdr->frame_type);
++				rsp[0]);
+ 
+ 			ireq->scu_status = SCU_TASK_DONE_SMP_FRM_TYPE_ERR;
+ 			ireq->sci_status = SCI_FAILURE_CONTROLLER_SPECIFIC_IO_ERR;
+ 			sci_change_state(&ireq->sm, SCI_REQ_COMPLETED);
+ 		}
++		kunmap_atomic(kaddr, KM_IRQ0);
+ 
+ 		sci_controller_release_frame(ihost, frame_index);
+ 
+@@ -2603,18 +2605,7 @@ static void isci_request_io_request_comp
+ 			status   = SAM_STAT_GOOD;
+ 			set_bit(IREQ_COMPLETE_IN_TARGET, &request->flags);
+ 
+-			if (task->task_proto == SAS_PROTOCOL_SMP) {
+-				void *rsp = &request->smp.rsp;
+-
+-				dev_dbg(&ihost->pdev->dev,
+-					"%s: SMP protocol completion\n",
+-					__func__);
+-
+-				sg_copy_from_buffer(
+-					&task->smp_task.smp_resp, 1,
+-					rsp, sizeof(struct smp_resp));
+-			} else if (completion_status
+-				   == SCI_IO_SUCCESS_IO_DONE_EARLY) {
++			if (completion_status == SCI_IO_SUCCESS_IO_DONE_EARLY) {
+ 
+ 				/* This was an SSP / STP / SATA transfer.
+ 				 * There is a possibility that less data than
+--- a/drivers/scsi/isci/request.h
++++ b/drivers/scsi/isci/request.h
+@@ -174,9 +174,6 @@ struct isci_request {
+ 			};
+ 		} ssp;
+ 		struct {
+-			struct smp_resp rsp;
+-		} smp;
+-		struct {
+ 			struct isci_stp_request req;
+ 			struct host_to_dev_fis cmd;
+ 			struct dev_to_host_fis rsp;
+--- a/drivers/scsi/isci/sas.h
++++ b/drivers/scsi/isci/sas.h
+@@ -204,8 +204,6 @@ struct smp_req {
+ 	u8 req_data[0];
+ }  __packed;
+ 
+-#define SMP_RESP_HDR_SZ	4
+-
+ /*
+  * struct sci_sas_address - This structure depicts how a SAS address is
+  *    represented by SCI.
 
 
