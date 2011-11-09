@@ -1,120 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab1KIIFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:05:06 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58320 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab1KIIFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:05:04 -0500
-Date: Wed, 9 Nov 2011 16:04:51 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org,
-        sergey.senozhatsky@gmail.com, bp@alien8.de,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        David Rientjes <rientjes@google.com>, casteyde.christian@free.fr
-Subject: [PATCH 1/2] lockdep: kmemcheck: annotate ->lock in lockdep_init_map()
-Message-ID: <20111109080451.GB8124@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <1320398790-21663-2-git-send-email-yong.zhang0@gmail.com>
- <1320669279.18053.29.camel@twins>
- <CAOMGZ=EC0eHahfHy2K=5HwBwOCWEdF6u-mDaeLhb4GQVKVxLLA@mail.gmail.com>
- <1320682230.17809.11.camel@twins>
- <20111108025847.GB11439@zhy>
- <1320739015.2244.0.camel@twins>
- <20111108081433.GA3746@zhy>
- <1320741980.2244.4.camel@twins>
- <20111108090735.GA4038@zhy>
- <1320745246.2244.12.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1320745246.2244.12.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755525Ab1KIIFX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:05:23 -0500
+Received: from ozlabs.org ([203.10.76.45]:51512 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755371Ab1KIIFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 03:05:17 -0500
+Subject: Re: [PATCH v3 3/3] Use separate struct console structure for each
+ hvc_console.
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Miche Baker-Harvey <miche@google.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, xen-devel@lists.xensource.com,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        Anton Blanchard <anton@samba.org>, Amit Shah <amit.shah@redhat.com>,
+        Mike Waychison <mikew@google.com>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Eric Northrup <digitaleric@google.com>
+In-Reply-To: <20111108214509.28884.98169.stgit@miche.sea.corp.google.com>
+References: <20111108214452.28884.14840.stgit@miche.sea.corp.google.com>
+	 <20111108214509.28884.98169.stgit@miche.sea.corp.google.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-d4UMUQr8j6a6R6ANBKiZ"
+Date: Wed, 09 Nov 2011 19:05:12 +1100
+Message-ID: <1320825912.9376.72.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 10:40:46AM +0100, Peter Zijlstra wrote:
-> On Tue, 2011-11-08 at 17:07 +0800, Yong Zhang wrote:
-> > So something like below?
-> 
-> that fails to clear/init the class_cache, leading to all sorts of
-> problems.
-> 
-> Wiping the class_cache just reduces performance somewhat, not wiping
-> them is disastrous since it can results in wild pointer derefs.
-> 
-> Now we could fix up register_lock_class() to reset the class_cache,
-> although that's a little tricky and I'm not sure its worth it.
 
-Yeah, I have done some benchmark which show it's worthful, please
-check patch#2.
+--=-d4UMUQr8j6a6R6ANBKiZ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-And below is the one which cure the current problem.
+On Tue, 2011-11-08 at 13:45 -0800, Miche Baker-Harvey wrote:
+> It is possible to make any virtio_console port be a console
+> by sending VIRITO_CONSOLE_CONSOLE_PORT.  But hvc_alloc was
+> using a single struct console hvc_console, which contains
+> both an index and flags which are per-port.
+>=20
+> This adds a separate struct console for each virtio_console
+> that is CONSOLE_PORT.
 
-Thanks,
-Yong
+Hi Miche,
 
----
-From: Yong Zhang <yong.zhang0@gmail.com>
-Subject: [PATCH 1/2] lockdep: kmemcheck: annotate ->lock in lockdep_init_map()
+I'm testing this on powerpc and unfortunately it's working a little _too
+well_. I end up with two struct consoles registered and so I get every
+line of output twice :)
 
-Since commit f59de89 [lockdep: Clear whole lockdep_map on initialization],
-lockdep_init_map() will clear all the struct. But it will break
-lock_set_class()/lock_set_subclass(). A typical race condition
-is like below:
+The problem is that we're registering two struct consoles. The first
+obviously is hvc_console, either in hvc_console_init(), or in my case
+from hvc_instantiate().
 
-     CPU A                                   CPU B
-lock_set_subclass(lockA);
- lock_set_class(lockA);
-   lockdep_init_map(lockA);
-     /* lockA->name is cleared */
-     memset(lockA);
-                                     __lock_acquire(lockA);
-                                       /* lockA->class_cache[] is cleared */
-                                       register_lock_class(lockA);
-                                         look_up_lock_class(lockA);
-                                           WARN_ON_ONCE(class->name !=
-                                                     lock->name);
+Then we register the allocated one in hvc_alloc(). But because they both
+point back to the same hardware you get duplicate output.
 
-     lock->name = name;
+We _do_ want to register a console early, in either/both
+hvc_console_init() and hvc_instantiate(), because we want to have
+console during boot prior to when hvc_alloc() gets called.
 
-So restore to what we have done before commit f59de89 but annotate
-->lock with kmemcheck_mark_initialized() to suppress the kmemcheck
-warning reported in commit f59de89.
+I think maybe we should be checking in hvc_alloc() whether we already
+have hvc_console associated with the vtermno and if so we use
+hvc_console instead of allocating a new one.
 
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Borislav Petkov <bp@alien8.de>
-Suggested-by: Vegard Nossum <vegard.nossum@gmail.com>
-Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
----
- kernel/lockdep.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+Patch below to do that, and works for me, but it's a bit of a hack,
+there must be a better solution.
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index e69434b..21ea1dc 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -2948,7 +2948,12 @@ static int mark_lock(struct task_struct *curr, struct held_lock *this,
- void lockdep_init_map(struct lockdep_map *lock, const char *name,
- 		      struct lock_class_key *key, int subclass)
- {
--	memset(lock, 0, sizeof(*lock));
-+	int i;
+Finally I'm not sure how your patch affects the code in hvc_poll() which
+checks hvc_console.index to do the SYSRQ hack.
+
+cheers
+
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index fff35da..b249195 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -815,13 +815,15 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int da=
+ta,
+        kref_init(&hp->kref);
+=20
+        INIT_WORK(&hp->tty_resize, hvc_set_winsz);
+-       /*
+-        * Make each console its own struct console.
+-        */
+-       cp =3D kmemdup(&hvc_console, sizeof(*cp), GFP_KERNEL);
+-       if (!cp) {
+-               kfree(hp);
+-               return ERR_PTR(-ENOMEM);
 +
-+	kmemcheck_mark_initialized(lock, sizeof(*lock));
++       if (hvc_console.index >=3D 0 && vtermnos[hvc_console.index] =3D=3D =
+hp->vtermno)
++               cp =3D &hvc_console;
++       else {
++               cp =3D kmemdup(&hvc_console, sizeof(*cp), GFP_KERNEL);
++               if (!cp) {
++                       kfree(hp);
++                       return ERR_PTR(-ENOMEM);
++               }
+        }
+=20
+        hp->hvc_console =3D cp;
+@@ -850,7 +852,9 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data=
+,
+=20
+        list_add_tail(&(hp->next), &hvc_structs);
+        spin_unlock(&hvc_structs_lock);
+-       register_console(cp);
 +
-+	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
-+		lock->class_cache[i] = NULL;
- 
- #ifdef CONFIG_LOCK_STAT
- 	lock->cpu = raw_smp_processor_id();
--- 
-1.7.5.4
++       if (cp !=3D &hvc_console)
++               register_console(cp);
+=20
+        return hp;
+ }
+
+
+--=-d4UMUQr8j6a6R6ANBKiZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAk66NDgACgkQdSjSd0sB4dJg5ACgjHqUujtNJ9SiPUAhWVHc6sv7
+Y5AAnRuekB5kaSUrzXaxayeTwFqR49UT
+=Ticb
+-----END PGP SIGNATURE-----
+
+--=-d4UMUQr8j6a6R6ANBKiZ--
 
