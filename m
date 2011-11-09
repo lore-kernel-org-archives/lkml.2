@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936227Ab1KJEAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:00:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44967 "EHLO mx2.suse.de"
+	id S936232Ab1KJEBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:01:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44960 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965879Ab1KJDq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:59 -0500
+	id S965857Ab1KJDqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:52 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:01 2011
-Message-Id: <20111109213201.659005213@clark.kroah.org>
+Message-Id: <20111109213201.455602739@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:59 -0800
+Date: Wed, 09 Nov 2011 13:33:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: [192/264] ALSA: hda/realtek - Skip invalid digital out pins
+        alan@lxorguk.ukuu.org.uk, Charles Chin <Charles.Chin@idt.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [190/264] ALSA: hda - Add support for 92HD65 / 92HD66 family of codecs
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,60 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Charles Chin <Charles.Chin@idt.com>
 
-commit 51e4152a969aa6d2306492ebf143932dcb535c9b upstream.
+commit ad5d8755116b431f0709c745ee17cb567a478d43 upstream.
 
-Some BIOS report invalid pins as digital output pins.  The driver checks
-the connection but it doesn't do it fully correctly, and it leaves some
-undefined value as the audio-out widget, which makes the driver spewing
-warnings.  This patch fixes the issue.
+These codecs have SPDIF-in, which is new to the 92HD83xxx compatible
+families, so a bit of logic is added to support them.
 
-Reference: https://bugzilla.novell.com/show_bug.cgi?id=727348
-
+Signed-off-by: Charles Chin <Charles.Chin@idt.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/hda/patch_realtek.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -1566,27 +1566,29 @@ static void alc_auto_init_digital(struct
- static void alc_auto_parse_digital(struct hda_codec *codec)
- {
- 	struct alc_spec *spec = codec->spec;
--	int i, err;
-+	int i, err, nums;
- 	hda_nid_t dig_nid;
- 
- 	/* support multiple SPDIFs; the secondary is set up as a slave */
-+	nums = 0;
- 	for (i = 0; i < spec->autocfg.dig_outs; i++) {
- 		hda_nid_t conn[4];
- 		err = snd_hda_get_connections(codec,
- 					      spec->autocfg.dig_out_pins[i],
- 					      conn, ARRAY_SIZE(conn));
--		if (err < 0)
-+		if (err <= 0)
- 			continue;
- 		dig_nid = conn[0]; /* assume the first element is audio-out */
--		if (!i) {
-+		if (!nums) {
- 			spec->multiout.dig_out_nid = dig_nid;
- 			spec->dig_out_type = spec->autocfg.dig_out_type[0];
- 		} else {
- 			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
--			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
-+			if (nums >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
- 				break;
--			spec->slave_dig_outs[i - 1] = dig_nid;
-+			spec->slave_dig_outs[nums - 1] = dig_nid;
- 		}
-+		nums++;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -5653,7 +5653,11 @@ again:
  	}
+ #endif	
  
- 	if (spec->autocfg.dig_in_pin) {
+-	err = stac92xx_parse_auto_config(codec, 0x1d, 0);
++	/* 92HD65/66 series has S/PDIF-IN */
++	if (codec->vendor_id >= 0x111d76e8 && codec->vendor_id <= 0x111d76f3)
++		err = stac92xx_parse_auto_config(codec, 0x1d, 0x22);
++	else
++		err = stac92xx_parse_auto_config(codec, 0x1d, 0);
+ 	if (!err) {
+ 		if (spec->board_config < 0) {
+ 			printk(KERN_WARNING "hda_codec: No auto-config is "
+@@ -6543,6 +6547,18 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x111d76e3, .name = "92HD98BXX", .patch = patch_stac92hd83xxx},
+ 	{ .id = 0x111d76e5, .name = "92HD99BXX", .patch = patch_stac92hd83xxx},
+ 	{ .id = 0x111d76e7, .name = "92HD90BXX", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76e8, .name = "92HD66B1X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76e9, .name = "92HD66B2X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ea, .name = "92HD66B3X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76eb, .name = "92HD66C1X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ec, .name = "92HD66C2X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ed, .name = "92HD66C3X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ee, .name = "92HD66B1X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ef, .name = "92HD66B2X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f0, .name = "92HD66B3X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f1, .name = "92HD66C1X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f2, .name = "92HD66C2X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f3, .name = "92HD66C3/65", .patch = patch_stac92hd83xxx},
+ 	{} /* terminator */
+ };
+ 
 
 
