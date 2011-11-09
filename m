@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965395Ab1KJDmG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:42:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44364 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965392Ab1KJDl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965391Ab1KJDl6 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Nov 2011 22:41:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44346 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965376Ab1KJDlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:41:51 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:55 2011
-Message-Id: <20111109213155.694965160@clark.kroah.org>
+Message-Id: <20111109213155.487430594@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:02 -0800
+Date: Wed, 09 Nov 2011 13:33:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joerg Roedel <joerg.roedel@amd.com>
-Subject: [135/264] iommu/amd: Fix wrong shift direction
+        alan@lxorguk.ukuu.org.uk, Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [133/264] [S390] ccwgroup: move attributes to attribute group
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +25,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
 
-commit fcd0861db1cf4e6ed99f60a815b7b72c2ed36ea4 upstream.
+commit dbdf1afcaaabe83dea15a3cb9b9013e73ae3b1ad upstream.
 
-The shift direction was wrong because the function takes a
-page number and i is the address is the loop.
+Put sysfs attributes of ccwgroup devices in an attribute group to
+ensure that these attributes are actually present when userspace
+is notified via uevents.
 
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/iommu/amd_iommu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/s390/cio/ccwgroup.c |   42 ++++++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1283,7 +1283,7 @@ static int alloc_new_range(struct dma_op
- 		if (!pte || !IOMMU_PTE_PRESENT(*pte))
- 			continue;
+--- a/drivers/s390/cio/ccwgroup.c
++++ b/drivers/s390/cio/ccwgroup.c
+@@ -87,6 +87,12 @@ static void __ccwgroup_remove_cdev_refs(
+ 	}
+ }
  
--		dma_ops_reserve_addresses(dma_dom, i << PAGE_SHIFT, 1);
-+		dma_ops_reserve_addresses(dma_dom, i >> PAGE_SHIFT, 1);
++static ssize_t ccwgroup_online_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count);
++static ssize_t ccwgroup_online_show(struct device *dev,
++				    struct device_attribute *attr,
++				    char *buf);
+ /*
+  * Provide an 'ungroup' attribute so the user can remove group devices no
+  * longer needed or accidentially created. Saves memory :)
+@@ -134,6 +140,20 @@ out:
+ }
+ 
+ static DEVICE_ATTR(ungroup, 0200, NULL, ccwgroup_ungroup_store);
++static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
++
++static struct attribute *ccwgroup_attrs[] = {
++	&dev_attr_online.attr,
++	&dev_attr_ungroup.attr,
++	NULL,
++};
++static struct attribute_group ccwgroup_attr_group = {
++	.attrs = ccwgroup_attrs,
++};
++static const struct attribute_group *ccwgroup_attr_groups[] = {
++	&ccwgroup_attr_group,
++	NULL,
++};
+ 
+ static void
+ ccwgroup_release (struct device *dev)
+@@ -293,25 +313,17 @@ int ccwgroup_create_from_string(struct d
  	}
  
- 	update_domain(&dma_dom->domain);
+ 	dev_set_name(&gdev->dev, "%s", dev_name(&gdev->cdev[0]->dev));
+-
++	gdev->dev.groups = ccwgroup_attr_groups;
+ 	rc = device_add(&gdev->dev);
+ 	if (rc)
+ 		goto error;
+ 	get_device(&gdev->dev);
+-	rc = device_create_file(&gdev->dev, &dev_attr_ungroup);
+-
+-	if (rc) {
+-		device_unregister(&gdev->dev);
+-		goto error;
+-	}
+-
+ 	rc = __ccwgroup_create_symlinks(gdev);
+ 	if (!rc) {
+ 		mutex_unlock(&gdev->reg_mutex);
+ 		put_device(&gdev->dev);
+ 		return 0;
+ 	}
+-	device_remove_file(&gdev->dev, &dev_attr_ungroup);
+ 	device_unregister(&gdev->dev);
+ error:
+ 	for (i = 0; i < num_devices; i++)
+@@ -423,7 +435,7 @@ ccwgroup_online_store (struct device *de
+ 	int ret;
+ 
+ 	if (!dev->driver)
+-		return -ENODEV;
++		return -EINVAL;
+ 
+ 	gdev = to_ccwgroupdev(dev);
+ 	gdrv = to_ccwgroupdrv(dev->driver);
+@@ -456,8 +468,6 @@ ccwgroup_online_show (struct device *dev
+ 	return sprintf(buf, online ? "1\n" : "0\n");
+ }
+ 
+-static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
+-
+ static int
+ ccwgroup_probe (struct device *dev)
+ {
+@@ -469,12 +479,7 @@ ccwgroup_probe (struct device *dev)
+ 	gdev = to_ccwgroupdev(dev);
+ 	gdrv = to_ccwgroupdrv(dev->driver);
+ 
+-	if ((ret = device_create_file(dev, &dev_attr_online)))
+-		return ret;
+-
+ 	ret = gdrv->probe ? gdrv->probe(gdev) : -ENODEV;
+-	if (ret)
+-		device_remove_file(dev, &dev_attr_online);
+ 
+ 	return ret;
+ }
+@@ -485,9 +490,6 @@ ccwgroup_remove (struct device *dev)
+ 	struct ccwgroup_device *gdev;
+ 	struct ccwgroup_driver *gdrv;
+ 
+-	device_remove_file(dev, &dev_attr_online);
+-	device_remove_file(dev, &dev_attr_ungroup);
+-
+ 	if (!dev->driver)
+ 		return 0;
+ 
 
 
