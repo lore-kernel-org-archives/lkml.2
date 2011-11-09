@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345Ab1KINkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 08:40:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39500 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab1KINkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 08:40:36 -0500
+	id S1753176Ab1KINnB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 08:43:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51715 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab1KINnA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 08:43:00 -0500
+Message-ID: <4EBA8383.3020100@suse.cz>
+Date: Wed, 09 Nov 2011 14:43:31 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-In-Reply-To: <20111108093225.GB32533@elte.hu>
-References: <CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com>
-	<CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com>
-	<20111106231953.GD4500@thunk.org>
-	<alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
-	<alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
-	<CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>
-	<20111107203255.GF24234@thunk.org>
-	<CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com>
-	<4EB85969.2010108@codemonkey.ws>
-	<12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu>
-	<20111108093225.GB32533@elte.hu>
-Date: Wed, 9 Nov 2011 21:40:35 +0800
-Message-ID: <CAM_iQpU4CsudDYxD=-tayEMmkKGP-hSPEsptC6sir7XDPJvzUA@mail.gmail.com>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
- tools/perf/ and tools/kvm/
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Theodore Tso <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <ddaney.cavm@gmail.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "Daney, David" <David.Daney@caviumnetworks.com>
+Subject: Re: [PATCH] Kbuild: append missing-syscalls to the default target
+ list
+References: <1314234210-11090-1-git-send-email-lacombar@gmail.com> <4E69FEC9.2080204@suse.cz> <CACqU3MUFyn_jh2pN4GLENqcGVUzAwcMJUR_WLY2EtqOhMheceQ@mail.gmail.com> <20111101232233.GA32441@sepie.suse.cz> <20111107204448.GA9949@linux-mips.org> <20111107211900.GB6264@sepie.suse.cz> <20111107233330.GA26705@linux-mips.org> <4EB8E75D.1010706@suse.cz> <4EB97333.1050403@gmail.com> <4EB9AD98.3010404@suse.cz> <20111109095414.GA15438@linux-mips.org>
+In-Reply-To: <20111109095414.GA15438@linux-mips.org>
+X-Enigmail-Version: 1.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 8, 2011 at 5:32 PM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> So i think you should seriously consider moving your projects *into*
-> tools/ instead of trying to get other projects to move out ...
->
-> You should at least *try* the unified model before criticising it -
-> because currently you guys are preaching about sex while having sworn
-> a life long celibacy ;-)
->
+Dne 9.11.2011 10:54, Ralf Baechle napsal(a):
+> On Tue, Nov 08, 2011 at 11:30:48PM +0100, Michal Marek wrote:
+> 
+>> On 8.11.2011 19:21, David Daney wrote:
+>>> The problem is that compiler options meant to be used only for the 
+>>> compiling done by scripts/checksyscalls.sh are now leaking into the 
+>>> compilation of other parts of the kernel (asm-offsets.c), where they 
+>>> wreak havoc.
+>>>
+>>> Something like the attached is what I think needs to be done.
+>>
+>> Ah, right. That makes a lot of sense now. Ralf, does the patch at
+>> https://lkml.org/lkml/2011/11/8/312 work for you?
+> 
+> Yes, it does - and unlike David's first version this one also looks
+> reasonably elegant.
+> 
+> Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-Ingo, this is making Linux another BSD... manage everything in a single
-tree...
+Thanks to both of you, applied to kbuild.git#rc-fixes.
 
-Also, what is your criteria for merging a user-space project into kernel tree?
-
-Thanks.
+Michal
