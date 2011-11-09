@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063Ab1KJDWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:22:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41838 "EHLO mx2.suse.de"
+	id S934188Ab1KJDXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:23:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41900 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934021Ab1KJDW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:05 2011
-Message-Id: <20111109212705.863882598@clark.kroah.org>
+	id S934162Ab1KJDXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:23:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:04 2011
+Message-Id: <20111109212703.902588535@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:17 -0800
+Date: Wed, 09 Nov 2011 13:25:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
-Subject: [055/262] USB: option: add ZTE product 0x0037 to sendsetup blacklist
+        alan@lxorguk.ukuu.org.uk, Jack Steiner <steiner@sgi.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [036/262] x86: uv2: Workaround for UV2 Hub bug (system global address format)
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,39 +26,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Jack Steiner <steiner@sgi.com>
 
-commit eb05ce567a81c592c58f4bdb96eb91ce96661c30 upstream.
+commit 6a469e4665bc158599de55d64388861d0a9f10f4 upstream.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+This is a workaround for a UV2 hub bug that affects the format of system
+global addresses.
+
+The GRU API for UV2 was inadvertently broken by a hardware change.  The
+format of the physical address used for TLB dropins and for addresses used
+with instructions running in unmapped mode has changed.  This change was
+not documented and became apparent only when diags failed running on
+system simulators.
+
+For UV1, TLB and GRU instruction physical addresses are identical to
+socket physical addresses (although high NASID bits must be OR'ed into the
+address).
+
+For UV2, socket physical addresses need to be converted.  The NODE portion
+of the physical address needs to be shifted so that the low bit is in bit
+39 or bit 40, depending on an MMR value.
+
+It is not yet clear if this bug will be fixed in a silicon respin.  If it
+is fixed, the hub revision will be incremented & the workaround disabled.
+
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/uv/uv_bau.h   |    1 +
+ arch/x86/include/asm/uv/uv_hub.h   |   37 ++++++++++++++++++++++++++++++++++---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 +++++--
+ arch/x86/platform/uv/tlb_uv.c      |   17 ++++++-----------
+ 4 files changed, 46 insertions(+), 16 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -491,6 +491,10 @@ static const struct option_blacklist_inf
- 	.sendsetup = BIT(0) | BIT(1),
- };
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -55,6 +55,7 @@
+ #define UV_BAU_TUNABLES_DIR		"sgi_uv"
+ #define UV_BAU_TUNABLES_FILE		"bau_tunables"
+ #define WHITESPACE			" \t\n"
++#define uv_mmask			((1UL << uv_hub_info->m_val) - 1)
+ #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
+ #define cpubit_isset(cpu, bau_local_cpumask) \
+ 	test_bit((cpu), (bau_local_cpumask).bits)
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -46,6 +46,13 @@
+  *	PNODE   - the low N bits of the GNODE. The PNODE is the most useful variant
+  *		  of the nasid for socket usage.
+  *
++ *	GPA	- (global physical address) a socket physical address converted
++ *		  so that it can be used by the GRU as a global address. Socket
++ *		  physical addresses 1) need additional NASID (node) bits added
++ *		  to the high end of the address, and 2) unaliased if the
++ *		  partition does not have a physical address 0. In addition, on
++ *		  UV2 rev 1, GPAs need the gnode left shifted to bits 39 or 40.
++ *
+  *
+  *  NumaLink Global Physical Address Format:
+  *  +--------------------------------+---------------------+
+@@ -141,6 +148,8 @@ struct uv_hub_info_s {
+ 	unsigned int		gnode_extra;
+ 	unsigned char		hub_revision;
+ 	unsigned char		apic_pnode_shift;
++	unsigned char		m_shift;
++	unsigned char		n_lshift;
+ 	unsigned long		gnode_upper;
+ 	unsigned long		lowmem_remap_top;
+ 	unsigned long		lowmem_remap_base;
+@@ -177,6 +186,16 @@ static inline int is_uv2_hub(void)
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
+ }
  
-+static const struct option_blacklist_info zte_0037_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1),
-+};
++static inline int is_uv2_1_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
++}
 +
- static const struct option_blacklist_info zte_k3765_z_blacklist = {
- 	.sendsetup = BIT(0) | BIT(1) | BIT(2),
- };
-@@ -743,7 +747,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&zte_0037_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0038, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0039, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0040, 0xff, 0xff, 0xff) },
++static inline int is_uv2_2_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
++}
++
+ union uvh_apicid {
+     unsigned long       v;
+     struct uvh_apicid_s {
+@@ -276,7 +295,10 @@ static inline unsigned long uv_soc_phys_
+ {
+ 	if (paddr < uv_hub_info->lowmem_remap_top)
+ 		paddr |= uv_hub_info->lowmem_remap_base;
+-	return paddr | uv_hub_info->gnode_upper;
++	paddr |= uv_hub_info->gnode_upper;
++	paddr = ((paddr << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((paddr >> uv_hub_info->m_val) << uv_hub_info->n_lshift);
++	return paddr;
+ }
+ 
+ 
+@@ -300,16 +322,19 @@ static inline unsigned long uv_gpa_to_so
+ 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
+ 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+ 
++	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
++	gpa = gpa & uv_hub_info->gpa_mask;
+ 	if (paddr >= remap_base && paddr < remap_base + remap_top)
+ 		paddr -= remap_base;
+ 	return paddr;
+ }
+ 
+ 
+-/* gnode -> pnode */
++/* gpa -> pnode */
+ static inline unsigned long uv_gpa_to_gnode(unsigned long gpa)
+ {
+-	return gpa >> uv_hub_info->m_val;
++	return gpa >> uv_hub_info->n_lshift;
+ }
+ 
+ /* gpa -> pnode */
+@@ -320,6 +345,12 @@ static inline int uv_gpa_to_pnode(unsign
+ 	return uv_gpa_to_gnode(gpa) & n_mask;
+ }
+ 
++/* gpa -> node offset*/
++static inline unsigned long uv_gpa_to_offset(unsigned long gpa)
++{
++	return (gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift;
++}
++
+ /* pnode, offset --> socket virtual */
+ static inline void *uv_pnode_offset_to_vaddr(int pnode, unsigned long offset)
+ {
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -832,6 +832,10 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
+ 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
+ 
++		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
++		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
++				(m_val == 40 ? 40 : 39) : m_val;
++
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+ 		lcpu = uv_blade_info[blade].nr_possible_cpus;
+@@ -862,8 +866,7 @@ void __init uv_system_init(void)
+ 		if (uv_node_to_blade[nid] >= 0)
+ 			continue;
+ 		paddr = node_start_pfn(nid) << PAGE_SHIFT;
+-		paddr = uv_soc_phys_ram_to_gpa(paddr);
+-		pnode = (paddr >> m_val) & pnode_mask;
++		pnode = uv_gpa_to_pnode(uv_soc_phys_ram_to_gpa(paddr));
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+ 	}
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -115,9 +115,6 @@ early_param("nobau", setup_nobau);
+ 
+ /* base pnode in this partition */
+ static int uv_base_pnode __read_mostly;
+-/* position of pnode (which is nasid>>1): */
+-static int uv_nshift __read_mostly;
+-static unsigned long uv_mmask __read_mostly;
+ 
+ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+@@ -1426,7 +1423,7 @@ static void activation_descriptor_init(i
+ {
+ 	int i;
+ 	int cpu;
+-	unsigned long pa;
++	unsigned long gpa;
+ 	unsigned long m;
+ 	unsigned long n;
+ 	size_t dsize;
+@@ -1442,9 +1439,9 @@ static void activation_descriptor_init(i
+ 	bau_desc = kmalloc_node(dsize, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+-	pa = uv_gpa(bau_desc); /* need the real nasid*/
+-	n = pa >> uv_nshift;
+-	m = pa & uv_mmask;
++	gpa = uv_gpa(bau_desc);
++	n = uv_gpa_to_gnode(gpa);
++	m = uv_gpa_to_offset(gpa);
+ 
+ 	/* the 14-bit pnode */
+ 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
+@@ -1516,9 +1513,9 @@ static void pq_init(int node, int pnode)
+ 		bcp->queue_last		= pqp + (DEST_Q_SIZE - 1);
+ 	}
+ 	/*
+-	 * need the pnode of where the memory was really allocated
++	 * need the gnode of where the memory was really allocated
+ 	 */
+-	pn = uv_gpa(pqp) >> uv_nshift;
++	pn = uv_gpa_to_gnode(uv_gpa(pqp));
+ 	first = uv_physnodeaddr(pqp);
+ 	pn_first = ((unsigned long)pn << UV_PAYLOADQ_PNODE_SHIFT) | first;
+ 	last = uv_physnodeaddr(pqp + (DEST_Q_SIZE - 1));
+@@ -1812,8 +1809,6 @@ static int __init uv_bau_init(void)
+ 		zalloc_cpumask_var_node(mask, GFP_KERNEL, cpu_to_node(cur_cpu));
+ 	}
+ 
+-	uv_nshift = uv_hub_info->m_val;
+-	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
+ 	nuvhubs = uv_num_possible_blades();
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = usec_2_cycles(congested_respns_us);
 
 
