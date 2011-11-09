@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab1KIRoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:44:24 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:49214 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709Ab1KIRoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:44:23 -0500
-Subject: Re: [PATCH] hwmon: lm63: Add support for the NatSemi LM96163.
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20111108073052.GC27841@avionic-0098.mockup.avionic-design.de>
-References: <1320661258-1775-1-git-send-email-thierry.reding@avionic-design.de>
-	 <1320684566.2309.115.camel@groeck-laptop>
-	 <20111108073052.GC27841@avionic-0098.mockup.avionic-design.de>
+	id S932613Ab1KIRrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:47:43 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:40255 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab1KIRrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:47:42 -0500
+Subject: Re: [PATCH v2] drivers/net/usb/asix:  resync from vendor's copy
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Mark Lord <kernel@teksavvy.com>
+CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+In-Reply-To: <4EBAB8F5.1010101@teksavvy.com>
+References: <4EA89972.5060101@teksavvy.com>
+	 <20111026.194045.2019668159403582571.davem@davemloft.net>
+	 <4EA8B283.3010105@teksavvy.com>
+	 <20111026.221719.2216112919297458522.davem@davemloft.net>
+	 <4EB19BBE.5050602@teksavvy.com>  <4EBAB8F5.1010101@teksavvy.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Wed, 9 Nov 2011 09:42:16 -0800
-Message-ID: <1320860536.2309.173.camel@groeck-laptop>
+Organization: Solarflare Communications
+Date: Wed, 9 Nov 2011 17:47:37 +0000
+Message-ID: <1320860857.2781.5.camel@bwh-desktop>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18502.005
+X-TM-AS-Result: No--4.277800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-OriginalArrivalTime: 09 Nov 2011 17:47:41.0982 (UTC) FILETIME=[AE0173E0:01CC9F07]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 02:30 -0500, Thierry Reding wrote:
-> * Guenter Roeck wrote:
-> > Hi,
-> > 
-> > On Mon, 2011-11-07 at 05:20 -0500, Thierry Reding wrote:
-> > > Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> > > ---
-> > >  drivers/hwmon/lm63.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-> > > index 508cb29..94e373c 100644
-> > > --- a/drivers/hwmon/lm63.c
-> > > +++ b/drivers/hwmon/lm63.c
-> > > @@ -483,7 +483,7 @@ static int lm63_detect(struct i2c_client *new_client,
-> > >  		return -ENODEV;
-> > >  	}
-> > >  
-> > > -	if (chip_id == 0x41 && address == 0x4c)
-> > > +	if ((chip_id == 0x41 || chip_id == 0x49) && address == 0x4c)
-> > >  		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
-> > >  	else if (chip_id == 0x51 && (address == 0x18 || address == 0x4e))
-> > >  		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
-> > 
-> > Minor - the new chip should be mentioned in drivers/hwmon/Kconfig and in
-> > Documentation/hwmon/lm63.
-> 
-> I don't see how to list this variant meaningfully in the documentation.
-> Since, as you mention, no functionality specific to the LM96163 is added,
-> this patch really only adds support for one more lm63 chip.
-> 
-> > My main concern is that LM96163 supports a high resolution PWM mode.
-> > Since that mode is much more convenient than the LM63-compatible mode, I
-> > think it is likely to be enabled in designs using LM96163, and it should
-> > be supported by the driver if we add support for LM96163.
-> 
-> Unfortunately our design doesn't use the PWM at all. It is only used for
-> temperature measurements, so I'm not able to test any of the PWM code.
+On Wed, 2011-11-09 at 12:31 -0500, Mark Lord wrote:
+[...]
+> +static int ax88172_link_reset(struct usbnet *dev)
+> +{
+> +       u16 lpa;
+> +       u16 adv;
+> +       u16 res;
+> +       u8 mode;
+> +
+> +       mode = AX_MEDIUM_TX_ABORT_ALLOW | AX_MEDIUM_FLOW_CONTROL_EN;
+> +       lpa = ax8817x_mdio_read_le(dev->net, dev->mii.phy_id, MII_LPA);
+> +       adv = ax8817x_mdio_read_le(dev->net, dev->mii.phy_id, MII_ADVERTISE);
+> +       res = mii_nway_result(lpa|adv);
+[...]
 
-I requested samples for both LM63 and LM96163, so I should be able to
-test that part.
+The argument to mii_nway_result() must be lpa & adv (the intersection of
+supported modes, not the union!).
 
-Guenter
+Ben
 
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
