@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab1KJFZs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:25:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41770 "EHLO mx2.suse.de"
+	id S1757327Ab1KJF0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:26:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41718 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933946Ab1KJDVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:21:43 -0500
+	id S933893Ab1KJDV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:21:26 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:04 2011
-Message-Id: <20111109212704.840788762@clark.kroah.org>
+Message-Id: <20111109212704.322102669@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:07 -0800
+Date: Wed, 09 Nov 2011 13:26:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Matthias Dellweg <2500@gmx.de>
-Subject: [045/262] usb/core/devio.c: Check for printer class specific request
+        alan@lxorguk.ukuu.org.uk, Antonio Ospite <ospite@studenti.unina.it>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: [040/262] leds: turn the blink_timer off before starting to blink
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,74 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthias Dellweg <2500@gmx.de>
+From: Antonio Ospite <ospite@studenti.unina.it>
 
-commit 393cbb5151ecda9f9e14e3082d048dd27a1ff9f6 upstream.
+commit 488bc35bf40df89d37486c1826b178a2fba36ce7 upstream.
 
-In the usb printer class specific request get_device_id the value of
-wIndex is (interface << 8 | altsetting) instead of just interface.
-This enables the detection of some printers with libusb.
+Depending on the implementation of the hardware blinking function in
+blink_set(), the led can support hardware blinking for some values of
+delay_on and delay_off and fall-back to software blinking for some other
+values.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Matthias Dellweg <2500@gmx.de>
+Turning off the blink_timer unconditionally before starting to blink
+make sure that a sequence like:
+
+  OFF
+  hardware blinking
+  software blinking
+  hardware blinking
+
+does not leave the software blinking timer active.
+
+Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/devio.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ drivers/leds/led-class.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/core/devio.c
-+++ b/drivers/usb/core/devio.c
-@@ -607,9 +607,10 @@ static int findintfep(struct usb_device
- }
- 
- static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
--			   unsigned int index)
-+			   unsigned int request, unsigned int index)
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -267,6 +267,8 @@ void led_blink_set(struct led_classdev *
+ 		   unsigned long *delay_on,
+ 		   unsigned long *delay_off)
  {
- 	int ret = 0;
-+	struct usb_host_interface *alt_setting;
- 
- 	if (ps->dev->state != USB_STATE_UNAUTHENTICATED
- 	 && ps->dev->state != USB_STATE_ADDRESS
-@@ -618,6 +619,19 @@ static int check_ctrlrecip(struct dev_st
- 	if (USB_TYPE_VENDOR == (USB_TYPE_MASK & requesttype))
- 		return 0;
- 
-+	/*
-+	 * check for the special corner case 'get_device_id' in the printer
-+	 * class specification, where wIndex is (interface << 8 | altsetting)
-+	 * instead of just interface
-+	 */
-+	if (requesttype == 0xa1 && request == 0) {
-+		alt_setting = usb_find_alt_setting(ps->dev->actconfig,
-+						   index >> 8, index & 0xff);
-+		if (alt_setting
-+		 && alt_setting->desc.bInterfaceClass == USB_CLASS_PRINTER)
-+			index >>= 8;
-+	}
++	del_timer_sync(&led_cdev->blink_timer);
 +
- 	index &= 0xff;
- 	switch (requesttype & USB_RECIP_MASK) {
- 	case USB_RECIP_ENDPOINT:
-@@ -770,7 +784,8 @@ static int proc_control(struct dev_state
- 
- 	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
- 		return -EFAULT;
--	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.wIndex);
-+	ret = check_ctrlrecip(ps, ctrl.bRequestType, ctrl.bRequest,
-+			      ctrl.wIndex);
- 	if (ret)
- 		return ret;
- 	wLength = ctrl.wLength;		/* To suppress 64k PAGE_SIZE warning */
-@@ -1100,7 +1115,7 @@ static int proc_do_submiturb(struct dev_
- 			kfree(dr);
- 			return -EINVAL;
- 		}
--		ret = check_ctrlrecip(ps, dr->bRequestType,
-+		ret = check_ctrlrecip(ps, dr->bRequestType, dr->bRequest,
- 				      le16_to_cpup(&dr->wIndex));
- 		if (ret) {
- 			kfree(dr);
+ 	if (led_cdev->blink_set &&
+ 	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
+ 		led_cdev->blink_delay_on = *delay_on;
 
 
