@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935428Ab1KJEwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:52:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42953 "EHLO mx2.suse.de"
+	id S935379Ab1KJEwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:52:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42972 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935375Ab1KJDb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:31:56 -0500
+	id S935207Ab1KJDcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:32:03 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:19 2011
-Message-Id: <20111109212719.596739150@clark.kroah.org>
+Message-Id: <20111109212719.800579063@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:31 -0800
+Date: Wed, 09 Nov 2011 13:28:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -23,7 +23,7 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Heiko Carstens <heiko.carstens@de.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [189/262] s390: gup_huge_pmd() support THP tail recounting
+Subject: [191/262] thp: share get_huge_page_tail()
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,10 +35,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 220a2eb228d032acde60e9fd044ca802706ff583 upstream.
+commit b35a35b556f5e6b7993ad0baf20173e75c09ce8c upstream.
 
-Up to this point the code assumed old refcounting for hugepages (pre-thp).
-This updates the code directly to the thp mapcount tail page refcounting.
+This avoids duplicating the function in every arch gup_fast.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -57,13 +56,76 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/mm/gup.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ arch/powerpc/mm/hugetlbpage.c |   11 -----------
+ arch/s390/mm/gup.c            |   11 -----------
+ arch/x86/mm/gup.c             |   11 -----------
+ include/linux/mm.h            |   11 +++++++++++
+ 4 files changed, 11 insertions(+), 33 deletions(-)
 
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -385,17 +385,6 @@ follow_huge_pmd(struct mm_struct *mm, un
+ 	return NULL;
+ }
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static noinline int gup_hugepte(pte_t *ptep, unsigned long sz, unsigned long addr,
+ 		       unsigned long end, int write, struct page **pages, int *nr)
+ {
 --- a/arch/s390/mm/gup.c
 +++ b/arch/s390/mm/gup.c
-@@ -48,11 +48,22 @@ static inline int gup_pte_range(pmd_t *p
+@@ -48,17 +48,6 @@ static inline int gup_pte_range(pmd_t *p
  	return 1;
+ }
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -108,17 +108,6 @@ static inline void get_head_page_multipl
+ 	SetPageReferenced(page);
+ }
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -375,6 +375,17 @@ static inline int page_count(struct page
+ 	return atomic_read(&compound_head(page)->_count);
  }
  
 +static inline void get_huge_page_tail(struct page *page)
@@ -77,39 +139,8 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 +	atomic_inc(&page->_mapcount);
 +}
 +
- static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
- 		unsigned long end, int write, struct page **pages, int *nr)
- {
- 	unsigned long mask, result;
--	struct page *head, *page;
-+	struct page *head, *page, *tail;
- 	int refs;
+ extern bool __get_page_tail(struct page *page);
  
- 	result = write ? 0 : _SEGMENT_ENTRY_RO;
-@@ -64,6 +75,7 @@ static inline int gup_huge_pmd(pmd_t *pm
- 	refs = 0;
- 	head = pmd_page(pmd);
- 	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
-+	tail = page;
- 	do {
- 		VM_BUG_ON(compound_head(page) != head);
- 		pages[*nr] = page;
-@@ -81,6 +93,16 @@ static inline int gup_huge_pmd(pmd_t *pm
- 		*nr -= refs;
- 		while (refs--)
- 			put_page(head);
-+	} else {
-+		/*
-+		 * Any tail page need their mapcount reference taken
-+		 * before we return.
-+		 */
-+		while (refs--) {
-+			if (PageTail(tail))
-+				get_huge_page_tail(tail);
-+			tail++;
-+		}
- 	}
- 
- 	return 1;
+ static inline void get_page(struct page *page)
 
 
