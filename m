@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935254Ab1KJDa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:30:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42786 "EHLO mx2.suse.de"
+	id S935288Ab1KJDbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:31:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42823 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935241Ab1KJDaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:30:52 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:20 2011
-Message-Id: <20111109212720.728790150@clark.kroah.org>
+	id S934631Ab1KJDbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:31:09 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:19 2011
+Message-Id: <20111109212719.286514766@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:42 -0800
+Date: Wed, 09 Nov 2011 13:28:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [200/262] drm/radeon/kms: Add MSI quirk for HP RS690
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [186/262] powerpc: gup_hugepte() avoid freeing the head page too many times
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit b362105f7f5223fa4d2e03ceeea0e51da754ccc6 upstream.
+commit 8596468487e2062cae2aad56e973784e03959245 upstream.
 
-Some HP laptops only seem to work with MSIs.  This
-looks like a platform/bios bug.
+We only taken "refs" pins on the head page not "*nr" pins.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/powerpc/mm/hugetlbpage.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -118,6 +118,13 @@ static bool radeon_msi_ok(struct radeon_
- 	if (rdev->flags & RADEON_IS_AGP)
- 		return false;
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -428,10 +428,9 @@ static noinline int gup_hugepte(pte_t *p
  
-+	/* Quirks */
-+	/* HP RS690 only seems to work with MSIs. */
-+	if ((rdev->pdev->device == 0x791f) &&
-+	    (rdev->pdev->subsystem_vendor == 0x103c) &&
-+	    (rdev->pdev->subsystem_device == 0x30c2))
-+		return true;
-+
- 	if (rdev->flags & RADEON_IS_IGP) {
- 		/* APUs work fine with MSIs */
- 		if (rdev->family >= CHIP_PALM)
+ 	if (unlikely(pte_val(pte) != pte_val(*ptep))) {
+ 		/* Could be optimized better */
+-		while (*nr) {
++		*nr -= refs;
++		while (refs--)
+ 			put_page(head);
+-			(*nr)--;
+-		}
+ 	}
+ 
+ 	return 1;
 
 
