@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935396Ab1KJDcG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:32:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42960 "EHLO mx2.suse.de"
+	id S935435Ab1KJDcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:32:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43007 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935143Ab1KJDb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:31:59 -0500
+	id S935411Ab1KJDcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:32:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:19 2011
-Message-Id: <20111109212719.694975919@clark.kroah.org>
+Message-Id: <20111109212719.169862090@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:32 -0800
+Date: Wed, 09 Nov 2011 13:28:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -19,11 +19,8 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Miller <davem@davemloft.net>
-Subject: [190/262] s390: gup_huge_pmd() return 0 if pte changes
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [185/262] powerpc: get_hugepte() dont put_page() the wrong page
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,11 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 0693bc9ce2cc4f6a1b9c3c05790fc149a74c0b87 upstream.
+commit 405e44f2e312dd5dd63e5a9f459bffcbcd4368ef upstream.
 
-s390 didn't return 0 in that case, if it's rolling back the *nr pointer it
-should also return zero to avoid adding pages to the array at the wrong
-offset.
+"page" may have changed to point to the next hugepage after the loop
+completed, The references have been taken on the head page, so the
+put_page must happen there too.
+
+This is a longstanding issue pre-thp inclusion.
+
+It's totally unclear how these page_cache_add_speculative and
+pte_val(pte) != pte_val(*ptep) checks are necessary across all the
+powerpc gup_fast code, when x86 doesn't need any of that: there's no way
+the page can be freed with irq disabled so we're guaranteed the
+atomic_inc will happen on a page with page_count > 0 (so not needing the
+speculative check).
+
+The pte check is also meaningless on x86: no need to rollback on x86 if
+the pte changed, because the pte can still change a CPU tick after the
+check succeeded and it won't be rolled back in that case.  The important
+thing is we got a reference on a valid page that was mapped there a CPU
+tick ago.  So not knowing the soft tlb refill code of ppc64 in great
+detail I'm not removing the "speculative" page_count increase and the
+pte checks across all the code, but unless there's a strong reason for
+it they should be later cleaned up too.
+
+If a pte can change from huge to non-huge (like it could happen with
+THP) passing a pte_t *ptep to gup_hugepte() would also require to repeat
+the is_hugepd in gup_hugepte(), but that shouldn't happen with hugetlbfs
+only so I'm not altering that.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -49,47 +69,25 @@ Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: David Miller <davem@davemloft.net>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/mm/gup.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ arch/powerpc/mm/hugetlbpage.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/mm/gup.c
-+++ b/arch/s390/mm/gup.c
-@@ -93,16 +93,17 @@ static inline int gup_huge_pmd(pmd_t *pm
- 		*nr -= refs;
- 		while (refs--)
- 			put_page(head);
--	} else {
--		/*
--		 * Any tail page need their mapcount reference taken
--		 * before we return.
--		 */
--		while (refs--) {
--			if (PageTail(tail))
--				get_huge_page_tail(tail);
--			tail++;
--		}
-+		return 0;
-+	}
-+
-+	/*
-+	 * Any tail page need their mapcount reference taken before we
-+	 * return.
-+	 */
-+	while (refs--) {
-+		if (PageTail(tail))
-+			get_huge_page_tail(tail);
-+		tail++;
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -429,7 +429,7 @@ static noinline int gup_hugepte(pte_t *p
+ 	if (unlikely(pte_val(pte) != pte_val(*ptep))) {
+ 		/* Could be optimized better */
+ 		while (*nr) {
+-			put_page(page);
++			put_page(head);
+ 			(*nr)--;
+ 		}
  	}
- 
- 	return 1;
 
 
