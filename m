@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964966Ab1KJEe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:34:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43741 "EHLO mx2.suse.de"
+	id S1757230Ab1KJEfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:35:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43728 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935900Ab1KJDg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:59 -0500
+	id S935582Ab1KJDgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
-Message-Id: <20111109213146.741162097@clark.kroah.org>
+Message-Id: <20111109213146.542407832@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:33 -0800
+Date: Wed, 09 Nov 2011 13:31:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Antonio Ospite <ospite@studenti.unina.it>,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: [046/264] leds: save the delay values after a successful call to blink_set()
+        alan@lxorguk.ukuu.org.uk, Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: [044/264] x86: Fix compilation bug in kprobes twobyte_is_boostable
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,71 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Antonio Ospite <ospite@studenti.unina.it>
+From: Josh Stone <jistone@redhat.com>
 
-commit 6123b0e274503a0d3588e84fbe07c9aa01bfaf5d upstream.
+commit 315eb8a2a1b7f335d40ceeeb11b9e067475eb881 upstream.
 
-When calling the hardware blinking function implemented by blink_set(),
-the delay_on and delay_off values are not preserved across calls.
+When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
+noticed a warning about the asm operand for test_bit in kprobes'
+can_boost.  I discovered that this caused only the first long of
+twobyte_is_boostable[] to be output.
 
-Fix that and make the "timer" trigger work as expected when hardware
-blinking is available.
+Jakub filed and fixed gcc PR50571 to correct the warning and this output
+issue.  But to solve it for less current gcc, we can make kprobes'
+twobyte_is_boostable[] non-const, and it won't be optimized out.
 
-BEFORE the fix:
-  $ cd /sys/class/leds/someled
-  $ echo timer > trigger
-  $ cat delay_on delay_off
-  0
-  0
-  $ echo 100 > delay_on
-  $ cat delay_on delay_off
-  0
-  0
-  $ echo 100 > delay_off
-  $ cat delay_on delay_off
-  0
-  0
+Before:
 
-AFTER the fix:
-  $ cd /sys/class/leds/someled
-  $ echo timer > trigger
-  $ cat delay_on delay_off
-  0
-  0
-  $ echo 100 > delay_on
-  $ cat delay_on delay_off
-  100
-  0
-  $ echo 100 > delay_off
-  $ cat delay_on delay_off
-  100
-  100
+    CC      arch/x86/kernel/kprobes.o
+  In file included from include/linux/bitops.h:22:0,
+                   from include/linux/kernel.h:17,
+                   from [...]/arch/x86/include/asm/percpu.h:44,
+                   from [...]/arch/x86/include/asm/current.h:5,
+                   from [...]/arch/x86/include/asm/processor.h:15,
+                   from [...]/arch/x86/include/asm/atomic.h:6,
+                   from include/linux/atomic.h:4,
+                   from include/linux/mutex.h:18,
+                   from include/linux/notifier.h:13,
+                   from include/linux/kprobes.h:34,
+                   from arch/x86/kernel/kprobes.c:43:
+  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
+  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input
+        without lvalue in asm operand 1 is deprecated [enabled by default]
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
-Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
+                          554: R_386_32	.rodata.cst4
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+  Contents of section .rodata.cst4:
+   0000 4c030000                             L...
+
+Only a single long of twobyte_is_boostable[] is in the object file.
+
+After, without the const on twobyte_is_boostable:
+
+  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
+       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
+                          554: R_386_32	.data
+
+  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
+
+  arch/x86/kernel/kprobes.o:     file format elf32-i386
+
+  Contents of section .data:
+   0000 48000000 00000000 00000000 00000000  H...............
+   0010 00000000 00000000 00000000 00000000  ................
+   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
+   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
+
+Now all 32 bytes are output into .data instead.
+
+Signed-off-by: Josh Stone <jistone@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jakub Jelinek <jakub@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/leds/led-class.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kernel/kprobes.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -268,8 +268,11 @@ void led_blink_set(struct led_classdev *
- 		   unsigned long *delay_off)
- {
- 	if (led_cdev->blink_set &&
--	    !led_cdev->blink_set(led_cdev, delay_on, delay_off))
-+	    !led_cdev->blink_set(led_cdev, delay_on, delay_off)) {
-+		led_cdev->blink_delay_on = *delay_on;
-+		led_cdev->blink_delay_off = *delay_off;
- 		return;
-+	}
- 
- 	/* blink with 1 Hz as default if nothing specified */
- 	if (!*delay_on && !*delay_off)
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kpr
+ 	/*
+ 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
+ 	 * Groups, and some special opcodes can not boost.
++	 * This is non-const to keep gcc from statically optimizing it out, as
++	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
+ 	 */
+-static const u32 twobyte_is_boostable[256 / 32] = {
++static u32 twobyte_is_boostable[256 / 32] = {
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
+ 	/*      ----------------------------------------------          */
+ 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
 
 
