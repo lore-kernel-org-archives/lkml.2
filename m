@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab1KIMaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:30:30 -0500
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:47020
-	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753353Ab1KIMa2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 07:30:28 -0500
-X-SpamScore: -16
-X-BigFish: VPS-16(zz9371K542M1432N98dKzz1202hzz8275chz32i2a8h668h839h8e2h8e3h93fh61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:Outbound.kpitcummins.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "eric.miao@linaro.org" <eric.miao@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "david-b@pacbell.net" <david-b@pacbell.net>
-Subject: RE: Adding USB charge current property in the Linux Battery core
-Thread-Topic: Adding USB charge current property in the Linux Battery core
-Thread-Index: AQHMntnoBnCWHyb5kE247yhag0WwPJWkeC9A
-Date: Wed, 9 Nov 2011 12:30:19 +0000
-Message-ID: <C3AE124F08223B42BC95AEB82F0F6CED1F9BF409@KCHJEXMB02.kpit.com>
-References: <1320826417.1160.8.camel@L-0761.kpit.com>
- <20111109082005.GH23337@legolas.emea.dhcp.ti.com>
- <C3AE124F08223B42BC95AEB82F0F6CED1F9BF3F4@KCHJEXMB02.kpit.com>
- <20111109121950.GB16315@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20111109121950.GB16315@legolas.emea.dhcp.ti.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.10.38.22]
-Content-Type: text/plain; charset="utf-8"
+	id S1755161Ab1KIMbO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 07:31:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab1KIMbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 07:31:13 -0500
+Date: Wed, 9 Nov 2011 10:30:50 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Gerd Hoffmann <kraxel@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Theodore Tso <tytso@mit.edu>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git
+	repository, tools/perf/ and tools/kvm/
+Message-ID: <20111109123050.GC18207@ghostprotocols.net>
+References: <20111108093225.GB32533@elte.hu> <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125609.GA14272@ghostprotocols.net> <4EB9315A.10806@redhat.com> <20111108143228.GC14272@ghostprotocols.net> <4EB94D08.3010207@redhat.com> <20111109085120.GD11473@elte.hu> <4EBA5881.7080409@redhat.com> <20111109115502.GA18207@ghostprotocols.net> <4EBA717A.8010300@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBA717A.8010300@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pA9CUeo3026524
 
-> -----Original Message-----
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Wednesday, November 09, 2011 5:50 PM
-> To: Ashish Jangam
-> Cc: balbi@ti.com; linaro-dev@lists.linaro.org; linux-
-> kernel@vger.kernel.org; arnd@arndb.de; eric.miao@linaro.org; Mark Brown;
-> david-b@pacbell.net
-> Subject: Re: Adding USB charge current property in the Linux Battery core
+Em Wed, Nov 09, 2011 at 01:26:34PM +0100, Gerd Hoffmann escreveu:
+>   Hi,
 > 
-> On Wed, Nov 09, 2011 at 12:13:14PM +0000, Ashish Jangam wrote:
-> >
-> > > -----Original Message-----
-> > > From: Felipe Balbi [mailto:balbi@ti.com]
-> > > Sent: Wednesday, November 09, 2011 1:50 PM
-> > > To: Ashish Jangam
-> > > Cc: linaro-dev@lists.linaro.org; linux-kernel@vger.kernel.org;
-> > > arnd@arndb.de; eric.miao@linaro.org; Mark Brown
-> > > Subject: Re: Adding USB charge current property in the Linux Battery
-> core
-> > >
-> > > Hi,
-> > >
-> > > On Wed, Nov 09, 2011 at 01:43:37PM +0530, ashishj3 wrote:
-> > > > For a better performance in USB charging operation, the DA9052/53
-> > > charging
-> > > > current can be configured in accordance with the USB host current
-> > > > delivering capacity (known through USB drivers negotiation).
-> > > >
-> > > > To implement this useful feature, a new writable property "USB charge
-> > > current"
-> > > > needs to be added in the Linux battery core.
-> > > >
-> > > > Let me know your views on it.
-> > >
-> > > that's the wrong way to do it. What we need is to use the transceiver
-> > > notifications to notify every time someone calls usb_gadget_vbus_draw()
-> > > and pass the mA parameter as argument to the event notification.
-> > >
-> >
-> > This means that we need to modify the function usb_gadget_vbus_draw()
-> > to add a call like blocking_notifier_call_chain() but will this be fine
-> with
-> > the usb gadget driver maintainers?
+> >>> Plus allowing full .perfconfig configurability of all the relevant 
+> >>> colors, for those with special taste.
+> >>
+> >> Sure.  Maybe also allow multiple color sections and pick them by $TERM
+> >> or --colors switch, i.e. [colors "xterm"].
+> > 
+> > Its fully configurable as of now, what we need is a set of .perfconfigs
+> > that show how people think its better, we try it, set it as the default,
+> > leave the others in tools/perf/Documentation/perfconfig/color.examples.
 > 
-> I am the USB gadget driver maintainer and I have plans to do that
-> myself. First thing we need to do is convert the final UDC drivers to
-> the udc Class which I wrote and Sebastian helped brushing it up, then we
-> uninline the usb_gadget_* wrappers and move them to
-> drivers/usb/gadget/udc-core.c, then we can move the transceiver notifier
-> to the UDC as it makes more sense, and convert blocking into atomic
-> notifier.
+> Yep, a set of examples works too.
+> 
+> The colors are not fully configurable yet though.  First, when switching
+> all five colorsets to "default, default" there are still things which
+> are colored (top bar, bottom bar, keys help display).  Second there is
+> no way to set terminal attributes (i.e. "top = bold" or "selected =
+> reverse").
 
-This sounds good but since most PMICs have I2C bus connectivity using atomic
-notifier can introduce problems. 
-> 
-> After that we can add notifications to all gadget events/API/etc...
-> 
-> --
-> balbi
+Ok, adding those to the TODO list.
 
+/me goes to check if http://perf.wiki.kernel.org is back working so that
+we can have a _public_ TODO list, perhaps it may attract more
+contributors :)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+- Arnaldo
