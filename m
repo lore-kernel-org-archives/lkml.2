@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab1KJEmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:42:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43315 "EHLO mx2.suse.de"
+	id S1757262Ab1KJEmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:42:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43328 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964789Ab1KJDev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:34:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:26 2011
-Message-Id: <20111109212726.318940908@clark.kroah.org>
+	id S964796Ab1KJDe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:34:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:43 2011
+Message-Id: <20111109213143.239640371@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:38 -0800
+Date: Wed, 09 Nov 2011 13:30:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, jeffbrown@android.com,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [256/262] HID: hid-multitouch: Add LG Display Multitouch device.
-In-Reply-To: <20111109212847.GA20838@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [011/264] staging: hv: fix a kernel warning in netvsc_linkstatus_callback()
+In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jeff Brown <jeffbrown@android.com>
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
-commit c50bb1a4005630f47b5da26336f74a485033a515 upstream.
+commit c4b6a2eaf1c14810a4803d658f68614365978738 upstream.
 
-This panel is also known as the Dell ST2220Tc.
+netif_notify_peers() caused a kernel warning in netvsc_linkstatus_callback(),
+because netvsc_linkstatus_callback() is within IRQ context. So we move
+the first call to netif_notify_peers() into queued work as well, but with
+zero delay.
 
-Signed-off-by: jeffbrown@android.com
-Reviewed-By: Benjamin Tissoires <Benjamin_Tissoires@logitech.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+In addition to "staging-next", this should also be back-ported to stable
+kernels 2.6.32 and later.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-core.c       |    1 +
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    5 +++++
- 4 files changed, 10 insertions(+)
+ drivers/staging/hv/netvsc_drv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -314,6 +314,7 @@ config HID_MULTITOUCH
- 	  - Hanvon dual touch panels
- 	  - Ilitek dual touch panels
- 	  - IrTouch Infrared USB panels
-+	  - LG Display panels (Dell ST2220Tc)
- 	  - Lumio CrystalTouch panels
- 	  - MosArt dual-touch panels
- 	  - PenMount dual touch panels
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1398,6 +1398,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -423,6 +423,9 @@
- #define USB_DEVICE_ID_LD_HYBRID		0x2090
- #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
- 
-+#define USB_VENDOR_ID_LG		0x1fd2
-+#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
-+
- #define USB_VENDOR_ID_LOGITECH		0x046d
- #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
- #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -672,6 +672,11 @@ static const struct hid_device_id mt_dev
- 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
- 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 
-+	/* LG Display panels */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_LG,
-+			USB_DEVICE_ID_LG_MULTITOUCH) },
-+
- 	/* Lumio panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
+--- a/drivers/staging/hv/netvsc_drv.c
++++ b/drivers/staging/hv/netvsc_drv.c
+@@ -217,8 +217,8 @@ void netvsc_linkstatus_callback(struct h
+ 	if (status == 1) {
+ 		netif_carrier_on(net);
+ 		netif_wake_queue(net);
+-		netif_notify_peers(net);
+ 		ndev_ctx = netdev_priv(net);
++		schedule_delayed_work(&ndev_ctx->dwork, 0);
+ 		schedule_delayed_work(&ndev_ctx->dwork, msecs_to_jiffies(20));
+ 	} else {
+ 		netif_carrier_off(net);
 
 
