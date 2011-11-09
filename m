@@ -1,71 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab1KIMdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:33:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56589 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755164Ab1KIMdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932231Ab1KIMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 07:34:09 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:43089 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755126Ab1KIMdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Nov 2011 07:33:51 -0500
-Date: Wed, 9 Nov 2011 10:33:26 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Gerd Hoffmann <kraxel@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Theodore Tso <tytso@mit.edu>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git
-	repository, tools/perf/ and tools/kvm/
-Message-ID: <20111109123326.GD18207@ghostprotocols.net>
-References: <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu> <20111108125609.GA14272@ghostprotocols.net> <4EB9315A.10806@redhat.com> <20111108143228.GC14272@ghostprotocols.net> <4EB94D08.3010207@redhat.com> <20111109085120.GD11473@elte.hu> <4EBA5881.7080409@redhat.com> <20111109115502.GA18207@ghostprotocols.net> <4EBA717A.8010300@redhat.com> <20111109123050.GC18207@ghostprotocols.net>
+Date: Wed, 9 Nov 2011 14:33:44 +0200
+From: Felipe Balbi <balbi@ti.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "eric.miao@linaro.org" <eric.miao@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "david-b@pacbell.net" <david-b@pacbell.net>
+Subject: Re: Adding USB charge current property in the Linux Battery core
+Message-ID: <20111109123339.GC16315@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1320826417.1160.8.camel@L-0761.kpit.com>
+ <20111109082005.GH23337@legolas.emea.dhcp.ti.com>
+ <C3AE124F08223B42BC95AEB82F0F6CED1F9BF3F4@KCHJEXMB02.kpit.com>
+ <20111109121950.GB16315@legolas.emea.dhcp.ti.com>
+ <C3AE124F08223B42BC95AEB82F0F6CED1F9BF409@KCHJEXMB02.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
 Content-Disposition: inline
-In-Reply-To: <20111109123050.GC18207@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED1F9BF409@KCHJEXMB02.kpit.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 09, 2011 at 10:30:50AM -0200, Arnaldo Carvalho de Melo escreveu:
-> Em Wed, Nov 09, 2011 at 01:26:34PM +0100, Gerd Hoffmann escreveu:
-> > > Its fully configurable as of now, what we need is a set of .perfconfigs
-> > > that show how people think its better, we try it, set it as the default,
-> > > leave the others in tools/perf/Documentation/perfconfig/color.examples.
 
-> > Yep, a set of examples works too.
+--M38YqGLZlgb6RLPS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > The colors are not fully configurable yet though.  First, when switching
-> > all five colorsets to "default, default" there are still things which
-> > are colored (top bar, bottom bar, keys help display).  Second there is
-> > no way to set terminal attributes (i.e. "top = bold" or "selected =
-> > reverse").
+Hi,
 
-> Ok, adding those to my TODO list.
+On Wed, Nov 09, 2011 at 12:30:19PM +0000, Ashish Jangam wrote:
+> > > > On Wed, Nov 09, 2011 at 01:43:37PM +0530, ashishj3 wrote:
+> > > > > For a better performance in USB charging operation, the DA9052/53
+> > > > charging
+> > > > > current can be configured in accordance with the USB host current
+> > > > > delivering capacity (known through USB drivers negotiation).
+> > > > >
+> > > > > To implement this useful feature, a new writable property "USB ch=
+arge
+> > > > current"
+> > > > > needs to be added in the Linux battery core.
+> > > > >
+> > > > > Let me know your views on it.
+> > > >
+> > > > that's the wrong way to do it. What we need is to use the transceiv=
+er
+> > > > notifications to notify every time someone calls usb_gadget_vbus_dr=
+aw()
+> > > > and pass the mA parameter as argument to the event notification.
+> > > >
+> > >
+> > > This means that we need to modify the function usb_gadget_vbus_draw()
+> > > to add a call like blocking_notifier_call_chain() but will this be fi=
+ne
+> > with
+> > > the usb gadget driver maintainers?
+> >=20
+> > I am the USB gadget driver maintainer and I have plans to do that
+> > myself. First thing we need to do is convert the final UDC drivers to
+> > the udc Class which I wrote and Sebastian helped brushing it up, then we
+> > uninline the usb_gadget_* wrappers and move them to
+> > drivers/usb/gadget/udc-core.c, then we can move the transceiver notifier
+> > to the UDC as it makes more sense, and convert blocking into atomic
+> > notifier.
+>=20
+> This sounds good but since most PMICs have I2C bus connectivity using ato=
+mic
+> notifier can introduce problems.=20
 
-> /me goes to check if http://perf.wiki.kernel.org is back working so that
-> we can have a _public_ TODO list, perhaps it may attract more
-> contributors :)
+we can't use blocking on atomic, right ? usb_gadget_vbus_draw() and most
+of the others (usb_gadget_connect/disconnect, usb_gadget_frame_number,
+and so on) are called from atomic context...
 
-Oops, there is one, utterly old tho ;-\
+What i2c transceivers will have to do, is that they will need to defer
+handling of the notification, which isn't all that big of a deal. If it
+takes 300 miliseconds more to start charging, users won't even notice.
 
-I tried changing that and adding this entry but:
+--=20
+balbi
 
-https://perf.wiki.kernel.org/articles/u/s/e/Special~UserLogin_94cd.html
+--M38YqGLZlgb6RLPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Returns:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-The requested URL /articles/u/s/e/Special~UserLogin_94cd.html was not
-found on this server.
+iQIcBAEBAgAGBQJOunMjAAoJEIaOsuA1yqRED3wQAK4e5VI5J/cQ+N9hlsLUlFnn
+uXBUUyOrzhnO1g6dg8fDAz1UKPDvmhJvZB9VlbwIlQbHt5SKhEzmpvEUw+wY9SEP
+R27mCeC8jAJBS70loh+dZk13d7eIBve3PqJCsZMrDcGcTqkbfap0YvZCADCGljH0
+C2HjcK0gjWXaUYwy1z35G8kClUhC5nxdR/RM053vLsbXNQ//UL/zquJE+GR98mj4
+kH914h3nN56ig6xu4KkAngmd8Yb/8HJLerl2qcyplc1fT1KouxC2QJvw3pARqitd
+LTQs3kKuF1oFzKPnWTqAbBkgPhXv6js2sJZFie2NOp/tzSA9ZaFSAFDArSmFd/5X
+SmEDiUoevHI7Zy6n/oUEF8A8j86VQh+hY6aTmgdw5qZxjiWr4lszDEyWKZoQKz3r
+60ZoLGXiCshbtCSn7y7Zi6ozjna7L2BUPZUunIgPW6A99UaqDM3HhQ8MtMEIj0xg
+vkwKtbmp1gWzH0RtA/fqRSR5XNDwSUdmKWj1OJlB2qDkm8+9ISqtwLX1FlFoX9sx
+bVJTbLp5AzotSsa5rTaxdeXWtt5QXs/rIFshwSXrI7hXQl38svkeHDctinYazXb9
+JODA30dWfxcOuz8MeYDPK4gIvZkD9x2vL8b5bMSAOZ4tRppjyKNJi7SYTy5Xmoi/
+XC5oa6paNhHV1QXD46r/
+=2YpB
+-----END PGP SIGNATURE-----
 
-Ingo, would that G+ page be useful for that?
-
-- Arnaldo
+--M38YqGLZlgb6RLPS--
