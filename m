@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935862Ab1KJDiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:38:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43885 "EHLO mx2.suse.de"
+	id S935963Ab1KJDiR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:38:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43897 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935939Ab1KJDiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:45 2011
-Message-Id: <20111109213145.436353890@clark.kroah.org>
+	id S935783Ab1KJDiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:49 2011
+Message-Id: <20111109213148.944547180@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:20 -0800
+Date: Wed, 09 Nov 2011 13:31:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [033/264] [SCSI] isci: fix support for large smp requests
+        alan@lxorguk.ukuu.org.uk, s.kirste@avm.de, d.friedel@avm.de,
+        Martin Walter <m.walter@avm.de>,
+        Peter Grabienski <pgrabien@qca.qualcomm.com>,
+        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [068/264] ath9k_htc: add AVM FRITZ!WLAN 11N v2 support
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,146 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
 
-commit 54b5e3a4bfa3452bc10cd4da672099ccc46b8c09 upstream.
+commit 8c34559b4a6df32e4af1b073397fa4dc189a5485 upstream.
 
-Kill the local smp response buffer.
+This was reported and tested by Martin Walter over at AVM GmbH Berlin.
+This also applies to 3.0.1 so sendint to stable.
 
-Besides being unnecessary, it is too small (currently truncates
-responses to 60 bytes).  The mid-layer will have already allocated a
-sufficiently sized buffer, just kmap and copy into it directly.
-
-Reported-by: Derick Marks <derick.w.marks@intel.com>
-Tested-by: Derick Marks <derick.w.marks@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: s.kirste@avm.de
+Cc: d.friedel@avm.de
+Cc: Martin Walter <m.walter@avm.de>
+Cc: Peter Grabienski <pgrabien@qca.qualcomm.com>
+Tested-by: Martin Walter <m.walter@avm.de>
+Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/isci/isci.h    |    2 -
- drivers/scsi/isci/request.c |   49 +++++++++++++++++---------------------------
- drivers/scsi/isci/request.h |    3 --
- drivers/scsi/isci/sas.h     |    2 -
- 4 files changed, 21 insertions(+), 35 deletions(-)
+ drivers/net/wireless/ath/ath9k/hif_usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/isci/isci.h
-+++ b/drivers/scsi/isci/isci.h
-@@ -97,7 +97,7 @@
- #define SCU_MAX_COMPLETION_QUEUE_SHIFT	  (ilog2(SCU_MAX_COMPLETION_QUEUE_ENTRIES))
+--- a/drivers/net/wireless/ath/ath9k/hif_usb.c
++++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
+@@ -38,6 +38,7 @@ static struct usb_device_id ath9k_hif_us
+ 	{ USB_DEVICE(0x04CA, 0x4605) }, /* Liteon */
+ 	{ USB_DEVICE(0x040D, 0x3801) }, /* VIA */
+ 	{ USB_DEVICE(0x0cf3, 0xb003) }, /* Ubiquiti WifiStation Ext */
++	{ USB_DEVICE(0x057c, 0x8403) }, /* AVM FRITZ!WLAN 11N v2 USB */
  
- #define SCU_ABSOLUTE_MAX_UNSOLICITED_FRAMES (4096)
--#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024)
-+#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024U)
- #define SCU_INVALID_FRAME_INDEX             (0xFFFF)
- 
- #define SCU_IO_REQUEST_MAX_SGE_SIZE         (0x00FFFFFF)
---- a/drivers/scsi/isci/request.c
-+++ b/drivers/scsi/isci/request.c
-@@ -1490,29 +1490,30 @@ sci_io_request_frame_handler(struct isci
- 		return SCI_SUCCESS;
- 
- 	case SCI_REQ_SMP_WAIT_RESP: {
--		struct smp_resp *rsp_hdr = &ireq->smp.rsp;
--		void *frame_header;
-+		struct sas_task *task = isci_request_access_task(ireq);
-+		struct scatterlist *sg = &task->smp_task.smp_resp;
-+		void *frame_header, *kaddr;
-+		u8 *rsp;
- 
- 		sci_unsolicited_frame_control_get_header(&ihost->uf_control,
--							      frame_index,
--							      &frame_header);
--
--		/* byte swap the header. */
--		word_cnt = SMP_RESP_HDR_SZ / sizeof(u32);
--		sci_swab32_cpy(rsp_hdr, frame_header, word_cnt);
-+							 frame_index,
-+							 &frame_header);
-+		kaddr = kmap_atomic(sg_page(sg), KM_IRQ0);
-+		rsp = kaddr + sg->offset;
-+		sci_swab32_cpy(rsp, frame_header, 1);
- 
--		if (rsp_hdr->frame_type == SMP_RESPONSE) {
-+		if (rsp[0] == SMP_RESPONSE) {
- 			void *smp_resp;
- 
- 			sci_unsolicited_frame_control_get_buffer(&ihost->uf_control,
--								      frame_index,
--								      &smp_resp);
--
--			word_cnt = (sizeof(struct smp_resp) - SMP_RESP_HDR_SZ) /
--				sizeof(u32);
-+								 frame_index,
-+								 &smp_resp);
- 
--			sci_swab32_cpy(((u8 *) rsp_hdr) + SMP_RESP_HDR_SZ,
--				       smp_resp, word_cnt);
-+			word_cnt = (sg->length/4)-1;
-+			if (word_cnt > 0)
-+				word_cnt = min_t(unsigned int, word_cnt,
-+						 SCU_UNSOLICITED_FRAME_BUFFER_SIZE/4);
-+			sci_swab32_cpy(rsp + 4, smp_resp, word_cnt);
- 
- 			ireq->scu_status = SCU_TASK_DONE_GOOD;
- 			ireq->sci_status = SCI_SUCCESS;
-@@ -1528,12 +1529,13 @@ sci_io_request_frame_handler(struct isci
- 				__func__,
- 				ireq,
- 				frame_index,
--				rsp_hdr->frame_type);
-+				rsp[0]);
- 
- 			ireq->scu_status = SCU_TASK_DONE_SMP_FRM_TYPE_ERR;
- 			ireq->sci_status = SCI_FAILURE_CONTROLLER_SPECIFIC_IO_ERR;
- 			sci_change_state(&ireq->sm, SCI_REQ_COMPLETED);
- 		}
-+		kunmap_atomic(kaddr, KM_IRQ0);
- 
- 		sci_controller_release_frame(ihost, frame_index);
- 
-@@ -2603,18 +2605,7 @@ static void isci_request_io_request_comp
- 			status   = SAM_STAT_GOOD;
- 			set_bit(IREQ_COMPLETE_IN_TARGET, &request->flags);
- 
--			if (task->task_proto == SAS_PROTOCOL_SMP) {
--				void *rsp = &request->smp.rsp;
--
--				dev_dbg(&ihost->pdev->dev,
--					"%s: SMP protocol completion\n",
--					__func__);
--
--				sg_copy_from_buffer(
--					&task->smp_task.smp_resp, 1,
--					rsp, sizeof(struct smp_resp));
--			} else if (completion_status
--				   == SCI_IO_SUCCESS_IO_DONE_EARLY) {
-+			if (completion_status == SCI_IO_SUCCESS_IO_DONE_EARLY) {
- 
- 				/* This was an SSP / STP / SATA transfer.
- 				 * There is a possibility that less data than
---- a/drivers/scsi/isci/request.h
-+++ b/drivers/scsi/isci/request.h
-@@ -174,9 +174,6 @@ struct isci_request {
- 			};
- 		} ssp;
- 		struct {
--			struct smp_resp rsp;
--		} smp;
--		struct {
- 			struct isci_stp_request req;
- 			struct host_to_dev_fis cmd;
- 			struct dev_to_host_fis rsp;
---- a/drivers/scsi/isci/sas.h
-+++ b/drivers/scsi/isci/sas.h
-@@ -204,8 +204,6 @@ struct smp_req {
- 	u8 req_data[0];
- }  __packed;
- 
--#define SMP_RESP_HDR_SZ	4
--
- /*
-  * struct sci_sas_address - This structure depicts how a SAS address is
-  *    represented by SCI.
+ 	{ USB_DEVICE(0x0cf3, 0x7015),
+ 	  .driver_info = AR9287_USB },  /* Atheros */
 
 
