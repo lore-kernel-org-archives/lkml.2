@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab1KJE1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:27:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43966 "EHLO mx2.suse.de"
+	id S965064Ab1KJE1w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:27:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46620 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965085Ab1KJDiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:54 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:50 2011
-Message-Id: <20111109213150.149040933@clark.kroah.org>
+	id S1757202Ab1KJE1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 23:27:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:55 2011
+Message-Id: <20111109213155.077572076@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:07 -0800
+Date: Wed, 09 Nov 2011 13:32:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Woodhouse <David.Woodhouse@intel.com>,
-        =?ISO-8859-15?q?Sjur=20Br=C3=A6ndeland?= 
-	<sjur.brandeland@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [080/264] caif: Fix BUG() with network namespaces
+        alan@lxorguk.ukuu.org.uk, Susan Gao <sgao@opensource.wolfsonmicro.com>
+Subject: [129/264] ASoC: Fix a bug in WM8962 DSP_A and DSP_B settings
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,60 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <dwmw2@infradead.org>
+From: Susan Gao <sgao@opensource.wolfsonmicro.com>
 
-commit 08613e4626c06ca408fc55071f6aedee36986a87 upstream.
+commit fbc7c62a3ff831aef24894b7982cd1adb2b7e070 upstream.
 
-The caif code will register its own pernet_operations, and then register
-a netdevice_notifier. Each time the netdevice_notifier is triggered,
-it'll do some stuff... including a lookup of its own pernet stuff with
-net_generic().
-
-If the net_generic() call ever returns NULL, the caif code will BUG().
-That doesn't seem *so* unreasonable, I suppose — it does seem like it
-should never happen.
-
-However, it *does* happen. When we clone a network namespace,
-setup_net() runs through all the pernet_operations one at a time. It
-gets to loopback before it gets to caif. And loopback_net_init()
-registers a netdevice... while caif hasn't been initialised. So the caif
-netdevice notifier triggers, and immediately goes BUG().
-
-We could imagine a complex and overengineered solution to this generic
-class of problems, but this patch takes the simple approach. It just
-makes caif_device_notify() *not* go looking for its pernet data
-structures if the device it's being notified about isn't a caif device
-in the first place.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Susan Gao <sgao@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmico.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/caif/caif_dev.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8962.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/caif/caif_dev.c
-+++ b/net/caif/caif_dev.c
-@@ -212,8 +212,7 @@ static int caif_device_notify(struct not
- 	enum cfcnfg_phy_preference pref;
- 	enum cfcnfg_phy_type phy_type;
- 	struct cfcnfg *cfg;
--	struct caif_device_entry_list *caifdevs =
--	    caif_device_list(dev_net(dev));
-+	struct caif_device_entry_list *caifdevs;
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -3059,9 +3059,9 @@ static int wm8962_set_dai_fmt(struct snd
+ 	int aif0 = 0;
  
- 	if (dev->type != ARPHRD_CAIF)
- 		return 0;
-@@ -222,6 +221,8 @@ static int caif_device_notify(struct not
- 	if (cfg == NULL)
- 		return 0;
+ 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+-	case SND_SOC_DAIFMT_DSP_A:
+-		aif0 |= WM8962_LRCLK_INV;
+ 	case SND_SOC_DAIFMT_DSP_B:
++		aif0 |= WM8962_LRCLK_INV | 3;
++	case SND_SOC_DAIFMT_DSP_A:
+ 		aif0 |= 3;
  
-+	caifdevs = caif_device_list(dev_net(dev));
-+
- 	switch (what) {
- 	case NETDEV_REGISTER:
- 		caifd = caif_device_alloc(dev);
+ 		switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 
 
