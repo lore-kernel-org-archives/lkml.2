@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1KJEzL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:55:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42812 "EHLO mx2.suse.de"
+	id S935263Ab1KJDbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:31:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42796 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935269Ab1KJDbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:31:06 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:21 2011
-Message-Id: <20111109212721.105734352@clark.kroah.org>
+	id S935250Ab1KJDaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:30:55 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:20 2011
+Message-Id: <20111109212720.816680504@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:46 -0800
+Date: Wed, 09 Nov 2011 13:28:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [204/262] drm/radeon/kms: add MSI module parameter
+Subject: [201/262] drm/radeon: set hpd polarity at init time so hotplug detect works
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,76 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jerome Glisse <jglisse@redhat.com>
 
-commit a18cee15ed4c8b6a35f96b7b26a46bac32e04bd9 upstream.
+commit 8ab250d4484b72ccc78e34276c5ffa84c1d41303 upstream.
 
-Allow the user to override whether MSIs are enabled
-or not on supported ASICs.  MSIs are disabled by default
-on IGP chips as they tend not to work.  However certain
-IGP chips only seem to work with MSIs enabled.
+Polarity needs to be set accordingly to connector status (connected
+or disconnected). Set it up at module init so first hotplug works
+reliably no matter what is the initial set of connector.
 
-I suspect this is a chipset or bios issue, but I'm not sure
-what the proper fix is.  This will at least make diagnosing
-and working around the problem much easier.
-
-See:
-https://bugs.freedesktop.org/show_bug.cgi?id=37679
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jerome Glisse <jglisse@redhat.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon.h         |    1 +
- drivers/gpu/drm/radeon/radeon_drv.c     |    4 ++++
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    6 ++++++
- 3 files changed, 11 insertions(+)
+ drivers/gpu/drm/radeon/radeon_connectors.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -93,6 +93,7 @@ extern int radeon_audio;
- extern int radeon_disp_priority;
- extern int radeon_hw_i2c;
- extern int radeon_pcie_gen2;
-+extern int radeon_msi;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1779,6 +1779,7 @@ radeon_add_atom_connector(struct drm_dev
+ 			connector->polled = DRM_CONNECTOR_POLL_CONNECT;
+ 	} else
+ 		connector->polled = DRM_CONNECTOR_POLL_HPD;
++	radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
  
- /*
-  * Copy from radeon_drv.h so we don't have to include both and have conflicting
---- a/drivers/gpu/drm/radeon/radeon_drv.c
-+++ b/drivers/gpu/drm/radeon/radeon_drv.c
-@@ -117,6 +117,7 @@ int radeon_audio = 0;
- int radeon_disp_priority = 0;
- int radeon_hw_i2c = 0;
- int radeon_pcie_gen2 = 0;
-+int radeon_msi = -1;
- 
- MODULE_PARM_DESC(no_wb, "Disable AGP writeback for scratch registers");
- module_param_named(no_wb, radeon_no_wb, int, 0444);
-@@ -163,6 +164,9 @@ module_param_named(hw_i2c, radeon_hw_i2c
- MODULE_PARM_DESC(pcie_gen2, "PCIE Gen2 mode (1 = enable)");
- module_param_named(pcie_gen2, radeon_pcie_gen2, int, 0444);
- 
-+MODULE_PARM_DESC(msi, "MSI support (1 = enable, 0 = disable, -1 = auto)");
-+module_param_named(msi, radeon_msi, int, 0444);
-+
- static int radeon_suspend(struct drm_device *dev, pm_message_t state)
- {
- 	drm_radeon_private_t *dev_priv = dev->dev_private;
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -118,6 +118,12 @@ static bool radeon_msi_ok(struct radeon_
- 	if (rdev->flags & RADEON_IS_AGP)
- 		return false;
- 
-+	/* force MSI on */
-+	if (radeon_msi == 1)
-+		return true;
-+	else if (radeon_msi == 0)
-+		return false;
-+
- 	/* Quirks */
- 	/* HP RS690 only seems to work with MSIs. */
- 	if ((rdev->pdev->device == 0x791f) &&
+ 	connector->display_info.subpixel_order = subpixel_order;
+ 	drm_sysfs_connector_add(connector);
 
 
