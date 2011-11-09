@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab1KISR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 13:17:29 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45472 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab1KISR2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 13:17:28 -0500
-Message-ID: <4EBAC3B5.5060405@gmail.com>
-Date: Wed, 09 Nov 2011 19:17:25 +0100
-From: Natanji <natanji@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111108 Thunderbird/8.0
+	id S1756092Ab1KISTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 13:19:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24857 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab1KISTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 13:19:44 -0500
+Date: Wed, 9 Nov 2011 19:19:25 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
+Message-ID: <20111109181925.GN5075@redhat.com>
+References: <1320766151-2619-1-git-send-email-aarcange@redhat.com>
+ <1320766151-2619-2-git-send-email-aarcange@redhat.com>
+ <4EB98A83.3040101@linux.vnet.ibm.com>
+ <4EBA75F2.4080800@linux.vnet.ibm.com>
+ <20111109155342.GA1260@google.com>
+ <20111109165201.GI5075@redhat.com>
+ <20111109165925.GC1260@google.com>
+ <20111109170248.GD1260@google.com>
+ <20111109172942.GJ5075@redhat.com>
+ <20111109180900.GF1260@google.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Regression in thinkpad-acpi events
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111109180900.GF1260@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
-first time posting on this last, and I'm not subscribed, so please CC
-any replies to me. ;)
+On Wed, Nov 09, 2011 at 10:09:00AM -0800, Tejun Heo wrote:
+> I'm confused.  You're doing add_wait_queue() before
+> schedule_timeout_interruptible().  prepare_to_wait() is essentially
+> add_wait_queue() + set_current_state().  What am I missing?  ie. why
+> not do the following?
 
-I'm running Kernel version 3.1-4 using Arch Linux (32 Bit) on a Thinkpad
-X60 Tablet. Since upgrading from a pre-3.1 kernel to a post-3.1 kernel,
-the Thinkpad-specific ACPI events (from thinkpad-acpi) are completely gone.
+Ah the reason of the waitqueue is the sysfs store, to get out of there
+if somebody decreases the wait time from 1min to 10sec or
+similar. It's not really needed for other things, in theory it could
+be a separate waitqueue just for sysfs but probably not worth it.
 
-This can be observed by using the acpi_listen command. For instance, no
-ACPI events happen when swiveling the display, and the sleep button returns
-	button/sleep SBTN 00000080 00000000
-instead of the previous
-	ibm/hotkey HKEY 00000080 00001004
+> 	prepare_to_wait(INTERRUPTIBLE);
+> 	try_to_freeze();
+> 	schedule_timeout();
+> 	try_to_freeze();
+> 	finish_wait();
+> 
+> or even simpler,
+> 
+> 	wait_event_freezable_timeout(wq, false, timeout);
+> 
+> In terms of overhead, there is no appreciable difference from
+> 
+> 	add_wait_queue();
+> 	schedule_timeout_interruptible();
+> 	remove_wait_queue()
+> 
+> Or is the logic there scheduled to change?
 
-The bug was reported in the Arch Linux bugtracker [1] and it was
-suggested to report this upstream, so this is what I did now. Sadly I
-have no idea how I could find out if this is indeed a kernel bug or not;
-I have never compiled my own kernel so what I can give you is probably
-limited. But I suppose quite a few members of this list use a Thinkpad.
-If there is anything else I can help out with, just tell me.
+I have no "event" to wait other than the wakeup itself, this in the
+end is the only reason it isn't already using
+wait_event_freezable_timeout. Of course I can pass "false" as the
+event.
 
-[1] https://bugs.archlinux.org/index.php?do=details&task_id=26658
+> Hmmm... I don't know.  I really hope all freezable tasks stick to
+> higher level interface.  It's way too easy to get things wrong and eat
+> either freezing or actual wakeup condition.
+
+Well you've just to tell me if I have to pass "false" and if
+add_wait_queue+schedule_timeout_interruptible is obsoleted. If it's
+not obsoleted the patch I posted should already be ok. It also will be
+useful if others need to wait for a long time (> the freezer max wait)
+without a waitqueue which I don't think is necessarily impossible. It
+wasn't the case here just because I need to promptly react to the
+sysfs writes (or setting the wait time to 1 day would then require 1
+day before sysfs new value becomes meaningful, well unless somebody
+doess killall khugepaged.. :)
