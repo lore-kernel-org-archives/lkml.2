@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936129Ab1KJDzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:55:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45134 "EHLO mx2.suse.de"
+	id S1757134Ab1KJDz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:55:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45119 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965784Ab1KJDsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:48:22 -0500
+	id S966006Ab1KJDsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:48:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:07 2011
-Message-Id: <20111109213207.280090977@clark.kroah.org>
+Message-Id: <20111109213207.184733108@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:53 -0800
+Date: Wed, 09 Nov 2011 13:34:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Wippich <pewi@gw-instruments.de>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [246/264] mtd: mtdchar: add missing initializer on raw write
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [245/264] mac80211: disable powersave for broken APs
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Wippich <pewi@gw-instruments.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit bf5140817b2d65faac9b32fc9057a097044ac35b upstream.
+commit 05cb91085760ca378f28fc274fbf77fc4fd9886c upstream.
 
-On writes in MODE_RAW the mtd_oob_ops struct is not sufficiently
-initialized which may cause nandwrite to fail. With this patch
-it is possible to write raw nand/oob data without additional ECC
-(either for testing or when some sectors need different oob layout
-e.g. bootloader) like
-nandwrite  -n -r -o  /dev/mtd0 <myfile>
+Only AID values 1-2007 are valid, but some APs have been
+found to send random bogus values, in the reported case an
+AP that was sending the AID field value 0xffff, an AID of
+0x3fff (16383).
 
-Signed-off-by: Peter Wippich <pewi@gw-instruments.de>
-Tested-by: Ricard Wanderlof <ricardw@axis.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+There isn't much we can do but disable powersave since
+there's no way it can work properly in this case.
+
+Reported-by: Bill C Riemers <briemers@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/mtdchar.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/mac80211/ieee80211_i.h |    1 +
+ net/mac80211/mlme.c        |   18 ++++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -320,6 +320,7 @@ static ssize_t mtd_write(struct file *fi
- 			ops.mode = MTD_OOB_RAW;
- 			ops.datbuf = kbuf;
- 			ops.oobbuf = NULL;
-+			ops.ooboffs = 0;
- 			ops.len = len;
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -390,6 +390,7 @@ struct ieee80211_if_managed {
  
- 			ret = mtd->write_oob(mtd, *ppos, &ops);
+ 	unsigned long timers_running; /* used for quiesce/restart */
+ 	bool powersave; /* powersave requested for this iface */
++	bool broken_ap; /* AP is broken -- turn off powersave */
+ 	enum ieee80211_smps_mode req_smps, /* requested smps mode */
+ 				 ap_smps, /* smps mode AP thinks we're in */
+ 				 driver_smps_mode; /* smps mode request */
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -613,6 +613,9 @@ static bool ieee80211_powersave_allowed(
+ 	if (!mgd->powersave)
+ 		return false;
+ 
++	if (mgd->broken_ap)
++		return false;
++
+ 	if (!mgd->associated)
+ 		return false;
+ 
+@@ -1467,10 +1470,21 @@ static bool ieee80211_assoc_success(stru
+ 	capab_info = le16_to_cpu(mgmt->u.assoc_resp.capab_info);
+ 
+ 	if ((aid & (BIT(15) | BIT(14))) != (BIT(15) | BIT(14)))
+-		printk(KERN_DEBUG "%s: invalid aid value %d; bits 15:14 not "
+-		       "set\n", sdata->name, aid);
++		printk(KERN_DEBUG
++		       "%s: invalid AID value 0x%x; bits 15:14 not set\n",
++		       sdata->name, aid);
+ 	aid &= ~(BIT(15) | BIT(14));
+ 
++	ifmgd->broken_ap = false;
++
++	if (aid == 0 || aid > IEEE80211_MAX_AID) {
++		printk(KERN_DEBUG
++		       "%s: invalid AID value %d (out of range), turn off PS\n",
++		       sdata->name, aid);
++		aid = 0;
++		ifmgd->broken_ap = true;
++	}
++
+ 	pos = mgmt->u.assoc_resp.variable;
+ 	ieee802_11_parse_elems(pos, len - (pos - (u8 *) mgmt), &elems);
+ 
 
 
