@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934308Ab1KJDXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:23:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41973 "EHLO mx2.suse.de"
+	id S934350Ab1KJDYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:24:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42011 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933935Ab1KJDXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:23:49 -0500
+	id S933935Ab1KJDYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:08 2011
-Message-Id: <20111109212708.280822383@clark.kroah.org>
+Message-Id: <20111109212708.736644222@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:40 -0800
+Date: Wed, 09 Nov 2011 13:26:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>, Tejun Heo <htejun@gmail.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [078/262] ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge chipsets(v2)
+        alan@lxorguk.ukuu.org.uk, Richard Cochran <richard.cochran@omicron.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [082/262] net: hold sock reference while processing tx timestamps
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +26,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Richard Cochran <richardcochran@gmail.com>
 
-commit 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d upstream.
+commit da92b194cc36b5dc1fbd85206aeeffd80bee0c39 upstream.
 
-This quirk patch fixes one kind of bug inside some Intel Sandybridge
-chipsets, see reports from
+The pair of functions,
 
-       https://bugzilla.kernel.org/show_bug.cgi?id=40592.
+ * skb_clone_tx_timestamp()
+ * skb_complete_tx_timestamp()
 
-Many guys also have reported the problem before:
+were designed to allow timestamping in PHY devices. The first
+function, called during the MAC driver's hard_xmit method, identifies
+PTP protocol packets, clones them, and gives them to the PHY device
+driver. The PHY driver may hold onto the packet and deliver it at a
+later time using the second function, which adds the packet to the
+socket's error queue.
 
-	https://bugs.launchpad.net/bugs/737388
-	https://bugs.launchpad.net/bugs/794642
-	https://bugs.launchpad.net/bugs/782389
-	......
+As pointed out by Johannes, nothing prevents the socket from
+disappearing while the cloned packet is sitting in the PHY driver
+awaiting a timestamp. This patch fixes the issue by taking a reference
+on the socket for each such packet. In addition, the comments
+regarding the usage of these function are expanded to highlight the
+rule that PHY drivers must use skb_complete_tx_timestamp() to release
+the packet, in order to release the socket reference, too.
 
-With help from Tejun, the problem is found to be caused by 32bit PIO
-mode, so introduce the quirk patch to disable 32bit PIO on SATA piix
-for some Sandybridge CPT chipsets.
+These functions first appeared in v2.6.36.
 
-Seth also tested the patch on all five affected chipsets
-(pci device ID: 0x1c00, 0x1c01, 0x1d00, 0x1e00, 0x1e01), and found
-the patch does fix the problem.
-
-Tested-by: Heasley, Seth <seth.heasley@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Acked-by: Tejun Heo <htejun@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Reported-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Reviewed-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ata_piix.c |   37 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 32 insertions(+), 5 deletions(-)
+ include/linux/phy.h     |    2 +-
+ include/linux/skbuff.h  |    7 ++++++-
+ net/core/timestamping.c |   12 ++++++++++--
+ 3 files changed, 17 insertions(+), 4 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -113,6 +113,8 @@ enum {
- 	PIIX_PATA_FLAGS		= ATA_FLAG_SLAVE_POSS,
- 	PIIX_SATA_FLAGS		= ATA_FLAG_SATA | PIIX_FLAG_CHECKINTR,
+--- a/include/linux/phy.h
++++ b/include/linux/phy.h
+@@ -418,7 +418,7 @@ struct phy_driver {
  
-+	PIIX_FLAG_PIO16		= (1 << 30), /*support 16bit PIO only*/
-+
- 	PIIX_80C_PRI		= (1 << 5) | (1 << 4),
- 	PIIX_80C_SEC		= (1 << 7) | (1 << 6),
- 
-@@ -147,6 +149,7 @@ enum piix_controller_ids {
- 	ich8m_apple_sata,	/* locks up on second port enable */
- 	tolapai_sata,
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
-+	ich8_sata_snb,
- };
- 
- struct piix_map_db {
-@@ -177,6 +180,7 @@ static int piix_sidpr_scr_write(struct a
- static int piix_sidpr_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 			      unsigned hints);
- static bool piix_irq_check(struct ata_port *ap);
-+static int piix_port_start(struct ata_port *ap);
- #ifdef CONFIG_PM
- static int piix_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
- static int piix_pci_device_resume(struct pci_dev *pdev);
-@@ -298,21 +302,21 @@ static const struct pci_device_id piix_p
- 	/* SATA Controller IDE (PCH) */
- 	{ 0x8086, 0x3b2e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
- 	/* SATA Controller IDE (CPT) */
--	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (CPT) */
--	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (CPT) */
- 	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (CPT) */
- 	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (PBG) */
--	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (PBG) */
- 	{ 0x8086, 0x1d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Panther Point) */
--	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Panther Point) */
--	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Panther Point) */
- 	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Panther Point) */
-@@ -338,6 +342,7 @@ static struct scsi_host_template piix_sh
- static struct ata_port_operations piix_sata_ops = {
- 	.inherits		= &ata_bmdma32_port_ops,
- 	.sff_irq_check		= piix_irq_check,
-+	.port_start		= piix_port_start,
- };
- 
- static struct ata_port_operations piix_pata_ops = {
-@@ -478,6 +483,7 @@ static const struct piix_map_db *piix_ma
- 	[ich8_2port_sata]	= &ich8_2port_map_db,
- 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
- 	[tolapai_sata]		= &tolapai_map_db,
-+	[ich8_sata_snb]		= &ich8_map_db,
- };
- 
- static struct ata_port_info piix_port_info[] = {
-@@ -606,6 +612,19 @@ static struct ata_port_info piix_port_in
- 		.port_ops	= &piix_vmw_ops,
- 	},
- 
-+	/*
-+	 * some Sandybridge chipsets have broken 32 mode up to now,
-+	 * see https://bugzilla.kernel.org/show_bug.cgi?id=40592
-+	 */
-+	[ich8_sata_snb] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
-+
- };
- 
- static struct pci_bits piix_enable_bits[] = {
-@@ -649,6 +668,14 @@ static const struct ich_laptop ich_lapto
- 	{ 0, }
- };
- 
-+static int piix_port_start(struct ata_port *ap)
-+{
-+	if (!(ap->flags & PIIX_FLAG_PIO16))
-+		ap->pflags |= ATA_PFLAG_PIO32 | ATA_PFLAG_PIO32CHANGE;
-+
-+	return ata_bmdma_port_start(ap);
-+}
-+
+ 	/*
+ 	 * Requests a Tx timestamp for 'skb'. The phy driver promises
+-	 * to deliver it to the socket's error queue as soon as a
++	 * to deliver it using skb_complete_tx_timestamp() as soon as a
+ 	 * timestamp becomes available. One of the PTP_CLASS_ values
+ 	 * is passed in 'type'.
+ 	 */
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1996,8 +1996,13 @@ static inline bool skb_defer_rx_timestam
  /**
-  *	ich_pata_cable_detect - Probe host controller cable detect info
-  *	@ap: Port for which cable detect info is desired
+  * skb_complete_tx_timestamp() - deliver cloned skb with tx timestamps
+  *
++ * PHY drivers may accept clones of transmitted packets for
++ * timestamping via their phy_driver.txtstamp method. These drivers
++ * must call this function to return the skb back to the stack, with
++ * or without a timestamp.
++ *
+  * @skb: clone of the the original outgoing packet
+- * @hwtstamps: hardware time stamps
++ * @hwtstamps: hardware time stamps, may be NULL if not available
+  *
+  */
+ void skb_complete_tx_timestamp(struct sk_buff *skb,
+--- a/net/core/timestamping.c
++++ b/net/core/timestamping.c
+@@ -57,9 +57,13 @@ void skb_clone_tx_timestamp(struct sk_bu
+ 	case PTP_CLASS_V2_VLAN:
+ 		phydev = skb->dev->phydev;
+ 		if (likely(phydev->drv->txtstamp)) {
++			if (!atomic_inc_not_zero(&sk->sk_refcnt))
++				return;
+ 			clone = skb_clone(skb, GFP_ATOMIC);
+-			if (!clone)
++			if (!clone) {
++				sock_put(sk);
+ 				return;
++			}
+ 			clone->sk = sk;
+ 			phydev->drv->txtstamp(phydev, clone, type);
+ 		}
+@@ -76,8 +80,11 @@ void skb_complete_tx_timestamp(struct sk
+ 	struct sock_exterr_skb *serr;
+ 	int err;
+ 
+-	if (!hwtstamps)
++	if (!hwtstamps) {
++		sock_put(sk);
++		kfree_skb(skb);
+ 		return;
++	}
+ 
+ 	*skb_hwtstamps(skb) = *hwtstamps;
+ 	serr = SKB_EXT_ERR(skb);
+@@ -86,6 +93,7 @@ void skb_complete_tx_timestamp(struct sk
+ 	serr->ee.ee_origin = SO_EE_ORIGIN_TIMESTAMPING;
+ 	skb->sk = NULL;
+ 	err = sock_queue_err_skb(sk, skb);
++	sock_put(sk);
+ 	if (err)
+ 		kfree_skb(skb);
+ }
 
 
