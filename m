@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab1KJEoL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:44:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43266 "EHLO mx2.suse.de"
+	id S935716Ab1KJDeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:34:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43233 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935750Ab1KJDeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:34:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:25 2011
-Message-Id: <20111109212725.543157666@clark.kroah.org>
+	id S935279Ab1KJDeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:34:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:26 2011
+Message-Id: <20111109212726.428609899@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:30 -0800
+Date: Wed, 09 Nov 2011 13:29:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Carpenter <dan.carpenter@oracle.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [248/262] PM / Suspend: Off by one in pm_suspend()
+        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>
+Subject: [257/262] HID: add MacBookAir4,2 to hid_have_special_driver[]
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +24,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jiri Kosina <jkosina@suse.cz>
 
-commit 528f7ce6e439edeac38f6b3f8561f1be129b5e91 upstream.
+commit f6f554f09c5b831efdaf67c449e18ca06ee648fe upstream.
 
-In enter_state() we use "state" as an offset for the pm_states[]
-array.  The pm_states[] array only has PM_SUSPEND_MAX elements so
-this test is off by one.
+Otherwise the generic driver wouldn't unbind from it and wouldn't
+let hid-apple to automatically take over.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- kernel/power/suspend.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -307,7 +307,7 @@ int enter_state(suspend_state_t state)
-  */
- int pm_suspend(suspend_state_t state)
- {
--	if (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX)
-+	if (state > PM_SUSPEND_ON && state < PM_SUSPEND_MAX)
- 		return enter_state(state);
- 	return -EINVAL;
- }
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1340,6 +1340,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING5_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_JIS) },
 
 
