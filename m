@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936132Ab1KJDrn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:47:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45040 "EHLO mx2.suse.de"
+	id S965991Ab1KJDsC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:48:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45068 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936072Ab1KJDrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:47:35 -0500
+	id S965957Ab1KJDrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:47:49 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:06 2011
-Message-Id: <20111109213206.036876751@clark.kroah.org>
+Message-Id: <20111109213206.342469825@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:41 -0800
+Date: Wed, 09 Nov 2011 13:34:44 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        alan@lxorguk.ukuu.org.uk,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [234/264] powerpc/numa: Remove double of_node_put in hot_add_node_scn_to_nid
+Subject: [237/264] powerpc/eeh: Fix /proc/ppc64/eeh creation
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 6083184269fd723affca4f6340e491950267622a upstream.
+commit 8feaa43494cee5e938fd5a57b9e9bf1c827e6ccd upstream.
 
-During memory hotplug testing, I got the following warning:
+Since commit 188917e183cf9ad0374b571006d0fc6d48a7f447, /proc/ppc64 is a
+symlink to /proc/powerpc/. That means that creating /proc/ppc64/eeh will
+end up with a unaccessible file, that is not listed under /proc/powerpc/
+and, then, not listed under /proc/ppc64/.
 
-ERROR: Bad of_node_put() on /memory@0
+Creating /proc/powerpc/eeh fixes that problem and maintain the
+compatibility intended with the ppc64 symlink.
 
-of_node_release
-kref_put
-of_node_put
-of_find_node_by_type
-hot_add_node_scn_to_nid
-hot_add_scn_to_nid
-memory_add_physaddr_to_nid
-...
-
-of_find_node_by_type() loop does the of_node_put for us so we only
-need the handle the case where we terminate the loop early.
-
-As suggested by Stephen Rothwell we can do the of_node_put
-unconditionally outside of the loop since of_node_put handles a
-NULL argument fine.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/numa.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/eeh.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -1214,11 +1214,12 @@ int hot_add_node_scn_to_nid(unsigned lon
- 			break;
- 		}
- 
--		of_node_put(memory);
- 		if (nid >= 0)
- 			break;
- 	}
- 
-+	of_node_put(memory);
-+
- 	return nid;
+--- a/arch/powerpc/platforms/pseries/eeh.c
++++ b/arch/powerpc/platforms/pseries/eeh.c
+@@ -1338,7 +1338,7 @@ static const struct file_operations proc
+ static int __init eeh_init_proc(void)
+ {
+ 	if (machine_is(pseries))
+-		proc_create("ppc64/eeh", 0, NULL, &proc_eeh_operations);
++		proc_create("powerpc/eeh", 0, NULL, &proc_eeh_operations);
+ 	return 0;
  }
- 
+ __initcall(eeh_init_proc);
 
 
