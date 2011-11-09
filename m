@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965803Ab1KJDq3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:46:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44887 "EHLO mx2.suse.de"
+	id S965789Ab1KJDqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:46:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44874 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965544Ab1KJDqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:25 -0500
+	id S965775Ab1KJDqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:03 2011
-Message-Id: <20111109213203.771270563@clark.kroah.org>
+Message-Id: <20111109213203.558056268@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:19 -0800
+Date: Wed, 09 Nov 2011 13:34:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andy Grover <agrover@redhat.com>,
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
+        Andy Grover <agrover@redhat.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [212/264] iscsi-target: Fix non-immediate TMR handling
+Subject: [210/264] tcm_loop: Add explict read buffer memset for SCF_SCSI_CONTROL_SG_IO_CDB
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,49 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 5a4c8666c6d576f076a7c6824589cdbb984c0f84 upstream.
+commit 8cd79f24350826b81e16990d9e12bc878e67d385 upstream.
 
-This patch addresses two issues with non immediate TMR handling in
-iscsit_handle_task_mgt_cmd().  The first involves breakage due to
-v3.1-rc conversion of iscsit_sequence_cmd(), which upon good status
-would hit the iscsit_add_reject_from_cmd() block of code.  This patch
-adds an explict check for CMDSN_ERROR_CANNOT_RECOVER.
+This patch addresses an issue with buggy userspace code sending I/O
+via scsi-generic that does not explictly clear their associated read
+buffers.  It adds an explict memset of the first SGL entry within
+tcm_loop_new_cmd_map() for SCF_SCSI_CONTROL_SG_IO_CDB payloads that
+are currently guaranteed to be a single SGL by target-core code.
 
-The second adds a check to return when non immediate TMR operation is
-detected after iscsit_ack_from_expstatsn(), as iscsit_sequence_cmd()
--> iscsit_execute_cmd() will have called transport_generic_handle_tmr()
-for the non immediate TMR case already.
+This issue is a side effect of the v3.1-rc1 merge to remove the
+extra memcpy between certain control CDB types using a contigious
++ cleared buffer in target-core, and performing a memcpy into the
+SGL list within tcm_loop.
 
+It was originally mainfesting itself by udev + scsi_id + scsi-generic
+not properly setting up the expected /dev/disk/by-id/ symlinks because
+the INQUIRY payload was containing extra bogus data preventing the
+proper NAA IEEE WWN from being parsed by userspace.
+
+Cc: Christoph Hellwig <hch@lst.de>
 Cc: Andy Grover <agrover@redhat.com>
 Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/iscsi/iscsi_target.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/target/loopback/tcm_loop.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -1821,17 +1821,16 @@ attach:
- 		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
- 		if (cmdsn_ret == CMDSN_HIGHER_THAN_EXP)
- 			out_of_order_cmdsn = 1;
--		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
-+		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
- 			return 0;
--		} else { /* (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) */
-+		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
- 			return iscsit_add_reject_from_cmd(
- 					ISCSI_REASON_PROTOCOL_ERROR,
- 					1, 0, buf, cmd);
--		}
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -174,6 +174,24 @@ static int tcm_loop_new_cmd_map(struct s
+ 		sgl_bidi = sdb->table.sgl;
+ 		sgl_bidi_count = sdb->table.nents;
  	}
- 	iscsit_ack_from_expstatsn(conn, hdr->exp_statsn);
++	/*
++	 * Because some userspace code via scsi-generic do not memset their
++	 * associated read buffers, go ahead and do that here for type
++	 * SCF_SCSI_CONTROL_SG_IO_CDB.  Also note that this is currently
++	 * guaranteed to be a single SGL for SCF_SCSI_CONTROL_SG_IO_CDB
++	 * by target core in transport_generic_allocate_tasks() ->
++	 * transport_generic_cmd_sequencer().
++	 */
++	if (se_cmd->se_cmd_flags & SCF_SCSI_CONTROL_SG_IO_CDB &&
++	    se_cmd->data_direction == DMA_FROM_DEVICE) {
++		struct scatterlist *sg = scsi_sglist(sc);
++		unsigned char *buf = kmap(sg_page(sg)) + sg->offset;
++
++		if (buf != NULL) {
++			memset(buf, 0, sg->length);
++			kunmap(sg_page(sg));
++		}
++	}
  
--	if (out_of_order_cmdsn)
-+	if (out_of_order_cmdsn || !(hdr->opcode & ISCSI_OP_IMMEDIATE))
- 		return 0;
- 	/*
- 	 * Found the referenced task, send to transport for processing.
+ 	/* Tell the core about our preallocated memory */
+ 	ret = transport_generic_map_mem_to_cmd(se_cmd, scsi_sglist(sc),
 
 
