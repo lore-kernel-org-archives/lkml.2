@@ -1,21 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab1KJEvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:51:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42996 "EHLO mx2.suse.de"
+	id S935428Ab1KJEwV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:52:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42953 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935398Ab1KJDcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:32:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:20 2011
-Message-Id: <20111109212720.112240800@clark.kroah.org>
+	id S935375Ab1KJDb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:31:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:19 2011
+Message-Id: <20111109212719.596739150@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:36 -0800
+Date: Wed, 09 Nov 2011 13:28:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [194/262] ALSA: ua101: fix crash when unplugging
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [189/262] s390: gup_huge_pmd() support THP tail recounting
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,92 +33,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 862a6244eb9f9f5123fe819454fcfcae0ee1f2f9 upstream.
+commit 220a2eb228d032acde60e9fd044ca802706ff583 upstream.
 
-If the device is unplugged while running, it is possible for a PCM
-device to be closed after the disconnect callback has returned.  This
-means that kill_stream_urb() and disable_iso_interface() would try to
-access already-invalid or freed USB data structures.
+Up to this point the code assumed old refcounting for hugepages (pre-thp).
+This updates the code directly to the thp mapcount tail page refcounting.
 
-The function free_usb_related_resources() was intended to prevent this,
-but forgot to clear the affected variables.
-
-Reported-and-tested-by: Olivier Courtay <olivier@courtay.org>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/usb/misc/ua101.c |   28 +++++++++++++++++++++-------
- 1 file changed, 21 insertions(+), 7 deletions(-)
+ arch/s390/mm/gup.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/sound/usb/misc/ua101.c
-+++ b/sound/usb/misc/ua101.c
-@@ -459,7 +459,8 @@ static void kill_stream_urbs(struct ua10
- 	unsigned int i;
- 
- 	for (i = 0; i < stream->queue_length; ++i)
--		usb_kill_urb(&stream->urbs[i]->urb);
-+		if (stream->urbs[i])
-+			usb_kill_urb(&stream->urbs[i]->urb);
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -48,11 +48,22 @@ static inline int gup_pte_range(pmd_t *p
+ 	return 1;
  }
  
- static int enable_iso_interface(struct ua101 *ua, unsigned int intf_index)
-@@ -484,6 +485,9 @@ static void disable_iso_interface(struct
- {
- 	struct usb_host_interface *alts;
- 
-+	if (!ua->intf[intf_index])
-+		return;
++static inline void get_huge_page_tail(struct page *page)
++{
++	/*
++	 * __split_huge_page_refcount() cannot run
++	 * from under us.
++	 */
++	VM_BUG_ON(page_mapcount(page) < 0);
++	VM_BUG_ON(atomic_read(&page->_count) != 0);
++	atomic_inc(&page->_mapcount);
++}
 +
- 	alts = ua->intf[intf_index]->cur_altsetting;
- 	if (alts->desc.bAlternateSetting != 0) {
- 		int err = usb_set_interface(ua->dev,
-@@ -1144,27 +1148,37 @@ static void free_stream_urbs(struct ua10
+ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
  {
- 	unsigned int i;
+ 	unsigned long mask, result;
+-	struct page *head, *page;
++	struct page *head, *page, *tail;
+ 	int refs;
  
--	for (i = 0; i < stream->queue_length; ++i)
-+	for (i = 0; i < stream->queue_length; ++i) {
- 		kfree(stream->urbs[i]);
-+		stream->urbs[i] = NULL;
-+	}
- }
+ 	result = write ? 0 : _SEGMENT_ENTRY_RO;
+@@ -64,6 +75,7 @@ static inline int gup_huge_pmd(pmd_t *pm
+ 	refs = 0;
+ 	head = pmd_page(pmd);
+ 	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
++	tail = page;
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
+@@ -81,6 +93,16 @@ static inline int gup_huge_pmd(pmd_t *pm
+ 		*nr -= refs;
+ 		while (refs--)
+ 			put_page(head);
++	} else {
++		/*
++		 * Any tail page need their mapcount reference taken
++		 * before we return.
++		 */
++		while (refs--) {
++			if (PageTail(tail))
++				get_huge_page_tail(tail);
++			tail++;
++		}
+ 	}
  
- static void free_usb_related_resources(struct ua101 *ua,
- 				       struct usb_interface *interface)
- {
- 	unsigned int i;
-+	struct usb_interface *intf;
- 
-+	mutex_lock(&ua->mutex);
- 	free_stream_urbs(&ua->capture);
- 	free_stream_urbs(&ua->playback);
-+	mutex_unlock(&ua->mutex);
- 	free_stream_buffers(ua, &ua->capture);
- 	free_stream_buffers(ua, &ua->playback);
- 
--	for (i = 0; i < ARRAY_SIZE(ua->intf); ++i)
--		if (ua->intf[i]) {
--			usb_set_intfdata(ua->intf[i], NULL);
--			if (ua->intf[i] != interface)
-+	for (i = 0; i < ARRAY_SIZE(ua->intf); ++i) {
-+		mutex_lock(&ua->mutex);
-+		intf = ua->intf[i];
-+		ua->intf[i] = NULL;
-+		mutex_unlock(&ua->mutex);
-+		if (intf) {
-+			usb_set_intfdata(intf, NULL);
-+			if (intf != interface)
- 				usb_driver_release_interface(&ua101_driver,
--							     ua->intf[i]);
-+							     intf);
- 		}
-+	}
- }
- 
- static void ua101_card_free(struct snd_card *card)
+ 	return 1;
 
 
