@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935871Ab1KJDgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:36:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43614 "EHLO mx2.suse.de"
+	id S935764Ab1KJDgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:36:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43669 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933916Ab1KJDgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:43 2011
-Message-Id: <20111109213143.047189534@clark.kroah.org>
+	id S964893Ab1KJDg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:29 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
+Message-Id: <20111109213145.967621743@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:30:56 -0800
+Date: Wed, 09 Nov 2011 13:31:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [009/264] staging: quatech_usb2: Potential lost wakeup scenario in TIOCMIWAIT
+        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
+        Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: [038/264] target: Prevent cmd->se_queue_node double add
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,65 +26,140 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit e8df1674d383d2ecc6efa8d7dba74c03aafdfdd7 upstream.
+commit 79a7fef26431830e22e282053d050af790117db8 upstream.
 
-If the usermode app does an ioctl over this serial device  by
-using TIOCMIWAIT, then the code will wait by setting the current
-task state to TASK_INTERRUPTIBLE and then calling schedule().
-This will be woken up by the qt2_process_modem_status on URB
-completion when the port_extra->shadowMSR is set to the new
-modem status.
+This patch addresses a bug with the lio-core-2.6.git conversion of
+transport_add_cmd_to_queue() to use a single embedded list_head, instead
+of individual struct se_queue_req allocations allowing a single se_cmd to
+be added to the queue mulitple times.  This was changed in the following:
 
-However, this could result in a lost wakeup scenario due to a race
-in the logic in the qt2_ioctl(TIOCMIWAIT) loop and the URB completion
-for new modem status in qt2_process_modem_status.
-Due to this, the usermode app's task will continue to sleep despite a
-change in the modem status.
+commit 2a9e4d5ca5d99f4c600578d6285d45142e7e5208
+Author: Andy Grover <agrover@redhat.com>
+Date:   Tue Apr 26 17:45:51 2011 -0700
 
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+    target: Embed qr in struct se_cmd
+
+The problem is that some target code still assumes performing multiple
+adds is allowed via transport_add_cmd_to_queue(), which ends up causing
+list corruption in qobj->qobj_list code.  This patch addresses this
+by removing an existing struct se_cmd from the list before the add, and
+removes an unnecessary list walk in transport_remove_cmd_from_queue()
+
+It also changes cmd->t_transport_queue_active to use explict sets intead
+of increment/decrement to prevent confusion during exception path handling.
+
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/quatech_usb2/quatech_usb2.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/target/target_core_tmr.c       |    2 +-
+ drivers/target/target_core_transport.c |   31 +++++++++++++++----------------
+ 2 files changed, 16 insertions(+), 17 deletions(-)
 
---- a/drivers/staging/quatech_usb2/quatech_usb2.c
-+++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-@@ -916,9 +916,10 @@ static int qt2_ioctl(struct tty_struct *
- 		dbg("%s() port %d, cmd == TIOCMIWAIT enter",
- 			__func__, port->number);
- 		prev_msr_value = port_extra->shadowMSR  & QT2_SERIAL_MSR_MASK;
-+		barrier();
-+		__set_current_state(TASK_INTERRUPTIBLE);
- 		while (1) {
- 			add_wait_queue(&port_extra->wait, &wait);
--			set_current_state(TASK_INTERRUPTIBLE);
- 			schedule();
- 			dbg("%s(): port %d, cmd == TIOCMIWAIT here\n",
- 				__func__, port->number);
-@@ -926,9 +927,12 @@ static int qt2_ioctl(struct tty_struct *
- 			/* see if a signal woke us up */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+			set_current_state(TASK_INTERRUPTIBLE);
- 			msr_value = port_extra->shadowMSR & QT2_SERIAL_MSR_MASK;
--			if (msr_value == prev_msr_value)
-+			if (msr_value == prev_msr_value) {
-+				__set_current_state(TASK_RUNNING);
- 				return -EIO;  /* no change - error */
-+			}
- 			if ((arg & TIOCM_RNG &&
- 				((prev_msr_value & QT2_SERIAL_MSR_RI) ==
- 					(msr_value & QT2_SERIAL_MSR_RI))) ||
-@@ -941,6 +945,7 @@ static int qt2_ioctl(struct tty_struct *
- 				(arg & TIOCM_CTS &&
- 				((prev_msr_value & QT2_SERIAL_MSR_CTS) ==
- 					(msr_value & QT2_SERIAL_MSR_CTS)))) {
-+				__set_current_state(TASK_RUNNING);
- 				return 0;
- 			}
- 		} /* end inifinite while */
+--- a/drivers/target/target_core_tmr.c
++++ b/drivers/target/target_core_tmr.c
+@@ -340,7 +340,7 @@ int core_tmr_lun_reset(
+ 
+ 		atomic_dec(&cmd->t_transport_queue_active);
+ 		atomic_dec(&qobj->queue_cnt);
+-		list_del(&cmd->se_queue_node);
++		list_del_init(&cmd->se_queue_node);
+ 		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 
+ 		pr_debug("LUN_RESET: %s from Device Queue: cmd: %p t_state:"
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -621,8 +621,6 @@ static void transport_add_cmd_to_queue(
+ 	struct se_queue_obj *qobj = &dev->dev_queue_obj;
+ 	unsigned long flags;
+ 
+-	INIT_LIST_HEAD(&cmd->se_queue_node);
+-
+ 	if (t_state) {
+ 		spin_lock_irqsave(&cmd->t_state_lock, flags);
+ 		cmd->t_state = t_state;
+@@ -631,15 +629,21 @@ static void transport_add_cmd_to_queue(
+ 	}
+ 
+ 	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
++
++	/* If the cmd is already on the list, remove it before we add it */
++	if (!list_empty(&cmd->se_queue_node))
++		list_del(&cmd->se_queue_node);
++	else
++		atomic_inc(&qobj->queue_cnt);
++
+ 	if (cmd->se_cmd_flags & SCF_EMULATE_QUEUE_FULL) {
+ 		cmd->se_cmd_flags &= ~SCF_EMULATE_QUEUE_FULL;
+ 		list_add(&cmd->se_queue_node, &qobj->qobj_list);
+ 	} else
+ 		list_add_tail(&cmd->se_queue_node, &qobj->qobj_list);
+-	atomic_inc(&cmd->t_transport_queue_active);
++	atomic_set(&cmd->t_transport_queue_active, 1);
+ 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 
+-	atomic_inc(&qobj->queue_cnt);
+ 	wake_up_interruptible(&qobj->thread_wq);
+ }
+ 
+@@ -656,9 +660,9 @@ transport_get_cmd_from_queue(struct se_q
+ 	}
+ 	cmd = list_first_entry(&qobj->qobj_list, struct se_cmd, se_queue_node);
+ 
+-	atomic_dec(&cmd->t_transport_queue_active);
++	atomic_set(&cmd->t_transport_queue_active, 0);
+ 
+-	list_del(&cmd->se_queue_node);
++	list_del_init(&cmd->se_queue_node);
+ 	atomic_dec(&qobj->queue_cnt);
+ 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 
+@@ -668,7 +672,6 @@ transport_get_cmd_from_queue(struct se_q
+ static void transport_remove_cmd_from_queue(struct se_cmd *cmd,
+ 		struct se_queue_obj *qobj)
+ {
+-	struct se_cmd *t;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
+@@ -676,14 +679,9 @@ static void transport_remove_cmd_from_qu
+ 		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 		return;
+ 	}
+-
+-	list_for_each_entry(t, &qobj->qobj_list, se_queue_node)
+-		if (t == cmd) {
+-			atomic_dec(&cmd->t_transport_queue_active);
+-			atomic_dec(&qobj->queue_cnt);
+-			list_del(&cmd->se_queue_node);
+-			break;
+-		}
++	atomic_set(&cmd->t_transport_queue_active, 0);
++	atomic_dec(&qobj->queue_cnt);
++	list_del_init(&cmd->se_queue_node);
+ 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 
+ 	if (atomic_read(&cmd->t_transport_queue_active)) {
+@@ -1067,7 +1065,7 @@ static void transport_release_all_cmds(s
+ 	list_for_each_entry_safe(cmd, tcmd, &dev->dev_queue_obj.qobj_list,
+ 				se_queue_node) {
+ 		t_state = cmd->t_state;
+-		list_del(&cmd->se_queue_node);
++		list_del_init(&cmd->se_queue_node);
+ 		spin_unlock_irqrestore(&dev->dev_queue_obj.cmd_queue_lock,
+ 				flags);
+ 
+@@ -1598,6 +1596,7 @@ void transport_init_se_cmd(
+ 	INIT_LIST_HEAD(&cmd->se_delayed_node);
+ 	INIT_LIST_HEAD(&cmd->se_ordered_node);
+ 	INIT_LIST_HEAD(&cmd->se_qf_node);
++	INIT_LIST_HEAD(&cmd->se_queue_node);
+ 
+ 	INIT_LIST_HEAD(&cmd->t_task_list);
+ 	init_completion(&cmd->transport_lun_fe_stop_comp);
 
 
