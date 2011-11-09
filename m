@@ -1,82 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1KIMD0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:03:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:13626 "EHLO mga03.intel.com"
+	id S1754217Ab1KIMDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 07:03:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab1KIMDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 07:03:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,483,1315206000"; 
-   d="scan'208";a="72230419"
-Date: Wed, 9 Nov 2011 20:03:21 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Keith Packard <keithp@keithp.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.2-rc1
-Message-ID: <20111109120321.GA10264@localhost>
-References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
- <20111108145510.GA5142@elliptictech.com>
- <CA+55aFwx5=T1piX5qPj2jCAbzdHAQX2gYJODZnQ40h9hiDjkbQ@mail.gmail.com>
- <s5hty6dlp5o.wl%tiwai@suse.de>
+	id S1753109Ab1KIMDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 07:03:45 -0500
+Date: Wed, 9 Nov 2011 10:03:20 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Theodore Tso <tytso@MIT.EDU>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git
+	repository, tools/perf/ and tools/kvm/
+Message-ID: <20111109120320.GB18207@ghostprotocols.net>
+References: <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com> <20111107203255.GF24234@thunk.org> <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com> <4EB85969.2010108@codemonkey.ws> <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu> <20111108093225.GB32533@elte.hu> <20111108154304.GA4510@home.goodmis.org> <20111109092109.GF11473@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5hty6dlp5o.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111109092109.GF11473@elte.hu>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 03:40:19PM +0800, Takashi Iwai wrote:
-> At Tue, 8 Nov 2011 12:23:30 -0800,
-> Linus Torvalds wrote:
-> > 
-> > Hmm, I don't know what caused this to trigger, but I'm adding both the
-> > i915 people and the HDA people to the cc, and they can fight to the
-> > death about this in the HDMI Thunderdome.
-> 
-> It must be the new addition of ELD-passing code.
+Em Wed, Nov 09, 2011 at 10:21:09AM +0100, Ingo Molnar escreveu:
+> Eventually someone will do the right thing and implement 'perf trace' 
+> (there's still the tip:tmp.perf/trace2 prototype branch) and users 
 
-Yes, it's my fault.
+I'm working on it, reworking its patches into the new evlist/evsel
+abstractions, etc.
 
-> Fengguang, can the drm or i915 driver check whether ELD is changed or
-> not?  Writing ELD at each time even when unchanged confuses the audio
-> side, as if the monitor is hotplugged.
-
-It's sure possible to mask out the extra events.
-I'll work out a patch tomorrow.
-
-> > Guys: One.. Two.. Three.. FIGHT!
-> 
-> Round two!
-
-Three to fight!
-
-Thanks,
-Fengguang
-
-> > On Tue, Nov 8, 2011 at 6:55 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
-> > >
-> > > Mode switches are very noisy on an Intel G45 in 3.2-rc1:
-> > >
-> > >  HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-> > >  HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
-> > >  HDMI: detected monitor W2253 at connection type HDMI
-> > >  HDMI: available speakers: FL/FR
-> > >  HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
-> > >
-> > > These lines get printed every single switch; previously only a single
-> > > line was printed once at boot (the "HDMI status" line).
-> > >
-> > > Cheers,
-> > > --
-> > > Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-> > >
-> > 
+- Arnaldo
