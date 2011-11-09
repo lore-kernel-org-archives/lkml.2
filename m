@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495Ab1KJFRG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:17:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42062 "EHLO mx2.suse.de"
+	id S934380Ab1KJDY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:24:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42035 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934400Ab1KJDYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
-Message-Id: <20111109212706.577153053@clark.kroah.org>
+	id S933935Ab1KJDYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:21 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
+Message-Id: <20111109212709.150670406@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:24 -0800
+Date: Wed, 09 Nov 2011 13:26:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [062/262] ath9k: disable unnecessary PHY error reporting
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Subject: [086/262] md/raid5: fix bug that could result in reads from a failed device.
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: NeilBrown <neilb@suse.de>
 
-commit ac06697c79bad09e44a8b1d52104014016fb90de upstream.
+commit 355840e7a7e56bb2834fd3b0da64da5465f8aeaa upstream.
 
-PHY errors relevant for ANI are always tracked by hardware counters, the
-bits that allow them to pass through the rx filter are independent of that.
-Enabling PHY errors in the rx filter often creates lots of useless DMA traffic
-and might be responsible for some of the rx dma stop failure warnings.
+This bug was introduced in 415e72d034c50520ddb7ff79e7d1792c1306f0c9
+which was in 2.6.36.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+There is a small window of time between when a device fails and when
+it is removed from the array.  During this time we might still read
+from it, but we won't write to it - so it is possible that we could
+read stale data.
+
+We didn't need the test of 'Faulty' before because the test on
+In_sync is sufficient.  Since we started allowing reads from the early
+part of non-In_sync devices we need a test on Faulty too.
+
+This is suitable for any kernel from 2.6.36 onwards, though the patch
+might need a bit of tweaking in 3.0 and earlier.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ani.c  |    5 -----
- drivers/net/wireless/ath/ath9k/recv.c |    5 +----
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ drivers/md/raid5.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ani.c
-+++ b/drivers/net/wireless/ath/ath9k/ani.c
-@@ -502,9 +502,6 @@ static void ath9k_ani_reset_old(struct a
- 		ath9k_hw_ani_control(ah, ATH9K_ANI_CCK_WEAK_SIGNAL_THR,
- 				     ATH9K_ANI_CCK_WEAK_SIG_THR);
- 
--		ath9k_hw_setrxfilter(ah, ath9k_hw_getrxfilter(ah) |
--				     ATH9K_RX_FILTER_PHYERR);
--
- 		ath9k_ani_restart(ah);
- 		return;
- 	}
-@@ -525,8 +522,6 @@ static void ath9k_ani_reset_old(struct a
- 		ath9k_hw_ani_control(ah, ATH9K_ANI_FIRSTEP_LEVEL,
- 				     aniState->firstepLevel);
- 
--	ath9k_hw_setrxfilter(ah, ath9k_hw_getrxfilter(ah) &
--			     ~ATH9K_RX_FILTER_PHYERR);
- 	ath9k_ani_restart(ah);
- 
- 	ENABLE_REGWRITE_BUFFER(ah);
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -423,12 +423,9 @@ void ath_rx_cleanup(struct ath_softc *sc
- 
- u32 ath_calcrxfilter(struct ath_softc *sc)
- {
--#define	RX_FILTER_PRESERVE (ATH9K_RX_FILTER_PHYERR | ATH9K_RX_FILTER_PHYRADAR)
--
- 	u32 rfilt;
- 
--	rfilt = (ath9k_hw_getrxfilter(sc->sc_ah) & RX_FILTER_PRESERVE)
--		| ATH9K_RX_FILTER_UCAST | ATH9K_RX_FILTER_BCAST
-+	rfilt = ATH9K_RX_FILTER_UCAST | ATH9K_RX_FILTER_BCAST
- 		| ATH9K_RX_FILTER_MCAST;
- 
- 	if (sc->rx.rxfilter & FIF_PROBE_REQ)
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3369,7 +3369,7 @@ static void handle_stripe6(struct stripe
+ 			/* Not in-sync */;
+ 		else if (test_bit(In_sync, &rdev->flags))
+ 			set_bit(R5_Insync, &dev->flags);
+-		else {
++		else if (!test_bit(Faulty, &rdev->flags)) {
+ 			/* in sync if before recovery_offset */
+ 			if (sh->sector + STRIPE_SECTORS <= rdev->recovery_offset)
+ 				set_bit(R5_Insync, &dev->flags);
 
 
