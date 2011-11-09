@@ -1,128 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab1KIJcD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 04:32:03 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41916 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab1KIJcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 04:32:00 -0500
-Date: Wed, 9 Nov 2011 10:31:47 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 8/8] dt/arm: versatile add clock parsing
-Message-ID: <20111109093147.GZ16886@pengutronix.de>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-9-git-send-email-grant.likely@secretlab.ca>
+	id S932236Ab1KIJhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 04:37:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55949 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751568Ab1KIJhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 04:37:14 -0500
+Message-ID: <4EBA49C2.1000704@suse.de>
+Date: Wed, 09 Nov 2011 10:37:06 +0100
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.14) Gecko/20110221 SUSE/3.1.8 Thunderbird/3.1.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320801583-12774-9-git-send-email-grant.likely@secretlab.ca>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:15:20 up 20 days, 15:50, 23 users,  load average: 3.00, 3.02,
- 3.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Mike Snitzer <snitzer@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "Taraka R. Bodireddy" <tarak.reddy@in.ibm.com>,
+        "Seshagiri N. Ippili" <seshagiri.ippili@in.ibm.com>,
+        "Manvanthara B. Puttashankar" <mputtash@in.ibm.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Shaohua Li <shaohua.li@intel.com>,
+        gmuelas@de.ibm.com
+Subject: Re: [GIT PULL] Queue free fix (was Re: [PATCH] block: Free queue
+ resources at blk_release_queue())
+References: <4E9BEB68.1050707@ce.jp.nec.com> <1318860403.4794.12.camel@dabdike.int.hansenpartnership.com> <4E9D7FA8.9000000@ce.jp.nec.com> <20111018154542.GB3869@osiris.boeblingen.de.ibm.com> <1318955380.5169.15.camel@dabdike.int.hansenpartnership.com> <20111031100557.GA2621@osiris.boeblingen.de.ibm.com> <1320057746.2964.1.camel@dabdike> <4EAE8A7E.8000504@ce.jp.nec.com> <20111031130004.GB4768@osiris.boeblingen.de.ibm.com> <20111103182548.GA12131@redhat.com> <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20111104091936.GB2397@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 06:19:43PM -0700, Grant Likely wrote:
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  arch/arm/boot/dts/versatile-ab.dts     |   37 ++++++++++++++++++++++++++++++++
->  arch/arm/boot/dts/versatile-pb.dts     |    2 +
->  arch/arm/mach-versatile/core.c         |   37 +------------------------------
->  arch/arm/mach-versatile/versatile_dt.c |   33 ++++++++++++++++++++++++++++
->  4 files changed, 74 insertions(+), 35 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/versatile-ab.dts b/arch/arm/boot/dts/versatile-ab.dts
-> index 0b32925..cb8a49e 100644
-> --- a/arch/arm/boot/dts/versatile-ab.dts
-> +++ b/arch/arm/boot/dts/versatile-ab.dts
-> @@ -19,6 +19,35 @@
->  		reg = <0x0 0x08000000>;
->  	};
->  
-> +	clocks {
-> +		#address-cells = <1>;
-> +		#size-cells = <0>;
-> +
-> +		ref24_clk: clock0 {
-> +			compatible = "fixed-clock";
-> +			#clock-cells = <1>;
-> +			clock-frequency = <24000000>;
-> +			clock-output-names = "ref";
-> +		};
-> +
-> +		sp804_clk: clock1 {
-> +			compatible = "fixed-clock";
-> +			#clock-cells = <1>;
-> +			clock-frequency = <1000000>;
-> +			clock-output-names = "ref";
-> +		};
-> +
-> +		osc4_clk: clock3 {
-> +			compatible = "ics,icst307";
-> +			#clock-cells = <1>;
-> +			ref = <24000>;
-> +			vco-max = <200000>;
-> +			vd-range = <12 519>;
-> +			rd-range = <3 129>;
-> +			clock-output-names = "osc4";
-> +		};
+On 11/04/2011 10:19 AM, Heiko Carstens wrote:
+> On Thu, Nov 03, 2011 at 02:25:48PM -0400, Mike Snitzer wrote:
+>> On Mon, Oct 31 2011 at  9:00am -0400,
+>> Heiko Carstens<heiko.carstens@de.ibm.com>  wrote:
+>>
+>>> On Mon, Oct 31, 2011 at 08:46:06PM +0900, Jun'ichi Nomura wrote:
+>>>> Hm, dm_softirq_done is generic completion code of original
+>>>> request in dm-multipath.
+>>>> So oops here might be another manifestation of use-after-free.
+>>>>
+>>>> Do you always hit the oops at the same address?
+>>>
+>>> I think we saw this bug the first time. But before that the scsi
+>>> logging level was higher. Gonzalo is trying to recreate it with
+>>> the same (old) scsi logging level.
+>>> Afterwards we will try with barrier=0.
+>>>
+>>> Both on v3.0.7 btw.
+>>>
+>>>> Could you find corresponding source code line for
+>>>> the crashed address, dm_softirq_done+0x72/0x140,
+>>>> and which pointer was invalid?
+>>>
+>>> It crashes in the inlined function dm_done() when trying to
+>>> dereference tio (aka clone->end_io_data):
+>>>
+>>> static void dm_done(struct request *clone, int error, bool mapped)
+>>> {
+>>>          int r = error;
+>>>          struct dm_rq_target_io *tio = clone->end_io_data;
+>>>          dm_request_endio_fn rq_end_io = tio->ti->type->rq_end_io;
+>>
+>> Hi,
+>>
+>> Which underlying storage driver is being used by this multipath device?
+>
+> It's the s390 only zfcp device driver.
+>
+> FWIW, yet another use-after-free crash, this time however in multipath_end_io:
+>
+> [96875.870593] Unable to handle kernel pointer dereference at virtual kernel address 6b6b6b6b6b6b6000
+> [96875.870602] Oops: 0038 [#1]
+> [96875.870674] PREEMPT SMP DEBUG_PAGEALLOC
+> [96875.870683] Modules linked in: dm_round_robin sunrpc ipv6 qeth_l2 binfmt_misc dm_multipath scsi_dh dm_mod qeth ccwgroup [la\
+> st unloaded: scsi_wait_scan]
+> [96875.870722] CPU: 2 Tainted: G        W   3.0.7-50.x.20111024-s390xdefault #1
+> [96875.870728] Process udevd (pid: 36697, task: 0000000072c8a3a8, ksp: 0000000057c43868)
+> [96875.870732] Krnl PSW : 0704200180000000 000003e001347138 (multipath_end_io+0x50/0x140 [dm_multipath])
+> [96875.870746]            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
+> [96875.870751] Krnl GPRS: 0000000000000000 000003e000000000 6b6b6b6b6b6b6b6b 00000000717ab940
+> [96875.870755]            0000000000000000 00000000717abab0 0000000000000002 0700000000000008
+> [96875.870759]            0000000000000002 0000000000000000 0000000058dd37a8 000000006f845478
+> [96875.870764]            000003e0012e1000 000000005613d1f0 000000007a737bf0 000000007a737ba0
+> [96875.870768] Krnl Code: 000003e00134712a: b90200dd            ltgr %r13,%r13
+> [96875.870793]            000003e00134712e: a7840017            brc 8,3e00134715c
+> [96875.870800]            000003e001347132: e320d0100004        lg %r2,16(%r13)
+> [96875.870809]>000003e001347138: e31020180004        lg %r1,24(%r2)
+> [96875.870818]            000003e00134713e: e31010580004        lg %r1,88(%r1)
+> [96875.870827]            000003e001347144: b9020011            ltgr %r1,%r1
+> [96875.870835]            000003e001347148: a784000a            brc 8,3e00134715c
+> [96875.870841]            000003e00134714c: 41202018            la %r2,24(%r2)
+> [96875.870889] Call Trace:
+> [96875.870892] ([<0700000000000008>] 0x700000000000008)
+> [96875.870897]  [<000003e0012e3662>] dm_softirq_done+0x9a/0x140 [dm_mod]
+> [96875.870915]  [<000000000040d29c>] blk_done_softirq+0xd4/0xf0
+> [96875.870925]  [<00000000001587c2>] __do_softirq+0xda/0x398
+> [96875.870932]  [<000000000010f47e>] do_softirq+0xe2/0xe8
+> [96875.870940]  [<0000000000158e2c>] irq_exit+0xc8/0xcc
+> [96875.870945]  [<00000000004ceb48>] do_IRQ+0x910/0x1bfc
+> [96875.870953]  [<000000000061a164>] io_return+0x0/0x16
+> [96875.870961]  [<000000000019c84e>] lock_acquire+0xd2/0x204
+> [96875.870969] ([<000000000019c836>] lock_acquire+0xba/0x204)
+> [96875.870974]  [<0000000000615f8e>] mutex_lock_killable_nested+0x92/0x520
+> [96875.870983]  [<0000000000292796>] vfs_readdir+0x8a/0xe4
+> [96875.870992]  [<00000000002928e0>] SyS_getdents+0x60/0xe8
+> [96875.870999]  [<0000000000619af2>] sysc_noemu+0x16/0x1c
+> [96875.871024]  [<000003fffd1ec83e>] 0x3fffd1ec83e
+> [96875.871028] INFO: lockdep is turned off.
+> [96875.871031] Last Breaking-Event-Address:
+> [96875.871037]  [<000003e0012e3660>] dm_softirq_done+0x98/0x140 [dm_mod]
+>
+> static int multipath_end_io(struct dm_target *ti, struct request *clone,
+> 			    int error, union map_info *map_context)
+> {
+> 	struct multipath *m = ti->private;
+> 	struct dm_mpath_io *mpio = map_context->ptr;
+> 	struct pgpath *pgpath = mpio->pgpath;
+> 	struct path_selector *ps;
+> 	int r;
+>
+> 	r  = do_end_io(m, clone, error, mpio);
+> 	if (pgpath) {
+> 		ps =&pgpath->pg->ps;<--- crashes here
+> 		if (ps->type->end_io)
+> 			ps->type->end_io(ps,&pgpath->path, mpio->nr_bytes);
+> 	}
+> 	mempool_free(mpio, m->mpio_pool);
+>
+> 	return r;
+> }
+>
+> It crashes when trying to derefence pgpath, which was freed. Since we have
+> SLUB debugging turned on the freed object tells us that it was allocated
+> via a call to multipath_ctr() and freed via a call to free_priority_group().
+>
+> FWIW, this reproduction was done with barriers off.
+>
+> Btw, since I cc'ed you rather late I'm not sure if you are aware of the
+> test scenario: it's I/O stress with multipathing were paths come and go
+> all the time. It usually takes quite a few hours before the crashes are
+> observed.
 
-The registers needed to access osc4 are missing here. This probably
-means that osc4 cannot be specified in the clocks node but has to
-be sorted into the bus structure of the SoC.
+Hmm. Just to be on the safe side, could you try this one:
 
-> +
->  static void __init versatile_dt_init(void)
->  {
-> +	struct device_node *node;
-> +	struct clk *clk;
-> +	int rc;
-> +
-> +	for_each_compatible_node(node, NULL, "fixed-clock") {
-> +		u32 rate;
-> +		if (of_property_read_u32(node, "clock-frequency", &rate))
-> +			continue;
-> +
-> +		clk = kzalloc(sizeof(*clk), GFP_KERNEL);
-> +		if (!clk)
-> +			panic("out of memory\n");
-> +		clk->rate = rate;
-> +
-> +		rc = of_clk_add_provider(node, versatile_dt_clk_get, clk);
-> +		if (rc) {
-> +			kfree(clk);
-> +			pr_err("error adding fixed clk %s\n", node->name);
-> +		}
-> +	}
-> +
+diff --git a/drivers/md/dm-mpath.c b/drivers/md/dm-mpath.c
+index 5e0090e..e6fad46 100644
+--- a/drivers/md/dm-mpath.c
++++ b/drivers/md/dm-mpath.c
+@@ -920,8 +920,10 @@ static int multipath_map(struct dm_target *ti, 
+struct reque
+st *clone,
+         map_context->ptr = mpio;
+         clone->cmd_flags |= REQ_FAILFAST_TRANSPORT;
+         r = map_io(m, clone, mpio, 0);
+-       if (r < 0 || r == DM_MAPIO_REQUEUE)
++       if (r < 0 || r == DM_MAPIO_REQUEUE) {
+                 mempool_free(mpio, m->mpio_pool);
++               map_context->ptr = NULL;
++       }
 
-Well this is obviously just a quick hack to get something working. I
-just want to add the note here that Mikes current patches require to
-register the clock tree top-down. This may be hard to archieve as the
-clocks are somewhere in the devicetree (sorted by bus topology and not
-by clock topology). So we either need more thinking in the clock
-framework to overcome the top-down registration or more thinking here
-in the registration of the clocks.
+         return r;
+  }
 
-Sascha
+Cheers,
 
+Hannes
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
