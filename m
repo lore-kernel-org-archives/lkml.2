@@ -1,73 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab1KITYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 14:24:37 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:36741 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752826Ab1KITYf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 14:24:35 -0500
-Message-ID: <4EBAD329.1020309@xenotime.net>
-Date: Wed, 09 Nov 2011 11:23:21 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1756623Ab1KIT3M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 14:29:12 -0500
+Received: from nox.prolixium.com ([64.16.214.60]:37961 "EHLO nox.prolixium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab1KIT3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 14:29:11 -0500
+X-Greylist: delayed 1912 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Nov 2011 14:29:11 EST
+Date: Wed, 9 Nov 2011 13:57:14 -0500
+From: Mark Kamichoff <prox@prolixium.com>
+To: Dan Williams <dcbw@redhat.com>
+Cc: oliver@neukum.name, gregkh@suse.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/usb: Misc. fixes for the LG-VL600 LTE USB modem
+Message-ID: <20111109185714.GA15884@prolixium.com>
+References: <1320808200-28209-1-git-send-email-prox@prolixium.com>
+ <1320861104.24903.4.camel@dcbw.foobar.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: linux-next: Tree for Nov 9 (build errors summary)
-References: <20111109135826.7f8270fb7151cf7939998942@canb.auug.org.au>
-In-Reply-To: <20111109135826.7f8270fb7151cf7939998942@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320861104.24903.4.camel@dcbw.foobar.com>
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: prox@prolixium.com
+X-SA-Exim-Scanned: No (on nox.prolixium.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 06:58 PM, Stephen Rothwell wrote:
-> Hi all,
+On Wed, Nov 09, 2011 at 11:51:44AM -0600, Dan Williams wrote:
+> On Tue, 2011-11-08 at 22:10 -0500, Mark Kamichoff wrote:
+> > Add checking for valid magic values (needed for stability in the event
+> > corrupted packets are received) and remove some other unneeded checks.
+> > Also, fix flagging device as WWAN (Bugzilla bug #39952).
+> > 
+> > Signed-off-by: Mark Kamichoff <prox@prolixium.com>
+> > ---
+> >  drivers/net/usb/cdc_ether.c |    2 +-
+> >  drivers/net/usb/lg-vl600.c  |   30 ++++++++++++++----------------
+> >  2 files changed, 15 insertions(+), 17 deletions(-)
+> > 
+> > diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+> > index c924ea2..99ed6eb 100644
+> > --- a/drivers/net/usb/cdc_ether.c
+> > +++ b/drivers/net/usb/cdc_ether.c
+> > @@ -567,7 +567,7 @@ static const struct usb_device_id	products [] = {
+> >  {
+> >  	USB_DEVICE_AND_INTERFACE_INFO(0x1004, 0x61aa, USB_CLASS_COMM,
+> >  			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+> > -	.driver_info = (unsigned long)&wwan_info,
+> > +	.driver_info = 0,
+> >  },
+> >  
+> >  /*
+> > diff --git a/drivers/net/usb/lg-vl600.c b/drivers/net/usb/lg-vl600.c
+> > index d43db32..b975a39 100644
+> > --- a/drivers/net/usb/lg-vl600.c
+> > +++ b/drivers/net/usb/lg-vl600.c
+> > @@ -144,10 +144,11 @@ static int vl600_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+> >  	}
+> >  
+> >  	frame = (struct vl600_frame_hdr *) buf->data;
+> > -	/* NOTE: Should check that frame->magic == 0x53544448?
+> > -	 * Otherwise if we receive garbage at the beginning of the frame
+> > -	 * we may end up allocating a huge buffer and saving all the
+> > -	 * future incoming data into it.  */
+> > +	/* Yes, check that frame->magic == 0x53544448 (or 0x44544d48),
+> > +	 * otherwise we may run out of memory w/a bad packet */
+> > +	if (ntohl(frame->magic) != 0x53544448 &&
+> > +			ntohl(frame->magic) != 0x44544d48)
+> > +		goto error;
+> >  
+> >  	if (buf->len < sizeof(*frame) ||
+> >  			buf->len != le32_to_cpup(&frame->len)) {
+> > @@ -209,8 +210,9 @@ static int vl600_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+> >  			 * for IPv6 packets, and set the ethertype to IPv6
+> >  			 * (0x86dd) so Linux can understand it.
+> >  			 */
+> > -			if ((buf->data[sizeof(*ethhdr)] & 0xf0) == 0x60)
+> > -				ethhdr->h_proto = __constant_htons(ETH_P_IPV6);
+> > +			if ((buf->data[sizeof(*ethhdr)] & 0xf0) == 0x60) {
+> > +				ethhdr->h_proto = htons(ETH_P_IPV6);
+> > +			}
+> 
+> This change seems somewhat gratuitous; what's the reason for (a) the
+> switch from __constant_htons() to plain htons() and (b) adding the {} ?
+> 
+> Dan
 
+For (a), it's my understanding that __constant_htons() should be used
+only for initializers and htons() used in other cases, since it handles
+checking for constants.  I suppose you're right and this is a little
+gratuitous, but I wanted to keep things clean.
 
-1.  on i386, when CONFIG_SMP is not enabled:
+As far as (b), sorry!  That's an error on my part.  I must have been
+practicing another coding style at the time.  The braces certainly
+shouldn't be there, let me know if I should resubmit.
 
-arch/x86/built-in.o: In function `hpet_setup_msi_irq':
-hpet.c:(.text+0x12114): undefined reference to `arch_setup_hpet_msi'
-hpet.c:(.text+0x12123): undefined reference to `destroy_irq'
-arch/x86/built-in.o: In function `hpet_msi_capability_lookup':
-hpet.c:(.text+0x121fb): undefined reference to `create_irq_nr'
-arch/x86/built-in.o:(.data+0x314): undefined reference to `native_setup_msi_irqs'
-arch/x86/built-in.o:(.data+0x318): undefined reference to `native_teardown_msi_irq'
-drivers/built-in.o: In function `dmar_set_interrupt':
-(.text+0x6307a): undefined reference to `create_irq'
-drivers/built-in.o: In function `dmar_set_interrupt':
-(.text+0x630a3): undefined reference to `arch_setup_dmar_msi'
-drivers/built-in.o: In function `dmar_set_interrupt':
-(.text+0x630c0): undefined reference to `destroy_irq'
-drivers/built-in.o: In function `free_dmar_iommu':
-(.text+0x65e19): undefined reference to `destroy_irq'
+- Mark
 
-2.  When ATA_SFF is enabled but ATA_BMDMA is not enabled:
-
-drivers/ata/libata-sff.c: In function 'ata_pci_init_one':
-drivers/ata/libata-sff.c:2538:3: error: implicit declaration of function 'ata_pci_bmdma_prepare_host'
-drivers/ata/libata-sff.c:2549:40: error: 'ata_bmdma_interrupt' undeclared (first use in this function)
-
-3.  on x86_64:
-
-ERROR: "intel_iommu_gfx_mapped" [drivers/char/agp/intel-gtt.ko] undefined!
-
-4.  when CONFIG_NET is not enabled:
-
-drivers/staging/et131x/et131x.c:5489:12: error: 'et131x_pci_setup' undeclared here (not in a function)
-
-patch should be in Greg's to-apply queue.
-
-
+> 
+> >  		}
+> >  
+> >  		if (count) {
+> > @@ -296,6 +298,11 @@ encapsulate:
+> >  	 * overwrite the remaining fields.
+> >  	 */
+> >  	packet = (struct vl600_pkt_hdr *) skb->data;
+> > +	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
+> > +	 * Since this modem only supports IPv4 and IPv6, just set all
+> > +	 * frames to 0x0800 (ETH_P_IP)
+> > +	 */
+> > +	packet->h_proto = htons(ETH_P_IP);
+> >  	memset(&packet->dummy, 0, sizeof(packet->dummy));
+> >  	packet->len = cpu_to_le32(orig_len);
+> >  
+> > @@ -308,21 +315,12 @@ encapsulate:
+> >  	if (skb->len < full_len) /* Pad */
+> >  		skb_put(skb, full_len - skb->len);
+> >  
+> > -	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
+> > -	 * Check if this is an IPv6 packet, and set the ethertype
+> > -	 * to 0x800
+> > -	 */
+> > -	if ((skb->data[sizeof(struct vl600_pkt_hdr *) + 0x22] & 0xf0) == 0x60) {
+> > -		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x20] = 0x08;
+> > -		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x21] = 0;
+> > -	}
+> > -
+> >  	return skb;
+> >  }
+> >  
+> >  static const struct driver_info	vl600_info = {
+> >  	.description	= "LG VL600 modem",
+> > -	.flags		= FLAG_ETHER | FLAG_RX_ASSEMBLE,
+> > +	.flags		= FLAG_RX_ASSEMBLE | FLAG_WWAN,
+> >  	.bind		= vl600_bind,
+> >  	.unbind		= vl600_unbind,
+> >  	.status		= usbnet_cdc_status,
+> 
+> 
+> 
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Mark Kamichoff
+prox@prolixium.com
+http://www.prolixium.com/
