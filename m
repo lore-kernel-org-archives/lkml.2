@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934380Ab1KJDY1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:24:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42035 "EHLO mx2.suse.de"
+	id S934454Ab1KJFRc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:17:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42050 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933935Ab1KJDYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:21 -0500
+	id S933935Ab1KJDY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
-Message-Id: <20111109212709.150670406@clark.kroah.org>
+Message-Id: <20111109212709.336176239@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:48 -0800
+Date: Wed, 09 Nov 2011 13:26:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
-Subject: [086/262] md/raid5: fix bug that could result in reads from a failed device.
+        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
+Subject: [088/262] tracing: Fix returning of duplicate data after EOF in trace_pipe_raw
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +24,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Steven Rostedt <srostedt@redhat.com>
 
-commit 355840e7a7e56bb2834fd3b0da64da5465f8aeaa upstream.
+commit 436fc280261dcfce5af38f08b89287750dc91cd2 upstream.
 
-This bug was introduced in 415e72d034c50520ddb7ff79e7d1792c1306f0c9
-which was in 2.6.36.
+The trace_pipe_raw handler holds a cached page from the time the file
+is opened to the time it is closed. The cached page is used to handle
+the case of the user space buffer being smaller than what was read from
+the ring buffer. The left over buffer is held in the cache so that the
+next read will continue where the data left off.
 
-There is a small window of time between when a device fails and when
-it is removed from the array.  During this time we might still read
-from it, but we won't write to it - so it is possible that we could
-read stale data.
+After EOF is returned (no more data in the buffer), the index of
+the cached page is set to zero. If a user app reads the page again
+after EOF, the check in the buffer will see that the cached page
+is less than page size and will return the cached page again. This
+will cause reading the trace_pipe_raw again after EOF to return
+duplicate data, making the output look like the time went backwards
+but instead data is just repeated.
 
-We didn't need the test of 'Faulty' before because the test on
-In_sync is sufficient.  Since we started allowing reads from the early
-part of non-In_sync devices we need a test on Faulty too.
+The fix is to not reset the index right after all data is read
+from the cache, but to reset it after all data is read and more
+data exists in the ring buffer.
 
-This is suitable for any kernel from 2.6.36 onwards, though the patch
-might need a bit of tweaking in 3.0 and earlier.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Reported-by: Jeremy Eder <jeder@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/raid5.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -3369,7 +3369,7 @@ static void handle_stripe6(struct stripe
- 			/* Not in-sync */;
- 		else if (test_bit(In_sync, &rdev->flags))
- 			set_bit(R5_Insync, &dev->flags);
--		else {
-+		else if (!test_bit(Faulty, &rdev->flags)) {
- 			/* in sync if before recovery_offset */
- 			if (sh->sector + STRIPE_SECTORS <= rdev->recovery_offset)
- 				set_bit(R5_Insync, &dev->flags);
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3704,8 +3704,6 @@ tracing_buffers_read(struct file *filp,
+ 	if (info->read < PAGE_SIZE)
+ 		goto read;
+ 
+-	info->read = 0;
+-
+ 	trace_access_lock(info->cpu);
+ 	ret = ring_buffer_read_page(info->tr->buffer,
+ 				    &info->spare,
+@@ -3715,6 +3713,8 @@ tracing_buffers_read(struct file *filp,
+ 	if (ret < 0)
+ 		return 0;
+ 
++	info->read = 0;
++
+ read:
+ 	size = PAGE_SIZE - info->read;
+ 	if (size > count)
 
 
