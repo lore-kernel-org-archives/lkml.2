@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964789Ab1KJEnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:43:41 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54793 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933589Ab1KJEni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 23:43:38 -0500
-Date: Wed, 9 Nov 2011 20:43:34 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5]thp: improve the error code path
-In-Reply-To: <20111110030646.GT5075@redhat.com>
-Message-ID: <alpine.DEB.2.00.1111092039110.27280@chino.kir.corp.google.com>
-References: <1319511521.22361.135.camel@sli10-conroe> <20111025114406.GC10182@redhat.com> <1319593680.22361.145.camel@sli10-conroe> <1320643049.22361.204.camel@sli10-conroe> <20111110021853.GQ5075@redhat.com> <1320892395.22361.229.camel@sli10-conroe>
- <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com> <20111110030646.GT5075@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S964791Ab1KJEnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:43:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43281 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935758Ab1KJDea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:34:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:25 2011
+Message-Id: <20111109212725.728673269@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 09 Nov 2011 13:29:32 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Richard Cochran <richard.cochran@omicron.at>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [250/262] dp83640: use proper function to free transmit time stamping packets
+In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Nov 2011, Andrea Arcangeli wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> Before after won't matter much I guess... If you really want to clean
-> the code, I wonder what is exactly the point of those dummy functions
-> if we can't call those outside of #ifdefs.
+------------------
 
-You can, you just need to declare the actuals that you pass to the dummy 
-functions for CONFIG_SYSFS=n as well.  Or, convert the dummy functions to 
-do
+From: Richard Cochran <richardcochran@gmail.com>
 
-	#define sysfs_remove_group(kobj, grp) do {} while (0)
+commit f5ff7cd1a84caa9545d952a37ac872ccb73825fb upstream.
 
-but good luck getting that passed Andrew :)
+The previous commit enforces a new rule for handling the cloned packets
+for transmit time stamping. These packets must not be freed using any other
+function than skb_complete_tx_timestamp. This commit fixes the one and only
+driver using this API.
 
-> I mean a cleanup that adds
-> more #ifdefs when there are explicit dummy functions which I assume
-> are meant to be used outside of #ifdef CONFIG_SYSFS doesn't sound so
-> clean in the first place. I understand you need to refactor the code
-> above to call those outside of #ifdefs but hey if you're happy with
-> #ifdef I'm happy too :). It just looks fishy to read sysfs.h dummy
-> functions and #ifdefs. When I wrote the code I hardly could have
-> wondered about the sysfs #ifdefs but at this point it's only cleanups
-> I'm seeing so I actually noticed that.
-> 
+The driver first appeared in v3.0.
 
-The cleaniest solution would probably be to just extract all the calls 
-that depend on CONFIG_SYSFS out of hugepage_init(), call it 
-hugepage_sysfs_init(), and then return a failure code if it fails to setup 
-then do the error handling there.  hugepage_sysfs_init() would be defined 
-right after the attributes are defined.
+Signed-off-by: Richard Cochran <richard.cochran@omicron.at>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/phy/dp83640.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -1067,7 +1067,7 @@ static void dp83640_txtstamp(struct phy_
+ 	struct dp83640_private *dp83640 = phydev->priv;
+ 
+ 	if (!dp83640->hwts_tx_en) {
+-		kfree_skb(skb);
++		skb_complete_tx_timestamp(skb, NULL);
+ 		return;
+ 	}
+ 	skb_queue_tail(&dp83640->tx_queue, skb);
+
+
