@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933772Ab1KJF3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:29:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41605 "EHLO mx2.suse.de"
+	id S933700Ab1KJDUV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:20:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41593 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933703Ab1KJDUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
-Message-Id: <20111109212702.500748134@clark.kroah.org>
+	id S933607Ab1KJDUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:16 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:00 2011
+Message-Id: <20111109212700.501339341@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:44 -0800
+Date: Wed, 09 Nov 2011 13:25:24 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [022/262] drm/radeon/kms: bail early in dvi_detect for digital only connectors
+        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <smfrench@gmail.com>
+Subject: [002/262] CIFS: Fix DFS handling in cifs_get_file_info
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit 5f0a26128d66ef81613fe923d5c288942844ccdc upstream.
+commit 42274bb22afc3e877ae5abed787b0b09d7dede52 upstream.
 
-DVI-D and HDMI-A are digital only, so there's no need to
-attempt analog load detect.  Also, skip bail before the
-!force check, or we fail to get a disconnect events.
-The next patches in the series attempt to fix disconnect
-events for connectors with analog support (DVI-I, HDMI-B,
-DVI-A).
+We should call cifs_all_info_to_fattr in rc == 0 case only.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=41561
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ fs/cifs/inode.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -950,6 +950,11 @@ radeon_dvi_detect(struct drm_connector *
- 	if ((ret == connector_status_connected) && (radeon_connector->use_digital == true))
- 		goto out;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -562,7 +562,16 @@ int cifs_get_file_info(struct file *filp
  
-+	/* DVI-D and HDMI-A are digital only */
-+	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVID) ||
-+	    (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA))
-+		goto out;
-+
- 	if (!force) {
- 		ret = connector->status;
- 		goto out;
+ 	xid = GetXid();
+ 	rc = CIFSSMBQFileInfo(xid, tcon, cfile->netfid, &find_data);
+-	if (rc == -EOPNOTSUPP || rc == -EINVAL) {
++	switch (rc) {
++	case 0:
++		cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
++		break;
++	case -EREMOTE:
++		cifs_create_dfs_fattr(&fattr, inode->i_sb);
++		rc = 0;
++		break;
++	case -EOPNOTSUPP:
++	case -EINVAL:
+ 		/*
+ 		 * FIXME: legacy server -- fall back to path-based call?
+ 		 * for now, just skip revalidating and mark inode for
+@@ -570,18 +579,14 @@ int cifs_get_file_info(struct file *filp
+ 		 */
+ 		rc = 0;
+ 		CIFS_I(inode)->time = 0;
++	default:
+ 		goto cgfi_exit;
+-	} else if (rc == -EREMOTE) {
+-		cifs_create_dfs_fattr(&fattr, inode->i_sb);
+-		rc = 0;
+-	} else if (rc)
+-		goto cgfi_exit;
++	}
+ 
+ 	/*
+ 	 * don't bother with SFU junk here -- just mark inode as needing
+ 	 * revalidation.
+ 	 */
+-	cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
+ 	fattr.cf_uniqueid = CIFS_I(inode)->uniqueid;
+ 	fattr.cf_flags |= CIFS_FATTR_NEED_REVAL;
+ 	cifs_fattr_to_inode(inode, &fattr);
 
 
