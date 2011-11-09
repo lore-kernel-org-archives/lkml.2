@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934200Ab1KJDXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:23:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41915 "EHLO mx2.suse.de"
+	id S934233Ab1KJDX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:23:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41922 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934162Ab1KJDXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:23:14 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:04 2011
-Message-Id: <20111109212704.122095435@clark.kroah.org>
+	id S934195Ab1KJDXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:23:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
+Message-Id: <20111109212703.186296522@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:00 -0800
+Date: Wed, 09 Nov 2011 13:25:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nelson Elhage <nelhage@nelhage.com>,
-        Jason Baron <jbaron@redhat.com>, Dave Jones <davej@redhat.com>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: [038/262] epoll: fix spurious lockdep warnings
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [029/262] [SCSI] ipr: Always initiate hard reset in kdump kernel
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,137 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nelson Elhage <nelhage@nelhage.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit d8805e633e054c816c47cb6e727c81f156d9253d upstream.
+commit 5d7c20b7fa5c6ca19e871b4050e321c99d32bd43 upstream.
 
-epoll can acquire recursively acquire ep->mtx on multiple "struct
-eventpoll"s at once in the case where one epoll fd is monitoring another
-epoll fd.  This is perfectly OK, since we're careful about the lock
-ordering, but it causes spurious lockdep warnings.  Annotate the recursion
-using mutex_lock_nested, and add a comment explaining the nesting rules
-for good measure.
+During kdump testing I noticed timeouts when initialising each IPR
+adapter. While the driver has logic to detect an adapter in an
+indeterminate state, it wasn't triggering and each adapter went
+through a 5 minute timeout before finally going operational.
 
-Recent versions of systemd are triggering this, and it can also be
-demonstrated with the following trivial test program:
+Some analysis showed the needs_hard_reset flag wasn't getting set.
+We can check the reset_devices kernel parameter which is set by
+kdump and force a full reset. This fixes the problem.
 
---------------------8<--------------------
-
-int main(void) {
-   int e1, e2;
-   struct epoll_event evt = {
-       .events = EPOLLIN
-   };
-
-   e1 = epoll_create1(0);
-   e2 = epoll_create1(0);
-   epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
-   return 0;
-}
---------------------8<--------------------
-
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Tested-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
-Acked-by: Jason Baron <jbaron@redhat.com>
-Cc: Dave Jones <davej@redhat.com>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: Brian King <brking@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/eventpoll.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ drivers/scsi/ipr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -70,6 +70,15 @@
-  * simultaneous inserts (A into B and B into A) from racing and
-  * constructing a cycle without either insert observing that it is
-  * going to.
-+ * It is necessary to acquire multiple "ep->mtx"es at once in the
-+ * case when one epoll fd is added to another. In this case, we
-+ * always acquire the locks in the order of nesting (i.e. after
-+ * epoll_ctl(e1, EPOLL_CTL_ADD, e2), e1->mtx will always be acquired
-+ * before e2->mtx). Since we disallow cycles of epoll file
-+ * descriptors, this ensures that the mutexes are well-ordered. In
-+ * order to communicate this nesting to lockdep, when walking a tree
-+ * of epoll file descriptors, we use the current recursion depth as
-+ * the lockdep subkey.
-  * It is possible to drop the "ep->mtx" and to use the global
-  * mutex "epmutex" (together with "ep->lock") to have it working,
-  * but having "ep->mtx" will make the interface more scalable.
-@@ -464,13 +473,15 @@ static void ep_unregister_pollwait(struc
-  * @ep: Pointer to the epoll private data structure.
-  * @sproc: Pointer to the scan callback.
-  * @priv: Private opaque data passed to the @sproc callback.
-+ * @depth: The current depth of recursive f_op->poll calls.
-  *
-  * Returns: The same integer error code returned by the @sproc callback.
-  */
- static int ep_scan_ready_list(struct eventpoll *ep,
- 			      int (*sproc)(struct eventpoll *,
- 					   struct list_head *, void *),
--			      void *priv)
-+			      void *priv,
-+			      int depth)
- {
- 	int error, pwake = 0;
- 	unsigned long flags;
-@@ -481,7 +492,7 @@ static int ep_scan_ready_list(struct eve
- 	 * We need to lock this because we could be hit by
- 	 * eventpoll_release_file() and epoll_ctl().
- 	 */
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, depth);
- 
- 	/*
- 	 * Steal the ready list, and re-init the original one to the
-@@ -670,7 +681,7 @@ static int ep_read_events_proc(struct ev
- 
- static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
- {
--	return ep_scan_ready_list(priv, ep_read_events_proc, NULL);
-+	return ep_scan_ready_list(priv, ep_read_events_proc, NULL, call_nests + 1);
- }
- 
- static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
-@@ -737,7 +748,7 @@ void eventpoll_release_file(struct file
- 
- 		ep = epi->ep;
- 		list_del_init(&epi->fllink);
--		mutex_lock(&ep->mtx);
-+		mutex_lock_nested(&ep->mtx, 0);
- 		ep_remove(ep, epi);
- 		mutex_unlock(&ep->mtx);
- 	}
-@@ -1134,7 +1145,7 @@ static int ep_send_events(struct eventpo
- 	esed.maxevents = maxevents;
- 	esed.events = events;
- 
--	return ep_scan_ready_list(ep, ep_send_events_proc, &esed);
-+	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0);
- }
- 
- static inline struct timespec ep_set_mstimeout(long ms)
-@@ -1267,7 +1278,7 @@ static int ep_loop_check_proc(void *priv
- 	struct rb_node *rbp;
- 	struct epitem *epi;
- 
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, call_nests + 1);
- 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
- 		epi = rb_entry(rbp, struct epitem, rbn);
- 		if (unlikely(is_file_epoll(epi->ffd.file))) {
-@@ -1409,7 +1420,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
- 	}
- 
- 
--	mutex_lock(&ep->mtx);
-+	mutex_lock_nested(&ep->mtx, 0);
- 
- 	/*
- 	 * Try to lookup the file inside our RB tree, Since we grabbed "mtx"
+--- a/drivers/scsi/ipr.c
++++ b/drivers/scsi/ipr.c
+@@ -8812,7 +8812,7 @@ static int __devinit ipr_probe_ioa(struc
+ 	uproc = readl(ioa_cfg->regs.sense_uproc_interrupt_reg32);
+ 	if ((mask & IPR_PCII_HRRQ_UPDATED) == 0 || (uproc & IPR_UPROCI_RESET_ALERT))
+ 		ioa_cfg->needs_hard_reset = 1;
+-	if (interrupts & IPR_PCII_ERROR_INTERRUPTS)
++	if ((interrupts & IPR_PCII_ERROR_INTERRUPTS) || reset_devices)
+ 		ioa_cfg->needs_hard_reset = 1;
+ 	if (interrupts & IPR_PCII_IOA_UNIT_CHECKED)
+ 		ioa_cfg->ioa_unit_checked = 1;
 
 
