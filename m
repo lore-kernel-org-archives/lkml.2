@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966151Ab1KJDxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:53:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45198 "EHLO mx2.suse.de"
+	id S936141Ab1KJDsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:48:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45168 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966059Ab1KJDs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:48:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:08 2011
-Message-Id: <20111109213208.543628761@clark.kroah.org>
+	id S966037Ab1KJDsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:48:42 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:05 2011
+Message-Id: <20111109213205.049578197@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:35:05 -0800
+Date: Wed, 09 Nov 2011 13:34:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, jeffbrown@android.com,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [258/264] HID: hid-multitouch: Add LG Display Multitouch device.
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [224/264] NFS/sunrpc: dont use a credential with extra groups.
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Brown <jeffbrown@android.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c50bb1a4005630f47b5da26336f74a485033a515 upstream.
+commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
 
-This panel is also known as the Dell ST2220Tc.
+The sunrpc layer keeps a cache of recently used credentials and
+'unx_match' is used to find the credential which matches the current
+process.
 
-Signed-off-by: jeffbrown@android.com
-Reviewed-By: Benjamin Tissoires <Benjamin_Tissoires@logitech.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+However unx_match allows a match when the cached credential has extra
+groups at the end of uc_gids list which are not in the process group list.
+
+So if a process with a list of (say) 4 group accesses a file and gains
+access because of the last group in the list, then another process
+with the same uid and gid, and a gid list being the first tree of the
+gids of the original process tries to access the file, it will be
+granted access even though it shouldn't as the wrong rpc credential
+will be used.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/Kconfig          |    1 +
- drivers/hid/hid-core.c       |    1 +
- drivers/hid/hid-ids.h        |    3 +++
- drivers/hid/hid-multitouch.c |    5 +++++
- 4 files changed, 10 insertions(+)
+ net/sunrpc/auth_unix.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -328,6 +328,7 @@ config HID_MULTITOUCH
- 	  - Hanvon dual touch panels
- 	  - Ilitek dual touch panels
- 	  - IrTouch Infrared USB panels
-+	  - LG Display panels (Dell ST2220Tc)
- 	  - Lumio CrystalTouch panels
- 	  - MosArt dual-touch panels
- 	  - PenMount dual touch panels
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1399,6 +1399,7 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LABTEC, USB_DEVICE_ID_LABTEC_WIRELESS_KEYBOARD) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LCPOWER, USB_DEVICE_ID_LCPOWER_LC1000 ) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_LG, USB_DEVICE_ID_LG_MULTITOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_MX3000_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_LOGITECH, USB_DEVICE_ID_S510_RECEIVER_2) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -426,6 +426,9 @@
- #define USB_DEVICE_ID_LD_HYBRID		0x2090
- #define USB_DEVICE_ID_LD_HEATCONTROL	0x20A0
+--- a/net/sunrpc/auth_unix.c
++++ b/net/sunrpc/auth_unix.c
+@@ -129,6 +129,9 @@ unx_match(struct auth_cred *acred, struc
+ 	for (i = 0; i < groups ; i++)
+ 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
+ 			return 0;
++	if (groups < NFS_NGROUPS &&
++	    cred->uc_gids[groups] != NOGROUP)
++		return 0;
+ 	return 1;
+ }
  
-+#define USB_VENDOR_ID_LG		0x1fd2
-+#define USB_DEVICE_ID_LG_MULTITOUCH	0x0064
-+
- #define USB_VENDOR_ID_LOGITECH		0x046d
- #define USB_DEVICE_ID_LOGITECH_RECEIVER	0xc101
- #define USB_DEVICE_ID_LOGITECH_HARMONY_FIRST  0xc110
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
-@@ -672,6 +672,11 @@ static const struct hid_device_id mt_dev
- 		HID_USB_DEVICE(USB_VENDOR_ID_IRTOUCHSYSTEMS,
- 			USB_DEVICE_ID_IRTOUCH_INFRARED_USB) },
- 
-+	/* LG Display panels */
-+	{ .driver_data = MT_CLS_DEFAULT,
-+		HID_USB_DEVICE(USB_VENDOR_ID_LG,
-+			USB_DEVICE_ID_LG_MULTITOUCH) },
-+
- 	/* Lumio panels */
- 	{ .driver_data = MT_CLS_CONFIDENCE_MINUS_ONE,
- 		HID_USB_DEVICE(USB_VENDOR_ID_LUMIO,
 
 
