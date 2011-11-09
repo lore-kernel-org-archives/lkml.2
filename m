@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936023Ab1KJEb1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:31:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43881 "EHLO mx2.suse.de"
+	id S965021Ab1KJDh4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:37:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43860 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934065Ab1KJDiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:00 -0500
+	id S935925Ab1KJDhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:37:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:45 2011
-Message-Id: <20111109213145.329858250@clark.kroah.org>
+Message-Id: <20111109213145.023033695@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:19 -0800
+Date: Wed, 09 Nov 2011 13:31:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jack Wang <jack_wang@usish.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [032/264] [SCSI] libsas: set sas_address and device type of rphy
+        alan@lxorguk.ukuu.org.uk, Josh Boyer <jwboyer@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [029/264] PCI quirk: mmc: Always check for lower base frequency quirk for Ricoh 1180:e823
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Wang <jack_wang@usish.com>
+From: Josh Boyer <jwboyer@redhat.com>
 
-commit bb041a0e9c31229071b6e56e1d0d8374af0d2038 upstream.
+commit 3e309cdf07c930f29a4e0f233e47d399bea34c68 upstream.
 
-Libsas forget to set the sas_address and device type of rphy lead to file
-under /sys/class/sas_x show wrong value, fix that.
+Commit 15bed0f2f added a quirk for the e823 Ricoh card reader to lower the
+base frequency.  However, the quirk first checks to see if the proprietary
+MMC controller is disabled, and returns if so.  On some devices, such as the
+Lenovo X220, the MMC controller is already disabled by firmware it seems,
+but the frequency change is still needed so sdhci-pci can talk to the cards.
+Since the MMC controller is disabled, the frequency fixup was never being run
+on these machines.
 
-Signed-off-by: Jack Wang <jack_wang@usish.com>
-Tested-by: Crystal Yu <crystal_yu@usish.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+This moves the e823 check above the MMC controller check so that it always
+gets run.
+
+This fixes https://bugzilla.redhat.com/show_bug.cgi?id=722509
+
+Signed-off-by: Josh Boyer <jwboyer@redhat.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_expander.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/quirks.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -199,6 +199,8 @@ static void sas_set_ex_phy(struct domain
- 	phy->virtual = dr->virtual;
- 	phy->last_da_index = -1;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2745,20 +2745,6 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	/* disable must be done via function #0 */
+ 	if (PCI_FUNC(dev->devfn))
+ 		return;
+-
+-	pci_read_config_byte(dev, 0xCB, &disable);
+-
+-	if (disable & 0x02)
+-		return;
+-
+-	pci_read_config_byte(dev, 0xCA, &write_enable);
+-	pci_write_config_byte(dev, 0xCA, 0x57);
+-	pci_write_config_byte(dev, 0xCB, disable | 0x02);
+-	pci_write_config_byte(dev, 0xCA, write_enable);
+-
+-	dev_notice(&dev->dev, "proprietary Ricoh MMC controller disabled (via firewire function)\n");
+-	dev_notice(&dev->dev, "MMC cards are now supported by standard SDHCI controller\n");
+-
+ 	/*
+ 	 * RICOH 0xe823 SD/MMC card reader fails to recognize
+ 	 * certain types of SD/MMC cards. Lowering the SD base
+@@ -2781,6 +2767,20 @@ static void ricoh_mmc_fixup_r5c832(struc
  
-+	phy->phy->identify.sas_address = SAS_ADDR(phy->attached_sas_addr);
-+	phy->phy->identify.device_type = phy->attached_dev_type;
- 	phy->phy->identify.initiator_port_protocols = phy->attached_iproto;
- 	phy->phy->identify.target_port_protocols = phy->attached_tproto;
- 	phy->phy->identify.phy_identifier = phy_id;
+ 		dev_notice(&dev->dev, "MMC controller base frequency changed to 50Mhz.\n");
+ 	}
++
++	pci_read_config_byte(dev, 0xCB, &disable);
++
++	if (disable & 0x02)
++		return;
++
++	pci_read_config_byte(dev, 0xCA, &write_enable);
++	pci_write_config_byte(dev, 0xCA, 0x57);
++	pci_write_config_byte(dev, 0xCB, disable | 0x02);
++	pci_write_config_byte(dev, 0xCA, write_enable);
++
++	dev_notice(&dev->dev, "proprietary Ricoh MMC controller disabled (via firewire function)\n");
++	dev_notice(&dev->dev, "MMC cards are now supported by standard SDHCI controller\n");
++
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
 
 
