@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab1KIL6N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 06:58:13 -0500
-Received: from nm3-vm0.bullet.mail.in.yahoo.com ([121.101.151.212]:40919 "HELO
-	nm3-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751972Ab1KIL6L convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 06:58:11 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 362709.80976.bm@omp1003.mail.in.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=6ikn4bOzPEX2/puusWOgRqpKP7f3xy5oIzBUPgqE6d9geH7MfRQ/qw1OAEvps65bt5MyN0H2NljfK4DaPz41RmP7ZbQpEZUH+KlKwmXeveDIm16MXCOvfBl7KXHk6jGMEMqnhS5pqtpudCynxt10ls7/TxsPz4KyLkw+wX+N/zo=;
-X-YMail-OSG: 2yBapIUVM1l2XAjYUOqzKV24em1Ba.t4nxEJT6Xw2ACsPoH
- 0AygDsPFp0YVS7viMYWrkb.29wN15oDJGfEXzYjIsn04DYEkQrv5bM5tAuZF
- .ONG2MWML6poF50iZaQ0FszVSBhazhExDq_ZPD00At4T6IIZwPuiMCE7g7E7
- xtZQh6heRHtMama2cC561xdkBNgDvsGYPGW5a2o02eDBNybTpsT.WJiURXAK
- yOoKhDemcqGWkH.EAvOD85Ri6B2zAoOVKt6X7Zbw7fA8XisiByh29t9dmy5m
- zNPcYdxbN5jLH3aAfEjfx15fuGbUXrobkTXiUK.An5j6zyt7w5.E4BXpS3mI
- 9YtSR.LyEO8E5cGqvNYx9oxOihLTCPIlrxetNM6cA4sA2y3lgKJ90Fy95g.0
- vlB_SCxuLgI9IgyVwWMpKdZgTjPN5JDpVguX3VslOkoyDiXZ8HNeaCv4WmaB
- t2WdW.hes556iXaKb33MsGF3ziO.7bQ_nxdXoxrJ1thnWYx512s8rfMu9myl
- 6Rmq7kTq.DgDbAZO4HEKjVXQ-
-X-Mailer: YahooMailWebService/0.8.115.325013
-Message-ID: <1320839887.53468.yint-ygo-j2me@web94704.mail.in2.yahoo.com>
-Date: Wed, 9 Nov 2011 17:28:07 +0530 (IST)
-From: pradeep Annavarapu <asnvpradeep@yahoo.com>
-Subject: Re: 
-To: lavi2905@yahoo.com, leelaratnam@yahoo.com, lillian.gonzalez@njit.edu,
-        linux-kernel@vger.kernel.org, linux-newbie@vger.kernel.org,
-        linux-serial@vger.kernel.org, lucky@takrer.com, manchidevi@yahoo.co.in
+	id S1753827Ab1KIL70 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 06:59:26 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:35338 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751946Ab1KIL7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 06:59:25 -0500
+Message-ID: <4EBA6AF7.4020509@parallels.com>
+Date: Wed, 9 Nov 2011 09:58:47 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Wagin <avagin@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
+        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
+        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>, <pjt@google.com>,
+        <fweisbec@gmail.com>, Balbir Singh <bsingharora@gmail.com>
+Subject: Re: [PATCH v2 13/14] provide a version of cpuusage statistics inside
+ cpu cgroup
+References: <1320182360-20043-1-git-send-email-glommer@parallels.com> <1320182360-20043-14-git-send-email-glommer@parallels.com> <CANaxB-xQcqcZo5m7CJkCHrWj_TS4dyzYemPvrqZ25TaqK2tWYQ@mail.gmail.com>
+In-Reply-To: <CANaxB-xQcqcZo5m7CJkCHrWj_TS4dyzYemPvrqZ25TaqK2tWYQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.passionchapel.org/group.php?id=53&top=49&page=21
+On 11/09/2011 09:51 AM, Andrew Wagin wrote:
+> Hi Glauber,
+>
+>> diff --git a/kernel/sched.c b/kernel/sched.c
+>> index d93cfd4..b9296cd 100644
+>> --- a/kernel/sched.c
+>> +++ b/kernel/sched.c
+>> @@ -303,6 +303,7 @@ struct task_group {
+>>
+>>         struct cfs_bandwidth cfs_bandwidth;
+>>         struct kernel_cpustat __percpu *cpustat;
+>> +       u64 __percpu *cpuusage;
+>
+> I can't find where you use this variable, probably it may be removed.
+
+Indeed.
+This is a leftover from the previous attempt.
