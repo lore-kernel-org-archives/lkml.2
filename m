@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935267Ab1KJE4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:56:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42774 "EHLO mx2.suse.de"
+	id S935283Ab1KJE4q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:56:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42764 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934899Ab1KJDap (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:30:45 -0500
+	id S935210Ab1KJDaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:30:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:20 2011
-Message-Id: <20111109212720.521834665@clark.kroah.org>
+Message-Id: <20111109212720.335622964@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:40 -0800
+Date: Wed, 09 Nov 2011 13:28:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerome Glisse <jglisse@redhat.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Subject: [198/262] drm/radeon: avoid bouncing connector status btw disconnected & unknown
+        alan@lxorguk.ukuu.org.uk, Charles Chin <Charles.Chin@idt.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [196/262] ALSA: hda - Add support for 92HD65 / 92HD66 family of codecs
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerome Glisse <jglisse@redhat.com>
+From: Charles Chin <Charles.Chin@idt.com>
 
-commit 340764465aa4a586ca332e61ae64883e5ad6f183 upstream.
+commit ad5d8755116b431f0709c745ee17cb567a478d43 upstream.
 
-Since force handling rework of d0d0a225e6ad43314c9aa7ea081f76adc5098ad4
-we could end up bouncing connector status btw disconnected and unknown.
-When connector status change a call to output_poll_changed happen which
-in turn ask again for detect but with force set.
+These codecs have SPDIF-in, which is new to the 92HD83xxx compatible
+families, so a bit of logic is added to support them.
 
-So set the load detect flags whenever we report the connector as
-connected or unknown this avoid bouncing btw disconnected and unknown.
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Cc: Stefan Lippers-Hollmann <s.L-H@gmx.de>
+Signed-off-by: Charles Chin <Charles.Chin@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -755,7 +755,7 @@ radeon_vga_detect(struct drm_connector *
- 		if (radeon_connector->dac_load_detect && encoder) {
- 			encoder_funcs = encoder->helper_private;
- 			ret = encoder_funcs->detect(encoder, connector);
--			if (ret == connector_status_connected)
-+			if (ret != connector_status_disconnected)
- 				radeon_connector->detected_by_load = true;
- 		}
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -5486,7 +5486,11 @@ again:
  	}
-@@ -996,8 +996,9 @@ radeon_dvi_detect(struct drm_connector *
- 					ret = encoder_funcs->detect(encoder, connector);
- 					if (ret == connector_status_connected) {
- 						radeon_connector->use_digital = false;
--						radeon_connector->detected_by_load = true;
- 					}
-+					if (ret != connector_status_disconnected)
-+						radeon_connector->detected_by_load = true;
- 				}
- 				break;
- 			}
+ #endif	
+ 
+-	err = stac92xx_parse_auto_config(codec, 0x1d, 0);
++	/* 92HD65/66 series has S/PDIF-IN */
++	if (codec->vendor_id >= 0x111d76e8 && codec->vendor_id <= 0x111d76f3)
++		err = stac92xx_parse_auto_config(codec, 0x1d, 0x22);
++	else
++		err = stac92xx_parse_auto_config(codec, 0x1d, 0);
+ 	if (!err) {
+ 		if (spec->board_config < 0) {
+ 			printk(KERN_WARNING "hda_codec: No auto-config is "
+@@ -6369,6 +6373,18 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x111d76e3, .name = "92HD98BXX", .patch = patch_stac92hd83xxx},
+ 	{ .id = 0x111d76e5, .name = "92HD99BXX", .patch = patch_stac92hd83xxx},
+ 	{ .id = 0x111d76e7, .name = "92HD90BXX", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76e8, .name = "92HD66B1X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76e9, .name = "92HD66B2X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ea, .name = "92HD66B3X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76eb, .name = "92HD66C1X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ec, .name = "92HD66C2X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ed, .name = "92HD66C3X5", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ee, .name = "92HD66B1X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76ef, .name = "92HD66B2X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f0, .name = "92HD66B3X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f1, .name = "92HD66C1X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f2, .name = "92HD66C2X3", .patch = patch_stac92hd83xxx},
++	{ .id = 0x111d76f3, .name = "92HD66C3/65", .patch = patch_stac92hd83xxx},
+ 	{} /* terminator */
+ };
+ 
 
 
