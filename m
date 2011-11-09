@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965391Ab1KJDl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:41:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44346 "EHLO mx2.suse.de"
+	id S1757096Ab1KJDly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:41:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44339 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965376Ab1KJDlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:41:51 -0500
+	id S965372Ab1KJDls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:41:48 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:55 2011
-Message-Id: <20111109213155.487430594@clark.kroah.org>
+Message-Id: <20111109213155.372957433@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:00 -0800
+Date: Wed, 09 Nov 2011 13:32:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [133/264] [S390] ccwgroup: move attributes to attribute group
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [132/264] [S390] memory leak with RCU_TABLE_FREE
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,125 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit dbdf1afcaaabe83dea15a3cb9b9013e73ae3b1ad upstream.
+commit e73b7fffe487c315fd1a4fa22282e3362b440a06 upstream.
 
-Put sysfs attributes of ccwgroup devices in an attribute group to
-ensure that these attributes are actually present when userspace
-is notified via uevents.
+The rcu page table free code uses a couple of bits in the page table
+pointer passed to tlb_remove_table to discern the different page table
+types. __tlb_remove_table extracts the type with an incorrect mask which
+leads to memory leaks. The correct mask is ((FRAG_MASK << 4) | FRAG_MASK).
 
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/s390/cio/ccwgroup.c |   42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+ arch/s390/mm/pgtable.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/cio/ccwgroup.c
-+++ b/drivers/s390/cio/ccwgroup.c
-@@ -87,6 +87,12 @@ static void __ccwgroup_remove_cdev_refs(
- 	}
- }
+--- a/arch/s390/mm/pgtable.c
++++ b/arch/s390/mm/pgtable.c
+@@ -662,8 +662,9 @@ void page_table_free_rcu(struct mmu_gath
  
-+static ssize_t ccwgroup_online_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count);
-+static ssize_t ccwgroup_online_show(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf);
- /*
-  * Provide an 'ungroup' attribute so the user can remove group devices no
-  * longer needed or accidentially created. Saves memory :)
-@@ -134,6 +140,20 @@ out:
- }
- 
- static DEVICE_ATTR(ungroup, 0200, NULL, ccwgroup_ungroup_store);
-+static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
-+
-+static struct attribute *ccwgroup_attrs[] = {
-+	&dev_attr_online.attr,
-+	&dev_attr_ungroup.attr,
-+	NULL,
-+};
-+static struct attribute_group ccwgroup_attr_group = {
-+	.attrs = ccwgroup_attrs,
-+};
-+static const struct attribute_group *ccwgroup_attr_groups[] = {
-+	&ccwgroup_attr_group,
-+	NULL,
-+};
- 
- static void
- ccwgroup_release (struct device *dev)
-@@ -293,25 +313,17 @@ int ccwgroup_create_from_string(struct d
- 	}
- 
- 	dev_set_name(&gdev->dev, "%s", dev_name(&gdev->cdev[0]->dev));
--
-+	gdev->dev.groups = ccwgroup_attr_groups;
- 	rc = device_add(&gdev->dev);
- 	if (rc)
- 		goto error;
- 	get_device(&gdev->dev);
--	rc = device_create_file(&gdev->dev, &dev_attr_ungroup);
--
--	if (rc) {
--		device_unregister(&gdev->dev);
--		goto error;
--	}
--
- 	rc = __ccwgroup_create_symlinks(gdev);
- 	if (!rc) {
- 		mutex_unlock(&gdev->reg_mutex);
- 		put_device(&gdev->dev);
- 		return 0;
- 	}
--	device_remove_file(&gdev->dev, &dev_attr_ungroup);
- 	device_unregister(&gdev->dev);
- error:
- 	for (i = 0; i < num_devices; i++)
-@@ -423,7 +435,7 @@ ccwgroup_online_store (struct device *de
- 	int ret;
- 
- 	if (!dev->driver)
--		return -ENODEV;
-+		return -EINVAL;
- 
- 	gdev = to_ccwgroupdev(dev);
- 	gdrv = to_ccwgroupdrv(dev->driver);
-@@ -456,8 +468,6 @@ ccwgroup_online_show (struct device *dev
- 	return sprintf(buf, online ? "1\n" : "0\n");
- }
- 
--static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
--
- static int
- ccwgroup_probe (struct device *dev)
+ void __tlb_remove_table(void *_table)
  {
-@@ -469,12 +479,7 @@ ccwgroup_probe (struct device *dev)
- 	gdev = to_ccwgroupdev(dev);
- 	gdrv = to_ccwgroupdrv(dev->driver);
+-	void *table = (void *)((unsigned long) _table & PAGE_MASK);
+-	unsigned type = (unsigned long) _table & ~PAGE_MASK;
++	const unsigned long mask = (FRAG_MASK << 4) | FRAG_MASK;
++	void *table = (void *)((unsigned long) _table & ~mask);
++	unsigned type = (unsigned long) _table & mask;
  
--	if ((ret = device_create_file(dev, &dev_attr_online)))
--		return ret;
--
- 	ret = gdrv->probe ? gdrv->probe(gdev) : -ENODEV;
--	if (ret)
--		device_remove_file(dev, &dev_attr_online);
- 
- 	return ret;
- }
-@@ -485,9 +490,6 @@ ccwgroup_remove (struct device *dev)
- 	struct ccwgroup_device *gdev;
- 	struct ccwgroup_driver *gdrv;
- 
--	device_remove_file(dev, &dev_attr_online);
--	device_remove_file(dev, &dev_attr_ungroup);
--
- 	if (!dev->driver)
- 		return 0;
- 
+ 	if (type)
+ 		__page_table_free_rcu(table, type);
 
 
