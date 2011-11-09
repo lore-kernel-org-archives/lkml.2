@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935800Ab1KJDfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:35:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43332 "EHLO mx2.suse.de"
+	id S964823Ab1KJDfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:35:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43368 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935608Ab1KJDfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:35:01 -0500
+	id S964810Ab1KJDfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:35:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:43 2011
-Message-Id: <20111109213143.340134277@clark.kroah.org>
+Message-Id: <20111109213143.645434140@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:30:59 -0800
+Date: Wed, 09 Nov 2011 13:31:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Richard Hartmann <richih.mailinglist@gmail.com>
-Subject: [012/264] USB: qcserial: Add support for Sierra Wireless MC8355/Gobi 3000
+        alan@lxorguk.ukuu.org.uk, Ning Jiang <ning.jiang@marvell.com>
+Subject: [015/264] serial-core: power up uart port early before we do set_termios when resuming
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,31 +24,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Hartmann <richih.mailinglist@gmail.com>
+From: Ning Jiang <ning.jiang@marvell.com>
 
-commit 68c79e5756903229fa96826a2493c2265a3b395f upstream.
+commit 94abc56f4d90f289ea32a0a11d3577fcd8cb28fb upstream.
 
-Simple patch to make qcserial recognize the USB id of the Sierra
-Wireless MC8355 which is based on the Gobi 3000 chip.
+The following patch removed uart_change_pm() in uart_resume_port():
 
-Both UMTS and GPS work fine.
+commit 5933a161abcb8d83a2c145177f48027c3c0a8995
+Author: Yin Kangkai <kangkai.yin@linux.intel.com>
+    serial-core: reset the console speed on resume
 
-Signed-off-by: Richard Hartmann <richih.mailinglist@gmail.com>
+It will break the pxa serial driver when the system resumes from suspend mode
+as it will try to set baud rate divider register in set_termios but with
+clock off. The register value can not be set correctly on some platform if
+the clock is disabled. The pxa driver will check the value and report the
+following warning:
+
+------------[ cut here ]------------
+WARNING: at drivers/tty/serial/pxa.c:545 serial_pxa_set_termios+0x1dc/0x250()
+Modules linked in:
+[<c0281f30>] (unwind_backtrace+0x0/0xf0) from [<c029341c>] (warn_slowpath_common+0x4c/0x64)
+[<c029341c>] (warn_slowpath_common+0x4c/0x64) from [<c029344c>] (warn_slowpath_null+0x18/0x1c)
+[<c029344c>] (warn_slowpath_null+0x18/0x1c) from [<c044b1e4>] (serial_pxa_set_termios+0x1dc/0x250)
+[<c044b1e4>] (serial_pxa_set_termios+0x1dc/0x250) from [<c044a840>] (uart_resume_port+0x128/0x2dc)
+[<c044a840>] (uart_resume_port+0x128/0x2dc) from [<c044bbe0>] (serial_pxa_resume+0x18/0x24)
+[<c044bbe0>] (serial_pxa_resume+0x18/0x24) from [<c0454d34>] (platform_pm_resume+0x40/0x4c)
+[<c0454d34>] (platform_pm_resume+0x40/0x4c) from [<c0457ebc>] (pm_op+0x68/0xb4)
+[<c0457ebc>] (pm_op+0x68/0xb4) from [<c0458368>] (device_resume+0xb0/0xec)
+[<c0458368>] (device_resume+0xb0/0xec) from [<c04584c8>] (dpm_resume+0xe0/0x194)
+[<c04584c8>] (dpm_resume+0xe0/0x194) from [<c0458588>] (dpm_resume_end+0xc/0x18)
+[<c0458588>] (dpm_resume_end+0xc/0x18) from [<c02c518c>] (suspend_devices_and_enter+0x16c/0x1ac)
+[<c02c518c>] (suspend_devices_and_enter+0x16c/0x1ac) from [<c02c5278>] (enter_state+0xac/0xdc)
+[<c02c5278>] (enter_state+0xac/0xdc) from [<c02c48ec>] (state_store+0xa0/0xbc)
+[<c02c48ec>] (state_store+0xa0/0xbc) from [<c0408f7c>] (kobj_attr_store+0x18/0x1c)
+[<c0408f7c>] (kobj_attr_store+0x18/0x1c) from [<c034a6a4>] (sysfs_write_file+0x108/0x140)
+[<c034a6a4>] (sysfs_write_file+0x108/0x140) from [<c02fb798>] (vfs_write+0xac/0x134)
+[<c02fb798>] (vfs_write+0xac/0x134) from [<c02fb8cc>] (sys_write+0x3c/0x68)
+[<c02fb8cc>] (sys_write+0x3c/0x68) from [<c027c700>] (ret_fast_syscall+0x0/0x2c)
+---[ end trace 88289eceb4675b04 ]---
+
+This patch fix the problem by adding the power on opertion back for uart
+console when console_suspend_enabled is true.
+
+Signed-off-by: Ning Jiang <ning.jiang@marvell.com>
+Tested-by: Mayank Rana <mrana@codeaurora.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/qcserial.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/tty/serial/serial_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -84,6 +84,7 @@ static const struct usb_device_id id_tab
- 	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
- 	{USB_DEVICE(0x05c6, 0x9204)},	/* Gobi 2000 QDL device */
- 	{USB_DEVICE(0x05c6, 0x9205)},	/* Gobi 2000 Modem device */
-+	{USB_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
- 	{ }				/* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, id_table);
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -2008,6 +2008,8 @@ int uart_resume_port(struct uart_driver
+ 		if (port->tty && port->tty->termios && termios.c_cflag == 0)
+ 			termios = *(port->tty->termios);
+ 
++		if (console_suspend_enabled)
++			uart_change_pm(state, 0);
+ 		uport->ops->set_termios(uport, &termios, NULL);
+ 		if (console_suspend_enabled)
+ 			console_start(uport->cons);
 
 
