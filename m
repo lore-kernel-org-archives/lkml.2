@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933738Ab1KJFaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:30:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41601 "EHLO mx2.suse.de"
+	id S1757353Ab1KJFam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:30:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41588 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933689Ab1KJDUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:20 -0500
+	id S933667Ab1KJDUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
-Message-Id: <20111109212702.411511947@clark.kroah.org>
+Message-Id: <20111109212702.321107177@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:43 -0800
+Date: Wed, 09 Nov 2011 13:25:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
-        Keith Packard <keithp@keithp.com>
-Subject: [021/262] drm/i915/panel: Always record the backlight level again (but cleverly)
+        alan@lxorguk.ukuu.org.uk, Keith Packard <keithp@keithp.com>
+Subject: [020/262] drm/i915: Wrap DP EDID fetch functions to enable eDP panel power
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +24,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Keith Packard <keithp@keithp.com>
 
-commit f52c619a590fa75276c07dfcaf380dee53e4ea4c upstream.
+commit 8c241fef3e6f69f3f675678ae03599ece3f562e2 upstream.
 
-The commit 47356eb67285014527a5ab87543ba1fae3d1e10a introduced a
-mechanism to record the backlight level only at disabling time, but it
-also introduced a regression.  Since intel_lvds_enable() may be called
-without disabling (e.g. intel_lvds_commit() calls it unconditionally),
-the backlight gets back to the last recorded value.  For example, this
-happens when you dim the backlight, close the lid and open the lid,
-then the backlight suddenly goes to the brightest.
+Talking to the eDP DDC channel requires that the panel be powered
+up. Wrap both the EDID and modes fetch code with calls to turn the vdd
+power on and back off.
 
-This patch fixes the bug by recording the backlight level always
-when changed via intel_panel_set_backlight().  And,
-intel_panel_{enable|disable}_backlight() call the internal function not
-to update the recorded level wrongly.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Reviewed-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Keith Packard <keithp@keithp.com>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_panel.c |   21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/i915/intel_dp.c |   31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_panel.c
-+++ b/drivers/gpu/drm/i915/intel_panel.c
-@@ -226,7 +226,7 @@ static void intel_pch_panel_set_backligh
- 	I915_WRITE(BLC_PWM_CPU_CTL, val | level);
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -1658,6 +1658,31 @@ g4x_dp_detect(struct intel_dp *intel_dp)
+ 	return status;
  }
  
--void intel_panel_set_backlight(struct drm_device *dev, u32 level)
-+static void intel_panel_actually_set_backlight(struct drm_device *dev, u32 level)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	u32 tmp;
-@@ -254,16 +254,21 @@ void intel_panel_set_backlight(struct dr
- 	I915_WRITE(BLC_PWM_CTL, tmp | level);
- }
- 
--void intel_panel_disable_backlight(struct drm_device *dev)
-+void intel_panel_set_backlight(struct drm_device *dev, u32 level)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 
--	if (dev_priv->backlight_enabled) {
--		dev_priv->backlight_level = intel_panel_get_backlight(dev);
--		dev_priv->backlight_enabled = false;
--	}
-+	dev_priv->backlight_level = level;
-+	if (dev_priv->backlight_enabled)
-+		intel_panel_actually_set_backlight(dev, level);
++static struct edid *
++intel_dp_get_edid(struct drm_connector *connector, struct i2c_adapter *adapter)
++{
++	struct intel_dp *intel_dp = intel_attached_dp(connector);
++	struct edid	*edid;
++
++	ironlake_edp_panel_vdd_on(intel_dp);
++	edid = drm_get_edid(connector, adapter);
++	ironlake_edp_panel_vdd_off(intel_dp);
++	return edid;
 +}
 +
-+void intel_panel_disable_backlight(struct drm_device *dev)
++static int
++intel_dp_get_edid_modes(struct drm_connector *connector, struct i2c_adapter *adapter)
 +{
-+	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_dp *intel_dp = intel_attached_dp(connector);
++	int	ret;
++
++	ironlake_edp_panel_vdd_on(intel_dp);
++	ret = intel_ddc_get_modes(connector, adapter);
++	ironlake_edp_panel_vdd_off(intel_dp);
++	return ret;
++}
++
++
+ /**
+  * Uses CRT_HOTPLUG_EN and CRT_HOTPLUG_STAT to detect DP connection.
+  *
+@@ -1684,7 +1709,7 @@ intel_dp_detect(struct drm_connector *co
+ 	if (intel_dp->force_audio) {
+ 		intel_dp->has_audio = intel_dp->force_audio > 0;
+ 	} else {
+-		edid = drm_get_edid(connector, &intel_dp->adapter);
++		edid = intel_dp_get_edid(connector, &intel_dp->adapter);
+ 		if (edid) {
+ 			intel_dp->has_audio = drm_detect_monitor_audio(edid);
+ 			connector->display_info.raw_edid = NULL;
+@@ -1705,7 +1730,7 @@ static int intel_dp_get_modes(struct drm
+ 	/* We should parse the EDID data and find out if it has an audio sink
+ 	 */
  
--	intel_panel_set_backlight(dev, 0);
-+	dev_priv->backlight_enabled = false;
-+	intel_panel_actually_set_backlight(dev, 0);
- }
+-	ret = intel_ddc_get_modes(connector, &intel_dp->adapter);
++	ret = intel_dp_get_edid_modes(connector, &intel_dp->adapter);
+ 	if (ret) {
+ 		if (is_edp(intel_dp) && !dev_priv->panel_fixed_mode) {
+ 			struct drm_display_mode *newmode;
+@@ -1741,7 +1766,7 @@ intel_dp_detect_audio(struct drm_connect
+ 	struct edid *edid;
+ 	bool has_audio = false;
  
- void intel_panel_enable_backlight(struct drm_device *dev)
-@@ -273,8 +278,8 @@ void intel_panel_enable_backlight(struct
- 	if (dev_priv->backlight_level == 0)
- 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+-	edid = drm_get_edid(connector, &intel_dp->adapter);
++	edid = intel_dp_get_edid(connector, &intel_dp->adapter);
+ 	if (edid) {
+ 		has_audio = drm_detect_monitor_audio(edid);
  
--	intel_panel_set_backlight(dev, dev_priv->backlight_level);
- 	dev_priv->backlight_enabled = true;
-+	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
- }
- 
- void intel_panel_setup_backlight(struct drm_device *dev)
 
 
