@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965939Ab1KJDrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:47:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44997 "EHLO mx2.suse.de"
+	id S933714Ab1KJDra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:47:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45020 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965910Ab1KJDrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:47:15 -0500
+	id S965910Ab1KJDrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:47:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:05 2011
-Message-Id: <20111109213205.457905551@clark.kroah.org>
+Message-Id: <20111109213205.748018749@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:35 -0800
+Date: Wed, 09 Nov 2011 13:34:38 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mike Miller <mike.miller@hp.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [228/264] hpsa: add small delay when using PCI Power Management to reset for kump
+        alan@lxorguk.ukuu.org.uk, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [231/264] VFS: we need to set LOOKUP_JUMPED on mountpoint crossing
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +24,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Miller <mike.miller@hp.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit c4853efec665134b2e6fc9c13447323240980351 upstream.
+commit a3fbbde70a0cec017f2431e8f8de208708c76acc upstream.
 
-The P600 requires a small delay when changing states. Otherwise we may think
-the board did not reset and we bail. This for kdump only and is particular
-to the P600.
+Mountpoint crossing is similar to following procfs symlinks - we do
+not get ->d_revalidate() called for dentry we have arrived at, with
+unpleasant consequences for NFS4.
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Simple way to reproduce the problem in mainline:
+
+    cat >/tmp/a.c <<'EOF'
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <stdio.h>
+    main()
+    {
+            struct flock fl = {.l_type = F_RDLCK, .l_whence = SEEK_SET, .l_len = 1};
+            if (fcntl(0, F_SETLK, &fl))
+                    perror("setlk");
+    }
+    EOF
+    cc /tmp/a.c -o /tmp/test
+
+then on nfs4:
+
+    mount --bind file1 file2
+    /tmp/test < file1		# ok
+    /tmp/test < file2		# spews "setlk: No locks available"...
+
+What happens is the missing call of ->d_revalidate() after mountpoint
+crossing and that's where NFS4 would issue OPEN request to server.
+
+The fix is simple - treat mountpoint crossing the same way we deal with
+following procfs-style symlinks.  I.e.  set LOOKUP_JUMPED...
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/hpsa.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ fs/namei.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -3300,6 +3300,13 @@ static int hpsa_controller_hard_reset(st
- 		pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
- 		pmcsr |= PCI_D0;
- 		pci_write_config_word(pdev, pos + PCI_PM_CTRL, pmcsr);
-+
-+		/*
-+		 * The P600 requires a small delay when changing states.
-+		 * Otherwise we may think the board did not reset and we bail.
-+		 * This for kdump only and is particular to the P600.
-+		 */
-+		msleep(500);
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -852,7 +852,7 @@ static int follow_managed(struct path *p
+ 		mntput(path->mnt);
+ 	if (ret == -EISDIR)
+ 		ret = 0;
+-	return ret;
++	return ret < 0 ? ret : need_mntput;
+ }
+ 
+ int follow_down_one(struct path *path)
+@@ -900,6 +900,7 @@ static bool __follow_mount_rcu(struct na
+ 			break;
+ 		path->mnt = mounted;
+ 		path->dentry = mounted->mnt_root;
++		nd->flags |= LOOKUP_JUMPED;
+ 		nd->seq = read_seqcount_begin(&path->dentry->d_seq);
+ 		/*
+ 		 * Update the inode too. We don't need to re-check the
+@@ -1213,6 +1214,8 @@ retry:
+ 		path_put_conditional(path, nd);
+ 		return err;
  	}
++	if (err)
++		nd->flags |= LOOKUP_JUMPED;
+ 	*inode = path->dentry->d_inode;
  	return 0;
  }
+@@ -2149,6 +2152,10 @@ static struct file *do_last(struct namei
+ 	}
+ 
+ 	/* create side of things */
++	/*
++	 * This will *only* deal with leaving RCU mode - LOOKUP_JUMPED has been
++	 * cleared when we got to the last component we are about to look up
++	 */
+ 	error = complete_walk(nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+@@ -2217,6 +2224,9 @@ static struct file *do_last(struct namei
+ 	if (error < 0)
+ 		goto exit_dput;
+ 
++	if (error)
++		nd->flags |= LOOKUP_JUMPED;
++
+ 	error = -ENOENT;
+ 	if (!path->dentry->d_inode)
+ 		goto exit_dput;
+@@ -2226,6 +2236,10 @@ static struct file *do_last(struct namei
+ 
+ 	path_to_nameidata(path, nd);
+ 	nd->inode = path->dentry->d_inode;
++	/* Why this, you ask?  _Now_ we might have grown LOOKUP_JUMPED... */
++	error = complete_walk(nd);
++	if (error)
++		goto exit;
+ 	error = -EISDIR;
+ 	if (S_ISDIR(nd->inode->i_mode))
+ 		goto exit;
 
 
