@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935450Ab1KJDcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:32:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43016 "EHLO mx2.suse.de"
+	id S935464Ab1KJDca (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:32:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43028 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935411Ab1KJDcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:32:21 -0500
+	id S935411Ab1KJDc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:32:26 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:23 2011
-Message-Id: <20111109212723.317762999@clark.kroah.org>
+Message-Id: <20111109212723.523438959@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:08 -0800
+Date: Wed, 09 Nov 2011 13:29:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [226/262] xen/blkback: Report VBD_WSECT (wr_sect) properly.
+        alan@lxorguk.ukuu.org.uk, Mike Miller <mike.miller@hp.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [228/262] hpsa: add small delay when using PCI Power Management to reset for kump
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Mike Miller <mike.miller@hp.com>
 
-commit 5c62cb48602dba95159c81ffeca179d3852e25be upstream.
+commit c4853efec665134b2e6fc9c13447323240980351 upstream.
 
-We did not increment the amount of sectors written to disk
-b/c we tested for the == WRITE which is incorrect - as the
-operations are more of WRITE_FLUSH, WRITE_ODIRECT. This patch
-fixes it by doing a & WRITE check.
+The P600 requires a small delay when changing states. Otherwise we may think
+the board did not reset and we bail. This for kdump only and is particular
+to the P600.
 
-Reported-by: Andy Burns <xen.lists@burns.me.uk>
-Suggested-by: Ian Campbell <Ian.Campbell@citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/xen-blkback/blkback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/hpsa.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -667,7 +667,7 @@ static int dispatch_rw_block_io(struct x
- 
- 	if (operation == READ)
- 		blkif->st_rd_sect += preq.nr_sects;
--	else if (operation == WRITE || operation == WRITE_FLUSH)
-+	else if (operation & WRITE)
- 		blkif->st_wr_sect += preq.nr_sects;
- 
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -3300,6 +3300,13 @@ static int hpsa_controller_hard_reset(st
+ 		pmcsr &= ~PCI_PM_CTRL_STATE_MASK;
+ 		pmcsr |= PCI_D0;
+ 		pci_write_config_word(pdev, pos + PCI_PM_CTRL, pmcsr);
++
++		/*
++		 * The P600 requires a small delay when changing states.
++		 * Otherwise we may think the board did not reset and we bail.
++		 * This for kdump only and is particular to the P600.
++		 */
++		msleep(500);
+ 	}
  	return 0;
+ }
 
 
