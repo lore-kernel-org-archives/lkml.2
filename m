@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935794Ab1KJEm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:42:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43302 "EHLO mx2.suse.de"
+	id S935844Ab1KJEnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:43:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43292 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935768Ab1KJDeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:34:44 -0500
+	id S935773Ab1KJDei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:34:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:26 2011
-Message-Id: <20111109212726.120102088@clark.kroah.org>
+Message-Id: <20111109212725.927460524@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:36 -0800
+Date: Wed, 09 Nov 2011 13:29:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Werther <clemens.werther@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [254/262] HID: add support for HuiJia USB Gamepad connector
+        alan@lxorguk.ukuu.org.uk,
+        Adam Thomson <adam.thomson@alcatel-lucent.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Subject: [252/262] mtd: nand_base: always initialise oob_poi before writing OOB data
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +26,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Werther <clemens.werther@gmail.com>
+From: "THOMSON, Adam (Adam)" <adam.thomson@alcatel-lucent.com>
 
-commit 6d1db0777981e1626ae71243984ac300b61789ff upstream.
+commit f722013ee9fd24623df31dec9a91a6d02c3e2f2f upstream.
 
-Create each gamepad as a separate joystick
+In nand_do_write_ops() code it is possible for a caller to provide
+ops.oobbuf populated and ops.mode == MTD_OOB_AUTO, which currently
+means that the chip->oob_poi buffer isn't initialised to all 0xFF.
+The nand_fill_oob() method then carries out the task of copying
+the provided OOB data to oob_poi, but with MTD_OOB_AUTO it skips
+areas marked as unavailable by the layout struct, including the
+bad block marker bytes.
 
-Signed-off-by: Clemens Werther <clemens.werther@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+An example of this causing issues is when the last OOB data read
+was from the start of a bad block where the markers are not 0xFF,
+and the caller wishes to write new OOB data at the beginning of
+another block. In this scenario the caller would provide OOB data,
+but nand_fill_oob() would skip the bad block marker bytes in
+oob_poi before copying the OOB data provided by the caller.
+This means that when the OOB data is written back to NAND,
+the block is inadvertently marked as bad without the caller knowing.
+This has been witnessed when using YAFFS2 where tags are stored
+in the OOB.
+
+To avoid this oob_poi is always initialised to 0xFF to make sure
+no left over data is inadvertently written back to the OOB area.
+
+Credits to Brian Norris <computersforpeace@gmail.com> for fixing this
+patch.
+
+Signed-off-by: Adam Thomson <adam.thomson@alcatel-lucent.com>
+Signed-off-by: Artem Bityutskiy <dedekind1@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- drivers/hid/hid-ids.h           |    1 +
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 2 insertions(+)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -277,6 +277,7 @@
- #define USB_DEVICE_ID_PENPOWER		0x00f4
+---
+ drivers/mtd/nand/nand_base.c |   27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
+
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2097,14 +2097,22 @@ static int nand_write_page(struct mtd_in
  
- #define USB_VENDOR_ID_GREENASIA		0x0e8f
-+#define USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD	0x3013
+ /**
+  * nand_fill_oob - [Internal] Transfer client buffer to oob
+- * @chip:	nand chip structure
++ * @mtd:	MTD device structure
+  * @oob:	oob data buffer
+  * @len:	oob data write length
+  * @ops:	oob ops structure
+  */
+-static uint8_t *nand_fill_oob(struct nand_chip *chip, uint8_t *oob, size_t len,
+-						struct mtd_oob_ops *ops)
++static uint8_t *nand_fill_oob(struct mtd_info *mtd, uint8_t *oob, size_t len,
++			      struct mtd_oob_ops *ops)
+ {
++	struct nand_chip *chip = mtd->priv;
++
++	/*
++	 * Initialise to all 0xFF, to avoid the possibility of left over OOB
++	 * data from a previous OOB read.
++	 */
++	memset(chip->oob_poi, 0xff, mtd->oobsize);
++
+ 	switch (ops->mode) {
  
- #define USB_VENDOR_ID_GRETAGMACBETH	0x0971
- #define USB_DEVICE_ID_GRETAGMACBETH_HUEY	0x2005
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -47,6 +47,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_AFATECH, USB_DEVICE_ID_AFATECH_AF9016, HID_QUIRK_FULLSPEED_INTERVAL },
+ 	case MTD_OOB_PLACE:
+@@ -2201,10 +2209,6 @@ static int nand_do_write_ops(struct mtd_
+ 	    (chip->pagebuf << chip->page_shift) < (to + ops->len))
+ 		chip->pagebuf = -1;
  
- 	{ USB_VENDOR_ID_ETURBOTOUCH, USB_DEVICE_ID_ETURBOTOUCH, HID_QUIRK_MULTI_INPUT },
-+	{ USB_VENDOR_ID_GREENASIA, USB_DEVICE_ID_GREENASIA_DUAL_USB_JOYPAD, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_PANTHERLORD, USB_DEVICE_ID_PANTHERLORD_TWIN_USB_JOYSTICK, HID_QUIRK_MULTI_INPUT | HID_QUIRK_SKIP_OUTPUT_REPORTS },
- 	{ USB_VENDOR_ID_PLAYDOTCOM, USB_DEVICE_ID_PLAYDOTCOM_EMS_USBII, HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_TOUCHPACK, USB_DEVICE_ID_TOUCHPACK_RTS, HID_QUIRK_MULTI_INPUT },
+-	/* If we're not given explicit OOB data, let it be 0xFF */
+-	if (likely(!oob))
+-		memset(chip->oob_poi, 0xff, mtd->oobsize);
+-
+ 	/* Don't allow multipage oob writes with offset */
+ 	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen))
+ 		return -EINVAL;
+@@ -2226,8 +2230,11 @@ static int nand_do_write_ops(struct mtd_
+ 
+ 		if (unlikely(oob)) {
+ 			size_t len = min(oobwritelen, oobmaxlen);
+-			oob = nand_fill_oob(chip, oob, len, ops);
++			oob = nand_fill_oob(mtd, oob, len, ops);
+ 			oobwritelen -= len;
++		} else {
++			/* We still need to erase leftover OOB data */
++			memset(chip->oob_poi, 0xff, mtd->oobsize);
+ 		}
+ 
+ 		ret = chip->write_page(mtd, chip, wbuf, page, cached,
+@@ -2401,10 +2408,8 @@ static int nand_do_write_oob(struct mtd_
+ 	if (page == chip->pagebuf)
+ 		chip->pagebuf = -1;
+ 
+-	memset(chip->oob_poi, 0xff, mtd->oobsize);
+-	nand_fill_oob(chip, ops->oobbuf, ops->ooblen, ops);
++	nand_fill_oob(mtd, ops->oobbuf, ops->ooblen, ops);
+ 	status = chip->ecc.write_oob(mtd, chip, page & chip->pagemask);
+-	memset(chip->oob_poi, 0xff, mtd->oobsize);
+ 
+ 	if (status)
+ 		return status;
 
 
