@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932971Ab1KIUeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:34:21 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:37400 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742Ab1KIUd5 (ORCPT
+	id S933073Ab1KIUed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:34:33 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13160 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab1KIUe3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 15:33:57 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 09/10] TTY: serial, fill uart_port_shutdown
-Date: Wed,  9 Nov 2011 21:33:51 +0100
-Message-Id: <1320870831-23778-9-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
-References: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
+	Wed, 9 Nov 2011 15:34:29 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 09 Nov 2011 12:34:28 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: "Linus Walleij (linus.walleij@linaro.org)" <linus.walleij@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 9 Nov 2011 12:34:27 -0800
+Subject: pinctrl discussions @ Linaro Connect, and also requesting GPIOs
+Thread-Topic: pinctrl discussions @ Linaro Connect, and also requesting GPIOs
+Thread-Index: AcyfHfZoyc1ePaSxSqKVkm78S8zniA==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17408051C2@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's fill the port_ops->shutdown. We will need this for hangup and
-close port helpers.
+Linus,
 
-We don't need to touch DTR/RTS registers in uart_port_shutdown. They
-are set to off from port_close_start properly already.
+I'm curious about any pinctrl-related discussions that happened at Linaro
+Connect. Are you able to summarize any discussions/decisions, or point me
+at some existing summary? Especially anything to do with the new pin config
+options, possibly extending the mapping table to control them, etc.
 
-Also we don't need to pin the TTY_IO_ERROR bit. This will be done in
-close/hangup paths.
+On the topic of pinctrl:
 
-We leave uart_shutdown as is, because it is used (and will be) from
-several paths now. Like from suspend.
+Many drivers currently call gpio_request(). This is defined /not/ to
+perform any pinmux manipulation. On Tegra, the pinmux is set up due to
+board files calling tegra_gpio_enable() before probing drivers. I'm
+wondering:
 
-The point is to not touch ASYNC_INITIALIZED bit. It will be set (and
-checked) properly by the tty port helpers.
+a) Should drivers explicitly call pinmux_request_gpio() before calling
+gpio_request() instead, so that the board files don't have to set this up
+first?
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>
----
- drivers/tty/serial/serial_core.c |   42 +++++++++++++++++++++----------------
- 1 files changed, 24 insertions(+), 18 deletions(-)
+b) Shouldn't this be hidden inside the pinctrl's mapping table; if a driver
+needs to set up non-GPIO pinmux options, it's all done in pinmux_get() and
+pinmux_enable(), whereas for GPIOs they need to use the other API. Can we
+unify this?
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index d7e8a5e..68763c0 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -61,6 +61,8 @@ static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
- static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
- static void uart_change_pm(struct uart_state *state, int pm_state);
- 
-+static void uart_port_shutdown(struct tty_port *port);
-+
- /*
-  * This routine is used by the interrupt handler to schedule processing in
-  * the software interrupt portion of the driver.
-@@ -228,24 +230,7 @@ static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
- 		if (!tty || (tty->termios->c_cflag & HUPCL))
- 			uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
- 
--		/*
--		 * clear delta_msr_wait queue to avoid mem leaks: we may free
--		 * the irq here so the queue might never be woken up.  Note
--		 * that we won't end up waiting on delta_msr_wait again since
--		 * any outstanding file descriptors should be pointing at
--		 * hung_up_tty_fops now.
--		 */
--		wake_up_interruptible(&port->delta_msr_wait);
--
--		/*
--		 * Free the IRQ and disable the port.
--		 */
--		uport->ops->shutdown(uport);
--
--		/*
--		 * Ensure that the IRQ handler isn't running on another CPU.
--		 */
--		synchronize_irq(uport->irq);
-+		uart_port_shutdown(port);
- 	}
- 
- 	/*
-@@ -1411,6 +1396,27 @@ static int uart_port_activate(struct tty_port *port, struct tty_struct *tty)
- 
- static void uart_port_shutdown(struct tty_port *port)
- {
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+
-+	/*
-+	 * clear delta_msr_wait queue to avoid mem leaks: we may free
-+	 * the irq here so the queue might never be woken up.  Note
-+	 * that we won't end up waiting on delta_msr_wait again since
-+	 * any outstanding file descriptors should be pointing at
-+	 * hung_up_tty_fops now.
-+	 */
-+	wake_up_interruptible(&port->delta_msr_wait);
-+
-+	/*
-+	 * Free the IRQ and disable the port.
-+	 */
-+	uport->ops->shutdown(uport);
-+
-+	/*
-+	 * Ensure that the IRQ handler isn't running on another CPU.
-+	 */
-+	synchronize_irq(uport->irq);
- }
- 
- static int uart_carrier_raised(struct tty_port *port)
+I think extending the mapping table to be able to represent either the
+existing mux configuration, or GPIO allocation, might make sense. In fact,
+if we do that, perhaps pinmux_{request,free}_gpio() wouldn't even be needed?
+
+What are your thoughts?
+
 -- 
-1.7.7
-
+nvpublic
 
