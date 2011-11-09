@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559Ab1KIMC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:02:58 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:37321 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab1KIMC5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 07:02:57 -0500
-Date: Wed, 9 Nov 2011 20:02:49 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Valdis.Kletnieks@vt.edu
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH V2] fix typo in crypto/Kconfig
-Message-ID: <20111109120248.GA23893@gondor.apana.org.au>
-References: <20111.1320820160@turing-police.cc.vt.edu>
+	id S1753965Ab1KIMD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 07:03:26 -0500
+Received: from mga03.intel.com ([143.182.124.21]:13626 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752301Ab1KIMDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 07:03:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,483,1315206000"; 
+   d="scan'208";a="72230419"
+Date: Wed, 9 Nov 2011 20:03:21 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Keith Packard <keithp@keithp.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.2-rc1
+Message-ID: <20111109120321.GA10264@localhost>
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+ <20111108145510.GA5142@elliptictech.com>
+ <CA+55aFwx5=T1piX5qPj2jCAbzdHAQX2gYJODZnQ40h9hiDjkbQ@mail.gmail.com>
+ <s5hty6dlp5o.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111.1320820160@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <s5hty6dlp5o.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 01:29:20AM -0500, Valdis.Kletnieks@vt.edu wrote:
-> Fix a typo in the Kconfig file help text.
+On Wed, Nov 09, 2011 at 03:40:19PM +0800, Takashi Iwai wrote:
+> At Tue, 8 Nov 2011 12:23:30 -0800,
+> Linus Torvalds wrote:
+> > 
+> > Hmm, I don't know what caused this to trigger, but I'm adding both the
+> > i915 people and the HDA people to the cc, and they can fight to the
+> > death about this in the HDMI Thunderdome.
 > 
-> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> It must be the new addition of ELD-passing code.
 
-OK, now it applies.  Thanks.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Yes, it's my fault.
+
+> Fengguang, can the drm or i915 driver check whether ELD is changed or
+> not?  Writing ELD at each time even when unchanged confuses the audio
+> side, as if the monitor is hotplugged.
+
+It's sure possible to mask out the extra events.
+I'll work out a patch tomorrow.
+
+> > Guys: One.. Two.. Three.. FIGHT!
+> 
+> Round two!
+
+Three to fight!
+
+Thanks,
+Fengguang
+
+> > On Tue, Nov 8, 2011 at 6:55 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> > >
+> > > Mode switches are very noisy on an Intel G45 in 3.2-rc1:
+> > >
+> > >  HDMI hot plug event: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+> > >  HDMI status: Codec=3 Pin=3 Presence_Detect=1 ELD_Valid=1
+> > >  HDMI: detected monitor W2253 at connection type HDMI
+> > >  HDMI: available speakers: FL/FR
+> > >  HDMI: supports coding type LPCM: channels = 2, rates = 32000 44100 48000, bits = 16 20 24
+> > >
+> > > These lines get printed every single switch; previously only a single
+> > > line was printed once at boot (the "HDMI status" line).
+> > >
+> > > Cheers,
+> > > --
+> > > Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> > >
+> > 
