@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab1KIVIq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 16:08:46 -0500
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:45195 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab1KIVIo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 16:08:44 -0500
-Subject: Re: [PATCH] net: drivers/net/hippi/Kconfig should be sourced
-From: Paul Bolle <pebolle@tiscali.nl>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jeffrey.t.kirsher@intel.com
-In-Reply-To: <20111109.154643.2008804116058722848.davem@davemloft.net>
-References: <1320784270.14409.404.camel@x61.thuisdomein>
-	 <20111109.154643.2008804116058722848.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Nov 2011 22:08:36 +0100
-Message-ID: <1320872916.27598.49.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S933065Ab1KIVNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 16:13:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753104Ab1KIVNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 16:13:45 -0500
+Date: Wed, 9 Nov 2011 23:14:46 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@kernel.org
+Subject: Re: [PATCHv2 RFC] virtio-spec: flexible configuration layout
+Message-ID: <20111109211445.GC28599@redhat.com>
+References: <20111101114542.GA13434@redhat.com>
+ <1320150813.3847.24.camel@lappy>
+ <20111101124223.GA14060@redhat.com>
+ <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <20111108214021.GA4538@redhat.com>
+ <20111109195901.GA28155@redhat.com>
+ <1320870287.3730.6.camel@lappy>
+ <20111109205208.GA28599@redhat.com>
+ <1320872248.3730.11.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320872248.3730.11.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 15:46 -0500, David Miller wrote:
-> Please at least type "make oldconfig" with CONFIG_HIPPI enabled or
-> similar before submitting patches like this.
+On Wed, Nov 09, 2011 at 10:57:28PM +0200, Sasha Levin wrote:
+> On Wed, 2011-11-09 at 22:52 +0200, Michael S. Tsirkin wrote:
+> > On Wed, Nov 09, 2011 at 10:24:47PM +0200, Sasha Levin wrote:
+> > > On Wed, 2011-11-09 at 21:59 +0200, Michael S. Tsirkin wrote:
+> > > 
+> > > [snip]
+> > > 
+> > > > +\begin_layout Enumerate
+> > > > +Reset the device.
+> > > > + This is not required on initial start up.
+> > > > +\end_layout
+> > > > +
+> > > > +\begin_layout Enumerate
+> > > > +The ACKNOWLEDGE status bit is set: we have noticed the device.
+> > > > +\end_layout
+> > > > +
+> > > > +\begin_layout Enumerate
+> > > > +The DRIVER status bit is set: we know how to drive the device.
+> > > > +\end_layout
+> > > > +
+> > > > +\begin_layout Enumerate
+> > > > +
+> > > > +\change_inserted 1986246365 1320838089
+> > > > +PCI capability list scan, detecting virtio configuration layout using Virtio
+> > > > + Structure PCI capabilities.
+> > > 
+> > > Does the legacy space always gets mapped from BAR0?
+> > > 
+> > > If yes,
+> > 
+> > Yes and this is repeated in several places. Not clear? How can this
+> > be made clearer?
 > 
-> There is nothing architecture or platform specific about getting
-> the option enabled enough for you to see this:
+> Do you mean comments such as "For backwards compatibility, devices
+> should also present legacy configuration space in the first I/O region
+> of the PCI device"? What I understood from it is that the device should
+> have a legacy config in case it's used with an older guest, but I didn't
+> understand from it that the legacy config will be used even if new
+> layout is present.
+
+Yes, this is what I meant. New guest is required to use the new space
+and not the legacy one. So you dont need a legacy space for the at all.
+But practically, we'll need to support old guests for a long while.
+
+> > > It'll be a bit harder deprecating it in the future.
+> > 
+> > Harder than ... what ?
 > 
-> drivers/net/hippi/Kconfig:40: syntax error
-> drivers/net/hippi/Kconfig:20: missing end statement for this entry
-> drivers/net/Kconfig:28: missing end statement for this entry
-> drivers/Kconfig:1: missing end statement for this entry
-> drivers/net/hippi/Kconfig:39: invalid statement
-> drivers/net/Kconfig:341: unexpected end statement
-> drivers/Kconfig:139: unexpected end statement
-> make[1]: *** [oldconfig] Error 1
-> make: *** [oldconfig] Error 2
+> Harder than allowing devices not to present it at all if new layout
+> config is used.
+
+Yes, it's allowed if you know you have a new guest. It says
+explicitly that drivers are required to use new capabilities
+is they are there.
+
+> Right now the simple implementation is to use MMIO for
+> config and device specific, and let it fallback to legacy for ISR and
+> notifications (and therefore, this is probably how everybody will
+> implement it), which means that when you do want to deprecate legacy,
+> there will be extra work to be done then, instead of doing it now.
+
+If hypervisors don't implement the new layout then drivers will
+have to keep supporting the old one. I don't think we can do
+much about that.
+
+> > IMO there's no way to put legacy anywhere except the first BAR
+> > without breaking existing guests.
 > 
-> I've fixed this up but if you can't be bothered to type "make" I
-> seriously can't be bothered to even look at your patch submissions.
+> It's not about where we put legacy, it's about how easy it is to drop
+> legacy entirely.
 
-Would it be better if I hadn't submitted this as a patch (with a
-warning, which you perhaps missed, that I didn't build test it) but as a
-simple message to notify the people who wrote the patch that started all
-this, netdev and you, that that commit was incomplete? If so, I'd be
-glad to only do that in the future.
+We can only do this after all guests and hypervisors are updated. When
+they are, we can drop legacy from drivers and hypervisors, and
+I don't see a way to make it easier.
 
-
-Paul Bolle
-
+> -- 
+> 
+> Sasha.
