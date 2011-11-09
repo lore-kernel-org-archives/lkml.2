@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1KIRip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:38:45 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:49771 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab1KIRio (ORCPT
+	id S932545Ab1KIRkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:40:16 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:59275 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755866Ab1KIRkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:38:44 -0500
+	Wed, 9 Nov 2011 12:40:14 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAK+6uk4Y9geI/2dsb2JhbAAMNoR9ow6FEAEBAQEDIwRRARALDgoCAgUWCwICCQMCAQIBRQYNAQcBAa1Wkj6BMIc5gRYEiAyeKQ
+X-IronPort-AV: E=Sophos;i="4.69,484,1315195200"; 
+   d="scan'208";a="147187408"
+Message-ID: <4EBABAFD.6050604@teksavvy.com>
+Date: Wed, 09 Nov 2011 12:40:13 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
-References: <20111109162512.GB1260@google.com> <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 9 Nov 2011 18:38:21 +0100
-Message-ID: <CAPXgP13x9vvZ3pfW7u=o5rEaTAg_xV7=RC_UFuhk_aRdB4G0vg@mail.gmail.com>
-Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute "alias"
- in gendisk"
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com>  <20111026.194045.2019668159403582571.davem@davemloft.net>  <4EA8B283.3010105@teksavvy.com>  <20111026.221719.2216112919297458522.davem@davemloft.net>  <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>  <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>  <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>  <4EBAB643.8020603@teksavvy.com> <1320859911.2781.1.camel@bwh-desktop>
+In-Reply-To: <1320859911.2781.1.camel@bwh-desktop>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 9, 2011 at 18:30, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Wed, 2011-11-09 at 08:25 -0800, Tejun Heo wrote:
+On 11-11-09 12:31 PM, Ben Hutchings wrote:
+> On Wed, 2011-11-09 at 12:20 -0500, Mark Lord wrote:
+>> On 11-11-09 11:57 AM, Mark Lord wrote:
+>>> On 11-11-09 11:47 AM, Mark Lord wrote:
+>>> ..
+>>>> Note:  I'm looking at smsc95xx.c and smsc75xx.c for examples,
+>>>> and they both have the same problem I'll have here:
+>>>>
+>>>> How to update the csum settings atomically.
+>>>> A spinlock is no good, because config register access is over USB.
+>>>
+>>> Nevermind.. a slight change in the logic and all is well again.
+>> ..
+>>
+>> Or even simpler (below).  I don't think this method requires any
+>> extra locking, but I'm still open to persuasion.  :)
+> 
+> Looks reasonable, but...
+> 
+>> static int ax88772b_set_features(struct net_device *netdev, u32 features)
+>> {
+>>         struct usbnet *dev = netdev_priv(netdev);
+>>         struct ax88772b_data *priv = (struct ax88772b_data *)dev->driver_priv;
+>>         u16 tx_csum = 0, rx_csum = 0;
+>>
+>>         priv->features = features & (NETIF_F_HW_CSUM | NETIF_F_RXCSUM);
+> 
+> ...why do you need priv->features at all?
 
-> No, I can't agree with this ... if you propose a working alternative,
 
-The solution to this problem is to let udev log the known symlinks to
-the log stream at device discovery time. That way you can log _all_
-kernel device messages to the currently know disk names. This works
-already even on old systems,
+There's code elsewhere that takes action under some conditions
+based on the current setting of the NETIF_F_RXCSUM flag.
 
-> I'm listening, but in the absence of one, I think the hack fills a gap
+I don't claim to fully understand what's going on,
+but it doesn't care much about races on set/clear of the flag.
 
-There is no gap.
-
-> we have in log analysis and tides us over until we have an agreed on
-> proper solution (at which point, I'm perfectly happy to pull the hack
-> back out).
-
-Log analysis works just fine with the udev solution and provides the
-far better solution to this exact problem, so please revert it.
-
-Such hacks are not supposed to get in, and its really hard to get them
-out again.
-
-Thanks,
-Kay
+Cheers
