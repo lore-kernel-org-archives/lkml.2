@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab1KIOSh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:18:37 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:41947 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab1KIOSg convert rfc822-to-8bit (ORCPT
+	id S1752907Ab1KIOTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:19:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54636 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab1KIOTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:18:36 -0500
+	Wed, 9 Nov 2011 09:19:05 -0500
+Date: Wed, 9 Nov 2011 08:18:53 -0600
+From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Serge Hallyn <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, oleg@redhat.com, richard@nod.at,
+        ebiederm@xmission.com, dhowells@redhat.com, eparis@redhat.com
+Subject: Re: [PATCH 1/6] user namespace: make signal.c respect user
+ namespaces (v4)
+Message-ID: <20111109141853.GB4010@sergelap>
+References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
+ <1320445482-8459-2-git-send-email-serge@hallyn.com>
+ <20111108162216.1ffb3e9a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <4EBA6AF7.4020509@parallels.com>
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
-	<1320182360-20043-14-git-send-email-glommer@parallels.com>
-	<CANaxB-xQcqcZo5m7CJkCHrWj_TS4dyzYemPvrqZ25TaqK2tWYQ@mail.gmail.com>
-	<4EBA6AF7.4020509@parallels.com>
-Date: Wed, 9 Nov 2011 17:18:35 +0300
-Message-ID: <CANaxB-z0-VY=SVEjmYKXrF+i2VW3U3QCxz0yN4Wp8-qevnd4tA@mail.gmail.com>
-Subject: Re: [PATCH v2 13/14] provide a version of cpuusage statistics inside
- cpu cgroup
-From: Andrew Wagin <avagin@gmail.com>
-To: Glauber Costa <glommer@parallels.com>
-Cc: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, pjt@google.com, fweisbec@gmail.com,
-        Balbir Singh <bsingharora@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108162216.1ffb3e9a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And look at cfs_rq->prev_sum_exec_runtime, probably it is not used too.
-Usage of cfs_rq->sum_exec_runtime looks strange.
+Quoting Andrew Morton (akpm@linux-foundation.org):
+> On Fri,  4 Nov 2011 22:24:37 +0000
+> Serge Hallyn <serge@hallyn.com> wrote:
+> 
+> > +static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
+> > +{
+> > +#ifdef CONFIG_USER_NS
+> > +	if (current_user_ns() == task_cred_xxx(t, user_ns))
+> > +#endif
+> > +		return;
+> > +
+> > +	if (SI_FROMKERNEL(info))
+> > +		return;
+> > +
+> > +	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
+> > +					current_cred(), info->si_uid);
+> > +}
+> 
+> err, this function is a no-op if CONFIG_USER_NS=n.  If that was
+> intentional then why on earth do this in such a weird fashion?  If
 
-2011/11/9 Glauber Costa <glommer@parallels.com>:
-> On 11/09/2011 09:51 AM, Andrew Wagin wrote:
->>
->> Hi Glauber,
->>
->>> diff --git a/kernel/sched.c b/kernel/sched.c
->>> index d93cfd4..b9296cd 100644
->>> --- a/kernel/sched.c
->>> +++ b/kernel/sched.c
->>> @@ -303,6 +303,7 @@ struct task_group {
->>>
->>>        struct cfs_bandwidth cfs_bandwidth;
->>>        struct kernel_cpustat __percpu *cpustat;
->>> +       u64 __percpu *cpuusage;
->>
->> I can't find where you use this variable, probably it may be removed.
->
-> Indeed.
-> This is a leftover from the previous attempt.
->
+(I didn't write it, but)  I think the assumption was that the compiler
+would optimize it all away if !CONFIG_USER_NS, and in this way the
+call site didn't need to be obscured with the #ifdef.  Is there a way
+that's better?  Would you prefer something like:
+
++#ifdef CONFIG_USER_NS
++static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
++{
++	if (current_user_ns() == task_cred_xxx(t, user_ns))
++		return;
++
++	if (SI_FROMKERNEL(info))
++		return;
++
++	info->si_uid = user_ns_map_uid(task_cred_xxx(t, user_ns),
++					current_cred(), info->si_uid);
++}
++#else
++static inline void fixup_uid(struct siginfo *info, struct task_struct *t)
++{
++		return;
++}
++#endif
+
+?  It's less sneaky at least.
+
+> unintentional then it makes me wonder how well tested all this was with
+> CONFIG_USER_NS=n?
+> 
+> I vaguely remember that I've forgotten how all this stuff works.  Some
+> additional review input would be nice (cough-oleg-cough).
+> 
