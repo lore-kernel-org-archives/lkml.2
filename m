@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934812Ab1KJD1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:27:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42368 "EHLO mx2.suse.de"
+	id S934826Ab1KJFIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:08:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42380 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934785Ab1KJD1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:12 -0500
+	id S934808Ab1KJD1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:19 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:14 2011
-Message-Id: <20111109212714.296639072@clark.kroah.org>
+Message-Id: <20111109212714.505840026@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:38 -0800
+Date: Wed, 09 Nov 2011 13:27:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Hemminger <shemminger@vyatta.com>,
-        Sridhar Samudrala <sri@us.ibm.com>,
+        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [136/262] bridge: fix hang on removal of bridge via netlink
+Subject: [138/262] ipv4: fix ipsec forward performance regression
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,85 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-[ Upstream commit 1ce5cce895309862d2c35d922816adebe094fe4a ]
+[ Upstream commit b73233960a59ee66e09d642f13d0592b13651e94 ]
 
-Need to cleanup bridge device timers and ports when being bridge
-device is being removed via netlink.
+There is bug in commit 5e2b61f(ipv4: Remove flowi from struct rtable).
+It makes xfrm4_fill_dst() modify wrong data structure.
 
-This fixes the problem of observed when doing:
- ip link add br0 type bridge
- ip link set dev eth1 master br0
- ip link set br0 up
- ip link del br0
-
-which would cause br0 to hang in unregister_netdev because
-of leftover reference count.
-
-Reported-by: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Acked-by: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
+Reported-by: Kim Phillips <kim.phillips@freescale.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/bridge/br_if.c      |    9 +++++----
- net/bridge/br_netlink.c |    1 +
- net/bridge/br_private.h |    1 +
- 3 files changed, 7 insertions(+), 4 deletions(-)
+ net/ipv4/xfrm4_policy.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -161,9 +161,10 @@ static void del_nbp(struct net_bridge_po
- 	call_rcu(&p->rcu, destroy_nbp_rcu);
- }
+--- a/net/ipv4/xfrm4_policy.c
++++ b/net/ipv4/xfrm4_policy.c
+@@ -79,13 +79,13 @@ static int xfrm4_fill_dst(struct xfrm_ds
+ 	struct rtable *rt = (struct rtable *)xdst->route;
+ 	const struct flowi4 *fl4 = &fl->u.ip4;
  
--/* called with RTNL */
--static void del_br(struct net_bridge *br, struct list_head *head)
-+/* Delete bridge device */
-+void br_dev_delete(struct net_device *dev, struct list_head *head)
- {
-+	struct net_bridge *br = netdev_priv(dev);
- 	struct net_bridge_port *p, *n;
+-	rt->rt_key_dst = fl4->daddr;
+-	rt->rt_key_src = fl4->saddr;
+-	rt->rt_key_tos = fl4->flowi4_tos;
+-	rt->rt_route_iif = fl4->flowi4_iif;
+-	rt->rt_iif = fl4->flowi4_iif;
+-	rt->rt_oif = fl4->flowi4_oif;
+-	rt->rt_mark = fl4->flowi4_mark;
++	xdst->u.rt.rt_key_dst = fl4->daddr;
++	xdst->u.rt.rt_key_src = fl4->saddr;
++	xdst->u.rt.rt_key_tos = fl4->flowi4_tos;
++	xdst->u.rt.rt_route_iif = fl4->flowi4_iif;
++	xdst->u.rt.rt_iif = fl4->flowi4_iif;
++	xdst->u.rt.rt_oif = fl4->flowi4_oif;
++	xdst->u.rt.rt_mark = fl4->flowi4_mark;
  
- 	list_for_each_entry_safe(p, n, &br->port_list, list) {
-@@ -268,7 +269,7 @@ int br_del_bridge(struct net *net, const
- 	}
- 
- 	else
--		del_br(netdev_priv(dev), NULL);
-+		br_dev_delete(dev, NULL);
- 
- 	rtnl_unlock();
- 	return ret;
-@@ -445,7 +446,7 @@ void __net_exit br_net_exit(struct net *
- 	rtnl_lock();
- 	for_each_netdev(net, dev)
- 		if (dev->priv_flags & IFF_EBRIDGE)
--			del_br(netdev_priv(dev), &list);
-+			br_dev_delete(dev, &list);
- 
- 	unregister_netdevice_many(&list);
- 	rtnl_unlock();
---- a/net/bridge/br_netlink.c
-+++ b/net/bridge/br_netlink.c
-@@ -208,6 +208,7 @@ static struct rtnl_link_ops br_link_ops
- 	.priv_size	= sizeof(struct net_bridge),
- 	.setup		= br_dev_setup,
- 	.validate	= br_validate,
-+	.dellink	= br_dev_delete,
- };
- 
- int __init br_netlink_init(void)
---- a/net/bridge/br_private.h
-+++ b/net/bridge/br_private.h
-@@ -294,6 +294,7 @@ static inline int br_is_root_bridge(cons
- 
- /* br_device.c */
- extern void br_dev_setup(struct net_device *dev);
-+extern void br_dev_delete(struct net_device *dev, struct list_head *list);
- extern netdev_tx_t br_dev_xmit(struct sk_buff *skb,
- 			       struct net_device *dev);
- #ifdef CONFIG_NET_POLL_CONTROLLER
+ 	xdst->u.dst.dev = dev;
+ 	dev_hold(dev);
 
 
