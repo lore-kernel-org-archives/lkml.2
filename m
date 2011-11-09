@@ -1,98 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab1KIUlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:41:16 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:31712 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755643Ab1KIUlP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 15:41:15 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 09 Nov 2011 15:41:13 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v8 14/16] ARM: LPAE: mark memory banks with start >
- ULONG_MAX as highmem
-In-reply-to: <1320682618-1182-15-git-send-email-catalin.marinas@arm.com>
-Message-id: <alpine.LFD.2.02.1111091540450.3307@xanadu.home>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
- <1320682618-1182-15-git-send-email-catalin.marinas@arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756745Ab1KIUoz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:44:55 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:42881 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754874Ab1KIUoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 15:44:54 -0500
+Date: Wed, 9 Nov 2011 20:44:47 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: loongson2_clock: include linux/module.h
+Message-ID: <20111109204447.GC13280@linux-mips.org>
+References: <1320869109-9508-1-git-send-email-aaro.koskinen@iki.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320869109-9508-1-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Nov 2011, Catalin Marinas wrote:
+Thanks, applied.
 
-> From: Will Deacon <will.deacon@arm.com>
-> 
-> Memory banks living outside of the 32-bit physical address
-> space do not have a 1:1 pa <-> va mapping and therefore the
-> __va macro may wrap.
-> 
-> This patch ensures that such banks are marked as highmem so
-> that the Kernel doesn't try to split them up when it sees that
-> the wrapped virtual address overlaps the vmalloc space.
-> 
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-
-
-> ---
->  arch/arm/mm/mmu.c |   16 +++++++++++++++-
->  1 files changed, 15 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-> index 1935311..b836d6b 100644
-> --- a/arch/arm/mm/mmu.c
-> +++ b/arch/arm/mm/mmu.c
-> @@ -799,6 +799,9 @@ void __init sanity_check_meminfo(void)
->  		struct membank *bank = &meminfo.bank[j];
->  		*bank = meminfo.bank[i];
->  
-> +		if (bank->start > ULONG_MAX)
-> +			highmem = 1;
-> +
->  #ifdef CONFIG_HIGHMEM
->  		if (__va(bank->start) >= vmalloc_min ||
->  		    __va(bank->start) < (void *)PAGE_OFFSET)
-> @@ -810,7 +813,7 @@ void __init sanity_check_meminfo(void)
->  		 * Split those memory banks which are partially overlapping
->  		 * the vmalloc area greatly simplifying things later.
->  		 */
-> -		if (__va(bank->start) < vmalloc_min &&
-> +		if (!highmem && __va(bank->start) < vmalloc_min &&
->  		    bank->size > vmalloc_min - __va(bank->start)) {
->  			if (meminfo.nr_banks >= NR_BANKS) {
->  				printk(KERN_CRIT "NR_BANKS too low, "
-> @@ -831,6 +834,17 @@ void __init sanity_check_meminfo(void)
->  		bank->highmem = highmem;
->  
->  		/*
-> +		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
-> +		 */
-> +		if (highmem) {
-> +			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
-> +			       "(!CONFIG_HIGHMEM).\n",
-> +			       (unsigned long long)bank->start,
-> +			       (unsigned long long)bank->start + bank->size - 1);
-> +			continue;
-> +		}
-> +
-> +		/*
->  		 * Check whether this memory bank would entirely overlap
->  		 * the vmalloc area.
->  		 */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+  Ralf
