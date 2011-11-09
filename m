@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965063Ab1KJDih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:38:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43930 "EHLO mx2.suse.de"
+	id S964892Ab1KJDin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:38:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43938 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965055Ab1KJDib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:31 -0500
+	id S965061Ab1KJDih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:37 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:49 2011
-Message-Id: <20111109213149.529516578@clark.kroah.org>
+Message-Id: <20111109213149.749917727@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:01 -0800
+Date: Wed, 09 Nov 2011 13:32:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [074/264] ARM: smp: fix clipping of number of CPUs
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        linux-pci@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [076/264] xen-pcifront: Update warning comment to use e820_host option.
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,166 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-commit a06f916b7a9b57447ceb875eb0a89f1a66b31bca upstream.
+commit 917e3e65c35459d52f0d0b890aa5df0cad07a051 upstream.
 
-Rather than clipping the number of CPUs using the compile-time NR_CPUS
-constant, use the runtime nr_cpu_ids value instead.  This allows the
-nr_cpus command line option to work as expected.
+With Xen changeset 23428 "libxl: Add 'e820_host' option to config file"
+the E820 as seen from the host can now be passed into the guest.
+This means that a PV guest can now:
+ - Use the correct PCI I/O gap. Before these patches, Linux guest would
+   boot up and would tell:
+   [    0.000000] Allocating PCI resources starting at 40000000 (gap: 40000000:c0000000)
+   while in actuality the PCI I/O gap should have been:
+   [    0.000000] Allocating PCI resources starting at b0000000 (gap: b0000000:4c000000)
 
-Reported-by: Mark Salter <msalter@redhat.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+ - The PV domain with PCI devices was limited to 3GB. It now can be booted
+   with 4GB, 8GB, or whatever number you want. The PCI devices will now _not_ conflict
+   with System RAM. Meaning the drivers can load.
+
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org
+[v2: Made the string less broken up. Suggested by Joe Perches]
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-exynos4/platsmp.c   |   10 ++++------
- arch/arm/mach-msm/platsmp.c       |    6 ++++++
- arch/arm/mach-omap2/omap-smp.c    |   10 ++++------
- arch/arm/mach-realview/platsmp.c  |   10 ++++------
- arch/arm/mach-shmobile/platsmp.c  |    6 ++++++
- arch/arm/mach-tegra/platsmp.c     |    8 ++++----
- arch/arm/mach-ux500/platsmp.c     |   10 ++++------
- arch/arm/mach-vexpress/ct-ca9x4.c |    6 ++++++
- 8 files changed, 38 insertions(+), 28 deletions(-)
+ drivers/pci/xen-pcifront.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/arch/arm/mach-exynos4/platsmp.c
-+++ b/arch/arm/mach-exynos4/platsmp.c
-@@ -193,12 +193,10 @@ void __init smp_init_cpus(void)
- 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
- 
- 	/* sanity check */
--	if (ncores > NR_CPUS) {
--		printk(KERN_WARNING
--		       "EXYNOS4: no. of cores (%d) greater than configured "
--		       "maximum of %d - clipping\n",
--		       ncores, NR_CPUS);
--		ncores = NR_CPUS;
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
- 	}
- 
- 	for (i = 0; i < ncores; i++)
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -156,6 +156,12 @@ void __init smp_init_cpus(void)
- {
- 	unsigned int i, ncores = get_core_count();
- 
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
-+	}
-+
- 	for (i = 0; i < ncores; i++)
- 		set_cpu_possible(i, true);
- 
---- a/arch/arm/mach-omap2/omap-smp.c
-+++ b/arch/arm/mach-omap2/omap-smp.c
-@@ -109,12 +109,10 @@ void __init smp_init_cpus(void)
- 	ncores = scu_get_core_count(scu_base);
- 
- 	/* sanity check */
--	if (ncores > NR_CPUS) {
--		printk(KERN_WARNING
--		       "OMAP4: no. of cores (%d) greater than configured "
--		       "maximum of %d - clipping\n",
--		       ncores, NR_CPUS);
--		ncores = NR_CPUS;
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
- 	}
- 
- 	for (i = 0; i < ncores; i++)
---- a/arch/arm/mach-realview/platsmp.c
-+++ b/arch/arm/mach-realview/platsmp.c
-@@ -52,12 +52,10 @@ void __init smp_init_cpus(void)
- 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
- 
- 	/* sanity check */
--	if (ncores > NR_CPUS) {
--		printk(KERN_WARNING
--		       "Realview: no. of cores (%d) greater than configured "
--		       "maximum of %d - clipping\n",
--		       ncores, NR_CPUS);
--		ncores = NR_CPUS;
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
- 	}
- 
- 	for (i = 0; i < ncores; i++)
---- a/arch/arm/mach-shmobile/platsmp.c
-+++ b/arch/arm/mach-shmobile/platsmp.c
-@@ -56,6 +56,12 @@ void __init smp_init_cpus(void)
- 	unsigned int ncores = shmobile_smp_get_core_count();
- 	unsigned int i;
- 
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
-+	}
-+
- 	for (i = 0; i < ncores; i++)
- 		set_cpu_possible(i, true);
- 
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -114,10 +114,10 @@ void __init smp_init_cpus(void)
- {
- 	unsigned int i, ncores = scu_get_core_count(scu_base);
- 
--	if (ncores > NR_CPUS) {
--		printk(KERN_ERR "Tegra: no. of cores (%u) greater than configured (%u), clipping\n",
--			ncores, NR_CPUS);
--		ncores = NR_CPUS;
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
- 	}
- 
- 	for (i = 0; i < ncores; i++)
---- a/arch/arm/mach-ux500/platsmp.c
-+++ b/arch/arm/mach-ux500/platsmp.c
-@@ -156,12 +156,10 @@ void __init smp_init_cpus(void)
- 	ncores = scu_base ? scu_get_core_count(scu_base) : 1;
- 
- 	/* sanity check */
--	if (ncores > NR_CPUS) {
--		printk(KERN_WARNING
--		       "U8500: no. of cores (%d) greater than configured "
--		       "maximum of %d - clipping\n",
--		       ncores, NR_CPUS);
--		ncores = NR_CPUS;
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
- 	}
- 
- 	for (i = 0; i < ncores; i++)
---- a/arch/arm/mach-vexpress/ct-ca9x4.c
-+++ b/arch/arm/mach-vexpress/ct-ca9x4.c
-@@ -221,6 +221,12 @@ static void ct_ca9x4_init_cpu_map(void)
- {
- 	int i, ncores = scu_get_core_count(MMIO_P2V(A9_MPCORE_SCU));
- 
-+	if (ncores > nr_cpu_ids) {
-+		pr_warn("SMP: %u cores greater than maximum (%u), clipping\n",
-+			ncores, nr_cpu_ids);
-+		ncores = nr_cpu_ids;
-+	}
-+
- 	for (i = 0; i < ncores; ++i)
- 		set_cpu_possible(i, true);
- 
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -400,9 +400,8 @@ static int pcifront_claim_resource(struc
+ 			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+ 				pci_name(dev), i);
+ 			if (pci_claim_resource(dev, i)) {
+-				dev_err(&pdev->xdev->dev, "Could not claim "
+-					"resource %s/%d! Device offline. Try "
+-					"giving less than 4GB to domain.\n",
++				dev_err(&pdev->xdev->dev, "Could not claim resource %s/%d! "
++					"Device offline. Try using e820_host=1 in the guest config.\n",
+ 					pci_name(dev), i);
+ 			}
+ 		}
 
 
