@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab1KIWo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:44:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52787 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab1KIWo6 (ORCPT
+	id S932920Ab1KIWwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:52:42 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53859 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751617Ab1KIWwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:44:58 -0500
-Date: Wed, 9 Nov 2011 14:44:56 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com
-Subject: Re: [PATCH] memcg: doc the pagefault count
-Message-Id: <20111109144456.df8e4ccc.akpm@linux-foundation.org>
-In-Reply-To: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Wed, 9 Nov 2011 17:52:40 -0500
+Date: Wed, 9 Nov 2011 22:49:54 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Eugene Teo <eugeneteo@kernel.sg>,
+        security@kernel.org, kernel-hardening@lists.openwall.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: kernel: multiple flaws allowing to sniff keystrokes timings
+Message-ID: <20111109224954.3864c426@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111109222708.GA28509@kroah.com>
+References: <20111108121412.GA14450@albatros>
+	<4EBA0A32.3000607@kernel.sg>
+	<20111109161123.GC2557@kroah.com>
+	<20111109170946.GA30780@albatros>
+	<20111109222708.GA28509@kroah.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -24,56 +30,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Nov 2011 17:15:21 +0800
-Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
-
-> Pagefault count has added to memcg stats since commit 456f998e,
-> but forgot to doc it.
+> > 1) show zero fields to unprivileged users (for /proc/interrupts and
+> > /proc/stat it is CAP_SYS_ADMIN, for /proc/$PID/{stat,sched,schedstat} it
+> > is ptrace_may_access(), for ttys it is uid check) and real values for
+> > privileged.  The same technique is used in /proc/$PID/sched for eip/esp
+> > values.
 > 
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  Documentation/cgroups/memory.txt |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index cc0ebc5..081f4f44 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -389,6 +389,13 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
->  pgpgin		- # of pages paged in (equivalent to # of charging events).
->  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
->  swap		- # of bytes of swap usage
-> +
-> +pgfault		- # of page-faults
-> +pgmajfault	- # of major page-faults
-> +		These two are different from "pgpgin"/"pgpgout" stat which
-> +		count number of pages charged/discharged to the cgroup and
-> +		have no meaning of reading/writing page to disk.
-> +
->  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+> That makes sense to a point, users will wonder why they aren't seeing
+> interrupts anymore, which is a valuable debug tool.
 
-OK, but the documentation was already rather poor.
+For the interrupts case you don't want show misleading data. It really
+has only one use so it's better to change the permissions in the
+hardening case. Something distros can already do
 
-For a start, what do pgpgin and pgpgout actually count?  How about
+> All that is leaking here is the number of keystrokes at most, right?
 
-pgpgin: the number of pages read from disk as a result of pagefault
-activity within this memcg (swapin and mapped-file pagein).  Does not
-include other causes of disk I/O such as read().
+If even that on USB.
 
-pgpgout: the number of pages written to disk as a result of swap and
-mapped-file activity within this memcg.  Does not include other causes
-of disk I/O such as write().
+> If we provide a "good" library function for keyboard password usage, we
+> could get other applications to use it, but yes, it is a tough issue :(
 
-(I'm really not sure if this is correct!)
+You can also create noise by rounding off the values a bit. I don't think
+it would need much rounding to keep useful data and fuzz, and the
+rounding factor can be stuck in sysfs and default to 0.
 
-What are the units: is it "pages" or "multiples of 4k"?  If the latter
-then userspace must go off and work out what pagesize the kernel is,
-which is a bit ugly and is just asking for people to develop
-monitoring tools which report wrong results on other-than-4k-pagesize
-setups.
-
-
-Once we have that settled then we can move on to documenting pgfault
-and pgmajfault.  What are the units?  Exactly which kernel actions lead
-to these counters being altered?
-
+Alan
