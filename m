@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936041Ab1KJEMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:12:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44532 "EHLO mx2.suse.de"
+	id S936266Ab1KJENF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:13:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44506 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965566Ab1KJDnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:43:32 -0500
+	id S965545Ab1KJDnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:43:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:54 2011
-Message-Id: <20111109213154.295952857@clark.kroah.org>
+Message-Id: <20111109213154.788091133@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:48 -0800
+Date: Wed, 09 Nov 2011 13:32:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [121/264] ASoC: wm8940: Properly set codec->dapm.bias_level
+Subject: [126/264] ASoC: wm8994: Fix setting rate_reg for wm8994-aif2
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,27 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Axel Lin <axel.lin@gmail.com>
 
-commit 5927f94700e860ae27ff24e7f3bc9e4f7b9922eb upstream.
+commit c527e6aadc8f142ad388b6aa59a1ce6a4bfb1966 upstream.
 
-Reported-by: Chris Paulson-Ellis <chris@edesix.com>
+For wm8994-aif2, the rate_reg should be WM8994_AIF2_RATE.
+
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8940.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/soc/codecs/wm8994.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -470,6 +470,8 @@ static int wm8940_set_bias_level(struct
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -2311,7 +2311,7 @@ static void wm8994_aif_shutdown(struct s
+ 		rate_reg = WM8994_AIF1_RATE;
  		break;
- 	}
- 
-+	codec->dapm.bias_level = level;
-+
- 	return ret;
- }
- 
+ 	case 2:
+-		rate_reg = WM8994_AIF1_RATE;
++		rate_reg = WM8994_AIF2_RATE;
+ 		break;
+ 	default:
+ 		break;
 
 
