@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab1KIWh2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:37:28 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:44247 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab1KIWh0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:37:26 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: dilip.daya@hp.com
-Cc: linux-kernel@vger.kernel.org, jmorris@namei.org, <netdev@vger.kernel.org>,
-        adobrian@gmail.com
-References: <1320858706.2531.45.camel@pro6455b.example.com>
-Date: Wed, 09 Nov 2011 14:38:16 -0800
-In-Reply-To: <1320858706.2531.45.camel@pro6455b.example.com> (Dilip Daya's
-	message of "Wed, 09 Nov 2011 12:11:46 -0500")
-Message-ID: <m1d3d0oraf.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S932549Ab1KIWiU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:38:20 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60430 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932271Ab1KIWiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 17:38:19 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: [PATCH 2/7] PM / Domains: Make it possible to use per-device .active_wakeup()
+Date: Wed, 9 Nov 2011 23:40:57 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Linux-sh list" <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        jean.pihet@newoldbits.com
+References: <201111070101.33960.rjw@sisk.pl> <201111082140.00876.rjw@sisk.pl> <Pine.LNX.4.64.1111090818060.24340@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1111090818060.24340@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19mVsNwCb3Wb6FnPyUAqVDdwNjxAlQkngI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: *  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;dilip.daya@hp.com
-X-Spam-Relay-Country: **
-Subject: Re: ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111092340.57280.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dilip Daya <dilip.daya@hp.com> writes:
+On Wednesday, November 09, 2011, Guennadi Liakhovetski wrote:
+> On Tue, 8 Nov 2011, Rafael J. Wysocki wrote:
+> 
+> > On Tuesday, November 08, 2011, Guennadi Liakhovetski wrote:
+> > > On Mon, 7 Nov 2011, Rafael J. Wysocki wrote:
+> > > 
+> > > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > 
+> > > > The current generic PM domains code requires that the same
+> > > > .active_wakeup() device callback routine be used for all devices in
+> > > > the given domain, which is inflexible and may not cover some specific
+> > > > use cases.  For this reason, make it possible to use device specific
+> > > > .active_wakeup() callback routines by adding a corresponding callback
+> > > > pointer to struct generic_pm_domain_data.  To reduce code duplication
+> > > > use struct gpd_dev_ops to represent PM domain device callbacks as
+> > > > well as device-specific ones and add a macro for defining routines
+> > > > that will execute those callbacks.
+> > > > 
+> > > > Modify the shmobile's power domains code to allow drivers to use
+> > > > their own .active_wakeup() callback routines.
+> > > > 
+> > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > ---
+> > > >  arch/arm/mach-shmobile/pm-sh7372.c |   11 ++++---
+> > > >  drivers/base/power/domain.c        |   54 ++++++++++++++++++-------------------
+> > > >  include/linux/pm_domain.h          |   15 ++++------
+> > > >  3 files changed, 41 insertions(+), 39 deletions(-)
+> > > > 
+> > > > Index: linux/include/linux/pm_domain.h
+> > > > ===================================================================
+> > > > --- linux.orig/include/linux/pm_domain.h
+> > > > +++ linux/include/linux/pm_domain.h
+> > > > @@ -23,6 +23,12 @@ struct dev_power_governor {
+> > > >  	bool (*power_down_ok)(struct dev_pm_domain *domain);
+> > > >  };
+> > > >  
+> > > > +struct gpd_dev_ops {
+> > > > +	int (*start)(struct device *dev);
+> > > > +	int (*stop)(struct device *dev);
+> > > > +	bool (*active_wakeup)(struct device *dev);
+> > > > +};
+> > > > +
+> > > >  struct generic_pm_domain {
+> > > >  	struct dev_pm_domain domain;	/* PM domain operations */
+> > > >  	struct list_head gpd_list_node;	/* Node in the global PM domains list */
+> > > > @@ -45,9 +51,7 @@ struct generic_pm_domain {
+> > > >  	bool dev_irq_safe;	/* Device callbacks are IRQ-safe */
+> > > >  	int (*power_off)(struct generic_pm_domain *domain);
+> > > >  	int (*power_on)(struct generic_pm_domain *domain);
+> > > > -	int (*start_device)(struct device *dev);
+> > > > -	int (*stop_device)(struct device *dev);
+> > > > -	bool (*active_wakeup)(struct device *dev);
+> > > > +	struct gpd_dev_ops dev_ops;
+> > > 
+> > > Wouldn't it be better to merge patches 1 and 2?
+> > 
+> > First, why would it?
+> 
+> Because (1) AFAICS both these patches add new logically rather close to 
+> each other methods to the same existing API,
 
-> Hi All,
->
-> LTP-network tests produced:
->
-> 	"ip_local_deliver_finish: proto 108 (IPComp) isn't netns-ready"
->
-> Question:
-> Is the above a bug or feature (IPComp, mode: transport) not netns
-> enabled?
+Well, in fact .active_wakeup() was added for a totally different reason,
+but I agree that now it _looks_ analogous.
 
-I would call it a missing feature.
+> and (2) it would reduce the 
+> total changed lines count and simplify reading of the patch(es), because 
+> your second patch moves around and modifies lines of code, that the first 
+> patch adds.
 
-> Environment:
->
-> * v3.1-stable kernel.
->
-> * Configured two network-namespaces via "ip netns add ...".
->   on a single system: netns0 (assigned as server) and
->   netns1 (assigned as client).
->   - assigned multiple physical NICs to netns0 and netns1.
->
-> * Entered netns1 (ip netns exec netns1 bash) to execute
->   ltp-network suite of tests between netns1 and netns0.
->
-> * The following LTP tests produced messages:
->
->   "kernel: ip_local_deliver_finish: proto 108 isn't netns-ready"
->
->    - /usr/lib/ltp/testcases/bin/icmp4-multi-diffip06
->    - /usr/lib/ltp/testcases/bin/tcp4-multi-diffip13
->    - /usr/lib/ltp/testcases/bin/udp4-multi-diffip06
->    - /usr/lib/ltp/testcases/bin/udp4-multi-diffnic06
->    - /usr/lib/ltp/testcases/bin/udp4-multi-diffport06
->
-> * I also noticed missing ".netns_ok = 1" in:
->   - http://lxr.linux.no/linux+v3.1/net/ipv4/ipcomp.c#L150
+Well, I can fold [2/7] into [1/7] if that helps.
 
-The .netns_ok flag indicates that someone has audited the code and made
-certain it all works with network namespaces.
-
-Skimming the code I don't see anything that jumps out as me as
-wrong.  And it looks like Alexy did the work in Jan of 2010.
-
-   commit a92df2545402c1a08e7a158f4477a52dea0eeeed
-   Author: Alexey Dobriyan <adobriyan@gmail.com>
-   Date:   Mon Jan 25 10:38:34 2010 +0000
-   
-       netns xfrm: ipcomp support
-       
-       Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-       Signed-off-by: David S. Miller <davem@davemloft.net>
-
-However it is clear that no one has actually tested ipcomp with
-network namespaces.
-
-If you have a clue what is going on with ip compression my
-recommendation would be to add .netns_ok = 1.  Verify that the
-everything works and send the patch.  You probably want to
-verify and test ipv6 as well.  It really looks like the code
-is fine and it just needs to be enabled.
-
-Eric
+Thanks,
+Rafael
