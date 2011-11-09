@@ -1,38 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab1KIQwf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:52:35 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:40695 "EHLO mx2.parallels.com"
+	id S1755511Ab1KIQwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:52:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15287 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751285Ab1KIQwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:52:34 -0500
-Message-ID: <4EBAAFAC.90205@parallels.com>
-Date: Wed, 9 Nov 2011 14:51:56 -0200
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1755477Ab1KIQwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:52:39 -0500
+Date: Wed, 9 Nov 2011 17:52:01 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
+Message-ID: <20111109165201.GI5075@redhat.com>
+References: <4EB8E969.6010502@suse.cz>
+ <1320766151-2619-1-git-send-email-aarcange@redhat.com>
+ <1320766151-2619-2-git-send-email-aarcange@redhat.com>
+ <4EB98A83.3040101@linux.vnet.ibm.com>
+ <4EBA75F2.4080800@linux.vnet.ibm.com>
+ <20111109155342.GA1260@google.com>
 MIME-Version: 1.0
-To: Andrew Wagin <avagin@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <paul@paulmenage.org>,
-        <lizf@cn.fujitsu.com>, <daniel.lezcano@free.fr>,
-        <a.p.zijlstra@chello.nl>, <jbottomley@parallels.com>, <pjt@google.com>,
-        <fweisbec@gmail.com>, Balbir Singh <bsingharora@gmail.com>
-Subject: Re: [PATCH v2 13/14] provide a version of cpuusage statistics inside
- cpu cgroup
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com> <1320182360-20043-14-git-send-email-glommer@parallels.com> <CANaxB-xQcqcZo5m7CJkCHrWj_TS4dyzYemPvrqZ25TaqK2tWYQ@mail.gmail.com> <4EBA6AF7.4020509@parallels.com> <CANaxB-z0-VY=SVEjmYKXrF+i2VW3U3QCxz0yN4Wp8-qevnd4tA@mail.gmail.com>
-In-Reply-To: <CANaxB-z0-VY=SVEjmYKXrF+i2VW3U3QCxz0yN4Wp8-qevnd4tA@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [201.82.130.234]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111109155342.GA1260@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 12:18 PM, Andrew Wagin wrote:
-> And look at cfs_rq->prev_sum_exec_runtime, probably it is not used too.
-> Usage of cfs_rq->sum_exec_runtime looks strange.
+On Wed, Nov 09, 2011 at 07:53:42AM -0800, Tejun Heo wrote:
+> Hello, Andrea, Srivatsa.
+> 
+> On Wed, Nov 09, 2011 at 06:15:38PM +0530, Srivatsa S. Bhat wrote:
+> > >> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > >> index 4298aba..67311d1 100644
+> > >> --- a/mm/huge_memory.c
+> > >> +++ b/mm/huge_memory.c
+> > >> @@ -2277,6 +2277,7 @@ static struct page *khugepaged_alloc_hugepage(void)
+> > >>  		if (!hpage) {
+> > >>  			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+> > >>  			khugepaged_alloc_sleep();
+> > >> +			try_to_freeze();
+> > >>  		} else
+> > >>  			count_vm_event(THP_COLLAPSE_ALLOC);
+> > >>  	} while (unlikely(!hpage) &&
+> > >> @@ -2331,7 +2332,7 @@ static int khugepaged(void *none)
+> > >>  {
+> > >>  	struct mm_slot *mm_slot;
+> > >>
+> > >> -	set_freezable();
+> > >> +	set_freezable_with_signal();
+> > >>  	set_user_nice(current, 19);
+> 
+> Oooh, please don't do that.  It's already gone in the pm tree.  It
+> would be best if wait_event_freezable_timeout() can be used
+> (ie. wakeup condition should be set somewhere) but, if not, something
+> like the following sould work.
+> 
+> static void khugepaged_alloc_sleep(void)
+> {
+> 	DEFINE_WAIT(wait);
+> 	add_wait_queue(&khugepaged_wait, &wait);
+> 	try_to_freeze();
 
-No, it is not.
-se->sum_exec_runtime is a per-se measure. It follows the task group as 
-it moves from rq to rq. cfs->rq->sum_exec_runtime (and it's rt 
-counterpart) is a measurement of accumulated runtime of all tasks that 
-ever passed through this rq.
+XXXXX
+
+> 	schedule_timeout_interruptible(
+> 			msecs_to_jiffies(
+> 				khugepaged_alloc_sleep_millisecs));
+> 	try_to_freeze();
+> 	remove_wait_queue(&khugepaged_wait, &wait);
+> }
+
+I thought about that but isn't there a race condition if TIF_FREEZE is
+set just in the point I marked above? I thought the
+set_freezable_with_signal by forcing the task runnable would fix it.
+
+How exactly wait_event_freezable_timeout() would avoid the same race
+as above? I mean the freezer won't have visibility on the
+khugepaged_wait waitqueue head so it surely cannot wake it up. And if
+the freezing() check happens before TIF_FREEZE get set but before
+schedule() is called, we're still screwed even if I use
+wait_event_freezable_timeout()... Or is the signal_pending check
+fixing that? But without set_freezable_with_signal() we don't set
+TIF_SIGPENDING... so it's not immediately care how this whole logic is
+race free. If you use stop_machine that could avoid the races though,
+but it doesn't look like the freezer uses that.
