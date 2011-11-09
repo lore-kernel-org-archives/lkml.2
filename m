@@ -1,58 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965310Ab1KJEZK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:25:10 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62060 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965086Ab1KJEZE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 23:25:04 -0500
-Message-ID: <1320899091.6118.0.camel@phoenix>
-Subject: [PATCH] Input: htcpen - add #ifdef CONFIG_PNP guard for pnp_ids
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Pau Oliva Fora <pof@eslack.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org
-Date: Thu, 10 Nov 2011 12:24:51 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.0- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S965163Ab1KJDjk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:39:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44048 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965132Ab1KJDjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:39:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:48 2011
+Message-Id: <20111109213148.346581659@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 09 Nov 2011 13:31:49 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
+Subject: [062/264] USB: option: convert Huawei K3765, K4505, K4605 reservered interface to blacklist
+In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build warning if CONFIG_PNP is disabled.
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-  CC      drivers/input/touchscreen/htcpen.o
-drivers/input/touchscreen/htcpen.c:50: warning: 'pnp_ids' defined but not used
+------------------
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+From: Dan Williams <dcbw@redhat.com>
+
+commit 0d905fd5ece4ab65e8407c450077744e1c8f661b upstream.
+
+That's what the blacklist is for...
+
+Signed-off-by: Dan Williams <dcbw@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/input/touchscreen/htcpen.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/usb/serial/option.c |   79 +++++++++++++++++++++++---------------------
+ 1 file changed, 43 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/input/touchscreen/htcpen.c b/drivers/input/touchscreen/htcpen.c
-index 62811de..7acc928 100644
---- a/drivers/input/touchscreen/htcpen.c
-+++ b/drivers/input/touchscreen/htcpen.c
-@@ -47,11 +47,13 @@ static int invert_y;
- module_param(invert_y, bool, 0644);
- MODULE_PARM_DESC(invert_y, "If set, Y axis is inverted");
- 
-+#ifdef CONFIG_PNP
- static struct pnp_device_id pnp_ids[] = {
- 	{ .id = "PNP0cc0" },
- 	{ .id = "" }
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -495,6 +495,10 @@ static const struct option_blacklist_inf
+ 	.sendsetup = BIT(0) | BIT(1) | BIT(2),
  };
- MODULE_DEVICE_TABLE(pnp, pnp_ids);
-+#endif
  
- static irqreturn_t htcpen_interrupt(int irq, void *handle)
++static const struct option_blacklist_info huawei_cdc12_blacklist = {
++	.reserved = BIT(1) | BIT(2),
++};
++
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -592,12 +596,15 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+@@ -1207,10 +1214,35 @@ static void __exit option_exit(void)
+ module_init(option_init);
+ module_exit(option_exit);
+ 
++static bool is_blacklisted(const u8 ifnum, enum option_blacklist_reason reason,
++			   const struct option_blacklist_info *blacklist)
++{
++	unsigned long num;
++	const unsigned long *intf_list;
++
++	if (blacklist) {
++		if (reason == OPTION_BLACKLIST_SENDSETUP)
++			intf_list = &blacklist->sendsetup;
++		else if (reason == OPTION_BLACKLIST_RESERVED_IF)
++			intf_list = &blacklist->reserved;
++		else {
++			BUG_ON(reason);
++			return false;
++		}
++
++		for_each_set_bit(num, intf_list, MAX_BL_NUM + 1) {
++			if (num == ifnum)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id)
  {
--- 
-1.7.5.4
-
+ 	struct usb_wwan_intf_private *data;
++
+ 	/* D-Link DWM 652 still exposes CD-Rom emulation interface in modem mode */
+ 	if (serial->dev->descriptor.idVendor == DLINK_VENDOR_ID &&
+ 		serial->dev->descriptor.idProduct == DLINK_PRODUCT_DWM_652 &&
+@@ -1223,14 +1255,14 @@ static int option_probe(struct usb_seria
+ 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
+ 		return -ENODEV;
+ 
+-	/* Don't bind network interfaces on Huawei K3765, K4505 & K4605 */
+-	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
+-		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
+-			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505 ||
+-			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4605) &&
+-		(serial->interface->cur_altsetting->desc.bInterfaceNumber == 1 ||
+-			serial->interface->cur_altsetting->desc.bInterfaceNumber == 2))
+-		return -ENODEV;
++	/* Don't bind reserved interfaces (like network ones) which often have
++	 * the same class/subclass/protocol as the serial interfaces.  Look at
++	 * the Windows driver .INF files for reserved interface numbers.
++	 */
++	if (is_blacklisted(
++		serial->interface->cur_altsetting->desc.bInterfaceNumber,
++		OPTION_BLACKLIST_RESERVED_IF,
++		(const struct option_blacklist_info *) id->driver_info))
+ 
+ 	/* Don't bind network interface on Samsung GT-B3730, it is handled by a separate module */
+ 	if (serial->dev->descriptor.idVendor == SAMSUNG_VENDOR_ID &&
+@@ -1239,7 +1271,6 @@ static int option_probe(struct usb_seria
+ 		return -ENODEV;
+ 
+ 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
+-
+ 	if (!data)
+ 		return -ENOMEM;
+ 	data->send_setup = option_send_setup;
+@@ -1248,30 +1279,6 @@ static int option_probe(struct usb_seria
+ 	return 0;
+ }
+ 
+-static bool is_blacklisted(const u8 ifnum, enum option_blacklist_reason reason,
+-			   const struct option_blacklist_info *blacklist)
+-{
+-	unsigned long num;
+-	const unsigned long *intf_list;
+-
+-	if (blacklist) {
+-		if (reason == OPTION_BLACKLIST_SENDSETUP)
+-			intf_list = &blacklist->sendsetup;
+-		else if (reason == OPTION_BLACKLIST_RESERVED_IF)
+-			intf_list = &blacklist->reserved;
+-		else {
+-			BUG_ON(reason);
+-			return false;
+-		}
+-
+-		for_each_set_bit(num, intf_list, MAX_BL_NUM + 1) {
+-			if (num == ifnum)
+-				return true;
+-		}
+-	}
+-	return false;
+-}
+-
+ static void option_instat_callback(struct urb *urb)
+ {
+ 	int err;
 
 
