@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756505Ab1KIKFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:05:05 -0500
-Received: from smtp-vbr18.xs4all.nl ([194.109.24.38]:1349 "EHLO
-	smtp-vbr18.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab1KIKFD (ORCPT
+	id S1756587Ab1KIKGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:06:05 -0500
+Received: from casper.infradead.org ([85.118.1.10]:56018 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab1KIKGD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:05:03 -0500
-X-Greylist: delayed 526 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Nov 2011 05:05:02 EST
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: linux-next: manual merge of the akpm tree with the v4l-dvb tree
-Date: Wed, 9 Nov 2011 10:54:21 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-durdane; KDE/4.6.5; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20111109135353.69057bcd2463a6ea009b898e@canb.auug.org.au> <4EBA49FF.4090904@infradead.org>
-In-Reply-To: <4EBA49FF.4090904@infradead.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111091054.21425.hverkuil@xs4all.nl>
+	Wed, 9 Nov 2011 05:06:03 -0500
+Subject: Re: [F.A.Q.] perf ABI backwards and forwards compatibility
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Frank Ch. Eigler" <fche@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Vince Weaver <vince@deater.net>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Date: Wed, 09 Nov 2011 11:05:29 +0100
+In-Reply-To: <20111108125932.GC1022@elte.hu>
+References: <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
+	 <20111107175942.GA9395@elte.hu> <y0mpqh3og3v.fsf@fche.csb>
+	 <alpine.LFD.2.02.1111072204370.3082@tux.localdomain>
+	 <20111107203514.GG24234@thunk.org> <20111108102235.GA1241@elte.hu>
+	 <20111108113150.GA13195@redhat.com>
+	 <alpine.LFD.2.02.1111081336410.18135@tux.localdomain>
+	 <20111108121501.GA1022@elte.hu> <1320754825.11519.0.camel@twins>
+	 <20111108125932.GC1022@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320833129.13360.9.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 09, 2011 10:38:07 Mauro Carvalho Chehab wrote:
-> Em 09-11-2011 00:53, Stephen Rothwell escreveu:
-> > Hi Andrew,
-> > 
-> > Today's linux-next merge of the akpm tree got a conflict between commit
-> > "poll: add poll_requested_events() function" the v4l-dvb and akpm trees.
-> > It was very similar (but not identical), so I dropeed it from the akpm
-> > tree.
+On Tue, 2011-11-08 at 13:59 +0100, Ingo Molnar wrote:
 > 
-> Hans,
+> > Also the self monitor stuff, perf-tool doesn't use that for obvious 
+> > reasons.
 > 
-> Could you please double-check the differences?
+> Indeed, and that's PAPI's strong point.
+> 
+> We could try to utilize it via some clever LD_PRELOAD trickery?
 
-The akpm version was slightly older. The version in linux-next contains a
-coding style fix and adds a comment block to the header based on feedback I
-received from Andrew.
-
-Regards,
-
-	Hans
-
-> 
-> > BTW Mauro, that commit in v4l-dvb comes from a branch that contains a
-> > series of patches that have various Signed-off-by's but not yours ... it
-> > looks like they were imported from patchwork, but you forgot to add your
-> > SOB line.
-> 
-> Stephen,
-> 
-> Thanks for noticing it. Yes, I forgot to add my SOB on those patches, when
-> importing from Hans tree. I'll fix it for tomorrow's merge.
-> 
-> Thanks!
-> Mauro
-> 
+Wouldn't be really meaningful, a perf-test case that covers it would be
+much saner.
