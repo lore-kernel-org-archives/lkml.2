@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab1KJESU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:18:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44328 "EHLO mx2.suse.de"
+	id S936055Ab1KJESh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:18:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44305 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965356Ab1KJDlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:41:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:51 2011
-Message-Id: <20111109213151.053598289@clark.kroah.org>
+	id S965351Ab1KJDlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:41:40 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:52 2011
+Message-Id: <20111109213151.956922823@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:16 -0800
+Date: Wed, 09 Nov 2011 13:32:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peng Tao <peng_tao@emc.com>,
-        Jim Rees <rees@umich.edu>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [089/264] pnfs: make _set_lo_fail generic
+        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
+        Ming Lei <ming.lei@canonical.com>, Tejun Heo <htejun@gmail.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [098/264] ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge chipsets(v2)
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,151 +26,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <bergwolf@gmail.com>
+From: Ming Lei <ming.lei@canonical.com>
 
-commit 1b0ae068779874f54b55aac3a2a992bcf3f2c3c4 upstream.
+commit 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d upstream.
 
-file layout and block layout both use it to set mark layout io failure
-bit. So make it generic.
+This quirk patch fixes one kind of bug inside some Intel Sandybridge
+chipsets, see reports from
 
-Signed-off-by: Peng Tao <peng_tao@emc.com>
-Signed-off-by: Jim Rees <rees@umich.edu>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+       https://bugzilla.kernel.org/show_bug.cgi?id=40592.
+
+Many guys also have reported the problem before:
+
+	https://bugs.launchpad.net/bugs/737388
+	https://bugs.launchpad.net/bugs/794642
+	https://bugs.launchpad.net/bugs/782389
+	......
+
+With help from Tejun, the problem is found to be caused by 32bit PIO
+mode, so introduce the quirk patch to disable 32bit PIO on SATA piix
+for some Sandybridge CPT chipsets.
+
+Seth also tested the patch on all five affected chipsets
+(pci device ID: 0x1c00, 0x1c01, 0x1d00, 0x1e00, 0x1e01), and found
+the patch does fix the problem.
+
+Tested-by: Heasley, Seth <seth.heasley@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Acked-by: Tejun Heo <htejun@gmail.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/blocklayout/blocklayout.c |   17 +++--------------
- fs/nfs/nfs4filelayout.c          |   19 +++----------------
- fs/nfs/pnfs.c                    |   12 ++++++++++++
- fs/nfs/pnfs.h                    |    1 +
- 4 files changed, 19 insertions(+), 30 deletions(-)
+ drivers/ata/ata_piix.c |   37 ++++++++++++++++++++++++++++++++-----
+ 1 file changed, 32 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -176,17 +176,6 @@ retry:
- 	return bio;
- }
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -113,6 +113,8 @@ enum {
+ 	PIIX_PATA_FLAGS		= ATA_FLAG_SLAVE_POSS,
+ 	PIIX_SATA_FLAGS		= ATA_FLAG_SATA | PIIX_FLAG_CHECKINTR,
  
--static void bl_set_lo_fail(struct pnfs_layout_segment *lseg)
--{
--	if (lseg->pls_range.iomode == IOMODE_RW) {
--		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
--		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
--	} else {
--		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
--		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
--	}
--}
--
- /* This is basically copied from mpage_end_io_read */
- static void bl_end_io_read(struct bio *bio, int err)
- {
-@@ -206,7 +195,7 @@ static void bl_end_io_read(struct bio *b
- 	if (!uptodate) {
- 		if (!rdata->pnfs_error)
- 			rdata->pnfs_error = -EIO;
--		bl_set_lo_fail(rdata->lseg);
-+		pnfs_set_lo_fail(rdata->lseg);
- 	}
- 	bio_put(bio);
- 	put_parallel(par);
-@@ -370,7 +359,7 @@ static void bl_end_io_write_zero(struct
- 	if (!uptodate) {
- 		if (!wdata->pnfs_error)
- 			wdata->pnfs_error = -EIO;
--		bl_set_lo_fail(wdata->lseg);
-+		pnfs_set_lo_fail(wdata->lseg);
- 	}
- 	bio_put(bio);
- 	put_parallel(par);
-@@ -386,7 +375,7 @@ static void bl_end_io_write(struct bio *
- 	if (!uptodate) {
- 		if (!wdata->pnfs_error)
- 			wdata->pnfs_error = -EIO;
--		bl_set_lo_fail(wdata->lseg);
-+		pnfs_set_lo_fail(wdata->lseg);
- 	}
- 	bio_put(bio);
- 	put_parallel(par);
---- a/fs/nfs/nfs4filelayout.c
-+++ b/fs/nfs/nfs4filelayout.c
-@@ -77,19 +77,6 @@ filelayout_get_dserver_offset(struct pnf
- 	BUG();
- }
- 
--/* For data server errors we don't recover from */
--static void
--filelayout_set_lo_fail(struct pnfs_layout_segment *lseg)
--{
--	if (lseg->pls_range.iomode == IOMODE_RW) {
--		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
--		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
--	} else {
--		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
--		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
--	}
--}
--
- static int filelayout_async_handle_error(struct rpc_task *task,
- 					 struct nfs4_state *state,
- 					 struct nfs_client *clp,
-@@ -145,7 +132,7 @@ static int filelayout_read_done_cb(struc
- 		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
- 			__func__, data->ds_clp, data->ds_clp->cl_session);
- 		if (reset) {
--			filelayout_set_lo_fail(data->lseg);
-+			pnfs_set_lo_fail(data->lseg);
- 			nfs4_reset_read(task, data);
- 			clp = NFS_SERVER(data->inode)->nfs_client;
- 		}
-@@ -221,7 +208,7 @@ static int filelayout_write_done_cb(stru
- 		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
- 			__func__, data->ds_clp, data->ds_clp->cl_session);
- 		if (reset) {
--			filelayout_set_lo_fail(data->lseg);
-+			pnfs_set_lo_fail(data->lseg);
- 			nfs4_reset_write(task, data);
- 			clp = NFS_SERVER(data->inode)->nfs_client;
- 		} else
-@@ -256,7 +243,7 @@ static int filelayout_commit_done_cb(str
- 			__func__, data->ds_clp, data->ds_clp->cl_session);
- 		if (reset) {
- 			prepare_to_resend_writes(data);
--			filelayout_set_lo_fail(data->lseg);
-+			pnfs_set_lo_fail(data->lseg);
- 		} else
- 			nfs_restart_rpc(task, data->ds_clp);
- 		return -EAGAIN;
---- a/fs/nfs/pnfs.c
-+++ b/fs/nfs/pnfs.c
-@@ -1381,6 +1381,18 @@ static void pnfs_list_write_lseg(struct
- 	}
- }
- 
-+void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
-+{
-+	if (lseg->pls_range.iomode == IOMODE_RW) {
-+		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
-+		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
-+	} else {
-+		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
-+		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(pnfs_set_lo_fail);
++	PIIX_FLAG_PIO16		= (1 << 30), /*support 16bit PIO only*/
 +
- void
- pnfs_set_layoutcommit(struct nfs_write_data *wdata)
- {
---- a/fs/nfs/pnfs.h
-+++ b/fs/nfs/pnfs.h
-@@ -178,6 +178,7 @@ int pnfs_generic_pg_readpages(struct nfs
- void pnfs_generic_pg_init_write(struct nfs_pageio_descriptor *, struct nfs_page *);
- int pnfs_generic_pg_writepages(struct nfs_pageio_descriptor *desc);
- bool pnfs_generic_pg_test(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev, struct nfs_page *req);
-+void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg);
- int pnfs_layout_process(struct nfs4_layoutget *lgp);
- void pnfs_free_lseg_list(struct list_head *tmp_list);
- void pnfs_destroy_layout(struct nfs_inode *);
+ 	PIIX_80C_PRI		= (1 << 5) | (1 << 4),
+ 	PIIX_80C_SEC		= (1 << 7) | (1 << 6),
+ 
+@@ -147,6 +149,7 @@ enum piix_controller_ids {
+ 	ich8m_apple_sata,	/* locks up on second port enable */
+ 	tolapai_sata,
+ 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
++	ich8_sata_snb,
+ };
+ 
+ struct piix_map_db {
+@@ -177,6 +180,7 @@ static int piix_sidpr_scr_write(struct a
+ static int piix_sidpr_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
+ 			      unsigned hints);
+ static bool piix_irq_check(struct ata_port *ap);
++static int piix_port_start(struct ata_port *ap);
+ #ifdef CONFIG_PM
+ static int piix_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
+ static int piix_pci_device_resume(struct pci_dev *pdev);
+@@ -298,21 +302,21 @@ static const struct pci_device_id piix_p
+ 	/* SATA Controller IDE (PCH) */
+ 	{ 0x8086, 0x3b2e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
+ 	/* SATA Controller IDE (CPT) */
+-	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (CPT) */
+-	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (CPT) */
+ 	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (CPT) */
+ 	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (PBG) */
+-	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (PBG) */
+ 	{ 0x8086, 0x1d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Panther Point) */
+-	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Panther Point) */
+-	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
++	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Panther Point) */
+ 	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Panther Point) */
+@@ -338,6 +342,7 @@ static struct scsi_host_template piix_sh
+ static struct ata_port_operations piix_sata_ops = {
+ 	.inherits		= &ata_bmdma32_port_ops,
+ 	.sff_irq_check		= piix_irq_check,
++	.port_start		= piix_port_start,
+ };
+ 
+ static struct ata_port_operations piix_pata_ops = {
+@@ -478,6 +483,7 @@ static const struct piix_map_db *piix_ma
+ 	[ich8_2port_sata]	= &ich8_2port_map_db,
+ 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
+ 	[tolapai_sata]		= &tolapai_map_db,
++	[ich8_sata_snb]		= &ich8_map_db,
+ };
+ 
+ static struct ata_port_info piix_port_info[] = {
+@@ -606,6 +612,19 @@ static struct ata_port_info piix_port_in
+ 		.port_ops	= &piix_vmw_ops,
+ 	},
+ 
++	/*
++	 * some Sandybridge chipsets have broken 32 mode up to now,
++	 * see https://bugzilla.kernel.org/show_bug.cgi?id=40592
++	 */
++	[ich8_sata_snb] =
++	{
++		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
++		.pio_mask	= ATA_PIO4,
++		.mwdma_mask	= ATA_MWDMA2,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &piix_sata_ops,
++	},
++
+ };
+ 
+ static struct pci_bits piix_enable_bits[] = {
+@@ -649,6 +668,14 @@ static const struct ich_laptop ich_lapto
+ 	{ 0, }
+ };
+ 
++static int piix_port_start(struct ata_port *ap)
++{
++	if (!(ap->flags & PIIX_FLAG_PIO16))
++		ap->pflags |= ATA_PFLAG_PIO32 | ATA_PFLAG_PIO32CHANGE;
++
++	return ata_bmdma_port_start(ap);
++}
++
+ /**
+  *	ich_pata_cable_detect - Probe host controller cable detect info
+  *	@ap: Port for which cable detect info is desired
 
 
