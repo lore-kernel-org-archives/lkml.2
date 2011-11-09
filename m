@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab1KIIkA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:40:00 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57836 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab1KIIj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:39:59 -0500
-Date: Wed, 9 Nov 2011 09:38:12 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: John Kacur <jkacur@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
- tools/perf/ and tools/kvm/
-Message-ID: <20111109083812.GC11473@elte.hu>
-References: <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>
- <20111107203255.GF24234@thunk.org>
- <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com>
- <4EB85969.2010108@codemonkey.ws>
- <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu>
- <20111108093225.GB32533@elte.hu>
- <EDBAFB6F-4E3B-42B0-93E6-DF162B9859A6@mit.edu>
- <20111108125509.GB1022@elte.hu>
- <20111108163331.GJ24234@thunk.org>
- <alpine.LFD.2.00.1111082212560.8887@localhost6.localdomain6>
+	id S1756163Ab1KIImd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:42:33 -0500
+Received: from nm3.bullet.mail.bf1.yahoo.com ([98.139.212.162]:38685 "HELO
+	nm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753054Ab1KIImc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 03:42:32 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 283567.60954.bm@omp1046.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=NIasRVmY3sdqDInZC8qSxqdN46PcrAOUksOEPFvKDHxVrRxCx4n0ba6GXzW/AHP1rP7CUWJYRoU/gDqiIa7jRuAMWSxEdFzPgYb5zV6sQ7bZadN7UgbszKOOnqRrc8wLAAksJnEetXekp+vbZGTAtuBtExgds12gP5Za5QEgboA=;
+X-YMail-OSG: KrsQVloVM1n5pjQEKff0c0y526d.CajrXzo3YuCQIlp4AdO
+ zEB8Duxy7pcXcc04gbRtClRuurKbp8uH8X17DOtZVaaNDCa_NjaRxs8bGSCt
+ lCB6CdV.yYQhm0sZxQTZ17Y0Dbx2bYOgzCSrC9upyPzEaYcxlgdHyjLG7kLR
+ CGUvSlYrn5wBiLzM0mhb8MxJKOjPkurOx8DXwdWrlCBb6wChvjvvCgjXrNNl
+ fM3mE1swxPAzR30PmmH10LFt8AzQfiseDVv9KfHPy_gU6svYedqVz0MshZhM
+ r0odPtQvp1QVfKEyZbFEFUUlvbZZ3oZGsULilv1DWW0Q4JYEnBj5oY964Wbj
+ OmhVeQ4FG_NqKRiwhBaRL54ioJEv8d7PcPRWrwjr7vqhLBrhFzfKo088KlDm
+ Bl6t79SJgyPUHJWHZpqUHMN4YlzdX0whro0q4vaxcKf76VT8tle9aD10XUFM
+ 60Z7omA--
+X-Mailer: YahooMailWebService/0.8.115.325013
+References: <1320816503.73813.YahooMailNeo@web160718.mail.bf1.yahoo.com> <1320819875.26025.48.camel@edumazet-laptop> <CAA93jw4gDuHyG508zxRzyn+MJ4gL5m958OaCWJxoDsaLgjdnqg@mail.gmail.com>
+Message-ID: <1320828151.17101.YahooMailNeo@web160705.mail.bf1.yahoo.com>
+Date: Wed, 9 Nov 2011 00:42:31 -0800 (PST)
+From: Manavalan Krishnan <manavalan_k@yahoo.com>
+Reply-To: Manavalan Krishnan <manavalan_k@yahoo.com>
+Subject: Re: Large file copy to NFS mounted directory causes delay in other application packets
+To: Dave Taht <dave.taht@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: netdev <netdev@vger.kernel.org>
+In-Reply-To: <CAA93jw4gDuHyG508zxRzyn+MJ4gL5m958OaCWJxoDsaLgjdnqg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1111082212560.8887@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>When I see behavior like this I keep thinking interactions between overlarge large txqueuelens, somewhat busted TCP offloads on NICs, and that pfifo_fast must die in favor of fair queuing and/or diffserv classification. But seeing >it on two different nics implies that your switch (which I assume is shared) is possibly to blame...
+>(I see bufferbloat everywhere, but mostly because it's what I work on)
 
-* John Kacur <jkacur@redhat.com> wrote:
+>Is this NFS over TCP? Does the HA daemons prioritize packets at all? Does your switch? Does your qdiscs? How deep are your buffers on the network cards and txqueuelens and switch? 
+>(eric's other questions below are probably more valid)
 
-> On Tue, 8 Nov 2011, Ted Ts'o wrote:
-> 
-> > On Tue, Nov 08, 2011 at 01:55:09PM +0100, Ingo Molnar wrote:
 
-> > > I guess you can do well with a split project as well - my main 
-> > > claim is that good compatibility comes *naturally* with 
-> > > integration.
-> > 
-> > Here I have to disagree; my main worry is that integration makes 
-> > it *naturally* easy for people to skip the hard work needed to 
-> > keep a stable kernel/userspace interface.
-> > 
-> > The other worry which I've mentioned, but which I haven't seen 
-> > addressed, is that the even if you can use a perf from a newer 
-> > kernel with an older kernel, this causes distributions a huge 
-> > amount of pain, since they have to package two different kernel 
-> > source packages, and only compile perf from the newer kernel 
-> > source package.  This leads to all sorts of confusion from a 
-> > distribution packaging point of view.
-> > 
-> > For example, assume that RHEL 5, which is using 2.6.32 or 
-> > something like that, wants to use a newer e2fsck that does a 
-> > better job fixing file system corruptions.  If it were bundled 
-> > with the kernel, then they would have to package up the v3.1 
-> > kernel sources, and have a source RPM that isn't used for 
-> > building kernel sources, but just to build a newer version of 
-> > e2fsck.  Fortunately, they don't have to do that.  They just pull 
-> > down a newer version of e2fsprogs, and package, build, test, and 
-> > ship that.
-> > 
-> > In addition, suppose Red Hat ships a security bug fix which means 
-> > a new kernel-image RPM has to be shipped.  Does that mean that 
-> > Red Hat has to ship new binary RPM's for any and all tools/* 
-> > programs that they have packaged as separate RPM's?  Or should 
-> > installing a new kernel RPM also imply dropping new binaries in 
-> > /usr/bin/perf, et. al? There are all sorts of packaging questions 
-> > that are raised integration, and from where I sit I don't think 
-> > they've been adequately solved yet.
-> >
->  
-> This in practice is not a big deal.
-> 
-> There are many approaches for how the RPM can be built, but basically
-> getting the perf source is just a matter of
-> make perf-tar-src-pkg or friends such as
-> make perf-tarbz2-src-pkg
-> which will create perf-3.2.0-rc1.tar, and perf-3.2.0-rc1.tar.bz2
-> respectively which can be used for the src rpms. This tar ball can be used
-> as a separate package or subpackage.
+HA   daemons does not prioritize. could you please provide info on how to prioritize application packets?
+We tried with different switches, the same problem occurs. so switch may not be the issue here.
+switch and qdisks does not prirotize the packets.
+Here are network buffers used in the servers
 
-Great - the 'perf is impossible for distros' was a common counter 
-argument early in the perf project's lifetime - i'm glad it turned 
-out to be bogus in practice.
+txqueuelen is 1000 
 
-Would it further simplify distro side life if all utilities deeply 
-related to the kernel got built together and came in a single well 
-working package? kutils-3.2.0-rc1.rpm or such.
+net.core.netdev_max_backlog = 1000
+net.core.rmem_default = 262144
+net.core.rmem_max = 262144
+net.core.wmem_default = 129024
+net.core.wmem_max = 131071
+net.ipv4.tcp_rmem = 4096    87380    4194304
+net.ipv4.tcp_wmem = 4096    16384    4194304
+net.ipv4.tcp_mem = 196608    262144    393216
 
-They would always upgrade together with the kernel so there would 
-never be any forced backporting or separate errata pressure, beyond 
-the existing flow of -stable fixes.
-
-We do -stable fixes for tools/perf/ as well, for stability/security 
-fixes, naturally - other tools would have to follow the regular 
-kernel maintenance process to manage high priority fixes.
-
-Basically distros could rely on the kernel and its utilities being a 
-coherent whole, which is expected to work together, which is 
-maintained and built together and which, if it regresses, is handled 
-by the regular -stable kernel regressions process with high priority.
-
-I expect it would grow one by one - it's not like we can or want to 
-force utilities to go into the kernel proper. I'd also expect that 
-new tools would be added initially - not existing ones moved. My 
-question to you would rather be, would it make the life of distro 
-release engineers gradually easier if this space grew gradually over 
-the years, adding more and more critical tool functionality?
-
-Thanks,
-
-	Ingo
+Thanks
