@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935893Ab1KJDgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:36:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43711 "EHLO mx2.suse.de"
+	id S964939Ab1KJDhA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:37:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43734 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935881Ab1KJDgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:42 -0500
+	id S935894Ab1KJDg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
-Message-Id: <20111109213146.349425114@clark.kroah.org>
+Message-Id: <20111109213146.643285262@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:29 -0800
+Date: Wed, 09 Nov 2011 13:31:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: [042/264] target: Fix REPORT TARGET PORT GROUPS handling with small allocation length
+        alan@lxorguk.ukuu.org.uk, Nelson Elhage <nelhage@nelhage.com>,
+        Jason Baron <jbaron@redhat.com>, Dave Jones <davej@redhat.com>,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: [045/264] epoll: fix spurious lockdep warnings
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,65 +26,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Nelson Elhage <nelhage@nelhage.com>
 
-commit 6b20fa9aaf0c2f69ee6f9648e20ab2be0206705e upstream.
+commit d8805e633e054c816c47cb6e727c81f156d9253d upstream.
 
-This patch fixes a bug with the handling of REPORT TARGET PORT GROUPS
-containing a smaller allocation length than the payload requires causing
-memory writes beyond the end of the buffer.  This patch checks for the
-minimum 4 byte length for the response payload length, and also checks
-upon each loop of T10_ALUA(su_dev)->tg_pt_gps_list to ensure the Target
-port group and Target port descriptor list is able to fit into the
-remaining allocation length.
+epoll can acquire recursively acquire ep->mtx on multiple "struct
+eventpoll"s at once in the case where one epoll fd is monitoring another
+epoll fd.  This is perfectly OK, since we're careful about the lock
+ordering, but it causes spurious lockdep warnings.  Annotate the recursion
+using mutex_lock_nested, and add a comment explaining the nesting rules
+for good measure.
 
-If the response payload exceeds the allocation length length, then rd_len
-is still increments to indicate to the initiator that the payload has
-been truncated.
+Recent versions of systemd are triggering this, and it can also be
+demonstrated with the following trivial test program:
 
-Reported-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
+--------------------8<--------------------
+
+int main(void) {
+   int e1, e2;
+   struct epoll_event evt = {
+       .events = EPOLLIN
+   };
+
+   e1 = epoll_create1(0);
+   e2 = epoll_create1(0);
+   epoll_ctl(e1, EPOLL_CTL_ADD, e2, &evt);
+   return 0;
+}
+--------------------8<--------------------
+
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Tested-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
+Acked-by: Jason Baron <jbaron@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_alua.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ fs/eventpoll.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -68,6 +68,15 @@ int core_emulate_report_target_port_grou
- 	unsigned char *buf;
- 	u32 rd_len = 0, off = 4; /* Skip over RESERVED area to first
- 				    Target port group descriptor */
-+	/*
-+	 * Need at least 4 bytes of response data or else we can't
-+	 * even fit the return data length.
-+	 */
-+	if (cmd->data_length < 4) {
-+		pr_warn("REPORT TARGET PORT GROUPS allocation length %u"
-+			" too small\n", cmd->data_length);
-+		return -EINVAL;
-+	}
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -70,6 +70,15 @@
+  * simultaneous inserts (A into B and B into A) from racing and
+  * constructing a cycle without either insert observing that it is
+  * going to.
++ * It is necessary to acquire multiple "ep->mtx"es at once in the
++ * case when one epoll fd is added to another. In this case, we
++ * always acquire the locks in the order of nesting (i.e. after
++ * epoll_ctl(e1, EPOLL_CTL_ADD, e2), e1->mtx will always be acquired
++ * before e2->mtx). Since we disallow cycles of epoll file
++ * descriptors, this ensures that the mutexes are well-ordered. In
++ * order to communicate this nesting to lockdep, when walking a tree
++ * of epoll file descriptors, we use the current recursion depth as
++ * the lockdep subkey.
+  * It is possible to drop the "ep->mtx" and to use the global
+  * mutex "epmutex" (together with "ep->lock") to have it working,
+  * but having "ep->mtx" will make the interface more scalable.
+@@ -464,13 +473,15 @@ static void ep_unregister_pollwait(struc
+  * @ep: Pointer to the epoll private data structure.
+  * @sproc: Pointer to the scan callback.
+  * @priv: Private opaque data passed to the @sproc callback.
++ * @depth: The current depth of recursive f_op->poll calls.
+  *
+  * Returns: The same integer error code returned by the @sproc callback.
+  */
+ static int ep_scan_ready_list(struct eventpoll *ep,
+ 			      int (*sproc)(struct eventpoll *,
+ 					   struct list_head *, void *),
+-			      void *priv)
++			      void *priv,
++			      int depth)
+ {
+ 	int error, pwake = 0;
+ 	unsigned long flags;
+@@ -481,7 +492,7 @@ static int ep_scan_ready_list(struct eve
+ 	 * We need to lock this because we could be hit by
+ 	 * eventpoll_release_file() and epoll_ctl().
+ 	 */
+-	mutex_lock(&ep->mtx);
++	mutex_lock_nested(&ep->mtx, depth);
  
- 	buf = transport_kmap_first_data_page(cmd);
+ 	/*
+ 	 * Steal the ready list, and re-init the original one to the
+@@ -670,7 +681,7 @@ static int ep_read_events_proc(struct ev
  
-@@ -75,6 +84,17 @@ int core_emulate_report_target_port_grou
- 	list_for_each_entry(tg_pt_gp, &su_dev->t10_alua.tg_pt_gps_list,
- 			tg_pt_gp_list) {
- 		/*
-+		 * Check if the Target port group and Target port descriptor list
-+		 * based on tg_pt_gp_members count will fit into the response payload.
-+		 * Otherwise, bump rd_len to let the initiator know we have exceeded
-+		 * the allocation length and the response is truncated.
-+		 */
-+		if ((off + 8 + (tg_pt_gp->tg_pt_gp_members * 4)) >
-+		     cmd->data_length) {
-+			rd_len += 8 + (tg_pt_gp->tg_pt_gp_members * 4);
-+			continue;
-+		}
-+		/*
- 		 * PREF: Preferred target port bit, determine if this
- 		 * bit should be set for port group.
- 		 */
+ static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
+ {
+-	return ep_scan_ready_list(priv, ep_read_events_proc, NULL);
++	return ep_scan_ready_list(priv, ep_read_events_proc, NULL, call_nests + 1);
+ }
+ 
+ static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
+@@ -737,7 +748,7 @@ void eventpoll_release_file(struct file
+ 
+ 		ep = epi->ep;
+ 		list_del_init(&epi->fllink);
+-		mutex_lock(&ep->mtx);
++		mutex_lock_nested(&ep->mtx, 0);
+ 		ep_remove(ep, epi);
+ 		mutex_unlock(&ep->mtx);
+ 	}
+@@ -1134,7 +1145,7 @@ static int ep_send_events(struct eventpo
+ 	esed.maxevents = maxevents;
+ 	esed.events = events;
+ 
+-	return ep_scan_ready_list(ep, ep_send_events_proc, &esed);
++	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0);
+ }
+ 
+ static inline struct timespec ep_set_mstimeout(long ms)
+@@ -1267,7 +1278,7 @@ static int ep_loop_check_proc(void *priv
+ 	struct rb_node *rbp;
+ 	struct epitem *epi;
+ 
+-	mutex_lock(&ep->mtx);
++	mutex_lock_nested(&ep->mtx, call_nests + 1);
+ 	for (rbp = rb_first(&ep->rbr); rbp; rbp = rb_next(rbp)) {
+ 		epi = rb_entry(rbp, struct epitem, rbn);
+ 		if (unlikely(is_file_epoll(epi->ffd.file))) {
+@@ -1409,7 +1420,7 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, in
+ 	}
+ 
+ 
+-	mutex_lock(&ep->mtx);
++	mutex_lock_nested(&ep->mtx, 0);
+ 
+ 	/*
+ 	 * Try to lookup the file inside our RB tree, Since we grabbed "mtx"
 
 
