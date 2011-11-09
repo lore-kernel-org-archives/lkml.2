@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936107Ab1KJELw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:11:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44564 "EHLO mx2.suse.de"
+	id S1757162Ab1KJEMK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:12:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44559 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936026Ab1KJDnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:43:49 -0500
+	id S936022Ab1KJDnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:43:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:59 2011
-Message-Id: <20111109213159.018170203@clark.kroah.org>
+Message-Id: <20111109213158.914351694@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:34 -0800
+Date: Wed, 09 Nov 2011 13:33:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Clifton Barnes <cabarnes@indesign-llc.com>,
         Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [167/264] drivers/power/ds2780_battery.c: fix deadlock upon insertion and removal
+Subject: [166/264] drivers/power/ds2780_battery.c: add a nolock function to w1 interface
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,9 +27,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Clifton Barnes <cabarnes@indesign-llc.com>
 
-commit 0e053fcbbbc4d945247cb32cad2767b483cb65f8 upstream.
+commit 9fe678fa2feb4aaac0b4220de63e1b7f8ccebae6 upstream.
 
-Fixes the deadlock when inserting and removing the ds2780.
+Adds a nolock function to the w1 interface to avoid locking the
+mutex if needed.
 
 Signed-off-by: Clifton Barnes <cabarnes@indesign-llc.com>
 Cc: Evgeniy Polyakov <zbr@ioremap.net>
@@ -38,54 +39,100 @@ Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/power/ds2780_battery.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/w1/slaves/w1_ds2780.c |   48 ++++++++++++++++++++++++++++++------------
+ drivers/w1/slaves/w1_ds2780.h |    2 +
+ 2 files changed, 37 insertions(+), 13 deletions(-)
 
---- a/drivers/power/ds2780_battery.c
-+++ b/drivers/power/ds2780_battery.c
-@@ -39,6 +39,7 @@ struct ds2780_device_info {
- 	struct device *dev;
- 	struct power_supply bat;
- 	struct device *w1_dev;
-+	struct task_struct *mutex_holder;
- };
+--- a/drivers/w1/slaves/w1_ds2780.c
++++ b/drivers/w1/slaves/w1_ds2780.c
+@@ -26,20 +26,14 @@
+ #include "../w1_family.h"
+ #include "w1_ds2780.h"
  
- enum current_types {
-@@ -63,6 +64,9 @@ static inline struct power_supply *to_po
- static inline int ds2780_battery_io(struct ds2780_device_info *dev_info,
- 	char *buf, int addr, size_t count, int io)
+-int w1_ds2780_io(struct device *dev, char *buf, int addr, size_t count,
+-			int io)
++static int w1_ds2780_do_io(struct device *dev, char *buf, int addr,
++			size_t count, int io)
  {
-+	if (dev_info->mutex_holder == current)
-+		return w1_ds2780_io_nolock(dev_info->w1_dev, buf, addr, count, io);
-+	else
- 		return w1_ds2780_io(dev_info->w1_dev, buf, addr, count, io);
- }
+ 	struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
  
-@@ -775,6 +779,7 @@ static int __devinit ds2780_battery_prob
- 	dev_info->bat.properties	= ds2780_battery_props;
- 	dev_info->bat.num_properties	= ARRAY_SIZE(ds2780_battery_props);
- 	dev_info->bat.get_property	= ds2780_battery_get_property;
-+	dev_info->mutex_holder		= current;
+-	if (!dev)
+-		return -ENODEV;
+-
+-	mutex_lock(&sl->master->mutex);
++	if (addr > DS2780_DATA_SIZE || addr < 0)
++		return 0;
  
- 	ret = power_supply_register(&pdev->dev, &dev_info->bat);
- 	if (ret) {
-@@ -804,6 +809,8 @@ static int __devinit ds2780_battery_prob
- 		goto fail_remove_bin_file;
+-	if (addr > DS2780_DATA_SIZE || addr < 0) {
+-		count = 0;
+-		goto out;
+-	}
+ 	count = min_t(int, count, DS2780_DATA_SIZE - addr);
+ 
+ 	if (w1_reset_select_slave(sl) == 0) {
+@@ -47,7 +41,6 @@ int w1_ds2780_io(struct device *dev, cha
+ 			w1_write_8(sl->master, W1_DS2780_WRITE_DATA);
+ 			w1_write_8(sl->master, addr);
+ 			w1_write_block(sl->master, buf, count);
+-			/* XXX w1_write_block returns void, not n_written */
+ 		} else {
+ 			w1_write_8(sl->master, W1_DS2780_READ_DATA);
+ 			w1_write_8(sl->master, addr);
+@@ -55,13 +48,42 @@ int w1_ds2780_io(struct device *dev, cha
+ 		}
  	}
  
-+	dev_info->mutex_holder = NULL;
+-out:
++	return count;
++}
 +
- 	return 0;
++int w1_ds2780_io(struct device *dev, char *buf, int addr, size_t count,
++			int io)
++{
++	struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
++	int ret;
++
++	if (!dev)
++		return -ENODEV;
++
++	mutex_lock(&sl->master->mutex);
++
++	ret = w1_ds2780_do_io(dev, buf, addr, count, io);
++
+ 	mutex_unlock(&sl->master->mutex);
  
- fail_remove_bin_file:
-@@ -823,6 +830,8 @@ static int __devexit ds2780_battery_remo
+-	return count;
++	return ret;
+ }
+ EXPORT_SYMBOL(w1_ds2780_io);
+ 
++int w1_ds2780_io_nolock(struct device *dev, char *buf, int addr, size_t count,
++			int io)
++{
++	int ret;
++
++	if (!dev)
++		return -ENODEV;
++
++	ret = w1_ds2780_do_io(dev, buf, addr, count, io);
++
++	return ret;
++}
++EXPORT_SYMBOL(w1_ds2780_io_nolock);
++
+ int w1_ds2780_eeprom_cmd(struct device *dev, int addr, int cmd)
  {
- 	struct ds2780_device_info *dev_info = platform_get_drvdata(pdev);
+ 	struct w1_slave *sl = container_of(dev, struct w1_slave, dev);
+--- a/drivers/w1/slaves/w1_ds2780.h
++++ b/drivers/w1/slaves/w1_ds2780.h
+@@ -124,6 +124,8 @@
  
-+	dev_info->mutex_holder = current;
-+
- 	/* remove attributes */
- 	sysfs_remove_group(&dev_info->bat.dev->kobj, &ds2780_attr_group);
+ extern int w1_ds2780_io(struct device *dev, char *buf, int addr, size_t count,
+ 			int io);
++extern int w1_ds2780_io_nolock(struct device *dev, char *buf, int addr,
++			size_t count, int io);
+ extern int w1_ds2780_eeprom_cmd(struct device *dev, int addr, int cmd);
  
+ #endif /* !_W1_DS2780_H */
 
 
