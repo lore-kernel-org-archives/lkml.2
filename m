@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934431Ab1KJDYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:24:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42067 "EHLO mx2.suse.de"
+	id S934461Ab1KJDYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:24:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42086 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933980Ab1KJDYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
-Message-Id: <20111109212709.544834247@clark.kroah.org>
+	id S933985Ab1KJDYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
+Message-Id: <20111109212706.798527930@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:52 -0800
+Date: Wed, 09 Nov 2011 13:26:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [090/262] nfs: dont try to migrate pages with active requests
+        alan@lxorguk.ukuu.org.uk, Jerry Huang <r66093@freescale.com>
+Subject: [064/262] QE/FHCI: fixed the CONTROL bug
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,89 +24,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Jerry Huang <r66093@freescale.com>
 
-commit 2da956523526e440ef4f4dd174e26f5ac06fe011 upstream.
+commit 273d23574f9dacd9c63c80e7d63639a669aad441 upstream.
 
-nfs_find_and_lock_request will take a reference to the nfs_page and
-will then put it if the req is already locked. It's possible though
-that the reference will be the last one. That put then can kick off
-a whole series of reference puts:
+For USB CONTROL transaction, when the data length is zero,
+the IN package is needed to finish this transaction in status stage.
 
-nfs_page
-   nfs_open_context
-      dentry
-          inode
-
-If the inode ends up being deleted, then the VFS will call
-truncate_inode_pages. That function will try to take the page lock, but
-it was already locked when migrate_page was called. The code
-deadlocks.
-
-Fix this by simply refusing the migration request if PagePrivate is
-already set, indicating that the page is already associated with an
-active read or write request.
-
-We've had a customer test a backported version of this patch and
-the preliminary results seem good.
-
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Reported-by: Harshula Jayasuriya <harshula@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Jerry Huang <r66093@freescale.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/write.c |   36 +++++++++++-------------------------
- 1 file changed, 11 insertions(+), 25 deletions(-)
+ drivers/usb/host/fhci-sched.c |   19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1664,34 +1664,20 @@ out_error:
- int nfs_migrate_page(struct address_space *mapping, struct page *newpage,
- 		struct page *page)
- {
--	struct nfs_page *req;
--	int ret;
-+	/*
-+	 * If PagePrivate is set, then the page is currently associated with
-+	 * an in-progress read or write request. Don't try to migrate it.
-+	 *
-+	 * FIXME: we could do this in principle, but we'll need a way to ensure
-+	 *        that we can safely release the inode reference while holding
-+	 *        the page lock.
-+	 */
-+	if (PagePrivate(page))
-+		return -EBUSY;
+--- a/drivers/usb/host/fhci-sched.c
++++ b/drivers/usb/host/fhci-sched.c
+@@ -1,7 +1,7 @@
+ /*
+  * Freescale QUICC Engine USB Host Controller Driver
+  *
+- * Copyright (c) Freescale Semicondutor, Inc. 2006.
++ * Copyright (c) Freescale Semicondutor, Inc. 2006, 2011.
+  *               Shlomi Gridish <gridish@freescale.com>
+  *               Jerry Huang <Chang-Ming.Huang@freescale.com>
+  * Copyright (c) Logic Product Development, Inc. 2007
+@@ -810,9 +810,11 @@ void fhci_queue_urb(struct fhci_hcd *fhc
+ 		ed->dev_addr = usb_pipedevice(urb->pipe);
+ 		ed->max_pkt_size = usb_maxpacket(urb->dev, urb->pipe,
+ 			usb_pipeout(urb->pipe));
++		/* setup stage */
+ 		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++, FHCI_TA_SETUP,
+ 			USB_TD_TOGGLE_DATA0, urb->setup_packet, 8, 0, 0, true);
  
- 	nfs_fscache_release_page(page, GFP_KERNEL);
- 
--	req = nfs_find_and_lock_request(page, false);
--	ret = PTR_ERR(req);
--	if (IS_ERR(req))
--		goto out;
--
--	ret = migrate_page(mapping, newpage, page);
--	if (!req)
--		goto out;
--	if (ret)
--		goto out_unlock;
--	page_cache_get(newpage);
--	spin_lock(&mapping->host->i_lock);
--	req->wb_page = newpage;
--	SetPagePrivate(newpage);
--	set_page_private(newpage, (unsigned long)req);
--	ClearPagePrivate(page);
--	set_page_private(page, 0);
--	spin_unlock(&mapping->host->i_lock);
--	page_cache_release(page);
--out_unlock:
--	nfs_clear_page_tag_locked(req);
--out:
--	return ret;
-+	return migrate_page(mapping, newpage, page);
- }
- #endif
- 
++		/* data stage */
+ 		if (data_len > 0) {
+ 			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
+ 				usb_pipeout(urb->pipe) ? FHCI_TA_OUT :
+@@ -820,9 +822,18 @@ void fhci_queue_urb(struct fhci_hcd *fhc
+ 				USB_TD_TOGGLE_DATA1, data, data_len, 0, 0,
+ 				true);
+ 		}
+-		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
+-			usb_pipeout(urb->pipe) ? FHCI_TA_IN : FHCI_TA_OUT,
+-			USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
++
++		/* status stage */
++		if (data_len > 0)
++			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
++				(usb_pipeout(urb->pipe) ? FHCI_TA_IN :
++							  FHCI_TA_OUT),
++				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
++		else
++			 td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
++				FHCI_TA_IN,
++				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
++
+ 		urb_state = US_CTRL_SETUP;
+ 		break;
+ 	case FHCI_TF_ISO:
 
 
