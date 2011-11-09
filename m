@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934726Ab1KJD0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:26:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42296 "EHLO mx2.suse.de"
+	id S934754Ab1KJD0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:26:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42308 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934702Ab1KJD0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:26:39 -0500
+	id S934739Ab1KJD0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:26:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:10 2011
-Message-Id: <20111109212710.190126723@clark.kroah.org>
+Message-Id: <20111109212710.409160780@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:58 -0800
+Date: Wed, 09 Nov 2011 13:27:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [096/262] nfsd4: ignore WANT bits in open downgrade
+        alan@lxorguk.ukuu.org.uk, Bryan Schumaker <bjschuma@netapp.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [098/262] vfs: add "device" tag to /proc/self/mountstats
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-commit c30e92df30d7d5fe65262fbce5d1b7de675fe34e upstream.
+commit a877ee03ac010ded434b77f7831f43cbb1fcc60f upstream.
 
-We don't use WANT bits yet--and sending them can probably trigger a
-BUG() further down.
+nfsiostat was failing to find mounted filesystems on kernels after
+2.6.38 because of changes to show_vfsstat() by commit
+c7f404b40a3665d9f4e9a927cc5c1ee0479ed8f9.  This patch adds back the
+"device" tag before the nfs server entry so scripts can parse the
+mountstats file correctly.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4state.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/namespace.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -3421,6 +3421,8 @@ nfsd4_open_downgrade(struct svc_rqst *rq
- 	if (!access_valid(od->od_share_access, cstate->minorversion)
- 			|| !deny_valid(od->od_share_deny))
- 		return nfserr_inval;
-+	/* We don't yet support WANT bits: */
-+	od->od_share_access &= NFS4_SHARE_ACCESS_MASK;
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1109,6 +1109,7 @@ static int show_vfsstat(struct seq_file
  
- 	nfs4_lock_state();
- 	if ((status = nfs4_preprocess_seqid_op(cstate,
+ 	/* device */
+ 	if (mnt->mnt_sb->s_op->show_devname) {
++		seq_puts(m, "device ");
+ 		err = mnt->mnt_sb->s_op->show_devname(m, mnt);
+ 	} else {
+ 		if (mnt->mnt_devname) {
 
 
