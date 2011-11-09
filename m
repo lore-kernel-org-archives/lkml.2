@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab1KIBHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 20:07:14 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:22189 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1KIBHN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 20:07:13 -0500
-Date: Tue, 8 Nov 2011 20:07:01 -0500
-From: Chris Mason <chris.mason@oracle.com>
-To: Arne Jansen <sensille@gmx.net>
-Cc: Andrea Gelmini <andrea.gelmini@gmail.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs pull request
-Message-ID: <20111109010701.GI4149@shiny>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Arne Jansen <sensille@gmx.net>,
-	Andrea Gelmini <andrea.gelmini@gmail.com>,
-	linux-btrfs <linux-btrfs@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <20111106183851.GA4339@shiny>
- <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
- <4EB7A6CC.5030502@gmx.net>
- <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
- <4EB7D2D8.2060505@gmx.net>
- <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
- <4EB8DEAC.7000906@gmx.net>
+	id S1751541Ab1KIBPf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 20:15:35 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42495 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750816Ab1KIBPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Nov 2011 20:15:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
+	eLa1p5EUyv2fsK9X/z1oVRrBHsmQoC+lWaOkT8iCf/nLB0OptWccAlkjBgSz91wt
+	sNpjKABSoYqQUW0qfJfTB7Q6/+lb9RcNt4r8nI/qhU2F81Lj9aBH9nxtyPVnMaCo
+	RgkccoBUrlcrRlhJlvag162CEkpxKfYEtVyouNO2oxo=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.7.3
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 08 Nov 2011 17:15:31 -0800
+Message-ID: <7vsjlyw0y4.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EB8DEAC.7000906@gmx.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090207.4EB9D23E.0038,ss=1,re=0.000,fgs=0
+X-Pobox-Relay-ID: 523E347E-0A70-11E1-9188-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 08:47:56AM +0100, Arne Jansen wrote:
-> On 07.11.2011 13:50, Andrea Gelmini wrote:
-> > 2011/11/7 Arne Jansen <sensille@gmx.net>:
-> >> is it 32 or 64 bit?
-> > 
-> > 64bit.
-> > Please take a look at my other reply.
-> 
-> Can you please have a look with strace to make sure it's
-> really the ioctl the ENOMEM originates froM?
+The latest maintenance release Git 1.7.7.3 is available.
 
-Looks like bio_add_page() is failing and we're getting the enomem from
-there.  LVM is only letting us put one page in each bio.
+The release tarballs are found at:
 
--chris
+    http://code.google.com/p/git-core/downloads/list
+
+and their SHA-1 checksums are:
+
+382ee40da74a1b4a1875820c0f0a35c9ccd750f8  git-1.7.7.3.tar.gz
+bc0f89cb04e562e4a6d3b936382dbc8f593d861f  git-htmldocs-1.7.7.3.tar.gz
+cf1b0d35e2d242bc4cffce3b2bf5b3e32857b395  git-manpages-1.7.7.3.tar.gz
+
+Also the following public repositories all have a copy of the v1.7.7.3
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+----------------------------------------------------------------
+
+Changes since v1.7.7.2 are as follows:
+
+Dan McGee (4):
+      pack-objects: mark add_to_write_order() as inline
+      pack-objects: use unsigned int for counter and offset values
+      pack-objects: rewrite add_descendants_to_write_order() iteratively
+      pack-objects: don't traverse objects unnecessarily
+
+Jeff King (1):
+      docs: don't mention --quiet or --exit-code in git-log(1)
+
+Julien Muchembled (1):
+      gitweb: fix regression when filtering out forks
+
+Junio C Hamano (3):
+      branch -m/-M: remove undocumented RENAMED-REF
+      docs: Update install-doc-quick
+      Git 1.7.7.3
 
