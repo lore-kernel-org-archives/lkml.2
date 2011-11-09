@@ -1,103 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab1KIQsW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:48:22 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43291 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab1KIQsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:48:21 -0500
-Date: Wed, 9 Nov 2011 17:48:11 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org,
-        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        David Miller <davem@davemloft.net>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Mackerras <paulus@samba.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH RFC tip/core/rcu 19/28] nohz: Allow rcu extended
- quiescent state handling seperately from tick stop
-Message-ID: <20111109164804.GA17538@somewhere.redhat.com>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
- <1320265849-5744-19-git-send-email-paulmck@linux.vnet.ibm.com>
- <20111103040003.GE2042@leaf>
- <20111103115426.GD8198@somewhere.redhat.com>
- <20111103133231.GA2287@linux.vnet.ibm.com>
- <20111103153102.GC18443@leaf>
- <20111103160656.GC2287@linux.vnet.ibm.com>
+	id S932291Ab1KIQvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:51:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34875 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285Ab1KIQvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:51:19 -0500
+Date: Wed, 9 Nov 2011 17:51:59 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111109165158.GA2254@redhat.com>
+References: <20111029171554.GA16596@nomi.cz>
+ <20111031160342.GB2225@redhat.com>
+ <20111109155411.GA1669@nomi.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="ReaqsoxgOBHFXBhH"
 Content-Disposition: inline
-In-Reply-To: <20111103160656.GC2287@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111109155411.GA1669@nomi.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 03, 2011 at 09:06:56AM -0700, Paul E. McKenney wrote:
-> On Thu, Nov 03, 2011 at 08:31:02AM -0700, Josh Triplett wrote:
-> > On Thu, Nov 03, 2011 at 06:32:31AM -0700, Paul E. McKenney wrote:
-> > > On Thu, Nov 03, 2011 at 12:54:33PM +0100, Frederic Weisbecker wrote:
-> > > > On Wed, Nov 02, 2011 at 09:00:03PM -0700, Josh Triplett wrote:
-> > > > > On Wed, Nov 02, 2011 at 01:30:40PM -0700, Paul E. McKenney wrote:
-> > > > > > From: Frederic Weisbecker <fweisbec@gmail.com>
-> > > > > > 
-> > > > > > It is assumed that rcu won't be used once we switch to tickless
-> > > > > > mode and until we restart the tick. However this is not always
-> > > > > > true, as in x86-64 where we dereference the idle notifiers after
-> > > > > > the tick is stopped.
-> > > > > > 
-> > > > > > To prepare for fixing this, add two new APIs:
-> > > > > > tick_nohz_idle_enter_norcu() and tick_nohz_idle_exit_norcu().
-> > > > > > 
-> > > > > > If no use of RCU is made in the idle loop between
-> > > > > > tick_nohz_enter_idle() and tick_nohz_exit_idle() calls, the arch
-> > > > > > must instead call the new *_norcu() version such that the arch doesn't
-> > > > > > need to call rcu_idle_enter() and rcu_idle_exit().
-> > > > > 
-> > > > > The _norcu names confused me a bit.  At first, I thought they meant
-> > > > > "idle but not RCU idle, so you can use RCU", but from re-reading the
-> > > > > commit message, apparently they mean "idle and RCU idle, so don't use
-> > > > > RCU".  What about something like _forbid_rcu instead?  Or,
-> > > > > alternatively, why not just go ahead and separate the two types of idle
-> > > > > entirely rather than introducing the _norcu variants first?
-> > > > 
-> > > > Or tick_nohz_idle_enter_rcu_stop() and tick_nohz_idle_exit_rcu_restart()?
-> > > > 
-> > > > Sounds clear but too long. May be we can shorten the tick_nohz thing in the
-> > > > beginning.
-> > > 
-> > > How about tick_nohz_rcu_idle_enter() vs. tick_nohz_idle_enter() on
-> > > entry to the idle loop and tick_nohz_rcu_idle_exit() vs
-> > > tick_nohz_idle_exit() on exit?
-> > > 
-> > > That said, I don't feel all that strongly on this naming topic.
+
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+
+Hi
+
+On Wed, Nov 09, 2011 at 04:54:11PM +0100, Tomáš Janoušek wrote:
+> On Mon, Oct 31, 2011 at 05:03:43PM +0100, Stanislaw Gruszka wrote:
+> > You may try debugging patches I posted a while ago:
+> > http://marc.info/?l=linux-mm&m=131914560820378&w=2
+> > http://marc.info/?l=linux-mm&m=131914560820293&w=2
+> > http://marc.info/?l=linux-mm&m=131914560820317&w=2
 > > 
-> > Mostly I think that since this series tries to separate the concepts of
-> > "idle nohz" and "rcu extended quiescent state", we should end up with
-> > two entirely separate functions delimiting those two, without any
-> > functions that poke both with correspondingly complex compound names.
+> > With a bit of luck, kernel should panic and dump call-trace when
+> > bad code start to write at memory addresses where is not suppose
+> > to.
 > 
-> Having four API members rather than the current six does seem quite
-> attractive to me.  Frederic, any reason why this approach won't work?
+> Thanks for your suggestions. I did as you told me, applied those 3 patches on
+> top of 3.1 + net-next (the one from 29 Oct 2011), enabled all those things in
+> config and passed corrupt_dbg=1 on cmdline, but the problem happens without
+> anything being written to dmesg.
 
-The approach I took might sound silly but it's mostly an optimization:
+I just discovered that CONFIG_DEBUG_PAGEALLOC does not work as expected.
+It leave most of free pages unprotected, hence unintentional write to
+them is not discovered. I'm attaching additional patch, which should
+make detection actually work.
 
-I did the *_norcu() variant mostly to be able to keep rcu_idle_enter()
-call under the same local_irq_disable() section.
+If kernel will does not boot with corrupt_dbg=1, you may try to catch
+corruption without that option. Attached patch should make it possible,
+however having corrupt_dbg=1 increase probability of the catch.
 
-This way we can't have an interrupt in between that can needlessly perform
-RCU work (and trigger the softirq in the worst case), delaying the point
-where we actually put the CPU to sleep.
+Thanks
+Stanislaw
+
+
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-mm-remove-debug_pagealloc_enabled.patch"
+
+>From 744ddd37f7d61c46e755a7304d791ba0542428a0 Mon Sep 17 00:00:00 2001
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+Date: Wed, 9 Nov 2011 14:21:58 +0100
+Subject: [PATCH 1/4] mm: remove debug_pagealloc_enabled
+
+After we finish (no)bootmem, pages are passed to buddy allocator. Since
+debug_pagealloc_enabled is not set, we do not protect pages, what is
+not what we want with CONFIG_DEBUG_PAGEALLOC=y. That could be fixed by
+calling enable_debug_pagealloc() before free_all_bootmem(), but actually
+I do not see any reason why we need that global variable. Hence patch
+remove it.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+ arch/x86/mm/pageattr.c |    6 ------
+ include/linux/mm.h     |   10 ----------
+ init/main.c            |    5 -----
+ mm/debug-pagealloc.c   |    3 ---
+ 4 files changed, 0 insertions(+), 24 deletions(-)
+
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
+ 
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
+-- 
+1.7.1
+
+
+--ReaqsoxgOBHFXBhH--
