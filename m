@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936176Ab1KJDy4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:54:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45151 "EHLO mx2.suse.de"
+	id S1757124Ab1KJDzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:55:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45138 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934325Ab1KJDsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:48:32 -0500
+	id S966021Ab1KJDsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:48:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:04 2011
-Message-Id: <20111109213204.734601112@clark.kroah.org>
+Message-Id: <20111109213204.531410830@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:28 -0800
+Date: Wed, 09 Nov 2011 13:34:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [221/264] ASoC: Ensure WM8962 PLL registers are reset
+Subject: [219/264] ASoC: Leave input audio data bit length settings untouched in wm8711_set_dai_fmt
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 4f4488abc97c1c27ff029f887944e6a6da1f5733 upstream.
+commit d558cfc30064a97c2c65dbd2b3a4f5a1dea7ec1b upstream.
 
-The WM8962 has a separate software reset for the PLL registers. Ensure that
-these are reset also on startup.
+Current implementation in wm8711_set_dai_fmt always clear BIT[3:2]
+(the Input Audio Data Bit Length Select) of WM8711_IFACE(07h) register.
+Input Audio Data Bit Length Select bits are set by wm8711_hw_params,
+we should leave BIT[3:2] untouched in wm8711_set_dai_fmt.
 
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8962.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8711.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -1959,7 +1959,13 @@ static int wm8962_readable_register(stru
- 
- static int wm8962_reset(struct snd_soc_codec *codec)
+--- a/sound/soc/codecs/wm8711.c
++++ b/sound/soc/codecs/wm8711.c
+@@ -231,7 +231,7 @@ static int wm8711_set_dai_fmt(struct snd
+ 		unsigned int fmt)
  {
--	return snd_soc_write(codec, WM8962_SOFTWARE_RESET, 0x6243);
-+	int ret;
-+
-+	ret = snd_soc_write(codec, WM8962_SOFTWARE_RESET, 0x6243);
-+	if (ret != 0)
-+		return ret;
-+
-+	return snd_soc_write(codec, WM8962_PLL_SOFTWARE_RESET, 0);
- }
+ 	struct snd_soc_codec *codec = codec_dai->codec;
+-	u16 iface = 0;
++	u16 iface = snd_soc_read(codec, WM8711_IFACE) & 0x000c;
  
- static const DECLARE_TLV_DB_SCALE(inpga_tlv, -2325, 75, 0);
+ 	/* set master/slave audio interface */
+ 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 
 
