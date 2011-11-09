@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab1KJE1Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:27:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43999 "EHLO mx2.suse.de"
+	id S1757196Ab1KJE1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:27:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43966 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965118Ab1KJDjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:39:08 -0500
+	id S965085Ab1KJDiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:54 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:50 2011
-Message-Id: <20111109213150.541730393@clark.kroah.org>
+Message-Id: <20111109213150.149040933@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:11 -0800
+Date: Wed, 09 Nov 2011 13:32:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Stubbs <jasonbstubbs@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [084/264] platform: samsung_laptop: fix samsung brightness min/max calculations
+        alan@lxorguk.ukuu.org.uk, David Woodhouse <David.Woodhouse@intel.com>,
+        =?ISO-8859-15?q?Sjur=20Br=C3=A6ndeland?= 
+	<sjur.brandeland@stericsson.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [080/264] caif: Fix BUG() with network namespaces
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Stubbs <jasonbstubbs@gmail.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit bee460be8c691c544e84ed678280ace6153104c6 upstream.
+commit 08613e4626c06ca408fc55071f6aedee36986a87 upstream.
 
-The min_brightness value of the sabi_config is incorrectly used in brightness
-calculations. For the config where min_brightness = 1 and max_brightness = 8,
-the user visible range should be 0 to 7 with hardware being set in the range
-of 1 to 8. What is actually happening is that the user visible range is 0 to
-8 with hardware being set in the range of -1 to 7.
+The caif code will register its own pernet_operations, and then register
+a netdevice_notifier. Each time the netdevice_notifier is triggered,
+it'll do some stuff... including a lookup of its own pernet stuff with
+net_generic().
 
-This patch fixes the above issue as well as a miscalculation that would occur
-in the case of min_brightness > 1.
+If the net_generic() call ever returns NULL, the caif code will BUG().
+That doesn't seem *so* unreasonable, I suppose — it does seem like it
+should never happen.
 
-Signed-off-by: Jason Stubbs <jasonbstubbs@gmail.com>
+However, it *does* happen. When we clone a network namespace,
+setup_net() runs through all the pernet_operations one at a time. It
+gets to loopback before it gets to caif. And loopback_net_init()
+registers a netdevice... while caif hasn't been initialised. So the caif
+netdevice notifier triggers, and immediately goes BUG().
+
+We could imagine a complex and overengineered solution to this generic
+class of problems, but this patch takes the simple approach. It just
+makes caif_device_notify() *not* go looking for its pernet data
+structures if the device it's being notified about isn't a caif device
+in the first place.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Acked-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
 ---
- drivers/platform/x86/samsung-laptop.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ net/caif/caif_dev.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/platform/x86/samsung-laptop.c
-+++ b/drivers/platform/x86/samsung-laptop.c
-@@ -370,15 +370,17 @@ static u8 read_brightness(void)
- 				  &sretval);
- 	if (!retval) {
- 		user_brightness = sretval.retval[0];
--		if (user_brightness != 0)
-+		if (user_brightness > sabi_config->min_brightness)
- 			user_brightness -= sabi_config->min_brightness;
-+		else
-+			user_brightness = 0;
- 	}
- 	return user_brightness;
- }
+--- a/net/caif/caif_dev.c
++++ b/net/caif/caif_dev.c
+@@ -212,8 +212,7 @@ static int caif_device_notify(struct not
+ 	enum cfcnfg_phy_preference pref;
+ 	enum cfcnfg_phy_type phy_type;
+ 	struct cfcnfg *cfg;
+-	struct caif_device_entry_list *caifdevs =
+-	    caif_device_list(dev_net(dev));
++	struct caif_device_entry_list *caifdevs;
  
- static void set_brightness(u8 user_brightness)
- {
--	u8 user_level = user_brightness - sabi_config->min_brightness;
-+	u8 user_level = user_brightness + sabi_config->min_brightness;
+ 	if (dev->type != ARPHRD_CAIF)
+ 		return 0;
+@@ -222,6 +221,8 @@ static int caif_device_notify(struct not
+ 	if (cfg == NULL)
+ 		return 0;
  
- 	sabi_set_command(sabi_config->commands.set_brightness, user_level);
- }
-@@ -829,7 +831,8 @@ static int __init samsung_init(void)
- 	/* create a backlight device to talk to this one */
- 	memset(&props, 0, sizeof(struct backlight_properties));
- 	props.type = BACKLIGHT_PLATFORM;
--	props.max_brightness = sabi_config->max_brightness;
-+	props.max_brightness = sabi_config->max_brightness -
-+				sabi_config->min_brightness;
- 	backlight_device = backlight_device_register("samsung", &sdev->dev,
- 						     NULL, &backlight_ops,
- 						     &props);
++	caifdevs = caif_device_list(dev_net(dev));
++
+ 	switch (what) {
+ 	case NETDEV_REGISTER:
+ 		caifd = caif_device_alloc(dev);
 
 
