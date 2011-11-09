@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914Ab1KJE3p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:29:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43924 "EHLO mx2.suse.de"
+	id S965068Ab1KJEaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:30:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43920 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965043Ab1KJDi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:38:27 -0500
+	id S935965Ab1KJDiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:38:23 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:49 2011
-Message-Id: <20111109213149.428828200@clark.kroah.org>
+Message-Id: <20111109213149.336354237@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:00 -0800
+Date: Wed, 09 Nov 2011 13:31:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jerry Huang <r66093@freescale.com>
-Subject: [073/264] QE/FHCI: fixed the CONTROL bug
+        alan@lxorguk.ukuu.org.uk, Sergei Kolzun <x0r@dv-life.ru>,
+        Dmitry Torokhov <dtor@mail.ru>, Jiri Kosina <jkosina@suse.cz>
+Subject: [072/264] HID: ACRUX - fix enabling force feedback support
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,64 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jerry Huang <r66093@freescale.com>
+From: Sergei Kolzun <x0r@dv-life.ru>
 
-commit 273d23574f9dacd9c63c80e7d63639a669aad441 upstream.
+commit 364b936fc38dec7653c690d710e10657af235a36 upstream.
 
-For USB CONTROL transaction, when the data length is zero,
-the IN package is needed to finish this transaction in status stage.
+The config option needs to be a 'bool' and not a tristate, otheriwse
+force feedback support never makes it into the module.
 
-Signed-off-by: Jerry Huang <r66093@freescale.com>
+Signed-off-by: Sergei Kolzun <x0r@dv-life.ru>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/fhci-sched.c |   19 +++++++++++++++----
- 1 file changed, 15 insertions(+), 4 deletions(-)
+ drivers/hid/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/fhci-sched.c
-+++ b/drivers/usb/host/fhci-sched.c
-@@ -1,7 +1,7 @@
- /*
-  * Freescale QUICC Engine USB Host Controller Driver
-  *
-- * Copyright (c) Freescale Semicondutor, Inc. 2006.
-+ * Copyright (c) Freescale Semicondutor, Inc. 2006, 2011.
-  *               Shlomi Gridish <gridish@freescale.com>
-  *               Jerry Huang <Chang-Ming.Huang@freescale.com>
-  * Copyright (c) Logic Product Development, Inc. 2007
-@@ -810,9 +810,11 @@ void fhci_queue_urb(struct fhci_hcd *fhc
- 		ed->dev_addr = usb_pipedevice(urb->pipe);
- 		ed->max_pkt_size = usb_maxpacket(urb->dev, urb->pipe,
- 			usb_pipeout(urb->pipe));
-+		/* setup stage */
- 		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++, FHCI_TA_SETUP,
- 			USB_TD_TOGGLE_DATA0, urb->setup_packet, 8, 0, 0, true);
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -69,7 +69,7 @@ config HID_ACRUX
+ 	Say Y here if you want to enable support for ACRUX game controllers.
  
-+		/* data stage */
- 		if (data_len > 0) {
- 			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
- 				usb_pipeout(urb->pipe) ? FHCI_TA_OUT :
-@@ -820,9 +822,18 @@ void fhci_queue_urb(struct fhci_hcd *fhc
- 				USB_TD_TOGGLE_DATA1, data, data_len, 0, 0,
- 				true);
- 		}
--		td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
--			usb_pipeout(urb->pipe) ? FHCI_TA_IN : FHCI_TA_OUT,
--			USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+
-+		/* status stage */
-+		if (data_len > 0)
-+			td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
-+				(usb_pipeout(urb->pipe) ? FHCI_TA_IN :
-+							  FHCI_TA_OUT),
-+				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+		else
-+			 td = fhci_td_fill(fhci, urb, urb_priv, ed, cnt++,
-+				FHCI_TA_IN,
-+				USB_TD_TOGGLE_DATA1, data, 0, 0, 0, true);
-+
- 		urb_state = US_CTRL_SETUP;
- 		break;
- 	case FHCI_TF_ISO:
+ config HID_ACRUX_FF
+-	tristate "ACRUX force feedback support"
++	bool "ACRUX force feedback support"
+ 	depends on HID_ACRUX
+ 	select INPUT_FF_MEMLESS
+ 	---help---
 
 
