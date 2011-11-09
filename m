@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936263Ab1KJEQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:16:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44399 "EHLO mx2.suse.de"
+	id S936304Ab1KJEQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:16:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44389 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965179Ab1KJDmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:42:21 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:54 2011
-Message-Id: <20111109213154.388639364@clark.kroah.org>
+	id S965417Ab1KJDmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:42:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:56 2011
+Message-Id: <20111109213156.142255765@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:49 -0800
+Date: Wed, 09 Nov 2011 13:33:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [122/264] ASoC: wm8741: Fix setting interface format for DSP modes
+        alan@lxorguk.ukuu.org.uk,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: [139/264] viafb: use display information in info not in var for panning
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@gmail.com>
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 
-commit 3a340104fad6ecbea5ad6792a2ea855f0507a6e0 upstream.
+commit d933990c57b498c092ceef591c7c5d69dbfe9f30 upstream.
 
-According to the datasheet:
-Format Control (05h)
-BITS[3:2]
-        FMT[1:0] Audio data format selection
-                00 = right justified mode
-                01 = left justified mode
-                10 = I2S mode
-                11 = DSP mode
-BIT[4]  LRP Polarity selec for LRCLK/DSP mode select
-                0 = normal LRCLK poalrity/DSP mode A
-                1 = inverted LRCLK poarity/DSP mode B
+As Laurent pointed out we must not use any information in the passed
+var besides xoffset, yoffset and vmode as otherwise applications
+might abuse it. Also use the aligned fix.line_length and not the
+(possible) unaligned xres_virtual.
 
-For SND_SOC_DAIFMT_DSP_A, we should set 0x000C instead of 0x0003.
-For SND_SOC_DAIFMT_DSP_B, we should set 0x001C instead of 0x0013.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Acked-by: Liam Girdwood <lrg@ti.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Reported-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8741.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/via/viafbdev.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/wm8741.c
-+++ b/sound/soc/codecs/wm8741.c
-@@ -337,10 +337,10 @@ static int wm8741_set_dai_fmt(struct snd
- 		iface |= 0x0004;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_A:
--		iface |= 0x0003;
-+		iface |= 0x000C;
- 		break;
- 	case SND_SOC_DAIFMT_DSP_B:
--		iface |= 0x0013;
-+		iface |= 0x001C;
- 		break;
- 	default:
- 		return -EINVAL;
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -348,8 +348,9 @@ static int viafb_pan_display(struct fb_v
+ 	struct fb_info *info)
+ {
+ 	struct viafb_par *viapar = info->par;
+-	u32 vram_addr = (var->yoffset * var->xres_virtual + var->xoffset)
+-		* (var->bits_per_pixel / 8) + viapar->vram_addr;
++	u32 vram_addr = viapar->vram_addr
++		+ var->yoffset * info->fix.line_length
++		+ var->xoffset * info->var.bits_per_pixel / 8;
+ 
+ 	DEBUG_MSG(KERN_DEBUG "viafb_pan_display, address = %d\n", vram_addr);
+ 	if (!viafb_dual_fb) {
 
 
