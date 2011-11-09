@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab1KIUdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:33:35 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:37362 "EHLO
+	id S1756725Ab1KIUde (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:33:34 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:37366 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab1KIUdc (ORCPT
+	with ESMTP id S1752116Ab1KIUdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Nov 2011 15:33:32 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
         Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 5/7] TTY: move tty_lookup_driver to switch-cases
-Date: Wed,  9 Nov 2011 21:33:22 +0100
-Message-Id: <1320870804-23687-5-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 2/7] TTY: extract /dev/tty handling from tty_open
+Date: Wed,  9 Nov 2011 21:33:19 +0100
+Message-Id: <1320870804-23687-2-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1320870804-23687-1-git-send-email-jslaby@suse.cz>
 References: <1320870804-23687-1-git-send-email-jslaby@suse.cz>
@@ -21,68 +21,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The labels express more the nature of the decision tree. We returned
-from each if with a driver. Now we do this at the end of the function
-and the code flow is clear.
+This one is special to others (done in the next patch). We have the
+tty directly, not its driver and index. So this will reside in a
+separation function. In the next patch, the rest will be moved to
+another function.
 
-While at it, remove an obsolete comment (we already take the
-reference).
+So now we set neither driver nor index. Hence we need to init driver
+and check whether we are supposed to put a ref of that.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
 ---
- drivers/tty/tty_io.c |   19 +++++++++++--------
- 1 files changed, 11 insertions(+), 8 deletions(-)
+ drivers/tty/tty_io.c |   57 ++++++++++++++++++++++++++++++++++---------------
+ 1 files changed, 39 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index ba9194e..76e66ff 100644
+index 391cec3..1b90c98 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1841,16 +1841,17 @@ static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
- {
- 	struct tty_driver *driver;
- 
-+	switch (device) {
- #ifdef CONFIG_VT
--	if (device == MKDEV(TTY_MAJOR, 0)) {
-+	case MKDEV(TTY_MAJOR, 0): {
- 		extern struct tty_driver *console_driver;
- 		driver = tty_driver_kref_get(console_driver);
- 		*index = fg_console;
- 		*noctty = 1;
--		return driver;
-+		break;
- 	}
- #endif
--	if (device == MKDEV(TTYAUX_MAJOR, 1)) {
-+	case MKDEV(TTYAUX_MAJOR, 1): {
- 		struct tty_driver *console_driver = console_device(index);
- 		if (console_driver) {
- 			driver = tty_driver_kref_get(console_driver);
-@@ -1858,15 +1859,17 @@ static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
- 				/* Don't let /dev/console block */
- 				filp->f_flags |= O_NONBLOCK;
- 				*noctty = 1;
--				return driver;
-+				break;
- 			}
- 		}
- 		return ERR_PTR(-ENODEV);
- 	}
--
--	driver = get_tty_driver(device, index);
--	if (!driver)
--		return ERR_PTR(-ENODEV);
-+	default:
-+		driver = get_tty_driver(device, index);
-+		if (!driver)
-+			return ERR_PTR(-ENODEV);
-+		break;
-+	}
- 	return driver;
+@@ -1797,6 +1797,33 @@ int tty_release(struct inode *inode, struct file *filp)
  }
  
+ /**
++ *	tty_open_current_tty - get tty of current task for open
++ *	@device: device number
++ *	@filp: file pointer to tty
++ *	@return: tty of the current task iff @device is /dev/tty
++ *
++ *	We cannot return driver and index like for the other nodes because
++ *	devpts will not work then. It expects inodes to be from devpts FS.
++ */
++static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
++{
++	struct tty_struct *tty;
++
++	if (device != MKDEV(TTYAUX_MAJOR, 0))
++		return NULL;
++
++	tty = get_current_tty();
++	if (!tty)
++		return ERR_PTR(-ENXIO);
++
++	filp->f_flags |= O_NONBLOCK; /* Don't let /dev/tty block */
++	/* noctty = 1; */
++	tty_kref_put(tty);
++	/* FIXME: we put a reference and return a TTY! */
++	return tty;
++}
++
++/**
+  *	tty_open		-	open a tty device
+  *	@inode: inode of device file
+  *	@filp: file pointer to tty
+@@ -1819,9 +1846,9 @@ int tty_release(struct inode *inode, struct file *filp)
+ 
+ static int tty_open(struct inode *inode, struct file *filp)
+ {
+-	struct tty_struct *tty = NULL;
++	struct tty_struct *tty;
+ 	int noctty, retval;
+-	struct tty_driver *driver;
++	struct tty_driver *driver = NULL;
+ 	int index;
+ 	dev_t device = inode->i_rdev;
+ 	unsigned saved_flags = filp->f_flags;
+@@ -1840,22 +1867,15 @@ retry_open:
+ 	mutex_lock(&tty_mutex);
+ 	tty_lock();
+ 
+-	if (device == MKDEV(TTYAUX_MAJOR, 0)) {
+-		tty = get_current_tty();
+-		if (!tty) {
+-			tty_unlock();
+-			mutex_unlock(&tty_mutex);
+-			tty_free_file(filp);
+-			return -ENXIO;
+-		}
+-		driver = tty_driver_kref_get(tty->driver);
+-		index = tty->index;
+-		filp->f_flags |= O_NONBLOCK; /* Don't let /dev/tty block */
+-		/* noctty = 1; */
+-		/* FIXME: Should we take a driver reference ? */
+-		tty_kref_put(tty);
++	tty = tty_open_current_tty(device, filp);
++	if (IS_ERR(tty)) {
++		tty_unlock();
++		mutex_unlock(&tty_mutex);
++		tty_free_file(filp);
++		return PTR_ERR(tty);
++	} else if (tty)
+ 		goto got_driver;
+-	}
++
+ #ifdef CONFIG_VT
+ 	if (device == MKDEV(TTY_MAJOR, 0)) {
+ 		extern struct tty_driver *console_driver;
+@@ -1911,7 +1931,8 @@ got_driver:
+ 		tty = tty_init_dev(driver, index, 0);
+ 
+ 	mutex_unlock(&tty_mutex);
+-	tty_driver_kref_put(driver);
++	if (driver)
++		tty_driver_kref_put(driver);
+ 	if (IS_ERR(tty)) {
+ 		tty_unlock();
+ 		tty_free_file(filp);
 -- 
 1.7.7
 
