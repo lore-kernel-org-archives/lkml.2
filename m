@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab1KIKWN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:22:13 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42346 "EHLO
+	id S1754867Ab1KIK2E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:28:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46781 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab1KIKWL (ORCPT
+	with ESMTP id S1751598Ab1KIK2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:22:11 -0500
+	Wed, 9 Nov 2011 05:28:02 -0500
 Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
 From: Sasha Levin <levinsasha928@gmail.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>
@@ -17,60 +17,61 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
         Wang Sheng-Hui <shhuiw@gmail.com>,
         virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com
-In-Reply-To: <20111109101814.GC20612@redhat.com>
+        avi@redhat.com, penberg@cs.helsinki.fi
+In-Reply-To: <20111109101318.GB20612@redhat.com>
 References: <87wrbkvh3v.fsf@rustcorp.com.au>
 	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
 	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
 	 <20111102233110.GA20289@redhat.com> <20111108214021.GA4538@redhat.com>
-	 <1320832502.31056.22.camel@lappy>  <20111109101814.GC20612@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 09 Nov 2011 12:20:17 +0200
-Message-ID: <1320834017.31056.26.camel@lappy>
+	 <1320828366.31056.16.camel@lappy>  <20111109101318.GB20612@redhat.com>
+Content-Type: text/plain; charset="iso-8859-13"
+Date: Wed, 09 Nov 2011 12:26:08 +0200
+Message-ID: <1320834368.31056.31.camel@lappy>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 12:18 +0200, Michael S. Tsirkin wrote:
-> On Wed, Nov 09, 2011 at 11:55:02AM +0200, Sasha Levin wrote:
-> > On Tue, 2011-11-08 at 23:40 +0200, Michael S. Tsirkin wrote:
-> > > Here's a spec change documenting what my C patch does
-> > > (almost - I tweaked the layout a bit, but the idea is the same).
-> > > Some more cleanups are needed but I thought I'd send it
-> > > for early flames/comments.
-> > > 
-> > > The idea is simple: we split functionally unrelated
-> > > register groups to independent structures, and let
-> > > the device place is anywhere using a capability
-> > > in PCI configuration space.
+On Wed, 2011-11-09 at 12:13 +0200, Michael S. Tsirkin wrote:
+> On Wed, Nov 09, 2011 at 10:46:06AM +0200, Sasha Levin wrote:
+> > The device initialization sequence might use an update as well.
+> 
+> What is needed? Add an item where the driver scans the PCI capability
+> list to detect the layout?
+
+Yup, something similar like that - just to make it obvious.
+
+> > Maybe
+> > also a description of how device handles missing structure IDs.
 > > 
-> > I'm also wondering it it's ok to move virtio configuration out of virtio
-> > space and into PCI space for archs that don't have PCI (such as ARM).
+> > [snip]
 > 
-> A bit of confusion here: no register is moved from memory into
-> configuration space. Configuration space only gains a list of
-> pointers into memory/pio space.
-
-The definition of the way the virtio configuration space looks is moved
-into PCI configuration space, it was constant before.
-
-> > Would it mean they get stuck with legacy configuration (and no new
-> > features)? Or is there an alternative for them?
+> Hmm. I just have
+> 'Drivers should fall back on this legacy structure if a
+>  Virtio Structure capability is missing in the PCI capability
+>  list'. 
 > 
-> The change only affects the layout of virtio PCI. Arches that don't
-> have PCI don't use virtio PCI, presumably?
+> What else would be helpful? An example? 
+
+I just remembered from your patch that you could define some structure
+IDs, but not necessarily all of them, if it's not longer the case then
+ignore me. If it is, then the scenario of a missing structure should be
+specified (For example, if the ISR structure wasn't defined, fall back
+to...).
+
+> > I'm not sure what capability length is, can't find it in the spec
+> > either.
+> > 
+> > [snip]
 > 
-> BTW, the spec only covers x86 ATM, this needs to be fixed.
+> It's the legth of the vendor specific capability structure in bytes.
+> 'the byte immediately following the ´Next¡
+>  pointer in the capability structure is defined to be a length field'
+> It's on page 330 in my copy.
 
->From what I see there is a WIP by Pawel Moll <pawel.moll@arm.com> to add
-virtio platform drivers which get virtio working on ARM for example, and
-by Peter Maydell <peter.maydell@linaro.org> to modify the spec to
-support MMIO access (besides PCI).
-
-Maybe worth seeing if it works for them...
+Right, I was looking only at the regular cap definition.
 
 -- 
 
