@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737Ab1KIW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:26:24 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:60409 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab1KIW0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:26:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] PNP ACPI: Use real gsi
-Date: Wed, 9 Nov 2011 23:28:57 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, bjorn.helgaas@hp.com,
-        lenb@kernel.org, stable@kernel.org, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-References: <1320372728-3235-1-git-send-email-trenn@suse.de>
-In-Reply-To: <1320372728-3235-1-git-send-email-trenn@suse.de>
+	id S932742Ab1KIW1a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:27:30 -0500
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:60298 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751617Ab1KIW13 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 17:27:29 -0500
+X-Sasl-enc: 9Pp5+0l9sXi9hhu46qaW/FD/TC05bvZf5J3tLceSy6Ds 1320877648
+Date: Wed, 9 Nov 2011 14:27:08 -0800
+From: Greg KH <greg@kroah.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>, security@kernel.org,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
+Subject: Re: Fwd: kernel: multiple flaws allowing to sniff keystrokes timings
+Message-ID: <20111109222708.GA28509@kroah.com>
+References: <20111108121412.GA14450@albatros>
+ <4EBA0A32.3000607@kernel.sg>
+ <20111109161123.GC2557@kroah.com>
+ <20111109170946.GA30780@albatros>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111092328.58216.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111109170946.GA30780@albatros>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 04, 2011, Thomas Renninger wrote:
-> From: Yinghai Lu <yinghai@kernel.org>
+On Wed, Nov 09, 2011 at 09:09:46PM +0400, Vasiliy Kulikov wrote:
+> Hi,
 > 
-> In 2.6.35 a lot cleanups in this area (not pnp, but x86 ioapic setup) have
-> been introduced.
-> On an IBM Xseries (x3850) this caused the machine to freeze around when
-> the init userspace process is tried to get started.
-> The reason is that the timer interrupt is not set up correctly on this machine.
+> On Wed, Nov 09, 2011 at 08:11 -0800, Greg KH wrote:
+> > On Wed, Nov 09, 2011 at 01:05:54PM +0800, Eugene Teo wrote:
+> > > 1) https://lkml.org/lkml/2011/11/7/340
+> > > 
+> > > "/proc/interrupts contains the number of emitted interrupts, which
+> > > should not be world readable.  The information about keyboard interrupts
+> > > number may be used to learn the precise number of characters
+> > > in users' passwords by simply watching the changes of number of emitted
+> > > interrupts during the life of gksu-like programs."
+> > > 
+> > > PoC: http://www.openwall.com/lists/oss-security/2011/11/07/9
+> > > 
+> > > Vulnerable: all Linux versions, all distros with procfs mounted.
+> > > 
+> > > (The patch misses the same infoleak via /proc/stat, which must be closed
+> > > too.)
+> > 
+> > The patch is also buggy, and might be reverted at any moment :(
 > 
-> I could bisect the issue to one of ioapic cleanups introduced in 2.6.35:
-> commit a4384df3e24579d6292a1b3b41d500349948f30b
+> Hm?  This patch was never applied (at least I haven't received a tip for it).
 > 
-> While on this machine the problem was an interrupt timer issue,
-> there may be other platforms with different interrupt issues relatd to this
-> problem. Kernel logs with similar IOAPIC errors inside pnpacpi setup might
-> need this patch:
->   pnp 00:04: [io  0x02f8-0x02ff]
->   IOAPIC[1]: Invalid reference to IRQ 0
->   pnp 00:04: [irq 2]
->   pnp 00:04: Plug and Play ACPI device, IDs PNP0501 (active)
-> 
-> Yinghai came up with this patch which fixes the problem for me.
-> Looks like the bisected commit is correct, but the pnp layer has been
-> overseen.
-> 
-> Tested-by: Thomas Renninger <trenn@suse.de>
-> CC: Eric W. Biederman <ebiederm@xmission.com>
-> CC: bjorn.helgaas@hp.com
-> CC: lenb@kernel.org
-> CC: stable@kernel.org
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: H Peter Anvin <hpa@zytor.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> ---
->  drivers/pnp/pnpacpi/rsparser.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-> index bbf3edd..dad5da9 100644
-> --- a/drivers/pnp/pnpacpi/rsparser.c
-> +++ b/drivers/pnp/pnpacpi/rsparser.c
-> @@ -106,6 +106,14 @@ static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
->  		return;
->  	}
->  
-> +#ifdef CONFIG_X86_IO_APIC
-> +	/*
-> +	 * Convert it back to real gsi
-> +	 */
-> +	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
-> +		acpi_isa_irq_to_gsi(gsi, &gsi);
-> +#endif
-> +
+> You're probably talking about /proc/$PID/fd* with a weird deplock
+> warning, which is irrelevant.
 
-Have you checked which case in irq_to_gsi() really matters?
+Oops, sorry, you are correct.
 
-Rafael
-
-
->  	/*
->  	 * in IO-APIC mode, use overrided attribute. Two reasons:
->  	 * 1. BIOS bug in DSDT
+> > > 2) https://lkml.org/lkml/2011/11/7/355
+> [...]
+> > But we really can't change this as it would break compatibility, as Alan
+> > Cox pointed out, so what can be done here?
+> > 
+> > > 3) https://lkml.org/lkml/2011/11/8/136
+> [...]
+> > revoke() is still a dream (I looked into it and no other OS implements
+> > it as we have talked about it so I still fail to see how it would really
+> > work), so don't hold your breath waiting for that to happen...
 > 
+> Sad.  I see only two solutions then:
+> 
+> 1) show zero fields to unprivileged users (for /proc/interrupts and
+> /proc/stat it is CAP_SYS_ADMIN, for /proc/$PID/{stat,sched,schedstat} it
+> is ptrace_may_access(), for ttys it is uid check) and real values for
+> privileged.  The same technique is used in /proc/$PID/sched for eip/esp
+> values.
 
+That makes sense to a point, users will wonder why they aren't seeing
+interrupts anymore, which is a valuable debug tool.
+
+All that is leaking here is the number of keystrokes at most, right?
+
+> 2) completely deny the syscalls in questions for unprivileged users.
+> Not a way to go with /proc/$PID/* as it would break top and other cpu
+> monitors.
+
+Yes, not good.
+
+> The solution for /proc/$PID/* could come from the applications themselves,
+> i.e. they could create additional CPU noise while processing sensible
+> information like passwords (like some crypto software does to protect
+> against timing attacks), but it is crazy to expect this from all developers.
+> Probably it would not even fix the issue as the activity can be still
+> learned from other programs they interact with via the same /proc/$PID/*
+> files or other implicit information sources.
+
+If we provide a "good" library function for keyboard password usage, we
+could get other applications to use it, but yes, it is a tough issue :(
+
+greg k-h
