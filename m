@@ -1,165 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab1KIR36 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:29:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17731 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395Ab1KIR34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:29:56 -0500
-Date: Wed, 9 Nov 2011 18:29:42 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
+	id S932521Ab1KIRaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:30:09 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37463 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932395Ab1KIRaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:30:05 -0500
+Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute
+ "alias" in gendisk"
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
-Message-ID: <20111109172942.GJ5075@redhat.com>
-References: <4EB8E969.6010502@suse.cz>
- <1320766151-2619-1-git-send-email-aarcange@redhat.com>
- <1320766151-2619-2-git-send-email-aarcange@redhat.com>
- <4EB98A83.3040101@linux.vnet.ibm.com>
- <4EBA75F2.4080800@linux.vnet.ibm.com>
- <20111109155342.GA1260@google.com>
- <20111109165201.GI5075@redhat.com>
- <20111109165925.GC1260@google.com>
- <20111109170248.GD1260@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109170248.GD1260@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+In-Reply-To: <20111109162512.GB1260@google.com>
+References: <20111109162512.GB1260@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Nov 2011 11:30:00 -0600
+Message-ID: <1320859800.8294.27.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 09:02:48AM -0800, Tejun Heo wrote:
-> On Wed, Nov 09, 2011 at 08:59:25AM -0800, Tejun Heo wrote:
-> > Freezer depends on the usual "set_current_state(INTERRUPTIBLE); check
-> > freezing; schedule(); check freezing" construct and sends
-> > INTERRUPTIBLE wake up after setting freezing state.  The
-> > synchronization hasn't been completely clear but recently been cleaned
-> > up, so as long as freezing condition is tested after INTERRUPTIBLE is
-> > set before going to sleep, the event won't go missing.
+On Wed, 2011-11-09 at 08:25 -0800, Tejun Heo wrote:
+> This reverts commit a72c5e5eb738033938ab30d6a634b74d1d060f10.
 > 
-> Just in case, it's scheduled for the next merge window but TIF_FREEZE
-> is gone now.  There is freezing() helper which tests all pending
-> freezing conditions and the freezer guarantees there's mb between
-> assertion of freezing() and sending interruptible wakeups to target
-> tasks.
+> The commit introduced alias for block devices which is intended to be
+> used during logging although actual usage hasn't been committed yet.
+> This approach adds very limited benefit (raw log might be easier to
+> follow) which can be trivially implemented in userland but has a lot
+> of problems.
 
-My point is if what happens is:
+It has the specific benefit that on snipped logs we don't get a mismatch
+between device name and actual device.
 
-   freezer CPU		   khugepaged
-   ------
-   assert freezing
-   wake_up(interruptible)
-			   __set_current_state(interruptible)
-			   schedule()
+We already had this discussion at the kernel summit.  The structured
+logging that might give us this facility in userspace isn't there yet
+(and may not be for a while), so while users cut and paste logs it's
+useful for the logs to show the device preferred name.
 
-are we still hanging then? And I think it's silly to use
-wait_event_freezable_timeout if I don't have any waitqueue to wait
-on. Or are the pending changes hooking into the scheduler internally
-similarly to what the set_freezable_with_signal would have done? That
-would also kind of solve it. Removing set_freezable_with_signal sounds
-like the scheduler internal knowledge will go too, so I guess what's
-really missing is a schedule_timeout_freezable().
+With just logs, we can't solve the cross reference problem, since the
+cross references appear at different points in the log files.
 
-I think the below should solve the race but not having read your
-pending changes that make the TIF_FREEZE go away you may want to see
-if this is still relevant.
+> It is much worse than netif renames because it doesn't rename the
+> actual device but just adds conveninence name which isn't used
+> universally or enforced.  Everything internal including device lookup
+> and sysfs still uses the internal name and nothing prevents two
+> devices from using conflicting alias - ie. sda can have sdb as its
+> alias.
+> 
+> This has been nacked by people working on device driver core,
 
-Still there is a try_to_freeze we need to add somewhere in the tight
-loop, with this patch is automatically executed by
-schedule_timeout_freezable (the same way it would be run by
-wait_event_freezable_timeout if I had a waitqueue to deal with).
+Which is why it went into gendisk rather than the driver core
 
-Also note the smp_mb setting the current state interruptible and
-before calling freezing(). That should work fine if on the writer side
-asserts freezing, memory barrier and than wakeup. Memory barrier is
-only needed if the assert of the freezing could move into the wakeup
-critical section (wakeup will likely take a spinlock with acquire
-semantics so a write before taking the spinlock could mix inside the
-critical section of the wakeup).
+> block
+> layer and kernel-userland interface and shouldn't have been
+> upstreamed.  Revert it.
 
-===
-From: Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH] thp: reduce khugepaged freezing latency
+No, I can't agree with this ... if you propose a working alternative,
+I'm listening, but in the absence of one, I think the hack fills a gap
+we have in log analysis and tides us over until we have an agreed on
+proper solution (at which point, I'm perfectly happy to pull the hack
+back out).
 
-Lack of schedule_timeout_freezable() prevented khugepaged to be waken
-up across the schedule_timeout_interruptible() if freezing() becomes
-true.
+James
 
-khugepaged would still freeze just fine by trying again the next
-minute but it's better if it freezes immediately.
 
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- include/linux/sched.h |    1 +
- kernel/timer.c        |   10 ++++++++++
- mm/huge_memory.c      |    4 ++--
- 3 files changed, 13 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68daf4f..cfe07ef 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -356,6 +356,7 @@ extern int in_sched_functions(unsigned long addr);
- #define	MAX_SCHEDULE_TIMEOUT	LONG_MAX
- extern signed long schedule_timeout(signed long timeout);
- extern signed long schedule_timeout_interruptible(signed long timeout);
-+extern signed long schedule_timeout_freezable(signed long timeout);
- extern signed long schedule_timeout_killable(signed long timeout);
- extern signed long schedule_timeout_uninterruptible(signed long timeout);
- asmlinkage void schedule(void);
-diff --git a/kernel/timer.c b/kernel/timer.c
-index dbaa624..06a7322 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -40,6 +40,7 @@
- #include <linux/irq_work.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-+#include <linux/freezer.h>
- 
- #include <asm/uaccess.h>
- #include <asm/unistd.h>
-@@ -1493,6 +1494,15 @@ signed long __sched schedule_timeout_interruptible(signed long timeout)
- }
- EXPORT_SYMBOL(schedule_timeout_interruptible);
- 
-+signed long __sched schedule_timeout_freezable(signed long timeout)
-+{
-+	do
-+		set_current_state(TASK_INTERRUPTIBLE);
-+	while (try_to_freeze());
-+	return schedule_timeout(timeout);
-+}
-+EXPORT_SYMBOL(schedule_timeout_freezable);
-+
- signed long __sched schedule_timeout_killable(signed long timeout)
- {
- 	__set_current_state(TASK_KILLABLE);
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 4298aba..63d4f63 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -2261,7 +2261,7 @@ static void khugepaged_alloc_sleep(void)
- {
- 	DEFINE_WAIT(wait);
- 	add_wait_queue(&khugepaged_wait, &wait);
--	schedule_timeout_interruptible(
-+	schedule_timeout_freezable(
- 		msecs_to_jiffies(
- 			khugepaged_alloc_sleep_millisecs));
- 	remove_wait_queue(&khugepaged_wait, &wait);
-@@ -2317,7 +2317,7 @@ static void khugepaged_loop(void)
- 			if (!khugepaged_scan_sleep_millisecs)
- 				continue;
- 			add_wait_queue(&khugepaged_wait, &wait);
--			schedule_timeout_interruptible(
-+			schedule_timeout_freezable(
- 				msecs_to_jiffies(
- 					khugepaged_scan_sleep_millisecs));
- 			remove_wait_queue(&khugepaged_wait, &wait);
