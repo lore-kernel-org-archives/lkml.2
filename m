@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934837Ab1KJD1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:27:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42393 "EHLO mx2.suse.de"
+	id S1754888Ab1KJFHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:07:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42400 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934796Ab1KJD10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:26 -0500
+	id S934196Ab1KJD13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:14 2011
-Message-Id: <20111109212714.703010156@clark.kroah.org>
+Message-Id: <20111109212714.798975061@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:42 -0800
+Date: Wed, 09 Nov 2011 13:27:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Ward <david.ward@ll.mit.edu>,
+        alan@lxorguk.ukuu.org.uk, Gao feng <gaofeng@cn.fujitsu.com>,
+        Flavio Leitner <fbl@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [140/262] macvlan/macvtap: Fix unicast between macvtap interfaces in bridge mode
+Subject: [141/262] netconsole: enable netconsole can make net_device refcnt incorrent
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David Ward <david.ward@ll.mit.edu>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-[ Upstream commit cb2d0f3e968bff7c6d262aca3e3ab8d4184e69b2 ]
+[ Upstream commit d5123480b1d6f7d1a5fe1a13520cef88fb5d4c84 ]
 
-Packets should always be forwarded to the lowerdev using dev_forward_skb.
-vlan->forward is for packets being forwarded directly to another macvlan/
-macvtap device (used for multicast in bridge mode).
+There is no check if netconsole is enabled current.
+so when exec echo 1 > enabled;
+the reference of net_device will increment always.
 
-Reported-and-tested-by: Shlomo Pongratz <shlomop@mellanox.com>
-Signed-off-by: David Ward <david.ward@ll.mit.edu>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Acked-by: Flavio Leitner <fbl@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/macvlan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/netconsole.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -239,7 +239,7 @@ static int macvlan_queue_xmit(struct sk_
- 		dest = macvlan_hash_lookup(port, eth->h_dest);
- 		if (dest && dest->mode == MACVLAN_MODE_BRIDGE) {
- 			/* send to lowerdev first for its network taps */
--			vlan->forward(vlan->lowerdev, skb);
-+			dev_forward_skb(vlan->lowerdev, skb);
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -307,6 +307,11 @@ static ssize_t store_enabled(struct netc
+ 		return err;
+ 	if (enabled < 0 || enabled > 1)
+ 		return -EINVAL;
++	if (enabled == nt->enabled) {
++		printk(KERN_INFO "netconsole: network logging has already %s\n",
++				nt->enabled ? "started" : "stopped");
++		return -EINVAL;
++	}
  
- 			return NET_XMIT_SUCCESS;
- 		}
+ 	if (enabled) {	/* 1 */
+ 
 
 
