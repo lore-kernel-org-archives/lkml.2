@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123Ab1KJDWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:22:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41866 "EHLO mx2.suse.de"
+	id S934019Ab1KJDWP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:22:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41803 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934113Ab1KJDWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
-Message-Id: <20111109212706.252793265@clark.kroah.org>
+	id S933979Ab1KJDWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:22:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:05 2011
+Message-Id: <20111109212705.338784348@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:21 -0800
+Date: Wed, 09 Nov 2011 13:26:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [059/262] ath9k_hw: Fix magnitude/phase coeff correction
+        alan@lxorguk.ukuu.org.uk, Eric Benoit <eric@ecks.ca>
+Subject: [050/262] USB: pl2303: add id for SMART device
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Eric Benoit <eric@ecks.ca>
 
-commit e9c10469cf3c71bc1c6b0f01319161e277d6ac9b upstream.
+commit 598f0b703506da841d3459dc0c48506be14d1778 upstream.
 
-Do the magnitude/phase coeff correction only if the outlier
-is detected. Updating wrong magnitude/phase coeff factor
-impacts not only tx gain setting but also leads to poor
-performance in congested networks. In the clear environment
-the impact is very minimal because the outlier happens
-very rarely according to the past experiment. It occured
-less than once every 1000 calibrations.
+Add vendor and product ID for the SMART USB to serial adapter. These
+were meant to be used with their SMART Board whiteboards, but can be
+re-purposed for other tasks. Tested and working (at at least 9600 bps).
 
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Eric Benoit <eric@ecks.ca>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_calib.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/pl2303.c |    1 +
+ drivers/usb/serial/pl2303.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_calib.c
-@@ -643,8 +643,9 @@ static void ar9003_hw_detect_outlier(int
- 			outlier_idx = max_idx;
- 		else
- 			outlier_idx = min_idx;
-+
-+		mp_coeff[outlier_idx] = mp_avg;
- 	}
--	mp_coeff[outlier_idx] = mp_avg;
- }
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -92,6 +92,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
+ 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
+ 	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
++	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
+ 	{ }					/* Terminating entry */
+ };
  
- static void ar9003_hw_tx_iqcal_load_avg_2_passes(struct ath_hw *ah,
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -148,3 +148,8 @@
+ /* WinChipHead USB->RS 232 adapter */
+ #define WINCHIPHEAD_VENDOR_ID		0x4348
+ #define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
++
++/* SMART USB Serial Adapter */
++#define SMART_VENDOR_ID	0x0b8c
++#define SMART_PRODUCT_ID	0x2303
++
 
 
