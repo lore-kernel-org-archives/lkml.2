@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965789Ab1KJDqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:46:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44874 "EHLO mx2.suse.de"
+	id S965818Ab1KJDqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:46:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44903 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965775Ab1KJDqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:03 2011
-Message-Id: <20111109213203.558056268@clark.kroah.org>
+	id S965544Ab1KJDqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:01 2011
+Message-Id: <20111109213200.969379101@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:17 -0800
+Date: Wed, 09 Nov 2011 13:33:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [210/264] tcm_loop: Add explict read buffer memset for SCF_SCSI_CONTROL_SG_IO_CDB
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [186/264] thp: share get_huge_page_tail()
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +33,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 8cd79f24350826b81e16990d9e12bc878e67d385 upstream.
+commit b35a35b556f5e6b7993ad0baf20173e75c09ce8c upstream.
 
-This patch addresses an issue with buggy userspace code sending I/O
-via scsi-generic that does not explictly clear their associated read
-buffers.  It adds an explict memset of the first SGL entry within
-tcm_loop_new_cmd_map() for SCF_SCSI_CONTROL_SG_IO_CDB payloads that
-are currently guaranteed to be a single SGL by target-core code.
+This avoids duplicating the function in every arch gup_fast.
 
-This issue is a side effect of the v3.1-rc1 merge to remove the
-extra memcpy between certain control CDB types using a contigious
-+ cleared buffer in target-core, and performing a memcpy into the
-SGL list within tcm_loop.
-
-It was originally mainfesting itself by udev + scsi_id + scsi-generic
-not properly setting up the expected /dev/disk/by-id/ symlinks because
-the INQUIRY payload was containing extra bogus data preventing the
-proper NAA IEEE WWN from being parsed by userspace.
-
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/loopback/tcm_loop.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/powerpc/mm/hugetlbpage.c |   11 -----------
+ arch/s390/mm/gup.c            |   11 -----------
+ arch/sparc/mm/gup.c           |   11 -----------
+ arch/x86/mm/gup.c             |   11 -----------
+ include/linux/mm.h            |   11 +++++++++++
+ 5 files changed, 11 insertions(+), 44 deletions(-)
 
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -174,6 +174,24 @@ static int tcm_loop_new_cmd_map(struct s
- 		sgl_bidi = sdb->table.sgl;
- 		sgl_bidi_count = sdb->table.nents;
- 	}
-+	/*
-+	 * Because some userspace code via scsi-generic do not memset their
-+	 * associated read buffers, go ahead and do that here for type
-+	 * SCF_SCSI_CONTROL_SG_IO_CDB.  Also note that this is currently
-+	 * guaranteed to be a single SGL for SCF_SCSI_CONTROL_SG_IO_CDB
-+	 * by target core in transport_generic_allocate_tasks() ->
-+	 * transport_generic_cmd_sequencer().
-+	 */
-+	if (se_cmd->se_cmd_flags & SCF_SCSI_CONTROL_SG_IO_CDB &&
-+	    se_cmd->data_direction == DMA_FROM_DEVICE) {
-+		struct scatterlist *sg = scsi_sglist(sc);
-+		unsigned char *buf = kmap(sg_page(sg)) + sg->offset;
-+
-+		if (buf != NULL) {
-+			memset(buf, 0, sg->length);
-+			kunmap(sg_page(sg));
-+		}
-+	}
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -385,17 +385,6 @@ follow_huge_pmd(struct mm_struct *mm, un
+ 	return NULL;
+ }
  
- 	/* Tell the core about our preallocated memory */
- 	ret = transport_generic_map_mem_to_cmd(se_cmd, scsi_sglist(sc),
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static noinline int gup_hugepte(pte_t *ptep, unsigned long sz, unsigned long addr,
+ 		       unsigned long end, int write, struct page **pages, int *nr)
+ {
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -48,17 +48,6 @@ static inline int gup_pte_range(pmd_t *p
+ 	return 1;
+ }
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -12,17 +12,6 @@
+ #include <linux/rwsem.h>
+ #include <asm/pgtable.h>
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ /*
+  * The performance critical leaf functions are made noinline otherwise gcc
+  * inlines everything into a single function which results in too much
+--- a/arch/x86/mm/gup.c
++++ b/arch/x86/mm/gup.c
+@@ -108,17 +108,6 @@ static inline void get_head_page_multipl
+ 	SetPageReferenced(page);
+ }
+ 
+-static inline void get_huge_page_tail(struct page *page)
+-{
+-	/*
+-	 * __split_huge_page_refcount() cannot run
+-	 * from under us.
+-	 */
+-	VM_BUG_ON(page_mapcount(page) < 0);
+-	VM_BUG_ON(atomic_read(&page->_count) != 0);
+-	atomic_inc(&page->_mapcount);
+-}
+-
+ static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -376,6 +376,17 @@ static inline int page_count(struct page
+ 	return atomic_read(&compound_head(page)->_count);
+ }
+ 
++static inline void get_huge_page_tail(struct page *page)
++{
++	/*
++	 * __split_huge_page_refcount() cannot run
++	 * from under us.
++	 */
++	VM_BUG_ON(page_mapcount(page) < 0);
++	VM_BUG_ON(atomic_read(&page->_count) != 0);
++	atomic_inc(&page->_mapcount);
++}
++
+ extern bool __get_page_tail(struct page *page);
+ 
+ static inline void get_page(struct page *page)
 
 
