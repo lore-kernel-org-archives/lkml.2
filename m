@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab1KJDfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:35:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43442 "EHLO mx2.suse.de"
+	id S935867Ab1KJEkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:40:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43455 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933778Ab1KJDfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:35:24 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:44 2011
-Message-Id: <20111109213144.023670297@clark.kroah.org>
+	id S964840Ab1KJDfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:35:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:42 2011
+Message-Id: <20111109213142.335908386@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:06 -0800
+Date: Wed, 09 Nov 2011 13:30:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kautuk Consul <consul.kautuk@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [019/264] xhci-mem.c: Check for ring->first_seg != NULL
+        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
+        Steve French <smfrench@gmail.com>
+Subject: [002/264] CIFS: Fix DFS handling in cifs_get_file_info
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit 0e6c7f746ea99089fb3263709075c20485a479ae upstream.
+commit 42274bb22afc3e877ae5abed787b0b09d7dede52 upstream.
 
-There are 2 situations wherein the xhci_ring* might not get freed:
-- When xhci_ring_alloc() -> xhci_segment_alloc() returns NULL and
-  we goto the fail: label in xhci_ring_alloc. In this case, the ring
-  will not get kfreed.
-- When the num_segs argument to xhci_ring_alloc is passed as 0 and
-  we try to free the rung after that.
-  ( This doesn't really happen as of now in the code but we seem to
-    be entertaining num_segs=0 in xhci_ring_alloc )
+We should call cifs_all_info_to_fattr in rc == 0 case only.
 
-This should be backported to kernels as old as 2.6.31.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c |   22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+ fs/cifs/inode.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -112,18 +112,20 @@ void xhci_ring_free(struct xhci_hcd *xhc
- 	struct xhci_segment *seg;
- 	struct xhci_segment *first_seg;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -562,7 +562,16 @@ int cifs_get_file_info(struct file *filp
  
--	if (!ring || !ring->first_seg)
-+	if (!ring)
- 		return;
--	first_seg = ring->first_seg;
--	seg = first_seg->next;
--	xhci_dbg(xhci, "Freeing ring at %p\n", ring);
--	while (seg != first_seg) {
--		struct xhci_segment *next = seg->next;
--		xhci_segment_free(xhci, seg);
--		seg = next;
-+	if (ring->first_seg) {
-+		first_seg = ring->first_seg;
-+		seg = first_seg->next;
-+		xhci_dbg(xhci, "Freeing ring at %p\n", ring);
-+		while (seg != first_seg) {
-+			struct xhci_segment *next = seg->next;
-+			xhci_segment_free(xhci, seg);
-+			seg = next;
-+		}
-+		xhci_segment_free(xhci, first_seg);
-+		ring->first_seg = NULL;
- 	}
--	xhci_segment_free(xhci, first_seg);
--	ring->first_seg = NULL;
- 	kfree(ring);
- }
+ 	xid = GetXid();
+ 	rc = CIFSSMBQFileInfo(xid, tcon, cfile->netfid, &find_data);
+-	if (rc == -EOPNOTSUPP || rc == -EINVAL) {
++	switch (rc) {
++	case 0:
++		cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
++		break;
++	case -EREMOTE:
++		cifs_create_dfs_fattr(&fattr, inode->i_sb);
++		rc = 0;
++		break;
++	case -EOPNOTSUPP:
++	case -EINVAL:
+ 		/*
+ 		 * FIXME: legacy server -- fall back to path-based call?
+ 		 * for now, just skip revalidating and mark inode for
+@@ -570,18 +579,14 @@ int cifs_get_file_info(struct file *filp
+ 		 */
+ 		rc = 0;
+ 		CIFS_I(inode)->time = 0;
++	default:
+ 		goto cgfi_exit;
+-	} else if (rc == -EREMOTE) {
+-		cifs_create_dfs_fattr(&fattr, inode->i_sb);
+-		rc = 0;
+-	} else if (rc)
+-		goto cgfi_exit;
++	}
  
+ 	/*
+ 	 * don't bother with SFU junk here -- just mark inode as needing
+ 	 * revalidation.
+ 	 */
+-	cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
+ 	fattr.cf_uniqueid = CIFS_I(inode)->uniqueid;
+ 	fattr.cf_flags |= CIFS_FATTR_NEED_REVAL;
+ 	cifs_fattr_to_inode(inode, &fattr);
 
 
