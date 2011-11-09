@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab1KIPai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 10:30:38 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:35234 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab1KIPah convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 10:30:37 -0500
-Subject: Re: [PATCH v2 13/14] provide a version of cpuusage statistics
- inside cpu cgroup
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrew Wagin <avagin@gmail.com>
-Cc: Glauber Costa <glommer@parallels.com>, linux-kernel@vger.kernel.org,
-        paul@paulmenage.org, lizf@cn.fujitsu.com, daniel.lezcano@free.fr,
-        jbottomley@parallels.com, pjt@google.com, fweisbec@gmail.com,
-        Balbir Singh <bsingharora@gmail.com>
-Date: Wed, 09 Nov 2011 16:30:23 +0100
-In-Reply-To: <CANaxB-z0-VY=SVEjmYKXrF+i2VW3U3QCxz0yN4Wp8-qevnd4tA@mail.gmail.com>
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com>
-	 <1320182360-20043-14-git-send-email-glommer@parallels.com>
-	 <CANaxB-xQcqcZo5m7CJkCHrWj_TS4dyzYemPvrqZ25TaqK2tWYQ@mail.gmail.com>
-	 <4EBA6AF7.4020509@parallels.com>
-	 <CANaxB-z0-VY=SVEjmYKXrF+i2VW3U3QCxz0yN4Wp8-qevnd4tA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320852623.19727.12.camel@twins>
-Mime-Version: 1.0
+	id S1755085Ab1KIPck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 10:32:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27440 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751370Ab1KIPcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 10:32:39 -0500
+Date: Wed, 9 Nov 2011 17:33:14 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com, penberg@cs.helsinki.fi
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+Message-ID: <20111109153313.GB25329@redhat.com>
+References: <1320150813.3847.24.camel@lappy>
+ <20111101124223.GA14060@redhat.com>
+ <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <20111108214021.GA4538@redhat.com>
+ <1320828366.31056.16.camel@lappy>
+ <20111109101318.GB20612@redhat.com>
+ <alpine.LFD.2.02.1111091421570.4936@tux.localdomain>
+ <1320841683.31056.41.camel@lappy>
+ <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 17:18 +0300, Andrew Wagin wrote:
-> And look at cfs_rq->prev_sum_exec_runtime, probably it is not used too.
-> Usage of cfs_rq->sum_exec_runtime looks strange.
+On Wed, Nov 09, 2011 at 02:36:43PM +0200, Pekka Enberg wrote:
+> On Wed, 9 Nov 2011, Sasha Levin wrote:
+> >They don't exist in kernel code either, for same reason as above.
+> >
+> >Nothing will break if we remove it since no one really used it, we were
+> >probably the first and only implementation of the spec which considered
+> >them :)
+> 
+> As long as we are able to run older versions of the KVM tool with
+> newer kernels and vice versa, I see no reason why we can't drop 64-bit
+> features from the KVM tool.
+> 
+> 			Pekka
 
-A: Because it messes up the order in which people normally read text.
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
+What do these older versions do? Do they *set* bit 31 in the
+features register?
+
+-- 
+MST
