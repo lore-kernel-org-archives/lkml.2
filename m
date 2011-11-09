@@ -1,29 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965818Ab1KJDqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:46:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44903 "EHLO mx2.suse.de"
+	id S965839Ab1KJDqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:46:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44937 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965544Ab1KJDqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:01 2011
-Message-Id: <20111109213200.969379101@clark.kroah.org>
+	id S965544Ab1KJDqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:04 2011
+Message-Id: <20111109213204.093188179@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:53 -0800
+Date: Wed, 09 Nov 2011 13:34:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Miller <davem@davemloft.net>
-Subject: [186/264] thp: share get_huge_page_tail()
+        alan@lxorguk.ukuu.org.uk, Bart Van Assche <bvanassche@acm.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [215/264] [SCSI] Make scsi_free_queue() kill pending SCSI commands
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,135 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Bart Van Assche <bvanassche@acm.org>
 
-commit b35a35b556f5e6b7993ad0baf20173e75c09ce8c upstream.
+commit 3308511c93e6ad0d3c58984ecd6e5e57f96b12c8 upstream.
 
-This avoids duplicating the function in every arch gup_fast.
+Make sure that SCSI device removal via scsi_remove_host() does finish
+all pending SCSI commands. Currently that's not the case and hence
+removal of a SCSI host during I/O can cause a deadlock. See also
+"blkdev_issue_discard() hangs forever if underlying storage device is
+removed" (http://bugzilla.kernel.org/show_bug.cgi?id=40472). See also
+http://lkml.org/lkml/2011/8/27/6.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Bart Van Assche <bvanassche@acm.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/hugetlbpage.c |   11 -----------
- arch/s390/mm/gup.c            |   11 -----------
- arch/sparc/mm/gup.c           |   11 -----------
- arch/x86/mm/gup.c             |   11 -----------
- include/linux/mm.h            |   11 +++++++++++
- 5 files changed, 11 insertions(+), 44 deletions(-)
+ drivers/scsi/hosts.c    |    9 ++++++---
+ drivers/scsi/scsi_lib.c |    9 +++++++++
+ 2 files changed, 15 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -385,17 +385,6 @@ follow_huge_pmd(struct mm_struct *mm, un
- 	return NULL;
- }
- 
--static inline void get_huge_page_tail(struct page *page)
--{
--	/*
--	 * __split_huge_page_refcount() cannot run
--	 * from under us.
--	 */
--	VM_BUG_ON(page_mapcount(page) < 0);
--	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	atomic_inc(&page->_mapcount);
--}
--
- static noinline int gup_hugepte(pte_t *ptep, unsigned long sz, unsigned long addr,
- 		       unsigned long end, int write, struct page **pages, int *nr)
+--- a/drivers/scsi/hosts.c
++++ b/drivers/scsi/hosts.c
+@@ -286,6 +286,7 @@ static void scsi_host_dev_release(struct
  {
---- a/arch/s390/mm/gup.c
-+++ b/arch/s390/mm/gup.c
-@@ -48,17 +48,6 @@ static inline int gup_pte_range(pmd_t *p
- 	return 1;
- }
+ 	struct Scsi_Host *shost = dev_to_shost(dev);
+ 	struct device *parent = dev->parent;
++	struct request_queue *q;
  
--static inline void get_huge_page_tail(struct page *page)
--{
--	/*
--	 * __split_huge_page_refcount() cannot run
--	 * from under us.
--	 */
--	VM_BUG_ON(page_mapcount(page) < 0);
--	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	atomic_inc(&page->_mapcount);
--}
--
- static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
- 		unsigned long end, int write, struct page **pages, int *nr)
+ 	scsi_proc_hostdir_rm(shost->hostt);
+ 
+@@ -293,9 +294,11 @@ static void scsi_host_dev_release(struct
+ 		kthread_stop(shost->ehandler);
+ 	if (shost->work_q)
+ 		destroy_workqueue(shost->work_q);
+-	if (shost->uspace_req_q) {
+-		kfree(shost->uspace_req_q->queuedata);
+-		scsi_free_queue(shost->uspace_req_q);
++	q = shost->uspace_req_q;
++	if (q) {
++		kfree(q->queuedata);
++		q->queuedata = NULL;
++		scsi_free_queue(q);
+ 	}
+ 
+ 	scsi_destroy_command_freelist(shost);
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1698,6 +1698,15 @@ struct request_queue *scsi_alloc_queue(s
+ 
+ void scsi_free_queue(struct request_queue *q)
  {
---- a/arch/sparc/mm/gup.c
-+++ b/arch/sparc/mm/gup.c
-@@ -12,17 +12,6 @@
- #include <linux/rwsem.h>
- #include <asm/pgtable.h>
- 
--static inline void get_huge_page_tail(struct page *page)
--{
--	/*
--	 * __split_huge_page_refcount() cannot run
--	 * from under us.
--	 */
--	VM_BUG_ON(page_mapcount(page) < 0);
--	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	atomic_inc(&page->_mapcount);
--}
--
- /*
-  * The performance critical leaf functions are made noinline otherwise gcc
-  * inlines everything into a single function which results in too much
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -108,17 +108,6 @@ static inline void get_head_page_multipl
- 	SetPageReferenced(page);
- }
- 
--static inline void get_huge_page_tail(struct page *page)
--{
--	/*
--	 * __split_huge_page_refcount() cannot run
--	 * from under us.
--	 */
--	VM_BUG_ON(page_mapcount(page) < 0);
--	VM_BUG_ON(atomic_read(&page->_count) != 0);
--	atomic_inc(&page->_mapcount);
--}
--
- static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
- 		unsigned long end, int write, struct page **pages, int *nr)
- {
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -376,6 +376,17 @@ static inline int page_count(struct page
- 	return atomic_read(&compound_head(page)->_count);
- }
- 
-+static inline void get_huge_page_tail(struct page *page)
-+{
-+	/*
-+	 * __split_huge_page_refcount() cannot run
-+	 * from under us.
-+	 */
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	atomic_inc(&page->_mapcount);
-+}
++	unsigned long flags;
 +
- extern bool __get_page_tail(struct page *page);
++	WARN_ON(q->queuedata);
++
++	/* cause scsi_request_fn() to kill all non-finished requests */
++	spin_lock_irqsave(q->queue_lock, flags);
++	q->request_fn(q);
++	spin_unlock_irqrestore(q->queue_lock, flags);
++
+ 	blk_cleanup_queue(q);
+ }
  
- static inline void get_page(struct page *page)
 
 
