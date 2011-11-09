@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933867Ab1KJDVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:21:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41692 "EHLO mx2.suse.de"
+	id S933882Ab1KJDVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:21:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41688 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933816Ab1KJDVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:21:13 -0500
+	id S933844Ab1KJDVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:21:10 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:01 2011
-Message-Id: <20111109212701.205218062@clark.kroah.org>
+Message-Id: <20111109212701.106266386@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:31 -0800
+Date: Wed, 09 Nov 2011 13:25:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [009/262] staging: quatech_usb2: Potential lost wakeup scenario in TIOCMIWAIT
+        alan@lxorguk.ukuu.org.uk, Bill Pemberton <wfp5p@virginia.edu>
+Subject: [008/262] staging: serqt_usb2: remove ssu100 from supported devices
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,65 +24,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
+From: Bill Pemberton <wfp5p@virginia.edu>
 
-commit e8df1674d383d2ecc6efa8d7dba74c03aafdfdd7 upstream.
+commit 7cbf3c7cd59288fb5e9f31815c74773549668d43 upstream.
 
-If the usermode app does an ioctl over this serial device  by
-using TIOCMIWAIT, then the code will wait by setting the current
-task state to TASK_INTERRUPTIBLE and then calling schedule().
-This will be woken up by the qt2_process_modem_status on URB
-completion when the port_extra->shadowMSR is set to the new
-modem status.
+The serqt_usb2 driver will not work properly with the ssu100 device
+even though it claims to support it.  The ssu100 is supported by the
+ssu100 driver in mainline so there is no need to have it claimed by
+serqt_usb2.
 
-However, this could result in a lost wakeup scenario due to a race
-in the logic in the qt2_ioctl(TIOCMIWAIT) loop and the URB completion
-for new modem status in qt2_process_modem_status.
-Due to this, the usermode app's task will continue to sleep despite a
-change in the modem status.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+Signed-off-by: Bill Pemberton <wfp5p@virginia.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/quatech_usb2/quatech_usb2.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/staging/serqt_usb2/serqt_usb2.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
---- a/drivers/staging/quatech_usb2/quatech_usb2.c
-+++ b/drivers/staging/quatech_usb2/quatech_usb2.c
-@@ -916,9 +916,10 @@ static int qt2_ioctl(struct tty_struct *
- 		dbg("%s() port %d, cmd == TIOCMIWAIT enter",
- 			__func__, port->number);
- 		prev_msr_value = port_extra->shadowMSR  & QT2_SERIAL_MSR_MASK;
-+		barrier();
-+		__set_current_state(TASK_INTERRUPTIBLE);
- 		while (1) {
- 			add_wait_queue(&port_extra->wait, &wait);
--			set_current_state(TASK_INTERRUPTIBLE);
- 			schedule();
- 			dbg("%s(): port %d, cmd == TIOCMIWAIT here\n",
- 				__func__, port->number);
-@@ -926,9 +927,12 @@ static int qt2_ioctl(struct tty_struct *
- 			/* see if a signal woke us up */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+			set_current_state(TASK_INTERRUPTIBLE);
- 			msr_value = port_extra->shadowMSR & QT2_SERIAL_MSR_MASK;
--			if (msr_value == prev_msr_value)
-+			if (msr_value == prev_msr_value) {
-+				__set_current_state(TASK_RUNNING);
- 				return -EIO;  /* no change - error */
-+			}
- 			if ((arg & TIOCM_RNG &&
- 				((prev_msr_value & QT2_SERIAL_MSR_RI) ==
- 					(msr_value & QT2_SERIAL_MSR_RI))) ||
-@@ -941,6 +945,7 @@ static int qt2_ioctl(struct tty_struct *
- 				(arg & TIOCM_CTS &&
- 				((prev_msr_value & QT2_SERIAL_MSR_CTS) ==
- 					(msr_value & QT2_SERIAL_MSR_CTS)))) {
-+				__set_current_state(TASK_RUNNING);
- 				return 0;
- 			}
- 		} /* end inifinite while */
+--- a/drivers/staging/serqt_usb2/serqt_usb2.c
++++ b/drivers/staging/serqt_usb2/serqt_usb2.c
+@@ -24,7 +24,6 @@ static int debug;
+ #define DRIVER_DESC "Quatech USB to Serial Driver"
+ 
+ #define	USB_VENDOR_ID_QUATECH			0x061d	/* Quatech VID */
+-#define QUATECH_SSU100	0xC020	/* SSU100 */
+ #define QUATECH_SSU200	0xC030	/* SSU200 */
+ #define QUATECH_DSU100	0xC040	/* DSU100 */
+ #define QUATECH_DSU200	0xC050	/* DSU200 */
+@@ -127,7 +126,6 @@ static int debug;
+ #define RS232_MODE          0x00
+ 
+ static const struct usb_device_id serqt_id_table[] = {
+-	{USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_SSU100)},
+ 	{USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_SSU200)},
+ 	{USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_DSU100)},
+ 	{USB_DEVICE(USB_VENDOR_ID_QUATECH, QUATECH_DSU200)},
+@@ -775,7 +773,6 @@ static int qt_startup(struct usb_serial
+ 	}
+ 
+ 	switch (serial->dev->descriptor.idProduct) {
+-	case QUATECH_SSU100:
+ 	case QUATECH_DSU100:
+ 	case QUATECH_QSU100:
+ 	case QUATECH_ESU100A:
 
 
