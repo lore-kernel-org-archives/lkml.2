@@ -1,354 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab1KIOo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:44:26 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54484 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753846Ab1KIOoY (ORCPT
+	id S1754193Ab1KIOwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:52:00 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57785 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263Ab1KIOv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:44:24 -0500
-Date: Wed, 9 Nov 2011 08:44:16 -0600
-From: "Serge E. Hallyn" <serge.hallyn@canonical.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, oleg@redhat.com, richard@nod.at,
-        akpm@linux-foundation.org, ebiederm@xmission.com, dhowells@redhat.com
-Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
-Message-ID: <20111109144416.GA4976@sergelap>
-References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
- <1320445482-8459-7-git-send-email-serge@hallyn.com>
- <1320694510.10093.23.camel@localhost>
- <20111108032902.GA29433@hallyn.com>
- <1320848342.10093.57.camel@localhost>
+	Wed, 9 Nov 2011 09:51:58 -0500
+Message-ID: <4EBA9385.7010806@evidence.eu.com>
+Date: Wed, 09 Nov 2011 15:51:49 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320848342.10093.57.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jesper Nilsson <Jesper.Nilsson@axis.com>,
+        Mikael Starvik <mikael.starvik@axis.com>,
+        Darron Black <darron@griffin.net>
+Subject: Re: [PATCH] RS485: fix inconsistencies in the meaning of some variables
+References: <4E492CFF.7040905@pwrnet.de> <20110822211832.GA8023@kroah.com> <4EB3A009.10502@evidence.eu.com> <4EB8F6B9.6010008@atmel.com> <4EB90902.4030200@evidence.eu.com> <20111108134804.07095c5d@lxorguk.ukuu.org.uk> <20111108142432.GA11293@kroah.com>
+In-Reply-To: <20111108142432.GA11293@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Eric Paris (eparis@redhat.com):
-> On Tue, 2011-11-08 at 03:29 +0000, Serge E. Hallyn wrote:
-> > Quoting Eric Paris (eparis@redhat.com):
+Il 08/11/2011 15:24, Greg KH ha scritto:
+> On Tue, Nov 08, 2011 at 01:48:04PM +0000, Alan Cox wrote:
+>>> The modifications that I have proposed are very minimal, and most
+>>> user-space code should continue to work without any difference. Any Cris
+>>> user-space code will continue to work, because we didn't change the
+>>> behavior of the driver. For Atmel user-space code, instead, the behavior
+>>> of the driver changes only if flags are not set and delay variables
+>>> contain a value different than 0 (which, hopefully, is not a very common
+>>> situation). That's the reason why I preferred to not change the names of
+>>> the variables, even if better names would be desirable.
+>>
+>> We have inconsistency between implementations. We don't have a change in
+>> implementation. There isn't any way to resolve that except by fixing the
+>> deviating implementation and doing it promptly.
+>>
+>> With my tty hat on I'm quite happy with this patch. The sooner it is
+>> upstream the better.
 > 
-> > But, regardless, your point is valid in that I'm not tightening down as
-> > much as I could.  So how about I don't change the security_netlink_recv()
-> > and callers yet, and instead I change cap_netlink_recv() to do:
-> > 
-> > 	if (!IN_ROOT_USER_NS && !cap_raised(current_cap(), cap))
-> 
-> Actually better thought.  Remove the LSM hook altogether and just use
-> capable() in the callers.  This hook, being used this way, was
+> Ok, I'll push to get it to Linus for the next rc release.
 
-Heh, that sounds terrific!  Only concern I have is it will cause
-PF_SUPERPRIV to be set when successful, which it didn't use to.
-Now it looks like that might be more correct, but it's a change.
-Are people who care about accounting stats going to notice and be
-surprised?
+Hi Greg,
 
-> introduced in c7bdb545 back when we took the effective perms from the
-> skb.  We don't use the skb any more since netlink is synchronous.  This
-> is functionally equivalent except the capabilities code checks against
-> the init_user_ns (something we want) and it will now set PF_PRIV (which
-> also seems like a good thing) Something like:
-> 
-> security: remove the security_netlink_recv hook as it is equivalent to capable()
->     
-> Once upon a time netlink was not sync and we had to get the effective
-> capabilities from the skb that was being received.  Today we instead get
-> the capabilities from the current task.  This has rendered the entire
-> purpose of the hook moot as it is now functionally equivalent to the
-> capable() call.
->     
-> Signed-off-by: Eric Paris <eparis@redhat.com>
+	in case you didn't push it yet, this is the patch with also the ack by Jesper.
 
-Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Best regards,
 
-thanks,
--serge
+	Claudio
 
-> 
-> ---
-> 
->  drivers/scsi/scsi_netlink.c     |    2 +-
->  include/linux/security.h        |   14 --------------
->  kernel/audit.c                  |    4 ++--
->  net/core/rtnetlink.c            |    2 +-
->  net/decnet/netfilter/dn_rtmsg.c |    2 +-
->  net/ipv4/netfilter/ip_queue.c   |    2 +-
->  net/ipv6/netfilter/ip6_queue.c  |    2 +-
->  net/netfilter/nfnetlink.c       |    2 +-
->  net/netlink/genetlink.c         |    2 +-
->  net/xfrm/xfrm_user.c            |    2 +-
->  security/capability.c           |    1 -
->  security/commoncap.c            |    8 --------
->  security/security.c             |    6 ------
->  security/selinux/hooks.c        |   19 -------------------
->  14 files changed, 10 insertions(+), 58 deletions(-)
-> 
-> diff --git a/drivers/scsi/scsi_netlink.c b/drivers/scsi/scsi_netlink.c
-> index 44f76e8..c77628a 100644
-> --- a/drivers/scsi/scsi_netlink.c
-> +++ b/drivers/scsi/scsi_netlink.c
-> @@ -112,7 +112,7 @@ scsi_nl_rcv_msg(struct sk_buff *skb)
->  			goto next_msg;
->  		}
->  
-> -		if (security_netlink_recv(skb, CAP_SYS_ADMIN)) {
-> +		if (!capable(CAP_SYS_ADMIN)) {
->  			err = -EPERM;
->  			goto next_msg;
->  		}
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 1bb742b..bb7e8a0 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -96,7 +96,6 @@ struct xfrm_user_sec_ctx;
->  struct seq_file;
->  
->  extern int cap_netlink_send(struct sock *sk, struct sk_buff *skb);
-> -extern int cap_netlink_recv(struct sk_buff *skb, int cap);
->  
->  void reset_security_ops(void);
->  
-> @@ -798,12 +797,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
->   *	@skb contains the sk_buff structure for the netlink message.
->   *	Return 0 if the information was successfully saved and message
->   *	is allowed to be transmitted.
-> - * @netlink_recv:
-> - *	Check permission before processing the received netlink message in
-> - *	@skb.
-> - *	@skb contains the sk_buff structure for the netlink message.
-> - *	@cap indicates the capability required
-> - *	Return 0 if permission is granted.
->   *
->   * Security hooks for Unix domain networking.
->   *
-> @@ -1564,7 +1557,6 @@ struct security_operations {
->  			  struct sembuf *sops, unsigned nsops, int alter);
->  
->  	int (*netlink_send) (struct sock *sk, struct sk_buff *skb);
-> -	int (*netlink_recv) (struct sk_buff *skb, int cap);
->  
->  	void (*d_instantiate) (struct dentry *dentry, struct inode *inode);
->  
-> @@ -1817,7 +1809,6 @@ void security_d_instantiate(struct dentry *dentry, struct inode *inode);
->  int security_getprocattr(struct task_struct *p, char *name, char **value);
->  int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
->  int security_netlink_send(struct sock *sk, struct sk_buff *skb);
-> -int security_netlink_recv(struct sk_buff *skb, int cap);
->  int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
->  int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
->  void security_release_secctx(char *secdata, u32 seclen);
-> @@ -2505,11 +2496,6 @@ static inline int security_netlink_send(struct sock *sk, struct sk_buff *skb)
->  	return cap_netlink_send(sk, skb);
->  }
->  
-> -static inline int security_netlink_recv(struct sk_buff *skb, int cap)
-> -{
-> -	return cap_netlink_recv(skb, cap);
-> -}
-> -
->  static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return -EOPNOTSUPP;
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 2c1d6ab..57e3f51 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -601,13 +601,13 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
->  	case AUDIT_TTY_SET:
->  	case AUDIT_TRIM:
->  	case AUDIT_MAKE_EQUIV:
-> -		if (security_netlink_recv(skb, CAP_AUDIT_CONTROL))
-> +		if (!capable(CAP_AUDIT_CONTROL))
->  			err = -EPERM;
->  		break;
->  	case AUDIT_USER:
->  	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
->  	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
-> -		if (security_netlink_recv(skb, CAP_AUDIT_WRITE))
-> +		if (!capable(CAP_AUDIT_WRITE))
->  			err = -EPERM;
->  		break;
->  	default:  /* bad msg */
-> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-> index 39f8dd6..98ee1b6 100644
-> --- a/net/core/rtnetlink.c
-> +++ b/net/core/rtnetlink.c
-> @@ -1930,7 +1930,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  	sz_idx = type>>2;
->  	kind = type&3;
->  
-> -	if (kind != 2 && security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (kind != 2 && !capable(CAP_NET_ADMIN))
->  		return -EPERM;
->  
->  	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
-> diff --git a/net/decnet/netfilter/dn_rtmsg.c b/net/decnet/netfilter/dn_rtmsg.c
-> index 69975e0..1531135 100644
-> --- a/net/decnet/netfilter/dn_rtmsg.c
-> +++ b/net/decnet/netfilter/dn_rtmsg.c
-> @@ -108,7 +108,7 @@ static inline void dnrmg_receive_user_skb(struct sk_buff *skb)
->  	if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)
->  		return;
->  
-> -	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (!capable(CAP_NET_ADMIN))
->  		RCV_SKB_FAIL(-EPERM);
->  
->  	/* Eventually we might send routing messages too */
-> diff --git a/net/ipv4/netfilter/ip_queue.c b/net/ipv4/netfilter/ip_queue.c
-> index e59aabd..ffabb26 100644
-> --- a/net/ipv4/netfilter/ip_queue.c
-> +++ b/net/ipv4/netfilter/ip_queue.c
-> @@ -430,7 +430,7 @@ __ipq_rcv_skb(struct sk_buff *skb)
->  	if (type <= IPQM_BASE)
->  		return;
->  
-> -	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (!capable(CAP_NET_ADMIN))
->  		RCV_SKB_FAIL(-EPERM);
->  
->  	spin_lock_bh(&queue_lock);
-> diff --git a/net/ipv6/netfilter/ip6_queue.c b/net/ipv6/netfilter/ip6_queue.c
-> index e63c397..5e5ce77 100644
-> --- a/net/ipv6/netfilter/ip6_queue.c
-> +++ b/net/ipv6/netfilter/ip6_queue.c
-> @@ -431,7 +431,7 @@ __ipq_rcv_skb(struct sk_buff *skb)
->  	if (type <= IPQM_BASE)
->  		return;
->  
-> -	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (!capable(CAP_NET_ADMIN))
->  		RCV_SKB_FAIL(-EPERM);
->  
->  	spin_lock_bh(&queue_lock);
-> diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
-> index c879c1a..9da4fc5 100644
-> --- a/net/netfilter/nfnetlink.c
-> +++ b/net/netfilter/nfnetlink.c
-> @@ -130,7 +130,7 @@ static int nfnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  	const struct nfnetlink_subsystem *ss;
->  	int type, err;
->  
-> -	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (!capable(CAP_NET_ADMIN))
->  		return -EPERM;
->  
->  	/* All the messages must at least contain nfgenmsg */
-> diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-> index 482fa57..05fedbf 100644
-> --- a/net/netlink/genetlink.c
-> +++ b/net/netlink/genetlink.c
-> @@ -516,7 +516,7 @@ static int genl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  		return -EOPNOTSUPP;
->  
->  	if ((ops->flags & GENL_ADMIN_PERM) &&
-> -	    security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	    !capable(CAP_NET_ADMIN))
->  		return -EPERM;
->  
->  	if (nlh->nlmsg_flags & NLM_F_DUMP) {
-> diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-> index d0a42df..7ea716d 100644
-> --- a/net/xfrm/xfrm_user.c
-> +++ b/net/xfrm/xfrm_user.c
-> @@ -2290,7 +2290,7 @@ static int xfrm_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
->  	link = &xfrm_dispatch[type];
->  
->  	/* All operations require privileges, even GET */
-> -	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-> +	if (!capable(CAP_NET_ADMIN))
->  		return -EPERM;
->  
->  	if ((type == (XFRM_MSG_GETSA - XFRM_MSG_BASE) ||
-> diff --git a/security/capability.c b/security/capability.c
-> index 3cf5ae3..5c1aea0 100644
-> --- a/security/capability.c
-> +++ b/security/capability.c
-> @@ -1004,7 +1004,6 @@ void __init security_fixup_ops(struct security_operations *ops)
->  	set_to_cap_if_null(ops, sem_semctl);
->  	set_to_cap_if_null(ops, sem_semop);
->  	set_to_cap_if_null(ops, netlink_send);
-> -	set_to_cap_if_null(ops, netlink_recv);
->  	set_to_cap_if_null(ops, d_instantiate);
->  	set_to_cap_if_null(ops, getprocattr);
->  	set_to_cap_if_null(ops, setprocattr);
-> diff --git a/security/commoncap.c b/security/commoncap.c
-> index 90fdf97..454e974 100644
-> --- a/security/commoncap.c
-> +++ b/security/commoncap.c
-> @@ -56,14 +56,6 @@ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
->  	return 0;
->  }
->  
-> -int cap_netlink_recv(struct sk_buff *skb, int cap)
-> -{
-> -	if (!cap_raised(current_cap(), cap))
-> -		return -EPERM;
-> -	return 0;
-> -}
-> -EXPORT_SYMBOL(cap_netlink_recv);
-> -
->  /**
->   * cap_capable - Determine whether a task has a particular effective capability
->   * @cred: The credentials to use
-> diff --git a/security/security.c b/security/security.c
-> index 5560472..17ee1c0 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -983,12 +983,6 @@ int security_netlink_send(struct sock *sk, struct sk_buff *skb)
->  	return security_ops->netlink_send(sk, skb);
->  }
->  
-> -int security_netlink_recv(struct sk_buff *skb, int cap)
-> -{
-> -	return security_ops->netlink_recv(skb, cap);
-> -}
-> -EXPORT_SYMBOL(security_netlink_recv);
-> -
->  int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
->  {
->  	return security_ops->secid_to_secctx(secid, secdata, seclen);
-> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-> index 3deee07..668fe48 100644
-> --- a/security/selinux/hooks.c
-> +++ b/security/selinux/hooks.c
-> @@ -4731,24 +4731,6 @@ static int selinux_netlink_send(struct sock *sk, struct sk_buff *skb)
->  	return selinux_nlmsg_perm(sk, skb);
->  }
->  
-> -static int selinux_netlink_recv(struct sk_buff *skb, int capability)
-> -{
-> -	int err;
-> -	struct common_audit_data ad;
-> -	u32 sid;
-> -
-> -	err = cap_netlink_recv(skb, capability);
-> -	if (err)
-> -		return err;
-> -
-> -	COMMON_AUDIT_DATA_INIT(&ad, CAP);
-> -	ad.u.cap = capability;
-> -
-> -	security_task_getsecid(current, &sid);
-> -	return avc_has_perm(sid, sid, SECCLASS_CAPABILITY,
-> -			    CAP_TO_MASK(capability), &ad);
-> -}
-> -
->  static int ipc_alloc_security(struct task_struct *task,
->  			      struct kern_ipc_perm *perm,
->  			      u16 sclass)
-> @@ -5477,7 +5459,6 @@ static struct security_operations selinux_ops = {
->  	.vm_enough_memory =		selinux_vm_enough_memory,
->  
->  	.netlink_send =			selinux_netlink_send,
-> -	.netlink_recv =			selinux_netlink_recv,
->  
->  	.bprm_set_creds =		selinux_bprm_set_creds,
->  	.bprm_committing_creds =	selinux_bprm_committing_creds,
-> 
-> 
+
+Subject: RS485: fix inconsistencies in the meaning of some variables
+From: Claudio Scordino <claudio@evidence.eu.com>
+
+The crisv10.c and the atmel_serial.c serial drivers intepret the fields of the
+serial_rs485 structure in a different way.
+In particular, crisv10.c uses SER_RS485_RTS_AFTER_SEND and 
+SER_RS485_RTS_ON_SEND for the voltage of the RTS pin; atmel_serial.c, instead,
+uses these values to know if a delay must be set before and after sending.
+This patch makes the usage of these variables consistent across all drivers and
+fixes the Documentation as well.
+>From now on, SER_RS485_RTS_AFTER_SEND and SER_RS485_RTS_ON_SEND will be used to
+set the voltage of the RTS pin (as in the crisv10.c driver); the delay will be
+understood by looking only at the value of delay_rts_before_send and 
+delay_rts_after_send.
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Signed-off-by: Darron Black <darron@griffin.net>
+Acked-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+ Documentation/serial/serial-rs485.txt |   14 +++++++++++---
+ drivers/tty/serial/atmel_serial.c     |   16 +++-------------
+ drivers/tty/serial/crisv10.c          |   10 ++--------
+ include/linux/serial.h                |   14 ++++++++------
+ 4 files changed, 24 insertions(+), 30 deletions(-)
+
+diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+index 079cb3d..41c8378 100644
+--- a/Documentation/serial/serial-rs485.txt
++++ b/Documentation/serial/serial-rs485.txt
+@@ -97,15 +97,23 @@
+ 
+ 	struct serial_rs485 rs485conf;
+ 
+-	/* Set RS485 mode: */
++	/* Enable RS485 mode: */
+ 	rs485conf.flags |= SER_RS485_ENABLED;
+ 
++	/* Set logical level for RTS pin equal to 1 when sending: */
++	rs485conf.flags |= SER_RS485_RTS_ON_SEND;
++	/* or, set logical level for RTS pin equal to 0 when sending: */
++	rs485conf.flags &= ~(SER_RS485_RTS_ON_SEND);
++
++	/* Set logical level for RTS pin equal to 1 after sending: */
++	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
++	/* or, set logical level for RTS pin equal to 0 after sending: */
++	rs485conf.flags &= ~(SER_RS485_RTS_AFTER_SEND);
++
+ 	/* Set rts delay before send, if needed: */
+-	rs485conf.flags |= SER_RS485_RTS_BEFORE_SEND;
+ 	rs485conf.delay_rts_before_send = ...;
+ 
+ 	/* Set rts delay after send, if needed: */
+-	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
+ 	rs485conf.delay_rts_after_send = ...;
+ 
+ 	/* Set this flag if you want to receive data even whilst sending data */
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 4a0f86f..4c823f3 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -228,7 +228,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
+ 	if (rs485conf->flags & SER_RS485_ENABLED) {
+ 		dev_dbg(port->dev, "Setting UART to RS485\n");
+ 		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
+-		if (rs485conf->flags & SER_RS485_RTS_AFTER_SEND)
++		if ((rs485conf->delay_rts_after_send) > 0)
+ 			UART_PUT_TTGR(port, rs485conf->delay_rts_after_send);
+ 		mode |= ATMEL_US_USMODE_RS485;
+ 	} else {
+@@ -304,7 +304,7 @@ static void atmel_set_mctrl(struct uart_port *port, u_int mctrl)
+ 
+ 	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
+ 		dev_dbg(port->dev, "Setting UART to RS485\n");
+-		if (atmel_port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
++		if ((atmel_port->rs485.delay_rts_after_send) > 0)
+ 			UART_PUT_TTGR(port,
+ 					atmel_port->rs485.delay_rts_after_send);
+ 		mode |= ATMEL_US_USMODE_RS485;
+@@ -1228,7 +1228,7 @@ static void atmel_set_termios(struct uart_port *port, struct ktermios *termios,
+ 
+ 	if (atmel_port->rs485.flags & SER_RS485_ENABLED) {
+ 		dev_dbg(port->dev, "Setting UART to RS485\n");
+-		if (atmel_port->rs485.flags & SER_RS485_RTS_AFTER_SEND)
++		if ((atmel_port->rs485.delay_rts_after_send) > 0)
+ 			UART_PUT_TTGR(port,
+ 					atmel_port->rs485.delay_rts_after_send);
+ 		mode |= ATMEL_US_USMODE_RS485;
+@@ -1447,16 +1447,6 @@ static void __devinit atmel_of_init_port(struct atmel_uart_port *atmel_port,
+ 		rs485conf->delay_rts_after_send = rs485_delay[1];
+ 		rs485conf->flags = 0;
+ 
+-		if (rs485conf->delay_rts_before_send == 0 &&
+-		    rs485conf->delay_rts_after_send == 0) {
+-			rs485conf->flags |= SER_RS485_RTS_ON_SEND;
+-		} else {
+-			if (rs485conf->delay_rts_before_send)
+-				rs485conf->flags |= SER_RS485_RTS_BEFORE_SEND;
+-			if (rs485conf->delay_rts_after_send)
+-				rs485conf->flags |= SER_RS485_RTS_AFTER_SEND;
+-		}
+-
+ 		if (of_get_property(np, "rs485-rx-during-tx", NULL))
+ 			rs485conf->flags |= SER_RS485_RX_DURING_TX;
+ 
+diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
+index b743504..1dfba7b 100644
+--- a/drivers/tty/serial/crisv10.c
++++ b/drivers/tty/serial/crisv10.c
+@@ -3234,9 +3234,8 @@ rs_write(struct tty_struct *tty,
+ 		e100_disable_rx(info);
+ 		e100_enable_rx_irq(info);
+ #endif
+-		if ((info->rs485.flags & SER_RS485_RTS_BEFORE_SEND) &&
+-			(info->rs485.delay_rts_before_send > 0))
+-				msleep(info->rs485.delay_rts_before_send);
++		if (info->rs485.delay_rts_before_send > 0)
++			msleep(info->rs485.delay_rts_before_send);
+ 	}
+ #endif /* CONFIG_ETRAX_RS485 */
+ 
+@@ -3693,10 +3692,6 @@ rs_ioctl(struct tty_struct *tty,
+ 
+ 		rs485data.delay_rts_before_send = rs485ctrl.delay_rts_before_send;
+ 		rs485data.flags = 0;
+-		if (rs485data.delay_rts_before_send != 0)
+-			rs485data.flags |= SER_RS485_RTS_BEFORE_SEND;
+-		else
+-			rs485data.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
+ 
+ 		if (rs485ctrl.enabled)
+ 			rs485data.flags |= SER_RS485_ENABLED;
+@@ -4531,7 +4526,6 @@ static int __init rs_init(void)
+ 		/* Set sane defaults */
+ 		info->rs485.flags &= ~(SER_RS485_RTS_ON_SEND);
+ 		info->rs485.flags |= SER_RS485_RTS_AFTER_SEND;
+-		info->rs485.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
+ 		info->rs485.delay_rts_before_send = 0;
+ 		info->rs485.flags &= ~(SER_RS485_ENABLED);
+ #endif
+diff --git a/include/linux/serial.h b/include/linux/serial.h
+index 97ff8e2..3d86517 100644
+--- a/include/linux/serial.h
++++ b/include/linux/serial.h
+@@ -207,13 +207,15 @@ struct serial_icounter_struct {
+ 
+ struct serial_rs485 {
+ 	__u32	flags;			/* RS485 feature flags */
+-#define SER_RS485_ENABLED		(1 << 0)
+-#define SER_RS485_RTS_ON_SEND		(1 << 1)
+-#define SER_RS485_RTS_AFTER_SEND	(1 << 2)
+-#define SER_RS485_RTS_BEFORE_SEND	(1 << 3)
++#define SER_RS485_ENABLED		(1 << 0)	/* If enabled */
++#define SER_RS485_RTS_ON_SEND		(1 << 1)	/* Logical level for
++							   RTS pin when
++							   sending */
++#define SER_RS485_RTS_AFTER_SEND	(1 << 2)	/* Logical level for
++							   RTS pin after sent*/
+ #define SER_RS485_RX_DURING_TX		(1 << 4)
+-	__u32	delay_rts_before_send;	/* Milliseconds */
+-	__u32	delay_rts_after_send;	/* Milliseconds */
++	__u32	delay_rts_before_send;	/* Delay before send (milliseconds) */
++	__u32	delay_rts_after_send;	/* Delay after send (milliseconds) */
+ 	__u32	padding[5];		/* Memory is cheap, new structs
+ 					   are a royal PITA .. */
+ };
+-- 
+1.7.1
+
