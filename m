@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964990Ab1KJEge (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:36:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43681 "EHLO mx2.suse.de"
+	id S964847Ab1KJEg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:36:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43655 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964902Ab1KJDgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
-Message-Id: <20111109213146.153603496@clark.kroah.org>
+	id S935876Ab1KJDgW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:45 2011
+Message-Id: <20111109213145.761370518@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:27 -0800
+Date: Wed, 09 Nov 2011 13:31:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: [040/264] target: Prevent transport_send_task_abort when CHECK_CONDITION status
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [036/264] ALSA: hda - Keep EAPD turned on for old Conexant chips
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +24,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit c252f003470a99d319db4ebd12f4a9e4710a65db upstream.
+commit 254f296840b64b034a4c850d45dbde7c040f0819 upstream.
 
-This patch fixes a bug where transport_send_task_abort() could be called
-during LUN_RESET to return SAM_STAT_TASK_ABORTED + tfo->queue_status(), when
-SCF_SENT_CHECK_CONDITION -> tfo->queue_status() has already been sent from
-within another context via transport_send_check_condition_and_sense().
+In the old Conexant chips (5045, 5047, 5051 and 5066), a single EAPD
+may handle both headphone and speaker outputs while it's assigned only
+to one of them.  Turning off dynamically leads to the unexpected silent
+output in such a configuration with the auto-mute function.
 
-Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
+Since it's difficult to know how the EAPD is handled in the actual h/w
+implementation, better to keep EAPD on while running for such codecs.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_transport.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/pci/hda/patch_conexant.c |   43 ++++++++++++++++++++---------------------
+ 1 file changed, 22 insertions(+), 21 deletions(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -4920,6 +4920,15 @@ EXPORT_SYMBOL(transport_check_aborted_st
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -136,6 +136,7 @@ struct conexant_spec {
+ 	unsigned int thinkpad:1;
+ 	unsigned int hp_laptop:1;
+ 	unsigned int asus:1;
++	unsigned int pin_eapd_ctrls:1;
  
- void transport_send_task_abort(struct se_cmd *cmd)
+ 	unsigned int adc_switching:1;
+ 
+@@ -3473,12 +3474,14 @@ static void cx_auto_turn_eapd(struct hda
+ static void do_automute(struct hda_codec *codec, int num_pins,
+ 			hda_nid_t *pins, bool on)
  {
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&cmd->t_state_lock, flags);
-+	if (cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
-+		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
-+		return;
++	struct conexant_spec *spec = codec->spec;
+ 	int i;
+ 	for (i = 0; i < num_pins; i++)
+ 		snd_hda_codec_write(codec, pins[i], 0,
+ 				    AC_VERB_SET_PIN_WIDGET_CONTROL,
+ 				    on ? PIN_OUT : 0);
+-	cx_auto_turn_eapd(codec, num_pins, pins, on);
++	if (spec->pin_eapd_ctrls)
++		cx_auto_turn_eapd(codec, num_pins, pins, on);
+ }
+ 
+ static int detect_jacks(struct hda_codec *codec, int num_pins, hda_nid_t *pins)
+@@ -3503,9 +3506,12 @@ static void cx_auto_update_speakers(stru
+ 	int on = 1;
+ 
+ 	/* turn on HP EAPD when HP jacks are present */
+-	if (spec->auto_mute)
+-		on = spec->hp_present;
+-	cx_auto_turn_eapd(codec, cfg->hp_outs, cfg->hp_pins, on);
++	if (spec->pin_eapd_ctrls) {
++		if (spec->auto_mute)
++			on = spec->hp_present;
++		cx_auto_turn_eapd(codec, cfg->hp_outs, cfg->hp_pins, on);
 +	}
-+	spin_unlock_irqrestore(&cmd->t_state_lock, flags);
 +
- 	/*
- 	 * If there are still expected incoming fabric WRITEs, we wait
- 	 * until until they have completed before sending a TASK_ABORTED
+ 	/* mute speakers in auto-mode if HP or LO jacks are plugged */
+ 	if (spec->auto_mute)
+ 		on = !(spec->hp_present ||
+@@ -3932,20 +3938,10 @@ static void cx_auto_parse_beep(struct hd
+ #define cx_auto_parse_beep(codec)
+ #endif
+ 
+-static bool found_in_nid_list(hda_nid_t nid, const hda_nid_t *list, int nums)
+-{
+-	int i;
+-	for (i = 0; i < nums; i++)
+-		if (list[i] == nid)
+-			return true;
+-	return false;
+-}
+-
+-/* parse extra-EAPD that aren't assigned to any pins */
++/* parse EAPDs */
+ static void cx_auto_parse_eapd(struct hda_codec *codec)
+ {
+ 	struct conexant_spec *spec = codec->spec;
+-	struct auto_pin_cfg *cfg = &spec->autocfg;
+ 	hda_nid_t nid, end_nid;
+ 
+ 	end_nid = codec->start_nid + codec->num_nodes;
+@@ -3954,14 +3950,18 @@ static void cx_auto_parse_eapd(struct hd
+ 			continue;
+ 		if (!(snd_hda_query_pin_caps(codec, nid) & AC_PINCAP_EAPD))
+ 			continue;
+-		if (found_in_nid_list(nid, cfg->line_out_pins, cfg->line_outs) ||
+-		    found_in_nid_list(nid, cfg->hp_pins, cfg->hp_outs) ||
+-		    found_in_nid_list(nid, cfg->speaker_pins, cfg->speaker_outs))
+-			continue;
+ 		spec->eapds[spec->num_eapds++] = nid;
+ 		if (spec->num_eapds >= ARRAY_SIZE(spec->eapds))
+ 			break;
+ 	}
++
++	/* NOTE: below is a wild guess; if we have more than two EAPDs,
++	 * it's a new chip, where EAPDs are supposed to be associated to
++	 * pins, and we can control EAPD per pin.
++	 * OTOH, if only one or two EAPDs are found, it's an old chip,
++	 * thus it might control over all pins.
++	 */
++	spec->pin_eapd_ctrls = spec->num_eapds > 2;
+ }
+ 
+ static int cx_auto_parse_auto_config(struct hda_codec *codec)
+@@ -4067,8 +4067,9 @@ static void cx_auto_init_output(struct h
+ 		}
+ 	}
+ 	cx_auto_update_speakers(codec);
+-	/* turn on/off extra EAPDs, too */
+-	cx_auto_turn_eapd(codec, spec->num_eapds, spec->eapds, true);
++	/* turn on all EAPDs if no individual EAPD control is available */
++	if (!spec->pin_eapd_ctrls)
++		cx_auto_turn_eapd(codec, spec->num_eapds, spec->eapds, true);
+ }
+ 
+ static void cx_auto_init_input(struct hda_codec *codec)
 
 
