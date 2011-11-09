@@ -1,157 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936297Ab1KJEHi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:07:38 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:53468 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935071Ab1KJEHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 23:07:33 -0500
-Date: Wed, 9 Nov 2011 23:06:44 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, len.brown@intel.com,
-        tglx@linutronix.de, jeremy@goop.org, hpa@zytor.com, bp@alien8.de,
-        tj@kernel.org, trenn@suse.de
-Cc: stable@kernel.org, mingo@redhat.com, xen-devel@lists.xensource.com
-Subject: Re: [Xen-devel] [PATCH 1/3] cpuidle: If disable_cpuidle() is called,
- set pm_idle to default_idle.
-Message-ID: <20111110040644.GA5434@phenom.dumpdata.com>
-References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com>
- <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4EBB4DE6.000A,ss=1,re=0.000,fgs=0
+	id S936301Ab1KJEH6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:07:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44707 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965620Ab1KJDoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:54 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:58 2011
+Message-Id: <20111109213157.918147066@clark.kroah.org>
+User-Agent: quilt/0.48-16.4
+Date: Wed, 09 Nov 2011 13:33:23 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: [156/264] jsm: remove buggy write queue
+In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 08, 2011 at 04:15:12PM -0500, Konrad Rzeszutek Wilk wrote:
-> . however we ignore the disable_cpuidle() directive and
-> in select_idle_routine() set it to type preferred by the CPU.
-> 
-> This is a regression introduced by
-> 
->  commit a0bfa1373859e9d11dc92561a8667588803e42d8
->  Author: Len Brown <len.brown@intel.com>
->  Date:   Fri Apr 1 19:34:59 2011 -0400
-> 
->      cpuidle: stop depending on pm_idle
-> 
-> specifically this patch:
-> 
->  commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
->  Author: Len Brown <len.brown@intel.com>
->  Date:   Fri Apr 1 18:28:35 2011 -0400
-> 
->      cpuidle: replace xen access to x86 pm_idle and default_idle
-> 
->      ..scribble on pm_idle and access default_idle,
->     have it simply disable_cpuidle() so acpi_idle will not load and
->     architecture default HLT will be used.
-> 
-> .. but the default HLT does not get used. Instead we end up in the
-> situation that select_idle_routine() is called from arch/x86/kernel/cpu/common.c
-> and if we called cpuidle_disable(), then the pm_idle is not set, and
-> we end up setting pm_idle to mwait_idle or amd_e400_idle.
-> 
-> This patch uses the cpuidle_disabled() functionality and
-> makes select_idle_routine() adhere to that.
-> 
-> Reported-by: Stefan Bader <stefan.bader@canonical.com>
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-And just found that there is a BZ for this as well:
-https://bugzilla.redhat.com/show_bug.cgi?id=739499
+------------------
 
-And this patch fixes the Linux kernel to boot under Amazon EC2.
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-Another option which I played with today was to do this instead:
+commit 9d898966c4a07e4a5092215b5a2829d0ef02baa2 upstream.
 
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index 46d6d21..45136f2 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -448,6 +448,6 @@ void __init xen_arch_setup(void)
- #endif
-        disable_cpuidle();
-        boot_option_idle_override = IDLE_HALT;
+jsm uses a write queue that copies from uart_core circular buffer. This
+copying however has some bugs, like not wrapping the head counter. Since
+this write queue is also a circular buffer, the consumer function is
+ready to use the uart_core circular buffer directly.
+
+This buggy copying function was making some bytes be dropped when
+transmitting to a raw tty, doing something like this.
+
+[root@hostname ~]$ cat /dev/ttyn1 > cascardo/dump &
+[1] 2658
+[root@hostname ~]$ cat /proc/tty/drivers > /dev/ttyn0
+[root@hostname ~]$ cat /proc/tty/drivers
+/dev/tty             /dev/tty        5       0 system:/dev/tty
+/dev/console         /dev/console    5       1 system:console
+/dev/ptmx            /dev/ptmx       5       2 system
+/dev/vc/0            /dev/vc/0       4       0 system:vtmaster
+jsm                  /dev/ttyn     250 0-31 serial
+serial               /dev/ttyS       4 64-95 serial
+hvc                  /dev/hvc      229 0-7 system
+pty_slave            /dev/pts      136 0-1048575 pty:slave
+pty_master           /dev/ptm      128 0-1048575 pty:master
+unknown              /dev/tty        4 1-63 console
+[root@hostname ~]$ cat cascardo/dump
+/dev/tty             /dev/tty        5       0 system:/dev/tty
+/dev/console         /dev/console    5       1 system:console
+/dev/ptmx            /dev/ptmx       5       2 system
+/dev/vc/0            /dev/vc/0       4       0 system:vtmaste[root@hostname ~]$
+
+This patch drops the driver write queue entirely, using the circular
+buffer from uart_core only.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/tty/serial/jsm/jsm.h        |    7 --
+ drivers/tty/serial/jsm/jsm_driver.c |    1 
+ drivers/tty/serial/jsm/jsm_neo.c    |   29 +++++------
+ drivers/tty/serial/jsm/jsm_tty.c    |   94 ++++--------------------------------
+ 4 files changed, 28 insertions(+), 103 deletions(-)
+
+--- a/drivers/tty/serial/jsm/jsm.h
++++ b/drivers/tty/serial/jsm/jsm.h
+@@ -183,10 +183,8 @@ struct jsm_board
+ /* Our Read/Error/Write queue sizes */
+ #define RQUEUEMASK	0x1FFF		/* 8 K - 1 */
+ #define EQUEUEMASK	0x1FFF		/* 8 K - 1 */
+-#define WQUEUEMASK	0x0FFF		/* 4 K - 1 */
+ #define RQUEUESIZE	(RQUEUEMASK + 1)
+ #define EQUEUESIZE	RQUEUESIZE
+-#define WQUEUESIZE	(WQUEUEMASK + 1)
+ 
+ 
+ /************************************************************************
+@@ -226,10 +224,6 @@ struct jsm_channel {
+ 	u16		ch_e_head;	/* Head location of the error queue */
+ 	u16		ch_e_tail;	/* Tail location of the error queue */
+ 
+-	u8		*ch_wqueue;	/* Our write queue buffer - malloc'ed */
+-	u16		ch_w_head;	/* Head location of the write queue */
+-	u16		ch_w_tail;	/* Tail location of the write queue */
 -
-+       pm_idle = default_idle;
-        fiddle_vdso();
+ 	u64		ch_rxcount;	/* total of data received so far */
+ 	u64		ch_txcount;	/* total of data transmitted so far */
+ 
+@@ -378,7 +372,6 @@ extern int	jsm_debug;
+  * Prototypes for non-static functions used in more than one module
+  *
+  *************************************************************************/
+-int jsm_tty_write(struct uart_port *port);
+ int jsm_tty_init(struct jsm_board *);
+ int jsm_uart_port_init(struct jsm_board *);
+ int jsm_remove_uart_port(struct jsm_board *);
+--- a/drivers/tty/serial/jsm/jsm_driver.c
++++ b/drivers/tty/serial/jsm/jsm_driver.c
+@@ -211,7 +211,6 @@ static void __devexit jsm_remove_one(str
+ 		if (brd->channels[i]) {
+ 			kfree(brd->channels[i]->ch_rqueue);
+ 			kfree(brd->channels[i]->ch_equeue);
+-			kfree(brd->channels[i]->ch_wqueue);
+ 			kfree(brd->channels[i]);
+ 		}
+ 	}
+--- a/drivers/tty/serial/jsm/jsm_neo.c
++++ b/drivers/tty/serial/jsm/jsm_neo.c
+@@ -496,12 +496,15 @@ static void neo_copy_data_from_queue_to_
+ 	int s;
+ 	int qlen;
+ 	u32 len_written = 0;
++	struct circ_buf *circ;
+ 
+ 	if (!ch)
+ 		return;
+ 
++	circ = &ch->uart_port.state->xmit;
++
+ 	/* No data to write to the UART */
+-	if (ch->ch_w_tail == ch->ch_w_head)
++	if (uart_circ_empty(circ))
+ 		return;
+ 
+ 	/* If port is "stopped", don't send any data to the UART */
+@@ -517,11 +520,10 @@ static void neo_copy_data_from_queue_to_
+ 		if (ch->ch_cached_lsr & UART_LSR_THRE) {
+ 			ch->ch_cached_lsr &= ~(UART_LSR_THRE);
+ 
+-			writeb(ch->ch_wqueue[ch->ch_w_tail], &ch->ch_neo_uart->txrx);
++			writeb(circ->buf[circ->tail], &ch->ch_neo_uart->txrx);
+ 			jsm_printk(WRITE, INFO, &ch->ch_bd->pci_dev,
+-					"Tx data: %x\n", ch->ch_wqueue[ch->ch_w_head]);
+-			ch->ch_w_tail++;
+-			ch->ch_w_tail &= WQUEUEMASK;
++					"Tx data: %x\n", circ->buf[circ->head]);
++			circ->tail = (circ->tail + 1) & (UART_XMIT_SIZE - 1);
+ 			ch->ch_txcount++;
+ 		}
+ 		return;
+@@ -536,36 +538,36 @@ static void neo_copy_data_from_queue_to_
+ 	n = UART_17158_TX_FIFOSIZE - ch->ch_t_tlevel;
+ 
+ 	/* cache head and tail of queue */
+-	head = ch->ch_w_head & WQUEUEMASK;
+-	tail = ch->ch_w_tail & WQUEUEMASK;
+-	qlen = (head - tail) & WQUEUEMASK;
++	head = circ->head & (UART_XMIT_SIZE - 1);
++	tail = circ->tail & (UART_XMIT_SIZE - 1);
++	qlen = uart_circ_chars_pending(circ);
+ 
+ 	/* Find minimum of the FIFO space, versus queue length */
+ 	n = min(n, qlen);
+ 
+ 	while (n > 0) {
+ 
+-		s = ((head >= tail) ? head : WQUEUESIZE) - tail;
++		s = ((head >= tail) ? head : UART_XMIT_SIZE) - tail;
+ 		s = min(s, n);
+ 
+ 		if (s <= 0)
+ 			break;
+ 
+-		memcpy_toio(&ch->ch_neo_uart->txrxburst, ch->ch_wqueue + tail, s);
++		memcpy_toio(&ch->ch_neo_uart->txrxburst, circ->buf + tail, s);
+ 		/* Add and flip queue if needed */
+-		tail = (tail + s) & WQUEUEMASK;
++		tail = (tail + s) & (UART_XMIT_SIZE - 1);
+ 		n -= s;
+ 		ch->ch_txcount += s;
+ 		len_written += s;
+ 	}
+ 
+ 	/* Update the final tail */
+-	ch->ch_w_tail = tail & WQUEUEMASK;
++	circ->tail = tail & (UART_XMIT_SIZE - 1);
+ 
+ 	if (len_written >= ch->ch_t_tlevel)
+ 		ch->ch_flags &= ~(CH_TX_FIFO_EMPTY | CH_TX_FIFO_LWM);
+ 
+-	if (!jsm_tty_write(&ch->uart_port))
++	if (uart_circ_empty(circ))
+ 		uart_write_wakeup(&ch->uart_port);
  }
+ 
+@@ -946,7 +948,6 @@ static void neo_param(struct jsm_channel
+ 	if ((ch->ch_c_cflag & (CBAUD)) == 0) {
+ 		ch->ch_r_head = ch->ch_r_tail = 0;
+ 		ch->ch_e_head = ch->ch_e_tail = 0;
+-		ch->ch_w_head = ch->ch_w_tail = 0;
+ 
+ 		neo_flush_uart_write(ch);
+ 		neo_flush_uart_read(ch);
+--- a/drivers/tty/serial/jsm/jsm_tty.c
++++ b/drivers/tty/serial/jsm/jsm_tty.c
+@@ -118,6 +118,19 @@ static void jsm_tty_set_mctrl(struct uar
+ 	udelay(10);
+ }
+ 
++/*
++ * jsm_tty_write()
++ *
++ * Take data from the user or kernel and send it out to the FEP.
++ * In here exists all the Transparent Print magic as well.
++ */
++static void jsm_tty_write(struct uart_port *port)
++{
++	struct jsm_channel *channel;
++	channel = container_of(port, struct jsm_channel, uart_port);
++	channel->ch_bd->bd_ops->copy_data_from_queue_to_uart(channel);
++}
++
+ static void jsm_tty_start_tx(struct uart_port *port)
+ {
+ 	struct jsm_channel *channel = (struct jsm_channel *)port;
+@@ -216,14 +229,6 @@ static int jsm_tty_open(struct uart_port
+ 			return -ENOMEM;
+ 		}
+ 	}
+-	if (!channel->ch_wqueue) {
+-		channel->ch_wqueue = kzalloc(WQUEUESIZE, GFP_KERNEL);
+-		if (!channel->ch_wqueue) {
+-			jsm_printk(INIT, ERR, &channel->ch_bd->pci_dev,
+-				"unable to allocate write queue buf");
+-			return -ENOMEM;
+-		}
+-	}
+ 
+ 	channel->ch_flags &= ~(CH_OPENING);
+ 	/*
+@@ -237,7 +242,6 @@ static int jsm_tty_open(struct uart_port
+ 	 */
+ 	channel->ch_r_head = channel->ch_r_tail = 0;
+ 	channel->ch_e_head = channel->ch_e_tail = 0;
+-	channel->ch_w_head = channel->ch_w_tail = 0;
+ 
+ 	brd->bd_ops->flush_uart_write(channel);
+ 	brd->bd_ops->flush_uart_read(channel);
+@@ -836,75 +840,3 @@ void jsm_check_queue_flow_control(struct
+ 		}
+ 	}
+ }
+-
+-/*
+- * jsm_tty_write()
+- *
+- * Take data from the user or kernel and send it out to the FEP.
+- * In here exists all the Transparent Print magic as well.
+- */
+-int jsm_tty_write(struct uart_port *port)
+-{
+-	int bufcount;
+-	int data_count = 0,data_count1 =0;
+-	u16 head;
+-	u16 tail;
+-	u16 tmask;
+-	u32 remain;
+-	int temp_tail = port->state->xmit.tail;
+-	struct jsm_channel *channel = (struct jsm_channel *)port;
+-
+-	tmask = WQUEUEMASK;
+-	head = (channel->ch_w_head) & tmask;
+-	tail = (channel->ch_w_tail) & tmask;
+-
+-	if ((bufcount = tail - head - 1) < 0)
+-		bufcount += WQUEUESIZE;
+-
+-	bufcount = min(bufcount, 56);
+-	remain = WQUEUESIZE - head;
+-
+-	data_count = 0;
+-	if (bufcount >= remain) {
+-		bufcount -= remain;
+-		while ((port->state->xmit.head != temp_tail) &&
+-		(data_count < remain)) {
+-			channel->ch_wqueue[head++] =
+-			port->state->xmit.buf[temp_tail];
+-
+-			temp_tail++;
+-			temp_tail &= (UART_XMIT_SIZE - 1);
+-			data_count++;
+-		}
+-		if (data_count == remain) head = 0;
+-	}
+-
+-	data_count1 = 0;
+-	if (bufcount > 0) {
+-		remain = bufcount;
+-		while ((port->state->xmit.head != temp_tail) &&
+-			(data_count1 < remain)) {
+-			channel->ch_wqueue[head++] =
+-				port->state->xmit.buf[temp_tail];
+-
+-			temp_tail++;
+-			temp_tail &= (UART_XMIT_SIZE - 1);
+-			data_count1++;
+-
+-		}
+-	}
+-
+-	port->state->xmit.tail = temp_tail;
+-
+-	data_count += data_count1;
+-	if (data_count) {
+-		head &= tmask;
+-		channel->ch_w_head = head;
+-	}
+-
+-	if (data_count) {
+-		channel->ch_bd->bd_ops->copy_data_from_queue_to_uart(channel);
+-	}
+-
+-	return data_count;
+-}
 
 
-But that defeats the whole purpose of the patch series that Len developed
-where we would _not_ scribble on the pm_idle. <sigh>
-
-Thoughts?
-> 
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Ingo Molnar <mingo@redhat.com>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: x86@kernel.org
-> CC: Len Brown <len.brown@intel.com>
-> CC: Borislav Petkov <bp@alien8.de>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Thomas Renninger <trenn@suse.de>
-> CC: stable@kernel.org
-> ---
->  arch/x86/kernel/process.c |    5 +++++
->  include/linux/cpuidle.h   |    2 ++
->  2 files changed, 7 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> index e7e3b01..1f7f8c8 100644
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -14,6 +14,7 @@
->  #include <linux/utsname.h>
->  #include <trace/events/power.h>
->  #include <linux/hw_breakpoint.h>
-> +#include <linux/cpuidle.h>
->  #include <asm/cpu.h>
->  #include <asm/system.h>
->  #include <asm/apic.h>
-> @@ -587,6 +588,10 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
->  	if (pm_idle)
->  		return;
->  
-> +	if (cpuidle_disabled()) {
-> +		pm_idle = default_idle;
-> +		return;
-> +	}
->  	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
->  		/*
->  		 * One CPU supports mwait => All CPUs supports mwait
-> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
-> index b51629e..123fe9e 100644
-> --- a/include/linux/cpuidle.h
-> +++ b/include/linux/cpuidle.h
-> @@ -122,6 +122,7 @@ struct cpuidle_driver {
->  };
->  
->  #ifdef CONFIG_CPU_IDLE
-> +extern int cpuidle_disabled(void);
->  extern void disable_cpuidle(void);
->  extern int cpuidle_idle_call(void);
->  
-> @@ -137,6 +138,7 @@ extern int cpuidle_enable_device(struct cpuidle_device *dev);
->  extern void cpuidle_disable_device(struct cpuidle_device *dev);
->  
->  #else
-> +static inline int cpuidle_disabled(void) { return 1; }
->  static inline void disable_cpuidle(void) { }
->  static inline int cpuidle_idle_call(void) { return -ENODEV; }
->  
-> -- 
-> 1.7.7.1
-> 
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
