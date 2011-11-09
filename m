@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966187Ab1KJDuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:50:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45311 "EHLO mx2.suse.de"
+	id S936153Ab1KJDuv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:50:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45302 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966162Ab1KJDtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:49:49 -0500
+	id S966147Ab1KJDtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:49:43 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:08 2011
-Message-Id: <20111109213208.350501975@clark.kroah.org>
+Message-Id: <20111109213208.142631690@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:35:03 -0800
+Date: Wed, 09 Nov 2011 13:35:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Adam Thomson <adam.thomson@alcatel-lucent.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: [256/264] mtd: nand_base: always initialise oob_poi before writing OOB data
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
+        NeilBrown <neilb@suse.de>
+Subject: [254/264] md/raid5: abort any pending parity operations when array fails.
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,107 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "THOMSON, Adam (Adam)" <adam.thomson@alcatel-lucent.com>
+From: NeilBrown <neilb@suse.de>
 
-commit f722013ee9fd24623df31dec9a91a6d02c3e2f2f upstream.
+commit 9a3f530f39f4490eaa18b02719fb74ce5f4d2d86 upstream.
 
-In nand_do_write_ops() code it is possible for a caller to provide
-ops.oobbuf populated and ops.mode == MTD_OOB_AUTO, which currently
-means that the chip->oob_poi buffer isn't initialised to all 0xFF.
-The nand_fill_oob() method then carries out the task of copying
-the provided OOB data to oob_poi, but with MTD_OOB_AUTO it skips
-areas marked as unavailable by the layout struct, including the
-bad block marker bytes.
+When the number of failed devices exceeds the allowed number
+we must abort any active parity operations (checks or updates) as they
+are no longer meaningful, and can lead to a BUG_ON in
+handle_parity_checks6.
 
-An example of this causing issues is when the last OOB data read
-was from the start of a bad block where the markers are not 0xFF,
-and the caller wishes to write new OOB data at the beginning of
-another block. In this scenario the caller would provide OOB data,
-but nand_fill_oob() would skip the bad block marker bytes in
-oob_poi before copying the OOB data provided by the caller.
-This means that when the OOB data is written back to NAND,
-the block is inadvertently marked as bad without the caller knowing.
-This has been witnessed when using YAFFS2 where tags are stored
-in the OOB.
+This bug was introduce by commit 6c0069c0ae9659e3a91b68eaed06a5c6c37f45c8
+in 2.6.29.
 
-To avoid this oob_poi is always initialised to 0xFF to make sure
-no left over data is inadvertently written back to the OOB area.
-
-Credits to Brian Norris <computersforpeace@gmail.com> for fixing this
-patch.
-
-Signed-off-by: Adam Thomson <adam.thomson@alcatel-lucent.com>
-Signed-off-by: Artem Bityutskiy <dedekind1@gmail.com>
+Reported-by: Manish Katiyar <mkatiyar@gmail.com>
+Tested-by: Manish Katiyar <mkatiyar@gmail.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/mtd/nand/nand_base.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ drivers/md/raid5.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2097,14 +2097,22 @@ static int nand_write_page(struct mtd_in
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -3165,10 +3165,14 @@ static void handle_stripe(struct stripe_
+ 	/* check if the array has lost more than max_degraded devices and,
+ 	 * if so, some requests might need to be failed.
+ 	 */
+-	if (s.failed > conf->max_degraded && s.to_read+s.to_write+s.written)
+-		handle_failed_stripe(conf, sh, &s, disks, &s.return_bi);
+-	if (s.failed > conf->max_degraded && s.syncing)
+-		handle_failed_sync(conf, sh, &s);
++	if (s.failed > conf->max_degraded) {
++		sh->check_state = 0;
++		sh->reconstruct_state = 0;
++		if (s.to_read+s.to_write+s.written)
++			handle_failed_stripe(conf, sh, &s, disks, &s.return_bi);
++		if (s.syncing)
++			handle_failed_sync(conf, sh, &s);
++	}
  
- /**
-  * nand_fill_oob - [Internal] Transfer client buffer to oob
-- * @chip:	nand chip structure
-+ * @mtd:	MTD device structure
-  * @oob:	oob data buffer
-  * @len:	oob data write length
-  * @ops:	oob ops structure
-  */
--static uint8_t *nand_fill_oob(struct nand_chip *chip, uint8_t *oob, size_t len,
--						struct mtd_oob_ops *ops)
-+static uint8_t *nand_fill_oob(struct mtd_info *mtd, uint8_t *oob, size_t len,
-+			      struct mtd_oob_ops *ops)
- {
-+	struct nand_chip *chip = mtd->priv;
-+
-+	/*
-+	 * Initialise to all 0xFF, to avoid the possibility of left over OOB
-+	 * data from a previous OOB read.
-+	 */
-+	memset(chip->oob_poi, 0xff, mtd->oobsize);
-+
- 	switch (ops->mode) {
- 
- 	case MTD_OOB_PLACE:
-@@ -2201,10 +2209,6 @@ static int nand_do_write_ops(struct mtd_
- 	    (chip->pagebuf << chip->page_shift) < (to + ops->len))
- 		chip->pagebuf = -1;
- 
--	/* If we're not given explicit OOB data, let it be 0xFF */
--	if (likely(!oob))
--		memset(chip->oob_poi, 0xff, mtd->oobsize);
--
- 	/* Don't allow multipage oob writes with offset */
- 	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen))
- 		return -EINVAL;
-@@ -2226,8 +2230,11 @@ static int nand_do_write_ops(struct mtd_
- 
- 		if (unlikely(oob)) {
- 			size_t len = min(oobwritelen, oobmaxlen);
--			oob = nand_fill_oob(chip, oob, len, ops);
-+			oob = nand_fill_oob(mtd, oob, len, ops);
- 			oobwritelen -= len;
-+		} else {
-+			/* We still need to erase leftover OOB data */
-+			memset(chip->oob_poi, 0xff, mtd->oobsize);
- 		}
- 
- 		ret = chip->write_page(mtd, chip, wbuf, page, cached,
-@@ -2401,10 +2408,8 @@ static int nand_do_write_oob(struct mtd_
- 	if (page == chip->pagebuf)
- 		chip->pagebuf = -1;
- 
--	memset(chip->oob_poi, 0xff, mtd->oobsize);
--	nand_fill_oob(chip, ops->oobbuf, ops->ooblen, ops);
-+	nand_fill_oob(mtd, ops->oobbuf, ops->ooblen, ops);
- 	status = chip->ecc.write_oob(mtd, chip, page & chip->pagemask);
--	memset(chip->oob_poi, 0xff, mtd->oobsize);
- 
- 	if (status)
- 		return status;
+ 	/*
+ 	 * might be able to return some write requests if the parity blocks
 
 
