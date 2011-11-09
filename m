@@ -1,46 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab1KIOnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:43:06 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56380 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab1KIOnE (ORCPT
+	id S1754169Ab1KIOnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:43:52 -0500
+Received: from smtp.microsoft.com ([131.107.115.214]:33980 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab1KIOnv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:43:04 -0500
-Date: Wed, 9 Nov 2011 15:42:59 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>
-Cc: dougthompson@xmission.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] amd64_edac: fix size decoding error on K8
-Message-ID: <20111109144258.GD30472@aftab>
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
+	Wed, 9 Nov 2011 09:43:51 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "joe@perches.com" <joe@perches.com>,
+        "jkosina@suse.cz" <jkosina@suse.cz>
+Subject: RE: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Topic: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+Thread-Index: AQHMlb5tFmjUXJbXLkiQVEJ5ygNb75WeV3qAgAJF/pCAAN+mgIACQ0RAgACM/YCAAF/8YA==
+Date: Wed, 9 Nov 2011 14:43:50 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481AA6A1DF@TK5EX14MBXC128.redmond.corp.microsoft.com>
+References: <1319841316-29136-1-git-send-email-kys@microsoft.com>
+ <20111105064739.GA31111@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA68580@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20111107055109.GA21095@core.coreip.homeip.net>
+ <6E21E5352C11B742B20C142EB499E0481AA69FD0@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20111109004903.GA2144@suse.de>
+In-Reply-To: <20111109004903.GA2144@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.20]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 03:32:58PM +0100, Niklas Söderlund wrote:
-> Use a lookup table to calculate the size of a chip select. The old
-> method of calculating size return erroneous values for some memory
-> configurations.
 
-Can you elaborate more on those erroneous values, please?
 
-Thanks.
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Tuesday, November 08, 2011 7:49 PM
+> To: KY Srinivasan
+> Cc: Dmitry Torokhov; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; ohering@suse.com; joe@perches.com;
+> jkosina@suse.cz
+> Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+> 
+> On Wed, Nov 09, 2011 at 12:45:30AM +0000, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > > Sent: Monday, November 07, 2011 12:51 AM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
+> ohering@suse.com;
+> > > joe@perches.com; jkosina@suse.cz
+> > > Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of staging
+> > >
+> > > Hi K. Y,
+> > >
+> > > On Mon, Nov 07, 2011 at 01:04:53AM +0000, KY Srinivasan wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> > > > > Sent: Saturday, November 05, 2011 2:48 AM
+> > > > > To: KY Srinivasan
+> > > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org;
+> > > ohering@suse.com;
+> > > > > joe@perches.com; jkosina@suse.cz
+> > > > > Subject: Re: [PATCH 1/1] Staging: hv: Move the mouse driver out of
+> staging
+> > > > >
+> > > > > Hi KY,
+> > > >
+> > > > Dimitry,
+> > > >
+> > > > Let me begin by thanking you for taking the time to review. I have
+> incorporated
+> > > > pretty much all your suggestions.
+> > >
+> > > Thank you very much for considering my suggestions.
+> >
+> > >
+> > > > >
+> > > > > Instead of potentially ever-increasing buffer that you also allocate
+> > > > > (and it looks like leaking on every callback invocation) can you just
+> > > > > repeat the read if you know that there are more data and use single
+> > > > > pre-allocated buffer?
+> > > >
+> > > > The ring-buffer protocol is such that we need to consume the full message.
+> > > > Also, why do you say we are leaking memory?
+> > >
+> > > Ah, OK, I see, we keep reading until read returns 0-sized reply and then
+> > > we free the buffer... Never mind then.
+> > >
+> > > > > > +
+> > > > > > +	hid_dev->ll_driver = &mousevsc_ll_driver;
+> > > > > > +	hid_dev->driver = &mousevsc_hid_driver;
+> > > > >
+> > > > > You are not really hid driver; you are more of a "provider" so why do
+> > > > > you need to set hid_dev->driver in addition to hid_dev->ll_driver?
+> > > > >
+> > > > True, but hid_parse_report() expects that the driver field be set; so I
+> > > > need to fake this.
+> > >
+> > > If you supply .parse() method for your mousevsc_ll_driver structure and
+> > > call hid_parse_report() from it then HID core will set the default
+> > > driver and call parse at appropriate time.
+> >
+> > Would it be ok if I were to make this change after Jiri accepts the driver out of
+> staging?
+> 
+> Why not fix this now?  No need to take a driver that is known to have
+> issues, right?
 
--- 
-Regards/Gruss,
-Boris.
+The issue I am running into is that the mouse_vsc driver is both a low level driver as 
+well as the higher level driver all rolled into one. This is based on my understanding of the
+way the way the hid drivers are structured under driver/hid. Furthermore, there is going to
+be only one driver using this hyperv low level driver and there is really nothing much to do in 
+that driver either. Thus, in my mind it makes sense to structure the driver as I have currently structured.
+In any event, I am going to send the patches out as I have them. If there is a consensus that further
+changes are needed, I will obviously make them independent of where the driver is (either in staging 
+or not). 
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+Regards,
+
+K. Y 
+
