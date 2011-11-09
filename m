@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab1KIUhs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:37:48 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:37365 "EHLO
+	id S1756730Ab1KIUhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:37:47 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:37367 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab1KIUdc (ORCPT
+	with ESMTP id S1751221Ab1KIUdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Nov 2011 15:33:32 -0500
 From: Jiri Slaby <jslaby@suse.cz>
 To: gregkh@suse.de
 Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com,
         Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 6/7] TTY: move debug checking out of tty_release
-Date: Wed,  9 Nov 2011 21:33:23 +0100
-Message-Id: <1320870804-23687-6-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 3/7] TTY: extract driver lookup from tty_open
+Date: Wed,  9 Nov 2011 21:33:20 +0100
+Message-Id: <1320870804-23687-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1320870804-23687-1-git-send-email-jslaby@suse.cz>
 References: <1320870804-23687-1-git-send-email-jslaby@suse.cz>
@@ -21,165 +21,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to taint the tty_release code with paranoia
-checking. So move it out of line to a separate function. Making thus
-tty_release more readable.
+The error handling in tty_open became unbearable. There were many
+errors fixed recently. Extract the tty driver lookup from tty_open to
+a separate function. This reduces the fail paths significantly and
+makes tty_open more readable.
+
+In the next patch we will move the fail path handling to the end of
+the function.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: Alan Cox <alan@linux.intel.com>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/tty/tty_io.c |  105 +++++++++++++++++++++++++++----------------------
- 1 files changed, 58 insertions(+), 47 deletions(-)
+ drivers/tty/tty_io.c |   93 +++++++++++++++++++++++++++++--------------------
+ 1 files changed, 55 insertions(+), 38 deletions(-)
 
 diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 76e66ff..0fdddd3 100644
+index 1b90c98..00b8498 100644
 --- a/drivers/tty/tty_io.c
 +++ b/drivers/tty/tty_io.c
-@@ -1557,6 +1557,62 @@ static void release_tty(struct tty_struct *tty, int idx)
+@@ -1824,6 +1824,53 @@ static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
  }
  
  /**
-+ *	tty_release_checks - check a tty before real release
-+ *	@tty: tty to check
-+ *	@o_tty: link of @tty (if any)
-+ *	@idx: index of the tty
++ *	tty_lookup_driver - lookup a tty driver for a given device file
++ *	@device: device number
++ *	@filp: file pointer to tty
++ *	@noctty: set if the device should not become a controlling tty
++ *	@index: index for the device in the @return driver
++ *	@return: driver for this inode (with increased refcount)
 + *
-+ *	Performs some paranoid checking before true release of the @tty.
-+ *	This is a no-op unless TTY_PARANOIA_CHECK is defined.
++ * 	If @return is not erroneous, the caller is responsible to decrement the
++ * 	refcount by tty_driver_kref_put.
++ *
++ *	Locking: tty_mutex protects get_tty_driver
 + */
-+static int tty_release_checks(struct tty_struct *tty, struct tty_struct *o_tty,
-+		int idx)
++static struct tty_driver *tty_lookup_driver(dev_t device, struct file *filp,
++		int *noctty, int *index)
 +{
-+#ifdef TTY_PARANOIA_CHECK
-+	if (idx < 0 || idx >= tty->driver->num) {
-+		printk(KERN_DEBUG "tty_release_dev: bad idx when trying to "
-+				  "free (%s)\n", tty->name);
-+		return -1;
-+	}
++	struct tty_driver *driver;
 +
-+	/* not much to check for devpts */
-+	if (tty->driver->flags & TTY_DRIVER_DEVPTS_MEM)
-+		return 0;
-+
-+	if (tty != tty->driver->ttys[idx]) {
-+		printk(KERN_DEBUG "tty_release_dev: driver.table[%d] not tty "
-+		       "for (%s)\n", idx, tty->name);
-+		return -1;
-+	}
-+	if (tty->termios != tty->driver->termios[idx]) {
-+		printk(KERN_DEBUG "tty_release_dev: driver.termios[%d] not termios "
-+		       "for (%s)\n",
-+		       idx, tty->name);
-+		return -1;
-+	}
-+	if (tty->driver->other) {
-+		if (o_tty != tty->driver->other->ttys[idx]) {
-+			printk(KERN_DEBUG "tty_release_dev: other->table[%d] "
-+					  "not o_tty for (%s)\n",
-+			       idx, tty->name);
-+			return -1;
-+		}
-+		if (o_tty->termios != tty->driver->other->termios[idx]) {
-+			printk(KERN_DEBUG "tty_release_dev: other->termios[%d] "
-+					  "not o_termios for (%s)\n",
-+			       idx, tty->name);
-+			return -1;
-+		}
-+		if (o_tty->link != tty) {
-+			printk(KERN_DEBUG "tty_release_dev: bad pty pointers\n");
-+			return -1;
-+		}
++#ifdef CONFIG_VT
++	if (device == MKDEV(TTY_MAJOR, 0)) {
++		extern struct tty_driver *console_driver;
++		driver = tty_driver_kref_get(console_driver);
++		*index = fg_console;
++		*noctty = 1;
++		return driver;
 +	}
 +#endif
-+	return 0;
++	if (device == MKDEV(TTYAUX_MAJOR, 1)) {
++		struct tty_driver *console_driver = console_device(index);
++		if (console_driver) {
++			driver = tty_driver_kref_get(console_driver);
++			if (driver) {
++				/* Don't let /dev/console block */
++				filp->f_flags |= O_NONBLOCK;
++				*noctty = 1;
++				return driver;
++			}
++		}
++		return ERR_PTR(-ENODEV);
++	}
++
++	driver = get_tty_driver(device, index);
++	if (!driver)
++		return ERR_PTR(-ENODEV);
++	return driver;
 +}
 +
 +/**
-  *	tty_release		-	vfs callback for close
-  *	@inode: inode of tty
-  *	@filp: file pointer for handle to tty
-@@ -1580,7 +1636,6 @@ int tty_release(struct inode *inode, struct file *filp)
- 	struct tty_struct *tty = file_tty(filp);
- 	struct tty_struct *o_tty;
- 	int	pty_master, tty_closing, o_tty_closing, do_sleep;
--	int	devpts;
- 	int	idx;
- 	char	buf[64];
- 
-@@ -1595,62 +1650,18 @@ int tty_release(struct inode *inode, struct file *filp)
- 	idx = tty->index;
- 	pty_master = (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
- 		      tty->driver->subtype == PTY_TYPE_MASTER);
--	devpts = (tty->driver->flags & TTY_DRIVER_DEVPTS_MEM) != 0;
- 	o_tty = tty->link;
- 
--#ifdef TTY_PARANOIA_CHECK
--	if (idx < 0 || idx >= tty->driver->num) {
--		printk(KERN_DEBUG "tty_release_dev: bad idx when trying to "
--				  "free (%s)\n", tty->name);
-+	if (tty_release_checks(tty, o_tty, idx)) {
- 		tty_unlock();
- 		return 0;
- 	}
--	if (!devpts) {
--		if (tty != tty->driver->ttys[idx]) {
--			tty_unlock();
--			printk(KERN_DEBUG "tty_release_dev: driver.table[%d] not tty "
--			       "for (%s)\n", idx, tty->name);
--			return 0;
--		}
--		if (tty->termios != tty->driver->termios[idx]) {
--			tty_unlock();
--			printk(KERN_DEBUG "tty_release_dev: driver.termios[%d] not termios "
--			       "for (%s)\n",
--			       idx, tty->name);
--			return 0;
--		}
+  *	tty_open		-	open a tty device
+  *	@inode: inode of device file
+  *	@filp: file pointer to tty
+@@ -1839,7 +1886,7 @@ static struct tty_struct *tty_open_current_tty(dev_t device, struct file *filp)
+  *	The termios state of a pty is reset on first open so that
+  *	settings don't persist across reuse.
+  *
+- *	Locking: tty_mutex protects tty, get_tty_driver and tty_init_dev work.
++ *	Locking: tty_mutex protects tty, tty_lookup_driver and tty_init_dev.
+  *		 tty->count should protect the rest.
+  *		 ->siglock protects ->signal/->sighand
+  */
+@@ -1873,47 +1920,17 @@ retry_open:
+ 		mutex_unlock(&tty_mutex);
+ 		tty_free_file(filp);
+ 		return PTR_ERR(tty);
+-	} else if (tty)
+-		goto got_driver;
+-
+-#ifdef CONFIG_VT
+-	if (device == MKDEV(TTY_MAJOR, 0)) {
+-		extern struct tty_driver *console_driver;
+-		driver = tty_driver_kref_get(console_driver);
+-		index = fg_console;
+-		noctty = 1;
+-		goto got_driver;
 -	}
 -#endif
- 
- #ifdef TTY_DEBUG_HANGUP
- 	printk(KERN_DEBUG "tty_release_dev of %s (tty count=%d)...",
- 	       tty_name(tty, buf), tty->count);
- #endif
- 
--#ifdef TTY_PARANOIA_CHECK
--	if (tty->driver->other &&
--	     !(tty->driver->flags & TTY_DRIVER_DEVPTS_MEM)) {
--		if (o_tty != tty->driver->other->ttys[idx]) {
--			tty_unlock();
--			printk(KERN_DEBUG "tty_release_dev: other->table[%d] "
--					  "not o_tty for (%s)\n",
--			       idx, tty->name);
--			return 0 ;
--		}
--		if (o_tty->termios != tty->driver->other->termios[idx]) {
--			tty_unlock();
--			printk(KERN_DEBUG "tty_release_dev: other->termios[%d] "
--					  "not o_termios for (%s)\n",
--			       idx, tty->name);
--			return 0;
--		}
--		if (o_tty->link != tty) {
--			tty_unlock();
--			printk(KERN_DEBUG "tty_release_dev: bad pty pointers\n");
--			return 0;
--		}
+-	if (device == MKDEV(TTYAUX_MAJOR, 1)) {
+-		struct tty_driver *console_driver = console_device(&index);
+-		if (console_driver) {
+-			driver = tty_driver_kref_get(console_driver);
+-			if (driver) {
+-				/* Don't let /dev/console block */
+-				filp->f_flags |= O_NONBLOCK;
+-				noctty = 1;
+-				goto got_driver;
+-			}
++	} else if (!tty) {
++		driver = tty_lookup_driver(device, filp, &noctty, &index);
++		if (IS_ERR(driver)) {
++			tty_unlock();
++			mutex_unlock(&tty_mutex);
++			tty_free_file(filp);
++			return PTR_ERR(driver);
+ 		}
+-		tty_unlock();
+-		mutex_unlock(&tty_mutex);
+-		tty_free_file(filp);
+-		return -ENODEV;
 -	}
--#endif
- 	if (tty->ops->close)
- 		tty->ops->close(tty, filp);
  
-@@ -1790,7 +1801,7 @@ int tty_release(struct inode *inode, struct file *filp)
- 	release_tty(tty, idx);
- 
- 	/* Make this pty number available for reallocation */
--	if (devpts)
-+	if (tty->driver->flags & TTY_DRIVER_DEVPTS_MEM)
- 		devpts_kill_index(inode, idx);
- 	tty_unlock();
- 	return 0;
+-	driver = get_tty_driver(device, &index);
+-	if (!driver) {
+-		tty_unlock();
+-		mutex_unlock(&tty_mutex);
+-		tty_free_file(filp);
+-		return -ENODEV;
+-	}
+-got_driver:
+-	if (!tty) {
+ 		/* check whether we're reopening an existing tty */
+ 		tty = tty_driver_lookup_tty(driver, inode, index);
+-
+ 		if (IS_ERR(tty)) {
+ 			tty_unlock();
+ 			mutex_unlock(&tty_mutex);
 -- 
 1.7.7
 
