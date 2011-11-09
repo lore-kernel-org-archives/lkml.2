@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965258Ab1KJEWA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:22:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44195 "EHLO mx2.suse.de"
+	id S936277Ab1KJEW1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:22:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44179 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935041Ab1KJDkh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:40:37 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:53 2011
-Message-Id: <20111109213153.201863137@clark.kroah.org>
+	id S1754077Ab1KJDka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:40:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:51 2011
+Message-Id: <20111109213151.148712045@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:37 -0800
+Date: Wed, 09 Nov 2011 13:32:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
-Subject: [110/264] tracing: Fix returning of duplicate data after EOF in trace_pipe_raw
+        alan@lxorguk.ukuu.org.uk, Peng Tao <peng_tao@emc.com>,
+        Jim Rees <rees@umich.edu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [090/264] pnfs: recoalesce when ld write pagelist fails
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +26,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 436fc280261dcfce5af38f08b89287750dc91cd2 upstream.
+commit 8ce160c5ef06cc89c2b6b26bfa5ef7a5ce2c93e0 upstream.
 
-The trace_pipe_raw handler holds a cached page from the time the file
-is opened to the time it is closed. The cached page is used to handle
-the case of the user space buffer being smaller than what was read from
-the ring buffer. The left over buffer is held in the cache so that the
-next read will continue where the data left off.
+For pnfs pagelist write failure, we need to pg_recoalesce and resend IO to
+mds.
 
-After EOF is returned (no more data in the buffer), the index of
-the cached page is set to zero. If a user app reads the page again
-after EOF, the check in the buffer will see that the cached page
-is less than page size and will return the cached page again. This
-will cause reading the trace_pipe_raw again after EOF to return
-duplicate data, making the output look like the time went backwards
-but instead data is just repeated.
-
-The fix is to not reset the index right after all data is read
-from the cache, but to reset it after all data is read and more
-data exists in the ring buffer.
-
-Reported-by: Jeremy Eder <jeder@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Jim Rees <rees@umich.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/pnfs.c  |   20 +++++++-------------
+ fs/nfs/pnfs.h  |    2 +-
+ fs/nfs/write.c |   25 ++++++++++++++++++++++++-
+ 3 files changed, 32 insertions(+), 15 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3808,8 +3808,6 @@ tracing_buffers_read(struct file *filp,
- 	if (info->read < PAGE_SIZE)
- 		goto read;
- 
--	info->read = 0;
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1168,23 +1168,17 @@ EXPORT_SYMBOL_GPL(pnfs_generic_pg_test);
+ /*
+  * Called by non rpc-based layout drivers
+  */
+-int
+-pnfs_ld_write_done(struct nfs_write_data *data)
++void pnfs_ld_write_done(struct nfs_write_data *data)
+ {
+-	int status;
 -
- 	trace_access_lock(info->cpu);
- 	ret = ring_buffer_read_page(info->tr->buffer,
- 				    &info->spare,
-@@ -3819,6 +3817,8 @@ tracing_buffers_read(struct file *filp,
- 	if (ret < 0)
- 		return 0;
+-	if (!data->pnfs_error) {
++	if (likely(!data->pnfs_error)) {
+ 		pnfs_set_layoutcommit(data);
+ 		data->mds_ops->rpc_call_done(&data->task, data);
+-		data->mds_ops->rpc_release(data);
+-		return 0;
++	} else {
++		put_lseg(data->lseg);
++		data->lseg = NULL;
++		dprintk("pnfs write error = %d\n", data->pnfs_error);
+ 	}
+-
+-	dprintk("%s: pnfs_error=%d, retry via MDS\n", __func__,
+-		data->pnfs_error);
+-	status = nfs_initiate_write(data, NFS_CLIENT(data->inode),
+-				    data->mds_ops, NFS_FILE_SYNC);
+-	return status ? : -EAGAIN;
++	data->mds_ops->rpc_release(data);
+ }
+ EXPORT_SYMBOL_GPL(pnfs_ld_write_done);
  
-+	info->read = 0;
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -201,7 +201,7 @@ void pnfs_set_layoutcommit(struct nfs_wr
+ void pnfs_cleanup_layoutcommit(struct nfs4_layoutcommit_data *data);
+ int pnfs_layoutcommit_inode(struct inode *inode, bool sync);
+ int _pnfs_return_layout(struct inode *);
+-int pnfs_ld_write_done(struct nfs_write_data *);
++void pnfs_ld_write_done(struct nfs_write_data *);
+ int pnfs_ld_read_done(struct nfs_read_data *);
+ struct pnfs_layout_segment *pnfs_update_layout(struct inode *ino,
+ 					       struct nfs_open_context *ctx,
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1165,7 +1165,13 @@ static void nfs_writeback_done_full(stru
+ static void nfs_writeback_release_full(void *calldata)
+ {
+ 	struct nfs_write_data	*data = calldata;
+-	int status = data->task.tk_status;
++	int ret, status = data->task.tk_status;
++	struct nfs_pageio_descriptor pgio;
 +
- read:
- 	size = PAGE_SIZE - info->read;
- 	if (size > count)
++	if (data->pnfs_error) {
++		nfs_pageio_init_write_mds(&pgio, data->inode, FLUSH_STABLE);
++		pgio.pg_recoalesce = 1;
++	}
+ 
+ 	/* Update attributes as result of writeback. */
+ 	while (!list_empty(&data->pages)) {
+@@ -1181,6 +1187,11 @@ static void nfs_writeback_release_full(v
+ 			req->wb_bytes,
+ 			(long long)req_offset(req));
+ 
++		if (data->pnfs_error) {
++			dprintk(", pnfs error = %d\n", data->pnfs_error);
++			goto next;
++		}
++
+ 		if (status < 0) {
+ 			nfs_set_pageerror(page);
+ 			nfs_context_set_write_error(req->wb_context, status);
+@@ -1200,7 +1211,19 @@ remove_request:
+ 	next:
+ 		nfs_clear_page_tag_locked(req);
+ 		nfs_end_page_writeback(page);
++		if (data->pnfs_error) {
++			lock_page(page);
++			nfs_pageio_cond_complete(&pgio, page->index);
++			ret = nfs_page_async_flush(&pgio, page, 0);
++			if (ret) {
++				nfs_set_pageerror(page);
++				dprintk("rewrite to MDS error = %d\n", ret);
++			}
++			unlock_page(page);
++		}
+ 	}
++	if (data->pnfs_error)
++		nfs_pageio_complete(&pgio);
+ 	nfs_writedata_release(calldata);
+ }
+ 
 
 
