@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934454Ab1KJFRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:17:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42050 "EHLO mx2.suse.de"
+	id S1757257Ab1KJFRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:17:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42043 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933935Ab1KJDY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:24:28 -0500
+	id S933681Ab1KJDYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:24:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:09 2011
-Message-Id: <20111109212709.336176239@clark.kroah.org>
+Message-Id: <20111109212709.247597555@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:50 -0800
+Date: Wed, 09 Nov 2011 13:26:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steven Rostedt <rostedt@goodmis.org>
-Subject: [088/262] tracing: Fix returning of duplicate data after EOF in trace_pipe_raw
+        alan@lxorguk.ukuu.org.uk,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [087/262] perf probe: Fix to show correct error string
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-commit 436fc280261dcfce5af38f08b89287750dc91cd2 upstream.
+commit 44a56040a0037a845d5fa218dffde464579f0cab upstream.
 
-The trace_pipe_raw handler holds a cached page from the time the file
-is opened to the time it is closed. The cached page is used to handle
-the case of the user space buffer being smaller than what was read from
-the ring buffer. The left over buffer is held in the cache so that the
-next read will continue where the data left off.
+Fix perf probe to show correct error string when it
+fails to delete an event. The write(2) returns -1
+if failed, and errno stores real error number.
 
-After EOF is returned (no more data in the buffer), the index of
-the cached page is set to zero. If a user app reads the page again
-after EOF, the check in the buffer will see that the cached page
-is less than page size and will return the cached page again. This
-will cause reading the trace_pipe_raw again after EOF to return
-duplicate data, making the output look like the time went backwards
-but instead data is just repeated.
-
-The fix is to not reset the index right after all data is read
-from the cache, but to reset it after all data is read and more
-data exists in the ring buffer.
-
-Reported-by: Jeremy Eder <jeder@redhat.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Link: http://lkml.kernel.org/r/20111004104504.14591.41266.stgit@fedora15
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/trace/trace.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/probe-event.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3704,8 +3704,6 @@ tracing_buffers_read(struct file *filp,
- 	if (info->read < PAGE_SIZE)
- 		goto read;
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -1869,8 +1869,10 @@ static int __del_trace_probe_event(int f
  
--	info->read = 0;
--
- 	trace_access_lock(info->cpu);
- 	ret = ring_buffer_read_page(info->tr->buffer,
- 				    &info->spare,
-@@ -3715,6 +3713,8 @@ tracing_buffers_read(struct file *filp,
- 	if (ret < 0)
- 		return 0;
+ 	pr_debug("Writing event: %s\n", buf);
+ 	ret = write(fd, buf, strlen(buf));
+-	if (ret < 0)
++	if (ret < 0) {
++		ret = -errno;
+ 		goto error;
++	}
  
-+	info->read = 0;
-+
- read:
- 	size = PAGE_SIZE - info->read;
- 	if (size > count)
+ 	printf("Remove event: %s\n", ent->s);
+ 	return 0;
 
 
