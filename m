@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934903Ab1KJD14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:27:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42446 "EHLO mx2.suse.de"
+	id S934889Ab1KJD1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:27:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42418 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934856Ab1KJD1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:52 -0500
+	id S934856Ab1KJD1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.398190361@clark.kroah.org>
+Message-Id: <20111109212715.001132361@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:49 -0800
+Date: Wed, 09 Nov 2011 13:27:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
+        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [147/262] net: xen-netback: correctly restart Tx after a VM restore/migrate
+Subject: [143/262] tcp: properly update lost_cnt_hint during shifting
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,46 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-[ Upstream commit d0e5d83284dac15c015bb48115b6780f5a6413cd ]
+[ Upstream commit 1e5289e121372a3494402b1b131b41bfe1cf9b7f ]
 
-If a VM is saved and restored (or migrated) the netback driver will no
-longer process any Tx packets from the frontend.  xenvif_up() does not
-schedule the processing of any pending Tx requests from the front end
-because the carrier is off.  Without this initial kick the frontend
-just adds Tx requests to the ring without raising an event (until the
-ring is full).
+lost_skb_hint is used by tcp_mark_head_lost() to mark the first unhandled skb.
+lost_cnt_hint is the number of packets or sacked packets before the lost_skb_hint;
+When shifting a skb that is before the lost_skb_hint, if tcp_is_fack() is ture,
+the skb has already been counted in the lost_cnt_hint; if tcp_is_fack() is false,
+tcp_sacktag_one() will increase the lost_cnt_hint. So tcp_shifted_skb() does not
+need to adjust the lost_cnt_hint by itself. When shifting a skb that is equal to
+lost_skb_hint, the shifted packets will not be counted by tcp_mark_head_lost().
+So tcp_shifted_skb() should adjust the lost_cnt_hint even tcp_is_fack(tp) is true.
 
-This was caused by 47103041e91794acdbc6165da0ae288d844c820b (net:
-xen-netback: convert to hw_features) which reordered the calls to
-xenvif_up() and netif_carrier_on() in xenvif_connect().
-
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/net/xen-netback/interface.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/tcp_input.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -327,12 +327,12 @@ int xenvif_connect(struct xenvif *vif, u
- 	xenvif_get(vif);
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -1380,9 +1380,7 @@ static int tcp_shifted_skb(struct sock *
  
- 	rtnl_lock();
--	if (netif_running(vif->dev))
--		xenvif_up(vif);
- 	if (!vif->can_sg && vif->dev->mtu > ETH_DATA_LEN)
- 		dev_set_mtu(vif->dev, ETH_DATA_LEN);
- 	netdev_update_features(vif->dev);
- 	netif_carrier_on(vif->dev);
-+	if (netif_running(vif->dev))
-+		xenvif_up(vif);
- 	rtnl_unlock();
+ 	BUG_ON(!pcount);
  
- 	return 0;
+-	/* Tweak before seqno plays */
+-	if (!tcp_is_fack(tp) && tcp_is_sack(tp) && tp->lost_skb_hint &&
+-	    !before(TCP_SKB_CB(tp->lost_skb_hint)->seq, TCP_SKB_CB(skb)->seq))
++	if (skb == tp->lost_skb_hint)
+ 		tp->lost_cnt_hint += pcount;
+ 
+ 	TCP_SKB_CB(prev)->end_seq += shifted;
 
 
