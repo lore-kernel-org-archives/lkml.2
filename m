@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab1KIQ2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:28:22 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12633 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab1KIQ2V convert rfc822-to-8bit (ORCPT
+	id S1755364Ab1KIQai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:30:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58356 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285Ab1KIQah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:28:21 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 09 Nov 2011 08:28:16 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        David Brown <davidb@codeaurora.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rongjun Ying <Rongjun.Ying@csr.com>,
-        Linaro Dev <linaro-dev@lists.linaro.org>
-Date: Wed, 9 Nov 2011 08:28:14 -0800
-Subject: RE: [PATCH] pinctrl: Add explicit gpio_disable_free pinmux_op
-Thread-Topic: [PATCH] pinctrl: Add explicit gpio_disable_free pinmux_op
-Thread-Index: AcyQHulnhVOvaslFSkG/NSzwGF1zaAO3W98Q
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17408050C7@HQMAIL01.nvidia.com>
-References: <1319221553-15128-1-git-send-email-swarren@nvidia.com>
-In-Reply-To: <1319221553-15128-1-git-send-email-swarren@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Nov 2011 11:30:37 -0500
+Message-ID: <4EBAAAA5.7030807@fedoraproject.org>
+Date: Wed, 09 Nov 2011 17:30:29 +0100
+From: Michel Alexandre Salim <salimma@fedoraproject.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
+To: intel-gfx@lists.freedesktop.org
+CC: Keith Packard <keithp@keithp.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] drm/i915: Honor SSC quirk table over the default,
+ unless set by user
+References: <1320855178.5081.9.camel@fauix11.informatik.uni-erlangen.de>
+In-Reply-To: <1320855178.5081.9.camel@fauix11.informatik.uni-erlangen.de>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Warren wrote at Friday, October 21, 2011 12:26 PM:
-> Some pinctrl drivers (Tegra at least) program a pin to be a GPIO in a
-> completely different manner than they select which function to mux out of
-> that pin. In order to support a single "free" pinmux_op, the driver would
-> need to maintain a per-pin state of requested-for-gpio vs. requested-for-
-> function. However, that's a lot of work when the core already has explicit
-> separate paths for gpio request/free and function request/free.
->
-> So, add a gpio_disable_free op to struct pinmux_ops, and make pin_free()
-> call it when appropriate.
+Additional note: while I've not touched the line since it does not
+affect me, it seems that i915_panel_use_ssc *cannot* be less than 0
+since that variable is declared as unsigned.
 
-LinusW,
+So the last line (the value in dev_priv) will never be used to determine
+whether SSC is used anyway. Keith probably knows more since he
+introduces that check in the commit that my patch referred to.
 
-Does this patch look good?
+On 11/09/2011 05:12 PM, Michel Alexandre Salim wrote:
+>  static inline bool intel_panel_use_ssc(struct drm_i915_private *dev_priv)
+>  {
+> +	if (i915_panel_use_ssc == 1)
+> +		return true;
+> +	if (dev_priv->quirks & QUIRK_LVDS_SSC_DISABLE)
+> +		return false;
+>  	if (i915_panel_use_ssc >= 0)
+>  		return i915_panel_use_ssc != 0;
+> -	return dev_priv->lvds_use_ssc
+> -		&& !(dev_priv->quirks & QUIRK_LVDS_SSC_DISABLE);
+> +	return dev_priv->lvds_use_ssc;
+>  }
+>  
+>  /**
 
-> When doing this, I noticed that when calling pin_request():
-> 
->     !!gpio == (gpio_range != NULL)
-> 
-> ... and so I collapsed those two parameters in both pin_request(), and
-> when adding writing the new code in pin_free().
-> 
-> Also, for pin_free():
-> 
->     !!free_func == (gpio_range != NULL)
-> 
-> However, I didn't want pin_free() to know about the GPIO function naming
-> special case, so instead, I reworked pin_free() to always return the pin's
-> previously requested function, and now pinmux_free_gpio() calls
-> kfree(function). This is much more balanced with the allocation having
-> been performed in pinmux_request_gpio().
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 
 -- 
-nvpublic
+Michel Alexandre Salim
+µblog:      http://identi.ca/hircus
+            http://twitter.com/hircus
+GPG key ID: 78884778
 
+()  ascii ribbon campaign - against html e-mail
+/\  www.asciiribbon.org   - against proprietary attachments
