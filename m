@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934693Ab1KJD0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:26:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42237 "EHLO mx2.suse.de"
+	id S1757026Ab1KJFLn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:11:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42252 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934673Ab1KJD0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:26:15 -0500
+	id S934682Ab1KJD0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:26:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:12 2011
-Message-Id: <20111109212712.505602520@clark.kroah.org>
+Message-Id: <20111109212712.688775130@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:20 -0800
+Date: Wed, 09 Nov 2011 13:27:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ming Lei <ming.lei@canonical.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [118/262] [media] uvcvideo: Set alternate setting 0 on resume if the bus has been reset
+        alan@lxorguk.ukuu.org.uk, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Florian Mickler <florian@mickler.org>,
+        Javier Marcet <javier@marcet.info>,
+        Olivier Grenie <olivier.grenie@dibcom.fr>,
+        Patrick Boettcher <patrick.boettcher@dibcom.fr>
+Subject: [120/262] [media] dib0700: protect the dib0700 buffer access
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,74 +28,250 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Olivier Grenie <olivier.grenie@dibcom.fr>
 
-commit d59a7b1dbce8b972ec2dc9fcaaae0bfa23687423 upstream.
+commit bff469f4167fdabfe15294f375577d7eadbaa1bb upstream.
 
-If the bus has been reset on resume, set the alternate setting to 0.
-This should be the default value, but some devices crash or otherwise
-misbehave if they don't receive a SET_INTERFACE request before any other
-video control request.
+This patch protects the common buffer access inside the dib0700 in order
+to manage concurrent access. This protection is done using mutex.
 
-Microdia's 0c45:6437 camera has been found to require this change or it
-will stop sending video data after resume.
-
-uvc_video.c]
-
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Florian Mickler <florian@mickler.org>
+Signed-off-by: Javier Marcet <javier@marcet.info>
+Signed-off-by: Olivier Grenie <olivier.grenie@dibcom.fr>
+Signed-off-by: Patrick Boettcher <patrick.boettcher@dibcom.fr>
+[mchehab@redhat.com: dprint requires 3 arguments. Replaced by dib_info]
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/uvc/uvc_driver.c |    2 +-
- drivers/media/video/uvc/uvc_video.c  |   10 +++++++++-
- drivers/media/video/uvc/uvcvideo.h   |    2 +-
- 3 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/media/dvb/dvb-usb/dib0700_core.c |   81 +++++++++++++++++++++++++++----
+ 1 file changed, 72 insertions(+), 9 deletions(-)
 
---- a/drivers/media/video/uvc/uvc_driver.c
-+++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -1960,7 +1960,7 @@ static int __uvc_resume(struct usb_inter
- 
- 	list_for_each_entry(stream, &dev->streams, list) {
- 		if (stream->intf == intf)
--			return uvc_video_resume(stream);
-+			return uvc_video_resume(stream, reset);
- 	}
- 
- 	uvc_trace(UVC_TRACE_SUSPEND, "Resume: video streaming USB interface "
---- a/drivers/media/video/uvc/uvc_video.c
-+++ b/drivers/media/video/uvc/uvc_video.c
-@@ -1104,10 +1104,18 @@ int uvc_video_suspend(struct uvc_streami
-  * buffers, making sure userspace applications are notified of the problem
-  * instead of waiting forever.
-  */
--int uvc_video_resume(struct uvc_streaming *stream)
-+int uvc_video_resume(struct uvc_streaming *stream, int reset)
- {
+--- a/drivers/media/dvb/dvb-usb/dib0700_core.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
+@@ -30,6 +30,11 @@ int dib0700_get_version(struct dvb_usb_d
+ 	struct dib0700_state *st = d->priv;
  	int ret;
  
-+	/* If the bus has been reset on resume, set the alternate setting to 0.
-+	 * This should be the default value, but some devices crash or otherwise
-+	 * misbehave if they don't receive a SET_INTERFACE request before any
-+	 * other video control request.
-+	 */
-+	if (reset)
-+		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
 +
- 	stream->frozen = 0;
+ 	ret = usb_control_msg(d->udev, usb_rcvctrlpipe(d->udev, 0),
+ 				  REQUEST_GET_VERSION,
+ 				  USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
+@@ -46,6 +51,7 @@ int dib0700_get_version(struct dvb_usb_d
+ 	if (fwtype != NULL)
+ 		*fwtype     = (st->buf[12] << 24) | (st->buf[13] << 16) |
+ 			(st->buf[14] << 8) | st->buf[15];
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
  
- 	ret = uvc_commit_video(stream, &stream->ctrl);
---- a/drivers/media/video/uvc/uvcvideo.h
-+++ b/drivers/media/video/uvc/uvcvideo.h
-@@ -639,7 +639,7 @@ extern void uvc_mc_cleanup_entity(struct
- /* Video */
- extern int uvc_video_init(struct uvc_streaming *stream);
- extern int uvc_video_suspend(struct uvc_streaming *stream);
--extern int uvc_video_resume(struct uvc_streaming *stream);
-+extern int uvc_video_resume(struct uvc_streaming *stream, int reset);
- extern int uvc_video_enable(struct uvc_streaming *stream, int enable);
- extern int uvc_probe_video(struct uvc_streaming *stream,
- 		struct uvc_streaming_control *probe);
+@@ -108,7 +114,12 @@ int dib0700_ctrl_rd(struct dvb_usb_devic
+ int dib0700_set_gpio(struct dvb_usb_device *d, enum dib07x0_gpios gpio, u8 gpio_dir, u8 gpio_val)
+ {
+ 	struct dib0700_state *st = d->priv;
+-	s16 ret;
++	int ret;
++
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	st->buf[0] = REQUEST_SET_GPIO;
+ 	st->buf[1] = gpio;
+@@ -116,6 +127,7 @@ int dib0700_set_gpio(struct dvb_usb_devi
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 3);
+ 
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
+ 
+@@ -125,6 +137,11 @@ static int dib0700_set_usb_xfer_len(stru
+ 	int ret;
+ 
+ 	if (st->fw_version >= 0x10201) {
++		if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++			deb_info("could not acquire lock");
++			return 0;
++		}
++
+ 		st->buf[0] = REQUEST_SET_USB_XFER_LEN;
+ 		st->buf[1] = (nb_ts_packets >> 8) & 0xff;
+ 		st->buf[2] = nb_ts_packets & 0xff;
+@@ -132,6 +149,7 @@ static int dib0700_set_usb_xfer_len(stru
+ 		deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
+ 
+ 		ret = dib0700_ctrl_wr(d, st->buf, 3);
++		mutex_unlock(&d->usb_mutex);
+ 	} else {
+ 		deb_info("this firmware does not allow to change the USB xfer len\n");
+ 		ret = -EIO;
+@@ -208,6 +226,10 @@ static int dib0700_i2c_xfer_new(struct i
+ 
+ 		} else {
+ 			/* Write request */
++			if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++				deb_info("could not acquire lock");
++				return 0;
++			}
+ 			st->buf[0] = REQUEST_NEW_I2C_WRITE;
+ 			st->buf[1] = msg[i].addr << 1;
+ 			st->buf[2] = (en_start << 7) | (en_stop << 6) |
+@@ -227,6 +249,7 @@ static int dib0700_i2c_xfer_new(struct i
+ 						 USB_TYPE_VENDOR | USB_DIR_OUT,
+ 						 0, 0, st->buf, msg[i].len + 4,
+ 						 USB_CTRL_GET_TIMEOUT);
++			mutex_unlock(&d->usb_mutex);
+ 			if (result < 0) {
+ 				deb_info("i2c write error (status = %d)\n", result);
+ 				break;
+@@ -249,6 +272,10 @@ static int dib0700_i2c_xfer_legacy(struc
+ 
+ 	if (mutex_lock_interruptible(&d->i2c_mutex) < 0)
+ 		return -EAGAIN;
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	for (i = 0; i < num; i++) {
+ 		/* fill in the address */
+@@ -279,6 +306,7 @@ static int dib0700_i2c_xfer_legacy(struc
+ 				break;
+ 		}
+ 	}
++	mutex_unlock(&d->usb_mutex);
+ 	mutex_unlock(&d->i2c_mutex);
+ 
+ 	return i;
+@@ -337,7 +365,12 @@ static int dib0700_set_clock(struct dvb_
+ 	u16 pll_loopdiv, u16 free_div, u16 dsuScaler)
+ {
+ 	struct dib0700_state *st = d->priv;
+-	s16 ret;
++	int ret;
++
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	st->buf[0] = REQUEST_SET_CLOCK;
+ 	st->buf[1] = (en_pll << 7) | (pll_src << 6) |
+@@ -352,6 +385,7 @@ static int dib0700_set_clock(struct dvb_
+ 	st->buf[9] =  dsuScaler         & 0xff; /* LSB */
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 10);
++	mutex_unlock(&d->usb_mutex);
+ 
+ 	return ret;
+ }
+@@ -360,10 +394,16 @@ int dib0700_set_i2c_speed(struct dvb_usb
+ {
+ 	struct dib0700_state *st = d->priv;
+ 	u16 divider;
++	int ret;
+ 
+ 	if (scl_kHz == 0)
+ 		return -EINVAL;
+ 
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_SET_I2C_PARAM;
+ 	divider = (u16) (30000 / scl_kHz);
+ 	st->buf[1] = 0;
+@@ -379,7 +419,11 @@ int dib0700_set_i2c_speed(struct dvb_usb
+ 	deb_info("setting I2C speed: %04x %04x %04x (%d kHz).",
+ 		(st->buf[2] << 8) | (st->buf[3]), (st->buf[4] << 8) |
+ 		st->buf[5], (st->buf[6] << 8) | st->buf[7], scl_kHz);
+-	return dib0700_ctrl_wr(d, st->buf, 8);
++
++	ret = dib0700_ctrl_wr(d, st->buf, 8);
++	mutex_unlock(&d->usb_mutex);
++
++	return ret;
+ }
+ 
+ 
+@@ -515,6 +559,11 @@ int dib0700_streaming_ctrl(struct dvb_us
+ 		}
+ 	}
+ 
++	if (mutex_lock_interruptible(&adap->dev->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_ENABLE_VIDEO;
+ 	/* this bit gives a kind of command,
+ 	 * rather than enabling something or not */
+@@ -548,7 +597,10 @@ int dib0700_streaming_ctrl(struct dvb_us
+ 
+ 	deb_info("data for streaming: %x %x\n", st->buf[1], st->buf[2]);
+ 
+-	return dib0700_ctrl_wr(adap->dev, st->buf, 4);
++	ret = dib0700_ctrl_wr(adap->dev, st->buf, 4);
++	mutex_unlock(&adap->dev->usb_mutex);
++
++	return ret;
+ }
+ 
+ int dib0700_change_protocol(struct rc_dev *rc, u64 rc_type)
+@@ -557,6 +609,11 @@ int dib0700_change_protocol(struct rc_de
+ 	struct dib0700_state *st = d->priv;
+ 	int new_proto, ret;
+ 
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_SET_RC;
+ 	st->buf[1] = 0;
+ 	st->buf[2] = 0;
+@@ -567,23 +624,29 @@ int dib0700_change_protocol(struct rc_de
+ 	else if (rc_type == RC_TYPE_NEC)
+ 		new_proto = 0;
+ 	else if (rc_type == RC_TYPE_RC6) {
+-		if (st->fw_version < 0x10200)
+-			return -EINVAL;
++		if (st->fw_version < 0x10200) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 
+ 		new_proto = 2;
+-	} else
+-		return -EINVAL;
++	} else {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	st->buf[1] = new_proto;
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 3);
+ 	if (ret < 0) {
+ 		err("ir protocol setup failed");
+-		return ret;
++		goto out;
+ 	}
+ 
+ 	d->props.rc.core.protocol = rc_type;
+ 
++out:
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
+ 
 
 
