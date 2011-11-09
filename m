@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932224Ab1KJD3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:29:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42662 "EHLO mx2.suse.de"
+	id S935140Ab1KJD3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:29:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42652 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934393Ab1KJD3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:29:48 -0500
+	id S934435Ab1KJD3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:29:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:18 2011
-Message-Id: <20111109212718.665528097@clark.kroah.org>
+Message-Id: <20111109212718.444331793@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:22 -0800
+Date: Wed, 09 Nov 2011 13:28:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [180/262] xhci: If no endpoints changed, dont issue BW command.
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [178/262] btusb: add device entry for Broadcom SoftSailing
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,44 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 2dc3753997f3c80ce8b950242ab9bb3fb936acfd upstream.
+commit c510eae377c773241ff0b6369a8f3581da941a51 upstream.
 
-Some alternate interface settings have no endpoints associated with them.
-This shows up in some USB webcams, particularly the Logitech HD 1080p,
-which uses the uvcvideo driver.  If a driver switches between two alt
-settings with no endpoints, there is no need to issue a configure endpoint
-command, because there is no endpoint information to update.
 
-The only time a configure endpoint command with just the add slot flag set
-makes sense is when the driver is updating hub characteristics in the slot
-context.  However, that code never calls xhci_check_bandwidth, so we
-should be safe not issuing a command if only the slot context add flag is
-set.
+This device declares itself to be vendor specific
+It therefore needs to be added to the device table
+to make btusb bind.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/bluetooth/btusb.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1889,6 +1889,12 @@ int xhci_check_bandwidth(struct usb_hcd
- 	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
- 	ctrl_ctx->add_flags &= cpu_to_le32(~EP0_FLAG);
- 	ctrl_ctx->drop_flags &= cpu_to_le32(~(SLOT_FLAG | EP0_FLAG));
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -60,6 +60,9 @@ static struct usb_device_id btusb_table[
+ 	/* Generic Bluetooth USB device */
+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+ 
++	/* Broadcom SoftSailing reporting vendor specific */
++	{ USB_DEVICE(0x05ac, 0x21e1) },
 +
-+	/* Don't issue the command if there's no endpoints to update. */
-+	if (ctrl_ctx->add_flags == cpu_to_le32(SLOT_FLAG) &&
-+			ctrl_ctx->drop_flags == 0)
-+		return 0;
-+
- 	xhci_dbg(xhci, "New Input Control Context:\n");
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
+ 	/* Apple MacBookPro 7,1 */
+ 	{ USB_DEVICE(0x05ac, 0x8213) },
+ 
 
 
