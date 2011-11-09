@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab1KIF2Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 00:28:25 -0500
-Received: from nm15.bullet.mail.bf1.yahoo.com ([98.139.212.174]:38795 "HELO
-	nm15.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750795Ab1KIF2Y (ORCPT
+	id S1751743Ab1KIF3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 00:29:00 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51848 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab1KIF27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 00:28:24 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 646582.45172.bm@omp1041.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=K1aqwH4k5X34pVPB5P/JBildwRcyN81tcovGpOSb4nCuMsOXpYLqAaAHn18lv3WK0B7FmDr07DnRVSs3aB1kFQT+0FgQfKOoaqkMn/D2uob+LAn0vMWywq4lxhU2itp+F/YlzzauFm2XBmE3crXQ1sNl1SN+IOkiVh19BVHfzcM=;
-X-YMail-OSG: GAlorSsVM1mBKsjvRNkj1D5EPfQ2_w5pt4OmCSouGwPWLQ9
- ZPd_bm0Ouvt9FQNrojf6imGN7puXlctANGKfOon1u2p3EuBrS4bRW9EumWIg
- zu5uqMor9fz6fr7j_.vs8a5uJMUn2TTrquBm55tuZhnSNJhvtARVw7GPr4BQ
- 7PmVeQiEjsgK2xj0i54WYpcXgZ2.5JVknDSfeSqxeU_3BDPl1K5Jkk0avHdm
- V2ILOJWlgO1ez_oX5uC7TTnZtmLkiqNUhhx5ATFlR3Fvr_n5rv0RnLXSLWM5
- 6XCEQs02ykjAvZr_KdywwV9iGRCrxcpjhU0_L5PdHaj1kyM9d.MFD3c9Bgmd
- rvf5B_n_8HFkydacyj_56ZnhsKuYTiFnS5I9LOYMMVJysXlNrAwV6K4jZ7Tk
- 7AcUfovvS8jPwNnJU9ijuphXL4KJHVgW1_IipsyPih4U6
-X-Mailer: YahooMailWebService/0.8.115.325013
-Message-ID: <1320816503.73813.YahooMailNeo@web160718.mail.bf1.yahoo.com>
-Date: Tue, 8 Nov 2011 21:28:23 -0800 (PST)
-From: Manavalan Krishnan <manavalan_k@yahoo.com>
-Reply-To: Manavalan Krishnan <manavalan_k@yahoo.com>
-Subject: Large file copy to NFS mounted directory causes delay in other application packets
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 9 Nov 2011 00:28:59 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 9 Nov 2011 14:27:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <jweiner@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        Michel Lespinasse <walken@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH mm] mm: memcg: remove unused node/section info from
+ pc->flags fix
+Message-Id: <20111109142741.d3e5480b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.LSU.2.00.1111082108160.1250@sister.anvils>
+References: <1320787408-22866-1-git-send-email-jweiner@redhat.com>
+	<1320787408-22866-11-git-send-email-jweiner@redhat.com>
+	<alpine.LSU.2.00.1111082108160.1250@sister.anvils>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All
+On Tue, 8 Nov 2011 21:18:10 -0800 (PST)
+Hugh Dickins <hughd@google.com> wrote:
 
-I have two systems with two network interfaces each(eth0 and eth1). I am running linux-HA (heartbeat deamon) on both the systems and they use eth0 for exchanging heartbeats. I have NFS mounted directory in one system and the NFS client uses the interface eth1. 
+> Fix non-CONFIG_SPARSEMEM build, which failed with
+> mm/page_cgroup.c: In function `alloc_node_page_cgroup':
+> mm/page_cgroup.c:44: error: `start_pfn' undeclared (first use in this function)
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
 
-I try to copy a large file to NFS mounted directory. But the heartbeat daemons misses the heartbeat packets from peers while copy is under progress. I did tcpdump and found that the heartbeat packets are delayed for few seconds before sent out on eth0. When I stop the file copy, the heartbeats are delivered properly. It seems linux kernel somehow giving priority for NFS packets(generated from the file copy) over other application packets.
-
-Any thoughts on this behavior? Is there any way we can avoid this so that application packets get equal chance while large file copy to NFS mounted directory under progress?
-
-Thanks Much
-Mana
+Thank you.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
