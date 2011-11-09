@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab1KIOxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:53:15 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:58776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751464Ab1KIOxO convert rfc822-to-8bit (ORCPT
+	id S1754303Ab1KIOyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:54:21 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:49723 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753669Ab1KIOyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:53:14 -0500
-Subject: Re: [PATCH RFC tip/core/rcu 28/28] rcu: Fix idle-task checks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, darren@dvhart.com, patches@linaro.org,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>
-Date: Wed, 09 Nov 2011 15:52:44 +0100
-In-Reply-To: <20111103045509.GH2042@leaf>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
-	 <1320265849-5744-28-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20111103045509.GH2042@leaf>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320850364.19727.9.camel@twins>
-Mime-Version: 1.0
+	Wed, 9 Nov 2011 09:54:19 -0500
+Date: Wed, 9 Nov 2011 09:49:22 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Paul Durrant <Paul.Durrant@citrix.com>
+Cc: "annie.li@oracle.com" <annie.li@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>
+Subject: Re: [PATCH 1/3] Introducing grant table V2 stucture
+Message-ID: <20111109144922.GC8410@phenom.dumpdata.com>
+References: <4EBA35D3.3020506@oracle.com>
+ <1320826490-29362-1-git-send-email-annie.li@oracle.com>
+ <291EDFCB1E9E224A99088639C4762022B4543AB1BD@LONPMAILBOX01.citrite.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <291EDFCB1E9E224A99088639C4762022B4543AB1BD@LONPMAILBOX01.citrite.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4EBA9417.013B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-02 at 21:55 -0700, Josh Triplett wrote:
-> On Wed, Nov 02, 2011 at 01:30:49PM -0700, Paul E. McKenney wrote:
-> > From: Paul E. McKenney <paul.mckenney@linaro.org>
-> > 
-> > RCU has traditionally relied on idle_cpu() to determine whether a given
-> > CPU is running in the context of an idle task, but recent changes have
-> > invalidated this approach.  This commit therefore switches from idle_cpu
-> > to "current->pid != 0".
+On Wed, Nov 09, 2011 at 11:11:22AM +0000, Paul Durrant wrote:
+> Annie,
 > 
-> Could you elaborate a bit on "recent changes"?  It looks like you mean
-> commit 908a3283728d92df36e0c7cd63304fd35e93a8a9; if so, could you add
-> that reference to the commit message?
+>   Comments inline below...
+> 
+> > -----Original Message-----
+> [snip]
+> > -static struct grant_entry *shared;
+> > +static union {
+> > +	struct grant_entry_v1 *v1;
+> > +	void *ring_addr;
+> > +} shared;
+> > +
+> 
+> 'ring_addr' seems like the wrong name here; how about 'raw'?
 
-Oh, that was unintended fallout, idle_cpu() was taken to mean is this
-cpu currently idle, and was changed to not return true when there's
-pending wakeups, since in that case the cpu isn't actually idle, even
-though it might still be running the idle task.
+Or 'ring'. I asked Annie to change it from 'raw' to something else and the first
+thing that came in my mind was 'ring_addr'. But this does not point to a ring, so
+the 'ring' part is wrong.
 
-> Also, the hard-coded use of "current->pid != 0" concerns me.  Could this
-> use some existing function?  Does idle_task() help?  If no appropriate
-> predicate exists, perhaps it should.  is_idle_task(current)?
-
-Right, current == idle_task(smp_processor_id()) will test if the current
-task is the idle task for the current cpu, regardless of whether the cpu
-is actually idle or not.
-
-Then again, the ->pid == 0 thing seems to be fairly solid as well,
-having just looked at the fork_idle() code etc.. 
+Point here is to make it descriptive. 'raw' does not carry meaning of _what_
+it is suppose to do. 
