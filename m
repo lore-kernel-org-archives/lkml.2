@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965777Ab1KJDqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:46:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44863 "EHLO mx2.suse.de"
+	id S965803Ab1KJDq3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:46:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44887 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965746Ab1KJDqM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:12 -0500
+	id S965544Ab1KJDqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:03 2011
-Message-Id: <20111109213203.336714741@clark.kroah.org>
+Message-Id: <20111109213203.771270563@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:15 -0800
+Date: Wed, 09 Nov 2011 13:34:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [208/264] hwmon: (w83627ehf) Properly report PECI and AMD-SI sensor types
+        alan@lxorguk.ukuu.org.uk, Andy Grover <agrover@redhat.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [212/264] iscsi-target: Fix non-immediate TMR handling
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 2265cef2751b3441df91f85e0107f9f549e5b711 upstream.
+commit 5a4c8666c6d576f076a7c6824589cdbb984c0f84 upstream.
 
-When temperature sources are PECI or AMD-SI agents, it makes no sense
-to report their type as diode or thermistor. Instead we must report
-their digital nature.
+This patch addresses two issues with non immediate TMR handling in
+iscsit_handle_task_mgt_cmd().  The first involves breakage due to
+v3.1-rc conversion of iscsit_sequence_cmd(), which upon good status
+would hit the iscsit_add_reject_from_cmd() block of code.  This patch
+adds an explict check for CMDSN_ERROR_CANNOT_RECOVER.
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+The second adds a check to return when non immediate TMR operation is
+detected after iscsit_ack_from_expstatsn(), as iscsit_sequence_cmd()
+-> iscsit_execute_cmd() will have called transport_generic_handle_tmr()
+for the non immediate TMR case already.
+
+Cc: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/w83627ehf.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/target/iscsi/iscsi_target.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1756,7 +1756,14 @@ static inline void __devinit w83627ehf_i
- 		diode = 0x70;
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -1821,17 +1821,16 @@ attach:
+ 		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
+ 		if (cmdsn_ret == CMDSN_HIGHER_THAN_EXP)
+ 			out_of_order_cmdsn = 1;
+-		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
++		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+ 			return 0;
+-		} else { /* (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) */
++		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+ 			return iscsit_add_reject_from_cmd(
+ 					ISCSI_REASON_PROTOCOL_ERROR,
+ 					1, 0, buf, cmd);
+-		}
  	}
- 	for (i = 0; i < 3; i++) {
--		if ((tmp & (0x02 << i)))
-+		const char *label = data->temp_label[data->temp_src[i]];
-+
-+		/* Digital source overrides analog type */
-+		if (strncmp(label, "PECI", 4) == 0)
-+			data->temp_type[i] = 6;
-+		else if (strncmp(label, "AMD", 3) == 0)
-+			data->temp_type[i] = 5;
-+		else if ((tmp & (0x02 << i)))
- 			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
- 		else
- 			data->temp_type[i] = 4; /* thermistor */
+ 	iscsit_ack_from_expstatsn(conn, hdr->exp_statsn);
+ 
+-	if (out_of_order_cmdsn)
++	if (out_of_order_cmdsn || !(hdr->opcode & ISCSI_OP_IMMEDIATE))
+ 		return 0;
+ 	/*
+ 	 * Found the referenced task, send to transport for processing.
 
 
