@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936055Ab1KJESh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:18:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44305 "EHLO mx2.suse.de"
+	id S936332Ab1KJESv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:18:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44290 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965351Ab1KJDlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:41:40 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:52 2011
-Message-Id: <20111109213151.956922823@clark.kroah.org>
+	id S965340Ab1KJDlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:41:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:51 2011
+Message-Id: <20111109213151.738095119@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:25 -0800
+Date: Wed, 09 Nov 2011 13:32:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Cox <alan@linux.intel.com>,
-        Ming Lei <ming.lei@canonical.com>, Tejun Heo <htejun@gmail.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [098/264] ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge chipsets(v2)
+        alan@lxorguk.ukuu.org.uk, Peng Tao <peng_tao@emc.com>,
+        Jim Rees <rees@umich.edu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [096/264] SUNRPC/NFS: make rpc pipe upcall generic
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,145 +26,215 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d upstream.
+commit c1225158a8dad9e9d5eee8a17dbbd9c7cda05ab9 upstream.
 
-This quirk patch fixes one kind of bug inside some Intel Sandybridge
-chipsets, see reports from
+The same function is used by idmap, gss and blocklayout code. Make it
+generic.
 
-       https://bugzilla.kernel.org/show_bug.cgi?id=40592.
-
-Many guys also have reported the problem before:
-
-	https://bugs.launchpad.net/bugs/737388
-	https://bugs.launchpad.net/bugs/794642
-	https://bugs.launchpad.net/bugs/782389
-	......
-
-With help from Tejun, the problem is found to be caused by 32bit PIO
-mode, so introduce the quirk patch to disable 32bit PIO on SATA piix
-for some Sandybridge CPT chipsets.
-
-Seth also tested the patch on all five affected chipsets
-(pci device ID: 0x1c00, 0x1c01, 0x1d00, 0x1e00, 0x1e01), and found
-the patch does fix the problem.
-
-Tested-by: Heasley, Seth <seth.heasley@intel.com>
-Cc: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Acked-by: Tejun Heo <htejun@gmail.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Jim Rees <rees@umich.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ata_piix.c |   37 ++++++++++++++++++++++++++++++++-----
- 1 file changed, 32 insertions(+), 5 deletions(-)
+ fs/nfs/blocklayout/blocklayout.c    |    2 +-
+ fs/nfs/blocklayout/blocklayout.h    |    2 --
+ fs/nfs/blocklayout/blocklayoutdev.c |   22 ----------------------
+ fs/nfs/idmap.c                      |   25 +------------------------
+ include/linux/sunrpc/rpc_pipe_fs.h  |    2 ++
+ net/sunrpc/auth_gss/auth_gss.c      |   24 ++----------------------
+ net/sunrpc/rpc_pipe.c               |   20 ++++++++++++++++++++
+ 7 files changed, 26 insertions(+), 71 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -113,6 +113,8 @@ enum {
- 	PIIX_PATA_FLAGS		= ATA_FLAG_SLAVE_POSS,
- 	PIIX_SATA_FLAGS		= ATA_FLAG_SATA | PIIX_FLAG_CHECKINTR,
- 
-+	PIIX_FLAG_PIO16		= (1 << 30), /*support 16bit PIO only*/
-+
- 	PIIX_80C_PRI		= (1 << 5) | (1 << 4),
- 	PIIX_80C_SEC		= (1 << 7) | (1 << 6),
- 
-@@ -147,6 +149,7 @@ enum piix_controller_ids {
- 	ich8m_apple_sata,	/* locks up on second port enable */
- 	tolapai_sata,
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
-+	ich8_sata_snb,
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -960,7 +960,7 @@ static struct pnfs_layoutdriver_type blo
  };
  
- struct piix_map_db {
-@@ -177,6 +180,7 @@ static int piix_sidpr_scr_write(struct a
- static int piix_sidpr_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
- 			      unsigned hints);
- static bool piix_irq_check(struct ata_port *ap);
-+static int piix_port_start(struct ata_port *ap);
- #ifdef CONFIG_PM
- static int piix_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg);
- static int piix_pci_device_resume(struct pci_dev *pdev);
-@@ -298,21 +302,21 @@ static const struct pci_device_id piix_p
- 	/* SATA Controller IDE (PCH) */
- 	{ 0x8086, 0x3b2e, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
- 	/* SATA Controller IDE (CPT) */
--	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1c00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (CPT) */
--	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (CPT) */
- 	{ 0x8086, 0x1c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (CPT) */
- 	{ 0x8086, 0x1c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (PBG) */
--	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (PBG) */
- 	{ 0x8086, 0x1d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Panther Point) */
--	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1e00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Panther Point) */
--	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata },
-+	{ 0x8086, 0x1e01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Panther Point) */
- 	{ 0x8086, 0x1e08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (Panther Point) */
-@@ -338,6 +342,7 @@ static struct scsi_host_template piix_sh
- static struct ata_port_operations piix_sata_ops = {
- 	.inherits		= &ata_bmdma32_port_ops,
- 	.sff_irq_check		= piix_irq_check,
-+	.port_start		= piix_port_start,
+ static const struct rpc_pipe_ops bl_upcall_ops = {
+-	.upcall		= bl_pipe_upcall,
++	.upcall		= rpc_pipe_generic_upcall,
+ 	.downcall	= bl_pipe_downcall,
+ 	.destroy_msg	= bl_pipe_destroy_msg,
+ };
+--- a/fs/nfs/blocklayout/blocklayout.h
++++ b/fs/nfs/blocklayout/blocklayout.h
+@@ -169,8 +169,6 @@ extern wait_queue_head_t bl_wq;
+ #define BL_DEVICE_REQUEST_ERR          0x2 /* User level process fails */
+ 
+ /* blocklayoutdev.c */
+-ssize_t bl_pipe_upcall(struct file *, struct rpc_pipe_msg *,
+-		       char __user *, size_t);
+ ssize_t bl_pipe_downcall(struct file *, const char __user *, size_t);
+ void bl_pipe_destroy_msg(struct rpc_pipe_msg *);
+ struct block_device *nfs4_blkdev_get(dev_t dev);
+--- a/fs/nfs/blocklayout/blocklayoutdev.c
++++ b/fs/nfs/blocklayout/blocklayoutdev.c
+@@ -79,28 +79,6 @@ int nfs4_blkdev_put(struct block_device
+ 	return blkdev_put(bdev, FMODE_READ);
+ }
+ 
+-/*
+- * Shouldn't there be a rpc_generic_upcall() to do this for us?
+- */
+-ssize_t bl_pipe_upcall(struct file *filp, struct rpc_pipe_msg *msg,
+-		       char __user *dst, size_t buflen)
+-{
+-	char *data = (char *)msg->data + msg->copied;
+-	size_t mlen = min(msg->len - msg->copied, buflen);
+-	unsigned long left;
+-
+-	left = copy_to_user(dst, data, mlen);
+-	if (left == mlen) {
+-		msg->errno = -EFAULT;
+-		return -EFAULT;
+-	}
+-
+-	mlen -= left;
+-	msg->copied += mlen;
+-	msg->errno = 0;
+-	return mlen;
+-}
+-
+ static struct bl_dev_msg bl_mount_reply;
+ 
+ ssize_t bl_pipe_downcall(struct file *filp, const char __user *src,
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -336,8 +336,6 @@ struct idmap {
+ 	struct idmap_hashtable	idmap_group_hash;
  };
  
- static struct ata_port_operations piix_pata_ops = {
-@@ -478,6 +483,7 @@ static const struct piix_map_db *piix_ma
- 	[ich8_2port_sata]	= &ich8_2port_map_db,
- 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
- 	[tolapai_sata]		= &tolapai_map_db,
-+	[ich8_sata_snb]		= &ich8_map_db,
+-static ssize_t idmap_pipe_upcall(struct file *, struct rpc_pipe_msg *,
+-				 char __user *, size_t);
+ static ssize_t idmap_pipe_downcall(struct file *, const char __user *,
+ 				   size_t);
+ static void idmap_pipe_destroy_msg(struct rpc_pipe_msg *);
+@@ -345,7 +343,7 @@ static void idmap_pipe_destroy_msg(struc
+ static unsigned int fnvhash32(const void *, size_t);
+ 
+ static const struct rpc_pipe_ops idmap_upcall_ops = {
+-	.upcall		= idmap_pipe_upcall,
++	.upcall		= rpc_pipe_generic_upcall,
+ 	.downcall	= idmap_pipe_downcall,
+ 	.destroy_msg	= idmap_pipe_destroy_msg,
+ };
+@@ -595,27 +593,6 @@ nfs_idmap_name(struct idmap *idmap, stru
+ 	return ret;
+ }
+ 
+-/* RPC pipefs upcall/downcall routines */
+-static ssize_t
+-idmap_pipe_upcall(struct file *filp, struct rpc_pipe_msg *msg,
+-		  char __user *dst, size_t buflen)
+-{
+-	char *data = (char *)msg->data + msg->copied;
+-	size_t mlen = min(msg->len, buflen);
+-	unsigned long left;
+-
+-	left = copy_to_user(dst, data, mlen);
+-	if (left == mlen) {
+-		msg->errno = -EFAULT;
+-		return -EFAULT;
+-	}
+-
+-	mlen -= left;
+-	msg->copied += mlen;
+-	msg->errno = 0;
+-	return mlen;
+-}
+-
+ static ssize_t
+ idmap_pipe_downcall(struct file *filp, const char __user *src, size_t mlen)
+ {
+--- a/include/linux/sunrpc/rpc_pipe_fs.h
++++ b/include/linux/sunrpc/rpc_pipe_fs.h
+@@ -44,6 +44,8 @@ RPC_I(struct inode *inode)
+ 	return container_of(inode, struct rpc_inode, vfs_inode);
+ }
+ 
++extern ssize_t rpc_pipe_generic_upcall(struct file *, struct rpc_pipe_msg *,
++				       char __user *, size_t);
+ extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ 
+ struct rpc_clnt;
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -603,26 +603,6 @@ out:
+ 	return err;
+ }
+ 
+-static ssize_t
+-gss_pipe_upcall(struct file *filp, struct rpc_pipe_msg *msg,
+-		char __user *dst, size_t buflen)
+-{
+-	char *data = (char *)msg->data + msg->copied;
+-	size_t mlen = min(msg->len, buflen);
+-	unsigned long left;
+-
+-	left = copy_to_user(dst, data, mlen);
+-	if (left == mlen) {
+-		msg->errno = -EFAULT;
+-		return -EFAULT;
+-	}
+-
+-	mlen -= left;
+-	msg->copied += mlen;
+-	msg->errno = 0;
+-	return mlen;
+-}
+-
+ #define MSG_BUF_MAXSIZE 1024
+ 
+ static ssize_t
+@@ -1590,7 +1570,7 @@ static const struct rpc_credops gss_null
  };
  
- static struct ata_port_info piix_port_info[] = {
-@@ -606,6 +612,19 @@ static struct ata_port_info piix_port_in
- 		.port_ops	= &piix_vmw_ops,
- 	},
- 
-+	/*
-+	 * some Sandybridge chipsets have broken 32 mode up to now,
-+	 * see https://bugzilla.kernel.org/show_bug.cgi?id=40592
-+	 */
-+	[ich8_sata_snb] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR | PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
-+
+ static const struct rpc_pipe_ops gss_upcall_ops_v0 = {
+-	.upcall		= gss_pipe_upcall,
++	.upcall		= rpc_pipe_generic_upcall,
+ 	.downcall	= gss_pipe_downcall,
+ 	.destroy_msg	= gss_pipe_destroy_msg,
+ 	.open_pipe	= gss_pipe_open_v0,
+@@ -1598,7 +1578,7 @@ static const struct rpc_pipe_ops gss_upc
  };
  
- static struct pci_bits piix_enable_bits[] = {
-@@ -649,6 +668,14 @@ static const struct ich_laptop ich_lapto
- 	{ 0, }
- };
+ static const struct rpc_pipe_ops gss_upcall_ops_v1 = {
+-	.upcall		= gss_pipe_upcall,
++	.upcall		= rpc_pipe_generic_upcall,
+ 	.downcall	= gss_pipe_downcall,
+ 	.destroy_msg	= gss_pipe_destroy_msg,
+ 	.open_pipe	= gss_pipe_open_v1,
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -77,6 +77,26 @@ rpc_timeout_upcall_queue(struct work_str
+ 	rpc_purge_list(rpci, &free_list, destroy_msg, -ETIMEDOUT);
+ }
  
-+static int piix_port_start(struct ata_port *ap)
++ssize_t rpc_pipe_generic_upcall(struct file *filp, struct rpc_pipe_msg *msg,
++				char __user *dst, size_t buflen)
 +{
-+	if (!(ap->flags & PIIX_FLAG_PIO16))
-+		ap->pflags |= ATA_PFLAG_PIO32 | ATA_PFLAG_PIO32CHANGE;
++	char *data = (char *)msg->data + msg->copied;
++	size_t mlen = min(msg->len - msg->copied, buflen);
++	unsigned long left;
 +
-+	return ata_bmdma_port_start(ap);
++	left = copy_to_user(dst, data, mlen);
++	if (left == mlen) {
++		msg->errno = -EFAULT;
++		return -EFAULT;
++	}
++
++	mlen -= left;
++	msg->copied += mlen;
++	msg->errno = 0;
++	return mlen;
 +}
++EXPORT_SYMBOL_GPL(rpc_pipe_generic_upcall);
 +
  /**
-  *	ich_pata_cable_detect - Probe host controller cable detect info
-  *	@ap: Port for which cable detect info is desired
+  * rpc_queue_upcall - queue an upcall message to userspace
+  * @inode: inode of upcall pipe on which to queue given message
 
 
