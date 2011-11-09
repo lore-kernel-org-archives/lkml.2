@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934516Ab1KJDZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:25:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42122 "EHLO mx2.suse.de"
+	id S934544Ab1KJDZW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:25:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42141 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934491Ab1KJDZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:08 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
-Message-Id: <20111109212706.363601310@clark.kroah.org>
+	id S934015Ab1KJDZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
+Message-Id: <20111109212710.953614548@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:22 -0800
+Date: Wed, 09 Nov 2011 13:27:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, s.kirste@avm.de, d.friedel@avm.de,
-        Martin Walter <m.walter@avm.de>,
-        Peter Grabienski <pgrabien@qca.qualcomm.com>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [060/262] ath9k_htc: add AVM FRITZ!WLAN 11N v2 support
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [103/262] ASoC: ak4535: fixup cache register table
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 8c34559b4a6df32e4af1b073397fa4dc189a5485 upstream.
+commit 7c04241acbdaf97f1448dcccd27ea0fcd1a57684 upstream.
 
-This was reported and tested by Martin Walter over at AVM GmbH Berlin.
-This also applies to 3.0.1 so sendint to stable.
+ak4535_reg should be 8bit, but cache table is defined as 16bit.
 
-Cc: s.kirste@avm.de
-Cc: d.friedel@avm.de
-Cc: Martin Walter <m.walter@avm.de>
-Cc: Peter Grabienski <pgrabien@qca.qualcomm.com>
-Tested-by: Martin Walter <m.walter@avm.de>
-Signed-off-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |    1 +
- 1 file changed, 1 insertion(+)
+ sound/soc/codecs/ak4535.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -37,6 +37,7 @@ static struct usb_device_id ath9k_hif_us
- 	{ USB_DEVICE(0x04CA, 0x4605) }, /* Liteon */
- 	{ USB_DEVICE(0x040D, 0x3801) }, /* VIA */
- 	{ USB_DEVICE(0x0cf3, 0xb003) }, /* Ubiquiti WifiStation Ext */
-+	{ USB_DEVICE(0x057c, 0x8403) }, /* AVM FRITZ!WLAN 11N v2 USB */
+--- a/sound/soc/codecs/ak4535.c
++++ b/sound/soc/codecs/ak4535.c
+@@ -40,11 +40,11 @@ struct ak4535_priv {
+ /*
+  * ak4535 register cache
+  */
+-static const u16 ak4535_reg[AK4535_CACHEREGNUM] = {
+-    0x0000, 0x0080, 0x0000, 0x0003,
+-    0x0002, 0x0000, 0x0011, 0x0001,
+-    0x0000, 0x0040, 0x0036, 0x0010,
+-    0x0000, 0x0000, 0x0057, 0x0000,
++static const u8 ak4535_reg[AK4535_CACHEREGNUM] = {
++	0x00, 0x80, 0x00, 0x03,
++	0x02, 0x00, 0x11, 0x01,
++	0x00, 0x40, 0x36, 0x10,
++	0x00, 0x00, 0x57, 0x00,
+ };
  
- 	{ USB_DEVICE(0x0cf3, 0x7015),
- 	  .driver_info = AR9287_USB },  /* Atheros */
+ /*
 
 
