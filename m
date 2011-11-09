@@ -1,337 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab1KIOTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:19:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753178Ab1KIOTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:19:15 -0500
-Message-ID: <1320848342.10093.57.camel@localhost>
-Subject: Re: [PATCH 6/6] protect cap_netlink_recv from user namespaces
-From: Eric Paris <eparis@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        oleg@redhat.com, richard@nod.at, akpm@linux-foundation.org,
-        ebiederm@xmission.com, dhowells@redhat.com,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>
-Date: Wed, 09 Nov 2011 09:19:02 -0500
-In-Reply-To: <20111108032902.GA29433@hallyn.com>
-References: <1320445482-8459-1-git-send-email-serge@hallyn.com>
-	 <1320445482-8459-7-git-send-email-serge@hallyn.com>
-	 <1320694510.10093.23.camel@localhost> <20111108032902.GA29433@hallyn.com>
+	id S1753438Ab1KIO3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:29:04 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:55783 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab1KIO3C convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 09:29:02 -0500
+Subject: Re: [PATCH RFC tip/core/rcu 19/28] nohz: Allow rcu extended
+ quiescent state handling seperately from tick stop
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com, patches@linaro.org,
+        Mike Frysinger <vapier@gentoo.org>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        David Miller <davem@davemloft.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Mackerras <paulus@samba.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>
+Date: Wed, 09 Nov 2011 15:28:07 +0100
+In-Reply-To: <20111103160656.GC2287@linux.vnet.ibm.com>
+References: <20111102203017.GA3830@linux.vnet.ibm.com>
+	 <1320265849-5744-19-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20111103040003.GE2042@leaf> <20111103115426.GD8198@somewhere.redhat.com>
+	 <20111103133231.GA2287@linux.vnet.ibm.com> <20111103153102.GC18443@leaf>
+	 <20111103160656.GC2287@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320848887.19727.4.camel@twins>
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 03:29 +0000, Serge E. Hallyn wrote:
-> Quoting Eric Paris (eparis@redhat.com):
-
-> But, regardless, your point is valid in that I'm not tightening down as
-> much as I could.  So how about I don't change the security_netlink_recv()
-> and callers yet, and instead I change cap_netlink_recv() to do:
+On Thu, 2011-11-03 at 09:06 -0700, Paul E. McKenney wrote:
+> > Mostly I think that since this series tries to separate the concepts of
+> > "idle nohz" and "rcu extended quiescent state", we should end up with
+> > two entirely separate functions delimiting those two, without any
+> > functions that poke both with correspondingly complex compound names.
 > 
-> 	if (!IN_ROOT_USER_NS && !cap_raised(current_cap(), cap))
+> Having four API members rather than the current six does seem quite
+> attractive to me.  Frederic, any reason why this approach won't work? 
 
-Actually better thought.  Remove the LSM hook altogether and just use
-capable() in the callers.  This hook, being used this way, was
-introduced in c7bdb545 back when we took the effective perms from the
-skb.  We don't use the skb any more since netlink is synchronous.  This
-is functionally equivalent except the capabilities code checks against
-the init_user_ns (something we want) and it will now set PF_PRIV (which
-also seems like a good thing) Something like:
-
-security: remove the security_netlink_recv hook as it is equivalent to capable()
-    
-Once upon a time netlink was not sync and we had to get the effective
-capabilities from the skb that was being received.  Today we instead get
-the capabilities from the current task.  This has rendered the entire
-purpose of the hook moot as it is now functionally equivalent to the
-capable() call.
-    
-Signed-off-by: Eric Paris <eparis@redhat.com>
-
----
-
- drivers/scsi/scsi_netlink.c     |    2 +-
- include/linux/security.h        |   14 --------------
- kernel/audit.c                  |    4 ++--
- net/core/rtnetlink.c            |    2 +-
- net/decnet/netfilter/dn_rtmsg.c |    2 +-
- net/ipv4/netfilter/ip_queue.c   |    2 +-
- net/ipv6/netfilter/ip6_queue.c  |    2 +-
- net/netfilter/nfnetlink.c       |    2 +-
- net/netlink/genetlink.c         |    2 +-
- net/xfrm/xfrm_user.c            |    2 +-
- security/capability.c           |    1 -
- security/commoncap.c            |    8 --------
- security/security.c             |    6 ------
- security/selinux/hooks.c        |   19 -------------------
- 14 files changed, 10 insertions(+), 58 deletions(-)
-
-diff --git a/drivers/scsi/scsi_netlink.c b/drivers/scsi/scsi_netlink.c
-index 44f76e8..c77628a 100644
---- a/drivers/scsi/scsi_netlink.c
-+++ b/drivers/scsi/scsi_netlink.c
-@@ -112,7 +112,7 @@ scsi_nl_rcv_msg(struct sk_buff *skb)
- 			goto next_msg;
- 		}
- 
--		if (security_netlink_recv(skb, CAP_SYS_ADMIN)) {
-+		if (!capable(CAP_SYS_ADMIN)) {
- 			err = -EPERM;
- 			goto next_msg;
- 		}
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 1bb742b..bb7e8a0 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -96,7 +96,6 @@ struct xfrm_user_sec_ctx;
- struct seq_file;
- 
- extern int cap_netlink_send(struct sock *sk, struct sk_buff *skb);
--extern int cap_netlink_recv(struct sk_buff *skb, int cap);
- 
- void reset_security_ops(void);
- 
-@@ -798,12 +797,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@skb contains the sk_buff structure for the netlink message.
-  *	Return 0 if the information was successfully saved and message
-  *	is allowed to be transmitted.
-- * @netlink_recv:
-- *	Check permission before processing the received netlink message in
-- *	@skb.
-- *	@skb contains the sk_buff structure for the netlink message.
-- *	@cap indicates the capability required
-- *	Return 0 if permission is granted.
-  *
-  * Security hooks for Unix domain networking.
-  *
-@@ -1564,7 +1557,6 @@ struct security_operations {
- 			  struct sembuf *sops, unsigned nsops, int alter);
- 
- 	int (*netlink_send) (struct sock *sk, struct sk_buff *skb);
--	int (*netlink_recv) (struct sk_buff *skb, int cap);
- 
- 	void (*d_instantiate) (struct dentry *dentry, struct inode *inode);
- 
-@@ -1817,7 +1809,6 @@ void security_d_instantiate(struct dentry *dentry, struct inode *inode);
- int security_getprocattr(struct task_struct *p, char *name, char **value);
- int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
- int security_netlink_send(struct sock *sk, struct sk_buff *skb);
--int security_netlink_recv(struct sk_buff *skb, int cap);
- int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
- int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
- void security_release_secctx(char *secdata, u32 seclen);
-@@ -2505,11 +2496,6 @@ static inline int security_netlink_send(struct sock *sk, struct sk_buff *skb)
- 	return cap_netlink_send(sk, skb);
- }
- 
--static inline int security_netlink_recv(struct sk_buff *skb, int cap)
--{
--	return cap_netlink_recv(skb, cap);
--}
--
- static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return -EOPNOTSUPP;
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 2c1d6ab..57e3f51 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -601,13 +601,13 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- 	case AUDIT_TTY_SET:
- 	case AUDIT_TRIM:
- 	case AUDIT_MAKE_EQUIV:
--		if (security_netlink_recv(skb, CAP_AUDIT_CONTROL))
-+		if (!capable(CAP_AUDIT_CONTROL))
- 			err = -EPERM;
- 		break;
- 	case AUDIT_USER:
- 	case AUDIT_FIRST_USER_MSG ... AUDIT_LAST_USER_MSG:
- 	case AUDIT_FIRST_USER_MSG2 ... AUDIT_LAST_USER_MSG2:
--		if (security_netlink_recv(skb, CAP_AUDIT_WRITE))
-+		if (!capable(CAP_AUDIT_WRITE))
- 			err = -EPERM;
- 		break;
- 	default:  /* bad msg */
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 39f8dd6..98ee1b6 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1930,7 +1930,7 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	sz_idx = type>>2;
- 	kind = type&3;
- 
--	if (kind != 2 && security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (kind != 2 && !capable(CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	if (kind == 2 && nlh->nlmsg_flags&NLM_F_DUMP) {
-diff --git a/net/decnet/netfilter/dn_rtmsg.c b/net/decnet/netfilter/dn_rtmsg.c
-index 69975e0..1531135 100644
---- a/net/decnet/netfilter/dn_rtmsg.c
-+++ b/net/decnet/netfilter/dn_rtmsg.c
-@@ -108,7 +108,7 @@ static inline void dnrmg_receive_user_skb(struct sk_buff *skb)
- 	if (nlh->nlmsg_len < sizeof(*nlh) || skb->len < nlh->nlmsg_len)
- 		return;
- 
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		RCV_SKB_FAIL(-EPERM);
- 
- 	/* Eventually we might send routing messages too */
-diff --git a/net/ipv4/netfilter/ip_queue.c b/net/ipv4/netfilter/ip_queue.c
-index e59aabd..ffabb26 100644
---- a/net/ipv4/netfilter/ip_queue.c
-+++ b/net/ipv4/netfilter/ip_queue.c
-@@ -430,7 +430,7 @@ __ipq_rcv_skb(struct sk_buff *skb)
- 	if (type <= IPQM_BASE)
- 		return;
- 
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		RCV_SKB_FAIL(-EPERM);
- 
- 	spin_lock_bh(&queue_lock);
-diff --git a/net/ipv6/netfilter/ip6_queue.c b/net/ipv6/netfilter/ip6_queue.c
-index e63c397..5e5ce77 100644
---- a/net/ipv6/netfilter/ip6_queue.c
-+++ b/net/ipv6/netfilter/ip6_queue.c
-@@ -431,7 +431,7 @@ __ipq_rcv_skb(struct sk_buff *skb)
- 	if (type <= IPQM_BASE)
- 		return;
- 
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		RCV_SKB_FAIL(-EPERM);
- 
- 	spin_lock_bh(&queue_lock);
-diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
-index c879c1a..9da4fc5 100644
---- a/net/netfilter/nfnetlink.c
-+++ b/net/netfilter/nfnetlink.c
-@@ -130,7 +130,7 @@ static int nfnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	const struct nfnetlink_subsystem *ss;
- 	int type, err;
- 
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	/* All the messages must at least contain nfgenmsg */
-diff --git a/net/netlink/genetlink.c b/net/netlink/genetlink.c
-index 482fa57..05fedbf 100644
---- a/net/netlink/genetlink.c
-+++ b/net/netlink/genetlink.c
-@@ -516,7 +516,7 @@ static int genl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 		return -EOPNOTSUPP;
- 
- 	if ((ops->flags & GENL_ADMIN_PERM) &&
--	    security_netlink_recv(skb, CAP_NET_ADMIN))
-+	    !capable(CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	if (nlh->nlmsg_flags & NLM_F_DUMP) {
-diff --git a/net/xfrm/xfrm_user.c b/net/xfrm/xfrm_user.c
-index d0a42df..7ea716d 100644
---- a/net/xfrm/xfrm_user.c
-+++ b/net/xfrm/xfrm_user.c
-@@ -2290,7 +2290,7 @@ static int xfrm_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
- 	link = &xfrm_dispatch[type];
- 
- 	/* All operations require privileges, even GET */
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		return -EPERM;
- 
- 	if ((type == (XFRM_MSG_GETSA - XFRM_MSG_BASE) ||
-diff --git a/security/capability.c b/security/capability.c
-index 3cf5ae3..5c1aea0 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -1004,7 +1004,6 @@ void __init security_fixup_ops(struct security_operations *ops)
- 	set_to_cap_if_null(ops, sem_semctl);
- 	set_to_cap_if_null(ops, sem_semop);
- 	set_to_cap_if_null(ops, netlink_send);
--	set_to_cap_if_null(ops, netlink_recv);
- 	set_to_cap_if_null(ops, d_instantiate);
- 	set_to_cap_if_null(ops, getprocattr);
- 	set_to_cap_if_null(ops, setprocattr);
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 90fdf97..454e974 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -56,14 +56,6 @@ int cap_netlink_send(struct sock *sk, struct sk_buff *skb)
- 	return 0;
- }
- 
--int cap_netlink_recv(struct sk_buff *skb, int cap)
--{
--	if (!cap_raised(current_cap(), cap))
--		return -EPERM;
--	return 0;
--}
--EXPORT_SYMBOL(cap_netlink_recv);
--
- /**
-  * cap_capable - Determine whether a task has a particular effective capability
-  * @cred: The credentials to use
-diff --git a/security/security.c b/security/security.c
-index 5560472..17ee1c0 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -983,12 +983,6 @@ int security_netlink_send(struct sock *sk, struct sk_buff *skb)
- 	return security_ops->netlink_send(sk, skb);
- }
- 
--int security_netlink_recv(struct sk_buff *skb, int cap)
--{
--	return security_ops->netlink_recv(skb, cap);
--}
--EXPORT_SYMBOL(security_netlink_recv);
--
- int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
- {
- 	return security_ops->secid_to_secctx(secid, secdata, seclen);
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 3deee07..668fe48 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -4731,24 +4731,6 @@ static int selinux_netlink_send(struct sock *sk, struct sk_buff *skb)
- 	return selinux_nlmsg_perm(sk, skb);
- }
- 
--static int selinux_netlink_recv(struct sk_buff *skb, int capability)
--{
--	int err;
--	struct common_audit_data ad;
--	u32 sid;
--
--	err = cap_netlink_recv(skb, capability);
--	if (err)
--		return err;
--
--	COMMON_AUDIT_DATA_INIT(&ad, CAP);
--	ad.u.cap = capability;
--
--	security_task_getsecid(current, &sid);
--	return avc_has_perm(sid, sid, SECCLASS_CAPABILITY,
--			    CAP_TO_MASK(capability), &ad);
--}
--
- static int ipc_alloc_security(struct task_struct *task,
- 			      struct kern_ipc_perm *perm,
- 			      u16 sclass)
-@@ -5477,7 +5459,6 @@ static struct security_operations selinux_ops = {
- 	.vm_enough_memory =		selinux_vm_enough_memory,
- 
- 	.netlink_send =			selinux_netlink_send,
--	.netlink_recv =			selinux_netlink_recv,
- 
- 	.bprm_set_creds =		selinux_bprm_set_creds,
- 	.bprm_committing_creds =	selinux_bprm_committing_creds,
-
-
+Quite agreed. And since you seem to be touching most archs anyway,
+touching them all isn't much more extra work.
