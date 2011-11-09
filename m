@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934637Ab1KJD0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:26:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42204 "EHLO mx2.suse.de"
+	id S934665Ab1KJD0L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:26:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42215 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934626Ab1KJDZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:56 -0500
+	id S934626Ab1KJD0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:26:05 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:12 2011
-Message-Id: <20111109212712.005461570@clark.kroah.org>
+Message-Id: <20111109212712.216204593@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:15 -0800
+Date: Wed, 09 Nov 2011 13:27:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jean Delvare <jdelvare@suse.de>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Sebastian Siewior <bigeasy@linutronix.de>
-Subject: [113/262] carminefb: Fix module parameters permissions
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [115/262] fb: sh-mobile: Fix deadlock risk between lock_fb_info() and console_lock()
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
 
-commit c84c14224bbca6ec60d5851fcc87be0e34df2f44 upstream.
+commit 4a47a0e09c504e3ce0ccdb405411aefc5b09deb8 upstream.
 
-The third parameter of module_param is supposed to be an octal value.
-The missing leading "0" causes the following:
+Following on Herton's patch "fb: avoid possible deadlock caused by
+fb_set_suspend" which moves lock_fb_info() out of fb_set_suspend()
+to its callers, correct sh-mobile's locking around call to
+fb_set_suspend() and the same sort of deaklocks with console_lock()
+due to order of taking the lock.
 
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_displays
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode
--rw-rwxr-- 1 root root 4096 Jul  8 08:55 fb_mode_str
+console_lock() must be taken while fb_info is already locked and fb_info
+must be locked while calling fb_set_suspend().
 
-After fixing the perm parameter, we get the expected:
-
-$ ls -l /sys/module/carminefb/parameters/
-total 0
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_displays
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode
--r--r--r-- 1 root root 4096 Jul  8 08:56 fb_mode_str
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Sebastian Siewior <bigeasy@linutronix.de>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/carminefb.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/video/sh_mobile_hdmi.c |   47 ++++++++++++++++++++++-------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
---- a/drivers/video/carminefb.c
-+++ b/drivers/video/carminefb.c
-@@ -32,11 +32,11 @@
- #define CARMINEFB_DEFAULT_VIDEO_MODE	1
+--- a/drivers/video/sh_mobile_hdmi.c
++++ b/drivers/video/sh_mobile_hdmi.c
+@@ -1111,6 +1111,7 @@ static long sh_hdmi_clk_configure(struct
+ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+ {
+ 	struct sh_hdmi *hdmi = container_of(work, struct sh_hdmi, edid_work.work);
++	struct fb_info *info;
+ 	struct sh_mobile_hdmi_info *pdata = hdmi->dev->platform_data;
+ 	struct sh_mobile_lcdc_chan *ch;
+ 	int ret;
+@@ -1123,8 +1124,9 @@ static void sh_hdmi_edid_work_fn(struct
  
- static unsigned int fb_mode = CARMINEFB_DEFAULT_VIDEO_MODE;
--module_param(fb_mode, uint, 444);
-+module_param(fb_mode, uint, 0444);
- MODULE_PARM_DESC(fb_mode, "Initial video mode as integer.");
+ 	mutex_lock(&hdmi->mutex);
  
- static char *fb_mode_str;
--module_param(fb_mode_str, charp, 444);
-+module_param(fb_mode_str, charp, 0444);
- MODULE_PARM_DESC(fb_mode_str, "Initial video mode in characters.");
++	info = hdmi->info;
++
+ 	if (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED) {
+-		struct fb_info *info = hdmi->info;
+ 		unsigned long parent_rate = 0, hdmi_rate;
  
- /*
-@@ -46,7 +46,7 @@ MODULE_PARM_DESC(fb_mode_str, "Initial v
-  * 0b010 Display 1
-  */
- static int fb_displays = CARMINE_USE_DISPLAY0 | CARMINE_USE_DISPLAY1;
--module_param(fb_displays, int, 444);
-+module_param(fb_displays, int, 0444);
- MODULE_PARM_DESC(fb_displays, "Bit mode, which displays are used");
+ 		ret = sh_hdmi_read_edid(hdmi, &hdmi_rate, &parent_rate);
+@@ -1148,42 +1150,45 @@ static void sh_hdmi_edid_work_fn(struct
  
- struct carmine_hw {
+ 		ch = info->par;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI plug in */
+-		if (!sh_hdmi_must_reconfigure(hdmi) &&
+-		    info->state == FBINFO_STATE_RUNNING) {
+-			/*
+-			 * First activation with the default monitor - just turn
+-			 * on, if we run a resume here, the logo disappears
+-			 */
+-			if (lock_fb_info(info)) {
++			/* HDMI plug in */
++			if (!sh_hdmi_must_reconfigure(hdmi) &&
++			    info->state == FBINFO_STATE_RUNNING) {
++				/*
++				 * First activation with the default monitor - just turn
++				 * on, if we run a resume here, the logo disappears
++				 */
+ 				info->var.width = hdmi->var.width;
+ 				info->var.height = hdmi->var.height;
+ 				sh_hdmi_display_on(hdmi, info);
+-				unlock_fb_info(info);
++			} else {
++				/* New monitor or have to wake up */
++				fb_set_suspend(info, 0);
+ 			}
+-		} else {
+-			/* New monitor or have to wake up */
+-			fb_set_suspend(info, 0);
+-		}
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	} else {
+ 		ret = 0;
+-		if (!hdmi->info)
++		if (!info)
+ 			goto out;
+ 
+ 		hdmi->monspec.modedb_len = 0;
+ 		fb_destroy_modedb(hdmi->monspec.modedb);
+ 		hdmi->monspec.modedb = NULL;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI disconnect */
+-		fb_set_suspend(hdmi->info, 1);
++			/* HDMI disconnect */
++			fb_set_suspend(info, 1);
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	}
+ 
+ out:
 
 
