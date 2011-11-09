@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754028Ab1KIOmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:42:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:33945 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab1KIOmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:42:09 -0500
-From: Sergio Aguirre <saaguirre@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Samuel Ortiz <samuel.ortiz@intel.com>, Sergio Aguirre <saaguirre@ti.com>
-Subject: [PATCH] mfd: twl6040: Fix wrong TWL6040_GPO3 bitfield value
-Date: Wed, 9 Nov 2011 08:42:04 -0600
-Message-ID: <1320849724-1750-1-git-send-email-saaguirre@ti.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1754122Ab1KIOnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:43:06 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56380 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab1KIOnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 09:43:04 -0500
+Date: Wed, 9 Nov 2011 15:42:59 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Niklas =?iso-8859-1?Q?S=F6derlund?= 
+	<niklas.soderlund@ericsson.com>
+Cc: dougthompson@xmission.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] amd64_edac: fix size decoding error on K8
+Message-ID: <20111109144258.GD30472@aftab>
+References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The define should be the result of 1 << Bit number.
+On Wed, Nov 09, 2011 at 03:32:58PM +0100, Niklas Söderlund wrote:
+> Use a lookup table to calculate the size of a chip select. The old
+> method of calculating size return erroneous values for some memory
+> configurations.
 
-Bit number for GPOCTL.GPO3 field is 2, which results
-in 0x4 value.
+Can you elaborate more on those erroneous values, please?
 
-Signed-off-by: Sergio Aguirre <saaguirre@ti.com>
----
- include/linux/mfd/twl6040.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks.
 
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index 2463c261..2a7ff16 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -142,7 +142,7 @@
- 
- #define TWL6040_GPO1			0x01
- #define TWL6040_GPO2			0x02
--#define TWL6040_GPO3			0x03
-+#define TWL6040_GPO3			0x04
- 
- /* ACCCTL (0x2D) fields */
- 
 -- 
-1.7.5.4
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+GM: Alberto Bozzo
+Reg: Dornach, Landkreis Muenchen
+HRB Nr. 43632 WEEE Registernr: 129 19551
