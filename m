@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965461Ab1KJDmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:42:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44424 "EHLO mx2.suse.de"
+	id S936145Ab1KJEQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:16:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44421 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965448Ab1KJDmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:42:32 -0500
+	id S965412Ab1KJDm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:42:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:56 2011
-Message-Id: <20111109213156.560856871@clark.kroah.org>
+Message-Id: <20111109213156.456215969@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:10 -0800
+Date: Wed, 09 Nov 2011 13:33:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [143/264] [media] tuner_xc2028: Allow selection of the frequency adjustment code for XC3028
+        alan@lxorguk.ukuu.org.uk, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Florian Mickler <florian@mickler.org>,
+        Javier Marcet <javier@marcet.info>,
+        Olivier Grenie <olivier.grenie@dibcom.fr>,
+        Patrick Boettcher <patrick.boettcher@dibcom.fr>
+Subject: [142/264] [media] dib0700: protect the dib0700 buffer access
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +28,250 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Olivier Grenie <olivier.grenie@dibcom.fr>
 
-commit 9bed77ee2fb46b74782d0d9d14b92e9d07f3df6e upstream.
+commit bff469f4167fdabfe15294f375577d7eadbaa1bb upstream.
 
-This device is not using the proper demod IF. Instead of using the
-IF macro, it is specifying a IF frequency. This doesn't work, as xc3028
-needs to load an specific SCODE for the tuner. In this case, there's
-no IF table for 5 MHz.
+This patch protects the common buffer access inside the dib0700 in order
+to manage concurrent access. This protection is done using mutex.
 
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Florian Mickler <florian@mickler.org>
+Signed-off-by: Javier Marcet <javier@marcet.info>
+Signed-off-by: Olivier Grenie <olivier.grenie@dibcom.fr>
+Signed-off-by: Patrick Boettcher <patrick.boettcher@dibcom.fr>
+[mchehab@redhat.com: dprint requires 3 arguments. Replaced by dib_info]
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/media/video/cx23885/cx23885-dvb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb/dvb-usb/dib0700_core.c |   81 +++++++++++++++++++++++++++----
+ 1 file changed, 72 insertions(+), 9 deletions(-)
 
---- a/drivers/media/video/cx23885/cx23885-dvb.c
-+++ b/drivers/media/video/cx23885/cx23885-dvb.c
-@@ -844,7 +844,7 @@ static int dvb_register(struct cx23885_t
- 			static struct xc2028_ctrl ctl = {
- 				.fname   = XC3028L_DEFAULT_FIRMWARE,
- 				.max_len = 64,
--				.demod   = 5000,
-+				.demod   = XC3028_FE_DIBCOM52,
- 				/* This is true for all demods with
- 					v36 firmware? */
- 				.type    = XC2028_D2633,
+--- a/drivers/media/dvb/dvb-usb/dib0700_core.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
+@@ -30,6 +30,11 @@ int dib0700_get_version(struct dvb_usb_d
+ 	struct dib0700_state *st = d->priv;
+ 	int ret;
+ 
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	ret = usb_control_msg(d->udev, usb_rcvctrlpipe(d->udev, 0),
+ 				  REQUEST_GET_VERSION,
+ 				  USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
+@@ -46,6 +51,7 @@ int dib0700_get_version(struct dvb_usb_d
+ 	if (fwtype != NULL)
+ 		*fwtype     = (st->buf[12] << 24) | (st->buf[13] << 16) |
+ 			(st->buf[14] << 8) | st->buf[15];
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
+ 
+@@ -108,7 +114,12 @@ int dib0700_ctrl_rd(struct dvb_usb_devic
+ int dib0700_set_gpio(struct dvb_usb_device *d, enum dib07x0_gpios gpio, u8 gpio_dir, u8 gpio_val)
+ {
+ 	struct dib0700_state *st = d->priv;
+-	s16 ret;
++	int ret;
++
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	st->buf[0] = REQUEST_SET_GPIO;
+ 	st->buf[1] = gpio;
+@@ -116,6 +127,7 @@ int dib0700_set_gpio(struct dvb_usb_devi
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 3);
+ 
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
+ 
+@@ -125,6 +137,11 @@ static int dib0700_set_usb_xfer_len(stru
+ 	int ret;
+ 
+ 	if (st->fw_version >= 0x10201) {
++		if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++			deb_info("could not acquire lock");
++			return 0;
++		}
++
+ 		st->buf[0] = REQUEST_SET_USB_XFER_LEN;
+ 		st->buf[1] = (nb_ts_packets >> 8) & 0xff;
+ 		st->buf[2] = nb_ts_packets & 0xff;
+@@ -132,6 +149,7 @@ static int dib0700_set_usb_xfer_len(stru
+ 		deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
+ 
+ 		ret = dib0700_ctrl_wr(d, st->buf, 3);
++		mutex_unlock(&d->usb_mutex);
+ 	} else {
+ 		deb_info("this firmware does not allow to change the USB xfer len\n");
+ 		ret = -EIO;
+@@ -208,6 +226,10 @@ static int dib0700_i2c_xfer_new(struct i
+ 
+ 		} else {
+ 			/* Write request */
++			if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++				deb_info("could not acquire lock");
++				return 0;
++			}
+ 			st->buf[0] = REQUEST_NEW_I2C_WRITE;
+ 			st->buf[1] = msg[i].addr << 1;
+ 			st->buf[2] = (en_start << 7) | (en_stop << 6) |
+@@ -227,6 +249,7 @@ static int dib0700_i2c_xfer_new(struct i
+ 						 USB_TYPE_VENDOR | USB_DIR_OUT,
+ 						 0, 0, st->buf, msg[i].len + 4,
+ 						 USB_CTRL_GET_TIMEOUT);
++			mutex_unlock(&d->usb_mutex);
+ 			if (result < 0) {
+ 				deb_info("i2c write error (status = %d)\n", result);
+ 				break;
+@@ -249,6 +272,10 @@ static int dib0700_i2c_xfer_legacy(struc
+ 
+ 	if (mutex_lock_interruptible(&d->i2c_mutex) < 0)
+ 		return -EAGAIN;
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	for (i = 0; i < num; i++) {
+ 		/* fill in the address */
+@@ -279,6 +306,7 @@ static int dib0700_i2c_xfer_legacy(struc
+ 				break;
+ 		}
+ 	}
++	mutex_unlock(&d->usb_mutex);
+ 	mutex_unlock(&d->i2c_mutex);
+ 
+ 	return i;
+@@ -337,7 +365,12 @@ static int dib0700_set_clock(struct dvb_
+ 	u16 pll_loopdiv, u16 free_div, u16 dsuScaler)
+ {
+ 	struct dib0700_state *st = d->priv;
+-	s16 ret;
++	int ret;
++
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
+ 
+ 	st->buf[0] = REQUEST_SET_CLOCK;
+ 	st->buf[1] = (en_pll << 7) | (pll_src << 6) |
+@@ -352,6 +385,7 @@ static int dib0700_set_clock(struct dvb_
+ 	st->buf[9] =  dsuScaler         & 0xff; /* LSB */
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 10);
++	mutex_unlock(&d->usb_mutex);
+ 
+ 	return ret;
+ }
+@@ -360,10 +394,16 @@ int dib0700_set_i2c_speed(struct dvb_usb
+ {
+ 	struct dib0700_state *st = d->priv;
+ 	u16 divider;
++	int ret;
+ 
+ 	if (scl_kHz == 0)
+ 		return -EINVAL;
+ 
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_SET_I2C_PARAM;
+ 	divider = (u16) (30000 / scl_kHz);
+ 	st->buf[1] = 0;
+@@ -379,7 +419,11 @@ int dib0700_set_i2c_speed(struct dvb_usb
+ 	deb_info("setting I2C speed: %04x %04x %04x (%d kHz).",
+ 		(st->buf[2] << 8) | (st->buf[3]), (st->buf[4] << 8) |
+ 		st->buf[5], (st->buf[6] << 8) | st->buf[7], scl_kHz);
+-	return dib0700_ctrl_wr(d, st->buf, 8);
++
++	ret = dib0700_ctrl_wr(d, st->buf, 8);
++	mutex_unlock(&d->usb_mutex);
++
++	return ret;
+ }
+ 
+ 
+@@ -515,6 +559,11 @@ int dib0700_streaming_ctrl(struct dvb_us
+ 		}
+ 	}
+ 
++	if (mutex_lock_interruptible(&adap->dev->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_ENABLE_VIDEO;
+ 	/* this bit gives a kind of command,
+ 	 * rather than enabling something or not */
+@@ -548,7 +597,10 @@ int dib0700_streaming_ctrl(struct dvb_us
+ 
+ 	deb_info("data for streaming: %x %x\n", st->buf[1], st->buf[2]);
+ 
+-	return dib0700_ctrl_wr(adap->dev, st->buf, 4);
++	ret = dib0700_ctrl_wr(adap->dev, st->buf, 4);
++	mutex_unlock(&adap->dev->usb_mutex);
++
++	return ret;
+ }
+ 
+ int dib0700_change_protocol(struct rc_dev *rc, u64 rc_type)
+@@ -557,6 +609,11 @@ int dib0700_change_protocol(struct rc_de
+ 	struct dib0700_state *st = d->priv;
+ 	int new_proto, ret;
+ 
++	if (mutex_lock_interruptible(&d->usb_mutex) < 0) {
++		deb_info("could not acquire lock");
++		return 0;
++	}
++
+ 	st->buf[0] = REQUEST_SET_RC;
+ 	st->buf[1] = 0;
+ 	st->buf[2] = 0;
+@@ -567,23 +624,29 @@ int dib0700_change_protocol(struct rc_de
+ 	else if (rc_type == RC_TYPE_NEC)
+ 		new_proto = 0;
+ 	else if (rc_type == RC_TYPE_RC6) {
+-		if (st->fw_version < 0x10200)
+-			return -EINVAL;
++		if (st->fw_version < 0x10200) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 
+ 		new_proto = 2;
+-	} else
+-		return -EINVAL;
++	} else {
++		ret = -EINVAL;
++		goto out;
++	}
+ 
+ 	st->buf[1] = new_proto;
+ 
+ 	ret = dib0700_ctrl_wr(d, st->buf, 3);
+ 	if (ret < 0) {
+ 		err("ir protocol setup failed");
+-		return ret;
++		goto out;
+ 	}
+ 
+ 	d->props.rc.core.protocol = rc_type;
+ 
++out:
++	mutex_unlock(&d->usb_mutex);
+ 	return ret;
+ }
+ 
 
 
