@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966138Ab1KJDxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:53:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45210 "EHLO mx2.suse.de"
+	id S966058Ab1KJDsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:48:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45174 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966076Ab1KJDtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:49:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:08 2011
-Message-Id: <20111109213208.735107375@clark.kroah.org>
+	id S966042Ab1KJDsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:48:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:05 2011
+Message-Id: <20111109213205.149994835@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:35:07 -0800
+Date: Wed, 09 Nov 2011 13:34:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Nobuhiro Iwamatsu <iwamatsu@nigauri.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [260/264] HID: Add support MacbookAir 4,1 keyboard
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [225/264] block: make gendisk hold a reference to its queue
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,99 +25,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit d762cc290b9f17e346f4297fd5984b70ce71ef66 upstream.
+commit f992ae801a7dec34a4ed99a6598bbbbfb82af4fb upstream.
 
-Added USB device IDs and keyboard map for MacBookAir 4,1 keyboard.
+The following command sequence triggers an oops.
 
-Signed-off-by: Nobuhiro Iwamatsu <iwamatsu@nigauri.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+# mount /dev/sdb1 /mnt
+# echo 1 > /sys/class/scsi_device/0\:0\:1\:0/device/delete
+# umount /mnt
+
+ general protection fault: 0000 [#1] PREEMPT SMP
+ CPU 2
+ Modules linked in:
+
+ Pid: 791, comm: umount Not tainted 3.1.0-rc3-work+ #8 Bochs Bochs
+ RIP: 0010:[<ffffffff810d0879>]  [<ffffffff810d0879>] __lock_acquire+0x389/0x1d60
+...
+ Call Trace:
+  [<ffffffff810d2845>] lock_acquire+0x95/0x140
+  [<ffffffff81aed87b>] _raw_spin_lock+0x3b/0x50
+  [<ffffffff811573bc>] bdi_lock_two+0x5c/0x70
+  [<ffffffff811c2f6c>] bdev_inode_switch_bdi+0x4c/0xf0
+  [<ffffffff811c3fcb>] __blkdev_put+0x11b/0x1d0
+  [<ffffffff811c4010>] __blkdev_put+0x160/0x1d0
+  [<ffffffff811c40df>] blkdev_put+0x5f/0x190
+  [<ffffffff8118f18d>] kill_block_super+0x4d/0x80
+  [<ffffffff8118f4a5>] deactivate_locked_super+0x45/0x70
+  [<ffffffff8119003a>] deactivate_super+0x4a/0x70
+  [<ffffffff811ac4ad>] mntput_no_expire+0xed/0x130
+  [<ffffffff811acf2e>] sys_umount+0x7e/0x3a0
+  [<ffffffff81aeeeab>] system_call_fastpath+0x16/0x1b
+
+This is because bdev holds on to disk but disk doesn't pin the
+associated queue.  If a SCSI device is removed while the device is
+still open, the sdev puts the base reference to the queue on release.
+When the bdev is finally released, the associated queue is already
+gone along with the bdi and bdev_inode_switch_bdi() ends up
+dereferencing already freed bdi.
+
+Even if it were not for this bug, disk not holding onto the associated
+queue is very unusual and error-prone.
+
+Fix it by making add_disk() take an extra reference to its queue and
+put it on disk_release() and ensuring that disk and its fops owner are
+put in that order after all accesses to the disk and queue are
+complete.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hid/hid-apple.c |   31 +++++++++++++++++++++++++++++++
- drivers/hid/hid-core.c  |    3 +++
- drivers/hid/hid-ids.h   |    3 +++
- 3 files changed, 37 insertions(+)
+ block/genhd.c  |    8 ++++++++
+ fs/block_dev.c |   13 ++++++++-----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -82,6 +82,28 @@ static const struct apple_key_translatio
- 	{ }
- };
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -611,6 +611,12 @@ void add_disk(struct gendisk *disk)
+ 	register_disk(disk);
+ 	blk_register_queue(disk);
  
-+static const struct apple_key_translation macbookair4_fn_keys[] = {
-+	{ KEY_BACKSPACE, KEY_DELETE },
-+	{ KEY_ENTER,	KEY_INSERT },
-+	{ KEY_F1,	KEY_BRIGHTNESSDOWN, APPLE_FLAG_FKEY },
-+	{ KEY_F2,	KEY_BRIGHTNESSUP,   APPLE_FLAG_FKEY },
-+	{ KEY_F3,	KEY_SCALE,          APPLE_FLAG_FKEY },
-+	{ KEY_F4,	KEY_DASHBOARD,      APPLE_FLAG_FKEY },
-+	{ KEY_F5,	KEY_KBDILLUMDOWN,   APPLE_FLAG_FKEY },
-+	{ KEY_F6,	KEY_KBDILLUMUP,     APPLE_FLAG_FKEY },
-+	{ KEY_F7,	KEY_PREVIOUSSONG,   APPLE_FLAG_FKEY },
-+	{ KEY_F8,	KEY_PLAYPAUSE,      APPLE_FLAG_FKEY },
-+	{ KEY_F9,	KEY_NEXTSONG,       APPLE_FLAG_FKEY },
-+	{ KEY_F10,	KEY_MUTE,           APPLE_FLAG_FKEY },
-+	{ KEY_F11,	KEY_VOLUMEDOWN,     APPLE_FLAG_FKEY },
-+	{ KEY_F12,	KEY_VOLUMEUP,       APPLE_FLAG_FKEY },
-+	{ KEY_UP,	KEY_PAGEUP },
-+	{ KEY_DOWN,	KEY_PAGEDOWN },
-+	{ KEY_LEFT,	KEY_HOME },
-+	{ KEY_RIGHT,	KEY_END },
-+	{ }
-+};
++	/*
++	 * Take an extra ref on queue which will be put on disk_release()
++	 * so that it sticks around as long as @disk is there.
++	 */
++	WARN_ON_ONCE(blk_get_queue(disk->queue));
 +
- static const struct apple_key_translation apple_fn_keys[] = {
- 	{ KEY_BACKSPACE, KEY_DELETE },
- 	{ KEY_ENTER,	KEY_INSERT },
-@@ -186,6 +208,9 @@ static int hidinput_apple_event(struct h
- 		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI &&
- 				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6_JIS)
- 			table = macbookair_fn_keys;
-+		else if (hid->product >= USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI &&
-+				hid->product <= USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS)
-+			table = macbookair4_fn_keys;
- 		else if (hid->product < 0x21d || hid->product >= 0x300)
- 			table = powerbook_fn_keys;
- 		else
-@@ -502,6 +527,12 @@ static const struct hid_device_id apple_
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI),
-+		.driver_data = APPLE_HAS_FN },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO),
-+		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS),
-+		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1343,6 +1343,9 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6_JIS) },
-+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI) },
-+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO) },
-+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_REVB_JIS) },
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -109,6 +109,9 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI	0x0245
- #define USB_DEVICE_ID_APPLE_WELLSPRING5_ISO	0x0246
- #define USB_DEVICE_ID_APPLE_WELLSPRING5_JIS	0x0247
-+#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI	0x0249
-+#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO	0x024a
-+#define USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS	0x024b
- #define USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI	0x024c
- #define USB_DEVICE_ID_APPLE_WELLSPRING6_ISO	0x024d
- #define USB_DEVICE_ID_APPLE_WELLSPRING6_JIS	0x024e
+ 	retval = sysfs_create_link(&disk_to_dev(disk)->kobj, &bdi->dev->kobj,
+ 				   "bdi");
+ 	WARN_ON(retval);
+@@ -1095,6 +1101,8 @@ static void disk_release(struct device *
+ 	disk_replace_part_tbl(disk, NULL);
+ 	free_part_stats(&disk->part0);
+ 	free_part_info(&disk->part0);
++	if (disk->queue)
++		blk_put_queue(disk->queue);
+ 	kfree(disk);
+ }
+ struct class block_class = {
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1085,6 +1085,7 @@ static int __blkdev_put(struct block_dev
+ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ {
+ 	struct gendisk *disk;
++	struct module *owner;
+ 	int ret;
+ 	int partno;
+ 	int perm = 0;
+@@ -1110,6 +1111,7 @@ static int __blkdev_get(struct block_dev
+ 	disk = get_gendisk(bdev->bd_dev, &partno);
+ 	if (!disk)
+ 		goto out;
++	owner = disk->fops->owner;
+ 
+ 	disk_block_events(disk);
+ 	mutex_lock_nested(&bdev->bd_mutex, for_part);
+@@ -1137,8 +1139,8 @@ static int __blkdev_get(struct block_dev
+ 					bdev->bd_disk = NULL;
+ 					mutex_unlock(&bdev->bd_mutex);
+ 					disk_unblock_events(disk);
+-					module_put(disk->fops->owner);
+ 					put_disk(disk);
++					module_put(owner);
+ 					goto restart;
+ 				}
+ 			}
+@@ -1194,8 +1196,8 @@ static int __blkdev_get(struct block_dev
+ 				goto out_unlock_bdev;
+ 		}
+ 		/* only one opener holds refs to the module and disk */
+-		module_put(disk->fops->owner);
+ 		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	bdev->bd_openers++;
+ 	if (for_part)
+@@ -1215,8 +1217,8 @@ static int __blkdev_get(struct block_dev
+  out_unlock_bdev:
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	disk_unblock_events(disk);
+-	module_put(disk->fops->owner);
+ 	put_disk(disk);
++	module_put(owner);
+  out:
+ 	bdput(bdev);
+ 
+@@ -1442,14 +1444,15 @@ static int __blkdev_put(struct block_dev
+ 	if (!bdev->bd_openers) {
+ 		struct module *owner = disk->fops->owner;
+ 
+-		put_disk(disk);
+-		module_put(owner);
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
++
++		put_disk(disk);
++		module_put(owner);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
 
 
