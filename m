@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab1KIRcF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:32:05 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:37814 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427Ab1KIRb7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:31:59 -0500
-Subject: Re: [PATCH] drivers/net/usb/asix:  resync from vendor's copy
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Mark Lord <kernel@teksavvy.com>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-In-Reply-To: <4EBAB643.8020603@teksavvy.com>
-References: <4EA89972.5060101@teksavvy.com>
-	 <20111026.194045.2019668159403582571.davem@davemloft.net>
-	 <4EA8B283.3010105@teksavvy.com>
-	 <20111026.221719.2216112919297458522.davem@davemloft.net>
-	 <4EB19BBE.5050602@teksavvy.com> <1320266549.2782.21.camel@bwh-desktop>
-	 <4EBAA967.10403@teksavvy.com> <1320856444.18929.78.camel@deadeye>
-	 <4EBAAEA5.1060408@teksavvy.com> <4EBAB0EA.1050102@teksavvy.com>
-	 <4EBAB643.8020603@teksavvy.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Wed, 9 Nov 2011 17:31:51 +0000
-Message-ID: <1320859911.2781.1.camel@bwh-desktop>
+	id S1755888Ab1KIRdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:33:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64484 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751709Ab1KIRdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:33:19 -0500
+Date: Wed, 9 Nov 2011 18:33:08 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
+Message-ID: <20111109173308.GK5075@redhat.com>
+References: <4EB8E969.6010502@suse.cz>
+ <1320766151-2619-1-git-send-email-aarcange@redhat.com>
+ <1320766151-2619-2-git-send-email-aarcange@redhat.com>
+ <4EB98A83.3040101@linux.vnet.ibm.com>
+ <4EBA75F2.4080800@linux.vnet.ibm.com>
+ <20111109155342.GA1260@google.com>
+ <20111109165201.GI5075@redhat.com>
+ <20111109165925.GC1260@google.com>
+ <20111109170657.GE1260@google.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18502.005
-X-TM-AS-Result: No--19.099000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-OriginalArrivalTime: 09 Nov 2011 17:31:58.0607 (UTC) FILETIME=[7BB5D9F0:01CC9F05]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111109170657.GE1260@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 12:20 -0500, Mark Lord wrote:
-> On 11-11-09 11:57 AM, Mark Lord wrote:
-> > On 11-11-09 11:47 AM, Mark Lord wrote:
-> > ..
-> >> Note:  I'm looking at smsc95xx.c and smsc75xx.c for examples,
-> >> and they both have the same problem I'll have here:
-> >>
-> >> How to update the csum settings atomically.
-> >> A spinlock is no good, because config register access is over USB.
-> > 
-> > Nevermind.. a slight change in the logic and all is well again.
-> ..
-> 
-> Or even simpler (below).  I don't think this method requires any
-> extra locking, but I'm still open to persuasion.  :)
+On Wed, Nov 09, 2011 at 09:06:57AM -0800, Tejun Heo wrote:
+> Ah, crap, still waking up.  Sorry about that.  So, yes, there's a race
+> condition above.  You need to set TASK_INTERRUPTIBLE before testing
+> freezing and use schedule_timeout() instead of
 
-Looks reasonable, but...
+Yep that's the race I was thinking about. I see the wakeup in the
+no-signal case avoids the race in wait_even_freezable_timeout so that
+is ok but it'd race if I were just to add try_to_freeze before calling
+schedule_timeout_interruptible.
 
-> static int ax88772b_set_features(struct net_device *netdev, u32 features)
-> {
->         struct usbnet *dev = netdev_priv(netdev);
->         struct ax88772b_data *priv = (struct ax88772b_data *)dev->driver_priv;
->         u16 tx_csum = 0, rx_csum = 0;
-> 
->         priv->features = features & (NETIF_F_HW_CSUM | NETIF_F_RXCSUM);
+> schedule_timeout_interruptible().  Was getting confused with
+> prepare_to_wait().  That said, why not use prepare_to_wait() instead?
 
-...why do you need priv->features at all?
-
-Ben.
-
->         if (features & NETIF_F_HW_CSUM)
->                 tx_csum = AX_TXCOE_DEF_CSUM;
->         if (features & NETIF_F_RXCSUM)
->                 rx_csum = AX_RXCOE_DEF_CSUM;
->         ax8817x_write_cmd(dev, AX_CMD_WRITE_RXCOE_CTL, rx_csum, 0, 0, NULL);
->         ax8817x_write_cmd(dev, AX_CMD_WRITE_TXCOE_CTL, tx_csum, 0, 0, NULL);
->         return 0;
-> }
-> 
-
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Because I don't need to wait on a waitqueue there. A THP failure
+occurred, that caused some CPU overload and it's usually happening at
+time of heavy VM stress, so I don't want to retry and cause more CPU
+load from khugepaged until after some time even if more wakeups come
+by. khugepaged is a very low cost background op, so it shouldn't cause
+unnecessary CPU usage at times of VM pressure, waiting a better time
+later is better.
