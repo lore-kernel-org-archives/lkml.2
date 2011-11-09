@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933664Ab1KJDUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:20:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41572 "EHLO mx2.suse.de"
+	id S933728Ab1KJDUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:20:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41613 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933607Ab1KJDUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:03 -0500
+	id S933715Ab1KJDU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:26 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
-Message-Id: <20111109212702.025632746@clark.kroah.org>
+Message-Id: <20111109212702.594881721@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:39 -0800
+Date: Wed, 09 Nov 2011 13:25:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
-Subject: [017/262] EHCI: workaround for MosChip controller bug
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [023/262] drm/radeon/kms: handle !force case in connector detect more gracefully
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,170 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 68aa95d5d4de31c9348c1628ffa85c805305ebc5 upstream.
+commit d0d0a225e6ad43314c9aa7ea081f76adc5098ad4 upstream.
 
-This patch (as1489) works around a hardware bug in MosChip EHCI
-controllers.  Evidently when one of these controllers increments the
-frame-index register, it changes the three low-order bits (the
-microframe counter) before changing the higher order bits (the frame
-counter).  If the register is read at just the wrong time, the value
-obtained is too low by 8.
+When force == false, we don't do load detection in the connector
+detect functions.  Unforunately, we also return the previous
+connector state so we never get disconnect events for DVI-I, DVI-A,
+or VGA.  Save whether we detected the monitor via load detection
+previously and use that to determine whether we return the previous
+state or not.
 
-When the appropriate quirk flag is set, we work around this problem by
-reading the frame-index register a second time if the first value's
-three low-order bits are all 0.  This gives the hardware a chance to
-finish updating the register, yielding the correct value.
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=41561
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Jason N Pitt <jpitt@fhcrc.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-dbg.c   |    2 +-
- drivers/usb/host/ehci-hcd.c   |    3 +--
- drivers/usb/host/ehci-pci.c   |    5 +++++
- drivers/usb/host/ehci-sched.c |   30 +++++++++++++++++++++++++-----
- drivers/usb/host/ehci.h       |   17 +++++++++++++++++
- 5 files changed, 49 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   23 ++++++++++++++++++++---
+ drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
+ 2 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/ehci-dbg.c
-+++ b/drivers/usb/host/ehci-dbg.c
-@@ -808,7 +808,7 @@ static ssize_t fill_registers_buffer(str
- 	next += temp;
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -715,6 +715,7 @@ radeon_vga_detect(struct drm_connector *
+ 		dret = radeon_ddc_probe(radeon_connector,
+ 					radeon_connector->requires_extended_probe);
+ 	if (dret) {
++		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+ 			radeon_connector->edid = NULL;
+@@ -741,12 +742,21 @@ radeon_vga_detect(struct drm_connector *
+ 	} else {
  
- 	temp = scnprintf (next, size, "uframe %04x\n",
--			ehci_readl(ehci, &ehci->regs->frame_index));
-+			ehci_read_frame_index(ehci));
- 	size -= temp;
- 	next += temp;
+ 		/* if we aren't forcing don't do destructive polling */
+-		if (!force)
+-			return connector->status;
++		if (!force) {
++			/* only return the previous status if we last
++			 * detected a monitor via load.
++			 */
++			if (radeon_connector->detected_by_load)
++				return connector->status;
++			else
++				return ret;
++		}
  
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -1188,8 +1188,7 @@ ehci_endpoint_reset(struct usb_hcd *hcd,
- static int ehci_get_frame (struct usb_hcd *hcd)
- {
- 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
--	return (ehci_readl(ehci, &ehci->regs->frame_index) >> 3) %
--		ehci->periodic_size;
-+	return (ehci_read_frame_index(ehci) >> 3) % ehci->periodic_size;
- }
- 
- /*-------------------------------------------------------------------------*/
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -224,6 +224,11 @@ static int ehci_pci_setup(struct usb_hcd
- 			pci_dev_put(p_smbus);
+ 		if (radeon_connector->dac_load_detect && encoder) {
+ 			encoder_funcs = encoder->helper_private;
+ 			ret = encoder_funcs->detect(encoder, connector);
++			if (ret == connector_status_connected)
++				radeon_connector->detected_by_load = true;
  		}
- 		break;
-+	case PCI_VENDOR_ID_NETMOS:
-+		/* MosChip frame-index-register bug */
-+		ehci_info(ehci, "applying MosChip frame-index workaround\n");
-+		ehci->frame_index_bug = 1;
-+		break;
  	}
  
- 	/* optional debug port, normally in the first BAR */
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -36,6 +36,27 @@
+@@ -888,6 +898,7 @@ radeon_dvi_detect(struct drm_connector *
+ 		dret = radeon_ddc_probe(radeon_connector,
+ 					radeon_connector->requires_extended_probe);
+ 	if (dret) {
++		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+ 			radeon_connector->edid = NULL;
+@@ -955,8 +966,13 @@ radeon_dvi_detect(struct drm_connector *
+ 	    (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA))
+ 		goto out;
  
- static int ehci_get_frame (struct usb_hcd *hcd);
- 
-+#ifdef CONFIG_PCI
-+
-+static unsigned ehci_read_frame_index(struct ehci_hcd *ehci)
-+{
-+	unsigned uf;
-+
-+	/*
-+	 * The MosChip MCS9990 controller updates its microframe counter
-+	 * a little before the frame counter, and occasionally we will read
-+	 * the invalid intermediate value.  Avoid problems by checking the
-+	 * microframe number (the low-order 3 bits); if they are 0 then
-+	 * re-read the register to get the correct value.
-+	 */
-+	uf = ehci_readl(ehci, &ehci->regs->frame_index);
-+	if (unlikely(ehci->frame_index_bug && ((uf & 7) == 0)))
-+		uf = ehci_readl(ehci, &ehci->regs->frame_index);
-+	return uf;
-+}
-+
-+#endif
-+
- /*-------------------------------------------------------------------------*/
- 
- /*
-@@ -482,7 +503,7 @@ static int enable_periodic (struct ehci_
- 	ehci_to_hcd(ehci)->state = HC_STATE_RUNNING;
- 
- 	/* make sure ehci_work scans these */
--	ehci->next_uframe = ehci_readl(ehci, &ehci->regs->frame_index)
-+	ehci->next_uframe = ehci_read_frame_index(ehci)
- 		% (ehci->periodic_size << 3);
- 	if (unlikely(ehci->broken_periodic))
- 		ehci->last_periodic_enable = ktime_get_real();
-@@ -1412,7 +1433,7 @@ iso_stream_schedule (
- 		goto fail;
++	/* if we aren't forcing don't do destructive polling */
+ 	if (!force) {
+-		ret = connector->status;
++		/* only return the previous status if we last
++		 * detected a monitor via load.
++		 */
++		if (radeon_connector->detected_by_load)
++			ret = connector->status;
+ 		goto out;
  	}
  
--	now = ehci_readl(ehci, &ehci->regs->frame_index) & (mod - 1);
-+	now = ehci_read_frame_index(ehci) & (mod - 1);
- 
- 	/* Typical case: reuse current schedule, stream is still active.
- 	 * Hopefully there are no gaps from the host falling behind
-@@ -2279,7 +2300,7 @@ scan_periodic (struct ehci_hcd *ehci)
- 	 */
- 	now_uframe = ehci->next_uframe;
- 	if (HC_IS_RUNNING(ehci_to_hcd(ehci)->state)) {
--		clock = ehci_readl(ehci, &ehci->regs->frame_index);
-+		clock = ehci_read_frame_index(ehci);
- 		clock_frame = (clock >> 3) & (ehci->periodic_size - 1);
- 	} else  {
- 		clock = now_uframe + mod - 1;
-@@ -2458,8 +2479,7 @@ restart:
- 					|| ehci->periodic_sched == 0)
+@@ -980,6 +996,7 @@ radeon_dvi_detect(struct drm_connector *
+ 					ret = encoder_funcs->detect(encoder, connector);
+ 					if (ret == connector_status_connected) {
+ 						radeon_connector->use_digital = false;
++						radeon_connector->detected_by_load = true;
+ 					}
+ 				}
  				break;
- 			ehci->next_uframe = now_uframe;
--			now = ehci_readl(ehci, &ehci->regs->frame_index) &
--					(mod - 1);
-+			now = ehci_read_frame_index(ehci) & (mod - 1);
- 			if (now_uframe == now)
- 				break;
- 
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -137,6 +137,7 @@ struct ehci_hcd {			/* one per controlle
- 	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
- 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
- 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
-+	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
- 
- 	/* required for usb32 quirk */
- 	#define OHCI_CTRL_HCFS          (3 << 6)
-@@ -735,6 +736,22 @@ static inline u32 hc32_to_cpup (const st
- }
- 
- #endif
-+
-+/*-------------------------------------------------------------------------*/
-+
-+#ifdef CONFIG_PCI
-+
-+/* For working around the MosChip frame-index-register bug */
-+static unsigned ehci_read_frame_index(struct ehci_hcd *ehci);
-+
-+#else
-+
-+static inline unsigned ehci_read_frame_index(struct ehci_hcd *ehci)
-+{
-+	return ehci_readl(ehci, &ehci->regs->frame_index);
-+}
-+
-+#endif
- 
- /*-------------------------------------------------------------------------*/
- 
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -447,6 +447,7 @@ struct radeon_connector {
+ 	struct edid *edid;
+ 	void *con_priv;
+ 	bool dac_load_detect;
++	bool detected_by_load; /* if the connection status was determined by load */
+ 	uint16_t connector_object_id;
+ 	struct radeon_hpd hpd;
+ 	struct radeon_router router;
 
 
