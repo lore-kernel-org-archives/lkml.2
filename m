@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935418Ab1KJEyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:54:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42845 "EHLO mx2.suse.de"
+	id S1757288Ab1KJEys (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:54:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42827 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934804Ab1KJDbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:31:19 -0500
+	id S935282Ab1KJDbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:31:13 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:21 2011
-Message-Id: <20111109212721.403653853@clark.kroah.org>
+Message-Id: <20111109212721.202875519@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:49 -0800
+Date: Wed, 09 Nov 2011 13:28:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [207/262] PM / Runtime: Automatically retry failed autosuspends
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <j.glisse@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [205/262] drm/radeon/kms: set HPD polarity in hpd_init()
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +25,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 886486b792e4f6f96d4fbe8ec5bf20811cab7d6a upstream.
+commit 64912e997f0fe13512e4c7b90e4f7c11cb922ab5 upstream.
 
-Originally, the runtime PM core would send an idle notification
-whenever a suspend attempt failed.  The idle callback routine could
-then schedule a delayed suspend for some time later.
+Polarity needs to be set accordingly to connector status (connected
+or disconnected). Set it up in hpd_init() so first hotplug works
+reliably no matter what is the initial set of connector. hpd_init()
+also covers resume so HPD will work correctly after resume as well.
 
-However this behavior was changed by commit
-f71648d73c1650b8b4aceb3856bebbde6daa3b86 (PM / Runtime: Remove idle
-notification after failing suspend).  No notifications were sent, and
-there was no clear mechanism to retry failed suspends.
-
-This caused problems for the usbhid driver, because it fails
-autosuspend attempts as long as a key is being held down.  Therefore
-this patch (as1492) adds a mechanism for retrying failed
-autosuspends.  If the callback routine updates the last_busy field so
-that the next autosuspend expiration time is in the future, the
-autosuspend will automatically be rescheduled.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Jerome Glisse <j.glisse@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/power/runtime_pm.txt |   10 ++++++++++
- drivers/base/power/runtime.c       |   18 ++++++++++++++++--
- 2 files changed, 26 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c         |    1 +
+ drivers/gpu/drm/radeon/r100.c              |    1 +
+ drivers/gpu/drm/radeon/r600.c              |   19 +++++++++----------
+ drivers/gpu/drm/radeon/radeon_connectors.c |    1 -
+ drivers/gpu/drm/radeon/rs600.c             |    1 +
+ 5 files changed, 12 insertions(+), 11 deletions(-)
 
---- a/Documentation/power/runtime_pm.txt
-+++ b/Documentation/power/runtime_pm.txt
-@@ -708,6 +708,16 @@ will behave normally, not taking the aut
- Similarly, if the power.use_autosuspend field isn't set then the autosuspend
- helper functions will behave just like the non-autosuspend counterparts.
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -353,6 +353,7 @@ void evergreen_hpd_init(struct radeon_de
+ 		default:
+ 			break;
+ 		}
++		radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
+ 	}
+ 	if (rdev->irq.installed)
+ 		evergreen_irq_set(rdev);
+--- a/drivers/gpu/drm/radeon/r100.c
++++ b/drivers/gpu/drm/radeon/r100.c
+@@ -434,6 +434,7 @@ void r100_hpd_init(struct radeon_device
+ 		default:
+ 			break;
+ 		}
++		radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
+ 	}
+ 	if (rdev->irq.installed)
+ 		r100_irq_set(rdev);
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -762,13 +762,14 @@ void r600_hpd_init(struct radeon_device
+ 	struct drm_device *dev = rdev->ddev;
+ 	struct drm_connector *connector;
  
-+Under some circumstances a driver or subsystem may want to prevent a device
-+from autosuspending immediately, even though the usage counter is zero and the
-+autosuspend delay time has expired.  If the ->runtime_suspend() callback
-+returns -EAGAIN or -EBUSY, and if the next autosuspend delay expiration time is
-+in the future (as it normally would be if the callback invoked
-+pm_runtime_mark_last_busy()), the PM core will automatically reschedule the
-+autosuspend.  The ->runtime_suspend() callback can't do this rescheduling
-+itself because no suspend requests of any kind are accepted while the device is
-+suspending (i.e., while the callback is running).
+-	if (ASIC_IS_DCE3(rdev)) {
+-		u32 tmp = DC_HPDx_CONNECTION_TIMER(0x9c4) | DC_HPDx_RX_INT_TIMER(0xfa);
+-		if (ASIC_IS_DCE32(rdev))
+-			tmp |= DC_HPDx_EN;
++	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
++		struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 +
- The implementation is well suited for asynchronous use in interrupt contexts.
- However such use inevitably involves races, because the PM core can't
- synchronize ->runtime_suspend() callbacks with the arrival of I/O requests.
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -278,6 +278,9 @@ static int rpm_callback(int (*cb)(struct
-  * If a deferred resume was requested while the callback was running then carry
-  * it out; otherwise send an idle notification for the device (if the suspend
-  * failed) or for its parent (if the suspend succeeded).
-+ * If ->runtime_suspend failed with -EAGAIN or -EBUSY, and if the RPM_AUTO
-+ * flag is set and the next autosuspend-delay expiration time is in the
-+ * future, schedule another autosuspend attempt.
-  *
-  * This function must be called under dev->power.lock with interrupts disabled.
-  */
-@@ -389,10 +392,21 @@ static int rpm_suspend(struct device *de
- 	if (retval) {
- 		__update_runtime_status(dev, RPM_ACTIVE);
- 		dev->power.deferred_resume = 0;
--		if (retval == -EAGAIN || retval == -EBUSY)
-+		if (retval == -EAGAIN || retval == -EBUSY) {
- 			dev->power.runtime_error = 0;
--		else
-+
-+			/*
-+			 * If the callback routine failed an autosuspend, and
-+			 * if the last_busy time has been updated so that there
-+			 * is a new autosuspend expiration time, automatically
-+			 * reschedule another autosuspend.
-+			 */
-+			if ((rpmflags & RPM_AUTO) &&
-+			    pm_runtime_autosuspend_expiration(dev) != 0)
-+				goto repeat;
++		if (ASIC_IS_DCE3(rdev)) {
++			u32 tmp = DC_HPDx_CONNECTION_TIMER(0x9c4) | DC_HPDx_RX_INT_TIMER(0xfa);
++			if (ASIC_IS_DCE32(rdev))
++				tmp |= DC_HPDx_EN;
+ 
+-		list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+-			struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 			switch (radeon_connector->hpd.hpd) {
+ 			case RADEON_HPD_1:
+ 				WREG32(DC_HPD1_CONTROL, tmp);
+@@ -798,10 +799,7 @@ void r600_hpd_init(struct radeon_device
+ 			default:
+ 				break;
+ 			}
+-		}
+-	} else {
+-		list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+-			struct radeon_connector *radeon_connector = to_radeon_connector(connector);
 +		} else {
- 			pm_runtime_cancel_pending(dev);
-+		}
- 	} else {
-  no_callback:
- 		__update_runtime_status(dev, RPM_SUSPENDED);
+ 			switch (radeon_connector->hpd.hpd) {
+ 			case RADEON_HPD_1:
+ 				WREG32(DC_HOT_PLUG_DETECT1_CONTROL, DC_HOT_PLUG_DETECTx_EN);
+@@ -819,6 +817,7 @@ void r600_hpd_init(struct radeon_device
+ 				break;
+ 			}
+ 		}
++		radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
+ 	}
+ 	if (rdev->irq.installed)
+ 		r600_irq_set(rdev);
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -1779,7 +1779,6 @@ radeon_add_atom_connector(struct drm_dev
+ 			connector->polled = DRM_CONNECTOR_POLL_CONNECT;
+ 	} else
+ 		connector->polled = DRM_CONNECTOR_POLL_HPD;
+-	radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
+ 
+ 	connector->display_info.subpixel_order = subpixel_order;
+ 	drm_sysfs_connector_add(connector);
+--- a/drivers/gpu/drm/radeon/rs600.c
++++ b/drivers/gpu/drm/radeon/rs600.c
+@@ -287,6 +287,7 @@ void rs600_hpd_init(struct radeon_device
+ 		default:
+ 			break;
+ 		}
++		radeon_hpd_set_polarity(rdev, radeon_connector->hpd.hpd);
+ 	}
+ 	if (rdev->irq.installed)
+ 		rs600_irq_set(rdev);
 
 
