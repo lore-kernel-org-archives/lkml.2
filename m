@@ -1,62 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab1KIVr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 16:47:56 -0500
-Received: from mga14.intel.com ([143.182.124.37]:40661 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab1KIVrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 16:47:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,485,1315206000"; 
-   d="scan'208";a="72526976"
-Date: Wed, 9 Nov 2011 21:59:01 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        jirislaby@gmail.com
-Subject: Re: [PATCH 01/10] TTY: serial, cleanup include file
-Message-ID: <20111109215901.16f44570@bob.linux.org.uk>
-In-Reply-To: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
-References: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756784Ab1KIVsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 16:48:03 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37314 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab1KIVr7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 16:47:59 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=BItHjLxI8KmYz8nUz/IQW3QYLoeYbMvDHDxk9W9rY93FiLR2iCapuG/ixbVlBkk22
+	HLK2ucSRpOGoAEfwqsTeA==
+From: Havard Skinnemoen <hskinnemoen@google.com>
+To: Oliver Neukum <oliver@neukum.name>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Havard Skinnemoen <hskinnemoen@google.com>
+Subject: [PATCH] cdc-acm: Fix disconnect() vs close() race
+Date: Wed,  9 Nov 2011 13:47:38 -0800
+Message-Id: <1320875258-3751-1-git-send-email-hskinnemoen@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ...instead of taking and dropping a reference in both uart_insert_char
-> and uart_push_chars there. But it may be as well an overkill, as this
-> stuff is not time critical. So any opinions? (If not I will proceed
-> without ticketing having tty_port_tty_get/put in every call. Like I
-> have it now.)
+There's a race between the USB disconnect handler and the TTY close
+handler which may cause the acm object to be freed while it's still
+being used. This may lead to things like
 
-The cure for this is different (and a spot more invasive)
+http://article.gmane.org/gmane.linux.usb.general/54250
 
-We need to move the tty_buffer objects into the tty_port. At that point
-the lifetime becomes
+and
 
-	create device (and tty_port struct)
-	request_irq
+https://lkml.org/lkml/2011/5/29/64
 
-	lifetime of physical port (ttys come and go)
+This is the simplest fix I could come up with. Holding on to open_mutex
+while closing the TTY device prevents acm_disconnect() from freeing the
+acm object between acm->port.count drops to 0 and the TTY side of the
+cleanups are finalized.
 
-	free_irq
-	free tty_port
-	done
+Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+---
+ drivers/usb/class/cdc-acm.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-and the locking goes away. On the flush_to_ldisc side we know the port
-physically exists because the work queue for the ldisc is killed and we
-wait for it when we kill off the port (we may need a spot more checking
-there)
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index dac7676..5b5dc3a 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -539,7 +539,6 @@ static void acm_port_down(struct acm *acm)
+ {
+ 	int i;
+ 
+-	mutex_lock(&open_mutex);
+ 	if (acm->dev) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+@@ -551,14 +550,15 @@ static void acm_port_down(struct acm *acm)
+ 		acm->control->needs_remote_wakeup = 0;
+ 		usb_autopm_put_interface(acm->control);
+ 	}
+-	mutex_unlock(&open_mutex);
+ }
+ 
+ static void acm_tty_hangup(struct tty_struct *tty)
+ {
+ 	struct acm *acm = tty->driver_data;
+ 	tty_port_hangup(&acm->port);
++	mutex_lock(&open_mutex);
+ 	acm_port_down(acm);
++	mutex_unlock(&open_mutex);
+ }
+ 
+ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+@@ -569,8 +569,9 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	   shutdown */
+ 	if (!acm)
+ 		return;
++
++	mutex_lock(&open_mutex);
+ 	if (tty_port_close_start(&acm->port, tty, filp) == 0) {
+-		mutex_lock(&open_mutex);
+ 		if (!acm->dev) {
+ 			tty_port_tty_set(&acm->port, NULL);
+ 			acm_tty_unregister(acm);
+@@ -582,6 +583,7 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	acm_port_down(acm);
+ 	tty_port_close_end(&acm->port, tty);
+ 	tty_port_tty_set(&acm->port, NULL);
++	mutex_unlock(&open_mutex);
+ }
+ 
+ static int acm_tty_write(struct tty_struct *tty,
+-- 
+1.7.3.1
 
-This needs every tty of all kinds to have a tty_port even if isn't used
-for anything else. That also cleans a ton of stuff up because then we
-can always put the tty_port in tty->private_data which means we can
-clean up some of the glue further.
-
-Alan
