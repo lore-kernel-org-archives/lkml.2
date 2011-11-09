@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965362Ab1KJDln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:41:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44297 "EHLO mx2.suse.de"
+	id S965237Ab1KJDmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:42:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44382 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965350Ab1KJDlf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:41:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:51 2011
-Message-Id: <20111109213151.838403920@clark.kroah.org>
+	id S965412Ab1KJDmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:42:11 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:56 2011
+Message-Id: <20111109213156.030108629@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:32:24 -0800
+Date: Wed, 09 Nov 2011 13:33:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [097/264] nfs: dont redirty inode when ncommit == 0 in nfs_commit_unstable_pages
+        alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [138/264] fb: sh-mobile: Fix deadlock risk between lock_fb_info() and console_lock()
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +27,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: =?UTF-8?q?Bruno=20Pr=C3=A9mont?= <bonbons@linux-vserver.org>
 
-commit 3236c3e1adc0c7ec83eaff1de2d06746b7c5bb28 upstream.
+commit 4a47a0e09c504e3ce0ccdb405411aefc5b09deb8 upstream.
 
-commit 420e3646 allowed the kernel to reduce the number of unnecessary
-commit calls by skipping the commit when there are a large number of
-outstanding pages.
+Following on Herton's patch "fb: avoid possible deadlock caused by
+fb_set_suspend" which moves lock_fb_info() out of fb_set_suspend()
+to its callers, correct sh-mobile's locking around call to
+fb_set_suspend() and the same sort of deaklocks with console_lock()
+due to order of taking the lock.
 
-However, the current test in nfs_commit_unstable_pages does not handle
-the edge condition properly. When ncommit == 0, then that means that the
-kernel doesn't need to do anything more for the inode. The current test
-though in the WB_SYNC_NONE case will return true, and the inode will end
-up being marked dirty. Once that happens the inode will never be clean
-until there's a WB_SYNC_ALL flush.
+console_lock() must be taken while fb_info is already locked and fb_info
+must be locked while calling fb_set_suspend().
 
-Fix this by immediately returning from nfs_commit_unstable_pages when
-ncommit == 0.
-
-Mike noticed this problem initially in RHEL5 (2.6.18-based kernel) which
-has a backported version of 420e3646. The inode cache there was growing
-very large. The inode cache was unable to be shrunk since the inodes
-were all marked dirty. Calling sync() would essentially "fix" the
-problem -- the WB_SYNC_ALL flush would result in the inodes all being
-marked clean.
-
-What I'm not clear on is how big a problem this is in mainline kernels
-as the writeback code there is very different. Either way, it seems
-incorrect to re-mark the inode dirty in this case.
-
-Reported-by: Mike McLean <mikem@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/write.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/video/sh_mobile_hdmi.c |   47 ++++++++++++++++++++++-------------------
+ 1 file changed, 26 insertions(+), 21 deletions(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1577,6 +1577,10 @@ static int nfs_commit_unstable_pages(str
- 	int flags = FLUSH_SYNC;
- 	int ret = 0;
+--- a/drivers/video/sh_mobile_hdmi.c
++++ b/drivers/video/sh_mobile_hdmi.c
+@@ -1111,6 +1111,7 @@ static long sh_hdmi_clk_configure(struct
+ static void sh_hdmi_edid_work_fn(struct work_struct *work)
+ {
+ 	struct sh_hdmi *hdmi = container_of(work, struct sh_hdmi, edid_work.work);
++	struct fb_info *info;
+ 	struct sh_mobile_hdmi_info *pdata = hdmi->dev->platform_data;
+ 	struct sh_mobile_lcdc_chan *ch;
+ 	int ret;
+@@ -1123,8 +1124,9 @@ static void sh_hdmi_edid_work_fn(struct
  
-+	/* no commits means nothing needs to be done */
-+	if (!nfsi->ncommit)
-+		return ret;
+ 	mutex_lock(&hdmi->mutex);
+ 
++	info = hdmi->info;
 +
- 	if (wbc->sync_mode == WB_SYNC_NONE) {
- 		/* Don't commit yet if this is a non-blocking flush and there
- 		 * are a lot of outstanding writes for this mapping.
+ 	if (hdmi->hp_state == HDMI_HOTPLUG_CONNECTED) {
+-		struct fb_info *info = hdmi->info;
+ 		unsigned long parent_rate = 0, hdmi_rate;
+ 
+ 		ret = sh_hdmi_read_edid(hdmi, &hdmi_rate, &parent_rate);
+@@ -1148,42 +1150,45 @@ static void sh_hdmi_edid_work_fn(struct
+ 
+ 		ch = info->par;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI plug in */
+-		if (!sh_hdmi_must_reconfigure(hdmi) &&
+-		    info->state == FBINFO_STATE_RUNNING) {
+-			/*
+-			 * First activation with the default monitor - just turn
+-			 * on, if we run a resume here, the logo disappears
+-			 */
+-			if (lock_fb_info(info)) {
++			/* HDMI plug in */
++			if (!sh_hdmi_must_reconfigure(hdmi) &&
++			    info->state == FBINFO_STATE_RUNNING) {
++				/*
++				 * First activation with the default monitor - just turn
++				 * on, if we run a resume here, the logo disappears
++				 */
+ 				info->var.width = hdmi->var.width;
+ 				info->var.height = hdmi->var.height;
+ 				sh_hdmi_display_on(hdmi, info);
+-				unlock_fb_info(info);
++			} else {
++				/* New monitor or have to wake up */
++				fb_set_suspend(info, 0);
+ 			}
+-		} else {
+-			/* New monitor or have to wake up */
+-			fb_set_suspend(info, 0);
+-		}
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	} else {
+ 		ret = 0;
+-		if (!hdmi->info)
++		if (!info)
+ 			goto out;
+ 
+ 		hdmi->monspec.modedb_len = 0;
+ 		fb_destroy_modedb(hdmi->monspec.modedb);
+ 		hdmi->monspec.modedb = NULL;
+ 
+-		console_lock();
++		if (lock_fb_info(info)) {
++			console_lock();
+ 
+-		/* HDMI disconnect */
+-		fb_set_suspend(hdmi->info, 1);
++			/* HDMI disconnect */
++			fb_set_suspend(info, 1);
+ 
+-		console_unlock();
++			console_unlock();
++			unlock_fb_info(info);
++		}
+ 	}
+ 
+ out:
 
 
