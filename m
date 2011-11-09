@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936110Ab1KJERq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:17:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44354 "EHLO mx2.suse.de"
+	id S1757179Ab1KJESU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:18:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44328 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965205Ab1KJDlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:41:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:55 2011
-Message-Id: <20111109213155.590760942@clark.kroah.org>
+	id S965356Ab1KJDlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:41:42 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:51 2011
+Message-Id: <20111109213151.053598289@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:01 -0800
+Date: Wed, 09 Nov 2011 13:32:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@mail.ru>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>
-Subject: [134/264] WMI: properly cleanup devices to avoid crashes
+        alan@lxorguk.ukuu.org.uk, Peng Tao <peng_tao@emc.com>,
+        Jim Rees <rees@umich.edu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [089/264] pnfs: make _set_lo_fail generic
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,41 +26,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Peng Tao <bergwolf@gmail.com>
 
-commit 023b9565972a4a5e0f01b9aa32680af6e9b5c388 upstream.
+commit 1b0ae068779874f54b55aac3a2a992bcf3f2c3c4 upstream.
 
-We need to remove devices that we destroy from the list, otherwise
-we'll crash if there are more than one "_WDG" methods in DSDT.
+file layout and block layout both use it to set mark layout io failure
+bit. So make it generic.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=32052
-
-Tested-by: Ilya Tumaykin <librarian_rus@yahoo.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-Acked-by: Carlos Corbacho <carlos@strangeworlds.co.uk>
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: Peng Tao <peng_tao@emc.com>
+Signed-off-by: Jim Rees <rees@umich.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/platform/x86/wmi.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/nfs/blocklayout/blocklayout.c |   17 +++--------------
+ fs/nfs/nfs4filelayout.c          |   19 +++----------------
+ fs/nfs/pnfs.c                    |   12 ++++++++++++
+ fs/nfs/pnfs.h                    |    1 +
+ 4 files changed, 19 insertions(+), 30 deletions(-)
 
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -754,9 +754,13 @@ static void wmi_free_devices(void)
- 	struct wmi_block *wblock, *next;
- 
- 	/* Delete devices for all the GUIDs */
--	list_for_each_entry_safe(wblock, next, &wmi_block_list, list)
-+	list_for_each_entry_safe(wblock, next, &wmi_block_list, list) {
-+		list_del(&wblock->list);
- 		if (wblock->dev.class)
- 			device_unregister(&wblock->dev);
-+		else
-+			kfree(wblock);
-+	}
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -176,17 +176,6 @@ retry:
+ 	return bio;
  }
  
- static bool guid_already_parsed(const char *guid_string)
+-static void bl_set_lo_fail(struct pnfs_layout_segment *lseg)
+-{
+-	if (lseg->pls_range.iomode == IOMODE_RW) {
+-		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
+-		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
+-	} else {
+-		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
+-		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
+-	}
+-}
+-
+ /* This is basically copied from mpage_end_io_read */
+ static void bl_end_io_read(struct bio *bio, int err)
+ {
+@@ -206,7 +195,7 @@ static void bl_end_io_read(struct bio *b
+ 	if (!uptodate) {
+ 		if (!rdata->pnfs_error)
+ 			rdata->pnfs_error = -EIO;
+-		bl_set_lo_fail(rdata->lseg);
++		pnfs_set_lo_fail(rdata->lseg);
+ 	}
+ 	bio_put(bio);
+ 	put_parallel(par);
+@@ -370,7 +359,7 @@ static void bl_end_io_write_zero(struct
+ 	if (!uptodate) {
+ 		if (!wdata->pnfs_error)
+ 			wdata->pnfs_error = -EIO;
+-		bl_set_lo_fail(wdata->lseg);
++		pnfs_set_lo_fail(wdata->lseg);
+ 	}
+ 	bio_put(bio);
+ 	put_parallel(par);
+@@ -386,7 +375,7 @@ static void bl_end_io_write(struct bio *
+ 	if (!uptodate) {
+ 		if (!wdata->pnfs_error)
+ 			wdata->pnfs_error = -EIO;
+-		bl_set_lo_fail(wdata->lseg);
++		pnfs_set_lo_fail(wdata->lseg);
+ 	}
+ 	bio_put(bio);
+ 	put_parallel(par);
+--- a/fs/nfs/nfs4filelayout.c
++++ b/fs/nfs/nfs4filelayout.c
+@@ -77,19 +77,6 @@ filelayout_get_dserver_offset(struct pnf
+ 	BUG();
+ }
+ 
+-/* For data server errors we don't recover from */
+-static void
+-filelayout_set_lo_fail(struct pnfs_layout_segment *lseg)
+-{
+-	if (lseg->pls_range.iomode == IOMODE_RW) {
+-		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
+-		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
+-	} else {
+-		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
+-		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
+-	}
+-}
+-
+ static int filelayout_async_handle_error(struct rpc_task *task,
+ 					 struct nfs4_state *state,
+ 					 struct nfs_client *clp,
+@@ -145,7 +132,7 @@ static int filelayout_read_done_cb(struc
+ 		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
+ 			__func__, data->ds_clp, data->ds_clp->cl_session);
+ 		if (reset) {
+-			filelayout_set_lo_fail(data->lseg);
++			pnfs_set_lo_fail(data->lseg);
+ 			nfs4_reset_read(task, data);
+ 			clp = NFS_SERVER(data->inode)->nfs_client;
+ 		}
+@@ -221,7 +208,7 @@ static int filelayout_write_done_cb(stru
+ 		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
+ 			__func__, data->ds_clp, data->ds_clp->cl_session);
+ 		if (reset) {
+-			filelayout_set_lo_fail(data->lseg);
++			pnfs_set_lo_fail(data->lseg);
+ 			nfs4_reset_write(task, data);
+ 			clp = NFS_SERVER(data->inode)->nfs_client;
+ 		} else
+@@ -256,7 +243,7 @@ static int filelayout_commit_done_cb(str
+ 			__func__, data->ds_clp, data->ds_clp->cl_session);
+ 		if (reset) {
+ 			prepare_to_resend_writes(data);
+-			filelayout_set_lo_fail(data->lseg);
++			pnfs_set_lo_fail(data->lseg);
+ 		} else
+ 			nfs_restart_rpc(task, data->ds_clp);
+ 		return -EAGAIN;
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -1381,6 +1381,18 @@ static void pnfs_list_write_lseg(struct
+ 	}
+ }
+ 
++void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg)
++{
++	if (lseg->pls_range.iomode == IOMODE_RW) {
++		dprintk("%s Setting layout IOMODE_RW fail bit\n", __func__);
++		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
++	} else {
++		dprintk("%s Setting layout IOMODE_READ fail bit\n", __func__);
++		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
++	}
++}
++EXPORT_SYMBOL_GPL(pnfs_set_lo_fail);
++
+ void
+ pnfs_set_layoutcommit(struct nfs_write_data *wdata)
+ {
+--- a/fs/nfs/pnfs.h
++++ b/fs/nfs/pnfs.h
+@@ -178,6 +178,7 @@ int pnfs_generic_pg_readpages(struct nfs
+ void pnfs_generic_pg_init_write(struct nfs_pageio_descriptor *, struct nfs_page *);
+ int pnfs_generic_pg_writepages(struct nfs_pageio_descriptor *desc);
+ bool pnfs_generic_pg_test(struct nfs_pageio_descriptor *pgio, struct nfs_page *prev, struct nfs_page *req);
++void pnfs_set_lo_fail(struct pnfs_layout_segment *lseg);
+ int pnfs_layout_process(struct nfs4_layoutget *lgp);
+ void pnfs_free_lseg_list(struct list_head *tmp_list);
+ void pnfs_destroy_layout(struct nfs_inode *);
 
 
