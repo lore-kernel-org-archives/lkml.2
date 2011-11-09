@@ -1,195 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab1KIIsE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:48:04 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57560 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225Ab1KIIsB (ORCPT
+	id S1756190Ab1KIIuy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:50:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40491 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab1KIIux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:48:01 -0500
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com
-In-Reply-To: <20111108214021.GA4538@redhat.com>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
-	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
-	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
-	 <20111102233110.GA20289@redhat.com>  <20111108214021.GA4538@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Wed, 09 Nov 2011 10:46:06 +0200
-Message-ID: <1320828366.31056.16.camel@lappy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Nov 2011 03:50:53 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.63.171]
+In-Reply-To: <201109271346.13791.laurent.pinchart@ideasonboard.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+ <1316948337-7924-6-git-send-email-ohad@wizery.com> <201109271346.13791.laurent.pinchart@ideasonboard.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 9 Nov 2011 10:50:30 +0200
+Message-ID: <CAK=WgbZaZTT=PsrvY8QTypuViknCK=APHogZLg5SjSN3_C=odw@mail.gmail.com>
+Subject: Re: [RFC 5/5] iommu/omap: eliminate the public omap_find_iommu_device()
+ method
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Hiroshi DOYU <Hiroshi.DOYU@nokia.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-08 at 23:40 +0200, Michael S. Tsirkin wrote:
-> Here's a spec change documenting what my C patch does
-> (almost - I tweaked the layout a bit, but the idea is the same).
-> Some more cleanups are needed but I thought I'd send it
-> for early flames/comments.
-> 
-> The idea is simple: we split functionally unrelated
-> register groups to independent structures, and let
-> the device place is anywhere using a capability
-> in PCI configuration space.
-> 
-> It can then go into MMIO space which is cheaper than PIO.
-> 
-> A legacy portion of the configuration is mirrored
-> in the first BAR, to keep legacy drivers working.
-> Any new fields can be added in existing structures
-> at the end, so they won't affect legacy.
+Hi Laurent,
 
-If newer specs add more structures at the end of the config space, and
-use the same config space for legacy, that space now becomes device
-specific config space and not new-shiny-feature space, so we must
-remember to handle those cases.
+On Tue, Sep 27, 2011 at 2:46 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Sunday 25 September 2011 12:58:57 Ohad Ben-Cohen wrote:
+>> Eliminate the public omap_find_iommu_device() method, and don't
+>> expect clients to provide the omap_iommu handle anymore.
+>>
+>> Instead, OMAP's iommu driver should now utilize dev_archdata's private
+>> iommu extension to be able to access the required iommu information.
+>>
+>> Update omap3isp appropriately.
+>>
+>> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+>> Cc: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>
+> For the OMAP3 ISP driver,
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-> Alternatively we can add new structures with new
-> structure IDs, pointed to from PCI configuration space.
-> 
-> As we don't yet have devices or drivers with 64 bit features,
-> I decided we don't need high feature bits in legacy space.
-> This also frees up feature bit 31 as we don't need it
-> to enable high feature bits anymore.
+Thanks !
 
-KVM tool actually has support for 64bit features, we can probably remove
-that when Pekka isn't looking :)
+Can you please also ack the 4th patch in this series (that's the part
+the makes this fifth patch possible):
 
-> 
-> As this solves the dynamic placement of MSIX vectors
-> and high feature bits,
-> I thought it's easier to just reserve space for that
-> programming than give it a separate structure. This
-> can be changed by a patch on top.
-> 
-> Note that data path is split from configuration.
-> 
-> PDF will follow.
-> ----
-> 
+https://lkml.org/lkml/2011/9/25/46
 
-The device initialization sequence might use an update as well. Maybe
-also a description of how device handles missing structure IDs.
+I could then ask Tony to Ack it so we could merge this via the iommu tree.
 
-[snip]
-
-> +
-> +\begin_layout Standard
-> +
-> +\change_inserted 1986246365 1320781133
-> +These registers are specified using vendor-specific PCI capability located
-> + on capability list in PCI configuration space of the device.
-> + This virtio structure capability uses little-endian format; all bits are
-> + read-only:
-> +\end_layout
-> +
-> +\begin_layout Standard
-> +
-> +\change_inserted 1986246365 1320772579
-> +\begin_inset Tabular
-
-Just a note, these tables are way too wide to work properly in PDFs :)
-
-> +<lyxtabular version="3" rows="4" columns="34">
-> +<features tabularvalignment="middle">
-> +<column alignment="center" valignment="top" width="0pt">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0">
-> +<column alignment="center" valignment="top" width="0pt">
-> +<row>
-
-[snip]
-
-> +
-> +\begin_layout Standard
-> +
-> +\change_inserted 1986246365 1320779667
-> +Purpose:
-> +\end_layout
-> +
-> +\begin_layout Standard
-> +
-> +\change_inserted 1986246365 1320780912
-> +
-> +\emph on
-> +Capability ID
-> +\emph default
-> +, 
-> +\emph on
-> +Next Capability Pointer
-> +\emph default
-> +, 
-> +\emph on
-> +Capability Length
-> +\emph default
-> + - these fields are specified by PCI local bus specification, Rev 3.0
-
-I'm not sure what capability length is, can't find it in the spec
-either.
-
-[snip]
-
-> +\begin_layout Plain Layout
-> +ie.
-> + once you enable MSI-X on the device, the other fields move.
-> + If you turn it off again, they move back!
-
-Is it still true? We're talking about the new layout here (there are
-several of this footnote, this one is located right *before* the section
-which talks about legacy config space.
-
-[snip]
-
-> + 
-> +\change_deleted 1986246365 1320784929
-> +If more than 31 feature bits are supported, the device indicates so by setting
-> + feature bit 31 (see 
-
-The bit numbers below this text should be corrected as well.
-
--- 
-
-Sasha.
-
+Thanks,
+Ohad.
