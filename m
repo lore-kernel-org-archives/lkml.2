@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934078Ab1KJDWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:22:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41842 "EHLO mx2.suse.de"
+	id S933708Ab1KJDWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:22:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41857 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934021Ab1KJDWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
-Message-Id: <20111109212705.969771934@clark.kroah.org>
+	id S934100Ab1KJDWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:22:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:03 2011
+Message-Id: <20111109212703.400574261@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:18 -0800
+Date: Wed, 09 Nov 2011 13:25:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
-Subject: [056/262] USB: option: add various ZTE device network interfaces to the blacklist
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [031/262] [SCSI] isci: fix support for large smp requests
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,158 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit c58a76cdd7ab5a945a44fd2d64f6faf40323f95b upstream.
+commit 54b5e3a4bfa3452bc10cd4da672099ccc46b8c09 upstream.
 
-IDs found in the Windows driver's ZTEusbnet.inf file from the
-ZTE MF100 drivers (O2 UK).  Also fixes the ZTE MF626 device
-since it really is distinct from the 4G Systems stick and
-apparently needs the net interface blacklisted too, while
-there's no indication (yet) that the 4G Systems stick does.
+Kill the local smp response buffer.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
+Besides being unnecessary, it is too small (currently truncates
+responses to 60 bytes).  The mid-layer will have already allocated a
+sufficiently sized buffer, just kmap and copy into it directly.
+
+Reported-by: Derick Marks <derick.w.marks@intel.com>
+Tested-by: Derick Marks <derick.w.marks@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |   63 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 49 insertions(+), 14 deletions(-)
+ drivers/scsi/isci/isci.h    |    2 -
+ drivers/scsi/isci/request.c |   49 +++++++++++++++++---------------------------
+ drivers/scsi/isci/request.h |    3 --
+ drivers/scsi/isci/sas.h     |    2 -
+ 4 files changed, 21 insertions(+), 35 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -497,12 +497,34 @@ static const struct option_blacklist_inf
+--- a/drivers/scsi/isci/isci.h
++++ b/drivers/scsi/isci/isci.h
+@@ -97,7 +97,7 @@
+ #define SCU_MAX_COMPLETION_QUEUE_SHIFT	  (ilog2(SCU_MAX_COMPLETION_QUEUE_ENTRIES))
  
- static const struct option_blacklist_info zte_k3765_z_blacklist = {
- 	.sendsetup = BIT(0) | BIT(1) | BIT(2),
-+	.reserved = BIT(4),
- };
+ #define SCU_ABSOLUTE_MAX_UNSOLICITED_FRAMES (4096)
+-#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024)
++#define SCU_UNSOLICITED_FRAME_BUFFER_SIZE   (1024U)
+ #define SCU_INVALID_FRAME_INDEX             (0xFFFF)
  
- static const struct option_blacklist_info huawei_cdc12_blacklist = {
- 	.reserved = BIT(1) | BIT(2),
- };
+ #define SCU_IO_REQUEST_MAX_SGE_SIZE         (0x00FFFFFF)
+--- a/drivers/scsi/isci/request.c
++++ b/drivers/scsi/isci/request.c
+@@ -1490,29 +1490,30 @@ sci_io_request_frame_handler(struct isci
+ 		return SCI_SUCCESS;
  
-+static const struct option_blacklist_info net_intf1_blacklist = {
-+	.reserved = BIT(1),
-+};
-+
-+static const struct option_blacklist_info net_intf3_blacklist = {
-+	.reserved = BIT(3),
-+};
-+
-+static const struct option_blacklist_info net_intf4_blacklist = {
-+	.reserved = BIT(4),
-+};
-+
-+static const struct option_blacklist_info net_intf5_blacklist = {
-+	.reserved = BIT(5),
-+};
-+
-+static const struct option_blacklist_info zte_mf626_blacklist = {
-+	.sendsetup = BIT(0) | BIT(1),
-+	.reserved = BIT(4),
-+};
-+
- static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
- 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -709,7 +731,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864E) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UC864G) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0002, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0003, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0004, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0005, 0xff, 0xff, 0xff) },
-@@ -724,26 +747,30 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x000f, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0010, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0011, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0012, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0012, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0013, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0014, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF628, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0016, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0018, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0020, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0021, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0021, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0022, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0023, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0024, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0025, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0025, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0026, 0xff, 0xff, 0xff) }, */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0028, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0029, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0030, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff,
--	  0xff, 0xff), .driver_info = (kernel_ulong_t)&four_g_w14_blacklist },
-+	  0xff, 0xff), .driver_info = (kernel_ulong_t)&zte_mf626_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
-@@ -752,24 +779,30 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0038, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0039, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0040, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0042, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0042, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0043, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0044, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0048, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0049, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0049, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0050, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0051, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0052, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0052, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0053, 0xff, 0xff, 0xff) }, */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0054, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0055, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0055, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf1_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0056, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0057, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0058, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0058, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0059, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0061, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0062, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0063, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0063, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0064, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0065, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0066, 0xff, 0xff, 0xff) },
-@@ -784,11 +817,13 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0083, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0086, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0087, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0104, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0104, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0105, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0106, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0108, 0xff, 0xff, 0xff) },
--	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff),
-+		.driver_info = (kernel_ulong_t)&net_intf5_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0117, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0118, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0121, 0xff, 0xff, 0xff) },
+ 	case SCI_REQ_SMP_WAIT_RESP: {
+-		struct smp_resp *rsp_hdr = &ireq->smp.rsp;
+-		void *frame_header;
++		struct sas_task *task = isci_request_access_task(ireq);
++		struct scatterlist *sg = &task->smp_task.smp_resp;
++		void *frame_header, *kaddr;
++		u8 *rsp;
+ 
+ 		sci_unsolicited_frame_control_get_header(&ihost->uf_control,
+-							      frame_index,
+-							      &frame_header);
+-
+-		/* byte swap the header. */
+-		word_cnt = SMP_RESP_HDR_SZ / sizeof(u32);
+-		sci_swab32_cpy(rsp_hdr, frame_header, word_cnt);
++							 frame_index,
++							 &frame_header);
++		kaddr = kmap_atomic(sg_page(sg), KM_IRQ0);
++		rsp = kaddr + sg->offset;
++		sci_swab32_cpy(rsp, frame_header, 1);
+ 
+-		if (rsp_hdr->frame_type == SMP_RESPONSE) {
++		if (rsp[0] == SMP_RESPONSE) {
+ 			void *smp_resp;
+ 
+ 			sci_unsolicited_frame_control_get_buffer(&ihost->uf_control,
+-								      frame_index,
+-								      &smp_resp);
+-
+-			word_cnt = (sizeof(struct smp_resp) - SMP_RESP_HDR_SZ) /
+-				sizeof(u32);
++								 frame_index,
++								 &smp_resp);
+ 
+-			sci_swab32_cpy(((u8 *) rsp_hdr) + SMP_RESP_HDR_SZ,
+-				       smp_resp, word_cnt);
++			word_cnt = (sg->length/4)-1;
++			if (word_cnt > 0)
++				word_cnt = min_t(unsigned int, word_cnt,
++						 SCU_UNSOLICITED_FRAME_BUFFER_SIZE/4);
++			sci_swab32_cpy(rsp + 4, smp_resp, word_cnt);
+ 
+ 			ireq->scu_status = SCU_TASK_DONE_GOOD;
+ 			ireq->sci_status = SCI_SUCCESS;
+@@ -1528,12 +1529,13 @@ sci_io_request_frame_handler(struct isci
+ 				__func__,
+ 				ireq,
+ 				frame_index,
+-				rsp_hdr->frame_type);
++				rsp[0]);
+ 
+ 			ireq->scu_status = SCU_TASK_DONE_SMP_FRM_TYPE_ERR;
+ 			ireq->sci_status = SCI_FAILURE_CONTROLLER_SPECIFIC_IO_ERR;
+ 			sci_change_state(&ireq->sm, SCI_REQ_COMPLETED);
+ 		}
++		kunmap_atomic(kaddr, KM_IRQ0);
+ 
+ 		sci_controller_release_frame(ihost, frame_index);
+ 
+@@ -2603,18 +2605,7 @@ static void isci_request_io_request_comp
+ 			status   = SAM_STAT_GOOD;
+ 			set_bit(IREQ_COMPLETE_IN_TARGET, &request->flags);
+ 
+-			if (task->task_proto == SAS_PROTOCOL_SMP) {
+-				void *rsp = &request->smp.rsp;
+-
+-				dev_dbg(&ihost->pdev->dev,
+-					"%s: SMP protocol completion\n",
+-					__func__);
+-
+-				sg_copy_from_buffer(
+-					&task->smp_task.smp_resp, 1,
+-					rsp, sizeof(struct smp_resp));
+-			} else if (completion_status
+-				   == SCI_IO_SUCCESS_IO_DONE_EARLY) {
++			if (completion_status == SCI_IO_SUCCESS_IO_DONE_EARLY) {
+ 
+ 				/* This was an SSP / STP / SATA transfer.
+ 				 * There is a possibility that less data than
+--- a/drivers/scsi/isci/request.h
++++ b/drivers/scsi/isci/request.h
+@@ -174,9 +174,6 @@ struct isci_request {
+ 			};
+ 		} ssp;
+ 		struct {
+-			struct smp_resp rsp;
+-		} smp;
+-		struct {
+ 			struct isci_stp_request req;
+ 			struct host_to_dev_fis cmd;
+ 			struct dev_to_host_fis rsp;
+--- a/drivers/scsi/isci/sas.h
++++ b/drivers/scsi/isci/sas.h
+@@ -204,8 +204,6 @@ struct smp_req {
+ 	u8 req_data[0];
+ }  __packed;
+ 
+-#define SMP_RESP_HDR_SZ	4
+-
+ /*
+  * struct sci_sas_address - This structure depicts how a SAS address is
+  *    represented by SCI.
 
 
