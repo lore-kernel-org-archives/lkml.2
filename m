@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417Ab1KINBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 08:01:41 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:48548 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab1KINBk (ORCPT
+	id S1751809Ab1KINCG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 08:02:06 -0500
+Received: from mail-pz0-f42.google.com ([209.85.210.42]:60755 "EHLO
+	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab1KINCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 08:01:40 -0500
+	Wed, 9 Nov 2011 08:02:03 -0500
 From: Eric Miao <eric.y.miao@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>,
         lm-sensors <lm-sensors@lm-sensors.org>
 Cc: Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH] hwmon: (max1111) change sysfs interface to in[0-3]_input in millivolts
-Date: Wed,  9 Nov 2011 21:01:34 +0800
-Message-Id: <1320843695-2839-1-git-send-email-eric.y.miao@gmail.com>
+Subject: [PATCH v2] hwmon: (max1111) change sysfs interface to in[0-3]_input in millivolts
+Date: Wed,  9 Nov 2011 21:02:01 +0800
+Message-Id: <1320843721-2916-1-git-send-email-eric.y.miao@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
