@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935668Ab1KJDdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:33:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43212 "EHLO mx2.suse.de"
+	id S935180Ab1KJDd4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:33:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43215 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935655Ab1KJDdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:49 -0500
+	id S935669Ab1KJDdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:53 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:23 2011
-Message-Id: <20111109212723.009341145@clark.kroah.org>
+Message-Id: <20111109212723.118204274@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:05 -0800
+Date: Wed, 09 Nov 2011 13:29:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [223/262] ASoC: Ensure the WM8962 oscillator and PLLs start up disabled
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [224/262] NFS/sunrpc: dont use a credential with extra groups.
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+From: NeilBrown <neilb@suse.de>
 
-commit 2af8de8c39cf58e5a5e40a9d5d71332da98e6ba7 upstream.
+commit dc6f55e9f8dac4b6479be67c5c9128ad37bb491f upstream.
 
-Since there is no current software control for these they would otherwise
-be left enabled, consuming power.
+The sunrpc layer keeps a cache of recently used credentials and
+'unx_match' is used to find the credential which matches the current
+process.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+However unx_match allows a match when the cached credential has extra
+groups at the end of uc_gids list which are not in the process group list.
+
+So if a process with a list of (say) 4 group accesses a file and gains
+access because of the last group in the list, then another process
+with the same uid and gid, and a gid list being the first tree of the
+gids of the original process tries to access the file, it will be
+granted access even though it shouldn't as the wrong rpc credential
+will be used.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/soc/codecs/wm8962.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/sunrpc/auth_unix.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -3829,6 +3829,11 @@ static int wm8962_probe(struct snd_soc_c
- 	 */
- 	snd_soc_update_bits(codec, WM8962_CLOCKING2, WM8962_SYSCLK_ENA, 0);
+--- a/net/sunrpc/auth_unix.c
++++ b/net/sunrpc/auth_unix.c
+@@ -129,6 +129,9 @@ unx_match(struct auth_cred *acred, struc
+ 	for (i = 0; i < groups ; i++)
+ 		if (cred->uc_gids[i] != GROUP_AT(acred->group_info, i))
+ 			return 0;
++	if (groups < NFS_NGROUPS &&
++	    cred->uc_gids[groups] != NOGROUP)
++		return 0;
+ 	return 1;
+ }
  
-+	/* Ensure that the oscillator and PLLs are disabled */
-+	snd_soc_update_bits(codec, WM8962_PLL2,
-+			    WM8962_OSC_ENA | WM8962_PLL2_ENA | WM8962_PLL3_ENA,
-+			    0);
-+
- 	regulator_bulk_disable(ARRAY_SIZE(wm8962->supplies), wm8962->supplies);
- 
- 	if (pdata) {
 
 
