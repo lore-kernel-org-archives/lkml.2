@@ -1,29 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936217Ab1KJEAY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:00:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44980 "EHLO mx2.suse.de"
+	id S936227Ab1KJEAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:00:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44967 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965889Ab1KJDrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:47:05 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
-Message-Id: <20111109213200.747474723@clark.kroah.org>
+	id S965879Ab1KJDq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:01 2011
+Message-Id: <20111109213201.659005213@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:51 -0800
+Date: Wed, 09 Nov 2011 13:33:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        David Miller <davem@davemloft.net>
-Subject: [184/264] s390: gup_huge_pmd() return 0 if pte changes
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
+Subject: [192/264] ALSA: hda/realtek - Skip invalid digital out pins
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,63 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 0693bc9ce2cc4f6a1b9c3c05790fc149a74c0b87 upstream.
+commit 51e4152a969aa6d2306492ebf143932dcb535c9b upstream.
 
-s390 didn't return 0 in that case, if it's rolling back the *nr pointer it
-should also return zero to avoid adding pages to the array at the wrong
-offset.
+Some BIOS report invalid pins as digital output pins.  The driver checks
+the connection but it doesn't do it fully correctly, and it leaves some
+undefined value as the audio-out widget, which makes the driver spewing
+warnings.  This patch fixes the issue.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reference: https://bugzilla.novell.com/show_bug.cgi?id=727348
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/mm/gup.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ sound/pci/hda/patch_realtek.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/arch/s390/mm/gup.c
-+++ b/arch/s390/mm/gup.c
-@@ -93,16 +93,17 @@ static inline int gup_huge_pmd(pmd_t *pm
- 		*nr -= refs;
- 		while (refs--)
- 			put_page(head);
--	} else {
--		/*
--		 * Any tail page need their mapcount reference taken
--		 * before we return.
--		 */
--		while (refs--) {
--			if (PageTail(tail))
--				get_huge_page_tail(tail);
--			tail++;
--		}
-+		return 0;
-+	}
-+
-+	/*
-+	 * Any tail page need their mapcount reference taken before we
-+	 * return.
-+	 */
-+	while (refs--) {
-+		if (PageTail(tail))
-+			get_huge_page_tail(tail);
-+		tail++;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -1566,27 +1566,29 @@ static void alc_auto_init_digital(struct
+ static void alc_auto_parse_digital(struct hda_codec *codec)
+ {
+ 	struct alc_spec *spec = codec->spec;
+-	int i, err;
++	int i, err, nums;
+ 	hda_nid_t dig_nid;
+ 
+ 	/* support multiple SPDIFs; the secondary is set up as a slave */
++	nums = 0;
+ 	for (i = 0; i < spec->autocfg.dig_outs; i++) {
+ 		hda_nid_t conn[4];
+ 		err = snd_hda_get_connections(codec,
+ 					      spec->autocfg.dig_out_pins[i],
+ 					      conn, ARRAY_SIZE(conn));
+-		if (err < 0)
++		if (err <= 0)
+ 			continue;
+ 		dig_nid = conn[0]; /* assume the first element is audio-out */
+-		if (!i) {
++		if (!nums) {
+ 			spec->multiout.dig_out_nid = dig_nid;
+ 			spec->dig_out_type = spec->autocfg.dig_out_type[0];
+ 		} else {
+ 			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
+-			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
++			if (nums >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
+ 				break;
+-			spec->slave_dig_outs[i - 1] = dig_nid;
++			spec->slave_dig_outs[nums - 1] = dig_nid;
+ 		}
++		nums++;
  	}
  
- 	return 1;
+ 	if (spec->autocfg.dig_in_pin) {
 
 
