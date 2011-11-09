@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab1KJEJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:09:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44630 "EHLO mx2.suse.de"
+	id S965339Ab1KJEKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:10:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44613 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936068Ab1KJDo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
-Message-Id: <20111109213200.026791362@clark.kroah.org>
+	id S936033Ab1KJDoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:59 2011
+Message-Id: <20111109213159.720755118@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:44 -0800
+Date: Wed, 09 Nov 2011 13:33:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@amd.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [177/264] xHCI: Clear PLC for USB2 root hub ports
+        alan@lxorguk.ukuu.org.uk, Seth Forshee <seth.forshee@canonical.com>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [174/264] usb_storage: Dont freeze in usb-stor-scan
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit 6fd4562178508a0949c9fdecd8558d8b10d671bd upstream.
+commit f02fe890ece7d695a5744b20525d45312382e6e4 upstream.
 
-When the link state changes, xHC will report a port status change event
-and set the PORT_PLC bit, for both USB3 and USB2 root hub ports.
+Scanning cannot be run during suspend or hibernation, but if
+usb-stor-scan freezes another thread waiting on scanning to
+complete may fail to freeze.
 
-The PLC will be cleared by usbcore for USB3 root hub ports, but not for
-USB2 ports, because they do not report USB_PORT_STAT_C_LINK_STATE in
-wPortChange.
+However, if usb-stor-scan is left freezable without ever actually
+freezing then the freezer will wait on it to exit, and threads
+waiting for scanning to finish will no longer be blocked. One
+problem with this approach is that usb-stor-scan has a delay to
+wait for devices to settle (which is currently the only point where
+it can freeze). To work around this we can request that the freezer
+send a fake signal when freezing, then use interruptible sleep to
+wake the thread early when freezing happens.
 
-Clear it for USB2 root hub ports in handle_port_status().
+To make this happen, the following changes are made to
+usb-stor-scan:
 
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+ * Use set_freezable_with_signal() instead of set_freezable() to
+   request a fake signal when freezing
+
+ * Use wait_event_interruptible_timeout() instead of
+   wait_event_freezable_timeout() to avoid freezing
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-ring.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/storage/usb.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1356,6 +1356,10 @@ static void handle_port_status(struct xh
- 		}
- 	}
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -831,12 +831,22 @@ static int usb_stor_scan_thread(void * _
  
-+	if (hcd->speed != HCD_USB3)
-+		xhci_test_and_clear_bit(xhci, port_array, faked_port_index,
-+					PORT_PLC);
-+
- cleanup:
- 	/* Update event ring dequeue pointer before dropping the lock */
- 	inc_deq(xhci, xhci->event_ring, true);
+ 	dev_dbg(dev, "device found\n");
+ 
+-	set_freezable();
+-	/* Wait for the timeout to expire or for a disconnect */
++	set_freezable_with_signal();
++	/*
++	 * Wait for the timeout to expire or for a disconnect
++	 *
++	 * We can't freeze in this thread or we risk causing khubd to
++	 * fail to freeze, but we can't be non-freezable either. Nor can
++	 * khubd freeze while waiting for scanning to complete as it may
++	 * hold the device lock, causing a hang when suspending devices.
++	 * So we request a fake signal when freezing and use
++	 * interruptible sleep to kick us out of our wait early when
++	 * freezing happens.
++	 */
+ 	if (delay_use > 0) {
+ 		dev_dbg(dev, "waiting for device to settle "
+ 				"before scanning\n");
+-		wait_event_freezable_timeout(us->delay_wait,
++		wait_event_interruptible_timeout(us->delay_wait,
+ 				test_bit(US_FLIDX_DONT_SCAN, &us->dflags),
+ 				delay_use * HZ);
+ 	}
 
 
