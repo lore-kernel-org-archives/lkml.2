@@ -1,91 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab1KIIrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:47:37 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46831 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab1KIIrf (ORCPT
+	id S1755799Ab1KIIsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:48:04 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57560 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab1KIIsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:47:35 -0500
-X-Greylist: delayed 3133 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Nov 2011 03:47:35 EST
-Date: Tue, 8 Nov 2011 23:55:10 -0800
-From: Joel Becker <jlbec@evilplan.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Valdis.Kletnieks@vt.edu, mfasheh@suse.com, ocfs2-devel@oss.oracle.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: OCFS2 1.6.0 for mainline?
-Message-ID: <20111109075508.GA331@noexit.corp.google.com>
-Mail-Followup-To: Richard Weinberger <richard@nod.at>,
-	Valdis.Kletnieks@vt.edu, mfasheh@suse.com,
-	ocfs2-devel@oss.oracle.com,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <4E99A8F3.50206@nod.at>
- <30236.1318700758@turing-police.cc.vt.edu>
- <4E99C7B7.5060405@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E99C7B7.5060405@nod.at>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 9 Nov 2011 03:48:01 -0500
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        avi@redhat.com
+In-Reply-To: <20111108214021.GA4538@redhat.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+	 <20111101114542.GA13434@redhat.com> <1320150813.3847.24.camel@lappy>
+	 <20111101124223.GA14060@redhat.com> <8739e7uy87.fsf@rustcorp.com.au>
+	 <20111102233110.GA20289@redhat.com>  <20111108214021.GA4538@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Date: Wed, 09 Nov 2011 10:46:06 +0200
+Message-ID: <1320828366.31056.16.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 15, 2011 at 07:49:43PM +0200, Richard Weinberger wrote:
-> Am 15.10.2011 19:45, schrieb Valdis.Kletnieks@vt.edu:
-> > On Sat, 15 Oct 2011 17:38:27 +0200, Richard Weinberger said:
-> > 
-> >> http://oss.oracle.com/projects/ocfs2/source.html states:
-> >> "Active development on OCFS2 happens in the mainline kernel."
-> >>
-> >> But the mainline kernel seems to contain only version 1.5.0.
-> >>
-> >> Also the linux-next ocfs2 branch has only 1.5.0.
-> >> git://oss.oracle.com/git/jlbec/linux-2.6.git linux-next
-> >>
-> >> Where can I get 1.6.0?
-> > 
-> > Presumably, it's GPL, so you should be able to get a copy from the
-> > person that told you that 1.6.0 exists. ;)
-> > 
-> > Put differently, why do you think 1.6.0 is available?
+On Tue, 2011-11-08 at 23:40 +0200, Michael S. Tsirkin wrote:
+> Here's a spec change documenting what my C patch does
+> (almost - I tweaked the layout a bit, but the idea is the same).
+> Some more cleanups are needed but I thought I'd send it
+> for early flames/comments.
 > 
-> http://oss.oracle.com/projects/ocfs2/
+> The idea is simple: we split functionally unrelated
+> register groups to independent structures, and let
+> the device place is anywhere using a capability
+> in PCI configuration space.
 > 
-> "OCFS2 1.6 RELEASE
+> It can then go into MMIO space which is cheaper than PIO.
 > 
-> OCFS2 1.6.3-1 and OCFS2 Tools 1.6.3-1 are the latest versions. The new
-> features available in this release include Extended Attributes, POSIX
-> ACLs, REFLINKs, Indexed Directories, Allocation Reservation, Metadata
-> Checksums and User/Group Quotas."
-> 
-> Looks like it's only available for "Unbreakable Linux" subscribers.
-> The development seems to be detached from mainline. :-(
+> A legacy portion of the configuration is mirrored
+> in the first BAR, to keep legacy drivers working.
+> Any new fields can be added in existing structures
+> at the end, so they won't affect legacy.
 
-Hello Folks,
-	Sorry I'm late to this game, but it's worth repeating.
-	Thankfully, you're just confused by shoddy version numbers.  ALL
-ocfs2 development happens in mainline.  Any code that is in the 1.6.0
-release, or any RPM release, started in mainline.
-	We don't really pay any attention to the version number reported
-in the mainline code.  It's said 1.5.0 for years now.  Mainline is
-versioned by the kernel release.
-	To repeat, ALL of the code in the 1.6.x RPM (or any RPM put out
-by Oracle or SuSE) started in mainline, with the possible exception of
-any trivial compatability fixes.  If you have the latest Linus code, you
-have the latest ocfs2 code.
+If newer specs add more structures at the end of the config space, and
+use the same config space for legacy, that space now becomes device
+specific config space and not new-shiny-feature space, so we must
+remember to handle those cases.
 
-Joel
+> Alternatively we can add new structures with new
+> structure IDs, pointed to from PCI configuration space.
+> 
+> As we don't yet have devices or drivers with 64 bit features,
+> I decided we don't need high feature bits in legacy space.
+> This also frees up feature bit 31 as we don't need it
+> to enable high feature bits anymore.
+
+KVM tool actually has support for 64bit features, we can probably remove
+that when Pekka isn't looking :)
+
+> 
+> As this solves the dynamic placement of MSIX vectors
+> and high feature bits,
+> I thought it's easier to just reserve space for that
+> programming than give it a separate structure. This
+> can be changed by a patch on top.
+> 
+> Note that data path is split from configuration.
+> 
+> PDF will follow.
+> ----
+> 
+
+The device initialization sequence might use an update as well. Maybe
+also a description of how device handles missing structure IDs.
+
+[snip]
+
+> +
+> +\begin_layout Standard
+> +
+> +\change_inserted 1986246365 1320781133
+> +These registers are specified using vendor-specific PCI capability located
+> + on capability list in PCI configuration space of the device.
+> + This virtio structure capability uses little-endian format; all bits are
+> + read-only:
+> +\end_layout
+> +
+> +\begin_layout Standard
+> +
+> +\change_inserted 1986246365 1320772579
+> +\begin_inset Tabular
+
+Just a note, these tables are way too wide to work properly in PDFs :)
+
+> +<lyxtabular version="3" rows="4" columns="34">
+> +<features tabularvalignment="middle">
+> +<column alignment="center" valignment="top" width="0pt">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0">
+> +<column alignment="center" valignment="top" width="0pt">
+> +<row>
+
+[snip]
+
+> +
+> +\begin_layout Standard
+> +
+> +\change_inserted 1986246365 1320779667
+> +Purpose:
+> +\end_layout
+> +
+> +\begin_layout Standard
+> +
+> +\change_inserted 1986246365 1320780912
+> +
+> +\emph on
+> +Capability ID
+> +\emph default
+> +, 
+> +\emph on
+> +Next Capability Pointer
+> +\emph default
+> +, 
+> +\emph on
+> +Capability Length
+> +\emph default
+> + - these fields are specified by PCI local bus specification, Rev 3.0
+
+I'm not sure what capability length is, can't find it in the spec
+either.
+
+[snip]
+
+> +\begin_layout Plain Layout
+> +ie.
+> + once you enable MSI-X on the device, the other fields move.
+> + If you turn it off again, they move back!
+
+Is it still true? We're talking about the new layout here (there are
+several of this footnote, this one is located right *before* the section
+which talks about legacy config space.
+
+[snip]
+
+> + 
+> +\change_deleted 1986246365 1320784929
+> +If more than 31 feature bits are supported, the device indicates so by setting
+> + feature bit 31 (see 
+
+The bit numbers below this text should be corrected as well.
 
 -- 
 
-"Same dancers in the same old shoes.
- You get too careful with the steps you choose.
- You don't care about winning but you don't want to lose
- After the thrill is gone."
+Sasha.
 
-			http://www.jlbec.org/
-			jlbec@evilplan.org
