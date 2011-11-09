@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab1KIUfz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:35:55 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51497 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932738Ab1KIUfw (ORCPT
+	id S932964Ab1KIUgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:36:19 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:37397 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932737Ab1KIUd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 15:35:52 -0500
-Date: Wed, 9 Nov 2011 21:35:46 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Niklas =?iso-8859-1?Q?S=F6derlund?= 
-	<niklas.soderlund@ericsson.com>
-Cc: "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: fix size decoding error on K8
-Message-ID: <20111109203546.GI14181@aftab>
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com>
- <20111109144258.GD30472@aftab>
- <4EBA98A1.90902@ericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EBA98A1.90902@ericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 9 Nov 2011 15:33:56 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        jirislaby@gmail.com, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 04/10] TTY: serial, use tty_port_close_start helper
+Date: Wed,  9 Nov 2011 21:33:46 +0100
+Message-Id: <1320870831-23778-4-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
+References: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Niklas,
+After the previous patches, the code is almost identical. There are
+few differences in the helper code:
+1) flush_buffer when flow_stopped
+   * when a user doesn't care about the data, delete it anyways
+2) ASYNCB_INITIALIZED test before wait_until_sent_from
+   * obviously, there is nothing to wait for if the port is dead
+3) drain_delay wait
+   * we don't set drain_delay
 
-On Wed, Nov 09, 2011 at 04:13:37PM +0100, Niklas Söderlund wrote:
-> The decoding table from the documentation:
-> 
-> cs_mode		size (mb)
-> 0		32
-> 1		64
-> 2		128
-> 3		128
-> 4		256
-> 5		512
-> 6		256
-> 7		512
-> 8		1024
-> 9		1024
-> 10		2048
-> 
-> The original code:
-> 
-> if (cs_mode == 3 || cs_mode == 8)
-> 	return 32 << (cs_mode - 1);
-> else
-> 	return 32 << cs_mode;
-> 
-> The code tries to compensate for the irregularity in the decoding
-> table but fails for cs_mode greater or equal to 4. It fails because:
-> 
-> - It do not consider the cumulating effect of reoccurring sizes for
-> all values of cs_mode. It only tries for the special cases and it
-> only succeeds in one.
-> 
-> - It do not consider the out of order values of cs_mode values 4-7:
-> 256, 512, 256, 512.
+So we can use the helper now. It indeed removes a bunch of duplicated
+code.
 
-Agreed, thanks for reporting this. However, I removed the static tables
-at the time because I didn't want to carry unnecessary weight around for
-no reason (tables were static back then). And I know, they're small but
-dead weight like that tends to accumulate.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>
+---
+ drivers/tty/serial/serial_core.c |   40 +-------------------------------------
+ 1 files changed, 1 insertions(+), 39 deletions(-)
 
-Your approach is ok with creating the lookup table on the stack but how
-about the following instead - it is much smaller and it is only code,
-no need for stack memory at all. It should give you the proper mapping,
-IINM.
-
---
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index c9eee6d33e9a..3702f20d784e 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1132,12 +1132,12 @@ static int k8_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
- 		return ddr2_cs_size(cs_mode, dclr & WIDTH_128);
- 	}
- 	else if (pvt->ext_model >= K8_REV_D) {
-+		unsigned diff;
- 		WARN_ON(cs_mode > 10);
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index 2b1ee7c..fcb5342 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -1267,46 +1267,8 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
  
--		if (cs_mode == 3 || cs_mode == 8)
--			return 32 << (cs_mode - 1);
--		else
--			return 32 << cs_mode;
-+		diff = cs_mode / 3 + (unsigned)(cs_mode > 5);
-+
-+		return 32 << (cs_mode - diff);
- 	}
- 	else {
- 		WARN_ON(cs_mode > 6);
---
-
-Thanks.
-
+ 	pr_debug("uart_close(%d) called\n", uport->line);
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+-
+-	if (tty_hung_up_p(filp)) {
+-		spin_unlock_irqrestore(&port->lock, flags);
++	if (tty_port_close_start(port, tty, filp) == 0)
+ 		return;
+-	}
+-
+-	if ((tty->count == 1) && (port->count != 1)) {
+-		/*
+-		 * Uh, oh.  tty->count is 1, which means that the tty
+-		 * structure will be freed.  port->count should always
+-		 * be one in these conditions.  If it's greater than
+-		 * one, we've got real problems, since it means the
+-		 * serial port won't be shutdown.
+-		 */
+-		printk(KERN_ERR "uart_close: bad serial port count; tty->count is 1, "
+-		       "port->count is %d\n", port->count);
+-		port->count = 1;
+-	}
+-	if (--port->count < 0) {
+-		printk(KERN_ERR "uart_close: bad serial port count for %s: %d\n",
+-		       tty->name, port->count);
+-		port->count = 0;
+-	}
+-	if (port->count) {
+-		spin_unlock_irqrestore(&port->lock, flags);
+-		return;
+-	}
+-
+-	/*
+-	 * Now we wait for the transmit buffer to clear; and we notify
+-	 * the line discipline to only process XON/XOFF characters by
+-	 * setting tty->closing.
+-	 */
+-	set_bit(ASYNCB_CLOSING, &port->flags);
+-	tty->closing = 1;
+-	spin_unlock_irqrestore(&port->lock, flags);
+-
+-	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+-		tty_wait_until_sent_from_close(tty, port->closing_wait);
+ 
+ 	/*
+ 	 * At this point, we stop accepting input.  To do this, we
 -- 
-Regards/Gruss,
-Boris.
+1.7.7
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-GM: Alberto Bozzo
-Reg: Dornach, Landkreis Muenchen
-HRB Nr. 43632 WEEE Registernr: 129 19551
+
