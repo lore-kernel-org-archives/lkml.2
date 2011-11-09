@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934882Ab1KJFHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:07:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42407 "EHLO mx2.suse.de"
+	id S934837Ab1KJD1b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:27:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42393 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934839Ab1KJD1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:13 2011
-Message-Id: <20111109212712.968840391@clark.kroah.org>
+	id S934796Ab1KJD10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:14 2011
+Message-Id: <20111109212714.703010156@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:25 -0800
+Date: Wed, 09 Nov 2011 13:27:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Paul Fertser <fercerpav@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [123/262] plat-mxc: iomux-v3.h: implicitly enable pull-up/down when thats desired
+        alan@lxorguk.ukuu.org.uk, David Ward <david.ward@ll.mit.edu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [140/262] macvlan/macvtap: Fix unicast between macvtap interfaces in bridge mode
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Fertser <fercerpav@gmail.com>
 
-commit 6571534b600b8ca1936ff5630b9e0947f21faf16 upstream.
+From: David Ward <david.ward@ll.mit.edu>
 
-To configure pads during the initialisation a set of special constants
-is used, e.g.
-#define MX25_PAD_FEC_MDIO__FEC_MDIO IOMUX_PAD(0x3c4, 0x1cc, 0x10, 0, 0, PAD_CTL_HYS | PAD_CTL_PUS_22K_UP)
+[ Upstream commit cb2d0f3e968bff7c6d262aca3e3ab8d4184e69b2 ]
 
-The problem is that no pull-up/down is getting activated unless both
-PAD_CTL_PUE (pull-up enable) and PAD_CTL_PKE (pull/keeper module
-enable) set. This is clearly stated in the i.MX25 datasheet and is
-confirmed by the measurements on hardware. This leads to some rather
-hard to understand bugs such as misdetecting an absent ethernet PHY (a
-real bug i had), unstable data transfer etc. This might affect mx25,
-mx35, mx50, mx51 and mx53 SoCs.
+Packets should always be forwarded to the lowerdev using dev_forward_skb.
+vlan->forward is for packets being forwarded directly to another macvlan/
+macvtap device (used for multicast in bridge mode).
 
-It's reasonable to expect that if the pullup value is specified, the
-intention was to have it actually active, so we implicitly add the
-needed bits.
-
-Signed-off-by: Paul Fertser <fercerpav@gmail.com>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Reported-and-tested-by: Shlomo Pongratz <shlomop@mellanox.com>
+Signed-off-by: David Ward <david.ward@ll.mit.edu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- arch/arm/plat-mxc/include/mach/iomux-v3.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/net/macvlan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/plat-mxc/include/mach/iomux-v3.h
-+++ b/arch/arm/plat-mxc/include/mach/iomux-v3.h
-@@ -89,11 +89,11 @@ typedef u64 iomux_v3_cfg_t;
- #define PAD_CTL_HYS			(1 << 8)
+--- a/drivers/net/macvlan.c
++++ b/drivers/net/macvlan.c
+@@ -239,7 +239,7 @@ static int macvlan_queue_xmit(struct sk_
+ 		dest = macvlan_hash_lookup(port, eth->h_dest);
+ 		if (dest && dest->mode == MACVLAN_MODE_BRIDGE) {
+ 			/* send to lowerdev first for its network taps */
+-			vlan->forward(vlan->lowerdev, skb);
++			dev_forward_skb(vlan->lowerdev, skb);
  
- #define PAD_CTL_PKE			(1 << 7)
--#define PAD_CTL_PUE			(1 << 6)
--#define PAD_CTL_PUS_100K_DOWN		(0 << 4)
--#define PAD_CTL_PUS_47K_UP		(1 << 4)
--#define PAD_CTL_PUS_100K_UP		(2 << 4)
--#define PAD_CTL_PUS_22K_UP		(3 << 4)
-+#define PAD_CTL_PUE			(1 << 6 | PAD_CTL_PKE)
-+#define PAD_CTL_PUS_100K_DOWN		(0 << 4 | PAD_CTL_PUE)
-+#define PAD_CTL_PUS_47K_UP		(1 << 4 | PAD_CTL_PUE)
-+#define PAD_CTL_PUS_100K_UP		(2 << 4 | PAD_CTL_PUE)
-+#define PAD_CTL_PUS_22K_UP		(3 << 4 | PAD_CTL_PUE)
- 
- #define PAD_CTL_ODE			(1 << 3)
- 
+ 			return NET_XMIT_SUCCESS;
+ 		}
 
 
