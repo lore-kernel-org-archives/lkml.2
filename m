@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754859Ab1KIPNl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 10:13:41 -0500
-Received: from mailgw10.se.ericsson.net ([193.180.251.61]:56507 "EHLO
-	mailgw10.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552Ab1KIPNk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 10:13:40 -0500
-X-AuditID: c1b4fb3d-b7c26ae0000035b9-c6-4eba98a273b4
-Message-ID: <4EBA98A1.90902@ericsson.com>
-Date: Wed, 9 Nov 2011 16:13:37 +0100
-From: =?ISO-8859-1?Q?Niklas_S=F6derlund?= <niklas.soderlund@ericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
+	id S1754942Ab1KIPS7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 10:18:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754559Ab1KIPS6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 10:18:58 -0500
+Date: Wed, 9 Nov 2011 17:19:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Wang Sheng-Hui <shhuiw@gmail.com>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
+Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
+Message-ID: <20111109151954.GA25329@redhat.com>
+References: <87wrbkvh3v.fsf@rustcorp.com.au>
+ <20111101114542.GA13434@redhat.com>
+ <1320150813.3847.24.camel@lappy>
+ <20111101124223.GA14060@redhat.com>
+ <8739e7uy87.fsf@rustcorp.com.au>
+ <20111102233110.GA20289@redhat.com>
+ <20111108214021.GA4538@redhat.com>
+ <1320828366.31056.16.camel@lappy>
+ <4EBA744D.8020107@redhat.com>
+ <1320842938.31056.55.camel@lappy>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] amd64_edac: fix size decoding error on K8
-References: <1320849178-23340-1-git-send-email-niklas.soderlund@ericsson.com> <20111109144258.GD30472@aftab>
-In-Reply-To: <20111109144258.GD30472@aftab>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320842938.31056.55.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 03:42 PM, Borislav Petkov wrote:
-> On Wed, Nov 09, 2011 at 03:32:58PM +0100, Niklas Söderlund wrote:
->> Use a lookup table to calculate the size of a chip select. The old
->> method of calculating size return erroneous values for some memory
->> configurations.
->
-> Can you elaborate more on those erroneous values, please?
->
-> Thanks.
->
+On Wed, Nov 09, 2011 at 02:48:58PM +0200, Sasha Levin wrote:
+> On Wed, 2011-11-09 at 14:38 +0200, Avi Kivity wrote:
+> > On 11/09/2011 10:46 AM, Sasha Levin wrote:
+> > > > Alternatively we can add new structures with new
+> > > > structure IDs, pointed to from PCI configuration space.
+> > > > 
+> > > > As we don't yet have devices or drivers with 64 bit features,
+> > > > I decided we don't need high feature bits in legacy space.
+> > > > This also frees up feature bit 31 as we don't need it
+> > > > to enable high feature bits anymore.
+> > >
+> > > KVM tool actually has support for 64bit features, we can probably remove
+> > > that when Pekka isn't looking :)
+> > >
+> > 
+> > What about the Windows drivers?
+> 
+> While 64-bit features were defined, there was no actual devices to use
+> them.
+> 
+> So even if Windows drivers had the ability to support 64-bit features,
+> no device ever needed it therefore no device ever activated it.
+> 
+> A potential issue might arise when we remap feature bit 31 to do
+> something else, and when activated it would fool Windows drivers to
+> think that 64-bit features are now activated, while they're not - but
+> thats not something that should happen since legacy layout shouldn't
+> have that field enabled as per the spec (no new features in legacy
+> code).
+> 
+> I was unable to check if it was actually implemented in the drivers
+> because
+> http://git.kernel.org/?p=virt/kvm/kvm-guest-drivers-windows.git;a=summary is not quite there (*cough*).
 
-The decoding table from the documentation:
+I'm pretty sure windows drivers didn't yet get to it.
+This was out for a very short time.
 
-cs_mode		size (mb)
-0		32
-1		64
-2		128
-3		128
-4		256
-5		512
-6		256
-7		512
-8		1024
-9		1024
-10		2048
-
-The original code:
-
-if (cs_mode == 3 || cs_mode == 8)
-	return 32 << (cs_mode - 1);
-else
-	return 32 << cs_mode;
-
-The code tries to compensate for the irregularity in the decoding table 
-but fails for cs_mode greater or equal to 4. It fails because:
-
-- It do not consider the cumulating effect of reoccurring sizes for all 
-values of cs_mode. It only tries for the special cases and it only 
-succeeds in one.
-
-- It do not consider the out of order values of cs_mode values 4-7: 256, 
-512, 256, 512.
-
-Best Regards
-// Niklas
+> -- 
+> 
+> Sasha.
+> 
