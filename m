@@ -1,58 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223Ab1KIXCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 18:02:20 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53925 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751000Ab1KIXCT (ORCPT
+	id S933294Ab1KIXCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 18:02:25 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:58693 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab1KIXCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 18:02:19 -0500
-Date: Wed, 9 Nov 2011 23:03:18 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>, Vinod Koul <vinod.koul@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Staging clear up
-Message-ID: <20111109230318.1168fd9e@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111109225933.GA17769@opensource.wolfsonmicro.com>
-References: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
-	<20111109121329.GC21630@sirena.org.uk>
-	<1320854413.32205.948.camel@vkoul-udesk3>
-	<20111109164211.GA4016@opensource.wolfsonmicro.com>
-	<20111109165518.GA13451@kroah.com>
-	<20111109165829.GC4016@opensource.wolfsonmicro.com>
-	<20111109173037.66bea268@lxorguk.ukuu.org.uk>
-	<20111109225933.GA17769@opensource.wolfsonmicro.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Nov 2011 18:02:22 -0500
+Date: Thu, 10 Nov 2011 00:02:17 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        jean.pihet@newoldbits.com
+Subject: Re: [PATCH 2/7] PM / Domains: Make it possible to use per-device
+ .active_wakeup()
+In-Reply-To: <201111092340.57280.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.64.1111100001530.4188@axis700.grange>
+References: <201111070101.33960.rjw@sisk.pl> <201111082140.00876.rjw@sisk.pl>
+ <Pine.LNX.4.64.1111090818060.24340@axis700.grange> <201111092340.57280.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:BM/jTFHb4glvwT5q8H3MwbfGXbR4rFgSp1G29MBejSz
+ cKogmGi+hkhxF3Cjvem+rdR+6Qd98r/LPqE2qneQ1hGs9bIz82
+ tdkRUGlNVkbkntT73KSz9y+xvg6Hpet5w3sbTpBx5hQ0QpYYs6
+ uy38mcSk5t3T/sfyRilpTEDXNtAAOPZnMxzWlC7zgPVQgM5KyT
+ U1NuWNxzESjfr3h5gMUGw6QVNuKY4jEjPSKgRUHdl/Z8ybsCGf
+ BQey+7BBclyh4N+5GqApgl6Y0hBGExYOicCtif4hlENSBVkgUD
+ eyNj+oKGAfc3bVSzU82ln/oH9xywekMrlW7I7VrHL9H1NxOFZa
+ P88HzPLDGgVJWXxcQoxC2bT3vlNqoYi9YhsL6ssoA10SKymwEt
+ AveFR+DDYIPrg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Nov 2011 22:59:34 +0000
-Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+On Wed, 9 Nov 2011, Rafael J. Wysocki wrote:
 
-> On Wed, Nov 09, 2011 at 05:30:37PM +0000, Alan Cox wrote:
+> On Wednesday, November 09, 2011, Guennadi Liakhovetski wrote:
+> > On Tue, 8 Nov 2011, Rafael J. Wysocki wrote:
+> > 
+> > > On Tuesday, November 08, 2011, Guennadi Liakhovetski wrote:
+> > > > On Mon, 7 Nov 2011, Rafael J. Wysocki wrote:
+> > > > 
+> > > > > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > > 
+> > > > > The current generic PM domains code requires that the same
+> > > > > .active_wakeup() device callback routine be used for all devices in
+> > > > > the given domain, which is inflexible and may not cover some specific
+> > > > > use cases.  For this reason, make it possible to use device specific
+> > > > > .active_wakeup() callback routines by adding a corresponding callback
+> > > > > pointer to struct generic_pm_domain_data.  To reduce code duplication
+> > > > > use struct gpd_dev_ops to represent PM domain device callbacks as
+> > > > > well as device-specific ones and add a macro for defining routines
+> > > > > that will execute those callbacks.
+> > > > > 
+> > > > > Modify the shmobile's power domains code to allow drivers to use
+> > > > > their own .active_wakeup() callback routines.
+> > > > > 
+> > > > > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > > > > ---
+> > > > >  arch/arm/mach-shmobile/pm-sh7372.c |   11 ++++---
+> > > > >  drivers/base/power/domain.c        |   54 ++++++++++++++++++-------------------
+> > > > >  include/linux/pm_domain.h          |   15 ++++------
+> > > > >  3 files changed, 41 insertions(+), 39 deletions(-)
+> > > > > 
+> > > > > Index: linux/include/linux/pm_domain.h
+> > > > > ===================================================================
+> > > > > --- linux.orig/include/linux/pm_domain.h
+> > > > > +++ linux/include/linux/pm_domain.h
+> > > > > @@ -23,6 +23,12 @@ struct dev_power_governor {
+> > > > >  	bool (*power_down_ok)(struct dev_pm_domain *domain);
+> > > > >  };
+> > > > >  
+> > > > > +struct gpd_dev_ops {
+> > > > > +	int (*start)(struct device *dev);
+> > > > > +	int (*stop)(struct device *dev);
+> > > > > +	bool (*active_wakeup)(struct device *dev);
+> > > > > +};
+> > > > > +
+> > > > >  struct generic_pm_domain {
+> > > > >  	struct dev_pm_domain domain;	/* PM domain operations */
+> > > > >  	struct list_head gpd_list_node;	/* Node in the global PM domains list */
+> > > > > @@ -45,9 +51,7 @@ struct generic_pm_domain {
+> > > > >  	bool dev_irq_safe;	/* Device callbacks are IRQ-safe */
+> > > > >  	int (*power_off)(struct generic_pm_domain *domain);
+> > > > >  	int (*power_on)(struct generic_pm_domain *domain);
+> > > > > -	int (*start_device)(struct device *dev);
+> > > > > -	int (*stop_device)(struct device *dev);
+> > > > > -	bool (*active_wakeup)(struct device *dev);
+> > > > > +	struct gpd_dev_ops dev_ops;
+> > > > 
+> > > > Wouldn't it be better to merge patches 1 and 2?
+> > > 
+> > > First, why would it?
+> > 
+> > Because (1) AFAICS both these patches add new logically rather close to 
+> > each other methods to the same existing API,
 > 
-> > Something like this I think
+> Well, in fact .active_wakeup() was added for a totally different reason,
+> but I agree that now it _looks_ analogous.
 > 
-> Yes, though...
+> > and (2) it would reduce the 
+> > total changed lines count and simplify reading of the patch(es), because 
+> > your second patch moves around and modifies lines of code, that the first 
+> > patch adds.
 > 
-> > --- a/sound/soc/codecs/sn95031.c
-> > +++ b/sound/soc/codecs/sn95031.c
-> > @@ -39,7 +39,7 @@
-> >  #include <sound/initval.h>
-> >  #include <sound/tlv.h>
-> >  #include <sound/jack.h>
-> > -#include "../../../drivers/staging/intel_sst/intel_sst.h"
-> > +#include "../mid-x86/intel_sst.h"
-> 
-> ..this can hopefully just be removed completely, if it's needed that
-> seems wrong.
+> Well, I can fold [2/7] into [1/7] if that helps.
 
+IMHO that would look nicer, yes.
 
-Thats for the SoC audio people to sort out. It means we can now blow away
-the staging stuff
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
