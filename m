@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab1KIVBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 16:01:20 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:9185 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753104Ab1KIVBS (ORCPT
+	id S1756789Ab1KIVHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 16:07:40 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:38093 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580Ab1KIVHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 16:01:18 -0500
-Date: Wed, 9 Nov 2011 13:01:18 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Message-ID: <820243891.352129.1320872478210.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <51331881.351549.1320871450391.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-Subject: /dev/mem "unbounded?"
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 9 Nov 2011 16:07:39 -0500
+Date: Wed, 09 Nov 2011 16:06:25 -0500 (EST)
+Message-Id: <20111109.160625.886392843374581983.davem@davemloft.net>
+To: prox@prolixium.com
+Cc: dcbw@redhat.com, oliver@neukum.name, gregkh@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/usb: Misc. fixes for the LG-VL600 LTE USB modem
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111109185714.GA15884@prolixium.com>
+References: <1320808200-28209-1-git-send-email-prox@prolixium.com>
+	<1320861104.24903.4.camel@dcbw.foobar.com>
+	<20111109185714.GA15884@prolixium.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.61.162]
-X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 09 Nov 2011 13:06:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear LKML,
+From: Mark Kamichoff <prox@prolixium.com>
+Date: Wed, 9 Nov 2011 13:57:14 -0500
 
-In the previous kernels, valid_phys_addr_range was not
-defined for x86, and used the static variant which
-returned 0 if access went above __pa(high_memory).
+> For (a), it's my understanding that __constant_htons() should be used
+> only for initializers and htons() used in other cases, since it handles
+> checking for constants.  I suppose you're right and this is a little
+> gratuitous, but I wanted to keep things clean.
+> 
+> As far as (b), sorry!  That's an error on my part.  I must have been
+> practicing another coding style at the time.  The braces certainly
+> shouldn't be there, let me know if I should resubmit.
 
-Current behavior, though, relies on the x86 variant
-of valid_phys_addr_range, defined in arch/x86/include/asm/io.h,
-that always returns 1, hence, reading will never end since there
-won't be any condition (barring an MCE on physical hardware) that
-would say "Bad Address". Is this supposed to be by design?
+Please get rid of the gratuitous htons() etc. changes and keep this
+patch purely to the bug fixes and resubmit.
 
-How about exposing the "top" allocated resource address from 
-linux/kernel/resource.c? That way /dev/mem will know when
-all the "interesting" bits end, and can return -EFAULT for
-everything above that.
-
-Thanks,
-A
-
+Thank you.
