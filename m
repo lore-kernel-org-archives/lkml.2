@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab1KIRRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:17:00 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9109 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752512Ab1KIRQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:16:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,484,1315206000"; 
-   d="scan'208";a="88060224"
-Subject: Re: Staging clear up
-From: Vinod Koul <vinod.koul@intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, greg@kroah.com,
-        linux-kernel@vger.kernel.org, dp@opensource.wolfsonmicro.com
-In-Reply-To: <20111109170819.GD4016@opensource.wolfsonmicro.com>
-References: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
-	 <20111109121329.GC21630@sirena.org.uk>
-	 <1320854413.32205.948.camel@vkoul-udesk3>
-	 <20111109164211.GA4016@opensource.wolfsonmicro.com>
-	 <1320857261.32205.1051.camel@vkoul-udesk3>
-	 <20111109165316.GB4016@opensource.wolfsonmicro.com>
-	 <1320858181.32205.1087.camel@vkoul-udesk3>
-	 <20111109170819.GD4016@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Nov 2011 22:42:34 +0530
-Message-ID: <1320858754.32205.1110.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755571Ab1KIRUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:20:04 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:43287 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751285Ab1KIRUC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:20:02 -0500
+Message-ID: <4EBAB5F7.80000@xenotime.net>
+Date: Wed, 09 Nov 2011 09:18:47 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.2-rc1
+References: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+In-Reply-To: <CA+55aFzytqbGcOzWvYAo-EnJCeK5mFqdCF5OjMTeM5UBfeyCXw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 17:08 +0000, Mark Brown wrote:
-> On Wed, Nov 09, 2011 at 10:33:01PM +0530, Vinod Koul wrote:
-> 
-> > Offtopic: I am ready with v2 of compressed API, testing stuff out. If
-> > you/Dimitris have stuff to add, please drop me a note. I didn't see any
-> > update after I published the tree
-> 
-> I'm pretty sure Dimitris has some stuff.
-Care to send me?
+On 11/07/2011 06:10 PM, Linus Torvalds wrote:
 
-I will push my updates worst case by week end. Fixed some usual misses
-found in testing and reworked the avail calculation.
+> Which brings me to a question I already asked on G+ - do people really
+> need the old-fashioned patches? The -rc1 patch is about 22MB gzip-9'd,
+> and part of the reason is that all those renames cause big
+> delete/create diffs. We *could* use git rename patches, but then you'd
+> have to apply them with "git apply" rather than the legacy "patch"
+> executables. But as it is, the patch is almost a third of the size of
+> the tar-ball, which makes me wonder if there's even any point to such
+> a big patch?
+
+[email was too long/noisy, sorry for the delayed reply.]
+[should I admit that I don't follow you on g+ ?]
+
+
+Do you mean files like patch-3.2-rc1.gz or .bz2 or .xz?
+Yes, I use them, but if I am the only user of them, I'll get over it.
 
 -- 
-~Vinod
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
