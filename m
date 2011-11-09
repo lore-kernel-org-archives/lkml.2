@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab1KJDUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:20:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41582 "EHLO mx2.suse.de"
+	id S933664Ab1KJDUH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:20:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41572 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933607Ab1KJDUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:10 -0500
+	id S933607Ab1KJDUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:03 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
-Message-Id: <20111109212702.224547806@clark.kroah.org>
+Message-Id: <20111109212702.025632746@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:41 -0800
+Date: Wed, 09 Nov 2011 13:25:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andiry Xu <andiry.xu@amd.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [019/262] xHCI: AMD isoc link TRB chain bit quirk
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
+Subject: [017/262] EHCI: workaround for MosChip controller bug
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,392 +24,170 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andiry Xu <andiry.xu@amd.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit 7e393a834b41001174a8fb3ae3bc23a749467760 upstream.
+commit 68aa95d5d4de31c9348c1628ffa85c805305ebc5 upstream.
 
-Setting the chain (CH) bit in the link TRB of isochronous transfer rings
-is required by AMD 0.96 xHCI host controller to successfully transverse
-multi-TRB TD that span through different memory segments.
+This patch (as1489) works around a hardware bug in MosChip EHCI
+controllers.  Evidently when one of these controllers increments the
+frame-index register, it changes the three low-order bits (the
+microframe counter) before changing the higher order bits (the frame
+counter).  If the register is read at just the wrong time, the value
+obtained is too low by 8.
 
-When a Missed Service Error event occurs, if the chain bit is not set in
-the link TRB and the host skips TDs which just across a link TRB, the
-host may falsely recognize the link TRB as a normal TRB. You can see
-this may cause big trouble - the host does not jump to the right address
-which is pointed by the link TRB, but continue fetching the memory which
-is after the link TRB address, which may not even belong to the host,
-and the result cannot be predicted.
+When the appropriate quirk flag is set, we work around this problem by
+reading the frame-index register a second time if the first value's
+three low-order bits are all 0.  This gives the hardware a chance to
+finish updating the register, yielding the correct value.
 
-This causes some big problems. Without the former patch I sent: "xHCI:
-prevent infinite loop when processing MSE event", the system may hang.
-With that patch applied, system does not hang, but the host still access
-wrong memory address and isoc transfer will fail. With this patch,
-isochronous transfer works as expected.
-
-This patch should be applied to kernels as old as 2.6.36, which was when
-the first isochronous support was added for the xHCI host controller.
-
-Signed-off-by: Andiry Xu <andiry.xu@amd.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Jason N Pitt <jpitt@fhcrc.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci-mem.c  |   32 ++++++++++++++-----------
- drivers/usb/host/xhci-pci.c  |    3 ++
- drivers/usb/host/xhci-ring.c |   53 +++++++++++++++++++++++--------------------
- drivers/usb/host/xhci.h      |    1 
- 4 files changed, 51 insertions(+), 38 deletions(-)
+ drivers/usb/host/ehci-dbg.c   |    2 +-
+ drivers/usb/host/ehci-hcd.c   |    3 +--
+ drivers/usb/host/ehci-pci.c   |    5 +++++
+ drivers/usb/host/ehci-sched.c |   30 +++++++++++++++++++++++++-----
+ drivers/usb/host/ehci.h       |   17 +++++++++++++++++
+ 5 files changed, 49 insertions(+), 8 deletions(-)
 
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -81,7 +81,7 @@ static void xhci_segment_free(struct xhc
-  * related flags, such as End TRB, Toggle Cycle, and no snoop.
-  */
- static void xhci_link_segments(struct xhci_hcd *xhci, struct xhci_segment *prev,
--		struct xhci_segment *next, bool link_trbs)
-+		struct xhci_segment *next, bool link_trbs, bool isoc)
+--- a/drivers/usb/host/ehci-dbg.c
++++ b/drivers/usb/host/ehci-dbg.c
+@@ -808,7 +808,7 @@ static ssize_t fill_registers_buffer(str
+ 	next += temp;
+ 
+ 	temp = scnprintf (next, size, "uframe %04x\n",
+-			ehci_readl(ehci, &ehci->regs->frame_index));
++			ehci_read_frame_index(ehci));
+ 	size -= temp;
+ 	next += temp;
+ 
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -1188,8 +1188,7 @@ ehci_endpoint_reset(struct usb_hcd *hcd,
+ static int ehci_get_frame (struct usb_hcd *hcd)
  {
- 	u32 val;
- 
-@@ -97,7 +97,9 @@ static void xhci_link_segments(struct xh
- 		val &= ~TRB_TYPE_BITMASK;
- 		val |= TRB_TYPE(TRB_LINK);
- 		/* Always set the chain bit with 0.95 hardware */
--		if (xhci_link_trb_quirk(xhci))
-+		/* Set chain bit for isoc rings on AMD 0.96 host */
-+		if (xhci_link_trb_quirk(xhci) ||
-+				(isoc && (xhci->quirks & XHCI_AMD_0x96_HOST)))
- 			val |= TRB_CHAIN;
- 		prev->trbs[TRBS_PER_SEGMENT-1].link.control = cpu_to_le32(val);
- 	}
-@@ -154,7 +156,7 @@ static void xhci_initialize_ring_info(st
-  * See section 4.9.1 and figures 15 and 16.
-  */
- static struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci,
--		unsigned int num_segs, bool link_trbs, gfp_t flags)
-+		unsigned int num_segs, bool link_trbs, bool isoc, gfp_t flags)
- {
- 	struct xhci_ring	*ring;
- 	struct xhci_segment	*prev;
-@@ -180,12 +182,12 @@ static struct xhci_ring *xhci_ring_alloc
- 		next = xhci_segment_alloc(xhci, flags);
- 		if (!next)
- 			goto fail;
--		xhci_link_segments(xhci, prev, next, link_trbs);
-+		xhci_link_segments(xhci, prev, next, link_trbs, isoc);
- 
- 		prev = next;
- 		num_segs--;
- 	}
--	xhci_link_segments(xhci, prev, ring->first_seg, link_trbs);
-+	xhci_link_segments(xhci, prev, ring->first_seg, link_trbs, isoc);
- 
- 	if (link_trbs) {
- 		/* See section 4.9.2.1 and 6.4.4.1 */
-@@ -231,14 +233,14 @@ void xhci_free_or_cache_endpoint_ring(st
-  * pointers to the beginning of the ring.
-  */
- static void xhci_reinit_cached_ring(struct xhci_hcd *xhci,
--		struct xhci_ring *ring)
-+		struct xhci_ring *ring, bool isoc)
- {
- 	struct xhci_segment	*seg = ring->first_seg;
- 	do {
- 		memset(seg->trbs, 0,
- 				sizeof(union xhci_trb)*TRBS_PER_SEGMENT);
- 		/* All endpoint rings have link TRBs */
--		xhci_link_segments(xhci, seg, seg->next, 1);
-+		xhci_link_segments(xhci, seg, seg->next, 1, isoc);
- 		seg = seg->next;
- 	} while (seg != ring->first_seg);
- 	xhci_initialize_ring_info(ring);
-@@ -542,7 +544,7 @@ struct xhci_stream_info *xhci_alloc_stre
- 	 */
- 	for (cur_stream = 1; cur_stream < num_streams; cur_stream++) {
- 		stream_info->stream_rings[cur_stream] =
--			xhci_ring_alloc(xhci, 1, true, mem_flags);
-+			xhci_ring_alloc(xhci, 1, true, false, mem_flags);
- 		cur_ring = stream_info->stream_rings[cur_stream];
- 		if (!cur_ring)
- 			goto cleanup_rings;
-@@ -767,7 +769,7 @@ int xhci_alloc_virt_device(struct xhci_h
- 	}
- 
- 	/* Allocate endpoint 0 ring */
--	dev->eps[0].ring = xhci_ring_alloc(xhci, 1, true, flags);
-+	dev->eps[0].ring = xhci_ring_alloc(xhci, 1, true, false, flags);
- 	if (!dev->eps[0].ring)
- 		goto fail;
- 
-@@ -1177,10 +1179,10 @@ int xhci_endpoint_init(struct xhci_hcd *
- 	 */
- 	if (usb_endpoint_xfer_isoc(&ep->desc))
- 		virt_dev->eps[ep_index].new_ring =
--			xhci_ring_alloc(xhci, 8, true, mem_flags);
-+			xhci_ring_alloc(xhci, 8, true, true, mem_flags);
- 	else
- 		virt_dev->eps[ep_index].new_ring =
--			xhci_ring_alloc(xhci, 1, true, mem_flags);
-+			xhci_ring_alloc(xhci, 1, true, false, mem_flags);
- 	if (!virt_dev->eps[ep_index].new_ring) {
- 		/* Attempt to use the ring cache */
- 		if (virt_dev->num_rings_cached == 0)
-@@ -1189,7 +1191,8 @@ int xhci_endpoint_init(struct xhci_hcd *
- 			virt_dev->ring_cache[virt_dev->num_rings_cached];
- 		virt_dev->ring_cache[virt_dev->num_rings_cached] = NULL;
- 		virt_dev->num_rings_cached--;
--		xhci_reinit_cached_ring(xhci, virt_dev->eps[ep_index].new_ring);
-+		xhci_reinit_cached_ring(xhci, virt_dev->eps[ep_index].new_ring,
-+			usb_endpoint_xfer_isoc(&ep->desc) ? true : false);
- 	}
- 	virt_dev->eps[ep_index].skip = false;
- 	ep_ring = virt_dev->eps[ep_index].new_ring;
-@@ -2003,7 +2006,7 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 		goto fail;
- 
- 	/* Set up the command ring to have one segments for now. */
--	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, true, flags);
-+	xhci->cmd_ring = xhci_ring_alloc(xhci, 1, true, false, flags);
- 	if (!xhci->cmd_ring)
- 		goto fail;
- 	xhci_dbg(xhci, "Allocated command ring at %p\n", xhci->cmd_ring);
-@@ -2034,7 +2037,8 @@ int xhci_mem_init(struct xhci_hcd *xhci,
- 	 * the event ring segment table (ERST).  Section 4.9.3.
- 	 */
- 	xhci_dbg(xhci, "// Allocating event ring\n");
--	xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, false, flags);
-+	xhci->event_ring = xhci_ring_alloc(xhci, ERST_NUM_SEGS, false, false,
-+						flags);
- 	if (!xhci->event_ring)
- 		goto fail;
- 	if (xhci_check_trb_in_td_math(xhci, flags) < 0)
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -128,6 +128,9 @@ static int xhci_pci_setup(struct usb_hcd
- 	if (pdev->vendor == PCI_VENDOR_ID_NEC)
- 		xhci->quirks |= XHCI_NEC_HOST;
- 
-+	if (pdev->vendor == PCI_VENDOR_ID_AMD && xhci->hci_version == 0x96)
-+		xhci->quirks |= XHCI_AMD_0x96_HOST;
-+
- 	/* AMD PLL quirk */
- 	if (pdev->vendor == PCI_VENDOR_ID_AMD && usb_amd_find_chipset_info())
- 		xhci->quirks |= XHCI_AMD_PLL_FIX;
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -187,7 +187,7 @@ static void inc_deq(struct xhci_hcd *xhc
-  *			prepare_transfer()?
-  */
- static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,
--		bool consumer, bool more_trbs_coming)
-+		bool consumer, bool more_trbs_coming, bool isoc)
- {
- 	u32 chain;
- 	union xhci_trb *next;
-@@ -214,11 +214,13 @@ static void inc_enq(struct xhci_hcd *xhc
- 				if (!chain && !more_trbs_coming)
- 					break;
- 
--				/* If we're not dealing with 0.95 hardware,
-+				/* If we're not dealing with 0.95 hardware or
-+				 * isoc rings on AMD 0.96 host,
- 				 * carry over the chain bit of the previous TRB
- 				 * (which may mean the chain bit is cleared).
- 				 */
--				if (!xhci_link_trb_quirk(xhci)) {
-+				if (!(isoc && (xhci->quirks & XHCI_AMD_0x96_HOST))
-+						&& !xhci_link_trb_quirk(xhci)) {
- 					next->link.control &=
- 						cpu_to_le32(~TRB_CHAIN);
- 					next->link.control |=
-@@ -2398,7 +2400,7 @@ irqreturn_t xhci_msi_irq(int irq, struct
-  *			prepare_transfer()?
-  */
- static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
--		bool consumer, bool more_trbs_coming,
-+		bool consumer, bool more_trbs_coming, bool isoc,
- 		u32 field1, u32 field2, u32 field3, u32 field4)
- {
- 	struct xhci_generic_trb *trb;
-@@ -2408,7 +2410,7 @@ static void queue_trb(struct xhci_hcd *x
- 	trb->field[1] = cpu_to_le32(field2);
- 	trb->field[2] = cpu_to_le32(field3);
- 	trb->field[3] = cpu_to_le32(field4);
--	inc_enq(xhci, ring, consumer, more_trbs_coming);
-+	inc_enq(xhci, ring, consumer, more_trbs_coming, isoc);
+ 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
+-	return (ehci_readl(ehci, &ehci->regs->frame_index) >> 3) %
+-		ehci->periodic_size;
++	return (ehci_read_frame_index(ehci) >> 3) % ehci->periodic_size;
  }
+ 
+ /*-------------------------------------------------------------------------*/
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -224,6 +224,11 @@ static int ehci_pci_setup(struct usb_hcd
+ 			pci_dev_put(p_smbus);
+ 		}
+ 		break;
++	case PCI_VENDOR_ID_NETMOS:
++		/* MosChip frame-index-register bug */
++		ehci_info(ehci, "applying MosChip frame-index workaround\n");
++		ehci->frame_index_bug = 1;
++		break;
+ 	}
+ 
+ 	/* optional debug port, normally in the first BAR */
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -36,6 +36,27 @@
+ 
+ static int ehci_get_frame (struct usb_hcd *hcd);
+ 
++#ifdef CONFIG_PCI
++
++static unsigned ehci_read_frame_index(struct ehci_hcd *ehci)
++{
++	unsigned uf;
++
++	/*
++	 * The MosChip MCS9990 controller updates its microframe counter
++	 * a little before the frame counter, and occasionally we will read
++	 * the invalid intermediate value.  Avoid problems by checking the
++	 * microframe number (the low-order 3 bits); if they are 0 then
++	 * re-read the register to get the correct value.
++	 */
++	uf = ehci_readl(ehci, &ehci->regs->frame_index);
++	if (unlikely(ehci->frame_index_bug && ((uf & 7) == 0)))
++		uf = ehci_readl(ehci, &ehci->regs->frame_index);
++	return uf;
++}
++
++#endif
++
+ /*-------------------------------------------------------------------------*/
  
  /*
-@@ -2416,7 +2418,7 @@ static void queue_trb(struct xhci_hcd *x
-  * FIXME allocate segments if the ring is full.
-  */
- static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
--		u32 ep_state, unsigned int num_trbs, gfp_t mem_flags)
-+		u32 ep_state, unsigned int num_trbs, bool isoc, gfp_t mem_flags)
- {
- 	/* Make sure the endpoint has been added to xHC schedule */
- 	switch (ep_state) {
-@@ -2458,10 +2460,11 @@ static int prepare_ring(struct xhci_hcd
- 		next = ring->enqueue;
+@@ -482,7 +503,7 @@ static int enable_periodic (struct ehci_
+ 	ehci_to_hcd(ehci)->state = HC_STATE_RUNNING;
  
- 		while (last_trb(xhci, ring, ring->enq_seg, next)) {
--			/* If we're not dealing with 0.95 hardware,
--			 * clear the chain bit.
-+			/* If we're not dealing with 0.95 hardware or isoc rings
-+			 * on AMD 0.96 host, clear the chain bit.
- 			 */
--			if (!xhci_link_trb_quirk(xhci))
-+			if (!xhci_link_trb_quirk(xhci) && !(isoc &&
-+					(xhci->quirks & XHCI_AMD_0x96_HOST)))
- 				next->link.control &= cpu_to_le32(~TRB_CHAIN);
- 			else
- 				next->link.control |= cpu_to_le32(TRB_CHAIN);
-@@ -2494,6 +2497,7 @@ static int prepare_transfer(struct xhci_
- 		unsigned int num_trbs,
- 		struct urb *urb,
- 		unsigned int td_index,
-+		bool isoc,
- 		gfp_t mem_flags)
- {
- 	int ret;
-@@ -2511,7 +2515,7 @@ static int prepare_transfer(struct xhci_
- 
- 	ret = prepare_ring(xhci, ep_ring,
- 			   le32_to_cpu(ep_ctx->ep_info) & EP_STATE_MASK,
--			   num_trbs, mem_flags);
-+			   num_trbs, isoc, mem_flags);
- 	if (ret)
- 		return ret;
- 
-@@ -2734,7 +2738,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (trb_buff_len < 0)
- 		return trb_buff_len;
- 
-@@ -2829,7 +2833,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 			more_trbs_coming = true;
- 		else
- 			more_trbs_coming = false;
--		queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+		queue_trb(xhci, ep_ring, false, more_trbs_coming, false,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -2920,7 +2924,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 
- 	ret = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -2992,7 +2996,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *
- 			more_trbs_coming = true;
- 		else
- 			more_trbs_coming = false;
--		queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+		queue_trb(xhci, ep_ring, false, more_trbs_coming, false,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -3052,7 +3056,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		num_trbs++;
- 	ret = prepare_transfer(xhci, xhci->devs[slot_id],
- 			ep_index, urb->stream_id,
--			num_trbs, urb, 0, mem_flags);
-+			num_trbs, urb, 0, false, mem_flags);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -3085,7 +3089,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		}
+ 	/* make sure ehci_work scans these */
+-	ehci->next_uframe = ehci_readl(ehci, &ehci->regs->frame_index)
++	ehci->next_uframe = ehci_read_frame_index(ehci)
+ 		% (ehci->periodic_size << 3);
+ 	if (unlikely(ehci->broken_periodic))
+ 		ehci->last_periodic_enable = ktime_get_real();
+@@ -1412,7 +1433,7 @@ iso_stream_schedule (
+ 		goto fail;
  	}
  
--	queue_trb(xhci, ep_ring, false, true,
-+	queue_trb(xhci, ep_ring, false, true, false,
- 		  setup->bRequestType | setup->bRequest << 8 | le16_to_cpu(setup->wValue) << 16,
- 		  le16_to_cpu(setup->wIndex) | le16_to_cpu(setup->wLength) << 16,
- 		  TRB_LEN(8) | TRB_INTR_TARGET(0),
-@@ -3105,7 +3109,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 	if (urb->transfer_buffer_length > 0) {
- 		if (setup->bRequestType & USB_DIR_IN)
- 			field |= TRB_DIR_IN;
--		queue_trb(xhci, ep_ring, false, true,
-+		queue_trb(xhci, ep_ring, false, true, false,
- 				lower_32_bits(urb->transfer_dma),
- 				upper_32_bits(urb->transfer_dma),
- 				length_field,
-@@ -3121,7 +3125,7 @@ int xhci_queue_ctrl_tx(struct xhci_hcd *
- 		field = 0;
- 	else
- 		field = TRB_DIR_IN;
--	queue_trb(xhci, ep_ring, false, false,
-+	queue_trb(xhci, ep_ring, false, false, false,
- 			0,
- 			0,
- 			TRB_INTR_TARGET(0),
-@@ -3270,7 +3274,8 @@ static int xhci_queue_isoc_tx(struct xhc
- 		trbs_per_td = count_isoc_trbs_needed(xhci, urb, i);
+-	now = ehci_readl(ehci, &ehci->regs->frame_index) & (mod - 1);
++	now = ehci_read_frame_index(ehci) & (mod - 1);
  
- 		ret = prepare_transfer(xhci, xhci->devs[slot_id], ep_index,
--				urb->stream_id, trbs_per_td, urb, i, mem_flags);
-+				urb->stream_id, trbs_per_td, urb, i, true,
-+				mem_flags);
- 		if (ret < 0) {
- 			if (i == 0)
- 				return ret;
-@@ -3340,7 +3345,7 @@ static int xhci_queue_isoc_tx(struct xhc
- 				remainder |
- 				TRB_INTR_TARGET(0);
- 
--			queue_trb(xhci, ep_ring, false, more_trbs_coming,
-+			queue_trb(xhci, ep_ring, false, more_trbs_coming, true,
- 				lower_32_bits(addr),
- 				upper_32_bits(addr),
- 				length_field,
-@@ -3422,7 +3427,7 @@ int xhci_queue_isoc_tx_prepare(struct xh
- 	 * Do not insert any td of the urb to the ring if the check failed.
+ 	/* Typical case: reuse current schedule, stream is still active.
+ 	 * Hopefully there are no gaps from the host falling behind
+@@ -2279,7 +2300,7 @@ scan_periodic (struct ehci_hcd *ehci)
  	 */
- 	ret = prepare_ring(xhci, ep_ring, le32_to_cpu(ep_ctx->ep_info) & EP_STATE_MASK,
--			   num_trbs, mem_flags);
-+			   num_trbs, true, mem_flags);
- 	if (ret)
- 		return ret;
+ 	now_uframe = ehci->next_uframe;
+ 	if (HC_IS_RUNNING(ehci_to_hcd(ehci)->state)) {
+-		clock = ehci_readl(ehci, &ehci->regs->frame_index);
++		clock = ehci_read_frame_index(ehci);
+ 		clock_frame = (clock >> 3) & (ehci->periodic_size - 1);
+ 	} else  {
+ 		clock = now_uframe + mod - 1;
+@@ -2458,8 +2479,7 @@ restart:
+ 					|| ehci->periodic_sched == 0)
+ 				break;
+ 			ehci->next_uframe = now_uframe;
+-			now = ehci_readl(ehci, &ehci->regs->frame_index) &
+-					(mod - 1);
++			now = ehci_read_frame_index(ehci) & (mod - 1);
+ 			if (now_uframe == now)
+ 				break;
  
-@@ -3481,7 +3486,7 @@ static int queue_command(struct xhci_hcd
- 		reserved_trbs++;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -137,6 +137,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
+ 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
++	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
  
- 	ret = prepare_ring(xhci, xhci->cmd_ring, EP_STATE_RUNNING,
--			reserved_trbs, GFP_ATOMIC);
-+			reserved_trbs, false, GFP_ATOMIC);
- 	if (ret < 0) {
- 		xhci_err(xhci, "ERR: No room for command on command ring\n");
- 		if (command_must_succeed)
-@@ -3489,8 +3494,8 @@ static int queue_command(struct xhci_hcd
- 					"unfailable commands failed.\n");
- 		return ret;
- 	}
--	queue_trb(xhci, xhci->cmd_ring, false, false, field1, field2, field3,
--			field4 | xhci->cmd_ring->cycle_state);
-+	queue_trb(xhci, xhci->cmd_ring, false, false, false, field1, field2,
-+			field3,	field4 | xhci->cmd_ring->cycle_state);
- 	return 0;
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -735,6 +736,22 @@ static inline u32 hc32_to_cpup (const st
  }
  
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1311,6 +1311,7 @@ struct xhci_hcd {
- #define XHCI_EP_LIMIT_QUIRK	(1 << 5)
- #define XHCI_BROKEN_MSI		(1 << 6)
- #define XHCI_RESET_ON_RESUME	(1 << 7)
-+#define XHCI_AMD_0x96_HOST	(1 << 9)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ #endif
++
++/*-------------------------------------------------------------------------*/
++
++#ifdef CONFIG_PCI
++
++/* For working around the MosChip frame-index-register bug */
++static unsigned ehci_read_frame_index(struct ehci_hcd *ehci);
++
++#else
++
++static inline unsigned ehci_read_frame_index(struct ehci_hcd *ehci)
++{
++	return ehci_readl(ehci, &ehci->regs->frame_index);
++}
++
++#endif
+ 
+ /*-------------------------------------------------------------------------*/
+ 
 
 
