@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901Ab1KIQRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:17:30 -0500
-Received: from smtp.gentoo.org ([140.211.166.183]:57941 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750783Ab1KIQR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:17:29 -0500
-From: Mike Frysinger <vapier@gentoo.org>
-Organization: wh0rd.org
-To: "Lars-Peter Clausen" <lars@metafoo.de>, dhowells@redhat.com
-Subject: Re: What happened to vcoalesce?
-Date: Wed, 9 Nov 2011 11:17:26 -0500
-User-Agent: KMail/1.13.7 (Linux/3.1.0; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
-References: <4EBA40E3.60203@metafoo.de>
-In-Reply-To: <4EBA40E3.60203@metafoo.de>
+	id S932241Ab1KIQUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:20:37 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:59733 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505Ab1KIQUg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:20:36 -0500
+Message-ID: <4EBAA847.1060907@linux.vnet.ibm.com>
+Date: Wed, 09 Nov 2011 21:50:23 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart20018144.HQBcaIqvjQ";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
+To: Tejun Heo <tj@kernel.org>
+CC: Andrea Arcangeli <aarcange@redhat.com>, "Rafael J. Wysocki" <rjw@suse.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jirislaby@gmail.com>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
+References: <4EB8E969.6010502@suse.cz> <1320766151-2619-1-git-send-email-aarcange@redhat.com> <1320766151-2619-2-git-send-email-aarcange@redhat.com> <4EB98A83.3040101@linux.vnet.ibm.com> <4EBA75F2.4080800@linux.vnet.ibm.com> <20111109155342.GA1260@google.com>
+In-Reply-To: <20111109155342.GA1260@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111091117.27481.vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart20018144.HQBcaIqvjQ
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+On 11/09/2011 09:23 PM, Tejun Heo wrote:
+> Hello, Andrea, Srivatsa.
+> 
+> On Wed, Nov 09, 2011 at 06:15:38PM +0530, Srivatsa S. Bhat wrote:
+>>>> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+>>>> index 4298aba..67311d1 100644
+>>>> --- a/mm/huge_memory.c
+>>>> +++ b/mm/huge_memory.c
+>>>> @@ -2277,6 +2277,7 @@ static struct page *khugepaged_alloc_hugepage(void)
+>>>>  		if (!hpage) {
+>>>>  			count_vm_event(THP_COLLAPSE_ALLOC_FAILED);
+>>>>  			khugepaged_alloc_sleep();
+>>>> +			try_to_freeze();
+>>>>  		} else
+>>>>  			count_vm_event(THP_COLLAPSE_ALLOC);
+>>>>  	} while (unlikely(!hpage) &&
+>>>> @@ -2331,7 +2332,7 @@ static int khugepaged(void *none)
+>>>>  {
+>>>>  	struct mm_slot *mm_slot;
+>>>>
+>>>> -	set_freezable();
+>>>> +	set_freezable_with_signal();
+>>>>  	set_user_nice(current, 19);
+> 
+> Oooh, please don't do that.  It's already gone in the pm tree.  It
+> would be best if wait_event_freezable_timeout() can be used
+> (ie. wakeup condition should be set somewhere) but, if not, something
+> like the following sould work.
+> 
+> static void khugepaged_alloc_sleep(void)
+> {
+> 	DEFINE_WAIT(wait);
+> 	add_wait_queue(&khugepaged_wait, &wait);
+> 	try_to_freeze();
+> 	schedule_timeout_interruptible(
+> 			msecs_to_jiffies(
+> 				khugepaged_alloc_sleep_millisecs));
+> 	try_to_freeze();
+> 	remove_wait_queue(&khugepaged_wait, &wait);
+> }
+> 												
 
-On Wednesday 09 November 2011 03:59:15 Lars-Peter Clausen wrote:
-> I'm using the kernel firmware loader on a blackfin board. And this
-> currently doesn't work with mainline since the firmware loader uses vmap.
-> In the ADI blackfin Linux tree there is a patch written by you, which
-> fixes this.
->=20
-> What is the status of that patch in regard to going mainline? I found a
-> mailing-list post from January where you tried to submit it upstream, but
-> there was a minor bug in the patch and so the it was rejected. In March y=
-ou
-> posted the fixed up version and from than on I couldn't find references to
-> it anymore.
+Right, Andrea this is what I meant. First of all we don't need both
+set_freezable_with_signal() _and_ an additional try_to_freeze().
+And since we are anyway doing away with set_freezable_with_signal(),
+we can just use try_to_freeze() as Tejun suggested above.  
 
-my patch had a bug in the MMU case, so when David pushed it to Linus, Linus=
-=20
-got grumpy and rejected them.  i think i need to re-convince David to push =
-the=20
-patches again now that i've fixed that bug.
-
-David: could you comment ?
-
-https://lkml.org/lkml/2011/3/24/386
-=2Dmike
-
---nextPart20018144.HQBcaIqvjQ
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQIcBAABAgAGBQJOuqeXAAoJEEFjO5/oN/WBe0gQAIr+LfEFyp7WSKamzgtXt1FA
-qegJULvJnFuEjGtRR3FjZQOG+cMkjQIJ570VpfHKugzIageANy0jaqT3ShrHY88+
-7vbND/snqk8/di0q7RA0MC/oVe6clgi6NFli1C8LE7mc1K2tTK3xS4NP6NhUzpj9
-IQdGY4MbSWMRtoh+3X75L7zJAWScZWh8+Az72L9mBjVMZA9ExblLwemVEU5QUIYe
-QdXkU/4kOC98nrQps8QEAnauTNoPnq+fx1bMqN3D+LpucpdAzk9keNdESKfEE+P9
-hdDzBwsZugLTivKDGZzegD+o4O6hV3p5de8yGWxjSVV4PvAqs346v+x5eA7N+W7W
-T8a39pPG5VJNPgrkmILdxM38ELddmg3pkLHHPCzO2CWUULDUx+Esfecn0zjm04Q8
-jX8DAionU2swSzpCh4f2Lh0xzIgQ1H8z8GB9Vfm0DKHhBKs68PrkP6yy2hPGdKT2
-p/jvXR4L+5DrDE1tfIGtff4jU5fUlidg0jKFD0ek4jIYqB0prp89MzjNmSBGJ8Xa
-Xq8zJYd8btKFUzgtcQ+qHtY/G552rGNLZEbSTph4+lGsvMBHScq1C2Hov12n90RE
-46CHEA4MVHgjNqHa+00azREJUmFpaDjmOXA60E60GtxaGBDAro2vVqWRZoTkHi40
-j6hLm3kD4JXIK5yeZBZH
-=8xWj
------END PGP SIGNATURE-----
-
---nextPart20018144.HQBcaIqvjQ--
+Thanks,
+Srivatsa S. Bhat
