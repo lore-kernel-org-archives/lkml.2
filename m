@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965684Ab1KJDpi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:45:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44774 "EHLO mx2.suse.de"
+	id S936261Ab1KJEE7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:04:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44789 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965669Ab1KJDp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:45:28 -0500
+	id S965669Ab1KJDpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:45:38 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:02 2011
-Message-Id: <20111109213202.067105003@clark.kroah.org>
+Message-Id: <20111109213202.380860626@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:03 -0800
+Date: Wed, 09 Nov 2011 13:34:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
         Dave Airlie <airlied@redhat.com>
-Subject: [196/264] drm/radeon/kms: split MSI check into a separate function
+Subject: [199/264] drm/radeon/kms: properly set panel mode for eDP
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,62 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 8f6c25c59b0c895c68cae59d1b34e9a7b36971bc upstream.
+commit 00dfb8df5bf8c3afe4c0bb8361133156b06b7a2c upstream.
 
-This makes it easier to add quirks for certain systems.
+This should make eDP more reliable.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_irq_kms.c |   29 +++++++++++++++++++++++------
- 1 file changed, 23 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/radeon/atombios_dp.c |   11 +++++++++++
+ include/drm/drm_dp_helper.h          |    3 +++
+ 2 files changed, 14 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -108,6 +108,27 @@ void radeon_driver_irq_uninstall_kms(str
- 	radeon_irq_set(rdev);
+--- a/drivers/gpu/drm/radeon/atombios_dp.c
++++ b/drivers/gpu/drm/radeon/atombios_dp.c
+@@ -553,6 +553,7 @@ static void radeon_dp_set_panel_mode(str
+ {
+ 	struct drm_device *dev = encoder->dev;
+ 	struct radeon_device *rdev = dev->dev_private;
++	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
+ 	int panel_mode = DP_PANEL_MODE_EXTERNAL_DP_MODE;
+ 
+ 	if (!ASIC_IS_DCE4(rdev))
+@@ -560,10 +561,20 @@ static void radeon_dp_set_panel_mode(str
+ 
+ 	if (radeon_connector_encoder_is_dp_bridge(connector))
+ 		panel_mode = DP_PANEL_MODE_INTERNAL_DP1_MODE;
++	else if (connector->connector_type == DRM_MODE_CONNECTOR_eDP) {
++		u8 tmp = radeon_read_dpcd_reg(radeon_connector, DP_EDP_CONFIGURATION_CAP);
++		if (tmp & 1)
++			panel_mode = DP_PANEL_MODE_INTERNAL_DP2_MODE;
++	}
+ 
+ 	atombios_dig_encoder_setup(encoder,
+ 				   ATOM_ENCODER_CMD_SETUP_PANEL_MODE,
+ 				   panel_mode);
++
++	if ((connector->connector_type == DRM_MODE_CONNECTOR_eDP) &&
++	    (panel_mode == DP_PANEL_MODE_INTERNAL_DP2_MODE)) {
++		radeon_write_dpcd_reg(radeon_connector, DP_EDP_CONFIGURATION_SET, 1);
++	}
  }
  
-+static bool radeon_msi_ok(struct radeon_device *rdev)
-+{
-+	/* RV370/RV380 was first asic with MSI support */
-+	if (rdev->family < CHIP_RV380)
-+		return false;
+ void radeon_dp_set_link_config(struct drm_connector *connector,
+--- a/include/drm/drm_dp_helper.h
++++ b/include/drm/drm_dp_helper.h
+@@ -72,6 +72,7 @@
+ 
+ #define DP_MAIN_LINK_CHANNEL_CODING         0x006
+ 
++#define DP_EDP_CONFIGURATION_CAP            0x00d
+ #define DP_TRAINING_AUX_RD_INTERVAL         0x00e
+ 
+ /* link configuration */
+@@ -133,6 +134,8 @@
+ #define DP_MAIN_LINK_CHANNEL_CODING_SET	    0x108
+ # define DP_SET_ANSI_8B10B		    (1 << 0)
+ 
++#define DP_EDP_CONFIGURATION_SET            0x10a
 +
-+	/* MSIs don't work on AGP */
-+	if (rdev->flags & RADEON_IS_AGP)
-+		return false;
-+
-+	if (rdev->flags & RADEON_IS_IGP) {
-+		/* APUs work fine with MSIs */
-+		if (rdev->family >= CHIP_PALM)
-+			return true;
-+		/* lots of IGPs have problems with MSIs */
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
- int radeon_irq_kms_init(struct radeon_device *rdev)
- {
- 	int i;
-@@ -124,12 +145,8 @@ int radeon_irq_kms_init(struct radeon_de
- 	}
- 	/* enable msi */
- 	rdev->msi_enabled = 0;
--	/* MSIs don't seem to work reliably on all IGP
--	 * chips.  Disable MSI on them for now.
--	 */
--	if ((rdev->family >= CHIP_RV380) &&
--	    ((!(rdev->flags & RADEON_IS_IGP)) || (rdev->family >= CHIP_PALM)) &&
--	    (!(rdev->flags & RADEON_IS_AGP))) {
-+
-+	if (radeon_msi_ok(rdev)) {
- 		int ret = pci_enable_msi(rdev->pdev);
- 		if (!ret) {
- 			rdev->msi_enabled = 1;
+ #define DP_LANE0_1_STATUS		    0x202
+ #define DP_LANE2_3_STATUS		    0x203
+ # define DP_LANE_CR_DONE		    (1 << 0)
 
 
