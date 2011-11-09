@@ -1,36 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753921Ab1KIQmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 11:42:21 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37893 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751201Ab1KIQmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 11:42:20 -0500
-Date: Wed, 9 Nov 2011 16:42:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Vinod Koul <vinod.koul@linux.intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: Staging clear up
-Message-ID: <20111109164211.GA4016@opensource.wolfsonmicro.com>
-References: <20111108211656.29defdda@lxorguk.ukuu.org.uk>
- <20111109121329.GC21630@sirena.org.uk>
- <1320854413.32205.948.camel@vkoul-udesk3>
+	id S1755256Ab1KIQpl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 11:45:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36627 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751870Ab1KIQpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 11:45:40 -0500
+Date: Wed, 9 Nov 2011 17:45:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: write_cache_pages inefficiency
+Message-ID: <20111109164537.GA7495@quack.suse.cz>
+References: <4EB700B1.3050205@cfl.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320854413.32205.948.camel@vkoul-udesk3>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4EB700B1.3050205@cfl.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 09:30:13PM +0530, Vinod Koul wrote:
+On Sun 06-11-11 16:48:33, Phillip Susi wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> I've read over write_cache_pages() in page-writeback.c, and related
+> writepages() functions, and it seems to me that it suffers from a
+> performance problem whenever an fsync is done on a file and some of
+> its pages have already begun writeback.  The comment in the code says:
+> 
+>  * If a page is already under I/O, write_cache_pages() skips it, even
+>  * if it's dirty.  This is desirable behaviour for memory-cleaning
+> writeback,
+>  * but it is INCORRECT for data-integrity system calls such as
+> fsync().  fsync()
+>  * and msync() need to guarantee that all the data which was dirty at
+> the time
+>  * the call was made get new I/O started against them.  If
+> wbc->sync_mode is
+>  * WB_SYNC_ALL then we were called for data integrity and we must wait for
+>  * existing IO to complete.
+> 
+> Based on this, I would expect the function to wait for an existing
+> write to complete only if the page is also dirty.  Instead, it waits
+> for existing page writes to complete regardless of the dirty bit.
+  Are you sure? I can see in the code:
+                        lock_page(page);
+                        if (unlikely(page->mapping != mapping)) {
+continue_unlock:
+                                unlock_page(page);
+                                continue;
+                        }
+                        if (!PageDirty(page)) {
+                                /* someone wrote it for us */
+                                goto continue_unlock;
+                        }
+                        if (PageWriteback(page)) {
+                                if (wbc->sync_mode != WB_SYNC_NONE)
+                                        wait_on_page_writeback(page);
+                                else
+                                        goto continue_unlock;
+                        }
+  So we skip clean pages...
 
-> Alan, if you folks are not using the staging driver I am okay for its
-> removal
+> Additionally, it does each wait serially, so if you are trying to
+> fsync 1000 dirty pages, and the first 10 are already being written
+> out, the thread will block on each of those 10 pages write completion
+> before it begins queuing any new writes.
+  Yes, this is correct.
 
-Someone will need to fix the build breakage from peering at the headers
-from staging.
+> Instead, shouldn't it go ahead and initiate pagewrite on all pages not
+> already being written, and then come back and wait on those that were
+> already in flight to complete, then initiate a second write on them if
+> they are dirty?
+  Well, if you can *demonstrate* with real numbers it has performance benefit
+we could do it. But it's not clear there will be any benefit - skipping
+pages which need writing can introduce additional seeks to the IO stream
+and that is costly - sometimes much more costly than just waiting for IO to
+complete...
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
