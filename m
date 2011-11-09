@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935000Ab1KJD2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:28:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42542 "EHLO mx2.suse.de"
+	id S935039Ab1KJD3A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:29:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42569 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934208Ab1KJD2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:28:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:12 2011
-Message-Id: <20111109212712.878820377@clark.kroah.org>
+	id S935027Ab1KJD24 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:28:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:17 2011
+Message-Id: <20111109212717.265555710@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:24 -0800
+Date: Wed, 09 Nov 2011 13:28:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [122/262] /proc/self/numa_maps: restore "huge" tag for hugetlb vmas
+        alan@lxorguk.ukuu.org.uk, Florian Echtler <floe@butterbrot.org>
+Subject: [166/262] USB: Serial: Add device ID for Sierra Wireless MC8305
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,41 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Florian Echtler <floe@butterbrot.org>
 
-commit fc360bd9cdcf875639a77f07fafec26699c546f3 upstream.
+commit 2f1def2695c223b2aa325e5e47d0d64200a45d23 upstream.
 
-The display of the "huge" tag was accidentally removed in 29ea2f698 ("mm:
-use walk_page_range() instead of custom page table walking code").
+A new device ID pair is added for Sierra Wireless MC8305.
 
-Reported-by: Stephen Hemminger <shemminger@vyatta.com>
-Tested-by: Stephen Hemminger <shemminger@vyatta.com>
-Reviewed-by: Stephen Wilson <wilsons@start.ca>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Hugh Dickins <hughd@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Florian Echtler <floe@butterbrot.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/task_mmu.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/qcserial.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -1039,6 +1039,9 @@ static int show_numa_map(struct seq_file
- 		seq_printf(m, " stack");
- 	}
- 
-+	if (is_vm_hugetlb_page(vma))
-+		seq_printf(m, " huge");
-+
- 	walk_page_range(vma->vm_start, vma->vm_end, &walk);
- 
- 	if (!md->pages)
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -80,6 +80,7 @@ static const struct usb_device_id id_tab
+ 	{USB_DEVICE(0x1199, 0x9008)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
+ 	{USB_DEVICE(0x1199, 0x9009)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
+ 	{USB_DEVICE(0x1199, 0x900a)},	/* Sierra Wireless Gobi 2000 Modem device (VT773) */
++	{USB_DEVICE(0x1199, 0x9011)},   /* Sierra Wireless Gobi 2000 Modem device (MC8305) */
+ 	{USB_DEVICE(0x16d8, 0x8001)},	/* CMDTech Gobi 2000 QDL device (VU922) */
+ 	{USB_DEVICE(0x16d8, 0x8002)},	/* CMDTech Gobi 2000 Modem device (VU922) */
+ 	{USB_DEVICE(0x05c6, 0x9204)},	/* Gobi 2000 QDL device */
 
 
