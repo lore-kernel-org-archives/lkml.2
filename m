@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965645Ab1KJDpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:45:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44739 "EHLO mx2.suse.de"
+	id S965668Ab1KJDp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:45:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44759 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965430Ab1KJDpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:45:08 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:58 2011
-Message-Id: <20111109213158.312859604@clark.kroah.org>
+	id S965430Ab1KJDpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:45:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:57 2011
+Message-Id: <20111109213157.604304845@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:27 -0800
+Date: Wed, 09 Nov 2011 13:33:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [160/264] mm: thp: tail page refcounting fix
+        alan@lxorguk.ukuu.org.uk, Andy Whitcroft <apw@canonical.com>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [153/264] readlinkat: ensure we return ENOENT for the empty pathname for normal lookups
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,491 +25,133 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Andy Whitcroft <apw@canonical.com>
 
-commit 70b50f94f1644e2aa7cb374819cfd93f3c28d725 upstream.
+commit 1fa1e7f615f4d3ae436fa319af6e4eebdd4026a8 upstream.
 
-Michel while working on the working set estimation code, noticed that
-calling get_page_unless_zero() on a random pfn_to_page(random_pfn)
-wasn't safe, if the pfn ended up being a tail page of a transparent
-hugepage under splitting by __split_huge_page_refcount().
+Since the commit below which added O_PATH support to the *at() calls, the
+error return for readlink/readlinkat for the empty pathname has switched
+from ENOENT to EINVAL:
 
-He then found the problem could also theoretically materialize with
-page_cache_get_speculative() during the speculative radix tree lookups
-that uses get_page_unless_zero() in SMP if the radix tree page is freed
-and reallocated and get_user_pages is called on it before
-page_cache_get_speculative has a chance to call get_page_unless_zero().
+  commit 65cfc6722361570bfe255698d9cd4dccaf47570d
+  Author: Al Viro <viro@zeniv.linux.org.uk>
+  Date:   Sun Mar 13 15:56:26 2011 -0400
 
-So the best way to fix the problem is to keep page_tail->_count zero at
-all times.  This will guarantee that get_page_unless_zero() can never
-succeed on any tail page.  page_tail->_mapcount is guaranteed zero and
-is unused for all tail pages of a compound page, so we can simply
-account the tail page references there and transfer them to
-tail_page->_count in __split_huge_page_refcount() (in addition to the
-head_page->_mapcount).
+    readlinkat(), fchownat() and fstatat() with empty relative pathnames
 
-While debugging this s/_count/_mapcount/ change I also noticed get_page is
-called by direct-io.c on pages returned by get_user_pages.  That wasn't
-entirely safe because the two atomic_inc in get_page weren't atomic.  As
-opposed to other get_user_page users like secondary-MMU page fault to
-establish the shadow pagetables would never call any superflous get_page
-after get_user_page returns.  It's safer to make get_page universally safe
-for tail pages and to use get_page_foll() within follow_page (inside
-get_user_pages()).  get_page_foll() is safe to do the refcounting for tail
-pages without taking any locks because it is run within PT lock protected
-critical sections (PT lock for pte and page_table_lock for
-pmd_trans_huge).
+This is both unexpected for userspace and makes readlink/readlinkat
+inconsistant with all other interfaces; and inconsistant with our stated
+return for these pathnames.
 
-The standard get_page() as invoked by direct-io instead will now take
-the compound_lock but still only for tail pages.  The direct-io paths
-are usually I/O bound and the compound_lock is per THP so very
-finegrined, so there's no risk of scalability issues with it.  A simple
-direct-io benchmarks with all lockdep prove locking and spinlock
-debugging infrastructure enabled shows identical performance and no
-overhead.  So it's worth it.  Ideally direct-io should stop calling
-get_page() on pages returned by get_user_pages().  The spinlock in
-get_page() is already optimized away for no-THP builds but doing
-get_page() on tail pages returned by GUP is generally a rare operation
-and usually only run in I/O paths.
+As the readlinkat call does not have a flags parameter we cannot use the
+AT_EMPTY_PATH approach used in the other calls.  Therefore expose whether
+the original path is infact entry via a new user_path_at_empty() path
+lookup function.  Use this to determine whether to default to EINVAL or
+ENOENT for failures.
 
-This new refcounting on page_tail->_mapcount in addition to avoiding new
-RCU critical sections will also allow the working set estimation code to
-work without any further complexity associated to the tail page
-refcounting with THP.
+Addresses http://bugs.launchpad.net/bugs/817187
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Reported-by: Michel Lespinasse <walken@google.com>
-Reviewed-by: Michel Lespinasse <walken@google.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
+[akpm@linux-foundation.org: remove unused getname_flags()]
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/gup.c    |    5 +-
- arch/x86/mm/gup.c        |    5 +-
- include/linux/mm.h       |   56 ++++++++++++-------------------
- include/linux/mm_types.h |   21 +++++++++--
- mm/huge_memory.c         |   37 ++++++++++++++------
- mm/internal.h            |   46 ++++++++++++++++++++++++++
- mm/memory.c              |    2 -
- mm/swap.c                |   83 ++++++++++++++++++++++++++++++-----------------
- 8 files changed, 171 insertions(+), 84 deletions(-)
+ fs/namei.c            |   18 +++++++++++++-----
+ fs/stat.c             |    5 +++--
+ include/linux/namei.h |    1 +
+ 3 files changed, 17 insertions(+), 7 deletions(-)
 
---- a/arch/powerpc/mm/gup.c
-+++ b/arch/powerpc/mm/gup.c
-@@ -22,8 +22,9 @@ static inline void get_huge_page_tail(st
- 	 * __split_huge_page_refcount() cannot run
- 	 * from under us.
- 	 */
--	VM_BUG_ON(atomic_read(&page->_count) < 0);
--	atomic_inc(&page->_count);
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	atomic_inc(&page->_mapcount);
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -137,7 +137,7 @@ static int do_getname(const char __user
+ 	return retval;
  }
  
- /*
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -114,8 +114,9 @@ static inline void get_huge_page_tail(st
- 	 * __split_huge_page_refcount() cannot run
- 	 * from under us.
- 	 */
--	VM_BUG_ON(atomic_read(&page->_count) < 0);
--	atomic_inc(&page->_count);
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	atomic_inc(&page->_mapcount);
- }
- 
- static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -356,36 +356,39 @@ static inline struct page *compound_head
- 	return page;
- }
- 
-+/*
-+ * The atomic page->_mapcount, starts from -1: so that transitions
-+ * both from it and to it can be tracked, using atomic_inc_and_test
-+ * and atomic_add_negative(-1).
-+ */
-+static inline void reset_page_mapcount(struct page *page)
-+{
-+	atomic_set(&(page)->_mapcount, -1);
-+}
-+
-+static inline int page_mapcount(struct page *page)
-+{
-+	return atomic_read(&(page)->_mapcount) + 1;
-+}
-+
- static inline int page_count(struct page *page)
+-static char *getname_flags(const char __user * filename, int flags)
++static char *getname_flags(const char __user *filename, int flags, int *empty)
  {
- 	return atomic_read(&compound_head(page)->_count);
- }
+ 	char *tmp, *result;
  
-+extern bool __get_page_tail(struct page *page);
-+
- static inline void get_page(struct page *page)
+@@ -148,6 +148,8 @@ static char *getname_flags(const char __
+ 
+ 		result = tmp;
+ 		if (retval < 0) {
++			if (retval == -ENOENT && empty)
++				*empty = 1;
+ 			if (retval != -ENOENT || !(flags & LOOKUP_EMPTY)) {
+ 				__putname(tmp);
+ 				result = ERR_PTR(retval);
+@@ -160,7 +162,7 @@ static char *getname_flags(const char __
+ 
+ char *getname(const char __user * filename)
  {
-+	if (unlikely(PageTail(page)))
-+		if (likely(__get_page_tail(page)))
-+			return;
- 	/*
- 	 * Getting a normal page or the head of a compound page
--	 * requires to already have an elevated page->_count. Only if
--	 * we're getting a tail page, the elevated page->_count is
--	 * required only in the head page, so for tail pages the
--	 * bugcheck only verifies that the page->_count isn't
--	 * negative.
-+	 * requires to already have an elevated page->_count.
- 	 */
--	VM_BUG_ON(atomic_read(&page->_count) < !PageTail(page));
-+	VM_BUG_ON(atomic_read(&page->_count) <= 0);
- 	atomic_inc(&page->_count);
--	/*
--	 * Getting a tail page will elevate both the head and tail
--	 * page->_count(s).
--	 */
--	if (unlikely(PageTail(page))) {
--		/*
--		 * This is safe only because
--		 * __split_huge_page_refcount can't run under
--		 * get_page().
--		 */
--		VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
--		atomic_inc(&page->first_page->_count);
--	}
+-	return getname_flags(filename, 0);
++	return getname_flags(filename, 0, 0);
  }
  
- static inline struct page *virt_to_head_page(const void *x)
-@@ -804,21 +807,6 @@ static inline pgoff_t page_index(struct
+ #ifdef CONFIG_AUDITSYSCALL
+@@ -1798,11 +1800,11 @@ struct dentry *lookup_one_len(const char
+ 	return __lookup_hash(&this, base, NULL);
  }
  
- /*
-- * The atomic page->_mapcount, like _count, starts from -1:
-- * so that transitions both from it and to it can be tracked,
-- * using atomic_inc_and_test and atomic_add_negative(-1).
-- */
--static inline void reset_page_mapcount(struct page *page)
--{
--	atomic_set(&(page)->_mapcount, -1);
--}
--
--static inline int page_mapcount(struct page *page)
--{
--	return atomic_read(&(page)->_mapcount) + 1;
--}
--
--/*
-  * Return true if this page is mapped into pagetables.
-  */
- static inline int page_mapped(struct page *page)
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -62,10 +62,23 @@ struct page {
- 			struct {
- 
- 				union {
--					atomic_t _mapcount;	/* Count of ptes mapped in mms,
--							 * to show when page is mapped
--							 * & limit reverse map searches.
--							 */
-+					/*
-+					 * Count of ptes mapped in
-+					 * mms, to show when page is
-+					 * mapped & limit reverse map
-+					 * searches.
-+					 *
-+					 * Used also for tail pages
-+					 * refcounting instead of
-+					 * _count. Tail pages cannot
-+					 * be mapped and keeping the
-+					 * tail page _count zero at
-+					 * all times guarantees
-+					 * get_page_unless_zero() will
-+					 * never succeed on tail
-+					 * pages.
-+					 */
-+					atomic_t _mapcount;
- 
- 					struct {
- 						unsigned inuse:16;
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -989,7 +989,7 @@ struct page *follow_trans_huge_pmd(struc
- 	page += (addr & ~HPAGE_PMD_MASK) >> PAGE_SHIFT;
- 	VM_BUG_ON(!PageCompound(page));
- 	if (flags & FOLL_GET)
--		get_page(page);
-+		get_page_foll(page);
- 
- out:
- 	return page;
-@@ -1156,6 +1156,7 @@ static void __split_huge_page_refcount(s
- 	unsigned long head_index = page->index;
- 	struct zone *zone = page_zone(page);
- 	int zonestat;
-+	int tail_count = 0;
- 
- 	/* prevent PageLRU to go away from under us, and freeze lru stats */
- 	spin_lock_irq(&zone->lru_lock);
-@@ -1164,11 +1165,27 @@ static void __split_huge_page_refcount(s
- 	for (i = 1; i < HPAGE_PMD_NR; i++) {
- 		struct page *page_tail = page + i;
- 
--		/* tail_page->_count cannot change */
--		atomic_sub(atomic_read(&page_tail->_count), &page->_count);
--		BUG_ON(page_count(page) <= 0);
--		atomic_add(page_mapcount(page) + 1, &page_tail->_count);
--		BUG_ON(atomic_read(&page_tail->_count) <= 0);
-+		/* tail_page->_mapcount cannot change */
-+		BUG_ON(page_mapcount(page_tail) < 0);
-+		tail_count += page_mapcount(page_tail);
-+		/* check for overflow */
-+		BUG_ON(tail_count < 0);
-+		BUG_ON(atomic_read(&page_tail->_count) != 0);
-+		/*
-+		 * tail_page->_count is zero and not changing from
-+		 * under us. But get_page_unless_zero() may be running
-+		 * from under us on the tail_page. If we used
-+		 * atomic_set() below instead of atomic_add(), we
-+		 * would then run atomic_set() concurrently with
-+		 * get_page_unless_zero(), and atomic_set() is
-+		 * implemented in C not using locked ops. spin_unlock
-+		 * on x86 sometime uses locked ops because of PPro
-+		 * errata 66, 92, so unless somebody can guarantee
-+		 * atomic_set() here would be safe on all archs (and
-+		 * not only on x86), it's safer to use atomic_add().
-+		 */
-+		atomic_add(page_mapcount(page) + page_mapcount(page_tail) + 1,
-+			   &page_tail->_count);
- 
- 		/* after clearing PageTail the gup refcount can be released */
- 		smp_mb();
-@@ -1186,10 +1203,7 @@ static void __split_huge_page_refcount(s
- 				      (1L << PG_uptodate)));
- 		page_tail->flags |= (1L << PG_dirty);
- 
--		/*
--		 * 1) clear PageTail before overwriting first_page
--		 * 2) clear PageTail before clearing PageHead for VM_BUG_ON
--		 */
-+		/* clear PageTail before overwriting first_page */
- 		smp_wmb();
- 
- 		/*
-@@ -1206,7 +1220,6 @@ static void __split_huge_page_refcount(s
- 		 * status is achieved setting a reserved bit in the
- 		 * pmd, not by clearing the present bit.
- 		*/
--		BUG_ON(page_mapcount(page_tail));
- 		page_tail->_mapcount = page->_mapcount;
- 
- 		BUG_ON(page_tail->mapping);
-@@ -1223,6 +1236,8 @@ static void __split_huge_page_refcount(s
- 
- 		lru_add_page_tail(zone, page, page_tail);
- 	}
-+	atomic_sub(tail_count, &page->_count);
-+	BUG_ON(atomic_read(&page->_count) <= 0);
- 
- 	__dec_zone_page_state(page, NR_ANON_TRANSPARENT_HUGEPAGES);
- 	__mod_zone_page_state(zone, NR_ANON_PAGES, HPAGE_PMD_NR);
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -37,6 +37,52 @@ static inline void __put_page(struct pag
- 	atomic_dec(&page->_count);
- }
- 
-+static inline void __get_page_tail_foll(struct page *page,
-+					bool get_page_head)
-+{
-+	/*
-+	 * If we're getting a tail page, the elevated page->_count is
-+	 * required only in the head page and we will elevate the head
-+	 * page->_count and tail page->_mapcount.
-+	 *
-+	 * We elevate page_tail->_mapcount for tail pages to force
-+	 * page_tail->_count to be zero at all times to avoid getting
-+	 * false positives from get_page_unless_zero() with
-+	 * speculative page access (like in
-+	 * page_cache_get_speculative()) on tail pages.
-+	 */
-+	VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	if (get_page_head)
-+		atomic_inc(&page->first_page->_count);
-+	atomic_inc(&page->_mapcount);
-+}
-+
-+/*
-+ * This is meant to be called as the FOLL_GET operation of
-+ * follow_page() and it must be called while holding the proper PT
-+ * lock while the pte (or pmd_trans_huge) is still mapping the page.
-+ */
-+static inline void get_page_foll(struct page *page)
-+{
-+	if (unlikely(PageTail(page)))
-+		/*
-+		 * This is safe only because
-+		 * __split_huge_page_refcount() can't run under
-+		 * get_page_foll() because we hold the proper PT lock.
-+		 */
-+		__get_page_tail_foll(page, true);
-+	else {
-+		/*
-+		 * Getting a normal page or the head of a compound page
-+		 * requires to already have an elevated page->_count.
-+		 */
-+		VM_BUG_ON(atomic_read(&page->_count) <= 0);
-+		atomic_inc(&page->_count);
-+	}
-+}
-+
- extern unsigned long highest_memmap_pfn;
- 
- /*
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1503,7 +1503,7 @@ split_fallthrough:
- 	}
- 
- 	if (flags & FOLL_GET)
--		get_page(page);
-+		get_page_foll(page);
- 	if (flags & FOLL_TOUCH) {
- 		if ((flags & FOLL_WRITE) &&
- 		    !pte_dirty(pte) && !PageDirty(page))
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -78,39 +78,22 @@ static void put_compound_page(struct pag
+-int user_path_at(int dfd, const char __user *name, unsigned flags,
+-		 struct path *path)
++int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
++		 struct path *path, int *empty)
  {
- 	if (unlikely(PageTail(page))) {
- 		/* __split_huge_page_refcount can run under us */
--		struct page *page_head = page->first_page;
--		smp_rmb();
--		/*
--		 * If PageTail is still set after smp_rmb() we can be sure
--		 * that the page->first_page we read wasn't a dangling pointer.
--		 * See __split_huge_page_refcount() smp_wmb().
--		 */
--		if (likely(PageTail(page) && get_page_unless_zero(page_head))) {
-+		struct page *page_head = compound_trans_head(page);
-+
-+		if (likely(page != page_head &&
-+			   get_page_unless_zero(page_head))) {
- 			unsigned long flags;
- 			/*
--			 * Verify that our page_head wasn't converted
--			 * to a a regular page before we got a
--			 * reference on it.
-+			 * page_head wasn't a dangling pointer but it
-+			 * may not be a head page anymore by the time
-+			 * we obtain the lock. That is ok as long as it
-+			 * can't be freed from under us.
- 			 */
--			if (unlikely(!PageHead(page_head))) {
--				/* PageHead is cleared after PageTail */
--				smp_rmb();
--				VM_BUG_ON(PageTail(page));
--				goto out_put_head;
--			}
--			/*
--			 * Only run compound_lock on a valid PageHead,
--			 * after having it pinned with
--			 * get_page_unless_zero() above.
--			 */
--			smp_mb();
--			/* page_head wasn't a dangling pointer */
- 			flags = compound_lock_irqsave(page_head);
- 			if (unlikely(!PageTail(page))) {
- 				/* __split_huge_page_refcount run before us */
- 				compound_unlock_irqrestore(page_head, flags);
- 				VM_BUG_ON(PageHead(page_head));
--			out_put_head:
- 				if (put_page_testzero(page_head))
- 					__put_single_page(page_head);
- 			out_put_single:
-@@ -121,16 +104,17 @@ static void put_compound_page(struct pag
- 			VM_BUG_ON(page_head != page->first_page);
- 			/*
- 			 * We can release the refcount taken by
--			 * get_page_unless_zero now that
--			 * split_huge_page_refcount is blocked on the
--			 * compound_lock.
-+			 * get_page_unless_zero() now that
-+			 * __split_huge_page_refcount() is blocked on
-+			 * the compound_lock.
- 			 */
- 			if (put_page_testzero(page_head))
- 				VM_BUG_ON(1);
- 			/* __split_huge_page_refcount will wait now */
--			VM_BUG_ON(atomic_read(&page->_count) <= 0);
--			atomic_dec(&page->_count);
-+			VM_BUG_ON(page_mapcount(page) <= 0);
-+			atomic_dec(&page->_mapcount);
- 			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
-+			VM_BUG_ON(atomic_read(&page->_count) != 0);
- 			compound_unlock_irqrestore(page_head, flags);
- 			if (put_page_testzero(page_head)) {
- 				if (PageHead(page_head))
-@@ -160,6 +144,45 @@ void put_page(struct page *page)
- }
- EXPORT_SYMBOL(put_page);
+ 	struct nameidata nd;
+-	char *tmp = getname_flags(name, flags);
++	char *tmp = getname_flags(name, flags, empty);
+ 	int err = PTR_ERR(tmp);
+ 	if (!IS_ERR(tmp)) {
  
-+/*
-+ * This function is exported but must not be called by anything other
-+ * than get_page(). It implements the slow path of get_page().
-+ */
-+bool __get_page_tail(struct page *page)
+@@ -1816,6 +1818,12 @@ int user_path_at(int dfd, const char __u
+ 	return err;
+ }
+ 
++int user_path_at(int dfd, const char __user *name, unsigned flags,
++		 struct path *path)
 +{
-+	/*
-+	 * This takes care of get_page() if run on a tail page
-+	 * returned by one of the get_user_pages/follow_page variants.
-+	 * get_user_pages/follow_page itself doesn't need the compound
-+	 * lock because it runs __get_page_tail_foll() under the
-+	 * proper PT lock that already serializes against
-+	 * split_huge_page().
-+	 */
-+	unsigned long flags;
-+	bool got = false;
-+	struct page *page_head = compound_trans_head(page);
-+
-+	if (likely(page != page_head && get_page_unless_zero(page_head))) {
-+		/*
-+		 * page_head wasn't a dangling pointer but it
-+		 * may not be a head page anymore by the time
-+		 * we obtain the lock. That is ok as long as it
-+		 * can't be freed from under us.
-+		 */
-+		flags = compound_lock_irqsave(page_head);
-+		/* here __split_huge_page_refcount won't run anymore */
-+		if (likely(PageTail(page))) {
-+			__get_page_tail_foll(page, false);
-+			got = true;
-+		}
-+		compound_unlock_irqrestore(page_head, flags);
-+		if (unlikely(!got))
-+			put_page(page_head);
-+	}
-+	return got;
++	return user_path_at_empty(dfd, name, flags, path, 0);
 +}
-+EXPORT_SYMBOL(__get_page_tail);
 +
- /**
-  * put_pages_list() - release a list of pages
-  * @pages: list of pages threaded on page->lru
+ static int user_path_parent(int dfd, const char __user *path,
+ 			struct nameidata *nd, char **name)
+ {
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -294,15 +294,16 @@ SYSCALL_DEFINE4(readlinkat, int, dfd, co
+ {
+ 	struct path path;
+ 	int error;
++	int empty = 0;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, LOOKUP_EMPTY, &path);
++	error = user_path_at_empty(dfd, pathname, LOOKUP_EMPTY, &path, &empty);
+ 	if (!error) {
+ 		struct inode *inode = path.dentry->d_inode;
+ 
+-		error = -EINVAL;
++		error = empty ? -ENOENT : -EINVAL;
+ 		if (inode->i_op->readlink) {
+ 			error = security_inode_readlink(path.dentry);
+ 			if (!error) {
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -67,6 +67,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LA
+ #define LOOKUP_EMPTY		0x4000
+ 
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
++extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
+ 
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 
 
