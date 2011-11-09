@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756163Ab1KIImd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:42:33 -0500
-Received: from nm3.bullet.mail.bf1.yahoo.com ([98.139.212.162]:38685 "HELO
-	nm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753054Ab1KIImc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:42:32 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 283567.60954.bm@omp1046.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=NIasRVmY3sdqDInZC8qSxqdN46PcrAOUksOEPFvKDHxVrRxCx4n0ba6GXzW/AHP1rP7CUWJYRoU/gDqiIa7jRuAMWSxEdFzPgYb5zV6sQ7bZadN7UgbszKOOnqRrc8wLAAksJnEetXekp+vbZGTAtuBtExgds12gP5Za5QEgboA=;
-X-YMail-OSG: KrsQVloVM1n5pjQEKff0c0y526d.CajrXzo3YuCQIlp4AdO
- zEB8Duxy7pcXcc04gbRtClRuurKbp8uH8X17DOtZVaaNDCa_NjaRxs8bGSCt
- lCB6CdV.yYQhm0sZxQTZ17Y0Dbx2bYOgzCSrC9upyPzEaYcxlgdHyjLG7kLR
- CGUvSlYrn5wBiLzM0mhb8MxJKOjPkurOx8DXwdWrlCBb6wChvjvvCgjXrNNl
- fM3mE1swxPAzR30PmmH10LFt8AzQfiseDVv9KfHPy_gU6svYedqVz0MshZhM
- r0odPtQvp1QVfKEyZbFEFUUlvbZZ3oZGsULilv1DWW0Q4JYEnBj5oY964Wbj
- OmhVeQ4FG_NqKRiwhBaRL54ioJEv8d7PcPRWrwjr7vqhLBrhFzfKo088KlDm
- Bl6t79SJgyPUHJWHZpqUHMN4YlzdX0whro0q4vaxcKf76VT8tle9aD10XUFM
- 60Z7omA--
-X-Mailer: YahooMailWebService/0.8.115.325013
-References: <1320816503.73813.YahooMailNeo@web160718.mail.bf1.yahoo.com> <1320819875.26025.48.camel@edumazet-laptop> <CAA93jw4gDuHyG508zxRzyn+MJ4gL5m958OaCWJxoDsaLgjdnqg@mail.gmail.com>
-Message-ID: <1320828151.17101.YahooMailNeo@web160705.mail.bf1.yahoo.com>
-Date: Wed, 9 Nov 2011 00:42:31 -0800 (PST)
-From: Manavalan Krishnan <manavalan_k@yahoo.com>
-Reply-To: Manavalan Krishnan <manavalan_k@yahoo.com>
-Subject: Re: Large file copy to NFS mounted directory causes delay in other application packets
-To: Dave Taht <dave.taht@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: netdev <netdev@vger.kernel.org>
-In-Reply-To: <CAA93jw4gDuHyG508zxRzyn+MJ4gL5m958OaCWJxoDsaLgjdnqg@mail.gmail.com>
+	id S1756139Ab1KIIqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:46:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39027 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab1KIIqo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 03:46:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <1320827885.6708.1.camel@phoenix>
+References: <1320827885.6708.1.camel@phoenix>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, 9 Nov 2011 16:46:22 +0800
+Message-ID: <CAF+7xW=uozfkCEfozZFmVzkbC+6S5UX-9n2woF9CCGxj5_tmFA@mail.gmail.com>
+Subject: Re: [PATCH v3] ASoC: wm9081: Use snd_soc_update_bits for read-modify-write
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->When I see behavior like this I keep thinking interactions between overlarge large txqueuelens, somewhat busted TCP offloads on NICs, and that pfifo_fast must die in favor of fair queuing and/or diffserv classification. But seeing >it on two different nics implies that your switch (which I assume is shared) is possibly to blame...
->(I see bufferbloat everywhere, but mostly because it's what I work on)
+>                        /* VMID 2*4k; Soft VMID ramp enable */
+> -                       reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
+> -                       reg |= WM9081_VMID_RAMP | 0x6;
+> -                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
+> +                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
+> +                                           WM9081_VMID_RAMP |
+> +                                           WM9081_VMID_SEL_MASK,
+> +                                           WM9081_VMID_RAMP | 0x6);
+>
+>                        mdelay(100);
+>
+>                        /* Normal bias enable & soft start off */
+> -                       reg &= ~WM9081_VMID_RAMP;
+> -                       snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
+> +                       snd_soc_update_bits(codec, WM9081_VMID_CONTROL,
+> +                                           WM9081_VMID_RAMP |
+> +                                           WM9081_VMID_SEL_MASK, 0);
+>
+It's probably not trival why we need to clear WM9081_VMID_SEL_MASK bits here by
+looking at the patch.  Looking at original code, you will know current code
+indeed clear WM9081_VMID_SEL_MASK bit here.
 
->Is this NFS over TCP? Does the HA daemons prioritize packets at all? Does your switch? Does your qdiscs? How deep are your buffers on the network cards and txqueuelens and switch? 
->(eric's other questions below are probably more valid)
+What current code does:
+        1. read WM9081_VMID_CONTROL register
+        2. write to WM9081_VMID_CONTROL register with setting WM9081_VMID_RAMP
+           bit and setting WM9081_VMID_SEL_MASK bits to 0x6 (VMID
+2*4k; Soft VMID
+           ramp enable)
+        3. mdelay(100)
+        4. write to WM9081_VMID_CONTROL register with clearing
+WM9081_VMID_RAMP bit.
+           Note: In this write, we do also clear WM9081_VMID_SEL_MASK
+bits because the register
+           value of WM9081_VMID_SEL_MASK bits are clear when we read
+in "step1".
+           In this case, the WM9081_VMID_SEL_MASK bits are clear
+           because we clear WM9081_VMID_SEL_MASK bits in SND_SOC_BIAS_OFF.
+           ( The default value is also zero for WM9081_VMID_SEL_MASK bits. )
 
+While converting to snd_soc_update_bits here we actually do one more read.
+For the second call of snd_soc_update_bits, we need to explictly clear
+WM9081_VMID_SEL_MASK bits.
 
-HA   daemons does not prioritize. could you please provide info on how to prioritize application packets?
-We tried with different switches, the same problem occurs. so switch may not be the issue here.
-switch and qdisks does not prirotize the packets.
-Here are network buffers used in the servers
-
-txqueuelen is 1000 
-
-net.core.netdev_max_backlog = 1000
-net.core.rmem_default = 262144
-net.core.rmem_max = 262144
-net.core.wmem_default = 129024
-net.core.wmem_max = 131071
-net.ipv4.tcp_rmem = 4096    87380    4194304
-net.ipv4.tcp_wmem = 4096    16384    4194304
-net.ipv4.tcp_mem = 196608    262144    393216
-
-Thanks
+Regards,
+Axel
