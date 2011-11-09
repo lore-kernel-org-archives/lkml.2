@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935527Ab1KJDcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:32:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43089 "EHLO mx2.suse.de"
+	id S935552Ab1KJDdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:33:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43101 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935341Ab1KJDcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:32:53 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:22 2011
-Message-Id: <20111109212722.416054914@clark.kroah.org>
+	id S935100Ab1KJDc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:32:59 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:24 2011
+Message-Id: <20111109212724.427129661@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:28:59 -0800
+Date: Wed, 09 Nov 2011 13:29:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [217/262] [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
+        alan@lxorguk.ukuu.org.uk,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [237/262] ath9k_hw: Update AR9485 initvals to fix system hang issue
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit f7c9c6bb14f3104608a3a83cadea10a6943d2804 upstream.
+commit 98fb2cc115b4ef1ea0a2d87a170c183bd395dd6c upstream.
 
-When looking at memory consumption issues I noticed quite a
-lot of memory in the kmalloc-2048 bucket:
+This patch fixes system hang when resuming from S3 state
+and lower rate sens failure issue.
 
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-  6561   6471  98%    2.30K    243       27     15552K kmalloc-2048
-
-Over 15MB. slub debug shows that cfq is responsible for almost
-all of it:
-
-# sort -nr /sys/kernel/slab/kmalloc-2048/alloc_calls
-6402 .cfq_init_queue+0xec/0x460 age=43423/43564/43655 pid=1 cpus=4,11,13
-
-In scsi_alloc_sdev we do scsi_alloc_queue but if slave_alloc
-fails we don't free it with scsi_free_queue.
-
-The patch below fixes the issue:
-
-  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
-   135     72  53%    2.30K      5       27       320K kmalloc-2048
-
-# cat /sys/kernel/slab/kmalloc-2048/alloc_calls
-3 .cfq_init_queue+0xec/0x460 age=3811/3876/3925 pid=1 cpus=4,11,13
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/scsi_scan.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/ar9485_initvals.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/scsi_scan.c
-+++ b/drivers/scsi/scsi_scan.c
-@@ -322,6 +322,7 @@ out_device_destroy:
- 	scsi_device_set_state(sdev, SDEV_DEL);
- 	transport_destroy_device(&sdev->sdev_gendev);
- 	put_device(&sdev->sdev_dev);
-+	scsi_free_queue(sdev->request_queue);
- 	put_device(&sdev->sdev_gendev);
- out:
- 	if (display_failure_msg)
+--- a/drivers/net/wireless/ath/ath9k/ar9485_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9485_initvals.h
+@@ -521,7 +521,7 @@ static const u32 ar9485_1_1_radio_postam
+ 	{0x000160ac, 0x24611800},
+ 	{0x000160b0, 0x03284f3e},
+ 	{0x0001610c, 0x00170000},
+-	{0x00016140, 0x10804008},
++	{0x00016140, 0x50804008},
+ };
+ 
+ static const u32 ar9485_1_1_mac_postamble[][5] = {
+@@ -603,7 +603,7 @@ static const u32 ar9485_1_1_radio_core[]
+ 
+ static const u32 ar9485_1_1_pcie_phy_pll_on_clkreq_enable_L1[][2] = {
+ 	/* Addr        allmodes */
+-	{0x00018c00, 0x10052e5e},
++	{0x00018c00, 0x18052e5e},
+ 	{0x00018c04, 0x000801d8},
+ 	{0x00018c08, 0x0000080c},
+ };
+@@ -776,7 +776,7 @@ static const u32 ar9485_modes_green_ob_d
+ 
+ static const u32 ar9485_1_1_pcie_phy_clkreq_disable_L1[][2] = {
+ 	/* Addr        allmodes */
+-	{0x00018c00, 0x10013e5e},
++	{0x00018c00, 0x18013e5e},
+ 	{0x00018c04, 0x000801d8},
+ 	{0x00018c08, 0x0000080c},
+ };
+@@ -882,7 +882,7 @@ static const u32 ar9485_fast_clock_1_1_b
+ 
+ static const u32 ar9485_1_1_pcie_phy_pll_on_clkreq_disable_L1[][2] = {
+ 	/* Addr        allmodes  */
+-	{0x00018c00, 0x10012e5e},
++	{0x00018c00, 0x18012e5e},
+ 	{0x00018c04, 0x000801d8},
+ 	{0x00018c08, 0x0000080c},
+ };
+@@ -1021,7 +1021,7 @@ static const u32 ar9485_common_rx_gain_1
+ 
+ static const u32 ar9485_1_1_pcie_phy_clkreq_enable_L1[][2] = {
+ 	/* Addr        allmodes */
+-	{0x00018c00, 0x10053e5e},
++	{0x00018c00, 0x18053e5e},
+ 	{0x00018c04, 0x000801d8},
+ 	{0x00018c08, 0x0000080c},
+ };
 
 
