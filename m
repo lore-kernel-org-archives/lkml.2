@@ -1,135 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab1KIN2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 08:28:07 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:12601 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab1KIN2F (ORCPT
+	id S1752745Ab1KINb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 08:31:28 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35303 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab1KINb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 08:28:05 -0500
-X-IronPort-AV: E=Sophos;i="4.69,484,1315180800"; 
-   d="scan'208";a="8840043"
-Subject: Re: [Xen-devel] [PATCH 1/3] Introducing grant table V2 stucture
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: "annie.li@oracle.com" <annie.li@oracle.com>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>
-Date: Wed, 9 Nov 2011 13:28:03 +0000
-In-Reply-To: <1320826490-29362-1-git-send-email-annie.li@oracle.com>
-References: <4EBA35D3.3020506@oracle.com>
-	 <1320826490-29362-1-git-send-email-annie.li@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1320845283.955.131.camel@zakaz.uk.xensource.com>
+	Wed, 9 Nov 2011 08:31:27 -0500
+Message-ID: <4EBA80AC.30604@gmail.com>
+Date: Wed, 09 Nov 2011 07:31:24 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 6/8] of: add clock providers
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca> <20111109091328.GY16886@pengutronix.de>
+In-Reply-To: <20111109091328.GY16886@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 08:14 +0000, annie.li@oracle.com wrote:
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 4f44b34..0d481a9 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -53,7 +53,7 @@
->  /* External tools reserve first few grant table entries. */
->  #define NR_RESERVED_ENTRIES 8
->  #define GNTTAB_LIST_END 0xffffffff
-> -#define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry))
-> +#define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry_v1))
-
-Does this need to become GREFS_V1_PER... or something?
-
+On 11/09/2011 03:13 AM, Sascha Hauer wrote:
+> On Tue, Nov 08, 2011 at 06:19:41PM -0700, Grant Likely wrote:
+>> Based on work by Ben Herrenschmidt and Jeremy Kerr, this patch adds an
+>> of_clk_get function to allow platforms to retrieve clock data from the
+>> device tree.
+>>
+>> Platform register a provider through of_clk_add_provider, which will be
+>> called when a device references the provider's OF node for a clock
+>> reference.
+>>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>> ---
+>>  .../devicetree/bindings/clock/clock-bindings.txt   |  109 +++++++++++++++++
+>>  drivers/of/Kconfig                                 |    6 +
+>>  drivers/of/Makefile                                |    1 +
+>>  drivers/of/clock.c                                 |  129 ++++++++++++++++++++
+>>  include/linux/of_clk.h                             |   37 ++++++
+>>  5 files changed, 282 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/clock/clock-bindings.txt
+>>  create mode 100644 drivers/of/clock.c
+>>  create mode 100644 include/linux/of_clk.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> new file mode 100644
+>> index 0000000..4770c7e
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> @@ -0,0 +1,109 @@
+>> +This binding is a work-in-progress, and are based on some experimental
+>> +work by benh[1].
+>> +
+>> +Sources of clock signal can be represented by any node in the device
+>> +tree.  Those nodes are designated as clock providers.  Clock consumer
+>> +nodes use a phandle and clock specifier pair to connect clock provider
+>> +outputs to clock inputs.  Similar to the gpio specifiers, a clock
+>> +specifier is an array of one more more cells identifying the clock
+>> +output on a device.  The length of a clock specifier is defined by the
+>> +value of a #clock-cells property in the clock provider node.
+>> +
+>> +[1] http://patchwork.ozlabs.org/patch/31551/
+>> +
+>> +==Clock providers==
+>> +
+>> +Required properties:
+>> +#clock-cells:	   Number of cells in a clock specifier; typically will be
+>> +		   set to 1
+>> +
+>> +Optional properties:
+>> +clock-output-name: Recommended to be a list of strings of clock output signal
+>> +		   names indexed by the first cell in the clock specifier.
+>> +		   However, the meaning of clock-output-names is domain
+>> +		   specific to the clock provider, and is only provided to
+>> +		   encourage using the same meaning for the majority of clock
+>> +		   providers.  This format may not work for clock providers
+>> +		   using a complex clock specifier format.  In those cases it
+>> +		   is recommended to omit this property and create a binding
+>> +		   specific names property.
 > 
->  static grant_ref_t **gnttab_list;
->  static unsigned int nr_grant_frames;
-> @@ -64,7 +64,72 @@ static DEFINE_SPINLOCK(gnttab_list_lock);
->  unsigned long xen_hvm_resume_frames;
->  EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
-> 
-> -static struct grant_entry *shared;
-> +static union {
-> +       struct grant_entry_v1 *v1;
-> +       void *ring_addr;
-> +} shared;
-> +
-> +/*
-> + * This function is null for grant table v1, adding it here in order to keep
-> + * consistent with *_v2 interface.
-> + */
-> +static int gnttab_map_status_v1(unsigned int nr_gframes);
-> +/*
-> + * This function is null for grant table v1, adding it here in order to keep
-> + * consistent with *_v2 interface.
-> + */
-> +static void gnttab_unmap_status_v1(void);
+> If the clock-output-name property is omitted, does this mean a clock
+> provider only has a single output or does it mean that it's not known
+> how many clock outputs a provider actually has?
 
-If you reorder the declarations of gnttab_request_version and
-gnttab_(un)map_status_v1 below then you can avoid these forward
-declarations.
+Neither. It's similar to how interrupt bindings work. For a clock
+consumer, you have a phandle to the parent and some number of cells to
+describe the connection. Often this is just the index or local interrupt
+number. Obviously, interrupt numbers make more sense than clock numbers,
+so having names is more useful in the clocks case if you have many outputs.
 
-Also I don't think the comment really adds much once you have the empty
-declaration underneath (like you do below). A simple "/* Nothing to do
-for v1 */" in the implementation would be sufficient.
+The name strings are just additional information. Keep in mind that the
+clock node name can also be used if you need to attach a name to a clock.
 
-> +
-> +/*This is a structure of function pointers for grant table v1*/
-
-and eventually v2, right? Actually I think the v1 is unnecessary. e.g.:
-	/*This is a structure of function pointers for grant table*/
-
-> +static struct {
-> +       /*
-> +        * Mapping a list of frames for storing grant entry status, this
-> +        * mechanism can allow better synchronization using barriers. Input
-> +        * parameter is frame number, returning GNTST_okay means success and
-> +        * negative value means failure.
-> +        */
-> +       int (*_gnttab_map_status)(unsigned int);
-
-I think you can drop the "_gnttab_" prefix from all of these, it'll be
-clear from the gnttab->foo what the namespace is.
-
-[...]
-> +} gnttab_interface;
-> +
-> +static int grant_table_version;
-> 
->  static struct gnttab_free_callback *gnttab_free_callback_list;
-> 
-
-> @@ -155,12 +229,10 @@ static void update_grant_entry(grant_ref_t ref, domid_t domid,
->          *  3. Write memory barrier (WMB).
->          *  4. Write ent->flags, inc. valid type.
->          */
-> -       shared[ref].frame = frame;
-> -       shared[ref].domid = domid;
-> -       wmb();
-> -       shared[ref].flags = flags;
-> +       gnttab_interface._update_grant_entry(ref, domid, frame, flags);
->  }
-> 
-> +
-
-Please avoid unrelated whitespace changes.
-
->  /*
->   * Public grant-issuing interface functions
->   */
-> @@ -187,31 +259,40 @@ int gnttab_grant_foreign_access(domid_t domid, unsigned long frame,
->  }
->  EXPORT_SYMBOL_GPL(gnttab_grant_foreign_access);
-> 
-> -int gnttab_query_foreign_access(grant_ref_t ref)
-> +int gnttab_query_foreign_access_v1(grant_ref_t ref)
-
-This and all the other similar functions can now be made static.
-
-Ian.
+Rob
 
