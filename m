@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933700Ab1KJDUV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:20:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41593 "EHLO mx2.suse.de"
+	id S933738Ab1KJFaE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:30:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41601 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933607Ab1KJDUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:00 2011
-Message-Id: <20111109212700.501339341@clark.kroah.org>
+	id S933689Ab1KJDUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
+Message-Id: <20111109212702.411511947@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:24 -0800
+Date: Wed, 09 Nov 2011 13:25:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: [002/262] CIFS: Fix DFS handling in cifs_get_file_info
+        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>,
+        Keith Packard <keithp@keithp.com>
+Subject: [021/262] drm/i915/panel: Always record the backlight level again (but cleverly)
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,61 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 42274bb22afc3e877ae5abed787b0b09d7dede52 upstream.
+commit f52c619a590fa75276c07dfcaf380dee53e4ea4c upstream.
 
-We should call cifs_all_info_to_fattr in rc == 0 case only.
+The commit 47356eb67285014527a5ab87543ba1fae3d1e10a introduced a
+mechanism to record the backlight level only at disabling time, but it
+also introduced a regression.  Since intel_lvds_enable() may be called
+without disabling (e.g. intel_lvds_commit() calls it unconditionally),
+the backlight gets back to the last recorded value.  For example, this
+happens when you dim the backlight, close the lid and open the lid,
+then the backlight suddenly goes to the brightest.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+This patch fixes the bug by recording the backlight level always
+when changed via intel_panel_set_backlight().  And,
+intel_panel_{enable|disable}_backlight() call the internal function not
+to update the recorded level wrongly.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Reviewed-by: Keith Packard <keithp@keithp.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/inode.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/i915/intel_panel.c |   21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -562,7 +562,16 @@ int cifs_get_file_info(struct file *filp
+--- a/drivers/gpu/drm/i915/intel_panel.c
++++ b/drivers/gpu/drm/i915/intel_panel.c
+@@ -226,7 +226,7 @@ static void intel_pch_panel_set_backligh
+ 	I915_WRITE(BLC_PWM_CPU_CTL, val | level);
+ }
  
- 	xid = GetXid();
- 	rc = CIFSSMBQFileInfo(xid, tcon, cfile->netfid, &find_data);
--	if (rc == -EOPNOTSUPP || rc == -EINVAL) {
-+	switch (rc) {
-+	case 0:
-+		cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
-+		break;
-+	case -EREMOTE:
-+		cifs_create_dfs_fattr(&fattr, inode->i_sb);
-+		rc = 0;
-+		break;
-+	case -EOPNOTSUPP:
-+	case -EINVAL:
- 		/*
- 		 * FIXME: legacy server -- fall back to path-based call?
- 		 * for now, just skip revalidating and mark inode for
-@@ -570,18 +579,14 @@ int cifs_get_file_info(struct file *filp
- 		 */
- 		rc = 0;
- 		CIFS_I(inode)->time = 0;
-+	default:
- 		goto cgfi_exit;
--	} else if (rc == -EREMOTE) {
--		cifs_create_dfs_fattr(&fattr, inode->i_sb);
--		rc = 0;
--	} else if (rc)
--		goto cgfi_exit;
-+	}
+-void intel_panel_set_backlight(struct drm_device *dev, u32 level)
++static void intel_panel_actually_set_backlight(struct drm_device *dev, u32 level)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	u32 tmp;
+@@ -254,16 +254,21 @@ void intel_panel_set_backlight(struct dr
+ 	I915_WRITE(BLC_PWM_CTL, tmp | level);
+ }
  
- 	/*
- 	 * don't bother with SFU junk here -- just mark inode as needing
- 	 * revalidation.
- 	 */
--	cifs_all_info_to_fattr(&fattr, &find_data, cifs_sb, false);
- 	fattr.cf_uniqueid = CIFS_I(inode)->uniqueid;
- 	fattr.cf_flags |= CIFS_FATTR_NEED_REVAL;
- 	cifs_fattr_to_inode(inode, &fattr);
+-void intel_panel_disable_backlight(struct drm_device *dev)
++void intel_panel_set_backlight(struct drm_device *dev, u32 level)
+ {
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+-	if (dev_priv->backlight_enabled) {
+-		dev_priv->backlight_level = intel_panel_get_backlight(dev);
+-		dev_priv->backlight_enabled = false;
+-	}
++	dev_priv->backlight_level = level;
++	if (dev_priv->backlight_enabled)
++		intel_panel_actually_set_backlight(dev, level);
++}
++
++void intel_panel_disable_backlight(struct drm_device *dev)
++{
++	struct drm_i915_private *dev_priv = dev->dev_private;
+ 
+-	intel_panel_set_backlight(dev, 0);
++	dev_priv->backlight_enabled = false;
++	intel_panel_actually_set_backlight(dev, 0);
+ }
+ 
+ void intel_panel_enable_backlight(struct drm_device *dev)
+@@ -273,8 +278,8 @@ void intel_panel_enable_backlight(struct
+ 	if (dev_priv->backlight_level == 0)
+ 		dev_priv->backlight_level = intel_panel_get_max_backlight(dev);
+ 
+-	intel_panel_set_backlight(dev, dev_priv->backlight_level);
+ 	dev_priv->backlight_enabled = true;
++	intel_panel_actually_set_backlight(dev, dev_priv->backlight_level);
+ }
+ 
+ void intel_panel_setup_backlight(struct drm_device *dev)
 
 
