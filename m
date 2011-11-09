@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934437Ab1KJD2N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:28:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42472 "EHLO mx2.suse.de"
+	id S934428Ab1KJD2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:28:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42482 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934912Ab1KJD2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:28:06 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.697553229@clark.kroah.org>
+	id S934093Ab1KJD2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:28:13 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:13 2011
+Message-Id: <20111109212713.077064395@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:52 -0800
+Date: Wed, 09 Nov 2011 13:27:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [150/262] vfs: show O_CLOEXE bit properly in /proc/<pid>/fdinfo/<fd> files
+        alan@lxorguk.ukuu.org.uk,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Adrian Bunk <adrian.bunk@movial.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [124/262] ARM: mach-ux500: unlock I&D l2x0 caches before init
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,59 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 1117f72ea0217ba0cc19f05adbbd8b9a397f5ab7 upstream.
+commit 1bf6d2c1bb23533af6930581cc39b74685bc29de upstream.
 
-The CLOEXE bit is magical, and for performance (and semantic) reasons we
-don't actually maintain it in the file descriptor itself, but in a
-separate bit array.  Which means that when we show f_flags, the CLOEXE
-status is shown incorrectly: we show the status not as it is now, but as
-it was when the file was opened.
+Apparently U8500 U-Boot versions may leave the l2x0 locked down
+before executing the kernel. Make sure we unlock it before we
+initialize the l2x0. This fixes a performance problem reported
+by Jan Rinze.
 
-Fix that by looking up the bit properly in the 'fdt->close_on_exec' bit
-array.
+The l2x0 core has been modified to unlock the l2x0 by default,
+but it will not touch the locking registers if the l2x0 was
+already enabled, as on the ux500, so we need this quirk to
+make sure it is properly turned off.
 
-Uli needs this in order to re-implement the pfiles program:
-
-  "For normal file descriptors (not sockets) this was the last piece of
-   information which wasn't available.  This is all part of my 'give
-   Solaris users no reason to not switch' effort.  I intend to offer the
-   code to the util-linux-ng maintainers."
-
-Requested-by: Ulrich Drepper <drepper@akkadia.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Cc: Adrian Bunk <adrian.bunk@movial.com>
+Reported-by: Jan Rinze <janrinze@gmail.com>
+Tested-by: Robert Marklund <robert.marklund@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/proc/base.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/arm/mach-ux500/cpu.c |   25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1920,6 +1920,14 @@ static int proc_fd_info(struct inode *in
- 		spin_lock(&files->file_lock);
- 		file = fcheck_files(files, fd);
- 		if (file) {
-+			unsigned int f_flags;
-+			struct fdtable *fdt;
+--- a/arch/arm/mach-ux500/cpu.c
++++ b/arch/arm/mach-ux500/cpu.c
+@@ -99,7 +99,27 @@ static void ux500_l2x0_inv_all(void)
+ 	ux500_cache_sync();
+ }
+ 
+-static int ux500_l2x0_init(void)
++static int __init ux500_l2x0_unlock(void)
++{
++	int i;
 +
-+			fdt = files_fdtable(files);
-+			f_flags = file->f_flags & ~O_CLOEXEC;
-+			if (FD_ISSET(fd, fdt->close_on_exec))
-+				f_flags |= O_CLOEXEC;
++	/*
++	 * Unlock Data and Instruction Lock if locked. Ux500 U-Boot versions
++	 * apparently locks both caches before jumping to the kernel. The
++	 * l2x0 core will not touch the unlock registers if the l2x0 is
++	 * already enabled, so we do it right here instead. The PL310 has
++	 * 8 sets of registers, one per possible CPU.
++	 */
++	for (i = 0; i < 8; i++) {
++		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_D_BASE +
++			       i * L2X0_LOCKDOWN_STRIDE);
++		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_I_BASE +
++			       i * L2X0_LOCKDOWN_STRIDE);
++	}
++	return 0;
++}
 +
- 			if (path) {
- 				*path = file->f_path;
- 				path_get(&file->f_path);
-@@ -1929,7 +1937,7 @@ static int proc_fd_info(struct inode *in
- 					 "pos:\t%lli\n"
- 					 "flags:\t0%o\n",
- 					 (long long) file->f_pos,
--					 file->f_flags);
-+					 f_flags);
- 			spin_unlock(&files->file_lock);
- 			put_files_struct(files);
- 			return 0;
++static int __init ux500_l2x0_init(void)
+ {
+ 	if (cpu_is_u5500())
+ 		l2x0_base = __io_address(U5500_L2CC_BASE);
+@@ -108,6 +128,9 @@ static int ux500_l2x0_init(void)
+ 	else
+ 		ux500_unknown_soc();
+ 
++	/* Unlock before init */
++	ux500_l2x0_unlock();
++
+ 	/* 64KB way size, 8 way associativity, force WA */
+ 	l2x0_init(l2x0_base, 0x3e060000, 0xc0000fff);
+ 
 
 
