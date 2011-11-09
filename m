@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934634Ab1KJFGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:06:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42436 "EHLO mx2.suse.de"
+	id S934882Ab1KJFHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:07:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42407 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934317Ab1KJD1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.211947810@clark.kroah.org>
+	id S934839Ab1KJD1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:27:32 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:13 2011
+Message-Id: <20111109212712.968840391@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:47 -0800
+Date: Wed, 09 Nov 2011 13:27:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [145/262] ipv6: nullify ipv6_ac_list and ipv6_fl_list when creating new socket
+        alan@lxorguk.ukuu.org.uk, Paul Fertser <fercerpav@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [123/262] plat-mxc: iomux-v3.h: implicitly enable pull-up/down when thats desired
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +25,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Paul Fertser <fercerpav@gmail.com>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit 6571534b600b8ca1936ff5630b9e0947f21faf16 upstream.
 
-[ Upstream commit 676a1184e8afd4fed7948232df1ff91517400859 ]
+To configure pads during the initialisation a set of special constants
+is used, e.g.
+#define MX25_PAD_FEC_MDIO__FEC_MDIO IOMUX_PAD(0x3c4, 0x1cc, 0x10, 0, 0, PAD_CTL_HYS | PAD_CTL_PUS_22K_UP)
 
-ipv6_ac_list and ipv6_fl_list from listening socket are inadvertently
-shared with new socket created for connection.
+The problem is that no pull-up/down is getting activated unless both
+PAD_CTL_PUE (pull-up enable) and PAD_CTL_PKE (pull/keeper module
+enable) set. This is clearly stated in the i.MX25 datasheet and is
+confirmed by the measurements on hardware. This leads to some rather
+hard to understand bugs such as misdetecting an absent ethernet PHY (a
+real bug i had), unstable data transfer etc. This might affect mx25,
+mx35, mx50, mx51 and mx53 SoCs.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+It's reasonable to expect that if the pullup value is specified, the
+intention was to have it actually active, so we implicitly add the
+needed bits.
+
+Signed-off-by: Paul Fertser <fercerpav@gmail.com>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv6/tcp_ipv6.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1409,6 +1409,8 @@ static struct sock * tcp_v6_syn_recv_soc
- 		newtp->af_specific = &tcp_sock_ipv6_mapped_specific;
- #endif
+---
+ arch/arm/plat-mxc/include/mach/iomux-v3.h |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- a/arch/arm/plat-mxc/include/mach/iomux-v3.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-v3.h
+@@ -89,11 +89,11 @@ typedef u64 iomux_v3_cfg_t;
+ #define PAD_CTL_HYS			(1 << 8)
  
-+		newnp->ipv6_ac_list = NULL;
-+		newnp->ipv6_fl_list = NULL;
- 		newnp->pktoptions  = NULL;
- 		newnp->opt	   = NULL;
- 		newnp->mcast_oif   = inet6_iif(skb);
-@@ -1473,6 +1475,7 @@ static struct sock * tcp_v6_syn_recv_soc
- 	   First: no IPv4 options.
- 	 */
- 	newinet->inet_opt = NULL;
-+	newnp->ipv6_ac_list = NULL;
- 	newnp->ipv6_fl_list = NULL;
+ #define PAD_CTL_PKE			(1 << 7)
+-#define PAD_CTL_PUE			(1 << 6)
+-#define PAD_CTL_PUS_100K_DOWN		(0 << 4)
+-#define PAD_CTL_PUS_47K_UP		(1 << 4)
+-#define PAD_CTL_PUS_100K_UP		(2 << 4)
+-#define PAD_CTL_PUS_22K_UP		(3 << 4)
++#define PAD_CTL_PUE			(1 << 6 | PAD_CTL_PKE)
++#define PAD_CTL_PUS_100K_DOWN		(0 << 4 | PAD_CTL_PUE)
++#define PAD_CTL_PUS_47K_UP		(1 << 4 | PAD_CTL_PUE)
++#define PAD_CTL_PUS_100K_UP		(2 << 4 | PAD_CTL_PUE)
++#define PAD_CTL_PUS_22K_UP		(3 << 4 | PAD_CTL_PUE)
  
- 	/* Clone RX bits */
+ #define PAD_CTL_ODE			(1 << 3)
+ 
 
 
