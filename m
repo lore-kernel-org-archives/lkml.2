@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab1KIRdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:33:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64484 "EHLO mx1.redhat.com"
+	id S932567Ab1KIReU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 12:34:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29433 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751709Ab1KIRdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:33:19 -0500
-Date: Wed, 9 Nov 2011 18:33:08 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@suse.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] thp: reduce khugepaged freezing latency
-Message-ID: <20111109173308.GK5075@redhat.com>
-References: <4EB8E969.6010502@suse.cz>
- <1320766151-2619-1-git-send-email-aarcange@redhat.com>
- <1320766151-2619-2-git-send-email-aarcange@redhat.com>
- <4EB98A83.3040101@linux.vnet.ibm.com>
- <4EBA75F2.4080800@linux.vnet.ibm.com>
- <20111109155342.GA1260@google.com>
- <20111109165201.GI5075@redhat.com>
- <20111109165925.GC1260@google.com>
- <20111109170657.GE1260@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109170657.GE1260@google.com>
+	id S1754118Ab1KIReT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 12:34:19 -0500
+Message-ID: <1320860080.24903.2.camel@dcbw.foobar.com>
+Subject: Re: [PATCH] wireless: libertas: fix unaligned le64 accesses
+From: Dan Williams <dcbw@redhat.com>
+To: Steven Miao <realmz6@gmail.com>
+Cc: "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 09 Nov 2011 11:34:40 -0600
+In-Reply-To: <1320827440-16904-1-git-send-email-realmz6@gmail.com>
+References: <1320827440-16904-1-git-send-email-realmz6@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 09:06:57AM -0800, Tejun Heo wrote:
-> Ah, crap, still waking up.  Sorry about that.  So, yes, there's a race
-> condition above.  You need to set TASK_INTERRUPTIBLE before testing
-> freezing and use schedule_timeout() instead of
+On Wed, 2011-11-09 at 16:30 +0800, Steven Miao wrote:
+> use get_unaligned_le64() to get timestamp
+> 
+> Signed-off-by: Steven Miao <realmz6@gmail.com>
 
-Yep that's the race I was thinking about. I see the wakeup in the
-no-signal case avoids the race in wait_even_freezable_timeout so that
-is ok but it'd race if I were just to add try_to_freeze before calling
-schedule_timeout_interruptible.
+Acked-by: Dan Williams <dcbw@redhat.com>
 
-> schedule_timeout_interruptible().  Was getting confused with
-> prepare_to_wait().  That said, why not use prepare_to_wait() instead?
+> ---
+>  drivers/net/wireless/libertas/cfg.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+> index b456a53..f23c2b1 100644
+> --- a/drivers/net/wireless/libertas/cfg.c
+> +++ b/drivers/net/wireless/libertas/cfg.c
+> @@ -630,7 +630,7 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
+>  			if (channel &&
+>  			    !(channel->flags & IEEE80211_CHAN_DISABLED))
+>  				cfg80211_inform_bss(wiphy, channel,
+> -					bssid, le64_to_cpu(*(__le64 *)tsfdesc),
+> +					bssid, get_unaligned_le64(tsfdesc),
+>  					capa, intvl, ie, ielen,
+>  					LBS_SCAN_RSSI_TO_MBM(rssi),
+>  					GFP_KERNEL);
 
-Because I don't need to wait on a waitqueue there. A THP failure
-occurred, that caused some CPU overload and it's usually happening at
-time of heavy VM stress, so I don't want to retry and cause more CPU
-load from khugepaged until after some time even if more wakeups come
-by. khugepaged is a very low cost background op, so it shouldn't cause
-unnecessary CPU usage at times of VM pressure, waiting a better time
-later is better.
+
