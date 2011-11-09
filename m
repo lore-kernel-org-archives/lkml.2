@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab1KIJHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 04:07:00 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:35265 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754749Ab1KIJG6 (ORCPT
+	id S1756260Ab1KIJIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 04:08:44 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44893 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752228Ab1KIJIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 04:06:58 -0500
-X-Authenticated: #7756412
-X-Provags-ID: V01U2FsdGVkX18chmE4BEscKiEYqpdcg0e025UGoVbaCEZ5xrPgls
-	6LMV2yE+Xp7fHL
-Message-ID: <4EBA42AF.3000501@gmx.net>
-Date: Wed, 09 Nov 2011 10:06:55 +0100
-From: Arne Jansen <sensille@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Lightning/1.0b2 Thunderbird/3.1.11
+	Wed, 9 Nov 2011 04:08:42 -0500
+Date: Wed, 9 Nov 2011 13:06:34 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Stephen Wilson <wilsons@start.ca>,
+        Alexey Dobriyan <adobriyan@gmail.com>, security@kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH] proc: restrict access to /proc/$PID/{sched,schedstat}
+Message-ID: <20111109090634.GA3418@albatros>
+References: <20111105104828.GA3489@albatros>
+ <20111108115900.GA14587@albatros>
+ <20111108151752.b2e37741.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Chris Mason <chris.mason@oracle.com>,
-        Andrea Gelmini <andrea.gelmini@gmail.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs pull request
-References: <20111106183851.GA4339@shiny> <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com> <4EB7A6CC.5030502@gmx.net> <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com> <4EB7D2D8.2060505@gmx.net> <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com> <4EB8DEAC.7000906@gmx.net> <20111109010701.GI4149@shiny> <20111109074847.GA16742@infradead.org>
-In-Reply-To: <20111109074847.GA16742@infradead.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108151752.b2e37741.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.11.2011 08:48, Christoph Hellwig wrote:
-> On Tue, Nov 08, 2011 at 08:07:01PM -0500, Chris Mason wrote:
->> Looks like bio_add_page() is failing and we're getting the enomem from
->> there.  LVM is only letting us put one page in each bio.
+On Tue, Nov 08, 2011 at 15:17 -0800, Andrew Morton wrote:
+> > On Sat, Nov 05, 2011 at 14:48 +0400, Vasiliy Kulikov wrote:
+> > > /proc/$PID/{sched,schedstat} contain debugging scheduler counters, which
+> > > should not be world readable.  They may be used to gather private information
+> > > about processes' activity.  E.g. it can be used to count the number of
+> > > characters typed in gksu dialog:
+> > > 
+> > > http://www.openwall.com/lists/oss-security/2011/11/05/3
+> > > 
+> > > This infoleak is similar to io (1d1221f375c) and stat's eip/esp (f83ce3e6b02d)
+> > > infoleaks.  Probably other 0644/0444 procfs files are vulnerable to
+> > > similar infoleaks.
 > 
-> Yes, at the moment all bio based DM targets only allow single page I/O.
+> Grumble.
+> 
+> The obvious issue with this patch is its non-back-compatibility.  What
+> existing code will break, in what manner and what is the seriousness of
+> the breakage?
+> 
+> You *know* this is the main issue, yet you didn't address it at all! 
+> You just leave the issue out there for other people to work out, and to
+> ask the obvious questions.
+> 
+> This happens over and over and I'm getting rather tired of the charade.
+> 
+> So I'm going to ignore this patch and I ask that you and other security
+> people never do this again.
+> 
+> If you're going to submit a patch which you know will change kernel
+> interfaces in a non-backward-compatible fashion then don't just pretend
+> that it didn't happen!  Please provide us with a complete description
+> of the breakage and at least some analysis of the downstream
+> implications of the change.  So that we are better able to decide
+> whether the security improvements justify the disruption.
 
-That's... unexpected. I guess this won't change with 3.3? For 3.3 I have
-to rework that part from scrub to account for Chris' bigblocks. If it can
-wait that long I'd prefer to fix both at once. Chris?
+I'm sorry it looked like I didn't test the patch, but I really didn't
+face to any breakage (top, ps, gnome monitor).  The actual problem is
+that the patch is still incomplete - all proc monitoring tools watch for
+/proc/$PID/stat file content changes, not /proc/$PID/sched.
+/proc/$PID/stat contains the same sched information, which I've missed.
+Restricting "stat" does break these tools.
 
--Arne
+/proc/$PID/stat already has "fake" fields like KSTK_EIP() and KSTK_ESP().
+We can continue to do such sort of force fields zeroing, which doesn't
+break ABI.
 
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
