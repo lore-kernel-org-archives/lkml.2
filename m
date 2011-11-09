@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934889Ab1KJD1v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:27:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42418 "EHLO mx2.suse.de"
+	id S934437Ab1KJD2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:28:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42472 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934856Ab1KJD1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:27:39 -0500
+	id S934912Ab1KJD2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:28:06 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.001132361@clark.kroah.org>
+Message-Id: <20111109212715.697553229@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:45 -0800
+Date: Wed, 09 Nov 2011 13:27:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [143/262] tcp: properly update lost_cnt_hint during shifting
+        alan@lxorguk.ukuu.org.uk
+Subject: [150/262] vfs: show O_CLOEXE bit properly in /proc/<pid>/fdinfo/<fd> files
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,39 +24,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit 1117f72ea0217ba0cc19f05adbbd8b9a397f5ab7 upstream.
 
-[ Upstream commit 1e5289e121372a3494402b1b131b41bfe1cf9b7f ]
+The CLOEXE bit is magical, and for performance (and semantic) reasons we
+don't actually maintain it in the file descriptor itself, but in a
+separate bit array.  Which means that when we show f_flags, the CLOEXE
+status is shown incorrectly: we show the status not as it is now, but as
+it was when the file was opened.
 
-lost_skb_hint is used by tcp_mark_head_lost() to mark the first unhandled skb.
-lost_cnt_hint is the number of packets or sacked packets before the lost_skb_hint;
-When shifting a skb that is before the lost_skb_hint, if tcp_is_fack() is ture,
-the skb has already been counted in the lost_cnt_hint; if tcp_is_fack() is false,
-tcp_sacktag_one() will increase the lost_cnt_hint. So tcp_shifted_skb() does not
-need to adjust the lost_cnt_hint by itself. When shifting a skb that is equal to
-lost_skb_hint, the shifted packets will not be counted by tcp_mark_head_lost().
-So tcp_shifted_skb() should adjust the lost_cnt_hint even tcp_is_fack(tp) is true.
+Fix that by looking up the bit properly in the 'fdt->close_on_exec' bit
+array.
 
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Uli needs this in order to re-implement the pfiles program:
+
+  "For normal file descriptors (not sockets) this was the last piece of
+   information which wasn't available.  This is all part of my 'give
+   Solaris users no reason to not switch' effort.  I intend to offer the
+   code to the util-linux-ng maintainers."
+
+Requested-by: Ulrich Drepper <drepper@akkadia.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/tcp_input.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -1380,9 +1380,7 @@ static int tcp_shifted_skb(struct sock *
- 
- 	BUG_ON(!pcount);
- 
--	/* Tweak before seqno plays */
--	if (!tcp_is_fack(tp) && tcp_is_sack(tp) && tp->lost_skb_hint &&
--	    !before(TCP_SKB_CB(tp->lost_skb_hint)->seq, TCP_SKB_CB(skb)->seq))
-+	if (skb == tp->lost_skb_hint)
- 		tp->lost_cnt_hint += pcount;
- 
- 	TCP_SKB_CB(prev)->end_seq += shifted;
+---
+ fs/proc/base.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1920,6 +1920,14 @@ static int proc_fd_info(struct inode *in
+ 		spin_lock(&files->file_lock);
+ 		file = fcheck_files(files, fd);
+ 		if (file) {
++			unsigned int f_flags;
++			struct fdtable *fdt;
++
++			fdt = files_fdtable(files);
++			f_flags = file->f_flags & ~O_CLOEXEC;
++			if (FD_ISSET(fd, fdt->close_on_exec))
++				f_flags |= O_CLOEXEC;
++
+ 			if (path) {
+ 				*path = file->f_path;
+ 				path_get(&file->f_path);
+@@ -1929,7 +1937,7 @@ static int proc_fd_info(struct inode *in
+ 					 "pos:\t%lli\n"
+ 					 "flags:\t0%o\n",
+ 					 (long long) file->f_pos,
+-					 file->f_flags);
++					 f_flags);
+ 			spin_unlock(&files->file_lock);
+ 			put_files_struct(files);
+ 			return 0;
 
 
