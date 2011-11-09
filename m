@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523Ab1KIOCm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 09:02:42 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:54974 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121Ab1KIOCk convert rfc822-to-8bit (ORCPT
+	id S1753659Ab1KIOGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 09:06:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56237 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752570Ab1KIOGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 09:02:40 -0500
-Subject: Re: [PATCH RFC tip/core/rcu 05/28] lockdep: Update documentation
- for lock-class leak detection
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com, patches@linaro.org
-Date: Wed, 09 Nov 2011 15:02:08 +0100
-In-Reply-To: <20111103194226.GG2287@linux.vnet.ibm.com>
-References: <20111102203017.GA3830@linux.vnet.ibm.com>
-	 <1320265849-5744-5-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20111103025716.GA2042@leaf> <20111103194226.GG2287@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320847328.19727.2.camel@twins>
-Mime-Version: 1.0
+	Wed, 9 Nov 2011 09:06:50 -0500
+Date: Wed, 9 Nov 2011 14:06:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: ashish.jangam@kpitcummins.com, linaro-dev@lists.linaro.org,
+        lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
+        Dajun <dajun.chen@diasemi.com>
+Subject: Re: [Patch 5/11] Regulator: DA9052/53 regulator support v5
+Message-ID: <20111109140647.GA587@opensource.wolfsonmicro.com>
+References: <1318950455.4644.65.camel@L-0761.kpit.com>
+ <1320740905.5640.3.camel@L-0761.kpit.com>
+ <4EBA7544.5030403@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBA7544.5030403@linaro.org>
+X-Cookie: Avoid reality at all costs.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-03 at 12:42 -0700, Paul E. McKenney wrote:
-> > If so, could we simply arrange to have lockdep scream when it encounters
-> > an uninitialized spinlock?
-> 
-> I reworded to distinguish between compile-time initialization (which will
-> cause lockdep to have a separate class per instance) and run-time
-> initialization (which will cause lockdep to have one class total).
+On Wed, Nov 09, 2011 at 08:42:44PM +0800, Ying-Chun Liu (PaulLiu) wrote:
 
-Right, runtime init will key off of the call-site, compile-time init
-will key off of the static data address.
+> Hi Mark,
 
-> Making lockdep scream in this case might be useful, but if I understand
-> correctly, that would give false positives for compile-time initialized
-> global locks. 
+> I've already tested this driver (v5) with the DA9052 MFD v8 driver
+> posted on 20111103. It is tested on my imx53 Quickstart board. This
+> patch also looks good to me. Please review this driver if possible.
 
-Yeah, that's going to bring a lot of pain with it, in particular all the
-early stuff like the init task etc. are all statically initialized.
+Please resubmit if you want it reviewed, to reiterate the problems with
+the core driver meant I didn't see much value in reviewing the code.  I
+can't review the code if I don't have a copy.  I'm also note sure why
+you're asking me alone to review the code?
+
+If Linaro wants to help get this stuff upstream I strongly suggest you
+help the guys with the process issues that have been (for example we've
+still not seen an actual patch series submitted).  Possibly taking over
+the actual patch submissions would be helpful.
