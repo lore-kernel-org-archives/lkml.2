@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab1KILdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 06:33:09 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45636 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab1KILdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 06:33:08 -0500
-Date: Wed, 9 Nov 2011 12:33:03 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Haywood <tla@oak.selfip.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Build warning: kernel/trace/trace.c (v3.2-rc1-90-g19e0baf)
-Message-ID: <20111109113303.GA18508@gere.osrc.amd.com>
-References: <4EBA3E3E.9060402@oak.selfip.net>
+	id S1752091Ab1KILhV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 06:37:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57606 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab1KILhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 06:37:19 -0500
+Message-ID: <4EBA65E5.1050506@gmail.com>
+Date: Wed, 09 Nov 2011 19:37:09 +0800
+From: Wang Sheng-Hui <shhuiw@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4EBA3E3E.9060402@oak.selfip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: yinghai@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3][RESEND] mm/memblock.c: return -ENOMEM instead of -ENXIO
+ on failure of debugfs_create_dir in memblock_init_debugfs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 08:47:58AM +0000, Dave Haywood wrote:
-> Hi,
-> 
->   Noticed this new warning in the build of kernel v3.2-rc1-90-g19e0baf:
-> 
->   CC      kernel/trace/trace.o
-> kernel/trace/trace.c: In function 'tracing_mark_write':
-> kernel/trace/trace.c:3644:8: warning: 'page2' may be used uninitialized in this function
+On the failure of debugfs_create_dir, we should return -ENOMEM
+instead of -ENXIO.
 
-That has to be gcc 4.5.x something. 4.6 is smarter in that aspect:
+Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
+---
+ mm/memblock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-$ make CC=gcc-4.6 kernel/trace/trace.o
-  CHK     include/linux/version.h
-  UPD     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  UPD     include/generated/utsrelease.h
-  CC      kernel/bounds.s
-
-  ...
-
-  HOSTLD  scripts/mod/modpost
-  CC      kernel/trace/trace.o
-$ make CC=gcc-4.5 kernel/trace/trace.o
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      kernel/bounds.s
-
-  ...
-
-  HOSTLD  scripts/mod/modpost
-  CC      kernel/trace/trace.o
-kernel/trace/trace.c: In function ‘tracing_mark_write’:
-kernel/trace/trace.c:3644:8: warning: ‘page2’ may be used uninitialized in this function
-
-HTH
-
+diff --git a/mm/memblock.c b/mm/memblock.c
+index ccbf973..4d4d5ee 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -852,7 +852,7 @@ static int __init memblock_init_debugfs(void)
+ {
+ 	struct dentry *root = debugfs_create_dir("memblock", NULL);
+ 	if (!root)
+-		return -ENXIO;
++		return -ENOMEM;
+ 	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
+ 	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
+ 
 -- 
-Regards/Gruss,
-Boris.
+1.7.1
+
