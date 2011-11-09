@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab1KJFXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:23:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41852 "EHLO mx2.suse.de"
+	id S934072Ab1KJFX4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:23:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41832 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934088Ab1KJDWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:22:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
-Message-Id: <20111109212706.157411720@clark.kroah.org>
+	id S934037Ab1KJDWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:22:25 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:05 2011
+Message-Id: <20111109212705.758100714@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:20 -0800
+Date: Wed, 09 Nov 2011 13:26:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [058/262] ath9k_hw: Fix descriptor status of TxOpExceeded
+        alan@lxorguk.ukuu.org.uk, Dan Williams <dcbw@redhat.com>
+Subject: [054/262] USB: option: convert Huawei K3765, K4505, K4605 reservered interface to blacklist
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +24,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+From: Dan Williams <dcbw@redhat.com>
 
-commit 2a15b394f8e46dd3e2ab365ab41cfa701d92fa77 upstream.
+commit 0d905fd5ece4ab65e8407c450077744e1c8f661b upstream.
 
-Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+That's what the blacklist is for...
+
+Signed-off-by: Dan Williams <dcbw@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_mac.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/option.c |   79 +++++++++++++++++++++++---------------------
+ 1 file changed, 43 insertions(+), 36 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-@@ -255,8 +255,6 @@ static int ar9003_hw_proc_txdesc(struct
- 		return -EIO;
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -495,6 +495,10 @@ static const struct option_blacklist_inf
+ 	.sendsetup = BIT(0) | BIT(1) | BIT(2),
+ };
  
--	if (status & AR_TxOpExceeded)
--		ts->ts_status |= ATH9K_TXERR_XTXOP;
- 	ts->ts_rateindex = MS(status, AR_FinalTxIdx);
- 	ts->ts_seqnum = MS(status, AR_SeqNum);
- 	ts->tid = MS(status, AR_TxTid);
-@@ -267,6 +265,8 @@ static int ar9003_hw_proc_txdesc(struct
- 	ts->ts_status = 0;
- 	ts->ts_flags  = 0;
++static const struct option_blacklist_info huawei_cdc12_blacklist = {
++	.reserved = BIT(1) | BIT(2),
++};
++
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -592,12 +596,15 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3806, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4605, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x31) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3770, 0xff, 0x02, 0x32) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3771, 0xff, 0x02, 0x31) },
+@@ -1207,10 +1214,35 @@ static void __exit option_exit(void)
+ module_init(option_init);
+ module_exit(option_exit);
  
-+	if (status & AR_TxOpExceeded)
-+		ts->ts_status |= ATH9K_TXERR_XTXOP;
- 	status = ACCESS_ONCE(ads->status2);
- 	ts->ts_rssi_ctl0 = MS(status, AR_TxRSSIAnt00);
- 	ts->ts_rssi_ctl1 = MS(status, AR_TxRSSIAnt01);
++static bool is_blacklisted(const u8 ifnum, enum option_blacklist_reason reason,
++			   const struct option_blacklist_info *blacklist)
++{
++	unsigned long num;
++	const unsigned long *intf_list;
++
++	if (blacklist) {
++		if (reason == OPTION_BLACKLIST_SENDSETUP)
++			intf_list = &blacklist->sendsetup;
++		else if (reason == OPTION_BLACKLIST_RESERVED_IF)
++			intf_list = &blacklist->reserved;
++		else {
++			BUG_ON(reason);
++			return false;
++		}
++
++		for_each_set_bit(num, intf_list, MAX_BL_NUM + 1) {
++			if (num == ifnum)
++				return true;
++		}
++	}
++	return false;
++}
++
+ static int option_probe(struct usb_serial *serial,
+ 			const struct usb_device_id *id)
+ {
+ 	struct usb_wwan_intf_private *data;
++
+ 	/* D-Link DWM 652 still exposes CD-Rom emulation interface in modem mode */
+ 	if (serial->dev->descriptor.idVendor == DLINK_VENDOR_ID &&
+ 		serial->dev->descriptor.idProduct == DLINK_PRODUCT_DWM_652 &&
+@@ -1223,14 +1255,14 @@ static int option_probe(struct usb_seria
+ 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
+ 		return -ENODEV;
+ 
+-	/* Don't bind network interfaces on Huawei K3765, K4505 & K4605 */
+-	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
+-		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
+-			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505 ||
+-			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4605) &&
+-		(serial->interface->cur_altsetting->desc.bInterfaceNumber == 1 ||
+-			serial->interface->cur_altsetting->desc.bInterfaceNumber == 2))
+-		return -ENODEV;
++	/* Don't bind reserved interfaces (like network ones) which often have
++	 * the same class/subclass/protocol as the serial interfaces.  Look at
++	 * the Windows driver .INF files for reserved interface numbers.
++	 */
++	if (is_blacklisted(
++		serial->interface->cur_altsetting->desc.bInterfaceNumber,
++		OPTION_BLACKLIST_RESERVED_IF,
++		(const struct option_blacklist_info *) id->driver_info))
+ 
+ 	/* Don't bind network interface on Samsung GT-B3730, it is handled by a separate module */
+ 	if (serial->dev->descriptor.idVendor == SAMSUNG_VENDOR_ID &&
+@@ -1239,7 +1271,6 @@ static int option_probe(struct usb_seria
+ 		return -ENODEV;
+ 
+ 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
+-
+ 	if (!data)
+ 		return -ENOMEM;
+ 	data->send_setup = option_send_setup;
+@@ -1248,30 +1279,6 @@ static int option_probe(struct usb_seria
+ 	return 0;
+ }
+ 
+-static bool is_blacklisted(const u8 ifnum, enum option_blacklist_reason reason,
+-			   const struct option_blacklist_info *blacklist)
+-{
+-	unsigned long num;
+-	const unsigned long *intf_list;
+-
+-	if (blacklist) {
+-		if (reason == OPTION_BLACKLIST_SENDSETUP)
+-			intf_list = &blacklist->sendsetup;
+-		else if (reason == OPTION_BLACKLIST_RESERVED_IF)
+-			intf_list = &blacklist->reserved;
+-		else {
+-			BUG_ON(reason);
+-			return false;
+-		}
+-
+-		for_each_set_bit(num, intf_list, MAX_BL_NUM + 1) {
+-			if (num == ifnum)
+-				return true;
+-		}
+-	}
+-	return false;
+-}
+-
+ static void option_instat_callback(struct urb *urb)
+ {
+ 	int err;
 
 
