@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab1KJFFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:05:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42497 "EHLO mx2.suse.de"
+	id S934361Ab1KJFFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:05:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42477 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934361Ab1KJD2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:28:20 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:13 2011
-Message-Id: <20111109212713.173650773@clark.kroah.org>
+	id S934920Ab1KJD2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:28:09 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
+Message-Id: <20111109212715.797132786@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:27 -0800
+Date: Wed, 09 Nov 2011 13:27:53 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>,
-        David Rientjes <rientjes@google.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [125/262] mm: avoid null pointer access in vm_struct via /proc/vmallocinfo
+        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [151/262] iwlagn: do not use interruptible waits
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,169 +27,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
 
-commit f5252e009d5b87071a919221e4f6624184005368 upstream.
+From: Johannes Berg <johannes.berg@intel.com>
 
-The /proc/vmallocinfo shows information about vmalloc allocations in
-vmlist that is a linklist of vm_struct.  It, however, may access pages
-field of vm_struct where a page was not allocated.  This results in a null
-pointer access and leads to a kernel panic.
+Upstream commit effd4d9aece9184f526e6556786a94d335e38b71.
 
-Why this happens: In __vmalloc_node_range() called from vmalloc(), newly
-allocated vm_struct is added to vmlist at __get_vm_area_node() and then,
-some fields of vm_struct such as nr_pages and pages are set at
-__vmalloc_area_node().  In other words, it is added to vmlist before it is
-fully initialized.  At the same time, when the /proc/vmallocinfo is read,
-it accesses the pages field of vm_struct according to the nr_pages field
-at show_numa_info().  Thus, a null pointer access happens.
+Since the dawn of its time, iwlwifi has used
+interruptible waits to wait for synchronous
+commands and firmware loading.
 
-The patch adds the newly allocated vm_struct to the vmlist *after* it is
-fully initialized.  So, it can avoid accessing the pages field with
-unallocated page when show_numa_info() is called.
+This leads to "interesting" bugs, because it
+can't actually handle the interruptions; for
+example when a command sending is interrupted
+it will assume the command completed fully,
+and then leave it pending, which leads to all
+kinds of trouble when the command finishes
+later.
 
-Signed-off-by: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Since there's no easy way to gracefully deal
+with interruptions, fix the driver to not use
+interruptible waits.
+
+This at least fixes the error
+iwlagn 0000:02:00.0: Error: Response NULL in  'REPLY_SCAN_ABORT_CMD'
+
+I have seen in P2P testing, but it is likely
+that there are other errors caused by this.
+
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- include/linux/vmalloc.h |    1 
- mm/vmalloc.c            |   65 +++++++++++++++++++++++++++++++++++-------------
- 2 files changed, 49 insertions(+), 17 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-ucode.c |    9 ++-------
+ drivers/net/wireless/iwlwifi/iwl-agn.c       |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-core.c      |    4 ++--
+ drivers/net/wireless/iwlwifi/iwl-hcmd.c      |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-rx.c        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-tx.c        |    2 +-
+ 6 files changed, 8 insertions(+), 13 deletions(-)
 
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -13,6 +13,7 @@ struct vm_area_struct;		/* vma defining
- #define VM_MAP		0x00000004	/* vmap()ed pages */
- #define VM_USERMAP	0x00000008	/* suitable for remap_vmalloc_range */
- #define VM_VPAGES	0x00000010	/* buffer for pages was vmalloc'ed */
-+#define VM_UNLIST	0x00000020	/* vm_struct is not listed in vmlist */
- /* bits [20..32] reserved for arch specific ioremap internals */
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-ucode.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-ucode.c
+@@ -144,13 +144,8 @@ static int iwlagn_load_section(struct iw
+ 		FH_TCSR_TX_CONFIG_REG_VAL_CIRQ_HOST_ENDTFD);
  
- /*
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1267,18 +1267,22 @@ EXPORT_SYMBOL_GPL(map_vm_area);
- DEFINE_RWLOCK(vmlist_lock);
- struct vm_struct *vmlist;
- 
--static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
-+static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 			      unsigned long flags, void *caller)
- {
--	struct vm_struct *tmp, **p;
--
- 	vm->flags = flags;
- 	vm->addr = (void *)va->va_start;
- 	vm->size = va->va_end - va->va_start;
- 	vm->caller = caller;
- 	va->private = vm;
- 	va->flags |= VM_VM_AREA;
-+}
-+
-+static void insert_vmalloc_vmlist(struct vm_struct *vm)
-+{
-+	struct vm_struct *tmp, **p;
- 
-+	vm->flags &= ~VM_UNLIST;
- 	write_lock(&vmlist_lock);
- 	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
- 		if (tmp->addr >= vm->addr)
-@@ -1289,6 +1293,13 @@ static void insert_vmalloc_vm(struct vm_
- 	write_unlock(&vmlist_lock);
- }
- 
-+static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
-+			      unsigned long flags, void *caller)
-+{
-+	setup_vmalloc_vm(vm, va, flags, caller);
-+	insert_vmalloc_vmlist(vm);
-+}
-+
- static struct vm_struct *__get_vm_area_node(unsigned long size,
- 		unsigned long align, unsigned long flags, unsigned long start,
- 		unsigned long end, int node, gfp_t gfp_mask, void *caller)
-@@ -1327,7 +1338,18 @@ static struct vm_struct *__get_vm_area_n
- 		return NULL;
+ 	IWL_DEBUG_INFO(priv, "%s uCode section being loaded...\n", name);
+-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
+-					priv->ucode_write_complete, 5 * HZ);
+-	if (ret == -ERESTARTSYS) {
+-		IWL_ERR(priv, "Could not load the %s uCode section due "
+-			"to interrupt\n", name);
+-		return ret;
+-	}
++	ret = wait_event_timeout(priv->wait_command_queue,
++				 priv->ucode_write_complete, 5 * HZ);
+ 	if (!ret) {
+ 		IWL_ERR(priv, "Could not load the %s uCode section\n",
+ 			name);
+--- a/drivers/net/wireless/iwlwifi/iwl-agn.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
+@@ -797,7 +797,7 @@ static void iwl_irq_tasklet(struct iwl_p
+ 		handled |= CSR_INT_BIT_FH_TX;
+ 		/* Wake up uCode load routine, now that load is complete */
+ 		priv->ucode_write_complete = 1;
+-		wake_up_interruptible(&priv->wait_command_queue);
++		wake_up(&priv->wait_command_queue);
  	}
  
--	insert_vmalloc_vm(area, va, flags, caller);
-+	/*
-+	 * When this function is called from __vmalloc_node_range,
-+	 * we do not add vm_struct to vmlist here to avoid
-+	 * accessing uninitialized members of vm_struct such as
-+	 * pages and nr_pages fields. They will be set later.
-+	 * To distinguish it from others, we use a VM_UNLIST flag.
-+	 */
-+	if (flags & VM_UNLIST)
-+		setup_vmalloc_vm(area, va, flags, caller);
-+	else
-+		insert_vmalloc_vm(area, va, flags, caller);
-+
- 	return area;
+ 	if (inta & ~handled) {
+--- a/drivers/net/wireless/iwlwifi/iwl-core.c
++++ b/drivers/net/wireless/iwlwifi/iwl-core.c
+@@ -899,7 +899,7 @@ void iwlagn_fw_error(struct iwl_priv *pr
+ 	 * commands by clearing the ready bit */
+ 	clear_bit(STATUS_READY, &priv->status);
+ 
+-	wake_up_interruptible(&priv->wait_command_queue);
++	wake_up(&priv->wait_command_queue);
+ 
+ 	if (!ondemand) {
+ 		/*
+@@ -950,7 +950,7 @@ void iwl_irq_handle_error(struct iwl_pri
+ 		 */
+ 		clear_bit(STATUS_READY, &priv->status);
+ 		clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
+-		wake_up_interruptible(&priv->wait_command_queue);
++		wake_up(&priv->wait_command_queue);
+ 		IWL_ERR(priv, "RF is used by WiMAX\n");
+ 		return;
+ 	}
+--- a/drivers/net/wireless/iwlwifi/iwl-hcmd.c
++++ b/drivers/net/wireless/iwlwifi/iwl-hcmd.c
+@@ -194,7 +194,7 @@ int iwl_send_cmd_sync(struct iwl_priv *p
+ 		return ret;
+ 	}
+ 
+-	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
++	ret = wait_event_timeout(priv->wait_command_queue,
+ 			!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
+ 			HOST_COMPLETE_TIMEOUT);
+ 	if (!ret) {
+--- a/drivers/net/wireless/iwlwifi/iwl-rx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-rx.c
+@@ -738,7 +738,7 @@ static void iwl_rx_card_state_notif(stru
+ 		wiphy_rfkill_set_hw_state(priv->hw->wiphy,
+ 			test_bit(STATUS_RF_KILL_HW, &priv->status));
+ 	else
+-		wake_up_interruptible(&priv->wait_command_queue);
++		wake_up(&priv->wait_command_queue);
  }
  
-@@ -1395,17 +1417,20 @@ struct vm_struct *remove_vm_area(const v
- 	va = find_vmap_area((unsigned long)addr);
- 	if (va && va->flags & VM_VM_AREA) {
- 		struct vm_struct *vm = va->private;
--		struct vm_struct *tmp, **p;
--		/*
--		 * remove from list and disallow access to this vm_struct
--		 * before unmap. (address range confliction is maintained by
--		 * vmap.)
--		 */
--		write_lock(&vmlist_lock);
--		for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
--			;
--		*p = tmp->next;
--		write_unlock(&vmlist_lock);
-+
-+		if (!(vm->flags & VM_UNLIST)) {
-+			struct vm_struct *tmp, **p;
-+			/*
-+			 * remove from list and disallow access to
-+			 * this vm_struct before unmap. (address range
-+			 * confliction is maintained by vmap.)
-+			 */
-+			write_lock(&vmlist_lock);
-+			for (p = &vmlist; (tmp = *p) != vm; p = &tmp->next)
-+				;
-+			*p = tmp->next;
-+			write_unlock(&vmlist_lock);
-+		}
+ static void iwl_rx_missed_beacon_notif(struct iwl_priv *priv,
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -821,7 +821,7 @@ void iwl_tx_cmd_complete(struct iwl_priv
+ 		clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
+ 		IWL_DEBUG_INFO(priv, "Clearing HCMD_ACTIVE for command %s\n",
+ 			       get_cmd_string(cmd->hdr.cmd));
+-		wake_up_interruptible(&priv->wait_command_queue);
++		wake_up(&priv->wait_command_queue);
+ 	}
  
- 		vmap_debug_free_range(va->va_start, va->va_end);
- 		free_unmap_vmap_area(va);
-@@ -1616,8 +1641,8 @@ void *__vmalloc_node_range(unsigned long
- 	if (!size || (size >> PAGE_SHIFT) > totalram_pages)
- 		return NULL;
- 
--	area = __get_vm_area_node(size, align, VM_ALLOC, start, end, node,
--				  gfp_mask, caller);
-+	area = __get_vm_area_node(size, align, VM_ALLOC | VM_UNLIST,
-+				  start, end, node, gfp_mask, caller);
- 
- 	if (!area)
- 		return NULL;
-@@ -1625,6 +1650,12 @@ void *__vmalloc_node_range(unsigned long
- 	addr = __vmalloc_area_node(area, gfp_mask, prot, node, caller);
- 
- 	/*
-+	 * In this function, newly allocated vm_struct is not added
-+	 * to vmlist at __get_vm_area_node(). so, it is added here.
-+	 */
-+	insert_vmalloc_vmlist(area);
-+
-+	/*
- 	 * A ref_count = 3 is needed because the vm_struct and vmap_area
- 	 * structures allocated in the __get_vm_area_node() function contain
- 	 * references to the virtual address of the vmalloc'ed block.
+ 	/* Mark as unmapped */
 
 
