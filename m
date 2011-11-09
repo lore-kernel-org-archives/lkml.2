@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab1KITI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 14:08:56 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61364 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab1KITIz (ORCPT
+	id S1756542Ab1KITMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 14:12:05 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54185 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab1KITMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 14:08:55 -0500
-Date: Wed, 9 Nov 2011 20:08:48 +0100
-From: Clement LECIGNE <clemun@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [BUG][SECURITY] Kernel stack overflow in hfs_mac2asc()
-Message-ID: <20111109190802.GA4540@ounaide>
+	Wed, 9 Nov 2011 14:12:03 -0500
+Date: Wed, 9 Nov 2011 19:11:36 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Voss, Nikolaus" <N.Voss@weinmann.de>
+Cc: "'Ryan Mallon'" <rmallon@gmail.com>,
+        "'nicolas.ferre@atmel.com'" <nicolas.ferre@atmel.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'balbi@ti.com'" <balbi@ti.com>,
+        "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
+        "'ben-linux@fluff.org'" <ben-linux@fluff.org>,
+        "'khali@linux-fr.org'" <khali@linux-fr.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V3 2/4] drivers/i2c/busses/i2c-at91.c: add new driver
+Message-ID: <20111109191136.GP12913@n2100.arm.linux.org.uk>
+References: <cover.1320753142.git.n.voss@weinmann.de> <7bdd6b456b0e055441cb25634c8cb6d483718f6c.1320753142.git.n.voss@weinmann.de> <4EB9B24A.5040809@gmail.com> <EF2E73589CA71846A15D0B2CDF79505D087B3C9440@wm021.weinmann.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <EF2E73589CA71846A15D0B2CDF79505D087B3C9440@wm021.weinmann.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi lkml,
+On Wed, Nov 09, 2011 at 05:01:07PM +0100, Voss, Nikolaus wrote:
+> Hi Ryan,
+> > 
+> > > +	dev->irq = irq->start;
+> > > +	platform_set_drvdata(pdev, dev);
+> > > +
+> > > +	dev->clk = clk_get(&pdev->dev, "twi_clk");
+> > 
+> > 
+> > This didn't get answered. Can't you just do:
+> > 
+> > 	dev->clk = clk_get(&pdev->dev, NULL);
+> > 
+> > and clkdev should figure out the correct clock based on the device pointer?
+> 
+> No, this doesn't work on at91 since the clocks have no dev_id property
+> but only con_id. I cannot see a reason for this, but that's the way it's
+> done. Multiple hardware interfaces are handled via a lookup table.
 
-I have found there is no len nor bound checkings in hfs_mac2asc()
-function against the size of the out buffer passed as parameter.
-The src size can be greater than HFS_MAX_NAMELEN on malformed file
-system. HFS_MAX_NAMELEN is 31 whereas src size can be set up to
-255 (unsigned char).
+If you can, you could move over to doing this via the standard method
+and start switching some of this stuff over to using dev_id.
 
-This can lead to a basic kernel stack overflow with user controlled
-data through for example hfs_readdir() which calls hfs_mac2asc() with
-out buffer "allocated" on the stack.
-
-This overflow can be simply fixed by adding bound checks on srclen
-before doing the copy.
-
-Best regards,
-
--- 
-Clément LECIGNE,
-"In Python, how do you create a string of random characters? Read a Perl
-file!"
+We'll then have another platform starting to use this stuff correctly.
