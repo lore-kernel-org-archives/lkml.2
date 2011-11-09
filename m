@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab1KIIbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:31:37 -0500
-Received: from t111.niisi.ras.ru ([193.232.173.111]:53562 "EHLO
-	t111.niisi.ras.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837Ab1KIIbg (ORCPT
+	id S1756030Ab1KIIeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:34:22 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:1238
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750816Ab1KIIeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:31:36 -0500
-X-Greylist: delayed 3610 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Nov 2011 03:31:35 EST
-Message-ID: <4EBA2E65.3010009@niisi.msk.ru>
-Date: Wed, 09 Nov 2011 11:40:21 +0400
-From: "Gleb O. Raiko" <raiko@niisi.msk.ru>
-Organization: NIISI RAN
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Wed, 9 Nov 2011 03:34:20 -0500
+X-SpamScore: 4
+X-BigFish: VS4(zzzz1202h1082kzz8275bhz2ei87h2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
+X-FB-SS: 0,13,
+X-FB-DOMAIN-IP-MATCH: fail
+From: Steven Miao <realmz6@gmail.com>
+To: Dan Williams <dcbw@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <libertas-dev@lists.infradead.org>
+CC: Steven Miao <realmz6@gmail.com>,
+        "open list:NETWORKING [WIREL..." <linux-wireless@vger.kernel.org>,
+        "open list:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] wireless: libertas: fix unaligned le64 accesses
+Date: Wed, 9 Nov 2011 16:30:40 +0800
+Message-ID: <1320827440-16904-1-git-send-email-realmz6@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Al Cooper <alcooperx@gmail.com>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Kernel hangs occasionally during boot.
-References: <y> <1320764341-4275-1-git-send-email-alcooperx@gmail.com> <20111108175532.GA15493@linux-mips.org>
-In-Reply-To: <20111108175532.GA15493@linux-mips.org>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Antivirus: Dr.Web (R) for Mail Servers on t111.niisi.ras.ru host
-X-Antivirus-Code: 100000
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.11.2011 21:55, Ralf Baechle wrote:
-> but we may need another hazard barrier to
-> replace back_to_back_c0_hazard().
-Urgently. We need some ticks to wait until counter state machine has 
-been updated. The amount of ticks may occasionally be the same as in 
-case of back_to_back_hazard for some cpus. It's completely different for 
-others, I sure. Original compare_change_hazard waits up to 12 ticks for 
-r4k. While I don't think this amount should depend on irq_disable_hazard 
-as old code assumes, we may still need 12 or so ticks for old cpus.
+use get_unaligned_le64() to get timestamp
 
-> Author: Al Cooper <alcooperx@gmail.com> Tue Nov 8 09:59:01 2011 -0500
-> Comitter: Ralf Baechle <ralf@linux-mips.org> Tue Nov 8 16:52:51 2011 +0000
-> Commit: 9121470d99c029493bd55daa11607b398fe9aea3
-> Gitweb: http://git.linux-mips.org/g/linux/9121470d
-Could you fix those links, it's broken after you moved git repo in?
+Signed-off-by: Steven Miao <realmz6@gmail.com>
+---
+ drivers/net/wireless/libertas/cfg.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Regards,
-Gleb.
+diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+index b456a53..f23c2b1 100644
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -630,7 +630,7 @@ static int lbs_ret_scan(struct lbs_private *priv, unsigned long dummy,
+ 			if (channel &&
+ 			    !(channel->flags & IEEE80211_CHAN_DISABLED))
+ 				cfg80211_inform_bss(wiphy, channel,
+-					bssid, le64_to_cpu(*(__le64 *)tsfdesc),
++					bssid, get_unaligned_le64(tsfdesc),
+ 					capa, intvl, ie, ielen,
+ 					LBS_SCAN_RSSI_TO_MBM(rssi),
+ 					GFP_KERNEL);
+-- 
+1.7.0.4
+
+
