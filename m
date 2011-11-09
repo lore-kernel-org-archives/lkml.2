@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab1KIVsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 16:48:03 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37314 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab1KIVr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 16:47:59 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=BItHjLxI8KmYz8nUz/IQW3QYLoeYbMvDHDxk9W9rY93FiLR2iCapuG/ixbVlBkk22
-	HLK2ucSRpOGoAEfwqsTeA==
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Oliver Neukum <oliver@neukum.name>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Havard Skinnemoen <hskinnemoen@google.com>
-Subject: [PATCH] cdc-acm: Fix disconnect() vs close() race
-Date: Wed,  9 Nov 2011 13:47:38 -0800
-Message-Id: <1320875258-3751-1-git-send-email-hskinnemoen@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S933188Ab1KIVsb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 16:48:31 -0500
+Received: from nox.prolixium.com ([64.16.214.60]:51164 "EHLO nox.prolixium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755584Ab1KIVs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 16:48:29 -0500
+From: Mark Kamichoff <prox@prolixium.com>
+To: oliver@neukum.name, gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mark Kamichoff <prox@prolixium.com>
+Date: Wed,  9 Nov 2011 16:48:10 -0500
+Message-Id: <1320875290-29407-1-git-send-email-prox@prolixium.com>
+X-Mailer: git-send-email 1.7.5.4
+X-SA-Exim-Connect-IP: 2001:48c8:1:12e:202:bcff:fe56:cb1a
+X-SA-Exim-Mail-From: prox@adria.prolixium.com
+Subject: [PATCH][RESEND] net/usb: Misc. fixes for the LG-VL600 LTE USB modem
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
+X-SA-Exim-Scanned: Yes (on nox.prolixium.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a race between the USB disconnect handler and the TTY close
-handler which may cause the acm object to be freed while it's still
-being used. This may lead to things like
+Add checking for valid magic values (needed for stability in the event
+corrupted packets are received) and remove some other unneeded checks.
+Also, fix flagging device as WWAN (Bugzilla bug #39952).
 
-http://article.gmane.org/gmane.linux.usb.general/54250
-
-and
-
-https://lkml.org/lkml/2011/5/29/64
-
-This is the simplest fix I could come up with. Holding on to open_mutex
-while closing the TTY device prevents acm_disconnect() from freeing the
-acm object between acm->port.count drops to 0 and the TTY side of the
-cleanups are finalized.
-
-Signed-off-by: Havard Skinnemoen <hskinnemoen@google.com>
+Signed-off-by: Mark Kamichoff <prox@prolixium.com>
 ---
- drivers/usb/class/cdc-acm.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/usb/cdc_ether.c |    2 +-
+ drivers/net/usb/lg-vl600.c  |   25 +++++++++++--------------
+ 2 files changed, 12 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index dac7676..5b5dc3a 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -539,7 +539,6 @@ static void acm_port_down(struct acm *acm)
+diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+index c924ea2..99ed6eb 100644
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -567,7 +567,7 @@ static const struct usb_device_id	products [] = {
  {
- 	int i;
+ 	USB_DEVICE_AND_INTERFACE_INFO(0x1004, 0x61aa, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+-	.driver_info = (unsigned long)&wwan_info,
++	.driver_info = 0,
+ },
  
--	mutex_lock(&open_mutex);
- 	if (acm->dev) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
-@@ -551,14 +550,15 @@ static void acm_port_down(struct acm *acm)
- 		acm->control->needs_remote_wakeup = 0;
- 		usb_autopm_put_interface(acm->control);
+ /*
+diff --git a/drivers/net/usb/lg-vl600.c b/drivers/net/usb/lg-vl600.c
+index d43db32..9c26c63 100644
+--- a/drivers/net/usb/lg-vl600.c
++++ b/drivers/net/usb/lg-vl600.c
+@@ -144,10 +144,11 @@ static int vl600_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
  	}
--	mutex_unlock(&open_mutex);
+ 
+ 	frame = (struct vl600_frame_hdr *) buf->data;
+-	/* NOTE: Should check that frame->magic == 0x53544448?
+-	 * Otherwise if we receive garbage at the beginning of the frame
+-	 * we may end up allocating a huge buffer and saving all the
+-	 * future incoming data into it.  */
++	/* Yes, check that frame->magic == 0x53544448 (or 0x44544d48),
++	 * otherwise we may run out of memory w/a bad packet */
++	if (ntohl(frame->magic) != 0x53544448 &&
++			ntohl(frame->magic) != 0x44544d48)
++		goto error;
+ 
+ 	if (buf->len < sizeof(*frame) ||
+ 			buf->len != le32_to_cpup(&frame->len)) {
+@@ -296,6 +297,11 @@ encapsulate:
+ 	 * overwrite the remaining fields.
+ 	 */
+ 	packet = (struct vl600_pkt_hdr *) skb->data;
++	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
++	 * Since this modem only supports IPv4 and IPv6, just set all
++	 * frames to 0x0800 (ETH_P_IP)
++	 */
++	packet->h_proto = htons(ETH_P_IP);
+ 	memset(&packet->dummy, 0, sizeof(packet->dummy));
+ 	packet->len = cpu_to_le32(orig_len);
+ 
+@@ -308,21 +314,12 @@ encapsulate:
+ 	if (skb->len < full_len) /* Pad */
+ 		skb_put(skb, full_len - skb->len);
+ 
+-	/* The VL600 wants IPv6 packets to have an IPv4 ethertype
+-	 * Check if this is an IPv6 packet, and set the ethertype
+-	 * to 0x800
+-	 */
+-	if ((skb->data[sizeof(struct vl600_pkt_hdr *) + 0x22] & 0xf0) == 0x60) {
+-		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x20] = 0x08;
+-		skb->data[sizeof(struct vl600_pkt_hdr *) + 0x21] = 0;
+-	}
+-
+ 	return skb;
  }
  
- static void acm_tty_hangup(struct tty_struct *tty)
- {
- 	struct acm *acm = tty->driver_data;
- 	tty_port_hangup(&acm->port);
-+	mutex_lock(&open_mutex);
- 	acm_port_down(acm);
-+	mutex_unlock(&open_mutex);
- }
- 
- static void acm_tty_close(struct tty_struct *tty, struct file *filp)
-@@ -569,8 +569,9 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
- 	   shutdown */
- 	if (!acm)
- 		return;
-+
-+	mutex_lock(&open_mutex);
- 	if (tty_port_close_start(&acm->port, tty, filp) == 0) {
--		mutex_lock(&open_mutex);
- 		if (!acm->dev) {
- 			tty_port_tty_set(&acm->port, NULL);
- 			acm_tty_unregister(acm);
-@@ -582,6 +583,7 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
- 	acm_port_down(acm);
- 	tty_port_close_end(&acm->port, tty);
- 	tty_port_tty_set(&acm->port, NULL);
-+	mutex_unlock(&open_mutex);
- }
- 
- static int acm_tty_write(struct tty_struct *tty,
+ static const struct driver_info	vl600_info = {
+ 	.description	= "LG VL600 modem",
+-	.flags		= FLAG_ETHER | FLAG_RX_ASSEMBLE,
++	.flags		= FLAG_RX_ASSEMBLE | FLAG_WWAN,
+ 	.bind		= vl600_bind,
+ 	.unbind		= vl600_unbind,
+ 	.status		= usbnet_cdc_status,
 -- 
-1.7.3.1
+1.7.5.4
 
