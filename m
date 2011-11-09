@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab1KIRz1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 12:55:27 -0500
-Received: from home.keithp.com ([63.227.221.253]:36110 "EHLO keithp.com"
+	id S1756074Ab1KISDd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 13:03:33 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:39656 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab1KIRz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 12:55:26 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Michel Alexandre Salim <salimma@fedoraproject.org>,
-        intel-gfx@lists.freedesktop.org
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] drm/i915: Prioritize SSC quirk table when determining SSC settings
-In-Reply-To: <1320848955.5081.7.camel@fauix11.informatik.uni-erlangen.de>
-References: <1320848955.5081.7.camel@fauix11.informatik.uni-erlangen.de>
-User-Agent: Notmuch/0.6.1-66-ga900dda (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Wed, 09 Nov 2011 09:55:22 -0800
-Message-ID: <yuny5vpxjsl.fsf@aiko.keithp.com>
+	id S1754613Ab1KISDb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 13:03:31 -0500
+Message-ID: <4EBAC04F.1010901@parallels.com>
+Date: Wed, 9 Nov 2011 16:02:55 -0200
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+To: <linux-kernel@vger.kernel.org>
+CC: <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <ebiederm@xmission.com>,
+        <davem@davemloft.net>, <gthelen@google.com>, <netdev@vger.kernel.org>,
+        <linux-mm@kvack.org>, <kirill@shutemov.name>, <avagin@parallels.com>,
+        <devel@openvz.org>, <eric.dumazet@gmail.com>
+Subject: Re: [PATCH v5 00/10] per-cgroup tcp memory pressure
+References: <1320679595-21074-1-git-send-email-glommer@parallels.com>
+In-Reply-To: <1320679595-21074-1-git-send-email-glommer@parallels.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [201.82.130.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On 11/07/2011 01:26 PM, Glauber Costa wrote:
+> Hi all,
+>
+> This is my new attempt at implementing per-cgroup tcp memory pressure.
+> I am particularly interested in what the network folks have to comment on
+> it: my main goal is to achieve the least impact possible in the network code.
+>
+> Here's a brief description of my approach:
+>
+> When only the root cgroup is present, the code should behave the same way as
+> before - with the exception of the inclusion of an extra field in struct sock,
+> and one in struct proto. All tests are patched out with static branch, and we
+> still access addresses directly - the same as we did before.
+>
+> When a cgroup other than root is created, we patch in the branches, and account
+> resources for that cgroup. The variables in the root cgroup are still updated.
+> If we were to try to be 100 % coherent with the memcg code, that should depend
+> on use_hierarchy. However, I feel that this is a good compromise in terms of
+> leaving the network code untouched, and still having a global vision of its
+> resources. I also do not compute max_usage for the root cgroup, for a similar
+> reason.
+>
+> Please let me know what you think of it.
 
-On Wed, 09 Nov 2011 15:29:13 +0100, Michel Alexandre Salim <salimma@fedorap=
-roject.org> wrote:
+Dave, Eric,
 
-> the quirk table unreachable if i915_panel_use_ssc is set. This patch
-> reorders the tests so that the quirk table is checked first, the
-> i915_panel_use_ssc next and the original per-device setting last.
+Can you let me know what you think of the general approach I've followed 
+in this series? The impact on the common case should be minimal, or at 
+least as expensive as a static branch (0 in most arches, I believe).
 
-The requirement is that the command line options override any internal
-configuration.
+I am mostly interested in knowing if this a valid pursue path. I'll be 
+happy to address any specific concerns you have once you're ok with the 
+general approach.
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUBTrq+ijYtFsjWk68qAQispA/7BnrckXZg4sEQi4zZRQ0Zl3aqXQ5FZyrB
-UYj1qxJJIhZyCwbqc1aud6+xo3oXcWl7JFh3eIP+Htl5BQnoPo66+/l7zmt1MR/R
-4wW99aZVL8knnlhKisTK2oE3Y554lBMTB1SBdGvMmprv4RldVZRbH9p9H8ojDEQV
-M6XUoEw9ki4S4VzmLz6HF9l+qzg7o9J6aVYpJosTMEQLlBRzos3ilIfzlN+4uv/m
-D5Wajib44wcObU9VRA+kyt93udlIymARJz91JqUejg/htlLUsy+LUayOVP3aSXFc
-xjV+huJRXGn6K+tW2PRIvhBUkr2Oe18F1l/+ZbHK8aNhfzMYklhQwF+htmEQi8uP
-mFbgSMxu4NTE3/+n+frUpUdKTN+6zvzMdAt6+YxL+Wh51x/7IsLTVjtPO0wkm5IH
-Pfk0g+ZsNC6CXgqmA+Yem9m3GDNU3GEyo3uYWte67b6BGz5gFHPeffMmLCt33S7W
-TD53m6VIkhumRcYEPM+n4j6P/AXdehaQLt+KTtj1sldfmPsx6lWbTVck5SjNtXTr
-Cjzq4Z+5YrHyW+5X28XMOylekqPtZd3drbhY9ds1pk9Zl6d0BONgeZaI1OWF5X0S
-4+RLSoGrvts1fpIriG24s2LeTByx4LxDZRE1vU9Vqa1iL3Fqjdg+ZaxNNl3M5gsO
-Ku9JTlHvLIE=
-=D1ad
------END PGP SIGNATURE-----
---=-=-=--
+Thanks!
