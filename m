@@ -1,96 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab1KIGG6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 01:06:58 -0500
-Received: from na3sys009aog111.obsmtp.com ([74.125.149.205]:59547 "EHLO
-	na3sys009aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750924Ab1KIGG4 (ORCPT
+	id S1752103Ab1KIGJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 01:09:27 -0500
+Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:54596 "EHLO
+	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751130Ab1KIGJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 01:06:56 -0500
-Date: Wed, 9 Nov 2011 08:06:51 +0200
+	Wed, 9 Nov 2011 01:09:26 -0500
+Date: Wed, 9 Nov 2011 08:09:21 +0200
 From: Felipe Balbi <balbi@ti.com>
-To: Peter Chen <peter.chen@freescale.com>
-Cc: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCHv6 01/19] usb: otg: Rename otg_transceiver to usb_phy
-Message-ID: <20111109060649.GC23337@legolas.emea.dhcp.ti.com>
+To: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: dan.j.williams@intel.com, linux-kernel@vger.kernel.org,
+        jaswinder.singh@linaro.org, 21cnbao@gmail.com, rmk@arm.linux.org.uk,
+        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>
+Subject: Re: [PATCH v2 1/2] USB-musb: move to dma_transfer_direction
+Message-ID: <20111109060919.GD23337@legolas.emea.dhcp.ti.com>
 Reply-To: balbi@ti.com
-References: <1319805325-24689-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1319805325-24689-2-git-send-email-heikki.krogerus@linux.intel.com>
- <CAAe_U6JnWLioK_NCz03uCGd3T0aV56-M3MFgRUdJVX4nB1uhbg@mail.gmail.com>
- <20111109012237.GA2231@nchen-desktop>
+References: <1318570705-17595-1-git-send-email-vinod.koul@intel.com>
+ <1318610350-23335-1-git-send-email-vinod.koul@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WfZ7S8PLGjBY9Voh"
+	protocol="application/pgp-signature"; boundary="2iBwrppp/7QCDedR"
 Content-Disposition: inline
-In-Reply-To: <20111109012237.GA2231@nchen-desktop>
+In-Reply-To: <1318610350-23335-1-git-send-email-vinod.koul@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---WfZ7S8PLGjBY9Voh
+--2iBwrppp/7QCDedR
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 09, 2011 at 09:22:38AM +0800, Peter Chen wrote:
-> On Tue, Nov 08, 2011 at 11:27:12AM +0530, ABRAHAM, KISHON VIJAY wrote:
-> > Hi Heikki,
-> >=20
-> > On Fri, Oct 28, 2011 at 6:05 PM, Heikki Krogerus
-> > <heikki.krogerus@linux.intel.com> wrote:
-> > > This is the first step in separating USB transceivers from
-> > > USB OTG utilities.
-> > >
-> > > Includes fixes to IMX code from Sascha Hauer.
-> >=20
-> > I tend to defer with your opinion of renaming otg_transceiver to
-> > usb_phy. According to me otg_transceiver should program hardware
-> > mechanisms associated to VBUS, ID lines, etc.. and phy is responsible
-> > for transmitting data over differential data lines (with its own
-> > programming of phy_init, phy_shutdown, setting phy clocks etc..). So
-> > in my opinion otg_transceiver and usb_phy should be two different and
-> > separate entities.
-> >=20
-> I am a little puzzled, are there two separate analog usb parts at OMap
-> 's usb part? What the transceiver do? And what the phy do?
+On Fri, Oct 14, 2011 at 10:09:09PM +0530, Vinod Koul wrote:
+> fixup usage of dma direction by introducing dma_transfer_direction,
+> this patch moves usb/musb driver to use new enum
+>=20
+> Signed-off-by: Vinod Koul <vinod.koul@linux.intel.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
-Kinda... there's one which is mostly digital inside the SoC handling
-data lines and also comunicating VBUS/ID levels to the link but the
-actual VBUS/ID comparators are outside of the SoC, inside the PMIC.
+This looks ok to me:
 
-It's a bit of a pain, but I understand why they did it that way. It's
-mostly for power management, although the same is likely to be
-achievable by keeping everything in the PMIC.
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+Mian, if you agree with this patch, please reply with your Acked-by
+
+> ---
+> v2: split the usb patch into two patches
+>     fix the error of direction variable
+>=20
+>  drivers/usb/musb/ux500_dma.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/usb/musb/ux500_dma.c b/drivers/usb/musb/ux500_dma.c
+> index ef4333f..d5b5262 100644
+> --- a/drivers/usb/musb/ux500_dma.c
+> +++ b/drivers/usb/musb/ux500_dma.c
+> @@ -112,7 +112,7 @@ static bool ux500_configure_channel(struct dma_channe=
+l *channel,
+>  	struct musb_hw_ep *hw_ep =3D ux500_channel->hw_ep;
+>  	struct dma_chan *dma_chan =3D ux500_channel->dma_chan;
+>  	struct dma_async_tx_descriptor *dma_desc;
+> -	enum dma_data_direction direction;
+> +	enum dma_transfer_direction direction;
+>  	struct scatterlist sg;
+>  	struct dma_slave_config slave_conf;
+>  	enum dma_slave_buswidth addr_width;
+> @@ -132,7 +132,7 @@ static bool ux500_configure_channel(struct dma_channe=
+l *channel,
+>  	sg_dma_address(&sg) =3D dma_addr;
+>  	sg_dma_len(&sg) =3D len;
+> =20
+> -	direction =3D ux500_channel->is_tx ? DMA_TO_DEVICE : DMA_FROM_DEVICE;
+> +	direction =3D ux500_channel->is_tx ? MEM_TO_DEV : DEV_TO_MEM;
+>  	addr_width =3D (len & 0x3) ? DMA_SLAVE_BUSWIDTH_1_BYTE :
+>  					DMA_SLAVE_BUSWIDTH_4_BYTES;
+> =20
+> --=20
+> 1.7.0.4
+>=20
 
 --=20
 balbi
 
---WfZ7S8PLGjBY9Voh
+--2iBwrppp/7QCDedR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBAgAGBQJOuhh5AAoJEIaOsuA1yqREr6AP/RF3A12Xm+QO4wT9sGLrTOn/
-+DELsqsMYFygqqS8sBWNF0YDlQ78SPyG8boO81RtmZjoPmuzbwllek+udyrolqyW
-QUwEQKFEYE8hWfhzpuK2wL5AhMGgi09KKIMiYnJgUP1kzu8fH7okM0Q2PM+T5LKI
-lShYMMUz/9aP85JndTVKTedCf5v30f6aN3+nQN60ZuWAgyRqCGHW2xEDVIo+fngX
-m0NsBdbbFL3y3bUmoAx+n/8R4pKmCfyHBeHtRlW81EbO9WChrI91R1jWCJxho892
-LjiJ6kxvpOKaqqE3FvS9+1TwmQ+e1QQgrcrs3WesLA20DXgeuM+H0jdR1K2/BSmF
-6W66Wmrw8S/q4x08vbRvafNkXP+KCM42d3LEM76/kb0ZpiqBiIcRm0duPkxAlcte
-gWjIdXW6g3HD5BPtFbtzbS/oopjo8sxwSQTVGG1xNl55zK8EfcePcHd3Bj3/d2J3
-DfxR83GaGC/MkmAm3MGTRPU4wXJKmJV6+kGJIyEShWh2Q52VjjGmVlF42JToQ94P
-51TSXdtyUfHdxO1WPUM705q0TMt+ATdQho9ElWpookYjeih0/qn2bELqzcBCkOki
-vdOS5IHPGWbwtYcs6k7D0V/lujl90fUGmQQzGz/KbD4iNOUSWAPRpPRMfoL47mG1
-zIlcEDXKmrcL3UGVsljs
-=yOGP
+iQIcBAEBAgAGBQJOuhkPAAoJEIaOsuA1yqREOmoP/RKyKiMkb8dYVI774/biK0oU
+lHUYEn9uKtnxAFHlyHjj6m4qLk+Cf0mePyHTFHgG49fNc2mb9rQbDgysj6jiSO8J
+nn9yfWYiDdnUD4OqFm0ittH5UQRGICa87Rw8esrLilgNrh8ZCtiDOiP1t26T247O
+FiRNsunLa+xDnOoGDCI4/LeMqrNZI2qnqlV0CQL6CBaxkM2C75r5Owba0SFjXsyT
+YTg2Yj6NYG8RLmVjbEbJWYABcj3erN1fUPcozAo1O3q+V+Y9GfSTco1PKNZbp1Eq
+Qn82ifJTd6EW1aVpvyntW8p88DC2z/4Qo+dGVp/77CYyLc0Lh2dZT8HiKpsOO9Hu
+kM7J1fPZ1UJ37XaDI0eXuzEaaQUsZumcyHoaGCKMoQ0P/gnTzz3vpSkAmw5VByG1
+eRGBPX8J1lzuHHPifPHGZ4pdb9Gc7Us/lgz6Pxb6vwVxdVH4oqzo5sL0PYHs2hoA
+stoPXJTQmjo42VoPg2mOMFv4DVobhbnomSRVdem6KG3AP38PbsnM89dGYH+/1TpF
+LN7zLtG4XpwyabzRsR+jZvjCdtzTixvay2iY5Swwq5x7CkH3IyLqkWhpSOpADDxN
+b/hDYnPM7YpS0oCccOneYojX3qo+4J63/LhuKEcN/zwR8k9JonnuPdafsgbN3dEz
+WqvdgrKF4F9ygW2LPE4A
+=Grdi
 -----END PGP SIGNATURE-----
 
---WfZ7S8PLGjBY9Voh--
+--2iBwrppp/7QCDedR--
