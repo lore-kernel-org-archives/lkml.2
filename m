@@ -1,242 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab1KIKS3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:18:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31551 "EHLO mx1.redhat.com"
+	id S1756597Ab1KIKU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:20:28 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52338 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751776Ab1KIKS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:18:27 -0500
-Date: Wed, 9 Nov 2011 12:13:18 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com, penberg@cs.helsinki.fi
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-Message-ID: <20111109101318.GB20612@redhat.com>
-References: <87wrbkvh3v.fsf@rustcorp.com.au>
- <20111101114542.GA13434@redhat.com>
- <1320150813.3847.24.camel@lappy>
- <20111101124223.GA14060@redhat.com>
- <8739e7uy87.fsf@rustcorp.com.au>
- <20111102233110.GA20289@redhat.com>
- <20111108214021.GA4538@redhat.com>
- <1320828366.31056.16.camel@lappy>
+	id S1752693Ab1KIKU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 05:20:27 -0500
+Message-ID: <4EBA53C5.9040603@linux.vnet.ibm.com>
+Date: Wed, 09 Nov 2011 15:49:49 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1320828366.31056.16.camel@lappy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org, len.brown@intel.com,
+        tglx@linutronix.de, jeremy@goop.org, hpa@zytor.com, bp@alien8.de,
+        tj@kernel.org, trenn@suse.de, mingo@redhat.com,
+        xen-devel@lists.xensource.com, stable@kernel.org
+Subject: Re: [PATCH 1/3] cpuidle: If disable_cpuidle() is called, set pm_idle
+ to default_idle.
+References: <1320786914-10541-1-git-send-email-konrad.wilk@oracle.com> <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1320786914-10541-2-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11110910-6078-0000-0000-0000042C1BBE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 10:46:06AM +0200, Sasha Levin wrote:
-> On Tue, 2011-11-08 at 23:40 +0200, Michael S. Tsirkin wrote:
-> > Here's a spec change documenting what my C patch does
-> > (almost - I tweaked the layout a bit, but the idea is the same).
-> > Some more cleanups are needed but I thought I'd send it
-> > for early flames/comments.
-> > 
-> > The idea is simple: we split functionally unrelated
-> > register groups to independent structures, and let
-> > the device place is anywhere using a capability
-> > in PCI configuration space.
-> > 
-> > It can then go into MMIO space which is cheaper than PIO.
-> > 
-> > A legacy portion of the configuration is mirrored
-> > in the first BAR, to keep legacy drivers working.
-> > Any new fields can be added in existing structures
-> > at the end, so they won't affect legacy.
+On Wednesday 09 November 2011 02:45 AM, Konrad Rzeszutek Wilk wrote:
+> . however we ignore the disable_cpuidle() directive and
+> in select_idle_routine() set it to type preferred by the CPU.
 > 
-> If newer specs add more structures at the end of the config space, and
-> use the same config space for legacy, that space now becomes device
-> specific config space and not new-shiny-feature space, so we must
-> remember to handle those cases.
-
-Yes. Devices should mirror virtio header and device structures
-in MMIO and point Structures there. It seems unavoidable for
-device structures (because legacy layout is dynamic
-and we don't want to keep doing that), so I thought it's not worth the
-trouble for virtio header either.
-
-Notification and ISR Structures can point into PIO.
-
-I'll add some more text to clarify that.
-
-> > Alternatively we can add new structures with new
-> > structure IDs, pointed to from PCI configuration space.
-> > 
-> > As we don't yet have devices or drivers with 64 bit features,
-> > I decided we don't need high feature bits in legacy space.
-> > This also frees up feature bit 31 as we don't need it
-> > to enable high feature bits anymore.
+> This is a regression introduced by
 > 
-> KVM tool actually has support for 64bit features, we can probably remove
-> that when Pekka isn't looking :)
-
-It's not yet released so maybe it's not an issue yet.
-If it's too late I can re-add them to legacy too.
-
-Pekka, 64 features aren't yet used and we are discussing
-changing the layout for that field. Mind taking it out
-of kvm tool for now?
-
-> > 
-> > As this solves the dynamic placement of MSIX vectors
-> > and high feature bits,
-> > I thought it's easier to just reserve space for that
-> > programming than give it a separate structure. This
-> > can be changed by a patch on top.
-> > 
-> > Note that data path is split from configuration.
-> > 
-> > PDF will follow.
-> > ----
-> > 
+>  commit a0bfa1373859e9d11dc92561a8667588803e42d8
+>  Author: Len Brown <len.brown@intel.com>
+>  Date:   Fri Apr 1 19:34:59 2011 -0400
 > 
-> The device initialization sequence might use an update as well.
-
-What is needed? Add an item where the driver scans the PCI capability
-list to detect the layout?
-
-> Maybe
-> also a description of how device handles missing structure IDs.
+>      cpuidle: stop depending on pm_idle
 > 
-> [snip]
-
-Hmm. I just have
-'Drivers should fall back on this legacy structure if a
- Virtio Structure capability is missing in the PCI capability
- list'. 
-
-What else would be helpful? An example? 
-
-> > +
-> > +\begin_layout Standard
-> > +
-> > +\change_inserted 1986246365 1320781133
-> > +These registers are specified using vendor-specific PCI capability located
-> > + on capability list in PCI configuration space of the device.
-> > + This virtio structure capability uses little-endian format; all bits are
-> > + read-only:
-> > +\end_layout
-> > +
-> > +\begin_layout Standard
-> > +
-> > +\change_inserted 1986246365 1320772579
-> > +\begin_inset Tabular
+> specifically this patch:
 > 
-> Just a note, these tables are way too wide to work properly in PDFs :)
-
-True, looks like I need to abbreviate
-
-> > +<lyxtabular version="3" rows="4" columns="34">
-> > +<features tabularvalignment="middle">
-> > +<column alignment="center" valignment="top" width="0pt">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0">
-> > +<column alignment="center" valignment="top" width="0pt">
-> > +<row>
+>  commit d91ee5863b71e8c90eaf6035bff3078a85e2e7b5
+>  Author: Len Brown <len.brown@intel.com>
+>  Date:   Fri Apr 1 18:28:35 2011 -0400
 > 
-> [snip]
+>      cpuidle: replace xen access to x86 pm_idle and default_idle
 > 
-> > +
-> > +\begin_layout Standard
-> > +
-> > +\change_inserted 1986246365 1320779667
-> > +Purpose:
-> > +\end_layout
-> > +
-> > +\begin_layout Standard
-> > +
-> > +\change_inserted 1986246365 1320780912
-> > +
-> > +\emph on
-> > +Capability ID
-> > +\emph default
-> > +, 
-> > +\emph on
-> > +Next Capability Pointer
-> > +\emph default
-> > +, 
-> > +\emph on
-> > +Capability Length
-> > +\emph default
-> > + - these fields are specified by PCI local bus specification, Rev 3.0
+>      ..scribble on pm_idle and access default_idle,
+>     have it simply disable_cpuidle() so acpi_idle will not load and
+>     architecture default HLT will be used.
 > 
-> I'm not sure what capability length is, can't find it in the spec
-> either.
+> .. but the default HLT does not get used. Instead we end up in the
+> situation that select_idle_routine() is called from arch/x86/kernel/cpu/common.c
+> and if we called cpuidle_disable(), then the pm_idle is not set, and
+> we end up setting pm_idle to mwait_idle or amd_e400_idle.
 > 
-> [snip]
-
-It's the legth of the vendor specific capability structure in bytes.
-'the byte immediately following the “Next”
- pointer in the capability structure is defined to be a length field'
-It's on page 330 in my copy.
-
-
-
-> > +\begin_layout Plain Layout
-> > +ie.
-> > + once you enable MSI-X on the device, the other fields move.
-> > + If you turn it off again, they move back!
+> This patch uses the cpuidle_disabled() functionality and
+> makes select_idle_routine() adhere to that.
 > 
-> Is it still true? We're talking about the new layout here (there are
-> several of this footnote, this one is located right *before* the section
-> which talks about legacy config space.
+> Reported-by: Stefan Bader <stefan.bader@canonical.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> [snip]
-
-Of course not.  I'll move the footnote, this only applies to the
-legacy naturally.
-
-> > + 
-> > +\change_deleted 1986246365 1320784929
-> > +If more than 31 feature bits are supported, the device indicates so by setting
-> > + feature bit 31 (see 
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: x86@kernel.org
+> CC: Len Brown <len.brown@intel.com>
+> CC: Borislav Petkov <bp@alien8.de>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Thomas Renninger <trenn@suse.de>
+> CC: stable@kernel.org
+> ---
+>  arch/x86/kernel/process.c |    5 +++++
+>  include/linux/cpuidle.h   |    2 ++
+>  2 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> The bit numbers below this text should be corrected as well.
-
-Will fix. Thanks!
-
-> -- 
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index e7e3b01..1f7f8c8 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/utsname.h>
+>  #include <trace/events/power.h>
+>  #include <linux/hw_breakpoint.h>
+> +#include <linux/cpuidle.h>
+>  #include <asm/cpu.h>
+>  #include <asm/system.h>
+>  #include <asm/apic.h>
+> @@ -587,6 +588,10 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
+>  	if (pm_idle)
+>  		return;
 > 
-> Sasha.
+> +	if (cpuidle_disabled()) {
+> +		pm_idle = default_idle;
+> +		return;
+> +	}
+
+
+The above check is needed to initialise pm_idle to default_idle if
+cpuidle is disabled but this requirement here is Zen specific. 
+On other architectures, if cpuidle is disabled on boot then we 
+rather would want mwait_idle or amd_e400_idle to be enabled than 
+default_idle. Can we make this check Zen specific ? 
+
+...  if(ZEN_ARCH && cpuidle_disabled()) ... 
+
+
+
+
+>  	if (cpu_has(c, X86_FEATURE_MWAIT) && mwait_usable(c)) {
+>  		/*
+>  		 * One CPU supports mwait => All CPUs supports mwait
+> diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+> index b51629e..123fe9e 100644
+> --- a/include/linux/cpuidle.h
+> +++ b/include/linux/cpuidle.h
+> @@ -122,6 +122,7 @@ struct cpuidle_driver {
+>  };
+> 
+>  #ifdef CONFIG_CPU_IDLE
+> +extern int cpuidle_disabled(void);
+>  extern void disable_cpuidle(void);
+>  extern int cpuidle_idle_call(void);
+> 
+> @@ -137,6 +138,7 @@ extern int cpuidle_enable_device(struct cpuidle_device *dev);
+>  extern void cpuidle_disable_device(struct cpuidle_device *dev);
+> 
+>  #else
+> +static inline int cpuidle_disabled(void) { return 1; }
+>  static inline void disable_cpuidle(void) { }
+>  static inline int cpuidle_idle_call(void) { return -ENODEV; }
+> 
+
