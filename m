@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab1KIKeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 05:34:18 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59231
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751700Ab1KIKeQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 05:34:16 -0500
-Date: Wed, 9 Nov 2011 05:34:15 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Schmidt <list.btrfs@jan-o-sch.net>
-Cc: linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Chris Mason <chris.mason@oracle.com>, Arne Jansen <sensille@gmx.net>,
-        Andrea Gelmini <andrea.gelmini@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] Btrfs pull request
-Message-ID: <20111109103415.GA11064@infradead.org>
-References: <20111106183851.GA4339@shiny>
- <CAK-xaQau04whLQm0Fz-fkCZ1AumLs84UiqGi0Rc=GZUzRvV7Gg@mail.gmail.com>
- <4EB7A6CC.5030502@gmx.net>
- <CAK-xaQbvpZQzPVxunSEVDzTXXzQ2HaQWHVR3BwR1iq95URWEdw@mail.gmail.com>
- <4EB7D2D8.2060505@gmx.net>
- <CAK-xaQbmY2Z3OJyQ211cUQn0CM2ho2U+UgpRKK9bUzxhEu6hzQ@mail.gmail.com>
- <4EB8DEAC.7000906@gmx.net>
- <20111109010701.GI4149@shiny>
- <20111109074847.GA16742@infradead.org>
- <4EBA560B.1070509@jan-o-sch.net>
+	id S1756621Ab1KIKen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 05:34:43 -0500
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:38448 "EHLO linux-mips.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754695Ab1KIKem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 05:34:42 -0500
+Date: Wed, 9 Nov 2011 10:34:33 +0000
+From: Ralf Baechle <ralf@linux-mips.org>
+To: "Gleb O. Raiko" <raiko@niisi.msk.ru>
+Cc: Al Cooper <alcooperx@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: Kernel hangs occasionally during boot.
+Message-ID: <20111109103432.GA27378@linux-mips.org>
+References: <y>
+ <1320764341-4275-1-git-send-email-alcooperx@gmail.com>
+ <20111108175532.GA15493@linux-mips.org>
+ <4EBA2E65.3010009@niisi.msk.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EBA560B.1070509@jan-o-sch.net>
+In-Reply-To: <4EBA2E65.3010009@niisi.msk.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 11:29:31AM +0100, Jan Schmidt wrote:
-> Am 09.11.2011 08:48, schrieb Christoph Hellwig:
-> >On Tue, Nov 08, 2011 at 08:07:01PM -0500, Chris Mason wrote:
-> >>Looks like bio_add_page() is failing and we're getting the enomem from
-> >>there.  LVM is only letting us put one page in each bio.
-> >
-> >Yes, at the moment all bio based DM targets only allow single page I/O.
-> 
-> Wait. If I got that correctly, each bio_add_page needs special
-> ENOMEM treatment (assuming the target could always be a device
-> mapper target), right?
+On Wed, Nov 09, 2011 at 11:40:21AM +0400, Gleb O. Raiko wrote:
 
-Each bio_add_page caller needs to expect it can't add more than a
-page worth of data.  If you look at callers what write large amounts
-of data (XFS, mpage code) you'll always see a pattern of:
+> On 08.11.2011 21:55, Ralf Baechle wrote:
+> >but we may need another hazard barrier to
+> >replace back_to_back_c0_hazard().
+> Urgently. We need some ticks to wait until counter state machine has
+> been updated. The amount of ticks may occasionally be the same as in
+> case of back_to_back_hazard for some cpus. It's completely different
+> for others, I sure. Original compare_change_hazard waits up to 12
+> ticks for r4k. While I don't think this amount should depend on
+> irq_disable_hazard as old code assumes, we may still need 12 or so
+> ticks for old cpus.
 
-	bio = bio_alloc();
+Hmm...  Looking at the R4000 manual which generall has the longest
+pipeline hazards, mtc0 gets executed at stage 7, interrupts get sampled
+at stage 3 meaning there is a (7 - 3 - 1) = 3 cycles hazard.  Does
+that one statisfy your constraints?  Or are additional cycles needed
+for a hazard that's generated outside of the CPU's pipeline?
 
-	while (bytes_left) {
-		len = min(bytes_left, PAGE_SIZE);
-		bytes = bio_add_page(io, ..., len);
-		if (bytes < len) {
-			submit_bio(bio);
-			bio = bio_alloc();
-		}
-		update_indices();
-	}
-	submit_bio(bio);
-
+  Ralf
