@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1KJDdU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:33:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43137 "EHLO mx2.suse.de"
+	id S935482Ab1KJDd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:33:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43166 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935567Ab1KJDdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:24 2011
-Message-Id: <20111109212724.830717360@clark.kroah.org>
+	id S935571Ab1KJDd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:25 2011
+Message-Id: <20111109212725.240410863@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:23 -0800
+Date: Wed, 09 Nov 2011 13:29:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Peter Wippich <pewi@gw-instruments.de>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [241/262] mtd: mtdchar: add missing initializer on raw write
+        alan@lxorguk.ukuu.org.uk, Jiaying Zhang <jiayingz@google.com>,
+        "Theodore Tso" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [245/262] ext4: remove i_mutex lock in ext4_evict_inode to fix lockdep complaining
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Wippich <pewi@gw-instruments.de>
+From: Jiaying Zhang <jiayingz@google.com>
 
-commit bf5140817b2d65faac9b32fc9057a097044ac35b upstream.
+commit 8c0bec2151a47906bf779c6715a10ce04453ab77 upstream.
 
-On writes in MODE_RAW the mtd_oob_ops struct is not sufficiently
-initialized which may cause nandwrite to fail. With this patch
-it is possible to write raw nand/oob data without additional ECC
-(either for testing or when some sectors need different oob layout
-e.g. bootloader) like
-nandwrite  -n -r -o  /dev/mtd0 <myfile>
+The i_mutex lock and flush_completed_IO() added by commit 2581fdc810
+in ext4_evict_inode() causes lockdep complaining about potential
+deadlock in several places.  In most/all of these LOCKDEP complaints
+it looks like it's a false positive, since many of the potential
+circular locking cases can't take place by the time the
+ext4_evict_inode() is called; but since at the very least it may mask
+real problems, we need to address this.
 
-Signed-off-by: Peter Wippich <pewi@gw-instruments.de>
-Tested-by: Ricard Wanderlof <ricardw@axis.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+This change removes the flush_completed_IO() and i_mutex lock in
+ext4_evict_inode().  Instead, we take a different approach to resolve
+the software lockup that commit 2581fdc810 intends to fix.  Rather
+than having ext4-dio-unwritten thread wait for grabing the i_mutex
+lock of an inode, we use mutex_trylock() instead, and simply requeue
+the work item if we fail to grab the inode's i_mutex lock.
+
+This should speed up work queue processing in general and also
+prevents the following deadlock scenario: During page fault,
+shrink_icache_memory is called that in turn evicts another inode B.
+Inode B has some pending io_end work so it calls ext4_ioend_wait()
+that waits for inode B's i_ioend_count to become zero.  However, inode
+B's ioend work was queued behind some of inode A's ioend work on the
+same cpu's ext4-dio-unwritten workqueue.  As the ext4-dio-unwritten
+thread on that cpu is processing inode A's ioend work, it tries to
+grab inode A's i_mutex lock.  Since the i_mutex lock of inode A is
+still hold before the page fault happened, we enter a deadlock.
+
+Signed-off-by: Jiaying Zhang <jiayingz@google.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/mtdchar.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/ext4/ext4.h    |    1 +
+ fs/ext4/inode.c   |    3 ---
+ fs/ext4/page-io.c |   18 +++++++++++++++++-
+ 3 files changed, 18 insertions(+), 4 deletions(-)
 
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -320,6 +320,7 @@ static ssize_t mtd_write(struct file *fi
- 			ops.mode = MTD_OOB_RAW;
- 			ops.datbuf = kbuf;
- 			ops.oobbuf = NULL;
-+			ops.ooboffs = 0;
- 			ops.len = len;
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -175,6 +175,7 @@ struct mpage_da_data {
+  */
+ #define	EXT4_IO_END_UNWRITTEN	0x0001
+ #define EXT4_IO_END_ERROR	0x0002
++#define EXT4_IO_END_QUEUED	0x0004
  
- 			ret = mtd->write_oob(mtd, *ppos, &ops);
+ struct ext4_io_page {
+ 	struct page	*p_page;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -190,9 +190,6 @@ void ext4_evict_inode(struct inode *inod
+ 
+ 	trace_ext4_evict_inode(inode);
+ 
+-	mutex_lock(&inode->i_mutex);
+-	ext4_flush_completed_IO(inode);
+-	mutex_unlock(&inode->i_mutex);
+ 	ext4_ioend_wait(inode);
+ 
+ 	if (inode->i_nlink) {
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -142,7 +142,23 @@ static void ext4_end_io_work(struct work
+ 	unsigned long		flags;
+ 	int			ret;
+ 
+-	mutex_lock(&inode->i_mutex);
++	if (!mutex_trylock(&inode->i_mutex)) {
++		/*
++		 * Requeue the work instead of waiting so that the work
++		 * items queued after this can be processed.
++		 */
++		queue_work(EXT4_SB(inode->i_sb)->dio_unwritten_wq, &io->work);
++		/*
++		 * To prevent the ext4-dio-unwritten thread from keeping
++		 * requeueing end_io requests and occupying cpu for too long,
++		 * yield the cpu if it sees an end_io request that has already
++		 * been requeued.
++		 */
++		if (io->flag & EXT4_IO_END_QUEUED)
++			yield();
++		io->flag |= EXT4_IO_END_QUEUED;
++		return;
++	}
+ 	ret = ext4_end_io_nolock(io);
+ 	if (ret < 0) {
+ 		mutex_unlock(&inode->i_mutex);
 
 
