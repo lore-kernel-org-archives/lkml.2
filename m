@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab1KIGhd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 01:37:33 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47026 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab1KIGhc (ORCPT
+	id S1752749Ab1KIGxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 01:53:19 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51859 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab1KIGxR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 01:37:32 -0500
-Date: Wed, 9 Nov 2011 17:37:22 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>, linux-next@vger.kernel.org,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: incorrect build fix
-Message-Id: <20111109173722.a7f4c7d65c13bcb80bf2e6ba@canb.auug.org.au>
-In-Reply-To: <003401cc9ea6$785e7dc0$691b7940$%kim@samsung.com>
-References: <20111109082624.ea5697763c50ef9128244783@canb.auug.org.au>
-	<003401cc9ea6$785e7dc0$691b7940$%kim@samsung.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__9_Nov_2011_17_37_22_+1100_rjuHPwVXhkywzhzu"
+	Wed, 9 Nov 2011 01:53:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111108201753.GA4149@shiny>
+References: <20111106183851.GA4339@shiny>
+	<CAPL5yKcDKnB+BaTdARSp80pGVr_W36cy9gNz=M-S8E3NyNDTQg@mail.gmail.com>
+	<20111108182728.GR4954@shiny>
+	<20111108201753.GA4149@shiny>
+Date: Wed, 9 Nov 2011 01:53:15 -0500
+Message-ID: <CAPL5yKfHjzeP_8gV9WMwY=SrA23wMWGJNnPH5cYNeZsoNQ3zpA@mail.gmail.com>
+Subject: Re: [GIT PULL] Btrfs pull request
+From: Dan Merillat <dan.merillat@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>,
+        Dan Merillat <dan.merillat@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__9_Nov_2011_17_37_22_+1100_rjuHPwVXhkywzhzu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Wed, 09 Nov 2011 15:11:50 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+On Tue, Nov 8, 2011 at 3:17 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> On Tue, Nov 08, 2011 at 01:27:28PM -0500, Chris Mason wrote:
+>> On Tue, Nov 08, 2011 at 12:55:40PM -0500, Dan Merillat wrote:
+>> > On Sun, Nov 6, 2011 at 1:38 PM, Chris Mason <chris.mason@oracle.com> wrote:
+>> > > Hi everyone,
+>> > >
+>> > > This pull request is pretty beefy, it ended up merging a number of long
+>> > > running projects and cleanup queues.  I've got btrfs patches in the new
+>> > > kernel.org btrfs repo.  There are two different branches with the same
+>> > > changes.  for-linus is against 3.1 and has also been tested against
+>> > > Linus' tree as of yesterday.
+>> >
+>> > [91795.123286] device label ROOT devid 1 transid 3331 /dev/sdi2
+>> > [91795.123538] btrfs: open_ctree failed
+>> >
+>> > FS created on 3.1 (x64), mounted once on 3.2-rc1 (i386), got that
+>> > whenI tried to mount on 3.1 (x64) again.  Format change in 3.2 or
+>> > 32/64 bit compatibility issues?
+>>
+>> I'm trying to reproduce right now but I did many bounces between 3.2 and
+>> 3.1 code before releasing.  I didn't try jumping between 32 and 64 bit.
+>>
+>> Are there any other messages in dmesg?  Could you please see what
+>> btrfs-debug-tree says?
 >
-> I'm not sure following......
-> So only for THIS_MODULE, <linux/export.h> should be added instead of
-> <linux/module.h>?
+> Ok, so I spun the wheel going between 32 and 64 and 3.1 and 3.2.  I'm
+> not having trouble with basic tests.
+>
+> So, we'll have to dig in and see why the open is failing.  btrfsck or
+> btrfs-debug-tree will help.
 
-Yes, that is correct.   It means that much less code is included.  If
-replacing module.h with export.h causes other build errors, they should
-be fixed by including the correct files directly (module.h include a lot
-of other include files).
+This is on a USB device, however I had used the filesystem quite a bit
+on the 64bit machine before moving it to the 32bit 3.2 box.   It's
+still mountable on the 32bit box even when I get the open_ctree failed
+on 3.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+[140865.425067] device label ROOT devid 1 transid 3436 /dev/sdi2
+[140865.426291] btrfs: open_ctree failed
+harik@fileserver:~/src/3.0/3.2-rc1$ sudo btrfsck /dev/sdi2
+[sudo] password for harik:
+found 3105894400 bytes used err is 0
+total csum bytes: 2916272
+total tree bytes: 119631872
+total fs tree bytes: 109928448
+btree space waste bytes: 33045213
+file data blocks allocated: 5391962112
+ referenced 2984988672
+Btrfs Btrfs v0.19
 
---Signature=_Wed__9_Nov_2011_17_37_22_+1100_rjuHPwVXhkywzhzu
-Content-Type: application/pgp-signature
+http://dl.dropbox.com/u/1071112/btrfs-debug-tree.sdi2.bz2
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Exact kernel that won't mount is linus 3.1 +
+Author: David Sterba <dsterba@suse.cz>
+Date:   Wed Aug 3 11:08:02 2011 -0700
+    btrfs: allow cross-subvolume file clone
 
-iQIcBAEBCAAGBQJOuh+iAAoJEECxmPOUX5FEcD4P/RBEYoXhXwcaXcs/5vbCS/ct
-qa2v2DFk545vsiWOz57m3N7ioipPrHsDm72t6zKIgY4BKXslP6pGtrPc9rWKGxGA
-lBURsM/hBY+YF4gNHRMfe/G6qcxd+12tAw9xzSzX1Oe5OFDa9jBaTCP1bOmJTqWu
-yRFf+QkYn7SGvSFKJj7yj7wJ0bmCvriig9AGyYu8S//EOv3kJJhHT3r9DtuXR7wx
-fYrr7VeGPLD7X0eKxOYcn2Adg4V1LJvnoViGGXdSnns7JMZCd+0sChXgi69zS0bD
-mvGpCYS3y25P+M5zqtc3LWzvp0y8MPZ6XJdsUPkAjbQDWDLpP+Nnot4cJYfLVCwS
-u6xZW49zmKpITjBSBiQmnHitAp6GGh4+XppHE/PCJ3jrmhWiM+P0sRbrfcWu4jSd
-Vtceg2JOAjFlNQrUJfOdd0JpRWic6blJf4gz+r5hg1jCXH9VQho8THxn7+HBL1/h
-UYpS9NrdjadW9cces1LHrUsoHIUyqN+zzG4Tt6Gfh26Si+xQh7pHGQLy0nUXQIBi
-+Ul8ZRfoKCxOgBE+JeERJnv2RouNr0xe3szuUdV78ItzSGM4iyCxkhb6rMXCivG2
-JbtdDbhAcklkTeF0O04zvJ2FQ5faokOndX/L+vn8P+kjLEDzpRgb4p1wlLotasc3
-M2TVxkHD1sB0ombba2n/
-=cUuI
------END PGP SIGNATURE-----
+Author: Li Zefan <lizf@cn.fujitsu.com>
+Date:   Fri Sep 2 15:56:25 2011 +0800
 
---Signature=_Wed__9_Nov_2011_17_37_22_+1100_rjuHPwVXhkywzhzu--
+    Btrfs: fix defragmentation regression
