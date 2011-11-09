@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1KIMwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 07:52:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46461 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753974Ab1KIMwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 07:52:24 -0500
-Date: Wed, 9 Nov 2011 10:51:47 -0200
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Gerd Hoffmann <kraxel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Theodore Tso <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
-        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git
-	repository, tools/perf/ and tools/kvm/
-Message-ID: <20111109125147.GE18207@ghostprotocols.net>
-References: <4EB9315A.10806@redhat.com> <20111108143228.GC14272@ghostprotocols.net> <4EB94D08.3010207@redhat.com> <20111109085120.GD11473@elte.hu> <4EBA5881.7080409@redhat.com> <20111109115502.GA18207@ghostprotocols.net> <4EBA717A.8010300@redhat.com> <20111109123050.GC18207@ghostprotocols.net> <20111109123326.GD18207@ghostprotocols.net> <1320842802.13360.12.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320842802.13360.12.camel@twins>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751417Ab1KINBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 08:01:41 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:48548 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944Ab1KINBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 08:01:40 -0500
+From: Eric Miao <eric.y.miao@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+        lm-sensors <lm-sensors@lm-sensors.org>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Subject: [PATCH] hwmon: (max1111) change sysfs interface to in[0-3]_input in millivolts
+Date: Wed,  9 Nov 2011 21:01:34 +0800
+Message-Id: <1320843695-2839-1-git-send-email-eric.y.miao@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Nov 09, 2011 at 01:46:42PM +0100, Peter Zijlstra escreveu:
-> On Wed, 2011-11-09 at 10:33 -0200, Arnaldo Carvalho de Melo wrote:
-> > 
-> > Ingo, would that G+ page be useful for that?
-> > 
-> *groan*
-> 
-> Can we please keep things sane?
+This patch fixed the inconsistent max1111 sysfs interface as pointed
+out by Jean Delvare:
 
-ROFL, I had to ask that :-P
+    It was pointed to me that the max1111 driver doesn't implement the
+    standard sysfs interface for hwmon drivers (as described in
+    Documentation/hwmon/sysfs-interface). It exports files adc[0-3]_in,
+    which
+    aren't part of the standard interface. Presumably these should be
+    renamed to in[0-3]_input. Renaming them is probably not sufficient
+    though, as I see no scaling done in the driver. As the MAX1111 chip has
+    a documented full scale of 2.048V, I take it that the LSB of the ADC
+    has a weight of 8 mV. Exporting raw register values to user-space is
+    not OK.
 
-- Arnaldo
+Reported-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+---
+ drivers/hwmon/max1111.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/hwmon/max1111.c b/drivers/hwmon/max1111.c
+index c97b78e..5586cca 100644
+--- a/drivers/hwmon/max1111.c
++++ b/drivers/hwmon/max1111.c
+@@ -106,11 +106,14 @@ static ssize_t show_adc(struct device *dev,
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	return sprintf(buf, "%d\n", ret);
++	/* assume the reference voltage to be 2.048V, with an 8-bit sample,
++	 * the LSB weight is 8mV
++	 */
++	return sprintf(buf, "%d\n", ret * 8);
+ }
+ 
+ #define MAX1111_ADC_ATTR(_id)		\
+-	SENSOR_DEVICE_ATTR(adc##_id##_in, S_IRUGO, show_adc, NULL, _id)
++	SENSOR_DEVICE_ATTR(in##_id##_input, S_IRUGO, show_adc, NULL, _id)
+ 
+ static DEVICE_ATTR(name, S_IRUGO, show_name, NULL);
+ static MAX1111_ADC_ATTR(0);
+@@ -120,10 +123,10 @@ static MAX1111_ADC_ATTR(3);
+ 
+ static struct attribute *max1111_attributes[] = {
+ 	&dev_attr_name.attr,
+-	&sensor_dev_attr_adc0_in.dev_attr.attr,
+-	&sensor_dev_attr_adc1_in.dev_attr.attr,
+-	&sensor_dev_attr_adc2_in.dev_attr.attr,
+-	&sensor_dev_attr_adc3_in.dev_attr.attr,
++	&sensor_dev_attr_in0_input.dev_attr.attr,
++	&sensor_dev_attr_in1_input.dev_attr.attr,
++	&sensor_dev_attr_in2_input.dev_attr.attr,
++	&sensor_dev_attr_in3_input.dev_attr.attr,
+ 	NULL,
+ };
+ 
+-- 
+1.7.5.4
+
