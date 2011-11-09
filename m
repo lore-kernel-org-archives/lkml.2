@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933200Ab1KIWJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:09:19 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60220 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab1KIWJQ (ORCPT
+	id S1756798Ab1KIWJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:09:44 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37981 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab1KIWJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:09:16 -0500
-Message-ID: <4EBAFA03.40405@suse.cz>
-Date: Wed, 09 Nov 2011 23:09:07 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Alan Cox <alan@linux.intel.com>
-CC: Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 01/10] TTY: serial, cleanup include file
-References: <1320870831-23778-1-git-send-email-jslaby@suse.cz> <20111109215901.16f44570@bob.linux.org.uk>
-In-Reply-To: <20111109215901.16f44570@bob.linux.org.uk>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Nov 2011 17:09:43 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:organization:x-system-of-record;
+	b=RhYyPNTA89lrv4Gy+4iDa/pcreeMH39p7raEPqR16/zO74a7GFRtRVaBl7Z05L2HG
+	wP6LwBNqxtA4GJWJcK2MA==
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        David Decotigny <david.decotigny@google.com>
+Subject: [PATCH net-next v1 0/9] forcedeth: stats & debug enhancements
+Date: Wed,  9 Nov 2011 14:09:14 -0800
+Message-Id: <cover.1320875577.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 10:59 PM, Alan Cox wrote:
-> We need to move the tty_buffer objects into the tty_port.
+These changes implement the ndo_get_stats64 API and add a few more
+stats and debugging features for forcedeth. They also ensure that
+stats updates are correct in SMP systems, 32 or 64-bits.
 
-Thanks a lot for reminding me. (I remember you telling me about this at
-KS.) So I suppose you prefer this to be done first... OK, I will look
-into that. Leaving the rest of the serial stuff apart for the time being.
+Regarding the "implement ndo_get_stats64() API" patch, I'm not sure
+I'm using the right way to protect the 64b stats. Ideally, I would
+like them to be non-blocking (u64_stats_sync.h), but as there are
+several sources for updates, I don't think I can do without locking or
+per-CPU stats. Would per-CPU stats be better here (note: I expect the
+contention on netdev_priv(dev)->stats_lock to be _VERY_ low)?
 
-> This needs every tty of all kinds to have a tty_port even if isn't used
-> for anything else.
+Tested:
+  ~150Mbps incoming TCP, ethtool -S in a loop, x86_64 16-way:
+     tx_bytes: 1413863329
+     rx_packets: 38918872
+     tx_packets: 19828148
+     rx_bytes: 57818685991
 
-Heh, out-of-tree driver maintainers will cry once again. It serves them
-right.
+############################################
+# Patch Set Summary:
 
-thanks,
+David Decotigny (6):
+  forcedeth: expose module parameters in /sys/module
+  forcedeth: stats for rx_packets based on hardware registers
+  forcedeth: implement ndo_get_stats64() API
+  forcedeth: account for dropped RX frames
+  forcedeth: stats updated with a deferrable timer
+  forcedeth: whitespace/indentation fixes
+
+Mike Ditto (1):
+  forcedeth: Add messages to indicate using MSI or MSI-X
+
+Sameer Nanda (2):
+  forcedeth: allow to silence "TX timeout" debug messages
+  forcedeth: new ethtool stat counter for TX timeouts
+
+ drivers/net/ethernet/nvidia/forcedeth.c |  271 +++++++++++++++++++++----------
+ 1 files changed, 184 insertions(+), 87 deletions(-)
+
 -- 
-js
-suse labs
+1.7.3.1
+
