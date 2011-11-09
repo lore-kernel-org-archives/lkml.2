@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936094Ab1KJDrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:47:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45035 "EHLO mx2.suse.de"
+	id S936132Ab1KJDrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:47:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45040 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933796Ab1KJDrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:47:32 -0500
+	id S936072Ab1KJDrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:47:35 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:06 2011
-Message-Id: <20111109213205.941095162@clark.kroah.org>
+Message-Id: <20111109213206.036876751@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:40 -0800
+Date: Wed, 09 Nov 2011 13:34:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joern Engel <joern@logfs.org>,
-        Roland Dreier <roland@purestorage.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [233/264] target: Fix wrong se_tmr being added to drain_tmr_list
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [234/264] powerpc/numa: Remove double of_node_put in hot_add_node_scn_to_nid
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joern Engel <joern@logfs.org>
+From: Anton Blanchard <anton@samba.org>
 
-commit 6eb40b2af4908e9aee71e43e7a384243128c56dd upstream.
+commit 6083184269fd723affca4f6340e491950267622a upstream.
 
-This patch fixes another bug from LUN_RESET re-org fallout in
-core_tmr_drain_tmr_list() that was adding the wrong se_tmr_req
-into the local drain_tmr_list to be walked + released.
+During memory hotplug testing, I got the following warning:
 
-Signed-off-by: Joern Engel <joern@logfs.org>
-Cc: Joern Engel <joern@logfs.org>
-Reviewed-by: Roland Dreier <roland@purestorage.com>
-Cc: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+ERROR: Bad of_node_put() on /memory@0
+
+of_node_release
+kref_put
+of_node_put
+of_find_node_by_type
+hot_add_node_scn_to_nid
+hot_add_scn_to_nid
+memory_add_physaddr_to_nid
+...
+
+of_find_node_by_type() loop does the of_node_put for us so we only
+need the handle the case where we terminate the loop early.
+
+As suggested by Stephen Rothwell we can do the of_node_put
+unconditionally outside of the loop since of_node_put handles a
+NULL argument fine.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_tmr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/mm/numa.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/target/target_core_tmr.c
-+++ b/drivers/target/target_core_tmr.c
-@@ -148,7 +148,7 @@ static void core_tmr_drain_tmr_list(
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -1214,11 +1214,12 @@ int hot_add_node_scn_to_nid(unsigned lon
+ 			break;
  		}
- 		spin_unlock(&cmd->t_state_lock);
  
--		list_move_tail(&tmr->tmr_list, &drain_tmr_list);
-+		list_move_tail(&tmr_p->tmr_list, &drain_tmr_list);
+-		of_node_put(memory);
+ 		if (nid >= 0)
+ 			break;
  	}
- 	spin_unlock_irqrestore(&dev->se_tmr_lock, flags);
+ 
++	of_node_put(memory);
++
+ 	return nid;
+ }
  
 
 
