@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936119Ab1KJDoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:44:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44663 "EHLO mx2.suse.de"
+	id S965512Ab1KJDot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:44:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44683 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936061Ab1KJDoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:37 -0500
+	id S936110Ab1KJDoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:44 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
-Message-Id: <20111109213200.316191985@clark.kroah.org>
+Message-Id: <20111109213200.541591898@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:47 -0800
+Date: Wed, 09 Nov 2011 13:33:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
@@ -19,8 +19,11 @@ Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [180/264] powerpc: gup_hugepte() avoid freeing the head page too many times
+        David Gibson <david@gibson.dropbear.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [182/264] powerpc: gup_huge_pmd() return 0 if pte changes
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,9 +35,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 8596468487e2062cae2aad56e973784e03959245 upstream.
+commit cf592bf768c4fa40282b8fce58a80820065de2cb upstream.
 
-We only taken "refs" pins on the head page not "*nr" pins.
+powerpc didn't return 0 in that case, if it's rolling back the *nr pointer
+it should also return zero to avoid adding pages to the array at the wrong
+offset.
 
 Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
@@ -45,26 +50,44 @@ Cc: Mel Gorman <mgorman@suse.de>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Acked-by: David Gibson <david@gibson.dropbear.id.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David Miller <davem@davemloft.net>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/mm/hugetlbpage.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/powerpc/mm/hugetlbpage.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
 --- a/arch/powerpc/mm/hugetlbpage.c
 +++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -428,10 +428,9 @@ static noinline int gup_hugepte(pte_t *p
- 
- 	if (unlikely(pte_val(pte) != pte_val(*ptep))) {
- 		/* Could be optimized better */
--		while (*nr) {
-+		*nr -= refs;
-+		while (refs--)
+@@ -443,16 +443,17 @@ static noinline int gup_hugepte(pte_t *p
+ 		*nr -= refs;
+ 		while (refs--)
  			put_page(head);
--			(*nr)--;
+-	} else {
+-		/*
+-		 * Any tail page need their mapcount reference taken
+-		 * before we return.
+-		 */
+-		while (refs--) {
+-			if (PageTail(tail))
+-				get_huge_page_tail(tail);
+-			tail++;
 -		}
++		return 0;
++	}
++
++	/*
++	 * Any tail page need their mapcount reference taken before we
++	 * return.
++	 */
++	while (refs--) {
++		if (PageTail(tail))
++			get_huge_page_tail(tail);
++		tail++;
  	}
  
  	return 1;
