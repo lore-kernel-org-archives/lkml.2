@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425Ab1KIBsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Nov 2011 20:48:12 -0500
-Received: from eastrmfepi102.cox.net ([68.230.241.198]:47584 "EHLO
-	eastrmfepi102.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab1KIBsL (ORCPT
+	id S1755504Ab1KIByU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Nov 2011 20:54:20 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:35897 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751298Ab1KIByS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Nov 2011 20:48:11 -0500
-X-Greylist: delayed 1904 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Nov 2011 20:48:11 EST
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020201.4EB9D46A.0069,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=n8j2qrTChidZYK+driZvPGNPpB1vlUiTfZeEYAw05jg=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=s7WxrzdoqFgA:10 a=IkcTkHD0fZMA:10
- a=kTUvB0TWC4kfFd9n2t+ykg==:17 a=PT6YlxcxAAAA:8 a=mJSZNoMlFQFIMELcyNgA:9
- a=QEXdDO2ut3YA:10 a=a6lP7IF8vnT4BHbt:21 a=RDDZ7n-Ch25iRN7f:21
- a=kTUvB0TWC4kfFd9n2t+ykg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20111108201626.YTLNP.99684.imail@eastrmwml46>
-Date: Tue, 8 Nov 2011 20:16:26 -0500
-From: "Western.Union" <e-preston@cox.net>
-Reply-To: wumtonlinepay@teman.zikri.com
-Subject: Good Day
+	Tue, 8 Nov 2011 20:54:18 -0500
+Date: Wed, 9 Nov 2011 09:54:06 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: danila.st@mail.ru, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-security-module@vger.kernel.org,
+        adobriyan@gmail.com, peter.p.waskiewicz.jr@intel.com
+Subject: Re: Add IPSec IP Range in Linux kernel
+Message-ID: <20111109015406.GA10800@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111108.204253.891598837549584662.davem@davemloft.net>
+Organization: Core
+X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel,apa
+	na.lists.os.linux.netdev
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good Day
+David Miller <davem@davemloft.net> wrote:
+>
+> Like I said, if you want address ranges, ask the userland IPSEC daemon
+> authors to synthesize it.
 
-This is to inform you that  have $5,000,000,00 million united states dollars Lodged in our Western Union to transfer to you 
-as Compensation. Contact Mr.Collins Moore E-mail : mr.collins.moore2011@teman.zikri.com TEL: +2348063279713.
+Alternatively you can do this with marking and use netfilter
+to set the mark.
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
