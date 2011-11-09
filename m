@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935104Ab1KJD3h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:29:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42608 "EHLO mx2.suse.de"
+	id S1752050Ab1KJFBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:01:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42635 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934695Ab1KJD3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:29:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:16 2011
-Message-Id: <20111109212716.121714673@clark.kroah.org>
+	id S935096Ab1KJD3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:29:34 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:18 2011
+Message-Id: <20111109212718.236595916@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:56 -0800
+Date: Wed, 09 Nov 2011 13:28:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clifton Barnes <cabarnes@indesign-llc.com>,
-        Evgeniy Polyakov <zbr@ioremap.net>
-Subject: [154/262] drivers/power/ds2780_battery.c: create central point for calling w1 interface
+        alan@lxorguk.ukuu.org.uk, "Steven.Li" <yongli@qca.qualcomm.com>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: [176/262] Bluetooth: Add Atheros AR3012 one PID/VID supported
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,278 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clifton Barnes <cabarnes@indesign-llc.com>
+From: "Steven.Li" <Steven.Li@Atheros.com>
 
-commit 853eee72f74f449797f0500ea19fc1bf497428d8 upstream.
+commit 2d25f8b462f3b849d8913d02978657ef06e67dd8 upstream.
 
-Simply creates one point to call the w1 interface.
+The new Ath3k needs to download patch and radio table,
+and it keeps same PID/VID even after downloading the patch and radio
+table. This patch is to use the bcdDevice (Device Release Number) to
+judge whether the chip has been patched or not. The init bcdDevice
+value of the chip is 0x0001, this value increases after patch and
+radio table downloading.
 
-Signed-off-by: Clifton Barnes <cabarnes@indesign-llc.com>
-Cc: Evgeniy Polyakov <zbr@ioremap.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven.Li <yongli@qca.qualcomm.com>
+Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/power/ds2780_battery.c |   77 ++++++++++++++++++++++-------------------
- 1 file changed, 42 insertions(+), 35 deletions(-)
+ drivers/bluetooth/ath3k.c |    5 +++++
+ drivers/bluetooth/btusb.c |   12 +++++++++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
---- a/drivers/power/ds2780_battery.c
-+++ b/drivers/power/ds2780_battery.c
-@@ -49,8 +49,8 @@ enum current_types {
- static const char model[] = "DS2780";
- static const char manufacturer[] = "Maxim/Dallas";
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -376,6 +376,11 @@ static int ath3k_probe(struct usb_interf
  
--static inline struct ds2780_device_info *to_ds2780_device_info(
--	struct power_supply *psy)
-+static inline struct ds2780_device_info *
-+to_ds2780_device_info(struct power_supply *psy)
- {
- 	return container_of(psy, struct ds2780_device_info, bat);
- }
-@@ -60,17 +60,25 @@ static inline struct power_supply *to_po
- 	return dev_get_drvdata(dev);
- }
- 
--static inline int ds2780_read8(struct device *dev, u8 *val, int addr)
-+static inline int ds2780_battery_io(struct ds2780_device_info *dev_info,
-+	char *buf, int addr, size_t count, int io)
- {
--	return w1_ds2780_io(dev, val, addr, sizeof(u8), 0);
-+		return w1_ds2780_io(dev_info->w1_dev, buf, addr, count, io);
- }
- 
--static int ds2780_read16(struct device *dev, s16 *val, int addr)
-+static inline int ds2780_read8(struct ds2780_device_info *dev_info, u8 *val,
-+	int addr)
-+{
-+	return ds2780_battery_io(dev_info, val, addr, sizeof(u8), 0);
-+}
+ 	/* load patch and sysconfig files for AR3012 */
+ 	if (id->driver_info & BTUSB_ATH3012) {
 +
-+static int ds2780_read16(struct ds2780_device_info *dev_info, s16 *val,
-+	int addr)
- {
- 	int ret;
- 	u8 raw[2];
++		/* New firmware with patch and sysconfig files already loaded */
++		if (le16_to_cpu(udev->descriptor.bcdDevice) > 0x0001)
++			return -ENODEV;
++
+ 		ret = ath3k_load_patch(udev);
+ 		if (ret < 0) {
+ 			BT_ERR("Loading patch file failed");
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -54,6 +54,7 @@ static struct usb_driver btusb_driver;
+ #define BTUSB_BCM92035		0x10
+ #define BTUSB_BROKEN_ISOC	0x20
+ #define BTUSB_WRONG_SCO_MTU	0x40
++#define BTUSB_ATH3012		0x80
  
--	ret = w1_ds2780_io(dev, raw, addr, sizeof(u8) * 2, 0);
-+	ret = ds2780_battery_io(dev_info, raw, addr, sizeof(raw), 0);
- 	if (ret < 0)
- 		return ret;
+ static struct usb_device_id btusb_table[] = {
+ 	/* Generic Bluetooth USB device */
+@@ -114,7 +115,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
  
-@@ -79,16 +87,16 @@ static int ds2780_read16(struct device *
- 	return 0;
- }
+ 	/* Atheros 3012 with sflash firmware */
+-	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
  
--static inline int ds2780_read_block(struct device *dev, u8 *val, int addr,
--	size_t count)
-+static inline int ds2780_read_block(struct ds2780_device_info *dev_info,
-+	u8 *val, int addr, size_t count)
- {
--	return w1_ds2780_io(dev, val, addr, count, 0);
-+	return ds2780_battery_io(dev_info, val, addr, count, 0);
- }
+ 	/* Atheros AR5BBU12 with sflash firmware */
+ 	{ USB_DEVICE(0x0489, 0xe02c), .driver_info = BTUSB_IGNORE },
+@@ -918,6 +919,15 @@ static int btusb_probe(struct usb_interf
+ 	if (ignore_sniffer && id->driver_info & BTUSB_SNIFFER)
+ 		return -ENODEV;
  
--static inline int ds2780_write(struct device *dev, u8 *val, int addr,
--	size_t count)
-+static inline int ds2780_write(struct ds2780_device_info *dev_info, u8 *val,
-+	int addr, size_t count)
- {
--	return w1_ds2780_io(dev, val, addr, count, 1);
-+	return ds2780_battery_io(dev_info, val, addr, count, 1);
- }
- 
- static inline int ds2780_store_eeprom(struct device *dev, int addr)
-@@ -122,7 +130,7 @@ static int ds2780_set_sense_register(str
- {
- 	int ret;
- 
--	ret = ds2780_write(dev_info->w1_dev, &conductance,
-+	ret = ds2780_write(dev_info, &conductance,
- 				DS2780_RSNSP_REG, sizeof(u8));
- 	if (ret < 0)
- 		return ret;
-@@ -134,7 +142,7 @@ static int ds2780_set_sense_register(str
- static int ds2780_get_rsgain_register(struct ds2780_device_info *dev_info,
- 	u16 *rsgain)
- {
--	return ds2780_read16(dev_info->w1_dev, rsgain, DS2780_RSGAIN_MSB_REG);
-+	return ds2780_read16(dev_info, rsgain, DS2780_RSGAIN_MSB_REG);
- }
- 
- /* Set RSGAIN value from 0 to 1.999 in steps of 0.001 */
-@@ -144,8 +152,8 @@ static int ds2780_set_rsgain_register(st
- 	int ret;
- 	u8 raw[] = {rsgain >> 8, rsgain & 0xFF};
- 
--	ret = ds2780_write(dev_info->w1_dev, raw,
--				DS2780_RSGAIN_MSB_REG, sizeof(u8) * 2);
-+	ret = ds2780_write(dev_info, raw,
-+				DS2780_RSGAIN_MSB_REG, sizeof(raw));
- 	if (ret < 0)
- 		return ret;
- 
-@@ -167,7 +175,7 @@ static int ds2780_get_voltage(struct ds2
- 	 * Bits 2 - 0 of the voltage value are in bits 7 - 5 of the
- 	 * voltage LSB register
- 	 */
--	ret = ds2780_read16(dev_info->w1_dev, &voltage_raw,
-+	ret = ds2780_read16(dev_info, &voltage_raw,
- 				DS2780_VOLT_MSB_REG);
- 	if (ret < 0)
- 		return ret;
-@@ -196,7 +204,7 @@ static int ds2780_get_temperature(struct
- 	 * Bits 2 - 0 of the temperature value are in bits 7 - 5 of the
- 	 * temperature LSB register
- 	 */
--	ret = ds2780_read16(dev_info->w1_dev, &temperature_raw,
-+	ret = ds2780_read16(dev_info, &temperature_raw,
- 				DS2780_TEMP_MSB_REG);
- 	if (ret < 0)
- 		return ret;
-@@ -222,13 +230,13 @@ static int ds2780_get_current(struct ds2
- 	 * The units of measurement for current are dependent on the value of
- 	 * the sense resistor.
- 	 */
--	ret = ds2780_read8(dev_info->w1_dev, &sense_res_raw, DS2780_RSNSP_REG);
-+	ret = ds2780_read8(dev_info, &sense_res_raw, DS2780_RSNSP_REG);
- 	if (ret < 0)
- 		return ret;
- 
- 	if (sense_res_raw == 0) {
- 		dev_err(dev_info->dev, "sense resistor value is 0\n");
--		return -ENXIO;
-+		return -EINVAL;
- 	}
- 	sense_res = 1000 / sense_res_raw;
- 
-@@ -248,7 +256,7 @@ static int ds2780_get_current(struct ds2
- 	 * Bits 7 - 0 of the current value are in bits 7 - 0 of the current
- 	 * LSB register
- 	 */
--	ret = ds2780_read16(dev_info->w1_dev, &current_raw, reg_msb);
-+	ret = ds2780_read16(dev_info, &current_raw, reg_msb);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -267,7 +275,7 @@ static int ds2780_get_accumulated_curren
- 	 * The units of measurement for accumulated current are dependent on
- 	 * the value of the sense resistor.
- 	 */
--	ret = ds2780_read8(dev_info->w1_dev, &sense_res_raw, DS2780_RSNSP_REG);
-+	ret = ds2780_read8(dev_info, &sense_res_raw, DS2780_RSNSP_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -285,7 +293,7 @@ static int ds2780_get_accumulated_curren
- 	 * Bits 7 - 0 of the ACR value are in bits 7 - 0 of the ACR
- 	 * LSB register
- 	 */
--	ret = ds2780_read16(dev_info->w1_dev, &current_raw, DS2780_ACR_MSB_REG);
-+	ret = ds2780_read16(dev_info, &current_raw, DS2780_ACR_MSB_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -299,7 +307,7 @@ static int ds2780_get_capacity(struct ds
- 	int ret;
- 	u8 raw;
- 
--	ret = ds2780_read8(dev_info->w1_dev, &raw, DS2780_RARC_REG);
-+	ret = ds2780_read8(dev_info, &raw, DS2780_RARC_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -345,7 +353,7 @@ static int ds2780_get_charge_now(struct
- 	 * Bits 7 - 0 of the RAAC value are in bits 7 - 0 of the RAAC
- 	 * LSB register
- 	 */
--	ret = ds2780_read16(dev_info->w1_dev, &charge_raw, DS2780_RAAC_MSB_REG);
-+	ret = ds2780_read16(dev_info, &charge_raw, DS2780_RAAC_MSB_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -356,7 +364,7 @@ static int ds2780_get_charge_now(struct
- static int ds2780_get_control_register(struct ds2780_device_info *dev_info,
- 	u8 *control_reg)
- {
--	return ds2780_read8(dev_info->w1_dev, control_reg, DS2780_CONTROL_REG);
-+	return ds2780_read8(dev_info, control_reg, DS2780_CONTROL_REG);
- }
- 
- static int ds2780_set_control_register(struct ds2780_device_info *dev_info,
-@@ -364,7 +372,7 @@ static int ds2780_set_control_register(s
- {
- 	int ret;
- 
--	ret = ds2780_write(dev_info->w1_dev, &control_reg,
-+	ret = ds2780_write(dev_info, &control_reg,
- 				DS2780_CONTROL_REG, sizeof(u8));
- 	if (ret < 0)
- 		return ret;
-@@ -503,7 +511,7 @@ static ssize_t ds2780_get_sense_resistor
- 	struct power_supply *psy = to_power_supply(dev);
- 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
- 
--	ret = ds2780_read8(dev_info->w1_dev, &sense_resistor, DS2780_RSNSP_REG);
-+	ret = ds2780_read8(dev_info, &sense_resistor, DS2780_RSNSP_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -584,7 +592,7 @@ static ssize_t ds2780_get_pio_pin(struct
- 	struct power_supply *psy = to_power_supply(dev);
- 	struct ds2780_device_info *dev_info = to_ds2780_device_info(psy);
- 
--	ret = ds2780_read8(dev_info->w1_dev, &sfr, DS2780_SFR_REG);
-+	ret = ds2780_read8(dev_info, &sfr, DS2780_SFR_REG);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -611,7 +619,7 @@ static ssize_t ds2780_set_pio_pin(struct
- 		return -EINVAL;
- 	}
- 
--	ret = ds2780_write(dev_info->w1_dev, &new_setting,
-+	ret = ds2780_write(dev_info, &new_setting,
- 				DS2780_SFR_REG, sizeof(u8));
- 	if (ret < 0)
- 		return ret;
-@@ -632,7 +640,7 @@ static ssize_t ds2780_read_param_eeprom_
- 		DS2780_EEPROM_BLOCK1_END -
- 		DS2780_EEPROM_BLOCK1_START + 1 - off);
- 
--	return ds2780_read_block(dev_info->w1_dev, buf,
-+	return ds2780_read_block(dev_info, buf,
- 				DS2780_EEPROM_BLOCK1_START + off, count);
- }
- 
-@@ -650,7 +658,7 @@ static ssize_t ds2780_write_param_eeprom
- 		DS2780_EEPROM_BLOCK1_END -
- 		DS2780_EEPROM_BLOCK1_START + 1 - off);
- 
--	ret = ds2780_write(dev_info->w1_dev, buf,
-+	ret = ds2780_write(dev_info, buf,
- 				DS2780_EEPROM_BLOCK1_START + off, count);
- 	if (ret < 0)
- 		return ret;
-@@ -685,9 +693,8 @@ static ssize_t ds2780_read_user_eeprom_b
- 		DS2780_EEPROM_BLOCK0_END -
- 		DS2780_EEPROM_BLOCK0_START + 1 - off);
- 
--	return ds2780_read_block(dev_info->w1_dev, buf,
-+	return ds2780_read_block(dev_info, buf,
- 				DS2780_EEPROM_BLOCK0_START + off, count);
--
- }
- 
- static ssize_t ds2780_write_user_eeprom_bin(struct file *filp,
-@@ -704,7 +711,7 @@ static ssize_t ds2780_write_user_eeprom_
- 		DS2780_EEPROM_BLOCK0_END -
- 		DS2780_EEPROM_BLOCK0_START + 1 - off);
- 
--	ret = ds2780_write(dev_info->w1_dev, buf,
-+	ret = ds2780_write(dev_info, buf,
- 				DS2780_EEPROM_BLOCK0_START + off, count);
- 	if (ret < 0)
- 		return ret;
++	if (id->driver_info & BTUSB_ATH3012) {
++		struct usb_device *udev = interface_to_usbdev(intf);
++
++		/* Old firmware would otherwise let ath3k driver load
++		 * patch and sysconfig files */
++		if (le16_to_cpu(udev->descriptor.bcdDevice) <= 0x0001)
++			return -ENODEV;
++	}
++
+ 	data = kzalloc(sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
 
 
