@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589Ab1KIFdw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 00:33:52 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:21961 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab1KIFdv (ORCPT
+	id S1751992Ab1KIGEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 01:04:30 -0500
+Received: from smtpauth03.mfg.siteprotect.com ([64.26.60.137]:42080 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750924Ab1KIGE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 00:33:51 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6524"; a="135960758"
-Message-ID: <bd0f0eff978b799baf979487756e5cde.squirrel@www.codeaurora.org>
-In-Reply-To: <1320778170.8062.134.camel@localhost.localdomain>
-References: <1320778170.8062.134.camel@localhost.localdomain>
-Date: Tue, 8 Nov 2011 21:33:50 -0800 (PST)
-Subject: Re: [PATCH] Hexagon: Use resource_size function
-From: rkuo@codeaurora.org
-To: "Thomas Meyer" <thomas@m3y3r.de>
-Cc: davidb@codeaurora.org, "Arnd Bergmann" <arnd@arndb.de>,
-        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.17
+	Wed, 9 Nov 2011 01:04:28 -0500
+Date: Wed, 9 Nov 2011 01:04:16 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Ted Ts'o" <tytso@mit.edu>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?ISO-8859-15?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Qemu-devel] [PATCH] KVM: Add wrapper script around QEMU to test
+ kernels
+In-Reply-To: <20111108130825.GB14272@ghostprotocols.net>
+Message-ID: <alpine.DEB.2.02.1111090100450.718@pianoman.cluster.toy>
+References: <4EB6BEFA.6000303@codemonkey.ws> <20111106183132.GA4500@thunk.org> <CAOJsxLHvYo5zA+_m-AXuZHjAcGKE5q0ytmPCZ0Gye52LWq1p9Q@mail.gmail.com> <CAOJsxLG6kyq-RoQiBj0B_tThvOy1AxJf6XB2VfQFQJkwQ5cHcQ@mail.gmail.com> <20111106231953.GD4500@thunk.org>
+ <alpine.LFD.2.02.1111070838520.1823@tux.localdomain> <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy> <20111107175942.GA9395@elte.hu> <alpine.DEB.2.02.1111072358190.8884@pianoman.cluster.toy> <20111108120755.GB571@elte.hu>
+ <20111108130825.GB14272@ghostprotocols.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Thomas Meyer <thomas@m3y3r.de>
->
->  Use resource_size function on resource object
->  instead of explicit computation.
->
->  The semantic patch that makes this change is available
->  in scripts/coccinelle/api/resource_size.cocci.
->
->  More information about semantic patching is available at
->  http://coccinelle.lip6.fr/
->
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
-> ---
->
-> diff -u -p a/arch/hexagon/kernel/time.c b/arch/hexagon/kernel/time.c
-> --- a/arch/hexagon/kernel/time.c 2011-11-07 19:37:21.719553477 +0100
-> +++ b/arch/hexagon/kernel/time.c 2011-11-08 12:21:17.722176538 +0100
-> @@ -200,12 +200,10 @@ void __init time_init_deferred(void)
->  		resource = rtos_timer_device.resource;
->
->  	/*  ioremap here means this has to run later, after paging init  */
-> -	rtos_timer = ioremap(resource->start, resource->end
-> -		- resource->start + 1);
-> +	rtos_timer = ioremap(resource->start, resource_size(resource));
->
->  	if (!rtos_timer) {
-> -		release_mem_region(resource->start, resource->end
-> -			- resource->start + 1);
-> +		release_mem_region(resource->start, resource_size(resource));
->  	}
->  	clocksource_register_khz(&hexagon_clocksource, pcycle_freq_mhz * 1000);
->
->
->
->
+On Tue, 8 Nov 2011, Arnaldo Carvalho de Melo wrote:
 
-I don't have much to add about the form of the patch; David
-noticed more than I did, but as far as content, it looks good
-and I will have this patch applied to my tree.  Thanks!
+> Em Tue, Nov 08, 2011 at 01:07:55PM +0100, Ingo Molnar escreveu:
+> > * Vince Weaver <vince@deater.net> wrote:
+> > > as mentioned before I have my own perf_event test suite with 20+ tests.
+> > >   http://web.eecs.utk.edu/~vweaver1/projects/perf-events/validation.html
+>  
+> > That should probably be moved into perf test. Arnaldo, any 
+> > objections?
+> 
+> I'd gladly take patches, I even have in my TODO list for me to volunteer
+> time to do that at some point.
+> 
+> If somebody else than me or Vince wants to do that... Assuming there is
+> no licensing problem and Vince doesn't objects for that to be done.
 
+I have no objections, though I don't really have time right now to do the 
+work myself.
 
+The test code is licensed dual GPLv2/BSD.  I should stick that in the 
+package somewhere if I haven't already.
 
+My testcases mostly are testing things necessary for proper PAPI 
+functionality and are by no means complete.  There are huge
+areas of perf_event functionality that are not well tested, especially
+the overflow code.
+
+Vince
