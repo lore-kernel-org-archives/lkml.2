@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab1KIJZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 04:25:56 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:56876 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab1KIJZy (ORCPT
+	id S1756398Ab1KIJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 04:29:41 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64519 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab1KIJ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 04:25:54 -0500
-X-Auth-Info: 8vygFN2gnNPpu1hmspe1mDWXWIU5aJn3ZfHcl+hu5M0=
-Date: Wed, 9 Nov 2011 10:25:40 +0100
-From: Anatolij Gustschin <agust@denx.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] misc/eeprom: Fix dependecy on 'PPC_MPC5200_GPIO'
-Message-ID: <20111109102540.322fabe9@wker>
-In-Reply-To: <1320793779.14409.415.camel@x61.thuisdomein>
-References: <1320793779.14409.415.camel@x61.thuisdomein>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Nov 2011 04:29:39 -0500
+MIME-Version: 1.0
+X-Originating-IP: [93.172.63.171]
+In-Reply-To: <201111091017.18860.laurent.pinchart@ideasonboard.com>
+References: <1316948337-7924-1-git-send-email-ohad@wizery.com>
+ <1316948337-7924-5-git-send-email-ohad@wizery.com> <201111091017.18860.laurent.pinchart@ideasonboard.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 9 Nov 2011 11:29:18 +0200
+Message-ID: <CAK=WgbbizCd5ZBjyk=sukWtR6j1vVv+1Jc-QRzfppPCaQ+67HQ@mail.gmail.com>
+Subject: Re: [RFC 4/5] ARM: OMAP3: bind omap3isp_device to its iommu device
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tony Lindgren <tony@atomide.com>
+Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Joerg Roedel <Joerg.Roedel@amd.com>, iommu@lists.linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Cousson Benoit <b-cousson@ti.com>, Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Nov 2011 00:09:39 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
+On Wed, Nov 9, 2011 at 11:17 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Ohad,
+>
+> On Sunday 25 September 2011 12:58:56 Ohad Ben-Cohen wrote:
+>> Bind OMAP3's isp device to the isp's dedicated iommu, by setting
+>> the device's archdata iommu member.
+>>
+>> This way omap3isp will be able to use the generic IOMMU API without
+>> having to call any omap-specific binding method.
+>>
+>> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+>
+> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-> The driver for the DigsyMTC display configuration EEPROMs device got
-> added by commit 469dded183 ("misc/eeprom: add eeprom access driver for
-> digsy_mtc board"). Its Kconfig symbol depends on PPC_MPC5200_GPIO. But
-> at the time that driver got added PPC_MPC5200_GPIO was already renamed
-> to GPIO_MPC5200, by commit 6eae1ace68 ("gpio: Move mpc5200 gpio driver
-> to drivers/gpio").
-> 
-> So make this driver depend on GPIO_MPC5200. And since GPIO_MPC5200 itself
-> implies that GPIOLIB is set, that dependency can be dropped.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Thanks, Laurent!
 
-Acked-by: Anatolij Gustschin <agust@denx.de>
+Tony, can you please Ack the OMAP parts of this patch set:
 
-Thanks!
+https://lkml.org/lkml/2011/9/25/44 (patch 3/5)
+https://lkml.org/lkml/2011/9/25/46 (patch 4/5)
+https://lkml.org/lkml/2011/9/25/45 (patch 5/5)
+
+With this in hand, generic iommu users will now work on OMAP platforms
+too (without calling any omap-specific API).
+
+Thanks,
+Ohad.
