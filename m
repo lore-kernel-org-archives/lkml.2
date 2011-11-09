@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933728Ab1KJDUa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:20:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41613 "EHLO mx2.suse.de"
+	id S933743Ab1KJDUd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:20:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41618 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933715Ab1KJDU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:20:26 -0500
+	id S933725Ab1KJDUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:20:30 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:02 2011
-Message-Id: <20111109212702.594881721@clark.kroah.org>
+Message-Id: <20111109212702.687347738@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:25:45 -0800
+Date: Wed, 09 Nov 2011 13:25:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [023/262] drm/radeon/kms: handle !force case in connector detect more gracefully
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <jdelvare@suse.de>,
+        Jerome Glisse <j.glisse@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [024/262] drm/radeon/kms: Fix I2C mask definitions
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,103 +25,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit d0d0a225e6ad43314c9aa7ea081f76adc5098ad4 upstream.
+commit 286e0c94f9c3f292cb38a977fbbde3433347a868 upstream.
 
-When force == false, we don't do load detection in the connector
-detect functions.  Unforunately, we also return the previous
-connector state so we never get disconnect events for DVI-I, DVI-A,
-or VGA.  Save whether we detected the monitor via load detection
-previously and use that to determine whether we return the previous
-state or not.
+Commit 9b9fe724 accidentally used RADEON_GPIO_EN_* where
+RADEON_GPIO_MASK_* was intended. This caused improper initialization
+of I2C buses, mostly visible when setting i2c_algo_bit.bit_test=1.
+Using the right constants fixes the problem.
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=41561
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Jerome Glisse <j.glisse@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c |   23 ++++++++++++++++++++---
- drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
- 2 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -715,6 +715,7 @@ radeon_vga_detect(struct drm_connector *
- 		dret = radeon_ddc_probe(radeon_connector,
- 					radeon_connector->requires_extended_probe);
- 	if (dret) {
-+		radeon_connector->detected_by_load = false;
- 		if (radeon_connector->edid) {
- 			kfree(radeon_connector->edid);
- 			radeon_connector->edid = NULL;
-@@ -741,12 +742,21 @@ radeon_vga_detect(struct drm_connector *
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -620,8 +620,8 @@ static struct radeon_i2c_bus_rec combios
+ 		i2c.y_data_mask = 0x80;
  	} else {
- 
- 		/* if we aren't forcing don't do destructive polling */
--		if (!force)
--			return connector->status;
-+		if (!force) {
-+			/* only return the previous status if we last
-+			 * detected a monitor via load.
-+			 */
-+			if (radeon_connector->detected_by_load)
-+				return connector->status;
-+			else
-+				return ret;
-+		}
- 
- 		if (radeon_connector->dac_load_detect && encoder) {
- 			encoder_funcs = encoder->helper_private;
- 			ret = encoder_funcs->detect(encoder, connector);
-+			if (ret == connector_status_connected)
-+				radeon_connector->detected_by_load = true;
- 		}
- 	}
- 
-@@ -888,6 +898,7 @@ radeon_dvi_detect(struct drm_connector *
- 		dret = radeon_ddc_probe(radeon_connector,
- 					radeon_connector->requires_extended_probe);
- 	if (dret) {
-+		radeon_connector->detected_by_load = false;
- 		if (radeon_connector->edid) {
- 			kfree(radeon_connector->edid);
- 			radeon_connector->edid = NULL;
-@@ -955,8 +966,13 @@ radeon_dvi_detect(struct drm_connector *
- 	    (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA))
- 		goto out;
- 
-+	/* if we aren't forcing don't do destructive polling */
- 	if (!force) {
--		ret = connector->status;
-+		/* only return the previous status if we last
-+		 * detected a monitor via load.
-+		 */
-+		if (radeon_connector->detected_by_load)
-+			ret = connector->status;
- 		goto out;
- 	}
- 
-@@ -980,6 +996,7 @@ radeon_dvi_detect(struct drm_connector *
- 					ret = encoder_funcs->detect(encoder, connector);
- 					if (ret == connector_status_connected) {
- 						radeon_connector->use_digital = false;
-+						radeon_connector->detected_by_load = true;
- 					}
- 				}
- 				break;
---- a/drivers/gpu/drm/radeon/radeon_mode.h
-+++ b/drivers/gpu/drm/radeon/radeon_mode.h
-@@ -447,6 +447,7 @@ struct radeon_connector {
- 	struct edid *edid;
- 	void *con_priv;
- 	bool dac_load_detect;
-+	bool detected_by_load; /* if the connection status was determined by load */
- 	uint16_t connector_object_id;
- 	struct radeon_hpd hpd;
- 	struct radeon_router router;
+ 		/* default masks for ddc pads */
+-		i2c.mask_clk_mask = RADEON_GPIO_EN_1;
+-		i2c.mask_data_mask = RADEON_GPIO_EN_0;
++		i2c.mask_clk_mask = RADEON_GPIO_MASK_1;
++		i2c.mask_data_mask = RADEON_GPIO_MASK_0;
+ 		i2c.a_clk_mask = RADEON_GPIO_A_1;
+ 		i2c.a_data_mask = RADEON_GPIO_A_0;
+ 		i2c.en_clk_mask = RADEON_GPIO_EN_1;
 
 
