@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab1KJEfb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:35:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43728 "EHLO mx2.suse.de"
+	id S964956Ab1KJEfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:35:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43715 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935582Ab1KJDgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:53 -0500
+	id S935888Ab1KJDgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:46 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
-Message-Id: <20111109213146.542407832@clark.kroah.org>
+Message-Id: <20111109213146.439654773@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:31 -0800
+Date: Wed, 09 Nov 2011 13:31:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: [044/264] x86: Fix compilation bug in kprobes twobyte_is_boostable
+        alan@lxorguk.ukuu.org.uk, Jack Steiner <steiner@sgi.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [043/264] x86: uv2: Workaround for UV2 Hub bug (system global address format)
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,93 +26,220 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Stone <jistone@redhat.com>
+From: Jack Steiner <steiner@sgi.com>
 
-commit 315eb8a2a1b7f335d40ceeeb11b9e067475eb881 upstream.
+commit 6a469e4665bc158599de55d64388861d0a9f10f4 upstream.
 
-When compiling an i386_defconfig kernel with gcc-4.6.1-9.fc15.i686, I
-noticed a warning about the asm operand for test_bit in kprobes'
-can_boost.  I discovered that this caused only the first long of
-twobyte_is_boostable[] to be output.
+This is a workaround for a UV2 hub bug that affects the format of system
+global addresses.
 
-Jakub filed and fixed gcc PR50571 to correct the warning and this output
-issue.  But to solve it for less current gcc, we can make kprobes'
-twobyte_is_boostable[] non-const, and it won't be optimized out.
+The GRU API for UV2 was inadvertently broken by a hardware change.  The
+format of the physical address used for TLB dropins and for addresses used
+with instructions running in unmapped mode has changed.  This change was
+not documented and became apparent only when diags failed running on
+system simulators.
 
-Before:
+For UV1, TLB and GRU instruction physical addresses are identical to
+socket physical addresses (although high NASID bits must be OR'ed into the
+address).
 
-    CC      arch/x86/kernel/kprobes.o
-  In file included from include/linux/bitops.h:22:0,
-                   from include/linux/kernel.h:17,
-                   from [...]/arch/x86/include/asm/percpu.h:44,
-                   from [...]/arch/x86/include/asm/current.h:5,
-                   from [...]/arch/x86/include/asm/processor.h:15,
-                   from [...]/arch/x86/include/asm/atomic.h:6,
-                   from include/linux/atomic.h:4,
-                   from include/linux/mutex.h:18,
-                   from include/linux/notifier.h:13,
-                   from include/linux/kprobes.h:34,
-                   from arch/x86/kernel/kprobes.c:43:
-  [...]/arch/x86/include/asm/bitops.h: In function ‘can_boost.part.1’:
-  [...]/arch/x86/include/asm/bitops.h:319:2: warning: use of memory input
-        without lvalue in asm operand 1 is deprecated [enabled by default]
+For UV2, socket physical addresses need to be converted.  The NODE portion
+of the physical address needs to be shifted so that the low bit is in bit
+39 or bit 40, depending on an MMR value.
 
-  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
-       551:	0f a3 05 00 00 00 00 	bt     %eax,0x0
-                          554: R_386_32	.rodata.cst4
+It is not yet clear if this bug will be fixed in a silicon respin.  If it
+is fixed, the hub revision will be incremented & the workaround disabled.
 
-  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
-
-  arch/x86/kernel/kprobes.o:     file format elf32-i386
-
-  Contents of section .data:
-   0000 48000000 00000000 00000000 00000000  H...............
-  Contents of section .rodata.cst4:
-   0000 4c030000                             L...
-
-Only a single long of twobyte_is_boostable[] is in the object file.
-
-After, without the const on twobyte_is_boostable:
-
-  $ objdump -rd arch/x86/kernel/kprobes.o | grep -A1 -w bt
-       551:	0f a3 05 20 00 00 00 	bt     %eax,0x20
-                          554: R_386_32	.data
-
-  $ objdump -s -j .rodata.cst4 -j .data arch/x86/kernel/kprobes.o
-
-  arch/x86/kernel/kprobes.o:     file format elf32-i386
-
-  Contents of section .data:
-   0000 48000000 00000000 00000000 00000000  H...............
-   0010 00000000 00000000 00000000 00000000  ................
-   0020 4c030000 0f000200 ffff0000 ffcff0c0  L...............
-   0030 0000ffff 3bbbfff8 03ff2ebb 26bb2e77  ....;.......&..w
-
-Now all 32 bytes are output into .data instead.
-
-Signed-off-by: Josh Stone <jistone@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jakub Jelinek <jakub@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/kprobes.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/uv/uv_bau.h   |    1 +
+ arch/x86/include/asm/uv/uv_hub.h   |   37 ++++++++++++++++++++++++++++++++++---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 +++++--
+ arch/x86/platform/uv/tlb_uv.c      |   17 ++++++-----------
+ 4 files changed, 46 insertions(+), 16 deletions(-)
 
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -75,8 +75,10 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kpr
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -55,6 +55,7 @@
+ #define UV_BAU_TUNABLES_DIR		"sgi_uv"
+ #define UV_BAU_TUNABLES_FILE		"bau_tunables"
+ #define WHITESPACE			" \t\n"
++#define uv_mmask			((1UL << uv_hub_info->m_val) - 1)
+ #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
+ #define cpubit_isset(cpu, bau_local_cpumask) \
+ 	test_bit((cpu), (bau_local_cpumask).bits)
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -46,6 +46,13 @@
+  *	PNODE   - the low N bits of the GNODE. The PNODE is the most useful variant
+  *		  of the nasid for socket usage.
+  *
++ *	GPA	- (global physical address) a socket physical address converted
++ *		  so that it can be used by the GRU as a global address. Socket
++ *		  physical addresses 1) need additional NASID (node) bits added
++ *		  to the high end of the address, and 2) unaliased if the
++ *		  partition does not have a physical address 0. In addition, on
++ *		  UV2 rev 1, GPAs need the gnode left shifted to bits 39 or 40.
++ *
+  *
+  *  NumaLink Global Physical Address Format:
+  *  +--------------------------------+---------------------+
+@@ -141,6 +148,8 @@ struct uv_hub_info_s {
+ 	unsigned int		gnode_extra;
+ 	unsigned char		hub_revision;
+ 	unsigned char		apic_pnode_shift;
++	unsigned char		m_shift;
++	unsigned char		n_lshift;
+ 	unsigned long		gnode_upper;
+ 	unsigned long		lowmem_remap_top;
+ 	unsigned long		lowmem_remap_base;
+@@ -177,6 +186,16 @@ static inline int is_uv2_hub(void)
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
+ }
+ 
++static inline int is_uv2_1_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
++}
++
++static inline int is_uv2_2_hub(void)
++{
++	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
++}
++
+ union uvh_apicid {
+     unsigned long       v;
+     struct uvh_apicid_s {
+@@ -276,7 +295,10 @@ static inline unsigned long uv_soc_phys_
+ {
+ 	if (paddr < uv_hub_info->lowmem_remap_top)
+ 		paddr |= uv_hub_info->lowmem_remap_base;
+-	return paddr | uv_hub_info->gnode_upper;
++	paddr |= uv_hub_info->gnode_upper;
++	paddr = ((paddr << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((paddr >> uv_hub_info->m_val) << uv_hub_info->n_lshift);
++	return paddr;
+ }
+ 
+ 
+@@ -300,16 +322,19 @@ static inline unsigned long uv_gpa_to_so
+ 	unsigned long remap_base = uv_hub_info->lowmem_remap_base;
+ 	unsigned long remap_top =  uv_hub_info->lowmem_remap_top;
+ 
++	gpa = ((gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift) |
++		((gpa >> uv_hub_info->n_lshift) << uv_hub_info->m_val);
++	gpa = gpa & uv_hub_info->gpa_mask;
+ 	if (paddr >= remap_base && paddr < remap_base + remap_top)
+ 		paddr -= remap_base;
+ 	return paddr;
+ }
+ 
+ 
+-/* gnode -> pnode */
++/* gpa -> pnode */
+ static inline unsigned long uv_gpa_to_gnode(unsigned long gpa)
+ {
+-	return gpa >> uv_hub_info->m_val;
++	return gpa >> uv_hub_info->n_lshift;
+ }
+ 
+ /* gpa -> pnode */
+@@ -320,6 +345,12 @@ static inline int uv_gpa_to_pnode(unsign
+ 	return uv_gpa_to_gnode(gpa) & n_mask;
+ }
+ 
++/* gpa -> node offset*/
++static inline unsigned long uv_gpa_to_offset(unsigned long gpa)
++{
++	return (gpa << uv_hub_info->m_shift) >> uv_hub_info->m_shift;
++}
++
+ /* pnode, offset --> socket virtual */
+ static inline void *uv_pnode_offset_to_vaddr(int pnode, unsigned long offset)
+ {
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -832,6 +832,10 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->apic_pnode_shift = uvh_apicid.s.pnode_shift;
+ 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
+ 
++		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
++		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
++				(m_val == 40 ? 40 : 39) : m_val;
++
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+ 		lcpu = uv_blade_info[blade].nr_possible_cpus;
+@@ -862,8 +866,7 @@ void __init uv_system_init(void)
+ 		if (uv_node_to_blade[nid] >= 0)
+ 			continue;
+ 		paddr = node_start_pfn(nid) << PAGE_SHIFT;
+-		paddr = uv_soc_phys_ram_to_gpa(paddr);
+-		pnode = (paddr >> m_val) & pnode_mask;
++		pnode = uv_gpa_to_pnode(uv_soc_phys_ram_to_gpa(paddr));
+ 		blade = boot_pnode_to_blade(pnode);
+ 		uv_node_to_blade[nid] = blade;
+ 	}
+--- a/arch/x86/platform/uv/tlb_uv.c
++++ b/arch/x86/platform/uv/tlb_uv.c
+@@ -115,9 +115,6 @@ early_param("nobau", setup_nobau);
+ 
+ /* base pnode in this partition */
+ static int uv_base_pnode __read_mostly;
+-/* position of pnode (which is nasid>>1): */
+-static int uv_nshift __read_mostly;
+-static unsigned long uv_mmask __read_mostly;
+ 
+ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+@@ -1435,7 +1432,7 @@ static void activation_descriptor_init(i
+ {
+ 	int i;
+ 	int cpu;
+-	unsigned long pa;
++	unsigned long gpa;
+ 	unsigned long m;
+ 	unsigned long n;
+ 	size_t dsize;
+@@ -1451,9 +1448,9 @@ static void activation_descriptor_init(i
+ 	bau_desc = kmalloc_node(dsize, GFP_KERNEL, node);
+ 	BUG_ON(!bau_desc);
+ 
+-	pa = uv_gpa(bau_desc); /* need the real nasid*/
+-	n = pa >> uv_nshift;
+-	m = pa & uv_mmask;
++	gpa = uv_gpa(bau_desc);
++	n = uv_gpa_to_gnode(gpa);
++	m = uv_gpa_to_offset(gpa);
+ 
+ 	/* the 14-bit pnode */
+ 	write_mmr_descriptor_base(pnode, (n << UV_DESC_PSHIFT | m));
+@@ -1525,9 +1522,9 @@ static void pq_init(int node, int pnode)
+ 		bcp->queue_last		= pqp + (DEST_Q_SIZE - 1);
+ 	}
  	/*
- 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
- 	 * Groups, and some special opcodes can not boost.
-+	 * This is non-const to keep gcc from statically optimizing it out, as
-+	 * variable_test_bit makes gcc think only *(unsigned long*) is used.
+-	 * need the pnode of where the memory was really allocated
++	 * need the gnode of where the memory was really allocated
  	 */
--static const u32 twobyte_is_boostable[256 / 32] = {
-+static u32 twobyte_is_boostable[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
- 	/*      ----------------------------------------------          */
- 	W(0x00, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0) | /* 00 */
+-	pn = uv_gpa(pqp) >> uv_nshift;
++	pn = uv_gpa_to_gnode(uv_gpa(pqp));
+ 	first = uv_physnodeaddr(pqp);
+ 	pn_first = ((unsigned long)pn << UV_PAYLOADQ_PNODE_SHIFT) | first;
+ 	last = uv_physnodeaddr(pqp + (DEST_Q_SIZE - 1));
+@@ -1837,8 +1834,6 @@ static int __init uv_bau_init(void)
+ 		zalloc_cpumask_var_node(mask, GFP_KERNEL, cpu_to_node(cur_cpu));
+ 	}
+ 
+-	uv_nshift = uv_hub_info->m_val;
+-	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
+ 	nuvhubs = uv_num_possible_blades();
+ 	spin_lock_init(&disable_lock);
+ 	congested_cycles = usec_2_cycles(congested_respns_us);
 
 
