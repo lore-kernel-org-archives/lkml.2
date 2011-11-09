@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab1KIPck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 10:32:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27440 "EHLO mx1.redhat.com"
+	id S1752253Ab1KIPrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 10:47:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33960 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab1KIPcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 10:32:39 -0500
-Date: Wed, 9 Nov 2011 17:33:14 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Alexey Kardashevskiy <aik@ozlabs.ru>, Amit Shah <amit.shah@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Krishna Kumar <krkumar2@in.ibm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Wang Sheng-Hui <shhuiw@gmail.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        avi@redhat.com, penberg@cs.helsinki.fi
-Subject: Re: [PATCH RFC] virtio-spec: flexible configuration layout
-Message-ID: <20111109153313.GB25329@redhat.com>
-References: <1320150813.3847.24.camel@lappy>
- <20111101124223.GA14060@redhat.com>
- <8739e7uy87.fsf@rustcorp.com.au>
- <20111102233110.GA20289@redhat.com>
- <20111108214021.GA4538@redhat.com>
- <1320828366.31056.16.camel@lappy>
- <20111109101318.GB20612@redhat.com>
- <alpine.LFD.2.02.1111091421570.4936@tux.localdomain>
- <1320841683.31056.41.camel@lappy>
- <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1111091434230.4936@tux.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751190Ab1KIPrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 10:47:24 -0500
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-kernel@vger.kernel.org
+Cc: David Howells <dhowells@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: [PATCH 1/3] frv: remove irqsave pgd_lock locking
+Date: Wed,  9 Nov 2011 16:47:17 +0100
+Message-Id: <1320853639-18048-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.7.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 02:36:43PM +0200, Pekka Enberg wrote:
-> On Wed, 9 Nov 2011, Sasha Levin wrote:
-> >They don't exist in kernel code either, for same reason as above.
-> >
-> >Nothing will break if we remove it since no one really used it, we were
-> >probably the first and only implementation of the spec which considered
-> >them :)
-> 
-> As long as we are able to run older versions of the KVM tool with
-> newer kernels and vice versa, I see no reason why we can't drop 64-bit
-> features from the KVM tool.
-> 
-> 			Pekka
+a79e53d8: x86/mm: Fix pgd_lock deadlock dropped irqsave locking to fix a
+deadlock. pgd_lock is not used from an irq context so we can drop
+irqsave locking here as well.
+The original patch was x86 only but the same applies here because both
+pgd_ctor (aka mm_alloc_pgd) and pgd_dtor (aka mm_free_pgd) are not used
+from an interrupt contexts.
 
-What do these older versions do? Do they *set* bit 31 in the
-features register?
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+---
+ arch/frv/mm/pgalloc.c |   12 ++++--------
+ 1 files changed, 4 insertions(+), 8 deletions(-)
 
+diff --git a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
+index 4fb63a3..9df65c6 100644
+--- a/arch/frv/mm/pgalloc.c
++++ b/arch/frv/mm/pgalloc.c
+@@ -104,10 +104,8 @@ static inline void pgd_list_del(pgd_t *pgd)
+ 
+ void pgd_ctor(void *pgd)
+ {
+-	unsigned long flags;
+-
+ 	if (PTRS_PER_PMD == 1)
+-		spin_lock_irqsave(&pgd_lock, flags);
++		spin_lock(&pgd_lock);
+ 
+ 	memcpy((pgd_t *) pgd + USER_PGDS_IN_LAST_PML4,
+ 	       swapper_pg_dir + USER_PGDS_IN_LAST_PML4,
+@@ -117,18 +115,16 @@ void pgd_ctor(void *pgd)
+ 		return;
+ 
+ 	pgd_list_add(pgd);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ 	memset(pgd, 0, USER_PGDS_IN_LAST_PML4 * sizeof(pgd_t));
+ }
+ 
+ /* never called when PTRS_PER_PMD > 1 */
+ void pgd_dtor(void *pgd)
+ {
+-	unsigned long flags; /* can be called from interrupt context */
+-
+-	spin_lock_irqsave(&pgd_lock, flags);
++	spin_lock(&pgd_lock);
+ 	pgd_list_del(pgd);
+-	spin_unlock_irqrestore(&pgd_lock, flags);
++	spin_unlock(&pgd_lock);
+ }
+ 
+ pgd_t *pgd_alloc(struct mm_struct *mm)
 -- 
-MST
+1.7.7.1
+
