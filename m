@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965640Ab1KJEDB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:03:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44867 "EHLO mx2.suse.de"
+	id S936243Ab1KJED2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:03:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44853 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965767Ab1KJDqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:46:15 -0500
+	id S965430Ab1KJDqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:46:08 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:03 2011
-Message-Id: <20111109213203.447728955@clark.kroah.org>
+Message-Id: <20111109213203.236752727@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:34:16 -0800
+Date: Wed, 09 Nov 2011 13:34:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [209/264] hwmon: (w83627ehf) Fix broken driver init
+        alan@lxorguk.ukuu.org.uk, Jean Delvare <khali@linux-fr.org>,
+        Durgadoss R <Durgadoss.r@intel.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [207/264] hwmon: (coretemp) Fix for non-SMP builds
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <guenter.roeck@ericsson.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-commit bfa02b0da66965caf46e441270af87edda4fea14 upstream.
+commit 2aba6cac2a84f3b80e11a680c34d55e7739b474d upstream.
 
-Commit 2265cef2 (hwmon: (w83627ehf) Properly report PECI and AMD-SI
-sensor types) results in kernel panic if data->temp_label was not
-initialized.
-The problem was found with chip W83627DHG-P.
+The definition of TO_ATTR_NO in the non-SMP case is wrong. As the SMP
+definition resolves to the correct value, just use this for both
+cases.
 
-Add check if data->temp->label was set before use.
+Without this fix the temperature attributes are named temp0_* instead
+of temp2_*, so libsensors won't pick them. Broken since kernel 3.0.
 
-Based on incomplete patch by Alexander Beregalov.
-
-Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-Tested-by: Alexander Beregalov <a.beregalov@gmail.com>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Tested-by: Phil Sutter <phil@nwl.cc>
+Acked-by: Durgadoss R <Durgadoss.r@intel.com>
+Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hwmon/w83627ehf.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/hwmon/coretemp.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/hwmon/w83627ehf.c
-+++ b/drivers/hwmon/w83627ehf.c
-@@ -1756,12 +1756,15 @@ static inline void __devinit w83627ehf_i
- 		diode = 0x70;
- 	}
- 	for (i = 0; i < 3; i++) {
--		const char *label = data->temp_label[data->temp_src[i]];
-+		const char *label = NULL;
-+
-+		if (data->temp_label)
-+			label = data->temp_label[data->temp_src[i]];
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -60,14 +60,13 @@ MODULE_PARM_DESC(tjmax, "TjMax value in
+ #ifdef CONFIG_SMP
+ #define TO_PHYS_ID(cpu)		cpu_data(cpu).phys_proc_id
+ #define TO_CORE_ID(cpu)		cpu_data(cpu).cpu_core_id
+-#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
+ #define for_each_sibling(i, cpu)	for_each_cpu(i, cpu_sibling_mask(cpu))
+ #else
+ #define TO_PHYS_ID(cpu)		(cpu)
+ #define TO_CORE_ID(cpu)		(cpu)
+-#define TO_ATTR_NO(cpu)		(cpu)
+ #define for_each_sibling(i, cpu)	for (i = 0; false; )
+ #endif
++#define TO_ATTR_NO(cpu)		(TO_CORE_ID(cpu) + BASE_SYSFS_ATTR_NO)
  
- 		/* Digital source overrides analog type */
--		if (strncmp(label, "PECI", 4) == 0)
-+		if (label && strncmp(label, "PECI", 4) == 0)
- 			data->temp_type[i] = 6;
--		else if (strncmp(label, "AMD", 3) == 0)
-+		else if (label && strncmp(label, "AMD", 3) == 0)
- 			data->temp_type[i] = 5;
- 		else if ((tmp & (0x02 << i)))
- 			data->temp_type[i] = (diode & (0x10 << i)) ? 1 : 3;
+ /*
+  * Per-Core Temperature Data
 
 
