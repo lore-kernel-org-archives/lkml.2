@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936076Ab1KJDo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:44:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44619 "EHLO mx2.suse.de"
+	id S936119Ab1KJDoq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:44:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44663 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936057Ab1KJDoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:20 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:59 2011
-Message-Id: <20111109213159.815716437@clark.kroah.org>
+	id S936061Ab1KJDoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:37 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
+Message-Id: <20111109213200.316191985@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:42 -0800
+Date: Wed, 09 Nov 2011 13:33:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [175/264] xhci: If no endpoints changed, dont issue BW command.
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [180/264] powerpc: gup_hugepte() avoid freeing the head page too many times
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,44 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-commit 2dc3753997f3c80ce8b950242ab9bb3fb936acfd upstream.
+commit 8596468487e2062cae2aad56e973784e03959245 upstream.
 
-Some alternate interface settings have no endpoints associated with them.
-This shows up in some USB webcams, particularly the Logitech HD 1080p,
-which uses the uvcvideo driver.  If a driver switches between two alt
-settings with no endpoints, there is no need to issue a configure endpoint
-command, because there is no endpoint information to update.
+We only taken "refs" pins on the head page not "*nr" pins.
 
-The only time a configure endpoint command with just the add slot flag set
-makes sense is when the driver is updating hub characteristics in the slot
-context.  However, that code never calls xhci_check_bandwidth, so we
-should be safe not issuing a command if only the slot context add flag is
-set.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/powerpc/mm/hugetlbpage.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1888,6 +1888,12 @@ int xhci_check_bandwidth(struct usb_hcd
- 	ctrl_ctx->add_flags |= cpu_to_le32(SLOT_FLAG);
- 	ctrl_ctx->add_flags &= cpu_to_le32(~EP0_FLAG);
- 	ctrl_ctx->drop_flags &= cpu_to_le32(~(SLOT_FLAG | EP0_FLAG));
-+
-+	/* Don't issue the command if there's no endpoints to update. */
-+	if (ctrl_ctx->add_flags == cpu_to_le32(SLOT_FLAG) &&
-+			ctrl_ctx->drop_flags == 0)
-+		return 0;
-+
- 	xhci_dbg(xhci, "New Input Control Context:\n");
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -428,10 +428,9 @@ static noinline int gup_hugepte(pte_t *p
+ 
+ 	if (unlikely(pte_val(pte) != pte_val(*ptep))) {
+ 		/* Could be optimized better */
+-		while (*nr) {
++		*nr -= refs;
++		while (refs--)
+ 			put_page(head);
+-			(*nr)--;
+-		}
+ 	}
+ 
+ 	return 1;
 
 
