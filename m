@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab1KJDXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:23:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41961 "EHLO mx2.suse.de"
+	id S934337Ab1KJDYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:24:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41985 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934270Ab1KJDXn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:23:43 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:08 2011
-Message-Id: <20111109212708.059637008@clark.kroah.org>
+	id S933935Ab1KJDX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:23:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:06 2011
+Message-Id: <20111109212706.478226578@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:26:38 -0800
+Date: Wed, 09 Nov 2011 13:26:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [076/262] Revert "NFS: Ensure that writeback_single_inode() calls write_inode() when syncing"
+        alan@lxorguk.ukuu.org.uk,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [061/262] ath9k_hw: Fix number of GPIO pins for AR9287/9300
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,47 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-commit 59b7c05fffba030e5d9e72324691e2f99aa69b79 upstream.
+commit 6321eb0977b011ac61dfca36e7c69b2c4325b104 upstream.
 
-This reverts commit b80c3cb628f0ebc241b02e38dd028969fb8026a2.
+this patch fixes the assumption of maximum number of GPIO pins present
+in AR9287/AR9300. this fix is essential as we might encounter some
+functionality issues involved in accessing the status of GPIO pins which
+are all incorrectly assumed to be not within the range of max_num_gpio
+of AR9300/AR9287 chipsets
 
-The reverted commit was rendered obsolete by a VFS fix: commit
-5547e8aac6f71505d621a612de2fca0dd988b439 (writeback: Update dirty flags in
-two steps). We now no longer need to worry about writeback_single_inode()
-missing our marking the inode for COMMIT in 'do_writepages()' call.
-
-Reverting this patch, fixes a performance regression in which the inode
-would continuously get queued to the dirty list, causing the writeback
-code to unnecessarily try to send a COMMIT.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Simon Kirby <sim@hostway.ca>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/write.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -428,7 +428,6 @@ static void
- nfs_mark_request_dirty(struct nfs_page *req)
- {
- 	__set_page_dirty_nobuffers(req->wb_page);
--	__mark_inode_dirty(req->wb_page->mapping->host, I_DIRTY_DATASYNC);
- }
- 
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
-@@ -762,6 +761,8 @@ int nfs_updatepage(struct file *file, st
- 	status = nfs_writepage_setup(ctx, page, offset, count);
- 	if (status < 0)
- 		nfs_set_pageerror(page);
-+	else
-+		__set_page_dirty_nobuffers(page);
- 
- 	dprintk("NFS:       nfs_updatepage returns %d (isize %lld)\n",
- 			status, (long long)i_size_read(inode));
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1931,6 +1931,10 @@ int ath9k_hw_fill_cap_info(struct ath_hw
+ 		pCap->num_gpio_pins = AR9271_NUM_GPIO;
+ 	else if (AR_DEVID_7010(ah))
+ 		pCap->num_gpio_pins = AR7010_NUM_GPIO;
++	else if (AR_SREV_9300_20_OR_LATER(ah))
++		pCap->num_gpio_pins = AR9300_NUM_GPIO;
++	else if (AR_SREV_9287_11_OR_LATER(ah))
++		pCap->num_gpio_pins = AR9287_NUM_GPIO;
+ 	else if (AR_SREV_9285_12_OR_LATER(ah))
+ 		pCap->num_gpio_pins = AR9285_NUM_GPIO;
+ 	else if (AR_SREV_9280_20_OR_LATER(ah))
 
 
