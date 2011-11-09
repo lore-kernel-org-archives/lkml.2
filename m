@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756385Ab1KIJJX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 04:09:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53631 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750936Ab1KIJJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 04:09:21 -0500
-X-Mailbox-Line: From 7413644b4310b474a496c8ee3cd5927daa721d10 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Fri, 4 Nov 2011 12:59:44 +0100
-Subject: [PATCH resend] oom: do not kill tasks with oom_score_adj OOM_SCORE_ADJ_MIN
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, Ying Han <yinghan@google.com>
-Message-Id: <20111109090919.C2D538AD27@mx2.suse.de>
+	id S1756436Ab1KIJJg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 04:09:36 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:60574 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756392Ab1KIJJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 04:09:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EBA40E3.60203@metafoo.de>
+References: <4EBA40E3.60203@metafoo.de>
+Date: Wed, 9 Nov 2011 17:09:33 +0800
+Message-ID: <CAA_GA1c-XAT4DjTfRdwqc4gVZQkC3hZ2PDGZ-W3GMajwYx2ALA@mail.gmail.com>
+Subject: Re: What happened to vcoalesce?
+From: Bob Liu <lliubbo@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c9f01245 (oom: remove oom_disable_count) has removed oom_disable_count
-counter which has been used for early break out from oom_badness so we
-could never select a task with oom_score_adj set to OOM_SCORE_ADJ_MIN
-(oom disabled).
+On Wed, Nov 9, 2011 at 4:59 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> Hi Mike,
+>
+> I'm using the kernel firmware loader on a blackfin board. And this currently
+> doesn't work with mainline since the firmware loader uses vmap. In the ADI
+> blackfin Linux tree there is a patch written by you, which fixes this.
+>
+> What is the status of that patch in regard to going mainline? I found a
+> mailing-list post from January where you tried to submit it upstream, but
+> there was a minor bug in the patch and so the it was rejected. In March you
+> posted the fixed up version and from than on I couldn't find references to
+> it anymore.
+>
 
-Now that the counter is gone we are always going through heuristics
-calculation and we always return a non zero positive value.  This
-means that we can end up killing a task with OOM disabled because it is
-indistinguishable from regular tasks with 1% resp. CAP_SYS_ADMIN tasks
-with 3% usage of memory or tasks with oom_score_adj set but OOM enabled.
+This may be help .
 
-Let's break out early if the task should have OOM disabled.
+https://lkml.org/lkml/2011/1/12/2
+https://lkml.org/lkml/2011/3/28/46
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index e916168..4465fb8 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -185,6 +185,11 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 	if (!p)
- 		return 0;
- 
-+	if (p->signal->oom_score_adj == OOM_SCORE_ADJ_MIN) {
-+		task_unlock(p);
-+		return 0;
-+	}
-+
- 	/*
- 	 * The memory controller may have a limit of 0 bytes, so avoid a divide
- 	 * by zero, if necessary.
 -- 
-1.7.7.1
-
+Regards,
+--Bob
