@@ -1,22 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539Ab1KJDpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:45:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44713 "EHLO mx2.suse.de"
+	id S965626Ab1KJDo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:44:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44700 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965430Ab1KJDo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:58 2011
-Message-Id: <20111109213158.016864165@clark.kroah.org>
+	id S965532Ab1KJDou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:44:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
+Message-Id: <20111109213200.645684570@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:24 -0800
+Date: Wed, 09 Nov 2011 13:33:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Zheng Yan <zheng.z.yan@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [157/264] ipv4: fix ipsec forward performance regression
+        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [183/264] s390: gup_huge_pmd() support THP tail recounting
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +33,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
+commit 220a2eb228d032acde60e9fd044ca802706ff583 upstream.
 
-[ Upstream commit b73233960a59ee66e09d642f13d0592b13651e94 ]
+Up to this point the code assumed old refcounting for hugepages (pre-thp).
+This updates the code directly to the thp mapcount tail page refcounting.
 
-There is bug in commit 5e2b61f(ipv4: Remove flowi from struct rtable).
-It makes xfrm4_fill_dst() modify wrong data structure.
-
-Signed-off-by: Zheng Yan <zheng.z.yan@intel.com>
-Reported-by: Kim Phillips <kim.phillips@freescale.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/xfrm4_policy.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/xfrm4_policy.c
-+++ b/net/ipv4/xfrm4_policy.c
-@@ -79,13 +79,13 @@ static int xfrm4_fill_dst(struct xfrm_ds
- 	struct rtable *rt = (struct rtable *)xdst->route;
- 	const struct flowi4 *fl4 = &fl->u.ip4;
+---
+ arch/s390/mm/gup.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
+
+--- a/arch/s390/mm/gup.c
++++ b/arch/s390/mm/gup.c
+@@ -48,11 +48,22 @@ static inline int gup_pte_range(pmd_t *p
+ 	return 1;
+ }
  
--	rt->rt_key_dst = fl4->daddr;
--	rt->rt_key_src = fl4->saddr;
--	rt->rt_key_tos = fl4->flowi4_tos;
--	rt->rt_route_iif = fl4->flowi4_iif;
--	rt->rt_iif = fl4->flowi4_iif;
--	rt->rt_oif = fl4->flowi4_oif;
--	rt->rt_mark = fl4->flowi4_mark;
-+	xdst->u.rt.rt_key_dst = fl4->daddr;
-+	xdst->u.rt.rt_key_src = fl4->saddr;
-+	xdst->u.rt.rt_key_tos = fl4->flowi4_tos;
-+	xdst->u.rt.rt_route_iif = fl4->flowi4_iif;
-+	xdst->u.rt.rt_iif = fl4->flowi4_iif;
-+	xdst->u.rt.rt_oif = fl4->flowi4_oif;
-+	xdst->u.rt.rt_mark = fl4->flowi4_mark;
++static inline void get_huge_page_tail(struct page *page)
++{
++	/*
++	 * __split_huge_page_refcount() cannot run
++	 * from under us.
++	 */
++	VM_BUG_ON(page_mapcount(page) < 0);
++	VM_BUG_ON(atomic_read(&page->_count) != 0);
++	atomic_inc(&page->_mapcount);
++}
++
+ static inline int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 		unsigned long end, int write, struct page **pages, int *nr)
+ {
+ 	unsigned long mask, result;
+-	struct page *head, *page;
++	struct page *head, *page, *tail;
+ 	int refs;
  
- 	xdst->u.dst.dev = dev;
- 	dev_hold(dev);
+ 	result = write ? 0 : _SEGMENT_ENTRY_RO;
+@@ -64,6 +75,7 @@ static inline int gup_huge_pmd(pmd_t *pm
+ 	refs = 0;
+ 	head = pmd_page(pmd);
+ 	page = head + ((addr & ~PMD_MASK) >> PAGE_SHIFT);
++	tail = page;
+ 	do {
+ 		VM_BUG_ON(compound_head(page) != head);
+ 		pages[*nr] = page;
+@@ -81,6 +93,16 @@ static inline int gup_huge_pmd(pmd_t *pm
+ 		*nr -= refs;
+ 		while (refs--)
+ 			put_page(head);
++	} else {
++		/*
++		 * Any tail page need their mapcount reference taken
++		 * before we return.
++		 */
++		while (refs--) {
++			if (PageTail(tail))
++				get_huge_page_tail(tail);
++			tail++;
++		}
+ 	}
+ 
+ 	return 1;
 
 
