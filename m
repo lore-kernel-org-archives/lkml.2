@@ -1,41 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab1KIUkR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 15:40:17 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:38873 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756676Ab1KIUkQ (ORCPT
+	id S1756751Ab1KIUlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 15:41:16 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:31712 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755643Ab1KIUlP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 15:40:16 -0500
-Date: Wed, 09 Nov 2011 15:40:06 -0500 (EST)
-Message-Id: <20111109.154006.436356200830517997.davem@davemloft.net>
-To: ricardo.ribalda@gmail.com
-Cc: ian.campbell@citrix.com, eric.dumazet@gmail.com,
-        jeffrey.t.kirsher@intel.com, jpirko@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/ll_temac: FIX : Wait for indirect wait to end
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1320745197-11053-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1320745197-11053-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 09 Nov 2011 12:40:10 -0800 (PST)
+	Wed, 9 Nov 2011 15:41:15 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Wed, 09 Nov 2011 15:41:13 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v8 14/16] ARM: LPAE: mark memory banks with start >
+ ULONG_MAX as highmem
+In-reply-to: <1320682618-1182-15-git-send-email-catalin.marinas@arm.com>
+Message-id: <alpine.LFD.2.02.1111091540450.3307@xanadu.home>
+References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
+ <1320682618-1182-15-git-send-email-catalin.marinas@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue,  8 Nov 2011 10:39:57 +0100
+On Mon, 7 Nov 2011, Catalin Marinas wrote:
 
-> While tracing down a connectivity problem on the temac I connected a
-> probe to the Cross bar irq, and it was triggered when doing
-> ifdown->ifup.
+> From: Will Deacon <will.deacon@arm.com>
 > 
-> This is fixed once waiting for the indirect write to end. Since it is
-> not on the hot path there is no performance loss.
+> Memory banks living outside of the 32-bit physical address
+> space do not have a 1:1 pa <-> va mapping and therefore the
+> __va macro may wrap.
 > 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+> This patch ensures that such banks are marked as highmem so
+> that the Kernel doesn't try to split them up when it sees that
+> the wrapped virtual address overlaps the vmalloc space.
+> 
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Also applied, thanks.
+Acked-by: Nicolas Pitre <nico@linaro.org>
+
+
+> ---
+>  arch/arm/mm/mmu.c |   16 +++++++++++++++-
+>  1 files changed, 15 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index 1935311..b836d6b 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -799,6 +799,9 @@ void __init sanity_check_meminfo(void)
+>  		struct membank *bank = &meminfo.bank[j];
+>  		*bank = meminfo.bank[i];
+>  
+> +		if (bank->start > ULONG_MAX)
+> +			highmem = 1;
+> +
+>  #ifdef CONFIG_HIGHMEM
+>  		if (__va(bank->start) >= vmalloc_min ||
+>  		    __va(bank->start) < (void *)PAGE_OFFSET)
+> @@ -810,7 +813,7 @@ void __init sanity_check_meminfo(void)
+>  		 * Split those memory banks which are partially overlapping
+>  		 * the vmalloc area greatly simplifying things later.
+>  		 */
+> -		if (__va(bank->start) < vmalloc_min &&
+> +		if (!highmem && __va(bank->start) < vmalloc_min &&
+>  		    bank->size > vmalloc_min - __va(bank->start)) {
+>  			if (meminfo.nr_banks >= NR_BANKS) {
+>  				printk(KERN_CRIT "NR_BANKS too low, "
+> @@ -831,6 +834,17 @@ void __init sanity_check_meminfo(void)
+>  		bank->highmem = highmem;
+>  
+>  		/*
+> +		 * Highmem banks not allowed with !CONFIG_HIGHMEM.
+> +		 */
+> +		if (highmem) {
+> +			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
+> +			       "(!CONFIG_HIGHMEM).\n",
+> +			       (unsigned long long)bank->start,
+> +			       (unsigned long long)bank->start + bank->size - 1);
+> +			continue;
+> +		}
+> +
+> +		/*
+>  		 * Check whether this memory bank would entirely overlap
+>  		 * the vmalloc area.
+>  		 */
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
