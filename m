@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1KJEr5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:47:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43143 "EHLO mx2.suse.de"
+	id S935610Ab1KJEsZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:48:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43107 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353Ab1KJDdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:33:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:25 2011
-Message-Id: <20111109212724.931888940@clark.kroah.org>
+	id S935547Ab1KJDdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:33:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:24 2011
+Message-Id: <20111109212724.527336663@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:24 -0800
+Date: Wed, 09 Nov 2011 13:29:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andres Salomon <dilinger@queued.net>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [242/262] mtd: provide an alias for the redboot module name
+        alan@lxorguk.ukuu.org.uk, Eliad Peller <eliad@wizery.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [238/262] mac80211: fix remain_off_channel regression
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andres Salomon <dilinger@queued.net>
+From: Eliad Peller <eliad@wizery.com>
 
-commit d5de1907d0af22e1a02de2b16a624148517a39c2 upstream.
+commit eaa7af2ae582c9a8c51b374c48d5970b748a5ce2 upstream.
 
-parse_mtd_partitions takes a list of partition types; if the driver
-isn't loaded, it attempts to load it, and then it grabs the partition
-parser.  For redboot, the module name is "redboot.ko", while the parser
-name is "RedBoot".  Since modprobe is case-sensitive, attempting to
-modprobe "RedBoot" will never work.  I suspect the embedded systems that
-make use of redboot just always manually loaded redboot prior to loading
-their specific nand chip drivers (or statically compiled it in).
+The offchannel code is currently broken - we should
+remain_off_channel if the work was started, and
+the work's channel and channel_type are the same
+as local->tmp_channel and local->tmp_channel_type.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+However, if wk->chan_type and local->tmp_channel_type
+coexist (e.g. have the same channel type), we won't
+remain_off_channel.
+
+This behavior was introduced by commit da2fd1f
+("mac80211: Allow work items to use existing
+channel type.")
+
+Tested-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Eliad Peller <eliad@wizery.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/redboot.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/mac80211/work.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/redboot.c
-+++ b/drivers/mtd/redboot.c
-@@ -297,6 +297,9 @@ static struct mtd_part_parser redboot_pa
- 	.name = "RedBoot",
- };
- 
-+/* mtd parsers will request the module by parser name */
-+MODULE_ALIAS("RedBoot");
-+
- static int __init redboot_parser_init(void)
- {
- 	return register_mtd_parser(&redboot_parser);
+--- a/net/mac80211/work.c
++++ b/net/mac80211/work.c
+@@ -1060,8 +1060,8 @@ static void ieee80211_work_work(struct w
+ 			continue;
+ 		if (wk->chan != local->tmp_channel)
+ 			continue;
+-		if (ieee80211_work_ct_coexists(wk->chan_type,
+-					       local->tmp_channel_type))
++		if (!ieee80211_work_ct_coexists(wk->chan_type,
++						local->tmp_channel_type))
+ 			continue;
+ 		remain_off_channel = true;
+ 	}
 
 
