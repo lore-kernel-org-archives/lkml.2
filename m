@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab1KJDgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:36:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43628 "EHLO mx2.suse.de"
+	id S964882Ab1KJDgY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:36:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43650 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933916Ab1KJDgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:42 2011
-Message-Id: <20111109213142.240104989@clark.kroah.org>
+	id S964874Ab1KJDgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:18 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:45 2011
+Message-Id: <20111109213145.653392069@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:30:48 -0800
+Date: Wed, 09 Nov 2011 13:31:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jeff Layton <jlayton@samba.org>,
-        Pavel Shilovsky <piastry@etersoft.ru>,
-        Steve French <smfrench@gmail.com>
-Subject: [001/264] CIFS: Fix incorrect max RFC1002 write size value
+        alan@lxorguk.ukuu.org.uk, Charles Chin <Charles.Chin@idt.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [035/264] ALSA: hda - Remove bad code for IDT 92HD83 family patch
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Shilovsky <piastry@etersoft.ru>
+From: Charles Chin <Charles.Chin@idt.com>
 
-commit 94443f43404239c2a6dc4252a7cb9e77f5b1eb6e upstream.
+commit 6c5c04e509b7000617b09d4301f0b9b6d171d1e6 upstream.
 
-..the length field has only 17 bits.
+The purpose of this patch is to remove a section of "bad" code that
+assigns the last DAC to ports E or F in order to support notebooks
+with docking in earlier days, around ALSA 1.0.19 - 21.  This is not
+necessary now and actually breaks some configurations that use these
+ports as other devices.  This have been tested on several different
+configurations to make sure that it is working for different combinations.
 
-Acked-by: Jeff Layton <jlayton@samba.org>
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Charles Chin <Charles.Chin@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/connect.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   18 ------------------
+ 1 file changed, 18 deletions(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2807,10 +2807,10 @@ void cifs_setup_cifs_sb(struct smb_vol *
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -5585,9 +5585,7 @@ static void stac92hd8x_fill_auto_spec(st
+ static int patch_stac92hd83xxx(struct hda_codec *codec)
+ {
+ 	struct sigmatel_spec *spec;
+-	hda_nid_t conn[STAC92HD83_DAC_COUNT + 1];
+ 	int err;
+-	int num_dacs;
  
- /*
-  * When the server doesn't allow large posix writes, only allow a wsize of
-- * 128k minus the size of the WRITE_AND_X header. That allows for a write up
-+ * 2^17-1 minus the size of the WRITE_AND_X header. That allows for a write up
-  * to the maximum size described by RFC1002.
-  */
--#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
-+#define CIFS_MAX_RFC1002_WSIZE ((1<<17) - 1 - sizeof(WRITE_REQ) + 4)
+ 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
+ 	if (spec == NULL)
+@@ -5689,22 +5687,6 @@ again:
+ 		return err;
+ 	}
  
- /*
-  * The default wsize is 1M. find_get_pages seems to return a maximum of 256
+-	/* docking output support */
+-	num_dacs = snd_hda_get_connections(codec, 0xF,
+-				conn, STAC92HD83_DAC_COUNT + 1) - 1;
+-	/* skip non-DAC connections */
+-	while (num_dacs >= 0 &&
+-			(get_wcaps_type(get_wcaps(codec, conn[num_dacs]))
+-					!= AC_WID_AUD_OUT))
+-		num_dacs--;
+-	/* set port E and F to select the last DAC */
+-	if (num_dacs >= 0) {
+-		snd_hda_codec_write_cache(codec, 0xE, 0,
+-			AC_VERB_SET_CONNECT_SEL, num_dacs);
+-		snd_hda_codec_write_cache(codec, 0xF, 0,
+-			AC_VERB_SET_CONNECT_SEL, num_dacs);
+-	}
+-
+ 	codec->proc_widget_hook = stac92hd_proc_hook;
+ 
+ 	return 0;
 
 
