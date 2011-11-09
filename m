@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934361Ab1KJFFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:05:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42477 "EHLO mx2.suse.de"
+	id S1755441Ab1KJFGB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:06:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42466 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934920Ab1KJD2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:28:09 -0500
+	id S934235Ab1KJD2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:28:03 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:15 2011
-Message-Id: <20111109212715.797132786@clark.kroah.org>
+Message-Id: <20111109212715.605529323@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:53 -0800
+Date: Wed, 09 Nov 2011 13:27:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [151/262] iwlagn: do not use interruptible waits
+        alan@lxorguk.ukuu.org.uk, Jiri Kosina <jkosina@suse.cz>,
+        Ingo Molnar <mingo@elte.hu>, Russell King <rmk@arm.linux.org.uk>,
+        "H.J. Lu" <hongjiu.lu@intel.com>, <stable@kernel.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: [149/262] binfmt_elf: fix PIE execution with randomization disabled
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,128 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jiri Kosina <jkosina@suse.cz>
 
-From: Johannes Berg <johannes.berg@intel.com>
+commit a3defbe5c337dbc6da911f8cc49ae3cc3b49b453 upstream.
 
-Upstream commit effd4d9aece9184f526e6556786a94d335e38b71.
+The case of address space randomization being disabled in runtime through
+randomize_va_space sysctl is not treated properly in load_elf_binary(),
+resulting in SIGKILL coming at exec() time for certain PIE-linked binaries
+in case the randomization has been disabled at runtime prior to calling
+exec().
 
-Since the dawn of its time, iwlwifi has used
-interruptible waits to wait for synchronous
-commands and firmware loading.
+Handle the randomize_va_space == 0 case the same way as if we were not
+supporting .text randomization at all.
 
-This leads to "interesting" bugs, because it
-can't actually handle the interruptions; for
-example when a command sending is interrupted
-it will assume the command completed fully,
-and then leave it pending, which leads to all
-kinds of trouble when the command finishes
-later.
+Based on original patch by H.J. Lu and Josh Boyer.
 
-Since there's no easy way to gracefully deal
-with interruptions, fix the driver to not use
-interruptible waits.
-
-This at least fixes the error
-iwlagn 0000:02:00.0: Error: Response NULL in  'REPLY_SCAN_ABORT_CMD'
-
-I have seen in P2P testing, but it is likely
-that there are other errors caused by this.
-
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Russell King <rmk@arm.linux.org.uk>
+Cc: H.J. Lu <hongjiu.lu@intel.com>
+Cc: <stable@kernel.org>
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/net/wireless/iwlwifi/iwl-agn-ucode.c |    9 ++-------
- drivers/net/wireless/iwlwifi/iwl-agn.c       |    2 +-
- drivers/net/wireless/iwlwifi/iwl-core.c      |    4 ++--
- drivers/net/wireless/iwlwifi/iwl-hcmd.c      |    2 +-
- drivers/net/wireless/iwlwifi/iwl-rx.c        |    2 +-
- drivers/net/wireless/iwlwifi/iwl-tx.c        |    2 +-
- 6 files changed, 8 insertions(+), 13 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-ucode.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-ucode.c
-@@ -144,13 +144,8 @@ static int iwlagn_load_section(struct iw
- 		FH_TCSR_TX_CONFIG_REG_VAL_CIRQ_HOST_ENDTFD);
- 
- 	IWL_DEBUG_INFO(priv, "%s uCode section being loaded...\n", name);
--	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
--					priv->ucode_write_complete, 5 * HZ);
--	if (ret == -ERESTARTSYS) {
--		IWL_ERR(priv, "Could not load the %s uCode section due "
--			"to interrupt\n", name);
--		return ret;
--	}
-+	ret = wait_event_timeout(priv->wait_command_queue,
-+				 priv->ucode_write_complete, 5 * HZ);
- 	if (!ret) {
- 		IWL_ERR(priv, "Could not load the %s uCode section\n",
- 			name);
---- a/drivers/net/wireless/iwlwifi/iwl-agn.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
-@@ -797,7 +797,7 @@ static void iwl_irq_tasklet(struct iwl_p
- 		handled |= CSR_INT_BIT_FH_TX;
- 		/* Wake up uCode load routine, now that load is complete */
- 		priv->ucode_write_complete = 1;
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- 	}
- 
- 	if (inta & ~handled) {
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -899,7 +899,7 @@ void iwlagn_fw_error(struct iwl_priv *pr
- 	 * commands by clearing the ready bit */
- 	clear_bit(STATUS_READY, &priv->status);
- 
--	wake_up_interruptible(&priv->wait_command_queue);
-+	wake_up(&priv->wait_command_queue);
- 
- 	if (!ondemand) {
- 		/*
-@@ -950,7 +950,7 @@ void iwl_irq_handle_error(struct iwl_pri
- 		 */
- 		clear_bit(STATUS_READY, &priv->status);
- 		clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- 		IWL_ERR(priv, "RF is used by WiMAX\n");
- 		return;
- 	}
---- a/drivers/net/wireless/iwlwifi/iwl-hcmd.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-hcmd.c
-@@ -194,7 +194,7 @@ int iwl_send_cmd_sync(struct iwl_priv *p
- 		return ret;
- 	}
- 
--	ret = wait_event_interruptible_timeout(priv->wait_command_queue,
-+	ret = wait_event_timeout(priv->wait_command_queue,
- 			!test_bit(STATUS_HCMD_ACTIVE, &priv->status),
- 			HOST_COMPLETE_TIMEOUT);
- 	if (!ret) {
---- a/drivers/net/wireless/iwlwifi/iwl-rx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-rx.c
-@@ -738,7 +738,7 @@ static void iwl_rx_card_state_notif(stru
- 		wiphy_rfkill_set_hw_state(priv->hw->wiphy,
- 			test_bit(STATUS_RF_KILL_HW, &priv->status));
- 	else
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- }
- 
- static void iwl_rx_missed_beacon_notif(struct iwl_priv *priv,
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -821,7 +821,7 @@ void iwl_tx_cmd_complete(struct iwl_priv
- 		clear_bit(STATUS_HCMD_ACTIVE, &priv->status);
- 		IWL_DEBUG_INFO(priv, "Clearing HCMD_ACTIVE for command %s\n",
- 			       get_cmd_string(cmd->hdr.cmd));
--		wake_up_interruptible(&priv->wait_command_queue);
-+		wake_up(&priv->wait_command_queue);
- 	}
- 
- 	/* Mark as unmapped */
+---
+ fs/binfmt_elf.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -796,7 +796,16 @@ static int load_elf_binary(struct linux_
+ 			 * might try to exec.  This is because the brk will
+ 			 * follow the loader, and is not movable.  */
+ #if defined(CONFIG_X86) || defined(CONFIG_ARM)
+-			load_bias = 0;
++			/* Memory randomization might have been switched off
++			 * in runtime via sysctl.
++			 * If that is the case, retain the original non-zero
++			 * load_bias value in order to establish proper
++			 * non-randomized mappings.
++			 */
++			if (current->flags & PF_RANDOMIZE)
++				load_bias = 0;
++			else
++				load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+ #else
+ 			load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+ #endif
 
 
