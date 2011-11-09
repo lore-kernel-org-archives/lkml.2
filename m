@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935764Ab1KJDgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:36:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43669 "EHLO mx2.suse.de"
+	id S964928Ab1KJDgz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:36:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43724 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964893Ab1KJDg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:36:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:46 2011
-Message-Id: <20111109213145.967621743@clark.kroah.org>
+	id S935894Ab1KJDgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:36:50 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:44 2011
+Message-Id: <20111109213144.626155215@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:31:25 -0800
+Date: Wed, 09 Nov 2011 13:31:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Roland Dreier <roland@purestorage.com>,
-        Andy Grover <agrover@redhat.com>,
-        Nicholas Bellinger <nab@risingtidesystems.com>
-Subject: [038/264] target: Prevent cmd->se_queue_node double add
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [025/264] drm/radeon/kms: handle !force case in connector detect more gracefully
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,140 +25,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roland Dreier <roland@purestorage.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 79a7fef26431830e22e282053d050af790117db8 upstream.
+commit d0d0a225e6ad43314c9aa7ea081f76adc5098ad4 upstream.
 
-This patch addresses a bug with the lio-core-2.6.git conversion of
-transport_add_cmd_to_queue() to use a single embedded list_head, instead
-of individual struct se_queue_req allocations allowing a single se_cmd to
-be added to the queue mulitple times.  This was changed in the following:
+When force == false, we don't do load detection in the connector
+detect functions.  Unforunately, we also return the previous
+connector state so we never get disconnect events for DVI-I, DVI-A,
+or VGA.  Save whether we detected the monitor via load detection
+previously and use that to determine whether we return the previous
+state or not.
 
-commit 2a9e4d5ca5d99f4c600578d6285d45142e7e5208
-Author: Andy Grover <agrover@redhat.com>
-Date:   Tue Apr 26 17:45:51 2011 -0700
+Fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=41561
 
-    target: Embed qr in struct se_cmd
-
-The problem is that some target code still assumes performing multiple
-adds is allowed via transport_add_cmd_to_queue(), which ends up causing
-list corruption in qobj->qobj_list code.  This patch addresses this
-by removing an existing struct se_cmd from the list before the add, and
-removes an unnecessary list walk in transport_remove_cmd_from_queue()
-
-It also changes cmd->t_transport_queue_active to use explict sets intead
-of increment/decrement to prevent confusion during exception path handling.
-
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Cc: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/target/target_core_tmr.c       |    2 +-
- drivers/target/target_core_transport.c |   31 +++++++++++++++----------------
- 2 files changed, 16 insertions(+), 17 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   23 ++++++++++++++++++++---
+ drivers/gpu/drm/radeon/radeon_mode.h       |    1 +
+ 2 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_tmr.c
-+++ b/drivers/target/target_core_tmr.c
-@@ -340,7 +340,7 @@ int core_tmr_lun_reset(
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -724,6 +724,7 @@ radeon_vga_detect(struct drm_connector *
+ 		dret = radeon_ddc_probe(radeon_connector,
+ 					radeon_connector->requires_extended_probe);
+ 	if (dret) {
++		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+ 			radeon_connector->edid = NULL;
+@@ -750,12 +751,21 @@ radeon_vga_detect(struct drm_connector *
+ 	} else {
  
- 		atomic_dec(&cmd->t_transport_queue_active);
- 		atomic_dec(&qobj->queue_cnt);
--		list_del(&cmd->se_queue_node);
-+		list_del_init(&cmd->se_queue_node);
- 		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+ 		/* if we aren't forcing don't do destructive polling */
+-		if (!force)
+-			return connector->status;
++		if (!force) {
++			/* only return the previous status if we last
++			 * detected a monitor via load.
++			 */
++			if (radeon_connector->detected_by_load)
++				return connector->status;
++			else
++				return ret;
++		}
  
- 		pr_debug("LUN_RESET: %s from Device Queue: cmd: %p t_state:"
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -621,8 +621,6 @@ static void transport_add_cmd_to_queue(
- 	struct se_queue_obj *qobj = &dev->dev_queue_obj;
- 	unsigned long flags;
- 
--	INIT_LIST_HEAD(&cmd->se_queue_node);
--
- 	if (t_state) {
- 		spin_lock_irqsave(&cmd->t_state_lock, flags);
- 		cmd->t_state = t_state;
-@@ -631,15 +629,21 @@ static void transport_add_cmd_to_queue(
+ 		if (radeon_connector->dac_load_detect && encoder) {
+ 			encoder_funcs = encoder->helper_private;
+ 			ret = encoder_funcs->detect(encoder, connector);
++			if (ret == connector_status_connected)
++				radeon_connector->detected_by_load = true;
+ 		}
  	}
  
- 	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-+
-+	/* If the cmd is already on the list, remove it before we add it */
-+	if (!list_empty(&cmd->se_queue_node))
-+		list_del(&cmd->se_queue_node);
-+	else
-+		atomic_inc(&qobj->queue_cnt);
-+
- 	if (cmd->se_cmd_flags & SCF_EMULATE_QUEUE_FULL) {
- 		cmd->se_cmd_flags &= ~SCF_EMULATE_QUEUE_FULL;
- 		list_add(&cmd->se_queue_node, &qobj->qobj_list);
- 	} else
- 		list_add_tail(&cmd->se_queue_node, &qobj->qobj_list);
--	atomic_inc(&cmd->t_transport_queue_active);
-+	atomic_set(&cmd->t_transport_queue_active, 1);
- 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
+@@ -897,6 +907,7 @@ radeon_dvi_detect(struct drm_connector *
+ 		dret = radeon_ddc_probe(radeon_connector,
+ 					radeon_connector->requires_extended_probe);
+ 	if (dret) {
++		radeon_connector->detected_by_load = false;
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+ 			radeon_connector->edid = NULL;
+@@ -964,8 +975,13 @@ radeon_dvi_detect(struct drm_connector *
+ 	    (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA))
+ 		goto out;
  
--	atomic_inc(&qobj->queue_cnt);
- 	wake_up_interruptible(&qobj->thread_wq);
- }
- 
-@@ -656,9 +660,9 @@ transport_get_cmd_from_queue(struct se_q
++	/* if we aren't forcing don't do destructive polling */
+ 	if (!force) {
+-		ret = connector->status;
++		/* only return the previous status if we last
++		 * detected a monitor via load.
++		 */
++		if (radeon_connector->detected_by_load)
++			ret = connector->status;
+ 		goto out;
  	}
- 	cmd = list_first_entry(&qobj->qobj_list, struct se_cmd, se_queue_node);
  
--	atomic_dec(&cmd->t_transport_queue_active);
-+	atomic_set(&cmd->t_transport_queue_active, 0);
- 
--	list_del(&cmd->se_queue_node);
-+	list_del_init(&cmd->se_queue_node);
- 	atomic_dec(&qobj->queue_cnt);
- 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
- 
-@@ -668,7 +672,6 @@ transport_get_cmd_from_queue(struct se_q
- static void transport_remove_cmd_from_queue(struct se_cmd *cmd,
- 		struct se_queue_obj *qobj)
- {
--	struct se_cmd *t;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&qobj->cmd_queue_lock, flags);
-@@ -676,14 +679,9 @@ static void transport_remove_cmd_from_qu
- 		spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
- 		return;
- 	}
--
--	list_for_each_entry(t, &qobj->qobj_list, se_queue_node)
--		if (t == cmd) {
--			atomic_dec(&cmd->t_transport_queue_active);
--			atomic_dec(&qobj->queue_cnt);
--			list_del(&cmd->se_queue_node);
--			break;
--		}
-+	atomic_set(&cmd->t_transport_queue_active, 0);
-+	atomic_dec(&qobj->queue_cnt);
-+	list_del_init(&cmd->se_queue_node);
- 	spin_unlock_irqrestore(&qobj->cmd_queue_lock, flags);
- 
- 	if (atomic_read(&cmd->t_transport_queue_active)) {
-@@ -1067,7 +1065,7 @@ static void transport_release_all_cmds(s
- 	list_for_each_entry_safe(cmd, tcmd, &dev->dev_queue_obj.qobj_list,
- 				se_queue_node) {
- 		t_state = cmd->t_state;
--		list_del(&cmd->se_queue_node);
-+		list_del_init(&cmd->se_queue_node);
- 		spin_unlock_irqrestore(&dev->dev_queue_obj.cmd_queue_lock,
- 				flags);
- 
-@@ -1598,6 +1596,7 @@ void transport_init_se_cmd(
- 	INIT_LIST_HEAD(&cmd->se_delayed_node);
- 	INIT_LIST_HEAD(&cmd->se_ordered_node);
- 	INIT_LIST_HEAD(&cmd->se_qf_node);
-+	INIT_LIST_HEAD(&cmd->se_queue_node);
- 
- 	INIT_LIST_HEAD(&cmd->t_task_list);
- 	init_completion(&cmd->transport_lun_fe_stop_comp);
+@@ -989,6 +1005,7 @@ radeon_dvi_detect(struct drm_connector *
+ 					ret = encoder_funcs->detect(encoder, connector);
+ 					if (ret == connector_status_connected) {
+ 						radeon_connector->use_digital = false;
++						radeon_connector->detected_by_load = true;
+ 					}
+ 				}
+ 				break;
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -447,6 +447,7 @@ struct radeon_connector {
+ 	struct edid *edid;
+ 	void *con_priv;
+ 	bool dac_load_detect;
++	bool detected_by_load; /* if the connection status was determined by load */
+ 	uint16_t connector_object_id;
+ 	struct radeon_hpd hpd;
+ 	struct radeon_router router;
 
 
