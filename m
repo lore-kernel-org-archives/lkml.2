@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934627Ab1KJFNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:13:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42175 "EHLO mx2.suse.de"
+	id S934605Ab1KJFOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:14:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42167 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934025Ab1KJDZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:41 -0500
+	id S934015Ab1KJDZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:34 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
-Message-Id: <20111109212711.697583037@clark.kroah.org>
+Message-Id: <20111109212711.486059644@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:12 -0800
+Date: Wed, 09 Nov 2011 13:27:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [110/262] [S390] ccwgroup: move attributes to attribute group
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [108/262] [S390] user per registers vs. ptrace single stepping
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,125 +24,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-commit dbdf1afcaaabe83dea15a3cb9b9013e73ae3b1ad upstream.
+commit a45aff5285871bf7be1781d9462d3fdbb6c913f9 upstream.
 
-Put sysfs attributes of ccwgroup devices in an attribute group to
-ensure that these attributes are actually present when userspace
-is notified via uevents.
+git commit 5e9a2692 "[S390] ptrace cleanup" introduced a regression
+for the case when both a user PER set (e.g. a storage alteration trace) and
+PTRACE_SINGLESTEP are active. The new code will overrule the user PER set
+with a instruction-fetch PER set over the whole address space for ptrace
+single stepping. The inferior process will be stopped after each instruction
+with an instruction fetch event. Any other events that may have occurred
+concurrently are not reported (e.g. storage alteration event) because the
+control bits for them are not set. The solution is to merge the PER control
+bits of the user PER set with the PER_EVENT_IFETCH control bit for
+PTRACE_SINGLESTEP.
 
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
 Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/s390/cio/ccwgroup.c |   42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+ arch/s390/kernel/ptrace.c |   28 +++++++++++++++-------------
+ 1 file changed, 15 insertions(+), 13 deletions(-)
 
---- a/drivers/s390/cio/ccwgroup.c
-+++ b/drivers/s390/cio/ccwgroup.c
-@@ -87,6 +87,12 @@ static void __ccwgroup_remove_cdev_refs(
- 	}
- }
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -47,29 +47,31 @@ enum s390_regset {
  
-+static ssize_t ccwgroup_online_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count);
-+static ssize_t ccwgroup_online_show(struct device *dev,
-+				    struct device_attribute *attr,
-+				    char *buf);
- /*
-  * Provide an 'ungroup' attribute so the user can remove group devices no
-  * longer needed or accidentially created. Saves memory :)
-@@ -134,6 +140,20 @@ out:
- }
- 
- static DEVICE_ATTR(ungroup, 0200, NULL, ccwgroup_ungroup_store);
-+static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
-+
-+static struct attribute *ccwgroup_attrs[] = {
-+	&dev_attr_online.attr,
-+	&dev_attr_ungroup.attr,
-+	NULL,
-+};
-+static struct attribute_group ccwgroup_attr_group = {
-+	.attrs = ccwgroup_attrs,
-+};
-+static const struct attribute_group *ccwgroup_attr_groups[] = {
-+	&ccwgroup_attr_group,
-+	NULL,
-+};
- 
- static void
- ccwgroup_release (struct device *dev)
-@@ -293,25 +313,17 @@ int ccwgroup_create_from_string(struct d
- 	}
- 
- 	dev_set_name(&gdev->dev, "%s", dev_name(&gdev->cdev[0]->dev));
--
-+	gdev->dev.groups = ccwgroup_attr_groups;
- 	rc = device_add(&gdev->dev);
- 	if (rc)
- 		goto error;
- 	get_device(&gdev->dev);
--	rc = device_create_file(&gdev->dev, &dev_attr_ungroup);
--
--	if (rc) {
--		device_unregister(&gdev->dev);
--		goto error;
--	}
--
- 	rc = __ccwgroup_create_symlinks(gdev);
- 	if (!rc) {
- 		mutex_unlock(&gdev->reg_mutex);
- 		put_device(&gdev->dev);
- 		return 0;
- 	}
--	device_remove_file(&gdev->dev, &dev_attr_ungroup);
- 	device_unregister(&gdev->dev);
- error:
- 	for (i = 0; i < num_devices; i++)
-@@ -423,7 +435,7 @@ ccwgroup_online_store (struct device *de
- 	int ret;
- 
- 	if (!dev->driver)
--		return -ENODEV;
-+		return -EINVAL;
- 
- 	gdev = to_ccwgroupdev(dev);
- 	gdrv = to_ccwgroupdrv(dev->driver);
-@@ -456,8 +468,6 @@ ccwgroup_online_show (struct device *dev
- 	return sprintf(buf, online ? "1\n" : "0\n");
- }
- 
--static DEVICE_ATTR(online, 0644, ccwgroup_online_show, ccwgroup_online_store);
--
- static int
- ccwgroup_probe (struct device *dev)
+ void update_per_regs(struct task_struct *task)
  {
-@@ -469,12 +479,7 @@ ccwgroup_probe (struct device *dev)
- 	gdev = to_ccwgroupdev(dev);
- 	gdrv = to_ccwgroupdrv(dev->driver);
+-	static const struct per_regs per_single_step = {
+-		.control = PER_EVENT_IFETCH,
+-		.start = 0,
+-		.end = PSW_ADDR_INSN,
+-	};
+ 	struct pt_regs *regs = task_pt_regs(task);
+ 	struct thread_struct *thread = &task->thread;
+-	const struct per_regs *new;
+-	struct per_regs old;
++	struct per_regs old, new;
  
--	if ((ret = device_create_file(dev, &dev_attr_online)))
--		return ret;
--
- 	ret = gdrv->probe ? gdrv->probe(gdev) : -ENODEV;
--	if (ret)
--		device_remove_file(dev, &dev_attr_online);
+-	/* TIF_SINGLE_STEP overrides the user specified PER registers. */
+-	new = test_tsk_thread_flag(task, TIF_SINGLE_STEP) ?
+-		&per_single_step : &thread->per_user;
++	/* Copy user specified PER registers */
++	new.control = thread->per_user.control;
++	new.start = thread->per_user.start;
++	new.end = thread->per_user.end;
++
++	/* merge TIF_SINGLE_STEP into user specified PER registers. */
++	if (test_tsk_thread_flag(task, TIF_SINGLE_STEP)) {
++		new.control |= PER_EVENT_IFETCH;
++		new.start = 0;
++		new.end = PSW_ADDR_INSN;
++	}
  
- 	return ret;
+ 	/* Take care of the PER enablement bit in the PSW. */
+-	if (!(new->control & PER_EVENT_MASK)) {
++	if (!(new.control & PER_EVENT_MASK)) {
+ 		regs->psw.mask &= ~PSW_MASK_PER;
+ 		return;
+ 	}
+ 	regs->psw.mask |= PSW_MASK_PER;
+ 	__ctl_store(old, 9, 11);
+-	if (memcmp(new, &old, sizeof(struct per_regs)) != 0)
+-		__ctl_load(*new, 9, 11);
++	if (memcmp(&new, &old, sizeof(struct per_regs)) != 0)
++		__ctl_load(new, 9, 11);
  }
-@@ -485,9 +490,6 @@ ccwgroup_remove (struct device *dev)
- 	struct ccwgroup_device *gdev;
- 	struct ccwgroup_driver *gdrv;
  
--	device_remove_file(dev, &dev_attr_online);
--	device_remove_file(dev, &dev_attr_ungroup);
--
- 	if (!dev->driver)
- 		return 0;
- 
+ void user_enable_single_step(struct task_struct *task)
 
 
