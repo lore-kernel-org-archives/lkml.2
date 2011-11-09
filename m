@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab1KIWis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 17:38:48 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:39970 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932271Ab1KIWir (ORCPT
+	id S932899Ab1KIWo7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 17:44:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52787 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab1KIWo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 17:38:47 -0500
-Date: Wed, 9 Nov 2011 14:38:46 -0800 (PST)
-From: Andrei Warkentin <awarkentin@vmware.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Message-ID: <1927751307.356328.1320878326756.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <4EBAFC33.5080605@zytor.com>
-Subject: Re: /dev/mem "unbounded?"
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Wed, 9 Nov 2011 17:44:58 -0500
+Date: Wed, 9 Nov 2011 14:44:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, yinghan@google.com
+Subject: Re: [PATCH] memcg: doc the pagefault count
+Message-Id: <20111109144456.df8e4ccc.akpm@linux-foundation.org>
+In-Reply-To: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.113.61.162]
-X-Mailer: Zimbra 7.1.1_GA_3225 (ZimbraWebClient - FF3.0 (Linux)/7.1.1_GA_3225)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Fri, 4 Nov 2011 17:15:21 +0800
+Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
 
------ Original Message -----
+> Pagefault count has added to memcg stats since commit 456f998e,
+> but forgot to doc it.
 > 
-> That would be incorrect behavior, though, except perhaps for the
-> range
-> that cannot be addressed by the processor.  It is explicitly
-> permitted
-> to address ranges that does not have addresses mapped to it.
-
-There is a current mechanism for restricting access to a subset
-of addresses, and it is used to enforce < 1MB accesses on x86
-if CONFIG_STRICT_DEVMEM. This could be extended.
-
-Do you think there is any value in specifying something like
-CONFIG_DEV_MEM_ONLY_CLAIMED, which would only allow accesses
-until the end of the last range claimed with request_region (but
-could, of course, well be unmapped). This will allow accesses to
-any unclaimed "holes" in between. I.e., if you have 0-100m claimed,
-followed by 300-700m claimed, then reading /dev/mem will work up
-until you reach 700m.
-
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  Documentation/cgroups/memory.txt |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> -EFAULT would also be wrong.  If anything it should be -EIO.
-> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index cc0ebc5..081f4f44 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -389,6 +389,13 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+>  swap		- # of bytes of swap usage
+> +
+> +pgfault		- # of page-faults
+> +pgmajfault	- # of major page-faults
+> +		These two are different from "pgpgin"/"pgpgout" stat which
+> +		count number of pages charged/discharged to the cgroup and
+> +		have no meaning of reading/writing page to disk.
+> +
+>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
 
-Ok, I'll submit a patch for that.
+OK, but the documentation was already rather poor.
 
-A
+For a start, what do pgpgin and pgpgout actually count?  How about
+
+pgpgin: the number of pages read from disk as a result of pagefault
+activity within this memcg (swapin and mapped-file pagein).  Does not
+include other causes of disk I/O such as read().
+
+pgpgout: the number of pages written to disk as a result of swap and
+mapped-file activity within this memcg.  Does not include other causes
+of disk I/O such as write().
+
+(I'm really not sure if this is correct!)
+
+What are the units: is it "pages" or "multiples of 4k"?  If the latter
+then userspace must go off and work out what pagesize the kernel is,
+which is a bit ugly and is just asking for people to develop
+monitoring tools which report wrong results on other-than-4k-pagesize
+setups.
+
+
+Once we have that settled then we can move on to documenting pgfault
+and pgmajfault.  What are the units?  Exactly which kernel actions lead
+to these counters being altered?
+
