@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934605Ab1KJFOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 00:14:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42167 "EHLO mx2.suse.de"
+	id S934592Ab1KJFOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 00:14:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42147 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934015Ab1KJDZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:25:34 -0500
+	id S934536Ab1KJDZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:25:21 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:11 2011
-Message-Id: <20111109212711.486059644@clark.kroah.org>
+Message-Id: <20111109212711.071557539@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:27:10 -0800
+Date: Wed, 09 Nov 2011 13:27:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [108/262] [S390] user per registers vs. ptrace single stepping
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [104/262] ASoC: wm8994: Use SND_SOC_DAPM_AIF_OUT for AIF3 Capture
 In-Reply-To: <20111109212847.GA20838@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,74 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit a45aff5285871bf7be1781d9462d3fdbb6c913f9 upstream.
+commit 35024f4922f7b271e7529673413889aa3d51c5fc upstream.
 
-git commit 5e9a2692 "[S390] ptrace cleanup" introduced a regression
-for the case when both a user PER set (e.g. a storage alteration trace) and
-PTRACE_SINGLESTEP are active. The new code will overrule the user PER set
-with a instruction-fetch PER set over the whole address space for ptrace
-single stepping. The inferior process will be stopped after each instruction
-with an instruction fetch event. Any other events that may have occurred
-concurrently are not reported (e.g. storage alteration event) because the
-control bits for them are not set. The solution is to merge the PER control
-bits of the user PER set with the PER_EVENT_IFETCH control bit for
-PTRACE_SINGLESTEP.
-
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Liam Girdwood <lrg@ti.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/kernel/ptrace.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+ sound/soc/codecs/wm8994.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -47,29 +47,31 @@ enum s390_regset {
+--- a/sound/soc/codecs/wm8994.c
++++ b/sound/soc/codecs/wm8994.c
+@@ -1266,7 +1266,7 @@ SND_SOC_DAPM_MUX("AIF2DAC Mux", SND_SOC_
+ SND_SOC_DAPM_MUX("AIF2ADC Mux", SND_SOC_NOPM, 0, 0, &aif2adc_mux),
  
- void update_per_regs(struct task_struct *task)
- {
--	static const struct per_regs per_single_step = {
--		.control = PER_EVENT_IFETCH,
--		.start = 0,
--		.end = PSW_ADDR_INSN,
--	};
- 	struct pt_regs *regs = task_pt_regs(task);
- 	struct thread_struct *thread = &task->thread;
--	const struct per_regs *new;
--	struct per_regs old;
-+	struct per_regs old, new;
+ SND_SOC_DAPM_AIF_IN("AIF3DACDAT", "AIF3 Playback", 0, SND_SOC_NOPM, 0, 0),
+-SND_SOC_DAPM_AIF_IN("AIF3ADCDAT", "AIF3 Capture", 0, SND_SOC_NOPM, 0, 0),
++SND_SOC_DAPM_AIF_OUT("AIF3ADCDAT", "AIF3 Capture", 0, SND_SOC_NOPM, 0, 0),
  
--	/* TIF_SINGLE_STEP overrides the user specified PER registers. */
--	new = test_tsk_thread_flag(task, TIF_SINGLE_STEP) ?
--		&per_single_step : &thread->per_user;
-+	/* Copy user specified PER registers */
-+	new.control = thread->per_user.control;
-+	new.start = thread->per_user.start;
-+	new.end = thread->per_user.end;
-+
-+	/* merge TIF_SINGLE_STEP into user specified PER registers. */
-+	if (test_tsk_thread_flag(task, TIF_SINGLE_STEP)) {
-+		new.control |= PER_EVENT_IFETCH;
-+		new.start = 0;
-+		new.end = PSW_ADDR_INSN;
-+	}
+ SND_SOC_DAPM_SUPPLY("TOCLK", WM8994_CLOCKING_1, 4, 0, NULL, 0),
  
- 	/* Take care of the PER enablement bit in the PSW. */
--	if (!(new->control & PER_EVENT_MASK)) {
-+	if (!(new.control & PER_EVENT_MASK)) {
- 		regs->psw.mask &= ~PSW_MASK_PER;
- 		return;
- 	}
- 	regs->psw.mask |= PSW_MASK_PER;
- 	__ctl_store(old, 9, 11);
--	if (memcmp(new, &old, sizeof(struct per_regs)) != 0)
--		__ctl_load(*new, 9, 11);
-+	if (memcmp(&new, &old, sizeof(struct per_regs)) != 0)
-+		__ctl_load(new, 9, 11);
- }
- 
- void user_enable_single_step(struct task_struct *task)
 
 
