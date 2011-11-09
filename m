@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965499Ab1KJDmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:42:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44451 "EHLO mx2.suse.de"
+	id S965550Ab1KJDnR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:43:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44495 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965130Ab1KJDmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:42:49 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:57 2011
-Message-Id: <20111109213157.082651130@clark.kroah.org>
+	id S965518Ab1KJDnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:43:09 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:31:54 2011
+Message-Id: <20111109213154.586632222@clark.kroah.org>
 User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:15 -0800
+Date: Wed, 09 Nov 2011 13:32:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Adrian Bunk <adrian.bunk@movial.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [148/264] ARM: mach-ux500: unlock I&D l2x0 caches before init
+        alan@lxorguk.ukuu.org.uk, Axel Lin <axel.lin@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [124/264] ASoC: ak4535: fixup cache register table
 In-Reply-To: <20111109213508.GA3476@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,72 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Axel Lin <axel.lin@gmail.com>
 
-commit 1bf6d2c1bb23533af6930581cc39b74685bc29de upstream.
+commit 7c04241acbdaf97f1448dcccd27ea0fcd1a57684 upstream.
 
-Apparently U8500 U-Boot versions may leave the l2x0 locked down
-before executing the kernel. Make sure we unlock it before we
-initialize the l2x0. This fixes a performance problem reported
-by Jan Rinze.
+ak4535_reg should be 8bit, but cache table is defined as 16bit.
 
-The l2x0 core has been modified to unlock the l2x0 by default,
-but it will not touch the locking registers if the l2x0 was
-already enabled, as on the ux500, so we need this quirk to
-make sure it is properly turned off.
-
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Cc: Adrian Bunk <adrian.bunk@movial.com>
-Reported-by: Jan Rinze <janrinze@gmail.com>
-Tested-by: Robert Marklund <robert.marklund@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-ux500/cpu.c |   25 ++++++++++++++++++++++++-
- 1 file changed, 24 insertions(+), 1 deletion(-)
+ sound/soc/codecs/ak4535.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/arm/mach-ux500/cpu.c
-+++ b/arch/arm/mach-ux500/cpu.c
-@@ -99,7 +99,27 @@ static void ux500_l2x0_inv_all(void)
- 	ux500_cache_sync();
- }
+--- a/sound/soc/codecs/ak4535.c
++++ b/sound/soc/codecs/ak4535.c
+@@ -40,11 +40,11 @@ struct ak4535_priv {
+ /*
+  * ak4535 register cache
+  */
+-static const u16 ak4535_reg[AK4535_CACHEREGNUM] = {
+-    0x0000, 0x0080, 0x0000, 0x0003,
+-    0x0002, 0x0000, 0x0011, 0x0001,
+-    0x0000, 0x0040, 0x0036, 0x0010,
+-    0x0000, 0x0000, 0x0057, 0x0000,
++static const u8 ak4535_reg[AK4535_CACHEREGNUM] = {
++	0x00, 0x80, 0x00, 0x03,
++	0x02, 0x00, 0x11, 0x01,
++	0x00, 0x40, 0x36, 0x10,
++	0x00, 0x00, 0x57, 0x00,
+ };
  
--static int ux500_l2x0_init(void)
-+static int __init ux500_l2x0_unlock(void)
-+{
-+	int i;
-+
-+	/*
-+	 * Unlock Data and Instruction Lock if locked. Ux500 U-Boot versions
-+	 * apparently locks both caches before jumping to the kernel. The
-+	 * l2x0 core will not touch the unlock registers if the l2x0 is
-+	 * already enabled, so we do it right here instead. The PL310 has
-+	 * 8 sets of registers, one per possible CPU.
-+	 */
-+	for (i = 0; i < 8; i++) {
-+		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_D_BASE +
-+			       i * L2X0_LOCKDOWN_STRIDE);
-+		writel_relaxed(0x0, l2x0_base + L2X0_LOCKDOWN_WAY_I_BASE +
-+			       i * L2X0_LOCKDOWN_STRIDE);
-+	}
-+	return 0;
-+}
-+
-+static int __init ux500_l2x0_init(void)
- {
- 	if (cpu_is_u5500())
- 		l2x0_base = __io_address(U5500_L2CC_BASE);
-@@ -108,6 +128,9 @@ static int ux500_l2x0_init(void)
- 	else
- 		ux500_unknown_soc();
- 
-+	/* Unlock before init */
-+	ux500_l2x0_unlock();
-+
- 	/* 64KB way size, 8 way associativity, force WA */
- 	l2x0_init(l2x0_base, 0x3e060000, 0xc0000fff);
- 
+ /*
 
 
