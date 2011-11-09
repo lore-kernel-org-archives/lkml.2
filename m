@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab1KISj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 13:39:57 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48041 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab1KISj4 (ORCPT
+	id S1756415Ab1KISyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 13:54:36 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34171 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751527Ab1KISye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 13:39:56 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX180R9nUb4cbSp7/AmR/nki5
-Date: Wed, 9 Nov 2011 10:39:45 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 6/8] of: add clock providers
-Message-ID: <20111109183945.GL31337@atomide.com>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
+	Wed, 9 Nov 2011 13:54:34 -0500
+Message-ID: <4EBACC5D.7000904@kernel.dk>
+Date: Wed, 09 Nov 2011 19:54:21 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320801583-12774-7-git-send-email-grant.likely@secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: "James E.J. Bottomley" <James.Bottomley@HansenPartnership.com>,
+        Nao Nishijima <nao.nishijima.xt@hitachi.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] block: Revert "[SCSI] genhd: add a new attribute "alias"
+ in gendisk"
+References: <20111109162512.GB1260@google.com>
+In-Reply-To: <20111109162512.GB1260@google.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely <grant.likely@secretlab.ca> [111108 16:51]:
-> +
-> +    /* external oscillator */
-> +    osc: oscillator {
-> +        compatible = "fixed-clock";
-> +        #clock-cells = <1>;
-> +        frequency  = <32678>;
-> +        clock-output-name = "osc";
-> +    };
-> +
-> +    /* phase-locked-loop device, generates a higher frequency clock
-> +     * from the external oscillator reference */
-> +    pll: pll {
-> +        compatible = "some-pll-interface"
-> +        #clock-cells = <1>;
-> +        clock-input = <&osc 0>;
-> +        clock-input-name = "ref";
-> +        reg = <0x4c000 0x1000>;
-> +        clock-output-name = "pll", "pll-switched";
-> +    };
+On 2011-11-09 17:25, Tejun Heo wrote:
+> This reverts commit a72c5e5eb738033938ab30d6a634b74d1d060f10.
+> 
+> The commit introduced alias for block devices which is intended to be
+> used during logging although actual usage hasn't been committed yet.
+> This approach adds very limited benefit (raw log might be easier to
+> follow) which can be trivially implemented in userland but has a lot
+> of problems.
+> 
+> It is much worse than netif renames because it doesn't rename the
+> actual device but just adds conveninence name which isn't used
+> universally or enforced.  Everything internal including device lookup
+> and sysfs still uses the internal name and nothing prevents two
+> devices from using conflicting alias - ie. sda can have sdb as its
+> alias.
+> 
+> This has been nacked by people working on device driver core, block
+> layer and kernel-userland interface and shouldn't have been
+> upstreamed.  Revert it.
+> 
+>  http://thread.gmane.org/gmane.linux.kernel/1155104
+>  http://thread.gmane.org/gmane.linux.scsi/68632
+>  http://thread.gmane.org/gmane.linux.scsi/69776
 
-I think for the clocks we need something describing which bits
-in the clock register the "pll" and "pll-switched" belong to.
+Ack on this, it seems both unneeded, unused, and a bad hack. We need to
+revert it before 3.2 rolls out, otherwise we are stuck with it.
 
-Otherwise we'll end up having to map all that data in the clock
-driver for various SoC variants.
+-- 
+Jens Axboe
 
-> +    /* UART, using the low frequency oscillator for the baud clock,
-> +     * and the high frequency switched PLL output for register
-> +     * clocking */
-> +    uart {
-> +        compatible = "fsl,imx-uart";
-> +        reg = <0xa000 0x1000>;
-> +        interrupts = <33>;
-> +        clock-input = <&osc 0>, <&pll 1>;
-> +        clock-input-name = "baud", "register";
-> +    };
-> +
-
-Here I think we need a better solution for finding the
-clocks by name. Doing clock-input = <&osc 0>, <&pll 1> means
-that we have redefine the uart for similar SoC many times.
-
-How about using source + option in the name instead:
-
-	   clock-source-name = "osc.osc", "pll.pll-switched";
-
-This same solution would also work for the pinctrl names:
-
-	   pinctrl-source-name = "uart1_rx.uart1_rx", "dss_data7.uart1_tx";
-
-The reason I'm worried here is that just for omap2/3/4 we already
-have 3 options for uart1 clock and 19 options for uart1_rx pin!
-
-Using the signal names for both clocks and pinctrl would
-allow defining the uart entry for for each reg address instead
-of for each clock and pinctrl option.
-
-Regards,
-
-Tony
