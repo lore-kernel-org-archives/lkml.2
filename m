@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab1KIIMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 03:12:25 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:39581 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab1KIIMX (ORCPT
+	id S932081Ab1KIINJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 03:13:09 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63001 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429Ab1KIINH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 03:12:23 -0500
-Message-ID: <4EBA35D3.3020506@oracle.com>
-Date: Wed, 09 Nov 2011 16:12:03 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+	Wed, 9 Nov 2011 03:13:07 -0500
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org
-CC: Paul Durrant <paul.durrant@citrix.com>,
-        Kurt Hackel <Kurt.Hackel@oracle.com>
-Subject: patches of upstreaming grant table version 2
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090204.4EBA35E3.00D6,ss=1,re=0.000,fgs=0
+In-Reply-To: <CAJ9D=p6oqXjpATFLNYhjb11O2wSErxC220kZ5Ngfq869H3BJmw@mail.gmail.com>
+References: <CAJ9D=p6oqXjpATFLNYhjb11O2wSErxC220kZ5Ngfq869H3BJmw@mail.gmail.com>
+Date: Wed, 9 Nov 2011 09:13:06 +0100
+Message-ID: <CACna6rw2f1wPtLBO6syEtK6TKiF6oTFZtwoiu0c3rYAXjs-H+g@mail.gmail.com>
+Subject: Re: r600 hdmi sound issue
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Greg Dietsche <greg@gregd.org>
+Cc: maraeo@gmail.com, airlied@redhat.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+2011/11/9 Greg Dietsche <greg@gregd.org>:
+> Hi,
+> I have a ASUS M4A89GTD motherboard and when I play back music in Rhythmbox,
+> there is no sound (hdmi connection). Also, the playback speed is in a sort
+> of fast forward (for example, after a few seconds of real time, rhythmbox
+> shows something like 30 seconds into the song). This seems to be a kernel
+> regression. I know that it started with 3.0, is present in 3.1, and is not
+> working in 3.2-rc1, so it is still a problem.
+>
+> I bisected and found my self here: fe6f0bd03d697835e76dd18d232ba476c65b8282.
+> However due to some graphical issues, I'm not actually able to test that
+> commit. I tried reverting that commit, but the problem wasn't fixed.
+>
+> I'd like to see this problem fixed and can compile and test patches as
+> necessary. Please let me know if you need more information - I'm happy to
+> provide it :)
 
-The following patches introduce and implement grant table version 2, and 
-they are based on v3.1.0-rc9+.
+fe6f0bd03d697835e76dd18d232ba476c65b8282 is not likely. I suspect you
+just experience results of so-called-fix:
 
-Descriptions for those patches:
+805c22168da76a65c978017d0fe0d59cd048e995
 
-1. In those patches, the grant table code supports both grant table v1 
-and v2 version, v2 is an extension from v1. Grant table of guest domain 
-can be either v1 or v2 version, and every grant table entry on one guest 
-should be the same version.
+drm/radeon/kms: disable hdmi audio by default
 
-2. Full page structure of grant table v2 play the same role as grant 
-table v1. Although full page structure is different from v1, grant table 
-2 is totally backwards compatible with v1. Grant table is shared between 
-guest and Xen, domu and dom0 all have their own grant table shared with 
-Xen, and their grant table version should be set before any grants are 
-activated. When domu grants an entry to dom0 to map a frame, following 
-are steps:
-* domu introduces a grant entry by reference
-* domu informs dom0 the gref
-* dom0 sends hypercall to map frame through this reference, Xen copy 
-shared entry to active entry and update frame
-* dom0 does its work and release the frame, Xen releases the entry.
-* domu redo those steps for a new cycle.
+I'm trying to get in contact with ppl affected by issues when enabling
+audio. Hopefully we can fix audio support and enable it by default
+again.
 
-Xen mapping process can be found in function __gnttab_map_grant_ref in 
-link: 
-http://xenbits.xen.org/hg/xen-4.1-testing.hg/file/81e39a4978ea/xen/common/grant_table.c#l2172 
+For now, please load radeon module with "audio=1", or simply boot with
+radeon.audio=1
 
-
-3. If dom0 supports grant table v2, guests run on it can either supports 
-v1 or v2. Xen is responsible to judge what version the guests are using. 
-This is implemented in link: 
-http://xenbits.xen.org/hg/xen-4.1-testing.hg/file/81e39a4978ea/xen/common/grant_table.c#l2172. 
-Key word is:  rd->grant_table->gt_version.
-
-4. Grant table2 is a precondition to netchannel2 mechanism. Netchannel2 
-imports a new device type: vif2. To support this type, we need new 
-netback2, netfront2 driver and modification in Xen. If all are ready, 
-two types of vif can be supported: vif and vif2. vif is for original 
-backend and frontend, vif2 is for netback2 and netfront2.
-
-Thanks
-Annie
+-- 
+Rafał
