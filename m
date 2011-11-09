@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab1KIXL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 18:11:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59329 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750981Ab1KIXL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 18:11:27 -0500
-Date: Wed, 9 Nov 2011 23:11:24 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, Vinod Koul <vinod.koul@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Staging clear up
-Message-ID: <20111109231124.GC17769@opensource.wolfsonmicro.com>
-References: <20111109121329.GC21630@sirena.org.uk>
- <1320854413.32205.948.camel@vkoul-udesk3>
- <20111109164211.GA4016@opensource.wolfsonmicro.com>
- <20111109165518.GA13451@kroah.com>
- <20111109165829.GC4016@opensource.wolfsonmicro.com>
- <20111109173037.66bea268@lxorguk.ukuu.org.uk>
- <20111109225933.GA17769@opensource.wolfsonmicro.com>
- <20111109230318.1168fd9e@lxorguk.ukuu.org.uk>
- <20111109230329.GB17769@opensource.wolfsonmicro.com>
- <20111109230558.2fb94c0b@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109230558.2fb94c0b@lxorguk.ukuu.org.uk>
-X-Cookie: You will be run over by a beer truck.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756825Ab1KIXOs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 18:14:48 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43676 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab1KIXOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 18:14:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
+   d="scan'208";a="88245361"
+Date: Wed, 9 Nov 2011 23:25:53 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Jiri Slaby <jirislaby@gmail.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH 01/10] TTY: serial, cleanup include file
+Message-ID: <20111109232553.5fa24741@bob.linux.org.uk>
+In-Reply-To: <4EBAFA03.40405@suse.cz>
+References: <1320870831-23778-1-git-send-email-jslaby@suse.cz>
+	<20111109215901.16f44570@bob.linux.org.uk>
+	<4EBAFA03.40405@suse.cz>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 11:05:58PM +0000, Alan Cox wrote:
+On Wed, 09 Nov 2011 23:09:07 +0100
+Jiri Slaby <jslaby@suse.cz> wrote:
 
-> Yes - then it doesn't compile. The codec is calling functions defined in
-> that header. I don't think you need much of it but both bits of that
-> driver are using some of the stuff.
+> On 11/09/2011 10:59 PM, Alan Cox wrote:
+> > We need to move the tty_buffer objects into the tty_port.
+> 
+> Thanks a lot for reminding me. (I remember you telling me about this
+> at KS.) So I suppose you prefer this to be done first... OK, I will
+> look into that. Leaving the rest of the serial stuff apart for the
+> time being.
 
-Oh, actually the mainline CODEC driver doesn't have any such staging
-references in it at all.  I don't know what tree you're patching
-against?
+I'm not really bothered what is done first - it's not as if I am doing
+the work! I just thought it might be easier to do it that way around
+rather than adding and removing more complexity on the way ?
+
+Alan
