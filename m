@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935675Ab1KJQTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:19:23 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:58931 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935326Ab1KJQTW (ORCPT
+	id S965101Ab1KJQUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:20:14 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:59195 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965061Ab1KJQUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:19:22 -0500
-Date: Fri, 11 Nov 2011 01:19:15 +0900
-From: =?utf-8?B?SsOpcsO0bWU=?= Pinot <ngc891@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Evolution of kernel size
-Message-ID: <20111110161915.GA28282@comet.deepsky.org>
-References: <20111110143333.GA29457@comet.deepsky.org>
- <20111110145902.GA13619@elliptictech.com>
- <20111110151548.GA8557@comet.deepsky.org>
- <20111110154003.GA14012@elliptictech.com>
+	Thu, 10 Nov 2011 11:20:11 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] PM/Usermodehelper: Cleanup remnants of
+ usermodehelper_pm_callback()
+To: rjw@sisk.pl
+Cc: dhowells@redhat.com, eparis@redhat.com, kay.sievers@vrfy.org,
+        jmorris@namei.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Date: Thu, 10 Nov 2011 21:49:29 +0530
+Message-ID: <20111110161921.3714.25382.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111110154003.GA14012@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 11111007-3568-0000-0000-000000AC18CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/11 10:40, Nick Bowler wrote:
-> On 2011-11-11 00:15 +0900, Jérôme Pinot wrote:
-> > On 11/10/11 09:59, Nick Bowler wrote:
-> > > On 2011-11-10 23:33 +0900, Jérôme Pinot wrote:
-> > > > I took some time to make a graph of the evolution of the size of the
-> > > > linux kernel tar.bz2 since version 1.0 till 3.1 (297 releases).
-> > > > It doesn't count the stable branches (2.6.x.y).
-> > > > 
-> > > > Impressive, it's mostly exponential.
-> > > > If dev keeps same pace, we should break the 100MB at
-> > > > linux 3.19.
-> > > > 
-> > > > You can get the graph on my blog, I provide the data and the
-> > > > gnuplot batch file for graphing/fitting:
-> > > > http://ngc891.blogdns.net/?p=92 
-> > > > 
-> > > > It may interest some people :-)
-> > > 
-> > > What scale did you use for the horizontal axis?  I see numbers assigned
-> > > to each version in your gnuplot file, but no indication of how you came
-> > > up with them.
-> > 
-> > It's just the release count, one step for one release.
-> > 
-> > Some release are missing, mostly at the very beginning, I didn't find
-> > tarball for them but it doesn't matter much for the shape of the curve.
-> 
-> The problem with this is that the releases were not made at fixed
-> intervals.  2.6.0 -> 3.0 represents more than double the amount of
-> development time as 2.4 -> 2.6, yet they get roughly the same amount
-> of horizontal space on your plot.
+usermodehelper_pm_callback() no longer exists in the kernel. There are 2
+comments in kernel/kmod.c that still refer to it.
 
-It's because my point was not about studying size(time) but
-size(version).
+Also, the patch that introduced usermodehelper_pm_callback(), #included
+2 header files: <linux/notifier.h> and <linux/suspend.h>. But these are
+no longer necessary.
 
-> I think it would be much more interesting to scale by release dates, so
-> that the gap between releases is proportional to the time between them.
-> I suspect you'll see a very different shape.
+This patch updates the comments as appropriate and removes the unnecessary
+header file inclusions.
 
-It's another point of view which is interesting too.
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
-> Furthermore, looking at the raw data, you gave 2.4.37 (released in 2008)
-> a lower release number than 2.6.0 (released in 2003), which seems odd.
+ kernel/kmod.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-Well, branches evolve in parallel, like the 2.4/2.6 move, so you can't
-fit these in one unique time-based graph (or it's a mess).
-Moreover, code was backported from 2.6 to 2.4 (remember the xfs
-thing?), so the 2.4.37 kernel is actually the one from 2.4 branch
-to be the more like 2.6.0. It's not a huge nonsense to put the
-two releases side by side to compare the code size.
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index a4bea97..2142687 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -34,8 +34,6 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/resource.h>
+-#include <linux/notifier.h>
+-#include <linux/suspend.h>
+ #include <asm/uaccess.h>
+ 
+ #include <trace/events/module.h>
+@@ -282,14 +280,14 @@ static int usermodehelper_disabled = 1;
+ static atomic_t running_helpers = ATOMIC_INIT(0);
+ 
+ /*
+- * Wait queue head used by usermodehelper_pm_callback() to wait for all running
++ * Wait queue head used by usermodehelper_disable() to wait for all running
+  * helpers to finish.
+  */
+ static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
+ 
+ /*
+  * Time to wait for running_helpers to become zero before the setting of
+- * usermodehelper_disabled in usermodehelper_pm_callback() fails
++ * usermodehelper_disabled in usermodehelper_disable() fails
+  */
+ #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
+ 
 
-If you like a time-based graph, you'd better to have a graph for each
-branch. That's an other work.
-
--- 
-Jérôme Pinot
-http://ngc891.blogdns.net/
