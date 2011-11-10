@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab1KJALu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:11:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36780 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756846Ab1KJALt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:11:49 -0500
-Message-ID: <4EBB16BE.9050308@zytor.com>
-Date: Wed, 09 Nov 2011 16:11:42 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
-MIME-Version: 1.0
-To: Andrei Warkentin <awarkentin@vmware.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: /dev/mem "unbounded?"
-References: <1927751307.356328.1320878326756.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-In-Reply-To: <1927751307.356328.1320878326756.JavaMail.root@zimbra-prod-mbox-2.vmware.com>
-X-Enigmail-Version: 1.3.2
-Content-Type: text/plain; charset=UTF-8
+	id S1756871Ab1KJAPm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:15:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34062 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab1KJAPl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 19:15:41 -0500
+Date: Wed, 9 Nov 2011 16:15:39 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+Cc: <linux-kernel@vger.kernel.org>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        Frank Zago <fzago@systemfabricworks.com>
+Subject: Re: [PATCH] crc32: Optimize inner loop.
+Message-Id: <20111109161539.b2cdf381.akpm@linux-foundation.org>
+In-Reply-To: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se>
+References: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 02:38 PM, Andrei Warkentin wrote:
-> Hi Peter,
+On Thu, 3 Nov 2011 10:28:25 +0100
+Joakim Tjernlund <Joakim.Tjernlund@transmode.se> wrote:
+
+> taking a pointer reference to each row in the crc table matrix,
+> one can reduce the inner loop with a few insn's
 > 
-> ----- Original Message -----
->>
->> That would be incorrect behavior, though, except perhaps for the
->> range
->> that cannot be addressed by the processor.  It is explicitly
->> permitted
->> to address ranges that does not have addresses mapped to it.
-> 
-> There is a current mechanism for restricting access to a subset
-> of addresses, and it is used to enforce < 1MB accesses on x86
-> if CONFIG_STRICT_DEVMEM. This could be extended.
-> 
+> Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
 
-Well, that mechanism is broken.  The way it *should* work is that any
-region which is system RAM should be denied access, and the rest is
-accessible.  The current behavior is a hack due to the behavior of some
-old versions of Xorg, but that has long been fixed.
+As we have other developers who have previously shown an interest in
+the crc32 code it is a good idea to cc them on future patches to get a
+bit more review and perhaps testing input.
 
-> Do you think there is any value in specifying something like
-> CONFIG_DEV_MEM_ONLY_CLAIMED, which would only allow accesses
-> until the end of the last range claimed with request_region (but
-> could, of course, well be unmapped). This will allow accesses to
-> any unclaimed "holes" in between. I.e., if you have 0-100m claimed,
-> followed by 300-700m claimed, then reading /dev/mem will work up
-> until you reach 700m.
+This patch seems fairly harmless.  Some runtime testing results would
+have been appropriate.
 
-No.  If you don't know what you're accessing, you should not be touching
-/dev/mem under any circumstances.  Odds are that even if you're only
-reading, there are registers with side effects in there somewhere.
+Also, something like "reduce a few insns" is extremely easy to
+substantiate, so why not do it?  With my compiler, the patch reduces
+the crc32.o text by 22 bytes.
 
-	-hpa
+>  As the slice by 8 CRC32 optimizations seems stalled, I figured
+>  I send in this generic one.
 
+I meant to ask about that.  The discussion was fairly long and complex
+and I'm now unsure whether the patch I have is a still up-to-date,
+whether it is a good one, whether it has additional testing results,
+etc.
 
+So probably the best thing to do now is for me to drop it.  Please
+resend when convenient.  Be sure to cc all previous reviewers and also
+update the changelog to cover any important issues which were
+brought up in the review.  This is to show what the issues were, how
+they were addressed, etc.
+
+Thanks.
+
+> index 4855995..b06d1e7 100644
+> --- a/lib/crc32.c
+> +++ b/lib/crc32.c
+> @@ -51,20 +51,21 @@ static inline u32
+>  crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
+>  {
+>  # ifdef __LITTLE_ENDIAN
+> -#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
+> -#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
+> -		tab[2][(crc >> 8) & 255] ^ \
+> -		tab[1][(crc >> 16) & 255] ^ \
+> -		tab[0][(crc >> 24) & 255]
+> +#  define DO_CRC(x) crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8)
+> +#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
+> +		t2[(crc >> 8) & 255] ^ \
+> +		t1[(crc >> 16) & 255] ^ \
+> +		t0[(crc >> 24) & 255]
+>  # else
+> -#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+> -#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
+> -		tab[1][(crc >> 8) & 255] ^ \
+> -		tab[2][(crc >> 16) & 255] ^ \
+> -		tab[3][(crc >> 24) & 255]
+> +#  define DO_CRC(x) crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
+> +#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
+> +		t1[(crc >> 8) & 255] ^  \
+> +		t2[(crc >> 16) & 255] ^	\
+> +		t3[(crc >> 24) & 255]
+>  # endif
+>  	const u32 *b;
+>  	size_t    rem_len;
+> +	const u32 *t0=tab[0], *t1=tab[1], *t2=tab[2], *t3=tab[3];
+>  
+>  	/* Align it */
+>  	if (unlikely((long)buf & 3 && len)) {
 
