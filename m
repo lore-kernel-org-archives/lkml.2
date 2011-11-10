@@ -1,74 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab1KJSTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 13:19:09 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35236 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754002Ab1KJSTC (ORCPT
+	id S1754741Ab1KJSWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 13:22:42 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:58395 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751676Ab1KJSWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 13:19:02 -0500
-Message-ID: <4EBC1592.2060307@garzik.org>
-Date: Thu, 10 Nov 2011 13:18:58 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Thu, 10 Nov 2011 13:22:36 -0500
+Message-ID: <4EBC1668.5040606@kernel.org>
+Date: Thu, 10 Nov 2011 18:22:32 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: Tree for Oct 11 (ata/pata_of_platform.c)
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au> <4E94A920.40503@xenotime.net> <4E987829.3080104@xenotime.net> <20111110135703.GA23609@elte.hu>
-In-Reply-To: <20111110135703.GA23609@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: oskar.andero@sonyericsson.com
+CC: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, aghayal@codeaurora.org,
+        Courtney Cavin <courtney.cavin@sonyericsson.com>
+Subject: Re: [PATCH] input: add driver support for Sharp gp2ap002a00f proximity
+ sensor
+References: <1320941273-21228-1-git-send-email-oskar.andero@sonyericsson.com>
+In-Reply-To: <1320941273-21228-1-git-send-email-oskar.andero@sonyericsson.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 08:57 AM, Ingo Molnar wrote:
->
-> * Randy Dunlap<rdunlap@xenotime.net>  wrote:
->
->> On 10/11/2011 01:37 PM, Randy Dunlap wrote:
->>> On 10/11/11 02:11, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> The linux-next tree is now available from
->>>> git://github.com/sfrothwell/linux-next.git as a temporary measure while
->>>> the kernel.org servers are unavailable.
->>>>
->>>> It may also turn up on git.kernel.org (depending on the mirroring).  The
->>>> patch set is still absent, however.
->>>>
->>>> Changes since 20111007:
->>>>
->>>> Removed tree: ide (at the maintainer's request)
->>>
->>>
->>> drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
->>
->>
->> [adding Author: Anton]
->>
->> Build error still present in linux-next of 20111014.
->
-> This build failure regression report was ignored twice and then
-> pushed upstream and is still unfixed a month after the initial
-> report. Upstream now fails to build on like 25% of x86 configs.
->
-> What's going on with this bug guys?
+On 11/10/2011 04:07 PM, oskar.andero@sonyericsson.com wrote:
+> From: Courtney Cavin <courtney.cavin@sonyericsson.com>
+ALS sensor in input?  Please see all the previous discussions about
+this.  I'm guessing you are aware of this given you cc'd me though!
 
+Having read driver, this is a proximity switch. Basically it's a button.
+The interface used should reflect this rather than pretending you are
+outputing an ABS value.  Hence this one probably does fit squarely in
+input, but that's for Dmitry to comment on.
 
-Hum, I missed it in my LKML scans, and never got a CC.
+Also, irq fields contain irqs not gpios + the two gpio related pdata
+functions need justification.
 
-Will merge Anton's patch immediately...
+Various small points inline.
 
-	Jeff
+> 
+> Signed-off-by: Courtney Cavin <courtney.cavin@sonyericsson.com>
+> Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
+> ---
+>  drivers/input/misc/Kconfig        |   11 ++
+>  drivers/input/misc/Makefile       |    1 +
+>  drivers/input/misc/gp2ap002a00f.c |  265 +++++++++++++++++++++++++++++++++++++
+>  include/linux/gp2ap002a00f.h      |   13 ++
+>  4 files changed, 290 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/misc/gp2ap002a00f.c
+>  create mode 100644 include/linux/gp2ap002a00f.h
+> 
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 22d875f..dee96a0 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -544,4 +544,15 @@ config INPUT_XEN_KBDDEV_FRONTEND
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called xen-kbdfront.
+>  
+> +config INPUT_GP2A
+> +	tristate "Sharp GP2AP002A00F I2C Proximity/Opto sensor driver"
+> +	depends on I2C
+> +	default n
+> +	help
+> +	  Say Y here if you have a Sharp GP2AP002A00F proximity/als combo-chip
+> +	  hooked to an I2C bus.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called gp2ap002a00f.
+> +
+>  endif
+> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+> index a244fc6..1681993 100644
+> --- a/drivers/input/misc/Makefile
+> +++ b/drivers/input/misc/Makefile
+> @@ -22,6 +22,7 @@ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
+>  obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+>  obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+>  obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
+> +obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
+>  obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
+>  obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
+>  obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+> diff --git a/drivers/input/misc/gp2ap002a00f.c b/drivers/input/misc/gp2ap002a00f.c
+> new file mode 100644
+> index 0000000..b1af83a
+> --- /dev/null
+> +++ b/drivers/input/misc/gp2ap002a00f.c
+> @@ -0,0 +1,265 @@
+> +/*
+> + * Copyright (C) 2009,2010 Sony Ericsson Mobile Communications Inc.
+> + *
+> + * Author: Courtney Cavin <courtney.cavin@sonyericsson.com>
+> + * Prepared for up-stream by: Oskar Andero <oskar.andero@sonyericsson.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2, as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/i2c.h>
+> +#include <linux/irq.h>
+> +#include <linux/slab.h>
+> +#include <linux/input.h>
+> +#include <linux/module.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/gpio.h>
+> +#include <linux/delay.h>
+That looks like a bold location for the header.
+Surely a sub directory?
+> +#include <linux/gp2ap002a00f.h>
+> +
+> +struct gp2a_data {
+> +	struct input_dev *device;
+> +	struct gp2a_platform_data *pdata;
+> +	struct i2c_client *i2c_client;
+> +};
+> +
+> +enum gp2a_addr {
+> +	GP2A_ADDR_PROX	= 0x0,
+> +	GP2A_ADDR_GAIN	= 0x1,
+> +	GP2A_ADDR_HYS	= 0x2,
+> +	GP2A_ADDR_CYCLE	= 0x3,
+> +	GP2A_ADDR_OPMOD	= 0x4,
+> +	GP2A_ADDR_CON	= 0x6
+> +};
+> +
+> +enum gp2a_controls {
+> +	GP2A_CTRL_SSD	= 0x01
+> +};
+> +
+> +#define NUM_TRIES 5
+> +static int gp2a_write_byte(struct gp2a_data *dt, u8 reg, u8 val)
+> +{
+> +	int error;
+> +	int n;
+> +	struct device *dev = &dt->i2c_client->dev;
+> +
+Usual question here is whether you every actually get errors?  If you do
+then
+something fishy is going on.  By all means check for them, but putting this
+repeated try logic into the driver doesn't normally make any sense.  It just
+complicates the driver code to deal with a very rare condition.
+Without that, this becomes a pointless wrapper and so should be replaced
+inline within the code with direct calls to i2c_smbus_write_byte_data.
 
+> +	for (n = 0; n < NUM_TRIES; n++) {
+> +		error = i2c_smbus_write_byte_data(dt->i2c_client, reg, val);
+> +		if (error < 0)
+> +			dev_err(dev, "i2c_smbus write failed, %d\n", error);
+> +		else
+> +			return 0;
+> +		msleep(10);
+> +	}
+> +	return error;
+> +}
+> +
+> +static int gp2a_initialize(struct gp2a_data *dt)
+> +{
+> +	int error;
+> +
+could do this via a const array and a loop. May not be worth bothering
+though..
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_GAIN, 0x08);
+> +	if (error < 0)
+> +		return error;
+> +
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_HYS, 0xc2);
+> +	if (error < 0)
+> +		return error;
+> +
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_CYCLE, 0x04);
+> +	if (error < 0)
+> +		return error;
+> +
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, 0x00);
+> +
+> +	return error;
+> +}
+> +
+> +static int gp2a_report(struct gp2a_data *dt)
+> +{
+> +	int vo = gpio_get_value(dt->pdata->gpio);
+> +
+that's a pretty weird bit of distance reporting.  This thing clearly doesn't
+report an absolute value, so don't claim it does.
+> +	input_report_abs(dt->device, ABS_DISTANCE, vo ? 255 : 0);
+> +	input_sync(dt->device);
+> +
+> +	return 0;
+> +}
+> +
+> +static irqreturn_t gp2a_irq(int irq, void *dev_id)
+> +{
+> +	struct device *dev = dev_id;
+> +	struct gp2a_data *dt = dev_get_drvdata(dev);
+> +
+> +	gp2a_report(dt);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int gp2a_device_open(struct input_dev *dev)
+> +{
+> +	struct gp2a_data *dt = input_get_drvdata(dev);
+> +	int error;
+> +
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, GP2A_CTRL_SSD);
+> +	if (error < 0) {
+> +		dev_err(&dev->dev, "Unable to activate, err %d\n", error);
+> +		return error;
+> +	}
+> +
+irq should be an irq number not a gpio number.
 
+Also, is it worth keeping the irq disabled until here?  What do you
+gain?
+> +	enable_irq(gpio_to_irq(dt->i2c_client->irq));
+> +
+> +	if (dt->pdata->wake)
+> +		enable_irq_wake(gpio_to_irq(dt->i2c_client->irq));
+> +
+> +	gp2a_report(dt);
+> +
+> +	return 0;
+> +}
+> +
+> +static void gp2a_device_close(struct input_dev *dev)
+> +{
+> +	struct gp2a_data *dt = input_get_drvdata(dev);
+> +	int error;
+> +
+> +	if (dt->pdata->wake)
+> +		disable_irq_wake(gpio_to_irq(dt->i2c_client->irq));
+> +
+> +	disable_irq(gpio_to_irq(dt->i2c_client->irq));
+> +	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, 0);
+> +	if (error < 0)
+> +		dev_err(&dev->dev, "Unable to deactivate, err %d\n", error);
+> +}
+> +
+why these definitions?  I guess because you use the driver data
+explicitly.  You shouldn't be doing that.
+> +static int gp2a_probe(struct i2c_client *client,
+> +		      const struct i2c_device_id *id);
+> +static int gp2a_remove(struct i2c_client *client);
+> +
+> +static const struct i2c_device_id gp2a_i2c_id[] = {
+> +	{GP2A_I2C_NAME, 0},
+> +	{}
+> +};
+> +
+> +static struct i2c_driver gp2a_i2c_driver = {
+> +	.driver = {
+> +		.name	= GP2A_I2C_NAME,
+> +		.owner	= THIS_MODULE
+> +	},
+> +	.probe		= gp2a_probe,
+> +	.remove		= __devexit_p(gp2a_remove),
+> +	.id_table	= gp2a_i2c_id
+> +};
+> +
+> +static int gp2a_probe(struct i2c_client *client, const struct i2c_device_id *id)
+> +{
+> +	struct gp2a_platform_data *pdata;
+> +	struct gp2a_data *dt;
+> +	int error;
+> +
+> +	pdata = client->dev.platform_data;
+> +	if (!pdata)
+> +		return -EINVAL;
+> +
+give a use case for this please.   Normally once just assumes that
+board file or similar has already configured this.  Use gpio_request_one
+to wrap up the directly bit as well as do the request.
+> +	if (pdata->gpio_setup) {
+> +		error = pdata->gpio_setup();
+> +		if (error < 0)
+> +			return error;
+> +	}
+> +
+> +	error = gpio_direction_input(pdata->gpio);
+> +	if (error < 0)
+> +		goto err_gpio_shutdown;
+> +
+> +	dt = kzalloc(sizeof(struct gp2a_data), GFP_KERNEL);
+> +	if (!dt) {
+> +		error = -ENOMEM;
+> +		goto err_gpio_shutdown;
+> +	}
+> +
+??????  that should not be explicitly done.
+> +	client->driver = &gp2a_i2c_driver;
+> +	dt->pdata = pdata;
+> +	dt->i2c_client = client;
+> +	i2c_set_clientdata(client, dt);
+> +
+> +	error = gp2a_initialize(dt);
+> +	if (error < 0)
+> +		goto err_free_dt;
+> +
+> +	dt->device = input_allocate_device();
+> +	if (!dt->device) {
+> +		error = -ENOMEM;
+> +		goto err_free_dt;
+> +	}
+> +
+> +	input_set_drvdata(dt->device, dt);
+> +
+> +	dt->device->open = gp2a_device_open;
+> +	dt->device->close = gp2a_device_close;
+> +	dt->device->name = GP2A_I2C_NAME;
+> +	dt->device->id.bustype = BUS_I2C;
+> +	set_bit(EV_ABS, dt->device->evbit);
+> +	set_bit(ABS_DISTANCE, dt->device->absbit);
+> +
+> +	input_set_abs_params(dt->device, ABS_DISTANCE, 0, 255, 0, 0);
+> +
+> +	error = input_register_device(dt->device);
+> +	if (error) {
+> +		dev_err(&dt->device->dev, "device registration failed\n");
+> +		input_free_device(dt->device);
+> +		goto err_free_dt;
+> +	}
+> +
+> +	error = request_threaded_irq(gpio_to_irq(dt->i2c_client->irq), NULL,
+> +			gp2a_irq, IRQF_TRIGGER_RISING |
+> +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> +			GP2A_I2C_NAME, &dt->i2c_client->dev);
+> +	if (error) {
+> +		dev_err(&dt->device->dev, "irq request failed\n");
+> +		goto err_unreg_input;
+> +	}
+> +	disable_irq(gpio_to_irq(dt->i2c_client->irq));
+> +
+> +	return 0;
+> +
+> +err_unreg_input:
+> +	input_unregister_device(dt->device);
+> +err_free_dt:
+> +	kfree(dt);
+> +err_gpio_shutdown:
+> +	if (pdata->gpio_shutdown)
+> +		pdata->gpio_shutdown();
+> +	return error;
+> +}
+> +
+> +static int gp2a_remove(struct i2c_client *client)
+> +{
+> +	struct gp2a_data *dt = i2c_get_clientdata(client);
+> +
+> +	device_init_wakeup(&client->dev, 0);
+> +	if (dt->pdata->gpio_shutdown)
+> +		dt->pdata->gpio_shutdown();
+> +	free_irq(gpio_to_irq(dt->i2c_client->irq), &dt->i2c_client->dev);
+> +	input_unregister_device(dt->device);
+> +	kfree(dt);
+> +
+> +	return 0;
+> +}
+> +
+> +static int __init gp2a_init(void)
+> +{
+> +	return i2c_add_driver(&gp2a_i2c_driver);
+> +}
+> +
+> +static void __exit gp2a_exit(void)
+> +{
+> +	i2c_del_driver(&gp2a_i2c_driver);
+> +}
+> +
+> +module_init(gp2a_init);
+> +module_exit(gp2a_exit);
+> +
+> +MODULE_AUTHOR("Courtney Cavin <courtney.cavin@sonyericsson.com>");
+> +MODULE_DESCRIPTION("Sharp GP2AP002A00F I2C Proximity/Opto sensor driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/gp2ap002a00f.h b/include/linux/gp2ap002a00f.h
+> new file mode 100644
+> index 0000000..74e2610
+> --- /dev/null
+> +++ b/include/linux/gp2ap002a00f.h
+> @@ -0,0 +1,13 @@
+> +#ifndef _GP2AP002A00F_H_
+> +#define _GP2AP002A00F_H_
+> +
+What is this doing in the header?
+> +#define GP2A_I2C_NAME   "gp2ap002a00f"
+> +
+Document this.  I guess that wake is a bool?
+Make it one then.  I'd suggest gpio needs
+a more descriptive name as well and the
+two gpio functions need a clearly stated reason
+for existing.
 
+> +struct gp2a_platform_data {
+> +	int gpio;
+> +	int wake;
+> +	int (*gpio_setup)(void);
+> +	int (*gpio_shutdown)(void);
+> +};
+> +
+> +#endif
 
