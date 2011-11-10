@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab1KJH57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 02:57:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1623 "EHLO mx1.redhat.com"
+	id S1757451Ab1KJICm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:02:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53778 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752570Ab1KJH55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 02:57:57 -0500
-From: Markus Armbruster <armbru@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
+	id S1752570Ab1KJICk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 03:02:40 -0500
+Date: Thu, 10 Nov 2011 09:00:41 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Anca Emanuel <anca.emanuel@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Jim Paris <jim@jtan.com>,
+        Gerd Hoffmann <kraxel@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
+        Avi Kivity <avi@redhat.com>,
+        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
+        qemu-devel Developers <qemu-devel@nongnu.org>,
+        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+        =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<4EBB4A21.20707@codemonkey.ws>
-	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-Date: Thu, 10 Nov 2011 08:57:17 +0100
-In-Reply-To: <alpine.LFD.2.02.1111100829560.1791@tux.localdomain> (Pekka
-	Enberg's message of "Thu, 10 Nov 2011 08:46:20 +0200 (EET)")
-Message-ID: <m3pqh0tnoi.fsf@blackfin.pond.sub.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
+ tools/perf/ and tools/kvm/
+Message-ID: <20111110080040.GB12768@elte.hu>
+References: <20111108125609.GA14272@ghostprotocols.net>
+ <4EB9315A.10806@redhat.com>
+ <20111108143228.GC14272@ghostprotocols.net>
+ <4EB94D08.3010207@redhat.com>
+ <20111109085120.GD11473@elte.hu>
+ <4EBA5881.7080409@redhat.com>
+ <20111109115502.GA18207@ghostprotocols.net>
+ <20111109192509.GA22581@psychosis.jim.sh>
+ <20111109201337.GH18207@ghostprotocols.net>
+ <CAJL_dMv-7Kszo1tT-HzwjeqyifBfQEy5J+pjXrnfS3o0dm8UQQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJL_dMv-7Kszo1tT-HzwjeqyifBfQEy5J+pjXrnfS3o0dm8UQQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pekka Enberg <penberg@kernel.org> writes:
 
-> Hi Anthony,
->
->> On 11/04/2011 03:38 AM, Pekka Enberg wrote:
->>> Hi Linus,
->>>
->>> Please consider pulling the latest KVM tool tree from:
->>>
->>> git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git
->>> kvmtool/for-linus
->>>
->>
->> [snip]
->>
->>> tools/kvm/virtio/net.c | 423 ++++++++
->>> tools/kvm/virtio/pci.c | 319 ++++++
->>> tools/kvm/virtio/rng.c | 185 ++++
->>> 186 files changed, 19071 insertions(+), 179 deletions(-)
->
-> On Wed, 9 Nov 2011, Anthony Liguori wrote:
->> So let's assume for a moment that a tool like this should live in
->> the kernel. What's disturbing about a PULL request like this is the
->> lack of reviewability of it and the lack of any real review from
->> people that understand what's going on in this code base.
->>
->> There are no Acked-by's by people that really understand what the
->> code is doing or that have domain expertise in filesystems and
->> networking.
->>
->> There are major functionality short comings in this code base, data
->> corruptors, and CVEs.  I'm not saying that the kvm-tool developers
->> are bad developers, but the code is not at the appropriate quality
->> level for the kernel.  It just looks pretty on the surface to people
->> that are used to the kernel coding style.
->>
->> To highlight a few of the issues:
-[...]
->> 2) The qcow2 code is a filesystem implemented in userspace.  Image
->> formats are file systems.  It really should be reviewed by the
->> filesystem maintainers. There is absolutely no attempt made to
->> synchronize the metadata during write operations which means that
->> you do not have crash consistency of the meta data.
->>
->> If you experience a power failure or kvm-tool crashs, your image
->> will get corrupted.  I highly doubt a file system would ever be
->> merged into Linux that was this naive about data integrity.
->
-> The QCOW2 is lagging behind because we lost the main developer. It's
-> forced as read-only for the issues you mention. If you think it's a
-> merge blocker, we can drop it completely from the tree until the
-> issues are sorted out.
->
-> I personally don't see the issue of having it as a read-only filesystem.
->
->> 3) The block probing code replicates a well known CVE from three
->> years ago[1]. Using kvm-tool, a malicious guest could write the
->> qcow2 signature to the zero sector and use that to attack the host.
->
-> We don't support QCOW2 snapshots so I don't see how the "arbitrary
-> file" thing can happen.
+* Anca Emanuel <anca.emanuel@gmail.com> wrote:
 
-You don't need snapshots for the hole.
+> "I'd even argue that that C library is obviously something the 
+> kernelshould offer as well - so klibc is the way to go and would 
+> help usfurther streamline this and keep Linux quality high."
+> 
+> I think there is code to share. Why not ?
 
-Start with a clean read/write raw image.  Probing declares it raw.
-Guest writes QCOW signature to it, with a backing file of its choice.
+The biggest downside of libc integration into the kernel would be 
+that the libc ABI is *vastly* larger than the kernel ABI, and i'm not 
+sure the kernel community is good enough to handle that. It's roughly 
+3000 ABI components compared to the 300 ABI functions the kernel has 
+today - so at least an order of magnitude larger...
 
-Restart with the same image.  Probing declares it QCOW2.  Guest can read
-the backing file.  Oops.
+The biggest upside of libc integration into the kernel would be that 
+we could push Linux kernel improvements into the C library - and thus 
+to apps - immediately, along a much larger ABI surface. The 
+'specialization' resolution of the libc ABI is an order of magnitude 
+larger than that of the kernel's, giving many more opportunities for 
+good, workload specific optimizations and unique solutions.
 
-Probing images works when all image types can be probed reliably, and
-the guest can't mess with the probing.  Requires distinctive signatures
-the guest can't change.  Raw images spoil it.
+Today the latency of getting a kernel improvement to applications via 
+a change in the C library is above a year, so most kernel people 
+don't actually try to improve the C library but try to find 
+improvements on the kernel level which gets to a distro within a 
+couple of months.
 
-> It's pretty sad though that we're replicating a known security issue :-/
+If the kernel offers a /proc/libc.so.6 library then the kernel will 
+always be 'in sync' with the library (there's no library to install 
+on-disk - it would be offered by the kernel) and we could use 
+integration techniques like the vDSO uses today.
 
-Maybe I'm wrong, but I got the impression you've been replicating quite
-a few of QEMU's early mistakes.
+Thanks,
 
-I hope you can create something better than QEMU, I really, really do.
-But to successfully build a second system, you need to learn the right
-lessons from the first system.  Are you sure you do?
-
->> [1] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-2004
-[...]
+	Ingo
