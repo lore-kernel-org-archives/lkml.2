@@ -1,88 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab1KKAG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 19:06:56 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52582 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab1KKAGy (ORCPT
+	id S1757722Ab1KKAIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 19:08:43 -0500
+Received: from mail-bw0-f74.google.com ([209.85.214.74]:47079 "EHLO
+	mail-bw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751624Ab1KKAIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 19:06:54 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 11 Nov 2011 09:05:46 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <jweiner@redhat.com>
-Cc: Konstantin Khlebnikov <khlebnikov@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Gene Heskett <gene.heskett@gmail.com>
-Subject: Re: [rfc 2/3] mm: vmscan: treat inactive cycling as neutral
-Message-Id: <20111111090546.6560077e.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111110160628.GM3153@redhat.com>
-References: <20110808110658.31053.55013.stgit@localhost6>
-	<CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
-	<4E3FD403.6000400@parallels.com>
-	<20111102163056.GG19965@redhat.com>
-	<20111102163213.GI19965@redhat.com>
-	<20111107113417.1b7581a5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111110160628.GM3153@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 19:08:41 -0500
+X-Greylist: delayed 3465 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 19:08:41 EST
+From: David Decotigny <david.decotigny@google.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+        David Decotigny <david.decotigny@google.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Joe Perches <joe@perches.com>,
+        Szymon Janc <szymon@janc.net.pl>
+Subject: [PATCH FIX net v1] forcedeth: fix ifconfig stats on hardware without extended stats support
+Date: Thu, 10 Nov 2011 15:10:40 -0800
+Message-Id: <202cfa353085f52352650ecc169cbee66a034301.1320966597.git.david.decotigny@google.com>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <cover.1320966597.git.david.decotigny@google.com>
+References: <cover.1320966597.git.david.decotigny@google.com>
+Organization: Google, Inc.
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Nov 2011 17:06:28 +0100
-Johannes Weiner <jweiner@redhat.com> wrote:
+This change makes sure that tx_packets/rx_bytes ifconfig counters are
+updated even on NICs that don't provide hardware support for these
+stats. In that case, they are updated in software.
 
-> On Mon, Nov 07, 2011 at 11:34:17AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 2 Nov 2011 17:32:13 +0100
-> > Johannes Weiner <jweiner@redhat.com> wrote:
-> > 
-> > > Each page that is scanned but put back to the inactive list is counted
-> > > as a successful reclaim, which tips the balance between file and anon
-> > > lists more towards the cycling list.
-> > > 
-> > > This does - in my opinion - not make too much sense, but at the same
-> > > time it was not much of a problem, as the conditions that lead to an
-> > > inactive list cycle were mostly temporary - locked page, concurrent
-> > > page table changes, backing device congested - or at least limited to
-> > > a single reclaimer that was not allowed to unmap or meddle with IO.
-> > > More important than being moderately rare, those conditions should
-> > > apply to both anon and mapped file pages equally and balance out in
-> > > the end.
-> > > 
-> > > Recently, we started cycling file pages in particular on the inactive
-> > > list much more aggressively, for used-once detection of mapped pages,
-> > > and when avoiding writeback from direct reclaim.
-> > > 
-> > > Those rotated pages do not exactly speak for the reclaimability of the
-> > > list they sit on and we risk putting immense pressure on file list for
-> > > no good reason.
-> > > 
-> > > Instead, count each page not reclaimed and put back to any list,
-> > > active or inactive, as rotated, so they are neutral with respect to
-> > > the scan/rotate ratio of the list class, as they should be.
-> > > 
-> > > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > 
-> > I think this makes sense.
-> > 
-> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > I wonder it may be better to have victim list for written-backed pages..
-> 
-> Do you mean an extra LRU list that holds dirty pages?
+Related commit: "forcedeth: Improve stats counters" (0bdfea8ba8)
 
-an extra LRU for pages PG_reclaim ? 
 
-THanks,
--Kame
+
+Signed-off-by: David Decotigny <david.decotigny@google.com>
+---
+ drivers/net/ethernet/nvidia/forcedeth.c |   34 ++++++++++++++++++++++++++----
+ 1 files changed, 29 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
+index 1dca570..c0afe8e 100644
+--- a/drivers/net/ethernet/nvidia/forcedeth.c
++++ b/drivers/net/ethernet/nvidia/forcedeth.c
+@@ -90,6 +90,7 @@
+ #define DEV_HAS_STATISTICS_V2      0x0000400  /* device supports hw statistics version 2 */
+ #define DEV_HAS_STATISTICS_V3      0x0000800  /* device supports hw statistics version 3 */
+ #define DEV_HAS_STATISTICS_V12     0x0000600  /* device supports hw statistics version 1 and 2 */
++#define DEV_HAS_STATISTICS_V23     0x0000c00  /* device supports hw statistics version 2 and 3 */
+ #define DEV_HAS_STATISTICS_V123    0x0000e00  /* device supports hw statistics version 1, 2, and 3 */
+ #define DEV_HAS_TEST_EXTENDED      0x0001000  /* device supports extended diagnostic test */
+ #define DEV_HAS_MGMT_UNIT          0x0002000  /* device supports management unit */
+@@ -1703,12 +1704,19 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
+ 	struct fe_priv *np = netdev_priv(dev);
+ 
+ 	/* If the nic supports hw counters then retrieve latest values */
+-	if (np->driver_data & (DEV_HAS_STATISTICS_V1|DEV_HAS_STATISTICS_V2|DEV_HAS_STATISTICS_V3)) {
++	if (np->driver_data & DEV_HAS_STATISTICS_V123) {
++		/* query hardware */
+ 		nv_get_hw_stats(dev);
+ 
+ 		/* copy to net_device stats */
+-		dev->stats.tx_packets = np->estats.tx_packets;
+-		dev->stats.rx_bytes = np->estats.rx_bytes;
++
++		if (np->driver_data & DEV_HAS_STATISTICS_V23) {
++			/* When HW stats are available for following
++			 * stats, we use them. Otherwise they are
++			 * updated by software. */
++			dev->stats.tx_packets = np->estats.tx_packets;
++			dev->stats.rx_bytes = np->estats.rx_bytes;
++		}
+ 		dev->stats.tx_bytes = np->estats.tx_bytes;
+ 		dev->stats.tx_fifo_errors = np->estats.tx_fifo_errors;
+ 		dev->stats.tx_carrier_errors = np->estats.tx_carrier_errors;
+@@ -2378,8 +2386,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		if (np->desc_ver == DESC_VER_1) {
+ 			if (flags & NV_TX_LASTPACKET) {
+ 				if (flags & NV_TX_ERROR) {
+-					if ((flags & NV_TX_RETRYERROR) && !(flags & NV_TX_RETRYCOUNT_MASK))
++					if ((flags & NV_TX_RETRYERROR)
++					    && !(flags & NV_TX_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
++				} else if (unlikely(!(np->driver_data
++						      & DEV_HAS_STATISTICS_V23))) {
++					dev->stats.tx_packets++;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2388,8 +2400,12 @@ static int nv_tx_done(struct net_device *dev, int limit)
+ 		} else {
+ 			if (flags & NV_TX2_LASTPACKET) {
+ 				if (flags & NV_TX2_ERROR) {
+-					if ((flags & NV_TX2_RETRYERROR) && !(flags & NV_TX2_RETRYCOUNT_MASK))
++					if ((flags & NV_TX2_RETRYERROR)
++					    && !(flags & NV_TX2_RETRYCOUNT_MASK))
+ 						nv_legacybackoff_reseed(dev);
++				} else if (unlikely(!(np->driver_data
++						      & DEV_HAS_STATISTICS_V23))) {
++					dev->stats.tx_packets++;
+ 				}
+ 				dev_kfree_skb_any(np->get_tx_ctx->skb);
+ 				np->get_tx_ctx->skb = NULL;
+@@ -2429,6 +2445,9 @@ static int nv_tx_done_optimized(struct net_device *dev, int limit)
+ 					else
+ 						nv_legacybackoff_reseed(dev);
+ 				}
++			} else if (unlikely(!(np->driver_data
++					      & DEV_HAS_STATISTICS_V23))) {
++				dev->stats.tx_packets++;
+ 			}
+ 
+ 			dev_kfree_skb_any(np->get_tx_ctx->skb);
+@@ -2678,6 +2697,8 @@ static int nv_rx_process(struct net_device *dev, int limit)
+ 		skb->protocol = eth_type_trans(skb, dev);
+ 		napi_gro_receive(&np->napi, skb);
+ 		dev->stats.rx_packets++;
++		if (unlikely(!(np->driver_data & DEV_HAS_STATISTICS_V23)))
++			dev->stats.rx_bytes += len;
+ next_pkt:
+ 		if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
+ 			np->get_rx.orig = np->first_rx.orig;
+@@ -2761,6 +2782,9 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
+ 			}
+ 			napi_gro_receive(&np->napi, skb);
+ 			dev->stats.rx_packets++;
++			if (unlikely(!(np->driver_data
++				       & DEV_HAS_STATISTICS_V23)))
++				dev->stats.rx_bytes += len;
+ 		} else {
+ 			dev_kfree_skb(skb);
+ 		}
+-- 
+1.7.3.1
 
