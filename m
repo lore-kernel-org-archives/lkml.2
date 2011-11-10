@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab1KJUKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 15:10:14 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:57870 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753190Ab1KJUKI (ORCPT
+	id S1756556Ab1KJURb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 15:17:31 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:43180 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752038Ab1KJUR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 15:10:08 -0500
-Date: Thu, 10 Nov 2011 22:10:02 +0200
-From: Felipe Balbi <balbi@ti.com>
-To: Nikolaus Voss <n.voss@weinmann.de>
-Cc: linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
-        nicolas.ferre@atmel.com, rmallon@gmail.com, balbi@ti.com,
-        linux@arm.linux.org.uk
-Subject: Re: [PATCH v5 3/4] drivers/i2c/busses/i2c-at91.c: add new driver
-Message-ID: <20111110201000.GB17468@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <cover.1320934086.git.n.voss@weinmann.de>
- <f29b091aaf5165d602f7ddd3980de748c1c27688.1320934707.git.n.voss@weinmann.de>
+	Thu, 10 Nov 2011 15:17:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAKIwvE4Y9geI/2dsb2JhbAAMOIR9oxGFFQEBAQEDI1UBEAsYAgIFFgsCAgkDAgECAUUGDQEHAQGtcZIGgTCHOIEWBIgPniw
+X-IronPort-AV: E=Sophos;i="4.69,490,1315195200"; 
+   d="scan'208";a="147440627"
+Message-ID: <4EBC3156.2050409@teksavvy.com>
+Date: Thu, 10 Nov 2011 15:17:26 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7qSK/uQB79J36Y4o"
-Content-Disposition: inline
-In-Reply-To: <f29b091aaf5165d602f7ddd3980de748c1c27688.1320934707.git.n.voss@weinmann.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Grant Grundler <grundler@google.com>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Michal Marek <mmarek@suse.cz>, Freddy Xin <freddy@asix.com.tw>,
+        "ASIX Allan Email [office]" <allan@asix.com.tw>
+Subject: Re: [PATCH v2] drivers/net/usb/asix: resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com> <20111026.194045.2019668159403582571.davem@davemloft.net> <4EA8B283.3010105@teksavvy.com> <20111026.221719.2216112919297458522.davem@davemloft.net> <4EB19BBE.5050602@teksavvy.com> <4EBAB8F5.1010101@teksavvy.com> <4EBBD936.40705@teksavvy.com> <CANEJEGuS1w_rPsjOfY8TqP=TewjRLSdEeR+OmaGB3G4LQZg82Q@mail.gmail.com>
+In-Reply-To: <CANEJEGuS1w_rPsjOfY8TqP=TewjRLSdEeR+OmaGB3G4LQZg82Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11-11-10 11:54 AM, Grant Grundler wrote:
+> ...  and I was certain on their own, ASIX
+> wouldn't get that upstream in one shot. No one knows them. No one
+> trusts them. Asix never mentioned that they had already hired you to
+> do it (and I am pretty sure you could have).
 
---7qSK/uQB79J36Y4o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just to clarify, ASIX did not contract me for any of this.
+Rather, another of my clients requires working ASIX USB support,
+and approved my working on that at their expense.
 
-On Tue, Nov 08, 2011 at 11:49:46AM +0100, Nikolaus Voss wrote:
-> This driver has the following properties compared to the old driver:
-> 1. Support for multiple interfaces.
-> 2. Interrupt driven I/O as opposed to polling/busy waiting.
-> 3. Support for _one_ repeated start (Sr) condition, which is enough
->    for most real-world applications including all SMBus transfer types.
->    (The hardware does not support issuing arbitrary Sr conditions on the
->     bus.)
->=20
-> Tested on Atmel G45 with BQ20Z80 battery SMBus client.
->=20
-> Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
+I've got working ASIX support now, just not in the mainline kernel.
+The code is GPL, so we could stuff it in anyway,
+but I think it would be better to do so with the
+full cooperation of the nice folks at ASIX.
 
-FWIW:
+But for now, they seem happy to prefer feeding patches
+only as requested, currently through Grant, rather than
+trying to get the in-kernel driver brought fully up to date.
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---7qSK/uQB79J36Y4o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJOvC+YAAoJEIaOsuA1yqREg3sQAKyTNZkFNeLjnflHsnBWeGcr
-H1ZLLMnDLQUPCmzFSrywge68Ox3b7cNOPRKzo22/f0ubDNEYohg7ji+35ejJTYQl
-bTW/hS6UxUyrMYHlPvIBS+Gqlr7uHwpe1z5CKGf05dH7A4rdL/Dk2PF3Hqmrt50j
-XYAUdfRyYPUgcfrZo/AkDZISIUIrR+qaOrzQo7HdQ0EVMxmD4ThWckTASrYFYDa0
-qgxZvoxZwxtb9TDFpF6XZg33hd1FPeadnRCEgyGRLWtoMpQc0633xrzyLALwBo1q
-oYl18m9Dj+EiGS3sv1EZlNCPqjmsOCxXDZt+lYgcscw0zZmatpgK/Xh36yzsycpq
-uM59L7drfhZzsnFHHcShFr95eE3wfYAAcdnKvTvRFUjH65D5dDsxL8NlD8O1cfn+
-uwLwDfZlLonX//O94kFFBAfqm+HqGrXGs+Fk0Yx+ERuqT4k7oS/3QKL+jqOYZ1ZK
-1SviZRBpsC4ra6xsTqTFqI0gtj7gErsk65UqQJfc0y378kSm1aODGnsVa9FmBr8m
-qE3GnPXsHQ01t3OOmlr6ei5lrrptBI79Soas2EohBZYs2W9LmkPY7/9oWNdJwPXr
-iEFBhizpcmAxVpMMdQ2JTehON4M920jO6zIIRy9E0xu2KQDiL8qYIhXdV+2gI6IV
-mCbTS4raAEZwuZFSbJ/T
-=HaU4
------END PGP SIGNATURE-----
-
---7qSK/uQB79J36Y4o--
+Cheers
