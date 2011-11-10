@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935362Ab1KJPbf (ORCPT <rfc822;w@1wt.eu>);
+	id S1757657Ab1KJPcG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:32:06 -0500
+Received: from smtp161.iad.emailsrvr.com ([207.97.245.161]:34521 "EHLO
+	smtp161.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935339Ab1KJPbf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Nov 2011 10:31:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934282Ab1KJPbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:31:33 -0500
-Date: Thu, 10 Nov 2011 16:29:44 +0100
-From: Johannes Weiner <jweiner@redhat.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Konstantin Khlebnikov <khlebnikov@parallels.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-        Gene Heskett <gene.heskett@gmail.com>
-Subject: Re: [rfc 1/3] mm: vmscan: never swap under low memory pressure
-Message-ID: <20111110152944.GL3153@redhat.com>
-References: <20110808110658.31053.55013.stgit@localhost6>
- <CAOJsxLF909NRC2r6RL+hm1ARve+3mA6UM_CY9epJaauyqJTG8w@mail.gmail.com>
- <4E3FD403.6000400@parallels.com>
- <20111102163056.GG19965@redhat.com>
- <20111102163141.GH19965@redhat.com>
- <20111107112941.0dfa07cb.kamezawa.hiroyu@jp.fujitsu.com>
+X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 10:31:34 EST
+Message-ID: <4EBBEC59.3020502@xiplink.com>
+Date: Thu, 10 Nov 2011 10:23:05 -0500
+From: Marc Branchaud <marcnarc@xiplink.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111107112941.0dfa07cb.kamezawa.hiroyu@jp.fujitsu.com>
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jochen Striepe <jochen@tolot.escape.de>,
+        Shawn Pearce <spearce@spearce.org>, Junio C Hamano <gitster@pobox.com>,
+        git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+References: <CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>  <7vwrbjlj5r.fsf@alter.siamese.dyndns.org>  <CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>  <7vk47jld5s.fsf@alter.siamese.dyndns.org>  <CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>  <CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>  <CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>  <CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>  <CAJo=hJsXvSyB65KBp8sfciT=h5uZSqSUdxkpWtZJRtr4hXAh5A@mail.gmail.com>  <CA+55aFyXg32mko8TOGCfGHpr3jHBEgcKiK7HdVwq0Wez0fAs9A@mail.gmail.com>  <20111103032205.GA25888@pompeji.miese-zwerge.org>  <CA+55aFyG4VuiRN3kcyDVF4sw7b89m-2bOBeQLOGWTcd9o3akzQ@mail.gmail.com> <1320933118.17392.23.camel@i7.infradead.org>
+In-Reply-To: <1320933118.17392.23.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 11:29:41AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 2 Nov 2011 17:31:41 +0100
-> Johannes Weiner <jweiner@redhat.com> wrote:
+On 11-11-10 08:51 AM, David Woodhouse wrote:
+> On Wed, 2011-11-02 at 21:13 -0700, Linus Torvalds wrote:
+>> No, my main objection to saving the data is that it's ugly and it's
+>> redundant. Sure, in practice you can check the signatures later fine
+>> (with the rare exceptions you mention), but even when you can do it,
+>> what's the big upside? 
 > 
-> > We want to prevent floods of used-once file cache pushing us to swap
-> > out anonymous pages.  Never swap under a certain priority level.  The
-> > availability of used-once cache pages should prevent us from reaching
-> > that threshold.
-> > 
-> > This is needed because subsequent patches will revert some of the
-> > mechanisms that tried to prefer file over anon, and this should not
-> > result in more eager swapping again.
-> > 
-> > It might also be better to keep the aging machinery going and just not
-> > swap, rather than staying away from anonymous pages in the first place
-> > and having less useful age information at the time of swapout.
-> > 
-> > Signed-off-by: Johannes Weiner <jweiner@redhat.com>
-> > ---
-> >  mm/vmscan.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index a90c603..39d3da3 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -831,6 +831,8 @@ static unsigned long shrink_page_list(struct list_head *page_list,
-> >  		 * Try to allocate it some swap space here.
-> >  		 */
-> >  		if (PageAnon(page) && !PageSwapCache(page)) {
-> > +			if (priority >= DEF_PRIORITY - 2)
-> > +				goto keep_locked;
-> >  			if (!(sc->gfp_mask & __GFP_IO))
-> >  				goto keep_locked;
-> >  			if (!add_to_swap(page))
+> Another objection (although it may not be insurmountable) is that it's
+> not necessarily *entirely* clear what's being signed.
+
+I think this is a non-issue as far as the implementation is concerned.  That
+is, the question exists regardless of what actual bits get (hashed and)
+encrypted by a private key.  Furthermore, the answer will depend on who's
+using the signatures and in what context, and it's not appropriate for the
+git tool to make assumptions about those things.
+
+> In the simple case where I clone your tree, make a few commits with my
+> Signed-off-by:, sign a tag and then ask you to pull, that's easy enough.
+> I'm vouching for what I committed, and not for everything that was in
+> your tree beforehand.
 > 
-> Hm, how about not scanning LRU_ANON rather than checking here ?
-> Add some bias to get_scan_count() or some..
-> If you think to need rotation of LRU, only kswapd should do that..
+> But what if I'm working on top of someone else's published git tree?
+> Does a signed tag at the top of *my* work imply that I'm vouching for
+> all of theirs too?
 
-Absolutely, it would require more tuning.  This patch was really a
-'hey, how about we do something like this?  anyone tried that before?'
+<philosophy>
 
-I keep those things in mind if I pursue this further, thanks.
+It all depends on what you mean by "vouch for".
+
+You obviously thought that the 3rd-party repo was good for something,
+otherwise why did you base your work on it in the first place?  So maybe
+you're just vouching for the 3rd-party repo being good enough for what you're
+trying to do.
+
+Or, maybe you've done a thorough analysis of the 3rd-party code and are ready
+to certify it as completely memory-leak-free or something.
+
+Or or, maybe you're only making a statement about the commits that you've
+authored yourself.  (You probably want to individually sign each of those
+commits in this case.)
+
+These sorts of issues have been debated on PKI mailing lists ad nauseum.  I
+think the best approach is that if you want your signature to have a
+particular meaning, then put that into some text that's part of what's being
+signed.  Let other humans read that text and make their own decisions.
+
+</philosophy>
+
+And whatever the case, the software that makes and validates the signatures
+shouldn't make any assertions about how to interpret good or bad signatures.
+ (Yes, other software could interpret meanings according to some criteria,
+and that software could exist alongside or be incorporated into the basic
+digital signature software, but the interpretation software is doing a
+different job.)
+
+		M.
