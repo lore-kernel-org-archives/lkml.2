@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab1KJU2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 15:28:45 -0500
-Received: from slb-smtpout-01.boeing.com ([130.76.64.48]:65454 "EHLO
-	slb-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020Ab1KJU2m convert rfc822-to-8bit (ORCPT
+	id S1753492Ab1KJU3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 15:29:24 -0500
+Received: from mail.windriver.com ([147.11.1.11]:33619 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752226Ab1KJU3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 15:28:42 -0500
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: Kumar Gala <galak@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>, Timur Tabi <B04825@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Date: Thu, 10 Nov 2011 14:27:35 -0600
-Subject: Re: [RFC PATCH 08/17] powerpc/e500: Remove conditional "lwsync"
- substitution
-Thread-Topic: [RFC PATCH 08/17] powerpc/e500: Remove conditional "lwsync"
- substitution
-Thread-Index: Acyf5y8OKfpuZ0kNR/exugY2Lh991g==
-Message-ID: <4567A1A9-51D2-4D21-9080-BD3D78901C1D@boeing.com>
-References: <4E42AB6F.1050900@freescale.com>
- <1320883635-17194-9-git-send-email-Kyle.D.Moffett@boeing.com>
- <3937191C-A735-4668-8E80-9FB4B35E2F63@kernel.crashing.org>
- <20111110163100.GA11983@schlenkerla.am.freescale.net>
- <AC287A9B-0C8B-494E-95CD-A33014AECE22@kernel.crashing.org>
- <20111110170334.GF11983@schlenkerla.am.freescale.net>
-In-Reply-To: <20111110170334.GF11983@schlenkerla.am.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Nov 2011 15:29:20 -0500
+Message-ID: <4EBC340D.10806@windriver.com>
+Date: Thu, 10 Nov 2011 15:29:01 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: "George G. Davis" <gdavis@mvista.com>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <torvalds@linux-foundation.org>, <stable@kernel.org>,
+        <jason.wessel@windriver.com>, Andi Kleen <andi@firstfloor.org>,
+        <lwn@lwn.net>
+Subject: Re: Announcement: Plans for v2.6.34-longterm
+References: <20101203210719.GB21223@windriver.com> <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com> <4EB9B731.9040804@windriver.com> <20111108235256.GB9866@kroah.com> <20111109032036.GF1354@windriver.com> <20111110195411.GA11357@kroah.com>
+In-Reply-To: <20111110195411.GA11357@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 10, 2011, at 12:03, Scott Wood wrote:
-> On Thu, Nov 10, 2011 at 10:42:25AM -0600, Kumar Gala wrote:
->> 
->> On Nov 10, 2011, at 10:31 AM, Scott Wood wrote:
->> 
->>> On Thu, Nov 10, 2011 at 07:40:04AM -0600, Kumar Gala wrote:
->>>> Nak, we can run an e500mc in a mode that is compatible with e500v1/v2.
->>>> I see no reason to change the support we have there.
->>> 
->>> What "mode" do you mean?  DCBZ32?  We don't support using that currently,
->>> and I'd imagine the performance implication would be such that you'd
->>> never want to do it unless it's the only way to make some piece of legacy
->>> software work.
->> 
->> Correct, DCBZ32, we've had customers that go down this path.
+On 11-11-10 02:54 PM, Greg KH wrote:
+> On Tue, Nov 08, 2011 at 10:20:37PM -0500, Paul Gortmaker wrote:
+>> [Re: Announcement: Plans for v2.6.34-longterm] On 08/11/2011 (Tue 15:52) Greg KH wrote:
+>>
+>> [...]
+>>
+>>> Also, I would like to populate the linux-stable.git tree with the
+>>> missing .34-longterm releases that you have already done, care to
+>>> provide a git tree that I can pull from for those now?
+>>
+>> Hi Greg,
+>>
+>> The below pull rq should get your repo caught up on the .34
+>> content for my tags 8 --> 10.  You should be able to use the
+>> "git verify-tag v2.6.34.10" on this older content without issue
+>> as a double check on things.
 > 
-> For running legacy software, or for multiplatform Linux kernels?
+> $ git verify-tag v2.6.34.10
+> gpg: Signature made Sun 26 Jun 2011 09:47:42 AM PDT using DSA key ID 0D0A18AD
+> gpg: Good signature from "Paul Gortmaker (work) <paul.gortmaker@windriver.com>"
+> gpg: Note: This key has expired!
+> Primary key fingerprint: 2A15 067C 2C4D F8FD A89E  1882 DBE2 2294 0D0A 18AD
 > 
-> And if you're willing to toss performance away for this goal, why do you
-> need lwsync? :-)
+> So I know that this was signed with an exprired key that is only
+> self-signed, hm, looks like that matches up with the previous releases
+> form you :)
 > 
-> DCBZ32 is not a "mode that is compatible with v1/v2", BTW.  It only
-> affects cache block size (for dcbz/dcba only), not SPE versus FP, not
-> changes in power management, not changes in machine check handling, etc.
+> thanks, now pushed out.
 > 
-> Using DCBZ32 for the kernel would also complicate switching the kernel to
-> dcbzl, to support enabling DCBZ32 for certain userspace apps (a more
-> likely use case) without making it systemwide.
+> Hopefully you have a new key, that is in the kernel.org ring of trust,
+> that you will be using to sign your new releases?
 
-So, as far as I can tell the kernel doesn't even try to touch DCBZ32.
+Yes, of course.  That is why the old one was recently expired.
 
-Even if it did, if you are building a new kernel that includes this patch,
-surely you can actually build a proper e500mc kernel instead of trying to
-build a new kernel to run on hardware it wasn't designed to run on, right?
+P.
 
-I think the bigger issue is the fact that building a PPC_BOOK3E_64 kernel
-with both e5500 and PowerPC A2 support turned on will not actually run on
-both.  Before my v1-patch-series, machine-check handling is messed up for
-PowerPC A2, and afterwards cacheline sizes are messed up for e5500.
-
-Does this mean that PPC_BOOK3E_64 needs to be split into two separate
-Book 3-III families the same way that 32-bit has been split?  Is there
-another way around it?
-
-Cheers,
-Kyle Moffett
+> 
+> thanks,
+> 
+> greg k-h
