@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab1KJHmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 02:42:31 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57188 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab1KJHma (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 02:42:30 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4EBB8058.6090500@jp.fujitsu.com>
-Date: Thu, 10 Nov 2011 16:42:16 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	id S933566Ab1KJHoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 02:44:12 -0500
+Received: from a.mx.secunet.com ([195.81.216.161]:48484 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757403Ab1KJHoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 02:44:10 -0500
+Date: Thu, 10 Nov 2011 08:44:08 +0100
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        Will Drewry <wad@chromium.org>, Elly Jones <ellyjones@chromium.org>,
+        Milan Broz <mbroz@redhat.com>, Olof Johansson <olofj@chromium.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dm: verity target
+Message-ID: <20111110074408.GE10138@secunet.com>
+References: <1320902290-19050-1-git-send-email-msb@chromium.org>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai.lu@oracle.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: [PATCH 2/2] pciehp: wait 100 ms after Link Training check
-References: <4EB88238.4050409@oracle.com> <4EB8F434.6090003@jp.fujitsu.com> <4EB94A51.6070809@oracle.com> <4EB9A50D.1040302@oracle.com> <4EBB7F9B.8050703@jp.fujitsu.com>
-In-Reply-To: <4EBB7F9B.8050703@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320902290-19050-1-git-send-email-msb@chromium.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 Nov 2011 07:44:08.0509 (UTC) FILETIME=[8781BED0:01CC9F7C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the port supports Link speeds greater than 5.0 GT/s, we must wait
-for 100 ms after Link training completes before sending configuration
-request.
+On Wed, Nov 09, 2011 at 09:18:10PM -0800, Mandeep Singh Baines wrote:
+>
+> + * TODO(wad): All hash storage memory is pre-allocated and freed once an
+> + * entire branch has been verified.
+> + */
+> +struct dm_bht {
+> +	/* Configured values */
+> +	int depth;  /* Depth of the tree including the root */
+> +	unsigned int block_count;  /* Number of blocks hashed */
+> +	unsigned int block_size;  /* Size of a hash block */
+> +	char hash_alg[CRYPTO_MAX_ALG_NAME];
+> +	unsigned char salt[DM_BHT_SALT_SIZE];
+> +
+> +	/* Computed values */
+> +	unsigned int node_count;  /* Data size (in hashes) for each entry */
+> +	unsigned int node_count_shift;  /* first bit set - 1 */
+> +	/* There is one per CPU so that verified can be simultaneous. */
+> +	struct hash_desc hash_desc[NR_CPUS];  /* Container for the hash alg */
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
----
- drivers/pci/hotplug/pciehp_hpc.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+Please don't add a new user for the old hash interface. If the hashes can
+be done asynchronous you can use ahash, if not use shash. Both interfaces
+are reentrant, that's probaply what you want to have here. You don't
+need to have this in a per cpu manner.
 
-Index: linux-3.1/drivers/pci/hotplug/pciehp_hpc.c
-===================================================================
---- linux-3.1.orig/drivers/pci/hotplug/pciehp_hpc.c
-+++ linux-3.1/drivers/pci/hotplug/pciehp_hpc.c
-@@ -302,6 +302,14 @@ int pciehp_check_link_status(struct cont
- 		return retval;
- 	}
- 
-+	/*
-+	 * If the port supports Link speeds greater than 5.0 GT/s, we
-+	 * must wait for 100 ms after Link training completes before
-+	 * sending configuration request.
-+	 */
-+	if (ctrl->pcie->port->subordinate->max_bus_speed > PCIE_SPEED_5_0GT)
-+		msleep(100);
-+
- 	pcie_update_link_speed(ctrl->pcie->port->subordinate, lnk_status);
- 
- 	return retval;
