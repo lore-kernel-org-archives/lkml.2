@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab1KJU3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 15:29:24 -0500
-Received: from mail.windriver.com ([147.11.1.11]:33619 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab1KJU3U (ORCPT
+	id S1753897Ab1KJUeg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 15:34:36 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45016 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752616Ab1KJUee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 15:29:20 -0500
-Message-ID: <4EBC340D.10806@windriver.com>
-Date: Thu, 10 Nov 2011 15:29:01 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Thu, 10 Nov 2011 15:34:34 -0500
+Message-ID: <4EBC3556.5000000@garzik.org>
+Date: Thu, 10 Nov 2011 15:34:30 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: "George G. Davis" <gdavis@mvista.com>, <linux-kernel@vger.kernel.org>,
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        <torvalds@linux-foundation.org>, <stable@kernel.org>,
-        <jason.wessel@windriver.com>, Andi Kleen <andi@firstfloor.org>,
-        <lwn@lwn.net>
-Subject: Re: Announcement: Plans for v2.6.34-longterm
-References: <20101203210719.GB21223@windriver.com> <ADA45A9A-E9A4-4B4C-80FF-711340F931BB@mvista.com> <4EB9B731.9040804@windriver.com> <20111108235256.GB9866@kroah.com> <20111109032036.GF1354@windriver.com> <20111110195411.GA11357@kroah.com>
-In-Reply-To: <20111110195411.GA11357@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ata: Don't use NO_IRQ in pata_of_platform driver
+References: <20111110151852.GA7465@oksana.dev.rtsoft.ru> <20111110152606.GB3207@oksana.dev.rtsoft.ru> <20111110153816.239af1d7@lxorguk.ukuu.org.uk> <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+In-Reply-To: <20111110162859.GA7088@oksana.dev.rtsoft.ru>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-10 02:54 PM, Greg KH wrote:
-> On Tue, Nov 08, 2011 at 10:20:37PM -0500, Paul Gortmaker wrote:
->> [Re: Announcement: Plans for v2.6.34-longterm] On 08/11/2011 (Tue 15:52) Greg KH wrote:
+On 11/10/2011 11:28 AM, Anton Vorontsov wrote:
+> Drivers should not use NO_IRQ; moreover, some architectures don't
+> have it nowadays. '0' is the 'no irq' case.
+>
+> Signed-off-by: Anton Vorontsov<cbouatmailru@gmail.com>
+> Acked-by: Alan Cox<alan@linux.intel.com>
+> ---
+>
+> On Thu, Nov 10, 2011 at 03:38:16PM +0000, Alan Cox wrote:
+>> On Thu, 10 Nov 2011 19:26:06 +0400
+>> Anton Vorontsov<cbouatmailru@gmail.com>  wrote:
 >>
->> [...]
+>>> Drivers should not use NO_IRQ; moreover, some architectures don't
+>>> have it nowadays. '0' is the 'no irq' case.
+>>>
+>>> Signed-off-by: Anton Vorontsov<cbouatmailru@gmail.com>
 >>
->>> Also, I would like to populate the linux-stable.git tree with the
->>> missing .34-longterm releases that you have already done, care to
->>> provide a git tree that I can pull from for those now?
->>
->> Hi Greg,
->>
->> The below pull rq should get your repo caught up on the .34
->> content for my tags 8 --> 10.  You should be able to use the
->> "git verify-tag v2.6.34.10" on this older content without issue
->> as a double check on things.
-> 
-> $ git verify-tag v2.6.34.10
-> gpg: Signature made Sun 26 Jun 2011 09:47:42 AM PDT using DSA key ID 0D0A18AD
-> gpg: Good signature from "Paul Gortmaker (work) <paul.gortmaker@windriver.com>"
-> gpg: Note: This key has expired!
-> Primary key fingerprint: 2A15 067C 2C4D F8FD A89E  1882 DBE2 2294 0D0A 18AD
-> 
-> So I know that this was signed with an exprired key that is only
-> self-signed, hm, looks like that matches up with the previous releases
-> form you :)
-> 
-> thanks, now pushed out.
-> 
-> Hopefully you have a new key, that is in the kernel.org ring of trust,
-> that you will be using to sign your new releases?
+>> Acked-by: Alan Cox<alan@linux.intel.com>
+>
+> In case if we don't want a "band-aid fix" for 3.2, here is the patch
+> that just does the proper fix (w/ a risk to break minor architectures).
+>
+>   drivers/ata/pata_of_platform.c |    2 +-
+>   1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/ata/pata_of_platform.c b/drivers/ata/pata_of_platform.c
+> index a72ab0d..2a472c5 100644
+> --- a/drivers/ata/pata_of_platform.c
+> +++ b/drivers/ata/pata_of_platform.c
+> @@ -52,7 +52,7 @@ static int __devinit pata_of_platform_probe(struct platform_device *ofdev)
+>   	}
+>
+>   	ret = of_irq_to_resource(dn, 0,&irq_res);
+> -	if (ret == NO_IRQ)
+> +	if (!ret)
+>   		irq_res.start = irq_res.end = 0;
+>   	else
+>   		irq_res.flags = 0;
 
-Yes, of course.  That is why the old one was recently expired.
+Unless someone screams, that is what I'll push upstream.
 
-P.
+	Jeff
 
-> 
-> thanks,
-> 
-> greg k-h
+
