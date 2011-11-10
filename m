@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab1KJTHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:07:51 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:51839 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab1KJTHq (ORCPT
+	id S1756034Ab1KJTIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:08:04 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42142 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009Ab1KJTH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:07:46 -0500
+	Thu, 10 Nov 2011 14:07:59 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,109 +23,120 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:12:37 +0530
-Message-Id: <20111110184237.11361.87061.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 11 Nov 2011 00:12:57 +0530
+Message-Id: <20111110184257.11361.74052.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
 References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 25/28]   uprobes: call post_xol() unconditionally
-x-cbid: 11111019-8878-0000-0000-0000002CF4B1
+Subject: [PATCH v6 3.2-rc1 27/28]   uprobes: x86: introduce xol_was_trapped()
+x-cbid: 11111019-2000-0000-0000-00000121496D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Kill sstep_complete(), change uprobe_notify_resume() to use
-post_xol() unconditionally.
+Postpone the signals until we execute the probed insn. This is
+simply wrong if xol insn traps and generates the signal itself. Say,
+SIGILL/SIGSEGV/etc.
 
-It is wrong to assume that regs->ip always changes after the step.
-rep or jmp/call to self for example. We know that this task has
-already done the step, we can rely on DIE_DEBUG notification.
+Adds xol_was_trapped() to detect this case. It assumes that anything
+like do_page_fault/do_trap/etc sets thread.trap_no != -1.
+
+We add uprobe_task_arch_info->saved_trap_no and change
+pre_xol/post_xol to save/restore thread.trap_no, xol_was_trapped()
+simply checks that ->trap_no is not equal to UPROBE_TRAP_NO == -1
+set by pre_xol().
 
 Original-patch-from: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/uprobes.h |    3 ++-
- kernel/uprobes.c        |   40 ++++++++++++----------------------------
- 2 files changed, 14 insertions(+), 29 deletions(-)
+ arch/x86/include/asm/uprobes.h |    6 +++++-
+ arch/x86/kernel/uprobes.c      |   21 +++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index add5222..70d639c 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -74,7 +74,8 @@ struct uprobe {
- enum uprobe_task_state {
- 	UTASK_RUNNING,
- 	UTASK_BP_HIT,
--	UTASK_SSTEP
-+	UTASK_SSTEP,
-+	UTASK_SSTEP_ACK,
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 99d7d4b..78e0007 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -39,16 +39,20 @@ struct uprobe_arch_info {
+ 
+ struct uprobe_task_arch_info {
+ 	unsigned long saved_scratch_register;
++	unsigned long saved_trap_no;
  };
- 
- /*
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index 9e73cef..13b1d68 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1316,24 +1316,6 @@ static int pre_ssout(struct uprobe *uprobe, struct pt_regs *regs,
+ #else
+ struct uprobe_arch_info {};
+-struct uprobe_task_arch_info {};
++struct uprobe_task_arch_info {
++	unsigned long saved_trap_no;
++};
+ #endif
+ struct uprobe;
+ extern int analyze_insn(struct mm_struct *mm, struct uprobe *uprobe);
+ extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
+ extern int pre_xol(struct uprobe *uprobe, struct pt_regs *regs);
+ extern int post_xol(struct uprobe *uprobe, struct pt_regs *regs);
++extern bool xol_was_trapped(struct task_struct *tsk);
+ extern int uprobe_exception_notify(struct notifier_block *self,
+ 				       unsigned long val, void *data);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 0792fc8..f5b0841 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -409,6 +409,8 @@ void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr)
+ 	regs->ip = vaddr;
  }
  
- /*
-- * Verify from Instruction Pointer if singlestep has indeed occurred.
-- * If Singlestep has occurred, then do post singlestep fix-ups.
-- */
--static bool sstep_complete(struct uprobe *uprobe, struct pt_regs *regs)
--{
--	unsigned long vaddr = instruction_pointer(regs);
--
--	/*
--	 * If we have executed out of line, Instruction pointer
--	 * cannot be same as virtual address of XOL slot.
--	 */
--	if (vaddr == current->utask->xol_vaddr)
--		return false;
--	post_xol(uprobe, regs);
--	return true;
--}
--
--/*
-  * uprobe_notify_resume gets called in task context just before returning
-  * to userspace.
-  *
-@@ -1381,17 +1363,18 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 		else
- 			/* Cannot Singlestep; re-execute the instruction. */
- 			goto cleanup_ret;
--	} else if (utask->state == UTASK_SSTEP) {
-+	} else {
- 		u = utask->active_uprobe;
--		if (sstep_complete(u, regs)) {
--			put_uprobe(u);
--			utask->active_uprobe = NULL;
--			utask->state = UTASK_RUNNING;
--			user_disable_single_step(current);
--			xol_free_insn_slot(current);
--
--			/* TODO Stop queueing signals. */
--		}
-+		if (utask->state == UTASK_SSTEP_ACK)
-+			post_xol(u, regs);
-+		else
-+			WARN_ON_ONCE(1);
++#define	UPROBE_TRAP_NO	-1ul
 +
-+		put_uprobe(u);
-+		utask->active_uprobe = NULL;
-+		utask->state = UTASK_RUNNING;
-+		user_disable_single_step(current);
-+		xol_free_insn_slot(current);
- 	}
- 	return;
+ /*
+  * pre_xol - prepare to execute out of line.
+  * @uprobe: the probepoint information.
+@@ -424,6 +426,9 @@ int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_task_arch_info *tskinfo = &current->utask->tskinfo;
  
-@@ -1441,6 +1424,7 @@ int uprobe_post_notifier(struct pt_regs *regs)
- 		/* task is currently not uprobed */
- 		return 0;
- 
-+	utask->state = UTASK_SSTEP_ACK;
- 	set_thread_flag(TIF_UPROBE);
- 	return 1;
++	tskinfo->saved_trap_no = current->thread.trap_no;
++	current->thread.trap_no = UPROBE_TRAP_NO;
++
+ 	regs->ip = current->utask->xol_vaddr;
+ 	if (uprobe->fixups & UPROBES_FIX_RIP_AX) {
+ 		tskinfo->saved_scratch_register = regs->ax;
+@@ -439,6 +444,11 @@ int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
+ #else
+ int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
+ {
++	struct uprobe_task_arch_info *tskinfo = &current->utask->tskinfo;
++
++	tskinfo->saved_trap_no = current->thread.trap_no;
++	current->thread.trap_no = UPROBE_TRAP_NO;
++
+ 	regs->ip = current->utask->xol_vaddr;
+ 	return 0;
  }
+@@ -504,6 +514,14 @@ static void handle_riprel_post_xol(struct uprobe *uprobe,
+ }
+ #endif
+ 
++bool xol_was_trapped(struct task_struct *tsk)
++{
++	if (tsk->thread.trap_no != UPROBE_TRAP_NO)
++		return true;
++
++	return false;
++}
++
+ /*
+  * Called after single-stepping. To avoid the SMP problems that can
+  * occur when we temporarily put back the original opcode to
+@@ -534,6 +552,9 @@ int post_xol(struct uprobe *uprobe, struct pt_regs *regs)
+ 	int result = 0;
+ 	long correction;
+ 
++	WARN_ON_ONCE(current->thread.trap_no != UPROBE_TRAP_NO);
++
++	current->thread.trap_no = utask->tskinfo.saved_trap_no;
+ 	correction = (long)(utask->vaddr - utask->xol_vaddr);
+ 	handle_riprel_post_xol(uprobe, regs, &correction);
+ 	if (uprobe->fixups & UPROBES_FIX_IP)
 
