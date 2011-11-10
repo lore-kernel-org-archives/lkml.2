@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075Ab1KJTAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:00:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755049Ab1KJTAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:00:50 -0500
-Date: Thu, 10 Nov 2011 19:56:03 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>, Nathan Lynch <ntl@pobox.com>,
-        Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serue@us.ibm.com>, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
-	pids
-Message-ID: <20111110185603.GA1757@redhat.com>
-References: <4EBC0696.9030103@parallels.com> <4EBC06DB.3090202@parallels.com> <20111110184654.GA1006@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110184654.GA1006@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933131Ab1KJTBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:01:42 -0500
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:40923 "EHLO
+	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933082Ab1KJTBh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 14:01:37 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH] ah: Don't return NET_XMIT_DROP on input.
+Date: Thu, 10 Nov 2011 14:01:27 -0500
+Message-Id: <1320951687-21491-1-git-send-email-nbowler@elliptictech.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forgot to mention...
+When the ahash driver returns -EBUSY, AH4/6 input functions return
+NET_XMIT_DROP, presumably copied from the output code path.  But
+returning transmit codes on input doesn't make a lot of sense.
+Since NET_XMIT_DROP is a positive int, this gets interpreted as
+the next header type (i.e., success).  As that can only end badly,
+remove the check.
 
-On 11/10, Oleg Nesterov wrote:
->
-> On 11/10, Pavel Emelyanov wrote:
-> >
-> > The child_tidptr points to an array of pids for current namespace and
-> > its ancestors. When 0 is met in this array the pid number for the
-> > corresponding namespace is generated, rather than set.
->
-> I must have missed something, but I can't unserstand how this works.
->
-> > For security reasons after a regular clone/fork is done in a namespace
-> > further cloning with predefined pid is not allowed.
->
-> I guess, this is pid_ns->last_pid != 0 check in set_pidmap(), right ?
->
-> > +static int set_pidmap(struct pid_namespace *pid_ns, int pid)
-> > +{
-> > +	int offset;
-> > +	struct pidmap *map;
-> > +
-> > +	offset = pid & BITS_PER_PAGE_MASK;
-> > +	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
-> > +
-> > +	if (unlikely(!map->page))
-> > +		if (alloc_pidmap_page(map))
-> > +			return -ENOMEM;
-> > +
-> > +	if (pid_ns->last_pid != 0)
-> > +		return -EPERM;
->
-> OK, but it should be always true, no? IOW, set_pidmap() should always
-> fail?
->
-> Unless: you are using CLONE_NEWPID along with CLONE_CHILD_USEPIDS and
-> this child_tidptr array has only one pid (before zero pid).
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+---
+This appears to be another longstanding issue (since the initial ahash
+conversion circa 2.6.33), but there doesn't seem to be many ahash
+drivers in the tree that can possibly trigger it.  Furthermore, most
+if not all of these drivers require special hardware.
 
-And, if you do clone(CLONE_NEWPID | CLONE_CHILD_USEPIDS), then
-new_ns->child_reaper == NULL (unless you pass "1" in child_tidptr[]) ?
+ net/ipv4/ah4.c |    2 --
+ net/ipv6/ah6.c |    2 --
+ 2 files changed, 0 insertions(+), 4 deletions(-)
 
-> So, could you please explain what I have missed?
-
-please ;) I guess I misread this patch completely. Help!
-
-Oleg.
+diff --git a/net/ipv4/ah4.c b/net/ipv4/ah4.c
+index c7056b2..36d1440 100644
+--- a/net/ipv4/ah4.c
++++ b/net/ipv4/ah4.c
+@@ -369,8 +369,6 @@ static int ah_input(struct xfrm_state *x, struct sk_buff *skb)
+ 		if (err == -EINPROGRESS)
+ 			goto out;
+ 
+-		if (err == -EBUSY)
+-			err = NET_XMIT_DROP;
+ 		goto out_free;
+ 	}
+ 
+diff --git a/net/ipv6/ah6.c b/net/ipv6/ah6.c
+index eb71dbc..0873a21 100644
+--- a/net/ipv6/ah6.c
++++ b/net/ipv6/ah6.c
+@@ -581,8 +581,6 @@ static int ah6_input(struct xfrm_state *x, struct sk_buff *skb)
+ 		if (err == -EINPROGRESS)
+ 			goto out;
+ 
+-		if (err == -EBUSY)
+-			err = NET_XMIT_DROP;
+ 		goto out_free;
+ 	}
+ 
+-- 
+1.7.3.4
 
