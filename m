@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab1KJSqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 13:46:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64192 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685Ab1KJSqF convert rfc822-to-8bit (ORCPT
+	id S932779Ab1KJStr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 13:49:47 -0500
+Received: from www17.your-server.de ([213.133.104.17]:41606 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750835Ab1KJSto (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 13:46:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <30a7c46d924c29d1faf879bc9522e4ec8565d378.1320875577.git.david.decotigny@google.com>
-References: <cover.1320875577.git.david.decotigny@google.com> <30a7c46d924c29d1faf879bc9522e4ec8565d378.1320875577.git.david.decotigny@google.com>
-From: David Decotigny <david.decotigny@google.com>
-Date: Thu, 10 Nov 2011 10:45:43 -0800
-Message-ID: <CAG88wWbq4Gn-DTTkNNQkzG7p7db1xEUYmPYQNx0oKZP8FetJZA@mail.gmail.com>
-Subject: Re: [PATCH net-next v1 4/9] forcedeth: stats for rx_packets based on
- hardware registers
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        David Decotigny <david.decotigny@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 10 Nov 2011 13:49:44 -0500
+Message-ID: <1320950975.20155.115.camel@localhost.localdomain>
+Subject: [PATCH] dlm: Use kmemdup rather than duplicating its implementation
+From: Thomas Meyer <thomas@m3y3r.de>
+To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Date: Thu, 10 Nov 2011 19:49:35 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Use kmemdup rather than duplicating its implementation
 
-After discussion with original author of patch  "forcedeth: statistics
-optimization" (21828163b2b31e0675cb3e66a2a4a231dec06236), I will
-revise this strategy, and step back to using software counters to make
-the accounting of packets received at software level more accurate.
-Will send an update to this series shortly.
+The semantic patch that makes this change is available
+in scripts/coccinelle/api/memdup.cocci.
 
-Regards,
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+---
 
---
-David Decotigny
+diff -u -p a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+--- a/fs/dlm/lowcomms.c 2011-11-07 19:38:22.277139918 +0100
++++ b/fs/dlm/lowcomms.c 2011-11-08 10:35:11.176833032 +0100
+@@ -1086,10 +1086,9 @@ static void init_local(void)
+ 		if (dlm_our_addr(&sas, i))
+ 			break;
+ 
+-		addr = kmalloc(sizeof(*addr), GFP_NOFS);
++		addr = kmemdup(&sas, sizeof(*addr), GFP_NOFS);
+ 		if (!addr)
+ 			break;
+-		memcpy(addr, &sas, sizeof(*addr));
+ 		dlm_local_addr[dlm_local_count++] = addr;
+ 	}
+ }
 
 
-On Wed, Nov 9, 2011 at 2:09 PM, David Decotigny
-<david.decotigny@google.com> wrote:
-> Use the hardware registers instead of a software implementation to
-> account for the number of RX packets.
->
->
->
-> Signed-off-by: David Decotigny <david.decotigny@google.com>
-> ---
->  drivers/net/ethernet/nvidia/forcedeth.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-> index cd7f83d..0071d5c 100644
-> --- a/drivers/net/ethernet/nvidia/forcedeth.c
-> +++ b/drivers/net/ethernet/nvidia/forcedeth.c
-> @@ -1712,6 +1712,7 @@ static struct net_device_stats *nv_get_stats(struct net_device *dev)
->                nv_get_hw_stats(dev);
->
->                /* copy to net_device stats */
-> +               dev->stats.rx_packets = np->estats.rx_packets;
->                dev->stats.tx_packets = np->estats.tx_packets;
->                dev->stats.rx_bytes = np->estats.rx_bytes;
->                dev->stats.tx_bytes = np->estats.tx_bytes;
-> @@ -2690,7 +2691,6 @@ static int nv_rx_process(struct net_device *dev, int limit)
->                skb_put(skb, len);
->                skb->protocol = eth_type_trans(skb, dev);
->                napi_gro_receive(&np->napi, skb);
-> -               dev->stats.rx_packets++;
->  next_pkt:
->                if (unlikely(np->get_rx.orig++ == np->last_rx.orig))
->                        np->get_rx.orig = np->first_rx.orig;
-> @@ -2773,7 +2773,6 @@ static int nv_rx_process_optimized(struct net_device *dev, int limit)
->                                __vlan_hwaccel_put_tag(skb, vid);
->                        }
->                        napi_gro_receive(&np->napi, skb);
-> -                       dev->stats.rx_packets++;
->                } else {
->                        dev_kfree_skb(skb);
->                }
-> --
-> 1.7.3.1
->
->
