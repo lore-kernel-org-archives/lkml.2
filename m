@@ -1,63 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab1KJXVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 18:21:41 -0500
-Received: from smtp-out0.tiscali.nl ([195.241.79.175]:35337 "EHLO
-	smtp-out0.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839Ab1KJXVk (ORCPT
+	id S932739Ab1KJXfV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 18:35:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45647 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932604Ab1KJXfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 18:21:40 -0500
-Subject: [PATCH] ARM: mach-s3c2440: drop selects of bogus Kconfig symbols
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Nov 2011 00:21:25 +0100
-Message-ID: <1320967285.27598.91.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Thu, 10 Nov 2011 18:35:11 -0500
+To: Yong Zhang <yong.zhang0@gmail.com>
+Subject: INFO: possible recursive locking detected: get_partial_node() on 3.2-rc1
+Date: Thu, 10 Nov 2011 23:35:05 +0000
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc1; KDE/4.6.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org
+References: <20111109090556.GA5949@zhy>
+In-Reply-To: <20111109090556.GA5949@zhy>
+MIME-Version: 1.0
+From: Julie Sullivan <kernelmail.jms@gmail.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201111102335.06046.kernelmail.jms@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no Kconfig symbols named MACH_NEO1973 and S3C2410_PWM. The
-three select statements for these symbols are nops. Drop these.
+(was '3.2-rc1: INFO: possible recursive locking detect')
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested by running "make ARCH=arm menuconfig" for both machines (with
-defaults from some x86 config file, as there are no defconfigs for these
-machines). Nothing related to these Kconfig symbols showed up in the
-generated config files. From that it follows that dropping these select
-statements changes nothing.
+On Wednesday 09 November 2011 09:05:57 Yong Zhang wrote:
+> 
+>Hi,
+>Just get below waring when doing:
+>for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
 
- arch/arm/mach-s3c2440/Kconfig |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+>And kernel config is attached.
 
-diff --git a/arch/arm/mach-s3c2440/Kconfig b/arch/arm/mach-s3c2440/Kconfig
-index e505701..70a12b3 100644
---- a/arch/arm/mach-s3c2440/Kconfig
-+++ b/arch/arm/mach-s3c2440/Kconfig
-@@ -93,8 +93,6 @@ config MACH_NEO1973_GTA02
- 	select PCF50633_GPIO
- 	select I2C
- 	select POWER_SUPPLY
--	select MACH_NEO1973
--	select S3C2410_PWM
- 	select S3C_DEV_USB_HOST
- 	help
- 	   Say Y here if you are using the Openmoko GTA02 / Freerunner GSM Phone
-@@ -192,7 +190,6 @@ config MACH_RX1950
- 	select S3C24XX_DCLK
- 	select PM_H1940 if PM
- 	select I2C
--	select S3C2410_PWM
- 	select S3C_DEV_NAND
- 	select S3C2410_IOTIMING if S3C2440_CPUFREQ
- 	select S3C2440_XTAL_16934400
--- 
-1.7.4.4
+>Thanks,
+>Yong
+
+>---
+>[  350.148020] =============================================
+[  350.148020] [ INFO: possible recursive locking detected ]
+[  350.148020] 3.2.0-rc1-10791-g76a4b59-dirty #2
+[  350.148020] ---------------------------------------------
+[  350.148020] perf/9439 is trying to acquire lock:
+[  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff8113847f>] get_partial_node+0x5f/0x360
+[  350.148020] 
+[  350.148020] but task is already holding lock:
+[  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
+[  350.148020] 
+[  350.148020] other info that might help us debug this:
+[  350.148020]  Possible unsafe locking scenario:
+[  350.148020] 
+[  350.148020]        CPU0
+[  350.148020]        ----
+[  350.148020]   lock(&(&n->list_lock)->rlock);
+[  350.148020]   lock(&(&n->list_lock)->rlock);
+[  350.148020] 
+[  350.148020]  *** DEADLOCK ***
+[  350.148020] 
+[  350.148020]  May be due to missing lock nesting notation
+[  350.148020] 
+[  350.148020] 2 locks held by perf/9439:
+[  350.148020]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff810552ee>] release_task+0x9e/0x500
+>[  350.148020]  #1:  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
+
+
+Hi Yong
+
+I've been getting a similar report not when using perf though, just in my dmesg at startup:
+(if people want my .config please ask, I'm not including it else in case it's just unhelpful noise)
+
+Cheers
+Julie
+
+[   34.545934] =============================================
+[   34.545936] [ INFO: possible recursive locking detected ]
+[   34.545939] 3.2.0-rc1 #103
+[   34.545940] ---------------------------------------------
+[   34.545943] kdeinit4/2559 is trying to acquire lock:
+[   34.545945]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff8110aaa4>] get_partial_node+0x3f/0x17a
+[   34.545954] 
+[   34.545955] but task is already holding lock:
+[   34.545957]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff81109efe>] unfreeze_partials+0xc4/0x193
+[   34.545963] 
+[   34.545964] other info that might help us debug this:
+[   34.545966]  Possible unsafe locking scenario:
+[   34.545966] 
+[   34.545968]        CPU0
+[   34.545969]        ----
+[   34.545971]   lock(&(&n->list_lock)->rlock);
+[   34.545974]   lock(&(&n->list_lock)->rlock);
+[   34.545977] 
+[   34.545978]  *** DEADLOCK ***
+[   34.545978] 
+[   34.545980]  May be due to missing lock nesting notation
+[   34.545981] 
+[   34.545983] 1 lock held by kdeinit4/2559:
+[   34.545985]  #0:  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff81109efe>] unfreeze_partials+0xc4/0x193
+[   34.545992] 
+[   34.545992] stack backtrace:
+[   34.545995] Pid: 2559, comm: kdeinit4 Not tainted 3.2.0-rc1 #103
+[   34.545997] Call Trace:
+[   34.546003]  [<ffffffff81076548>] __lock_acquire+0x9d8/0xdf7
+[   34.546008]  [<ffffffff8105fdf5>] ? __kernel_text_address+0x26/0x4c
+[   34.546010]  [<ffffffff81004c57>] ? print_context_stack+0x9c/0xb2
+[   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
+[   34.546010]  [<ffffffff81076e4a>] lock_acquire+0xd8/0xfe
+[   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
+[   34.546010]  [<ffffffff8107e092>] ? __module_text_address+0x12/0x5f
+[   34.546010]  [<ffffffff815af2d3>] _raw_spin_lock+0x45/0x7a
+[   34.546010]  [<ffffffff8110aaa4>] ? get_partial_node+0x3f/0x17a
+[   34.546010]  [<ffffffff8110aaa4>] get_partial_node+0x3f/0x17a
+[   34.546010]  [<ffffffff810733fb>] ? look_up_lock_class+0x5f/0xbe
+[   34.546010]  [<ffffffff8107e092>] ? __module_text_address+0x12/0x5f
+[   34.546010]  [<ffffffff8110ad4e>] __slab_alloc+0x16f/0x3ae
+[   34.546010]  [<ffffffff81008529>] ? native_sched_clock+0x3b/0x3d
+[   34.546010]  [<ffffffff81112d46>] ? create_object+0x39/0x283
+[   34.546010]  [<ffffffff81008529>] ? native_sched_clock+0x3b/0x3d
+[   34.546010]  [<ffffffff81072655>] ? arch_local_irq_save+0x9/0xc
+[   34.546010]  [<ffffffff81112d46>] ? create_object+0x39/0x283
+[   34.546010]  [<ffffffff8110c54c>] kmem_cache_alloc+0x5b/0x12b
+[   34.546010]  [<ffffffff81112d46>] create_object+0x39/0x283
+[   34.546010]  [<ffffffff8159655c>] kmemleak_alloc+0x73/0x98
+[   34.546010]  [<ffffffff81250c3c>] ? __debug_object_init+0x43/0x2e7
+[   34.546010]  [<ffffffff8110c5b4>] kmem_cache_alloc+0xc3/0x12b
+[   34.546010]  [<ffffffff810679c7>] ? sched_clock_local+0x12/0x75
+[   34.546010]  [<ffffffff81250c3c>] __debug_object_init+0x43/0x2e7
+[   34.546010]  [<ffffffff81067b92>] ? local_clock+0x2b/0x3c
+[   34.546010]  [<ffffffff81073b06>] ? lock_release_holdtime+0x59/0x60
+[   34.546010]  [<ffffffff81250ef4>] debug_object_init+0x14/0x16
+[   34.546010]  [<ffffffff8105fc57>] rcuhead_fixup_activate+0x27/0x5f
+[   34.546010]  [<ffffffff81250943>] debug_object_fixup+0x1e/0x2b
+[   34.546010]  [<ffffffff81250fdb>] debug_object_activate+0xcc/0xd9
+[   34.546010]  [<ffffffff8110939f>] ? discard_slab+0x4e/0x4e
+[   34.546010]  [<ffffffff810a8b77>] __call_rcu+0x4f/0x18e
+[   34.546010]  [<ffffffff810a8ce2>] call_rcu_sched+0x15/0x17
+[   34.546010]  [<ffffffff81109396>] discard_slab+0x45/0x4e
+[   34.546010]  [<ffffffff81109fa4>] unfreeze_partials+0x16a/0x193
+[   34.546010]  [<ffffffff81073b06>] ? lock_release_holdtime+0x59/0x60
+[   34.546010]  [<ffffffff815afd87>] ? _raw_spin_unlock_irqrestore+0x3f/0x55
+[   34.546010]  [<ffffffff8110a020>] put_cpu_partial+0x53/0xbd
+[   34.546010]  [<ffffffff8110a197>] __slab_free+0x10d/0x229
+[   34.546010]  [<ffffffff810f5e08>] ? anon_vma_free+0x3d/0x41
+[   34.546010]  [<ffffffff810f5e08>] ? anon_vma_free+0x3d/0x41
+[   34.546010]  [<ffffffff8110a44b>] kmem_cache_free+0x7d/0xc4
+[   34.546010]  [<ffffffff810f5e08>] anon_vma_free+0x3d/0x41
+[   34.546010]  [<ffffffff810f6d9e>] __put_anon_vma+0x38/0x3d
+[   34.546010]  [<ffffffff810f6dcc>] put_anon_vma+0x29/0x2d
+[   34.546010]  [<ffffffff810f6f28>] unlink_anon_vmas+0xf5/0x14c
+[   34.546010]  [<ffffffff815ae4c4>] ? mutex_unlock+0xe/0x10
+[   34.546010]  [<ffffffff810ed096>] free_pgtables+0x73/0xd0
+[   34.546010]  [<ffffffff810f30ad>] exit_mmap+0xac/0xe5
+[   34.546010]  [<ffffffff81043d05>] mmput+0x60/0x108
+[   34.546010]  [<ffffffff81048323>] exit_mm+0x119/0x126
+[   34.546010]  [<ffffffff815afd34>] ? _raw_spin_unlock_irq+0x30/0x44
+[   34.546010]  [<ffffffff81049a59>] do_exit+0x233/0x80f
+[   34.546010]  [<ffffffff81073330>] ? trace_hardirqs_off_caller+0x33/0x90
+[   34.546010]  [<ffffffff815affca>] ? retint_swapgs+0xe/0x13
+[   34.546010]  [<ffffffff8104a2dd>] do_group_exit+0x88/0xb6
+[   34.546010]  [<ffffffff8104a322>] sys_exit_group+0x17/0x1b
+[   34.546010]  [<ffffffff815b662b>] system_call_fastpath+0x16/0x1b
+
 
 
 
