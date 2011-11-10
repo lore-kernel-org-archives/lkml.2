@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934615Ab1KJNnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:43:40 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35669 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932540Ab1KJNni (ORCPT
+	id S934629Ab1KJNqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:46:45 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52574 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934545Ab1KJNqo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:43:38 -0500
-Message-ID: <4EBBD503.4020308@codemonkey.ws>
-Date: Thu, 10 Nov 2011 07:43:31 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.21) Gecko/20110831 Lightning/1.0b2 Thunderbird/3.1.13
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain> <4EBB4A21.20707@codemonkey.ws> <alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 08:46:44 -0500
+Subject: Re: [RFC PATCH 13/17] powerpc/e500: Add a new CONFIG_FSL_E5500 option for the e5500
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1320883635-17194-14-git-send-email-Kyle.D.Moffett@boeing.com>
+Date: Thu, 10 Nov 2011 07:46:08 -0600
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Baruch Siach <baruch@tkos.co.il>, Timur Tabi <B04825@freescale.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Paul Bolle <pebolle@tiscali.nl>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <20F26EAB-5DDA-4B65-913E-479653AD27D3@kernel.crashing.org>
+References: <4E42AB6F.1050900@freescale.com> <1320883635-17194-14-git-send-email-Kyle.D.Moffett@boeing.com>
+To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 12:46 AM, Pekka Enberg wrote:
-> Hi Anthony,
->
->> 1) The RTC emulation is limited to emulating CMOS and only the few fields used
->> to store the date and time. If code is added to arch/x86 that tries to make
->> use of a CMOS field for something useful, kvm-tool is going to fall over.
->>
->> None of the register A/B/C logic is implemented and none of the timer logic is
->> implemented. I imagine this requires kernel command line hackery to keep the
->> kernel from throwing up.
->
-> The "fake it until you make it" design principle is actually something Ingo
-> suggested early on and has been a really important factor in getting us to where
-> we are right now.
->
-> Not that I disagree with you. I think we should definitely clean up our hardware
-> emulation code.
->
->> If a kernel change that works on bare metal but breaks kvm-tool because
->> kvm-tool is incomplete is committed, is that a regression that requires
->> reverting the change in arch/x86?
->
-> If it's the KVM tool being silly, obviously not.
->
->> 2) The qcow2 code is a filesystem implemented in userspace. Image formats are
->> file systems. It really should be reviewed by the filesystem maintainers.
->> There is absolutely no attempt made to synchronize the metadata during write
->> operations which means that you do not have crash consistency of the meta data.
->>
->> If you experience a power failure or kvm-tool crashs, your image will get
->> corrupted. I highly doubt a file system would ever be merged into Linux that
->> was this naive about data integrity.
->
-> The QCOW2 is lagging behind because we lost the main developer. It's forced as
-> read-only for the issues you mention. If you think it's a merge blocker, we can
-> drop it completely from the tree until the issues are sorted out.
 
-It's not just the qcow2 implementation or even the block layer.  This pull 
-requests adds a userspace TCP/IP stack to the kernel and yet netdev isn't on the 
-CC and there are no Ack's from anyone from the networking stack.  I'm fairly 
-sure if they knew what was happening here they would object.
+On Nov 9, 2011, at 6:07 PM, Kyle Moffett wrote:
 
-And the implementation isn't even strictly needed.  You can just as well achieve 
-the same goal using tun/tap with a privileged helper[1].
+> As part of splitting CONFIG_E500 into separate options for e500v1/v2 and
+> e500mc/e5500, some code only needs to be built when e5500 support is
+> required.
+> 
+> This adds a new internal-use config option for both 32-bit and 64-bit
+> builds that enables only the e5500 support code.
+> 
+> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+> ---
+> arch/powerpc/platforms/85xx/Kconfig    |    2 +-
+> arch/powerpc/platforms/Kconfig.cputype |    4 ++++
+> 2 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
+> index 248f87c..72488d4 100644
+> --- a/arch/powerpc/platforms/85xx/Kconfig
+> +++ b/arch/powerpc/platforms/85xx/Kconfig
+> @@ -231,8 +231,8 @@ endif # PPC32
+> config P5020_DS
+> 	bool "Freescale P5020 DS"
+> 	depends on FSL_E500MC || PPC_BOOK3E_64
+> +	select FSL_E5500
+> 	select DEFAULT_UIMAGE
+> -	select E500
+> 	select PHYS_64BIT_DT_REQUIRED
+> 	select SWIOTLB
+> 	select ARCH_REQUIRE_GPIOLIB
+> diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
+> index fd37bb2..cff45e3 100644
+> --- a/arch/powerpc/platforms/Kconfig.cputype
+> +++ b/arch/powerpc/platforms/Kconfig.cputype
+> @@ -144,6 +144,10 @@ config 8xx
+> config PPC_85xx
+> 	bool
+> 
+> +config FSL_E5500
+> +	bool
+> +	select E500
+> +
+> config E500
+> 	select FSL_EMB_PERFMON
+> 	select PPC_FSL_BOOK3E
+> -- 
+> 1.7.2.5
 
->> I found these three issues in the course of about 30 seconds of looking
->> through the kvm-tool code. I'm sure if other people with expertise in these
->> areas looked through the code, they would find a lot more issues. I'm sure I
->> could find many, many more issues.
->
-> Thanks for the review!
->
-> Would you be interested in spending another 30 seconds to find out some more
-> issue? :-)
+Nak, I don't want to add a unique build option for 64-bit E5500 vs E500MC.  We have E6500 coming and I don't want to introduce CONFIG_FSL_E6500 at that point.
 
-I could, provided you could take the things you want to do differently and 
-submit them as patches to qemu.git instead of creating a new tool.
+- k
 
-There are lots of people on qemu-devel than can provide deep review of this type 
-of code.  That's the advantage of working in qemu.git.
-
-[1] http://mid.gmane.org/1320086191-23641-1-git-send-email-coreyb@linux.vnet.ibm.com
-
-Regards,
-
-Anthony Liguori
