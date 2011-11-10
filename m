@@ -1,80 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab1KJIKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:10:46 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:44811 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933765Ab1KJIGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:06:37 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: dwmw2@infradead.org, dedekind1@gmail.com, mikedunn@newsguy.com
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v2 08/16] mtd/docg3: add registers for erasing and writing
-Date: Thu, 10 Nov 2011 09:05:34 +0100
-Message-Id: <1320912342-30147-9-git-send-email-robert.jarzmik@free.fr>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
-References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+	id S933696Ab1KJIGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:06:22 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43450 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933643Ab1KJIGU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 03:06:20 -0500
+MIME-Version: 1.0
+Date: Thu, 10 Nov 2011 09:06:18 +0100
+Message-ID: <CAM8FrKJ8OeavZxTBJBONw76UBBzS_mQYMZuS6Chf8+Po6yqDgA@mail.gmail.com>
+Subject: ioremap on system memory
+From: Marcus Folkesson <marcus.folkesson@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the required registers and commands to erase and write
-flash pages / blocks.
+Hi,
 
-Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
----
- drivers/mtd/devices/docg3.h |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
+I'm working with a custom based platform based on OMAP-L138.
+A driver we are using is ioremapping system memory. It does this to
+share data between the GPP and DSP core.
+This is not allowed in later kernel versions since ARMv6+ does not support this.
 
-diff --git a/drivers/mtd/devices/docg3.h b/drivers/mtd/devices/docg3.h
-index 75df3a1..e9967ab 100644
---- a/drivers/mtd/devices/docg3.h
-+++ b/drivers/mtd/devices/docg3.h
-@@ -130,6 +130,8 @@
- #define DOC_SEQ_SET_PLANE1		0x0e
- #define DOC_SEQ_SET_PLANE2		0x10
- #define DOC_SEQ_PAGE_SETUP		0x1d
-+#define DOC_SEQ_ERASE			0x27
-+#define DOC_SEQ_PLANES_STATUS		0x31
- 
- /*
-  * Flash commands
-@@ -144,7 +146,10 @@
- #define DOC_CMD_PROG_BLOCK_ADDR		0x60
- #define DOC_CMD_PROG_CYCLE1		0x80
- #define DOC_CMD_PROG_CYCLE2		0x10
-+#define DOC_CMD_PROG_CYCLE3		0x11
- #define DOC_CMD_ERASECYCLE2		0xd0
-+#define DOC_CMD_READ_STATUS		0x70
-+#define DOC_CMD_PLANES_STATUS		0x71
- 
- #define DOC_CMD_RELIABLE_MODE		0x22
- #define DOC_CMD_FAST_MODE		0xa2
-@@ -186,7 +191,7 @@
-  */
- #define DOC_ECCCONF1_BCH_SYNDROM_ERR	0x80
- #define DOC_ECCCONF1_UNKOWN1		0x40
--#define DOC_ECCCONF1_UNKOWN2		0x20
-+#define DOC_ECCCONF1_PAGE_IS_WRITTEN	0x20
- #define DOC_ECCCONF1_UNKOWN3		0x10
- #define DOC_ECCCONF1_HAMMING_BITS_MASK	0x0f
- 
-@@ -224,6 +229,13 @@
- #define DOC_READADDR_ONE_BYTE		0x4000
- #define DOC_READADDR_ADDR_MASK		0x1fff
- 
-+/*
-+ * Status of erase and write operation
-+ */
-+#define DOC_PLANES_STATUS_FAIL		0x01
-+#define DOC_PLANES_STATUS_PLANE0_KO	0x02
-+#define DOC_PLANES_STATUS_PLANE1_KO	0x04
-+
- /**
-  * struct docg3 - DiskOnChip driver private data
-  * @dev: the device currently under control
--- 
-1.7.5.4
+Is there any good(and easy) way to get around this or is it so
+fundamentally wrong that the driver should be written from scratch?
 
+Thanks in advance
+
+Med vänliga hälsningar / Best regards
+Marcus Folkesson
