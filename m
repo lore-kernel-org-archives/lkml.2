@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934661Ab1KJN6z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:58:55 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51532 "EHLO mx2.mail.elte.hu"
+	id S934723Ab1KJN7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:59:24 -0500
+Received: from gate.crashing.org ([63.228.1.57]:41699 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751498Ab1KJN6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:58:54 -0500
-Date: Thu, 10 Nov 2011 14:57:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jeff Garzik <jeff@garzik.org>
-Subject: Re: linux-next: Tree for Oct 11 (ata/pata_of_platform.c)
-Message-ID: <20111110135703.GA23609@elte.hu>
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
- <4E94A920.40503@xenotime.net>
- <4E987829.3080104@xenotime.net>
-MIME-Version: 1.0
+	id S934622Ab1KJN7V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 08:59:21 -0500
+Subject: Re: [RFC PATCH 00/17] powerpc/e500: separate e500 from e500mc
+Mime-Version: 1.0 (Apple Message framework v1251.1)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E987829.3080104@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1320883399-15911-1-git-send-email-Kyle.D.Moffett@boeing.com>
+Date: Thu, 10 Nov 2011 07:59:08 -0600
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Timur Tabi <B04825@freescale.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FF2BF3F3-1158-4747-AEEC-03D6A7C462D9@kernel.crashing.org>
+References: <4E42AB6F.1050900@freescale.com> <1320883399-15911-1-git-send-email-Kyle.D.Moffett@boeing.com>
+To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Nov 9, 2011, at 6:03 PM, Kyle Moffett wrote:
 
-> On 10/11/2011 01:37 PM, Randy Dunlap wrote:
-> > On 10/11/11 02:11, Stephen Rothwell wrote:
-> >> Hi all,
-> >>
-> >> The linux-next tree is now available from
-> >> git://github.com/sfrothwell/linux-next.git as a temporary measure while
-> >> the kernel.org servers are unavailable.
-> >>
-> >> It may also turn up on git.kernel.org (depending on the mirroring).  The
-> >> patch set is still absent, however.
-> >>
-> >> Changes since 20111007:
-> >>
-> >> Removed tree: ide (at the maintainer's request)
-> > 
-> > 
-> > drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
+> Hello,
 > 
+> I saw Baruch Siach's patch:
+>  powerpc: 85xx: separate e500 from e500mc
 > 
-> [adding Author: Anton]
+> Unfortunately, that patch breaks the dependencies for the P5020DS
+> platform and does not fix the underlying code which does not
+> understand what the ambiguous "CONFIG_E500" means.
 > 
-> Build error still present in linux-next of 20111014.
+> In order to fix the issue at the fundamental level, I created the
+> following 17-patch series loosely based on Baruch's patch.
+> 
+> === High-Level Summary ===
+> 
+> The e500v1/v2 and e500mc/e5500 CPU families are not compatible with
+> each other, yet they share the same "CONFIG_E500" Kconfig option.
+> 
+> The following patch series splits the 32-bit CPU support into two
+> separate options: "CONFIG_FSL_E500_V1_V2" and "CONFIG_FSL_E500MC".
+> Additionally, the 64-bit e5500 support is separated to its own config
+> option ("CONFIG_FSL_E5500") which is automatically combined with
+> either 32-bit e500MC or 64-bit Book-3E when the P5020DS board support
+> is enabled.
 
-This build failure regression report was ignored twice and then 
-pushed upstream and is still unfixed a month after the initial 
-report. Upstream now fails to build on like 25% of x86 configs.
+So its clear from the community that there is confusion here and we need to clean this up.  I guess my attempt to support an kernel that ran on both E500v2 and E500mc isn't worth it.  However I don't want to completely remove the ability to do this.
 
-What's going on with this bug guys?
+Towards the cleanup I'd ask for a proposal on what exactly the CONFIG_ options we'd end up with would be and their meaning.
 
-Thanks,
+So today we have:
 
-	Ingo
+CONFIG_E500
+CONFIG_PPC_E500MC
+
+What do we want to move to?  I want to keep the builds such that we have only 2 classes:  e500V1/V2 and e500mc/e5500/e6500/.../eX500.  I see no reason to hyper-optimize e500mc vs e5500 vs e6500.
+
+- k
