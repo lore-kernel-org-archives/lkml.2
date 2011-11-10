@@ -1,124 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934787Ab1KJOHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 09:07:21 -0500
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:35179 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934643Ab1KJOHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 09:07:19 -0500
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>,
-        Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH 1/3] mm,slub,x86: decouple size of struct page from CONFIG_CMPXCHG_LOCAL
-Date: Thu, 10 Nov 2011 15:04:18 +0100
-Message-Id: <1320933860-15588-2-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1320933860-15588-1-git-send-email-heiko.carstens@de.ibm.com>
-References: <1320933860-15588-1-git-send-email-heiko.carstens@de.ibm.com>
+	id S934829Ab1KJOOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 09:14:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48355 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934785Ab1KJOOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 09:14:16 -0500
+Date: Thu, 10 Nov 2011 15:14:12 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5]thp: improve the error code path
+Message-ID: <20111110141412.GW5075@redhat.com>
+References: <1319511521.22361.135.camel@sli10-conroe>
+ <20111025114406.GC10182@redhat.com>
+ <1319593680.22361.145.camel@sli10-conroe>
+ <1320643049.22361.204.camel@sli10-conroe>
+ <20111110021853.GQ5075@redhat.com>
+ <1320892395.22361.229.camel@sli10-conroe>
+ <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com>
+ <20111110030646.GT5075@redhat.com>
+ <alpine.DEB.2.00.1111092039110.27280@chino.kir.corp.google.com>
+ <1320904609.22361.239.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320904609.22361.239.camel@sli10-conroe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an architecture supports CMPXCHG_LOCAL this shouldn't result automatically
-in larger struct pages if the SLUB allocator is used. Instead introduce a new
-config option "HAVE_ALIGNED_STRUCT_PAGE" which can be selected if a double
-word aligned struct page is required.
-Also update x86 Kconfig so that it should work as before.
+On Thu, Nov 10, 2011 at 01:56:49PM +0800, Shaohua Li wrote:
+> +static struct kobject *hugepage_kobj;
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- arch/Kconfig             |    8 ++++++++
- arch/x86/Kconfig         |    1 +
- include/linux/mm_types.h |    9 ++++-----
- mm/slub.c                |    6 +++---
- 4 files changed, 16 insertions(+), 8 deletions(-)
+It's minor nitpick but we don't need to put this in .bss, passing it
+as hugepage_init_sysfs(struct kobject **hugepage_kobj) and storing it
+there in case the error returned by hugepage_init_sysfs is zero should
+be fine. The feature cannot be unloaded so we can lose the pointer
+after init is complete.
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index 4b0669c..4b4a140 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -181,4 +181,12 @@ config HAVE_RCU_TABLE_FREE
- config ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	bool
- 
-+config HAVE_ALIGNED_STRUCT_PAGE
-+	bool
-+	help
-+	  This makes sure that struct pages are double word aligned and that
-+	  e.g. the SLUB allocator can perform double word atomic operations
-+	  on a struct page for better performance. However selecting this
-+	  might increase the size of a struct page by a word.
-+
- source "kernel/gcov/Kconfig"
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cb9a104..5115ce4 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -75,6 +75,7 @@ config X86
- 	select HAVE_BPF_JIT if (X86_64 && NET)
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 5b42f1b..3cc3062 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -151,12 +151,11 @@ struct page {
- #endif
- }
- /*
-- * If another subsystem starts using the double word pairing for atomic
-- * operations on struct page then it must change the #if to ensure
-- * proper alignment of the page struct.
-+ * The struct page can be forced to be double word aligned so that atomic ops
-+ * on double words work. The SLUB allocator can make use of such a feature.
-  */
--#if defined(CONFIG_SLUB) && defined(CONFIG_CMPXCHG_LOCAL)
--	__attribute__((__aligned__(2*sizeof(unsigned long))))
-+#ifdef CONFIG_HAVE_ALIGNED_STRUCT_PAGE
-+	__aligned(2 * sizeof(unsigned long))
- #endif
- ;
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 7d2a996..7669b4c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -366,7 +366,7 @@ static inline bool __cmpxchg_double_slab(struct kmem_cache *s, struct page *page
- 		const char *n)
- {
- 	VM_BUG_ON(!irqs_disabled());
--#ifdef CONFIG_CMPXCHG_DOUBLE
-+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (s->flags & __CMPXCHG_DOUBLE) {
- 		if (cmpxchg_double(&page->freelist,
- 			freelist_old, counters_old,
-@@ -400,7 +400,7 @@ static inline bool cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
- 		void *freelist_new, unsigned long counters_new,
- 		const char *n)
- {
--#ifdef CONFIG_CMPXCHG_DOUBLE
-+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (s->flags & __CMPXCHG_DOUBLE) {
- 		if (cmpxchg_double(&page->freelist,
- 			freelist_old, counters_old,
-@@ -2990,7 +2990,7 @@ static int kmem_cache_open(struct kmem_cache *s,
- 		}
- 	}
- 
--#ifdef CONFIG_CMPXCHG_DOUBLE
-+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
- 	if (system_has_cmpxchg_double() && (s->flags & SLAB_DEBUG_FLAGS) == 0)
- 		/* Enable fast mode */
- 		s->flags |= __CMPXCHG_DOUBLE;
--- 
-1.7.7.1
+Then I think we can be done with this... and it looks better now.
 
+> +static int __init hugepage_init_sysfs(void)
+>  {
+>  	int err;
+> -#ifdef CONFIG_SYSFS
+> -	static struct kobject *hugepage_kobj;
+> -#endif
+>  
+> -	err = -EINVAL;
+> -	if (!has_transparent_hugepage()) {
+> -		transparent_hugepage_flags = 0;
+> -		goto out;
+> -	}
+> -
+> -#ifdef CONFIG_SYSFS
+> -	err = -ENOMEM;
+>  	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
+>  	if (unlikely(!hugepage_kobj)) {
+>  		printk(KERN_ERR "hugepage: failed kobject create\n");
+> -		goto out;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
+>  	if (err) {
+>  		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> -		goto out;
+> +		goto delete_obj;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
+>  	if (err) {
+>  		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> -		goto out;
+> +		goto remove_hp_group;
+>  	}
+> -#endif
+> +
+> +	return 0;
+> +
+> +remove_hp_group:
+> +	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
+> +delete_obj:
+> +	kobject_put(hugepage_kobj);
+> +	return err;
+> +}
+> +
+> +static void __init hugepage_exit_sysfs(void)
+> +{
+> +	sysfs_remove_group(hugepage_kobj, &khugepaged_attr_group);
+> +	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
+> +	kobject_put(hugepage_kobj);
+> +}
+> +#else
+> +static inline int hugepage_init_sysfs(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void hugepage_exit_sysfs(void)
+> +{
+> +}
+> +#endif /* CONFIG_SYSFS */
+> +
+> +static int __init hugepage_init(void)
+> +{
+> +	int err;
+
+  	struct kobject *hugepage_kobj;
+
+> +
+> +	if (!has_transparent_hugepage()) {
+> +		transparent_hugepage_flags = 0;
+> +		return -EINVAL;
+> +	}
+> +
+> +	err = hugepage_init_sysfs();
+
+	err = hugepage_init_sysfs(&hugepage_kobj);
+
+
+> +	if (err)
+> +		return err;
+>  
+>  	err = khugepaged_slab_init();
+>  	if (err)
+> @@ -545,7 +572,9 @@ static int __init hugepage_init(void)
+>  
+>  	set_recommended_min_free_kbytes();
+>  
+> +	return 0;
+>  out:
+> +	hugepage_exit_sysfs();
+
+	hugepage_exit_sysfs(hugepage_kobj);
+
+>  	return err;
+>  }
+>  module_init(hugepage_init)
+> 
+> 
