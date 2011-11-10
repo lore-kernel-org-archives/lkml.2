@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab1KJAvw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:51:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32783 "EHLO mga03.intel.com"
+	id S933554Ab1KJAwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:52:09 -0500
+Received: from mga03.intel.com ([143.182.124.21]:1731 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933368Ab1KJAve (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:51:34 -0500
+	id S1756904Ab1KJAvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 19:51:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
-   d="scan'208";a="35103435"
+   d="scan'208";a="35103432"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         "Ingo Molnar" <mingo@elte.hu>,
@@ -24,9 +24,9 @@ To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
 Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
         "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 7/7] x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
-Date: Wed,  9 Nov 2011 16:34:17 -0800
-Message-Id: <1320885257-16647-8-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v3 6/7] x86/i387.c: Thread xstate is initialized only on BSP once
+Date: Wed,  9 Nov 2011 16:34:16 -0800
+Message-Id: <1320885257-16647-7-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
 References: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
@@ -36,66 +36,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate
-can't be executed if CPU0 is detected offline.
+init_thread_xstate() is only called on BSP once to avoid to override
+xstate_size.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/x86/kernel/i387.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index f10c0af..a4ec084 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -236,3 +236,47 @@ void restore_processor_state(void)
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
- #endif
-+
-+/*
-+ * When bsp_check() is called in hibernate and suspend, cpu hotplug
-+ * is disabled already. So it's unnessary to handle race condition between
-+ * cpumask query and cpu hotplug.
-+ */
-+static int bsp_check(void)
-+{
-+	if (cpumask_first(cpu_online_mask) != 0) {
-+		printk(KERN_WARNING "CPU0 is offline.\n");
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
-+static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-+			   void *ptr)
-+{
-+	int ret = 0;
-+
-+	switch (action) {
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		ret = bsp_check();
-+		break;
-+	default:
-+		break;
-+	}
-+	return notifier_from_errno(ret);
-+}
-+
-+static int __init bsp_pm_check_init(void)
-+{
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index 739d859..f721a61 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -93,6 +93,7 @@ void __cpuinit fpu_init(void)
+ {
+ 	unsigned long cr0;
+ 	unsigned long cr4_mask = 0;
++	static int once = 1;
+ 
+ 	if (cpu_has_fxsr)
+ 		cr4_mask |= X86_CR4_OSFXSR;
+@@ -107,8 +108,14 @@ void __cpuinit fpu_init(void)
+ 		cr0 |= X86_CR0_EM;
+ 	write_cr0(cr0);
+ 
+-	if (!smp_processor_id())
 +	/*
-+	 * Set this bsp_pm_callback as lower priority than
-+	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-+	 * earlier to disable cpu hotplug before bsp online check.
++	 * init_thread_xstate is only called on BSP once to avoid to override
++	 * xstate_size.
 +	 */
-+	pm_notifier(bsp_pm_callback, -INT_MAX);
-+	return 0;
-+}
-+
-+core_initcall(bsp_pm_check_init);
++	if (!smp_processor_id() && once) {
++		once = 0;
+ 		init_thread_xstate();
++	}
+ 
+ 	mxcsr_feature_mask_init();
+ 	/* clean state in init */
 -- 
 1.6.0.3
 
