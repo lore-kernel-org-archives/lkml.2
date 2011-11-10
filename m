@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934719Ab1KJOBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 09:01:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47115 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933828Ab1KJOBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 09:01:04 -0500
-Date: Thu, 10 Nov 2011 15:00:37 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111110140037.GV5075@redhat.com>
-References: <20111110100616.GD3083@suse.de>
+	id S934749Ab1KJOBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 09:01:30 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:9631 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933828Ab1KJOB2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 09:01:28 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAL7Yu04Y9geI/2dsb2JhbAAMHhqEfagfAQEBAQMjVhALDgoCAgUhAgIPAkYGDQEFAgEBiAYjpX6SEIEwhziBFgSID54sTg
+X-IronPort-AV: E=Sophos;i="4.69,489,1315195200"; 
+   d="scan'208";a="147370898"
+Message-ID: <4EBBD936.40705@teksavvy.com>
+Date: Thu, 10 Nov 2011 09:01:26 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110100616.GD3083@suse.de>
+To: David Miller <davem@davemloft.net>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Michal Marek <mmarek@suse.cz>, Grant Grundler <grundler@google.com>
+Subject: Re: [PATCH v2] drivers/net/usb/asix:  resync from vendor's copy
+References: <4EA89972.5060101@teksavvy.com> <20111026.194045.2019668159403582571.davem@davemloft.net> <4EA8B283.3010105@teksavvy.com> <20111026.221719.2216112919297458522.davem@davemloft.net> <4EB19BBE.5050602@teksavvy.com> <4EBAB8F5.1010101@teksavvy.com>
+In-Reply-To: <4EBAB8F5.1010101@teksavvy.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:06:16AM +0000, Mel Gorman wrote:
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 963c5de..cddc2d0 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2213,7 +2213,13 @@ rebalance:
->  					sync_migration);
->  	if (page)
->  		goto got_pg;
-> -	sync_migration = true;
-> +
-> +	/*
-> +	 * Do not use sync migration for transparent hugepage allocations as
-> +	 * it could stall writing back pages which is far worse than simply
-> +	 * failing to promote a page.
-> +	 */
-> +	sync_migration = !(gfp_mask & __GFP_NO_KSWAPD);
->  
->  	/* Try direct reclaim and then allocating */
->  	page = __alloc_pages_direct_reclaim(gfp_mask, order,
+On 11-11-09 12:31 PM, Mark Lord wrote:
+> Second pass (for review) at updating the in-kernel asix usb/network driver
+> from the v4.1.0 vendor GPL version of the driver, obtained from here:
+> 
+>   http://www.asix.com.tw/download.php?sub=searchresult&PItemID=84&download=driver
+> 
+> The original vendor copy used a local "axusbnet" middleware (rather than "usbnet").
+> I've converted it back to using "usbnet", made a ton of cosmetic changes
+> to get it to pass checkpatch.pl, and removed a small amount of code duplication.
+> 
+> The tx/rx checksum code has been updated per Ben's comments,
+> and the duplicated MII_* definitions have been removed.
+> I've changed the version string to be "4.1.0-kernel",
+> to reflect the vendor's code version while also distinguishing
+> this port from the original vendor code.
+> 
+> It can use more work going forward, but it is important to get it upstream
+> sooner than later -- the current in-kernel driver fails with many devices,
+> both old and new.  This updated version works with everything I have available
+> to test with, and also handles suspend / resume (unlike the in-kernel one).
+> 
+> Signed-off-by: Mark Lord <mlord@pobox.com>
+...
 
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Okay, the vendor has told me to cease development on this now.
+They prefer instead to feed small parts of their mainline driver
+to Grant Grundler as issues arise, rather than to get the whole
+thing upstream.
+
+So be it.
+
+Cheers
