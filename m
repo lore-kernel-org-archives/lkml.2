@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab1KJPQA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:16:00 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50486 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab1KJPP7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:15:59 -0500
-Date: Fri, 11 Nov 2011 00:15:48 +0900
-From: =?utf-8?B?SsOpcsO0bWU=?= Pinot <ngc891@gmail.com>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Evolution of kernel size
-Message-ID: <20111110151548.GA8557@comet.deepsky.org>
-References: <20111110143333.GA29457@comet.deepsky.org>
- <20111110145902.GA13619@elliptictech.com>
+	id S935122Ab1KJPSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:18:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50139 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933817Ab1KJPSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 10:18:13 -0500
+Date: Thu, 10 Nov 2011 07:17:46 -0800
+From: Greg KH <gregkh@suse.de>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH 3.1-stable] staging: brcm80211: fix for rate index in
+ receive status
+Message-ID: <20111110151746.GB29104@suse.de>
+References: <1320918514-5916-1-git-send-email-arend@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111110145902.GA13619@elliptictech.com>
+In-Reply-To: <1320918514-5916-1-git-send-email-arend@broadcom.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/11 09:59, Nick Bowler wrote:
-> On 2011-11-10 23:33 +0900, Jérôme Pinot wrote:
-> > I took some time to make a graph of the evolution of the size of the
-> > linux kernel tar.bz2 since version 1.0 till 3.1 (297 releases).
-> > It doesn't count the stable branches (2.6.x.y).
-> > 
-> > Impressive, it's mostly exponential.
-> > If dev keeps same pace, we should break the 100MB at
-> > linux 3.19.
-> > 
-> > You can get the graph on my blog, I provide the data and the
-> > gnuplot batch file for graphing/fitting:
-> > http://ngc891.blogdns.net/?p=92 
-> > 
-> > It may interest some people :-)
+On Thu, Nov 10, 2011 at 10:48:34AM +0100, Arend van Spriel wrote:
+> This fix resolves an issue on 5GHz as posted on LKML:
 > 
-> What scale did you use for the horizontal axis?  I see numbers assigned
-> to each version in your gnuplot file, but no indication of how you came
-> up with them.
+> BUG: All network processes hang (brcmsmac/wpa_supplicant)
+> ID: <20111018111422.GA1979@schottelius.org>
 
-It's just the release count, one step for one release.
+What are these tags for?  I've not seen them in kernel patches before.
 
-Some release are missing, mostly at the very beginning, I didn't find
-tarball for them but it doesn't matter much for the shape of the curve.
+> Cc: stable@kernel.org
 
--- 
-Jérôme Pinot
-http://ngc891.blogdns.net/
+Wrong address, please use stable@vger.kernel.org now.
+
+> Reported-by: Nico Schottelius <nico-linux-20111017@schottelius.org>
+> Signed-off-by: Arend van Spriel <arend@broadcom.com>
+> ---
+> Hi Greg,
+> 
+> This change is in the mainline brcmsmac driver, but I do not have a commit
+> message to refer to as we transitioned from staging to mainline in the last
+> merge window. Can you process this patch without that info?
+
+No, I need the git commit id of the patch that fixed this in Linus's
+tree, if the files are different due to the move, that's fine, but I
+still need this to reference.
+
+greg k-h
