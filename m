@@ -1,153 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab1KJKjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 05:39:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10480 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932533Ab1KJKjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 05:39:39 -0500
-Date: Thu, 10 Nov 2011 11:38:03 +0100
-From: Johannes Weiner <jweiner@redhat.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111110103803.GH3153@redhat.com>
-References: <20111110100616.GD3083@suse.de>
+	id S933830Ab1KJKkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 05:40:49 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:42949 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932533Ab1KJKkr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 05:40:47 -0500
+Date: Thu, 10 Nov 2011 16:10:36 +0530
+From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linuxppc-dev <linuxppc-dev@ozlabs.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ananth Narayan <ananth@in.ibm.com>, Milton Miller <miltonm@bga.com>,
+        Haren Myneni <hbabu@us.ibm.com>, Anton Blanchard <anton@samba.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH v4 01/10] fadump: Add documentation for
+ firmware-assisted dump.
+Message-ID: <20111110104036.GA5145@in.ibm.com>
+Reply-To: mahesh@linux.vnet.ibm.com
+References: <20111107095215.1997.14866.stgit@mars.in.ibm.com>
+ <20111107095521.1997.34844.stgit@mars.in.ibm.com>
+ <4EBB9D76.80601@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111110100616.GD3083@suse.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4EBB9D76.80601@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11111010-2000-0000-0000-0000011FCA37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:06:16AM +0000, Mel Gorman wrote:
-> Occasionally during large file copies to slow storage, there are still
-> reports of user-visible stalls when THP is enabled. Reports on this
-> have been intermittent and not reliable to reproduce locally but;
+On 2011-11-10 17:46:30 Thu, Cong Wang wrote:
+> 于 2011年11月07日 17:55, Mahesh J Salgaonkar 写道:
+> >From: Mahesh Salgaonkar<mahesh@linux.vnet.ibm.com>
+> >
+> >Documentation for firmware-assisted dump. This document is based on the
+> >original documentation written for phyp assisted dump by Linas Vepstas
+> >and Manish Ahuja, with few changes to reflect the current implementation.
+> >
+> >Change in v3:
+> >- Modified the documentation to reflect introdunction of fadump_registered
+> >   sysfs file and few minor changes.
+> >
+> >Change in v2:
+> >- Modified the documentation to reflect the change of fadump_region
+> >   file under debugfs filesystem.
+> >
+> >Signed-off-by: Mahesh Salgaonkar<mahesh@linux.vnet.ibm.com>
 > 
-> Andy Isaacson reported a problem copying to VFAT on SD Card
-> 	https://lkml.org/lkml/2011/11/7/2
 > 
-> 	In this case, it was stuck in munmap for betwen 20 and 60
-> 	seconds in compaction. It is also possible that khugepaged
-> 	was holding mmap_sem on this process if CONFIG_NUMA was set.
+> Please Cc Randy Dunlap <rdunlap@xenotime.net> for kernel documentation
+> patch.
 > 
-> Johannes Weiner reported stalls on USB
-> 	https://lkml.org/lkml/2011/7/25/378
+> I have some inline comments below.
 > 
-> 	In this case, there is no stack trace but it looks like the
-> 	same problem. The USB stick may have been using NTFS as a
-> 	filesystem based on other work done related to writing back
-> 	to USB around the same time.
 
-Sorry, here is a trace from when I first recorded the problem:
+Thanks for your review. I will incorporate all your comments.
 
-[171252.437688] firefox         D 000000010a31e6b7     0  8502   1110 0x00000000
-[171252.437691]  ffff88001e91f8a8 0000000000000082 ffff880000000000 ffff88001e91ffd8
-[171252.437693]  ffff88001e91ffd8 0000000000004000 ffffffff8180b020 ffff8800456e4680
-[171252.437696]  ffff88001e91f7e8 ffffffff810cd4ed ffffea00028d4500 000000000000000e
-[171252.437699] Call Trace:
-[171252.437701]  [<ffffffff810cd4ed>] ? __pagevec_free+0x2d/0x40
-[171252.437703]  [<ffffffff810d044c>] ? release_pages+0x24c/0x280
-[171252.437705]  [<ffffffff81099448>] ? ktime_get_ts+0xa8/0xe0
-[171252.437707]  [<ffffffff810c5040>] ? file_read_actor+0x170/0x170
-[171252.437709]  [<ffffffff8156ac8a>] io_schedule+0x8a/0xd0
-[171252.437711]  [<ffffffff810c5049>] sleep_on_page+0x9/0x10
-[171252.437713]  [<ffffffff8156b0f7>] __wait_on_bit+0x57/0x80
-[171252.437715]  [<ffffffff810c5630>] wait_on_page_bit+0x70/0x80
-[171252.437718]  [<ffffffff810916c0>] ? autoremove_wake_function+0x40/0x40
-[171252.437720]  [<ffffffff810f98a5>] migrate_pages+0x2a5/0x490
-[171252.437722]  [<ffffffff810f5940>] ? suitable_migration_target+0x50/0x50
-[171252.437724]  [<ffffffff810f6234>] compact_zone+0x4e4/0x770
-[171252.437727]  [<ffffffff810f65e0>] compact_zone_order+0x80/0xb0
-[171252.437729]  [<ffffffff810f66cd>] try_to_compact_pages+0xbd/0xf0
-[171252.437731]  [<ffffffff810cc608>] __alloc_pages_direct_compact+0xa8/0x180
-[171252.437734]  [<ffffffff810ccbdb>] __alloc_pages_nodemask+0x4fb/0x720
-[171252.437736]  [<ffffffff810fbfe3>] do_huge_pmd_wp_page+0x4c3/0x740
-[171252.437738]  [<ffffffff81094fff>] ? hrtimer_start_range_ns+0xf/0x20
-[171252.437740]  [<ffffffff810e3f9c>] handle_mm_fault+0x1bc/0x2f0
-[171252.437743]  [<ffffffff8102e6c6>] ? __switch_to+0x1e6/0x2c0
-[171252.437745]  [<ffffffff810511b2>] do_page_fault+0x132/0x430
-[171252.437747]  [<ffffffff810a4995>] ? sys_futex+0x105/0x1a0
-[171252.437749]  [<ffffffff8156cf9f>] page_fault+0x1f/0x30
+<...>
+> >+with minor modifications. The kdump script requires following
+> >+modifications:
+> >+-- During service kdump start if /proc/vmcore entry is not present,
+> >+   look for the existence of /sys/kernel/fadump_enabled and read
+> >+   value exported by it. If value is set to '0' then fallback to
+> >+   existing kexec based kdump. If value is set to '1' then check the
+> >+   value exported by /sys/kernel/fadump_registered. If value it set
+> >+   to '1' then print success otherwise register for fadump by
+> >+   echo'ing 1>  /sys/kernel/fadump_registered file.
+> >+
+> >+-- During service kdump start if /proc/vmcore entry is present,
+> >+   execute the existing routine to save the dump. Once the dump
+> >+   is saved, echo 1>  /sys/kernel/fadump_release_mem (if the
+> >+   file exists) to release the reserved memory for general use
+> >+   and continue without rebooting. At this point the memory
+> >+   reservation map will look like as shown in Fig. 1. If the file
+> >+   /sys/kernel/fadump_release_mem is not present then follow
+> >+   the existing routine to reboot into new kernel.
+> >+
+> >+-- During service kdump stop echo 0>  /sys/kernel/fadump_registered
+> >+   to un-register the fadump.
+> >+
+> 
+> I don't think you need to document kdump script changes in a kernel
+> doc.
+> 
 
-It could have been vfat, I don't remember for sure.  But I would think
-the problem depends only on the duration of PageWriteback being set.
+Agree. I will remove it.
 
-> Internally in SUSE, I received a bug report related to stalls in firefox
-> 	when using Java and Flash heavily while copying from NFS
-> 	to VFAT on USB. It has not been confirmed to be the same problem
-> 	but if it looks like a duck and quacks like a duck.....
+> >+
+> >+TODO:
+> >+-----
+> >+ o Need to come up with the better approach to find out more
+> >+   accurate boot memory size that is required for a kernel to
+> >+   boot successfully when booted with restricted memory.
+> >+ o The fadump implementation introduces a fadump crash info structure
+> >+   in the scratch area before the ELF core header. The idea of introducing
+> >+   this structure is to pass some important crash info data to the second
+> >+   kernel which will help second kernel to populate ELF core header with
+> >+   correct data before it gets exported through /proc/vmcore. The current
+> >+   design implementation does not address a possibility of introducing
+> >+   additional fields (in future) to this structure without affecting
+> >+   compatibility. Need to come up with the better approach to address this.
+> >+   The possible approaches are:
+> >+	1. Introduce version field for version tracking, bump up the version
+> >+	whenever a new field is added to the structure in future. The version
+> >+	field can be used to find out what fields are valid for the current
+> >+	version of the structure.
+> >+	2. Reserve the area of predefined size (say PAGE_SIZE) for this
+> >+	structure and have unused area as reserved (initialized to zero)
+> >+	for future field additions.
+> >+   The advantage of approach 1 over 2 is we don't need to reserve extra space.
+> >+---
 > 
-> In the past, commit [11bc82d6: mm: compaction: Use async migration for
-> __GFP_NO_KSWAPD and enforce no writeback] forced that sync compaction
-> would never be used for THP allocations. This was reverted in commit
-> [c6a140bf: mm/compaction: reverse the change that forbade sync
-> migraton with __GFP_NO_KSWAPD] on the grounds that it was uncertain
-> it was beneficial.
+> Why do we keep TODO in this doc?
 > 
-> While user-visible stalls do not happen for me when writing to USB,
-> I setup a test running postmark while short-lived processes created
-> anonymous mapping. The objective was to exercise the paths that
-> allocate transparent huge pages. I then logged when processes were
-> stalled for more than 1 second, recorded a stack strace and did some
-> analysis to aggregate unique "stall events" which revealed
-> 
-> Time stalled in this event:    47369 ms
-> Event count:                      20
-> usemem               sleep_on_page          3690 ms
-> usemem               sleep_on_page          2148 ms
-> usemem               sleep_on_page          1534 ms
-> usemem               sleep_on_page          1518 ms
-> usemem               sleep_on_page          1225 ms
-> usemem               sleep_on_page          2205 ms
-> usemem               sleep_on_page          2399 ms
-> usemem               sleep_on_page          2398 ms
-> usemem               sleep_on_page          3760 ms
-> usemem               sleep_on_page          1861 ms
-> usemem               sleep_on_page          2948 ms
-> usemem               sleep_on_page          1515 ms
-> usemem               sleep_on_page          1386 ms
-> usemem               sleep_on_page          1882 ms
-> usemem               sleep_on_page          1850 ms
-> usemem               sleep_on_page          3715 ms
-> usemem               sleep_on_page          3716 ms
-> usemem               sleep_on_page          4846 ms
-> usemem               sleep_on_page          1306 ms
-> usemem               sleep_on_page          1467 ms
-> [<ffffffff810ef30c>] wait_on_page_bit+0x6c/0x80
-> [<ffffffff8113de9f>] unmap_and_move+0x1bf/0x360
-> [<ffffffff8113e0e2>] migrate_pages+0xa2/0x1b0
-> [<ffffffff81134273>] compact_zone+0x1f3/0x2f0
-> [<ffffffff811345d8>] compact_zone_order+0xa8/0xf0
-> [<ffffffff811346ff>] try_to_compact_pages+0xdf/0x110
-> [<ffffffff810f773a>] __alloc_pages_direct_compact+0xda/0x1a0
-> [<ffffffff810f7d5d>] __alloc_pages_slowpath+0x55d/0x7a0
-> [<ffffffff810f8151>] __alloc_pages_nodemask+0x1b1/0x1c0
-> [<ffffffff811331db>] alloc_pages_vma+0x9b/0x160
-> [<ffffffff81142bb0>] do_huge_pmd_anonymous_page+0x160/0x270
-> [<ffffffff814410a7>] do_page_fault+0x207/0x4c0
-> [<ffffffff8143dde5>] page_fault+0x25/0x30
-> 
-> The stall times are approximate at best but the estimates represent 25%
-> of the worst stalls and even if the estimates are off by a factor of
-> 10, it's severe.
->
-> This patch once again prevents sync migration for transparent
-> hugepage allocations as it is preferable to fail a THP allocation
-> than stall. It was suggested that __GFP_NORETRY be used instead of
-> __GFP_NO_KSWAPD. This would look less like a special case but would
-> still cause compaction to run at least once with sync compaction.
-> 
-> If accepted, this is a -stable candidate.
-> 
-> Reported-by: Andy Isaacson <adi@hexapodia.org>
-> Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Tested-by: Johannes Weiner <jweiner@redhat.com>
+I see most of the kernel doc do contain TODO, hence I added it here.
+
+Thanks,
+-Mahesh.
+
+-- 
+Mahesh J Salgaonkar
+
