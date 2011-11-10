@@ -1,57 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811Ab1KJPf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:35:27 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60456 "EHLO
-	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751465Ab1KJPfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:35:24 -0500
-Date: Thu, 10 Nov 2011 15:35:50 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] ata: Fix build error in pata_of_platform (NO_IRQ usage)
-Message-ID: <20111110153550.6274179d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
-	<4E94A920.40503@xenotime.net>
-	<4E987829.3080104@xenotime.net>
-	<20111110135703.GA23609@elte.hu>
-	<20111110151852.GA7465@oksana.dev.rtsoft.ru>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S964827Ab1KJPg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:36:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757696Ab1KJPgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 10:36:55 -0500
+Date: Thu, 10 Nov 2011 16:36:51 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 3/5]thp: add tlb_remove_pmd_tlb_entry
+Message-ID: <20111110153651.GZ5075@redhat.com>
+References: <1319511571.22361.139.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319511571.22361.139.camel@sli10-conroe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The proper fix (stop OF code from returning NO_IRQ values) is pending.
+On Tue, Oct 25, 2011 at 10:59:31AM +0800, Shaohua Li wrote:
+> Index: linux/arch/x86/include/asm/tlb.h
+> ===================================================================
+> --- linux.orig/arch/x86/include/asm/tlb.h	2011-10-25 09:00:39.000000000 +0800
+> +++ linux/arch/x86/include/asm/tlb.h	2011-10-25 09:02:52.000000000 +0800
+> @@ -4,6 +4,7 @@
+>  #define tlb_start_vma(tlb, vma) do { } while (0)
+>  #define tlb_end_vma(tlb, vma) do { } while (0)
+>  #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
+> +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do { } while (0)
+>  #define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
 
-Please just apply the proper fix.
+This is superfluous, it's already define below as noop.
 
-> - The NO_IRQ disease spreads despite our willingness, even within
->   the new OF code.
-
-Then it can stop right here, because if the arch people don't fix their
-code to use zero their ATA port won't work.
-
-> +/* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
-> +#ifndef NO_IRQ
-> +#define NO_IRQ 0
+>  
+>  #include <asm-generic/tlb.h>
+> Index: linux/include/asm-generic/tlb.h
+> ===================================================================
+> --- linux.orig/include/asm-generic/tlb.h	2011-10-25 09:00:23.000000000 +0800
+> +++ linux/include/asm-generic/tlb.h	2011-10-25 09:18:01.000000000 +0800
+> @@ -139,6 +139,16 @@ static inline void tlb_remove_page(struc
+>  		__tlb_remove_tlb_entry(tlb, ptep, address);	\
+>  	} while (0)
+>  
+> +#ifndef __tlb_remove_pmd_tlb_entry
+> +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do {} while(0)
 > +#endif
+> +
+> +#define tlb_remove_pmd_tlb_entry(tlb, pmdp, address)		\
+> +	do {							\
+> +		tlb->need_flush = 1;				\
+> +		__tlb_remove_pmd_tlb_entry(tlb, pmdp, address);	\
+> +	} while (0)
 
-NAK - just test against zero. They've been complained at about this for
-over two years. Enough is enough.
+this looks weird, why do we set need_flush = 1 again, considering that
+we're doing tlb_remove_page() just a few lines later (which also sets
+tlb->need_flush = 1).
 
-Alan
+Ok that other archs may need the __tlb_remove_pmd_tlb_entry to be
+called (and I've no idea why), but the need_flush = 1 seems
+unnecessary.
+
+Why other archs need the __tlb_remove_pmd_tlb_entry to be called?
+
+One way to go would be to change the tlb->need_flush = 1 in
+__tlb_remove_page to a VM_BUG_ON(!tlb->need_flush) and then we keep it
+above and we add the __tlb_remove_pmd_tlb_entry call.
+
+Or is there any place where __tlb_remove_page is called without a
+tlb_remove_*tlb_entry being called before it?
+
+In any case the VM_BUG_ON will verify this.
+
+> Index: linux/include/linux/huge_mm.h
+> ===================================================================
+> --- linux.orig/include/linux/huge_mm.h	2011-10-25 09:07:12.000000000 +0800
+> +++ linux/include/linux/huge_mm.h	2011-10-25 09:07:44.000000000 +0800
+> @@ -18,7 +18,7 @@ extern struct page *follow_trans_huge_pm
+>  					  unsigned int flags);
+>  extern int zap_huge_pmd(struct mmu_gather *tlb,
+>  			struct vm_area_struct *vma,
+> -			pmd_t *pmd);
+> +			pmd_t *pmd, unsigned long addr);
+>  extern int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+>  			unsigned long addr, unsigned long end,
+>  			unsigned char *vec);
+> Index: linux/mm/huge_memory.c
+> ===================================================================
+> --- linux.orig/mm/huge_memory.c	2011-10-25 09:00:07.000000000 +0800
+> +++ linux/mm/huge_memory.c	2011-10-25 09:06:55.000000000 +0800
+> @@ -1005,7 +1005,7 @@ out:
+>  }
+>  
+>  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
+> -		 pmd_t *pmd)
+> +		 pmd_t *pmd, unsigned long addr)
+>  {
+>  	int ret = 0;
+>  
+> @@ -1021,6 +1021,7 @@ int zap_huge_pmd(struct mmu_gather *tlb,
+>  			pgtable = get_pmd_huge_pte(tlb->mm);
+>  			page = pmd_page(*pmd);
+>  			pmd_clear(pmd);
+> +			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
+>  			page_remove_rmap(page);
+>  			VM_BUG_ON(page_mapcount(page) < 0);
+>  			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
+> Index: linux/mm/memory.c
+> ===================================================================
+> --- linux.orig/mm/memory.c	2011-10-25 09:07:49.000000000 +0800
+> +++ linux/mm/memory.c	2011-10-25 09:08:29.000000000 +0800
+> @@ -1231,7 +1231,7 @@ static inline unsigned long zap_pmd_rang
+>  			if (next-addr != HPAGE_PMD_SIZE) {
+>  				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
+>  				split_huge_page_pmd(vma->vm_mm, pmd);
+> -			} else if (zap_huge_pmd(tlb, vma, pmd))
+> +			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
+>  				continue;
+>  			/* fall through */
+>  		}
+
+Rest looks ok.
