@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757798Ab1KJRNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 12:13:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757682Ab1KJRNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 12:13:53 -0500
-Date: Thu, 10 Nov 2011 19:13:44 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, mingo@elte.hu, ming.m.lin@intel.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
-Message-ID: <20111110171344.GB4659@redhat.com>
-References: <20111107110149.GA5177@quad>
- <1320935860.13800.25.camel@twins>
- <CABPqkBS_4TBYUvw_bPbtgpAfp8+vnSRZBYQoSAOKjOYV4GHmXA@mail.gmail.com>
- <20111110164135.GA4659@redhat.com>
- <CABPqkBQsQuzGP2YT+hucoZxgF4H1s9T3kriw37zTMrUwzTmLYA@mail.gmail.com>
+	id S935364Ab1KJROu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 12:14:50 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:33159
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757581Ab1KJROs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 12:14:48 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh87h2a8h668h839h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] regmap: Fix memory leak in regmap_init error path
+Date: Thu, 10 Nov 2011 18:15:15 +0100
+Message-ID: <1320945315-2745-1-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.7.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBQsQuzGP2YT+hucoZxgF4H1s9T3kriw37zTMrUwzTmLYA@mail.gmail.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 05:59:22PM +0100, Stephane Eranian wrote:
-> On Thu, Nov 10, 2011 at 5:41 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> > On Thu, Nov 10, 2011 at 04:09:32PM +0100, Stephane Eranian wrote:
-> >> On Thu, Nov 10, 2011 at 3:37 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >> > Just throwing this out there (hasn't event been compiled etc..).
-> >> >
-> >> > The idea is to try the fixed counters first so that we don't
-> >> > 'accidentally' fill a GP counter with something that could have lived on
-> >> > the fixed purpose one and then end up under utilizing the PMU that way.
-> >> >
-> >> > It ought to solve the most common PMU programming fail on Intel
-> >> > thingies.
-> >> >
-> > Heh, just looked into doing exactly that here.
-> >
-> >> What are the configs for which you have failures on Intel?
-> >>
-> > Suppose you have 3 fixed event counters and 2 GP counters and 3 event.
-> > One can go to one of the fixed counters or any GP, 2 others can be only on
-> > GP. If the event that can go to fixed counter will be placed into GP
-> > counter then one of the remaining events will fail to be scheduled.
-> >
-> Yes and the current algorithm does the right thing.
->  e1 (1 fixed +2 GP) -> weight = 3
->  e2 (2 GP) -> weight = 2
->  e3 (2 GP) -> weight = 2
-> 
-> The current algorithm schedules the event from light to heavy
-> weight. Thus, it schedules e2, e3 first on the GPs and then
-> e1 necessarily ends up on the fixed counter.
-> 
-> Do you have a test case where this does not work on Intel?
-Yeah, you are right indeed. Actually my incentive was to force an event
-to a fixed counter since it didn't count correctly when programmed into
-GP.
+If regcache initialization fails regmap_init will currently exit without
+freeing work_buf.
 
-What about if event that can go to fixed counter can go to only first
-GP? Then weight of each event will be 2. But I am not sure that such
-constrain actually exists on any real CPU.
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/base/regmap/regmap.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
---
-			Gleb.
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 3e30d16..b08df85 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -229,12 +229,14 @@ struct regmap *regmap_init(struct device *dev,
+ 
+ 	ret = regcache_init(map);
+ 	if (ret < 0)
+-		goto err_map;
++		goto err_free_workbuf;
+ 
+ 	regmap_debugfs_init(map);
+ 
+ 	return map;
+ 
++err_free_workbuf:
++	kfree(map->work_buf);
+ err_map:
+ 	kfree(map);
+ err:
+-- 
+1.7.7.1
+
+
