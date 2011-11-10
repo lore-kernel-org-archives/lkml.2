@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935277Ab1KJPkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:40:09 -0500
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:38681 "EHLO
-	mail.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933707Ab1KJPkI (ORCPT
+	id S935469Ab1KJPk0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:40:26 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:39321 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935321Ab1KJPkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:40:08 -0500
-Date: Thu, 10 Nov 2011 10:40:03 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: =?iso-8859-1?B?Suly9G1l?= Pinot <ngc891@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Evolution of kernel size
-Message-ID: <20111110154003.GA14012@elliptictech.com>
-References: <20111110143333.GA29457@comet.deepsky.org>
- <20111110145902.GA13619@elliptictech.com>
- <20111110151548.GA8557@comet.deepsky.org>
+	Thu, 10 Nov 2011 10:40:22 -0500
+Date: Thu, 10 Nov 2011 10:40:21 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Lin Ming <ming.m.lin@intel.com>
+cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH v2 4/4] ata: add ata port runtime PM callbacks
+In-Reply-To: <1320906166-15459-5-git-send-email-ming.m.lin@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1111101036160.2338-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111110151548.GA8557@comet.deepsky.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-11 00:15 +0900, Jérôme Pinot wrote:
-> On 11/10/11 09:59, Nick Bowler wrote:
-> > On 2011-11-10 23:33 +0900, Jérôme Pinot wrote:
-> > > I took some time to make a graph of the evolution of the size of the
-> > > linux kernel tar.bz2 since version 1.0 till 3.1 (297 releases).
-> > > It doesn't count the stable branches (2.6.x.y).
-> > > 
-> > > Impressive, it's mostly exponential.
-> > > If dev keeps same pace, we should break the 100MB at
-> > > linux 3.19.
-> > > 
-> > > You can get the graph on my blog, I provide the data and the
-> > > gnuplot batch file for graphing/fitting:
-> > > http://ngc891.blogdns.net/?p=92 
-> > > 
-> > > It may interest some people :-)
-> > 
-> > What scale did you use for the horizontal axis?  I see numbers assigned
-> > to each version in your gnuplot file, but no indication of how you came
-> > up with them.
-> 
-> It's just the release count, one step for one release.
-> 
-> Some release are missing, mostly at the very beginning, I didn't find
-> tarball for them but it doesn't matter much for the shape of the curve.
+On Thu, 10 Nov 2011, Lin Ming wrote:
 
-The problem with this is that the releases were not made at fixed
-intervals.  2.6.0 -> 3.0 represents more than double the amount of
-development time as 2.4 -> 2.6, yet they get roughly the same amount
-of horizontal space on your plot.
+> Add ata port runtime suspend/resume/idle callbacks.
+> Set ->eh_noresume to skip the runtime PM calls on scsi host
+> in the error handler to avoid dead lock.
 
-I think it would be much more interesting to scale by release dates, so
-that the gap between releases is proportional to the time between them.
-I suspect you'll see a very different shape.
+...
 
-Furthermore, looking at the raw data, you gave 2.4.37 (released in 2008)
-a lower release number than 2.6.0 (released in 2003), which seems odd.
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -3377,6 +3377,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
+>  		if (!shost)
+>  			goto err_alloc;
+>  
+> +		shost->eh_noresume = 1;
+>  		*(struct ata_port **)&shost->hostdata[0] = ap;
+>  		ap->scsi_host = shost;
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Are you really sure you want to keep this flag set throughout the 
+lifetime of the port?
+
+What happens if a command fails, then the port suspends, and then the 
+error handler is invoked to take care of the failed command?
+
+Alan Stern
+
