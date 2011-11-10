@@ -1,39 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935302Ab1KJPaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:30:46 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38131 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711Ab1KJPan (ORCPT
+	id S935325Ab1KJPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:30:58 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:39303 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S935306Ab1KJPay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:30:43 -0500
-Date: Thu, 10 Nov 2011 07:30:36 -0800
-From: Tejun Heo <tj@kernel.org>
+	Thu, 10 Nov 2011 10:30:54 -0500
+Date: Thu, 10 Nov 2011 10:30:53 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
 To: Lin Ming <ming.m.lin@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
+cc: linux-kernel@vger.kernel.org, <linux-ide@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>, <linux-pm@vger.kernel.org>,
         Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-        Kay Sievers <kay.sievers@vrfy.org>
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
 Subject: Re: [PATCH v2 0/4] ata port runtime power management support
-Message-ID: <20111110153036.GC27258@google.com>
-References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <Pine.LNX.4.44L0.1111101028250.2338-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 10 Nov 2011, Lin Ming wrote:
 
-(cc'ing Kay for the sysfs tree hierarchy change)
-
-On Thu, Nov 10, 2011 at 02:22:42PM +0800, Lin Ming wrote:
+> Hi, all
+> 
 > These 4 patches add ata port runtime pm support.
 > 
 > v1:
@@ -72,12 +67,13 @@ On Thu, Nov 10, 2011 at 02:22:42PM +0800, Lin Ming wrote:
 > 
 > This is much cleaner and natural.
 
-Yeah, I really like this approach.  Nicely done.  I *think* the
-hierarchy change should be okay but cc'ing Kay just in case.
+Have you observed any real benefit from this feature?
 
- Acked-by: Tejun Heo <tj@kernel.org>
+Currently, disks will not be runtime-suspended unless (1) the user 
+requests it by setting the appropriate power/control attribute, and (2) 
+the device file is closed (in particular, the disk has no mounted 
+filesystems or swap partitions).  I don't imagine this combination of 
+events is very common for disks using libata.
 
-Thanks.
+Alan Stern
 
--- 
-tejun
