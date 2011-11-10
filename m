@@ -1,122 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab1KJCFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 21:05:18 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38822 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab1KJCFQ (ORCPT
+	id S933516Ab1KJCLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 21:11:23 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3216 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753542Ab1KJCLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 21:05:16 -0500
+	Wed, 9 Nov 2011 21:11:22 -0500
+Message-ID: <4EBB32CA.5020206@dsn.lapis-semi.com>
+Date: Thu, 10 Nov 2011 11:11:22 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-Date: Wed, 9 Nov 2011 18:05:15 -0800
-Message-ID: <CAOesGMj+ppJty2_pQ=nkTQ4OT-8=O+OFL3FUq6nA-uC9tj9kCg@mail.gmail.com>
-Subject: [GIT PULL] arm-soc fixes for 3.2-rc
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <rmk@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nico@fluxnic.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Alan Cox <alan@linux.intel.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Subject: Re: [PATCH 2/2] pch_uart: Delete modem status interrupt enable code
+References: <1319697919-5623-1-git-send-email-tomoya-linux@dsn.lapis-semi.com>	<1319697919-5623-2-git-send-email-tomoya-linux@dsn.lapis-semi.com>	<20111101125757.4ef7f883@bob.linux.org.uk>	<4EB0DAB6.7000106@dsn.lapis-semi.com> <20111102110055.153d06c6@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111102110055.153d06c6@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Alan,
 
-Arnd is offline at the moment so I'm pitching in on collecting patches
-for arm-soc.
+(2011/11/02 20:00), Alan Cox wrote:
+>> Called ".get_mctrl" function, other software can know incoming carrier
+>> detection.
+>> Or you mean a uart driver must detect incoming carrier with interrupt ?
+>
+> If a user opens a tty port which has no carrier signal then the open is
+> supposed to block until the carrier is raised unless either clocal
+> termios or O_NDELAY open flags are set.
+>
+> That usually means you need to take the carrier raise interrupt in order
+> to wake out of open in this case.
+>
 
-See below for a set of fixes, mostly addressing fallout from the merge
-window. Please pull.
+I understand.
+We need to add modem status interrupt processing.
 
-
-Thanks!
-
-
--Olof
-
-
-The following changes since commit 19e0bafc36abd84a5b4d7c7745b78a6f4626e944:
-
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux (2011-11-08
-18:34:16 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git fixes
-
-Dirk Behme (1):
-      ARM: mxc: Remove test_for_ltirq
-
-Jason Liu (2):
-      ARM:i.MX: fix build error in tzic/avic.c
-      ARM:i.MX: fix build error in clock-mx51-mx53.c
-
-Jean-Christophe PLAGNIOL-VILLARD (4):
-      ARM: at91: usart: drop static map regs for dbgu
-      at91: vmalloc fix missing AT91_VIRT_BASE define
-      at91/yl-9200: Fix section mismatch
-      atmel/spi: fix missing probe
-
-Jochen Friedrich (1):
-      ARM: at91: Fix USBA gadget registration
-
-Marc Zyngier (2):
-      ARM: mxc: fix local timer interrupt handling
-      ARM: msm: fix compilation flags for MSM_SCM
-
-Olof Johansson (5):
-      Merge branch 'mxs/fixes' of
-git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge branch 'imx/compile-fixes' of
-git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge branch 'at91-fixes' of
-git://github.com/at91linux/linux-at91 into fixes
-      Merge branch 'for-3.2/fixes' of
-git://git.kernel.org/.../olof/tegra into fixes
-      Merge branch 'msm-fix' of
-git://codeaurora.org/quic/kernel/davidb/linux-msm into fixes
-
-Shawn Guo (1):
-      arm/mxs: fix mmc device adding for mach-mx28evk
-
-Stephen Boyd (1):
-      msm: boards: Fix fallout from removal of machine_desc in fixup
-
-Stephen Warren (2):
-      arm/tegra: Don't create duplicate gpio and pinmux devices
-      arm/dt: Fix ventana SDHCI power-gpios
-
-Yufeng Shen (1):
-      arm/tegra: enable headphone detection gpio on seaboard
-
- arch/arm/boot/dts/tegra-ventana.dts          |    3 +--
- arch/arm/mach-at91/at91cap9_devices.c        |    7 +++----
- arch/arm/mach-at91/at91rm9200_devices.c      |    5 ++---
- arch/arm/mach-at91/at91sam9260_devices.c     |    5 ++---
- arch/arm/mach-at91/at91sam9261_devices.c     |    5 ++---
- arch/arm/mach-at91/at91sam9263_devices.c     |    5 ++---
- arch/arm/mach-at91/at91sam9g45_devices.c     |    7 +++----
- arch/arm/mach-at91/at91sam9rl_devices.c      |    7 +++----
- arch/arm/mach-at91/board-yl-9200.c           |    2 +-
- arch/arm/mach-at91/include/mach/vmalloc.h    |    2 ++
- arch/arm/mach-msm/Makefile                   |    2 ++
- arch/arm/mach-msm/board-msm7x30.c            |    4 ++--
- arch/arm/mach-msm/board-msm8960.c            |    4 ++--
- arch/arm/mach-msm/board-msm8x60.c            |    4 ++--
- arch/arm/mach-msm/scm.c                      |    3 +++
- arch/arm/mach-mx5/clock-mx51-mx53.c          |    2 ++
- arch/arm/mach-mxs/mach-mx28evk.c             |    4 ++--
- arch/arm/mach-tegra/board-dt.c               |   13 +++++++------
- arch/arm/mach-tegra/board-harmony-pinmux.c   |    6 +++++-
- arch/arm/mach-tegra/board-paz00-pinmux.c     |    6 +++++-
- arch/arm/mach-tegra/board-seaboard-pinmux.c  |    6 +++++-
- arch/arm/mach-tegra/board-trimslice-pinmux.c |    5 ++++-
- arch/arm/plat-mxc/avic.c                     |    1 +
- arch/arm/plat-mxc/gic.c                      |   11 ++---------
- arch/arm/plat-mxc/include/mach/entry-macro.S |    3 ---
- arch/arm/plat-mxc/tzic.c                     |    1 +
- drivers/spi/spi-atmel.c                      |    5 +++--
- 27 files changed, 69 insertions(+), 59 deletions(-)
+Thanks,
+-- 
+tomoya
+ROHM Co., Ltd.
