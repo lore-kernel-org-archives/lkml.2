@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936313Ab1KJEIz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:08:55 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44671 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936097Ab1KJDok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:44:40 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:32:00 2011
-Message-Id: <20111109213200.426105516@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:33:48 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andrea Arcangeli <aarcange@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Hugh Dickins <hughd@google.com>, Johannes Weiner <jweiner@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S936320Ab1KJEJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:09:12 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:45113 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757100Ab1KJEJK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 23:09:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
+Date: Thu, 10 Nov 2011 12:09:08 +0800
+Message-ID: <CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com>
+Subject: Re: mm: convert vma->vm_flags to 64bit
+From: Nai Xia <nai.xia@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [181/264] powerpc: gup_hugepte() support THP based tail recounting
-In-Reply-To: <20111109213508.GA3476@kroah.com>
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+Hi all,
 
-------------------
+Did this patch get merged at last, or on this way being merged, or
+just dropped ?
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+Thanks,
 
-commit 3526741f0964c88bc2ce511e1078359052bf225b upstream.
+Nai
 
-Up to this point the code assumed old refcounting for hugepages (pre-thp).
-This updates the code directly to the thp mapcount tail page refcounting.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/powerpc/mm/hugetlbpage.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
-
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -385,12 +385,23 @@ follow_huge_pmd(struct mm_struct *mm, un
- 	return NULL;
- }
- 
-+static inline void get_huge_page_tail(struct page *page)
-+{
-+	/*
-+	 * __split_huge_page_refcount() cannot run
-+	 * from under us.
-+	 */
-+	VM_BUG_ON(page_mapcount(page) < 0);
-+	VM_BUG_ON(atomic_read(&page->_count) != 0);
-+	atomic_inc(&page->_mapcount);
-+}
-+
- static noinline int gup_hugepte(pte_t *ptep, unsigned long sz, unsigned long addr,
- 		       unsigned long end, int write, struct page **pages, int *nr)
- {
- 	unsigned long mask;
- 	unsigned long pte_end;
--	struct page *head, *page;
-+	struct page *head, *page, *tail;
- 	pte_t pte;
- 	int refs;
- 
-@@ -413,6 +424,7 @@ static noinline int gup_hugepte(pte_t *p
- 	head = pte_page(pte);
- 
- 	page = head + ((addr & (sz-1)) >> PAGE_SHIFT);
-+	tail = page;
- 	do {
- 		VM_BUG_ON(compound_head(page) != head);
- 		pages[*nr] = page;
-@@ -431,6 +443,16 @@ static noinline int gup_hugepte(pte_t *p
- 		*nr -= refs;
- 		while (refs--)
- 			put_page(head);
-+	} else {
-+		/*
-+		 * Any tail page need their mapcount reference taken
-+		 * before we return.
-+		 */
-+		while (refs--) {
-+			if (PageTail(tail))
-+				get_huge_page_tail(tail);
-+			tail++;
-+		}
- 	}
- 
- 	return 1;
-
-
+On Tue, Apr 12, 2011 at 2:10 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>
+> Benjamin, Hugh, I hope to add your S-O-B to this one because you are original author.
+> Can I do?
+>
+> Paul, Russell, This patch modifies arm and sh code a bit. I don't think
+> they are risky change. but I'm really glad if you see it.
+>
+>
+> Note: I confirmed x86, power and nommu-arm cross compiler build and
+> I've got no warning/error.
+>
+>
+>
+> From d5a0d1c265e4caccb9ff5978c615f74019b65453 Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 12 Apr 2011 14:00:42 +0900
+> Subject: [PATCH] mm: convert vma->vm_flags to 64bit
+>
+> For years, powerpc people repeatedly request us to convert vm_flags
+> to 64bit. Because now it has no room to store an addional powerpc
+> specific flags.
+>
+> Here is previous discussion logs.
+>
+>        http://lkml.org/lkml/2009/10/1/202
+>        http://lkml.org/lkml/2010/4/27/23
+>
+> But, unforunately they didn't get merged. This is 3rd trial.
+> I've merged previous two posted patches and adapted it for
+> latest tree.
+>
+> Of cource, this patch has no functional change.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
