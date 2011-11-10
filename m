@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935174Ab1KJPS7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:18:59 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34664 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933817Ab1KJPS5 (ORCPT
+	id S1757532Ab1KJPWl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:22:41 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50014 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1KJPWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:18:57 -0500
-Date: Thu, 10 Nov 2011 19:18:52 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] ata: Fix build error in pata_of_platform (NO_IRQ usage)
-Message-ID: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
-References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
- <4E94A920.40503@xenotime.net>
- <4E987829.3080104@xenotime.net>
- <20111110135703.GA23609@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20111110135703.GA23609@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Nov 2011 10:22:38 -0500
+Message-ID: <1320938548.22195.10.camel@i7.infradead.org>
+Subject: Re: [PATCH 2/4] intel-iommu: Implement iommu_device_group
+From: David Woodhouse <dwmw2@infradead.org>
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chrisw@redhat.com" <chrisw@redhat.com>,
+        "agraf@suse.de" <agraf@suse.de>, "dwg@au1.ibm.com" <dwg@au1.ibm.com>,
+        "scottwood@freescale.com" <scottwood@freescale.com>,
+        "B08248@freescale.com" <B08248@freescale.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+Date: Thu, 10 Nov 2011 15:22:28 +0000
+In-Reply-To: <20111108172348.GF5182@amd.com>
+References: <20111021195412.8438.9951.stgit@s20.home>
+	 <20111021195611.8438.84499.stgit@s20.home> <20111108172348.GF5182@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes a band-aid fix the following build failure:
-
-  CC      drivers/ata/pata_of_platform.o
-drivers/ata/pata_of_platform.c: In function 'pata_of_platform_probe':
-drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
-drivers/ata/pata_of_platform.c:55:13: note: each undeclared identifier is reported only once for each function it appears in
-
-The proper fix (stop OF code from returning NO_IRQ values) is pending.
-
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
-
-On Thu, Nov 10, 2011 at 02:57:03PM +0100, Ingo Molnar wrote:
-[...]
-> > > drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
+On Tue, 2011-11-08 at 18:23 +0100, Roedel, Joerg wrote:
+> On Fri, Oct 21, 2011 at 03:56:11PM -0400, Alex Williamson wrote:
+> > We generally have BDF granularity for devices, so we just need
+> > to make sure devices aren't hidden behind PCIe-to-PCI bridges.
+> > We can then make up a group number that's simply the concatenated
+> > seg|bus|dev|fn so we don't have to track them (not that users
+> > should depend on that).
 > > 
-> > [adding Author: Anton]
-> > 
-> > Build error still present in linux-next of 20111014.
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 > 
-> This build failure regression report was ignored twice and then 
-> pushed upstream and is still unfixed a month after the initial 
-> report. Upstream now fails to build on like 25% of x86 configs.
-> 
-> What's going on with this bug guys?
+> David, does this look good to you? Can you send an Acked-by if its okay?
 
-Here is the story:
+Looks good to me in principle, although I'd like to see it tested on one
+of those HP laptops with the dodgy Ricoh multi-function devices.
 
-- NO_IRQ is evil[1], AFAIR the trend is to remove its usage completely;
-- Sane arches (x86) don't use it at all, or have it defined to 0
-  (PPC32/64).
-- On another arches it is either -1 or whatever random value;
-- The NO_IRQ disease spreads despite our willingness, even within
-  the new OF code.
+Acked-By: David Woodhouse <David.Woodhouse@intel.com>
 
-The new irq domain stuff (that is used on ARM) always returns 0
-in 'no irq' case, so we may easily remove it.
-
-So the proper fix would be two-fold: for OF and for that driver.
-But this is for 3.3 kernels. I'll send the two patches as follow-ups.
-
-In the meantime, the band-aid (for 3.2) is down below.
-
-[1]
-http://lkml.org/lkml/2005/11/22/159
-http://lkml.org/lkml/2005/11/22/227
-
- drivers/ata/pata_of_platform.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/ata/pata_of_platform.c b/drivers/ata/pata_of_platform.c
-index a72ab0d..f99e17b 100644
---- a/drivers/ata/pata_of_platform.c
-+++ b/drivers/ata/pata_of_platform.c
-@@ -16,6 +16,11 @@
- #include <linux/of_platform.h>
- #include <linux/ata_platform.h>
- 
-+/* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
-+#ifndef NO_IRQ
-+#define NO_IRQ 0
-+#endif
-+
- static int __devinit pata_of_platform_probe(struct platform_device *ofdev)
- {
- 	int ret;
 -- 
-1.7.5.3
+dwmw2
 
