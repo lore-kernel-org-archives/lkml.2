@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab1KJM6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 07:58:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	id S934439Ab1KJM6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 07:58:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171Ab1KJM6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 07:58:07 -0500
+	id S934372Ab1KJM6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 07:58:14 -0500
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCHv3 09/10] KVM: x86 emulator: fix RDPMC privilege check
-Date: Thu, 10 Nov 2011 14:57:29 +0200
-Message-Id: <1320929850-10480-10-git-send-email-gleb@redhat.com>
+Subject: [PATCHv3 01/10] KVM: Expose kvm_lapic_local_deliver()
+Date: Thu, 10 Nov 2011 14:57:21 +0200
+Message-Id: <1320929850-10480-2-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320929850-10480-1-git-send-email-gleb@redhat.com>
 References: <1320929850-10480-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,28 +21,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Avi Kivity <avi@redhat.com>
 
-RDPMC is only privileged if CR4.PCE=0.  check_rdpmc() already implements this,
-so all we need to do is drop the Priv flag.
+Needed to deliver performance monitoring interrupts.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kvm/emulate.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kvm/lapic.c |    2 +-
+ arch/x86/kvm/lapic.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 8547958..c0ee85b 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -3254,7 +3254,7 @@ static struct opcode twobyte_table[256] = {
- 	DI(ImplicitOps | Priv, wrmsr),
- 	IIP(ImplicitOps, em_rdtsc, rdtsc, check_rdtsc),
- 	DI(ImplicitOps | Priv, rdmsr),
--	DIP(ImplicitOps | Priv, rdpmc, check_rdpmc),
-+	DIP(ImplicitOps, rdpmc, check_rdpmc),
- 	I(ImplicitOps | VendorSpecific, em_sysenter),
- 	I(ImplicitOps | Priv | VendorSpecific, em_sysexit),
- 	N, N,
+diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
+index 54abb40..e87e43e 100644
+--- a/arch/x86/kvm/lapic.c
++++ b/arch/x86/kvm/lapic.c
+@@ -1120,7 +1120,7 @@ int apic_has_pending_timer(struct kvm_vcpu *vcpu)
+ 	return 0;
+ }
+ 
+-static int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type)
+ {
+ 	u32 reg = apic_get_reg(apic, lvt_type);
+ 	int vector, mode, trig_mode;
+diff --git a/arch/x86/kvm/lapic.h b/arch/x86/kvm/lapic.h
+index 138e8cc..6f4ce25 100644
+--- a/arch/x86/kvm/lapic.h
++++ b/arch/x86/kvm/lapic.h
+@@ -34,6 +34,7 @@ void kvm_apic_set_version(struct kvm_vcpu *vcpu);
+ int kvm_apic_match_physical_addr(struct kvm_lapic *apic, u16 dest);
+ int kvm_apic_match_logical_addr(struct kvm_lapic *apic, u8 mda);
+ int kvm_apic_set_irq(struct kvm_vcpu *vcpu, struct kvm_lapic_irq *irq);
++int kvm_apic_local_deliver(struct kvm_lapic *apic, int lvt_type);
+ 
+ u64 kvm_get_apic_base(struct kvm_vcpu *vcpu);
+ void kvm_set_apic_base(struct kvm_vcpu *vcpu, u64 data);
 -- 
 1.7.7.1
 
