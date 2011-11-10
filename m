@@ -1,132 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935844Ab1KJEnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 23:43:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43292 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935773Ab1KJDei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:34:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Wed Nov  9 13:27:26 2011
-Message-Id: <20111109212725.927460524@clark.kroah.org>
-User-Agent: quilt/0.48-16.4
-Date: Wed, 09 Nov 2011 13:29:34 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Adam Thomson <adam.thomson@alcatel-lucent.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: [252/262] mtd: nand_base: always initialise oob_poi before writing OOB data
-In-Reply-To: <20111109212847.GA20838@kroah.com>
+	id S964789Ab1KJEnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 23:43:41 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54793 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933589Ab1KJEni (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 23:43:38 -0500
+Date: Wed, 9 Nov 2011 20:43:34 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrea Arcangeli <aarcange@redhat.com>
+cc: Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5]thp: improve the error code path
+In-Reply-To: <20111110030646.GT5075@redhat.com>
+Message-ID: <alpine.DEB.2.00.1111092039110.27280@chino.kir.corp.google.com>
+References: <1319511521.22361.135.camel@sli10-conroe> <20111025114406.GC10182@redhat.com> <1319593680.22361.145.camel@sli10-conroe> <1320643049.22361.204.camel@sli10-conroe> <20111110021853.GQ5075@redhat.com> <1320892395.22361.229.camel@sli10-conroe>
+ <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com> <20111110030646.GT5075@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 10 Nov 2011, Andrea Arcangeli wrote:
 
-------------------
+> Before after won't matter much I guess... If you really want to clean
+> the code, I wonder what is exactly the point of those dummy functions
+> if we can't call those outside of #ifdefs.
 
-From: "THOMSON, Adam (Adam)" <adam.thomson@alcatel-lucent.com>
+You can, you just need to declare the actuals that you pass to the dummy 
+functions for CONFIG_SYSFS=n as well.  Or, convert the dummy functions to 
+do
 
-commit f722013ee9fd24623df31dec9a91a6d02c3e2f2f upstream.
+	#define sysfs_remove_group(kobj, grp) do {} while (0)
 
-In nand_do_write_ops() code it is possible for a caller to provide
-ops.oobbuf populated and ops.mode == MTD_OOB_AUTO, which currently
-means that the chip->oob_poi buffer isn't initialised to all 0xFF.
-The nand_fill_oob() method then carries out the task of copying
-the provided OOB data to oob_poi, but with MTD_OOB_AUTO it skips
-areas marked as unavailable by the layout struct, including the
-bad block marker bytes.
+but good luck getting that passed Andrew :)
 
-An example of this causing issues is when the last OOB data read
-was from the start of a bad block where the markers are not 0xFF,
-and the caller wishes to write new OOB data at the beginning of
-another block. In this scenario the caller would provide OOB data,
-but nand_fill_oob() would skip the bad block marker bytes in
-oob_poi before copying the OOB data provided by the caller.
-This means that when the OOB data is written back to NAND,
-the block is inadvertently marked as bad without the caller knowing.
-This has been witnessed when using YAFFS2 where tags are stored
-in the OOB.
+> I mean a cleanup that adds
+> more #ifdefs when there are explicit dummy functions which I assume
+> are meant to be used outside of #ifdef CONFIG_SYSFS doesn't sound so
+> clean in the first place. I understand you need to refactor the code
+> above to call those outside of #ifdefs but hey if you're happy with
+> #ifdef I'm happy too :). It just looks fishy to read sysfs.h dummy
+> functions and #ifdefs. When I wrote the code I hardly could have
+> wondered about the sysfs #ifdefs but at this point it's only cleanups
+> I'm seeing so I actually noticed that.
+> 
 
-To avoid this oob_poi is always initialised to 0xFF to make sure
-no left over data is inadvertently written back to the OOB area.
-
-Credits to Brian Norris <computersforpeace@gmail.com> for fixing this
-patch.
-
-Signed-off-by: Adam Thomson <adam.thomson@alcatel-lucent.com>
-Signed-off-by: Artem Bityutskiy <dedekind1@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-
----
- drivers/mtd/nand/nand_base.c |   27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
-
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2097,14 +2097,22 @@ static int nand_write_page(struct mtd_in
- 
- /**
-  * nand_fill_oob - [Internal] Transfer client buffer to oob
-- * @chip:	nand chip structure
-+ * @mtd:	MTD device structure
-  * @oob:	oob data buffer
-  * @len:	oob data write length
-  * @ops:	oob ops structure
-  */
--static uint8_t *nand_fill_oob(struct nand_chip *chip, uint8_t *oob, size_t len,
--						struct mtd_oob_ops *ops)
-+static uint8_t *nand_fill_oob(struct mtd_info *mtd, uint8_t *oob, size_t len,
-+			      struct mtd_oob_ops *ops)
- {
-+	struct nand_chip *chip = mtd->priv;
-+
-+	/*
-+	 * Initialise to all 0xFF, to avoid the possibility of left over OOB
-+	 * data from a previous OOB read.
-+	 */
-+	memset(chip->oob_poi, 0xff, mtd->oobsize);
-+
- 	switch (ops->mode) {
- 
- 	case MTD_OOB_PLACE:
-@@ -2201,10 +2209,6 @@ static int nand_do_write_ops(struct mtd_
- 	    (chip->pagebuf << chip->page_shift) < (to + ops->len))
- 		chip->pagebuf = -1;
- 
--	/* If we're not given explicit OOB data, let it be 0xFF */
--	if (likely(!oob))
--		memset(chip->oob_poi, 0xff, mtd->oobsize);
--
- 	/* Don't allow multipage oob writes with offset */
- 	if (oob && ops->ooboffs && (ops->ooboffs + ops->ooblen > oobmaxlen))
- 		return -EINVAL;
-@@ -2226,8 +2230,11 @@ static int nand_do_write_ops(struct mtd_
- 
- 		if (unlikely(oob)) {
- 			size_t len = min(oobwritelen, oobmaxlen);
--			oob = nand_fill_oob(chip, oob, len, ops);
-+			oob = nand_fill_oob(mtd, oob, len, ops);
- 			oobwritelen -= len;
-+		} else {
-+			/* We still need to erase leftover OOB data */
-+			memset(chip->oob_poi, 0xff, mtd->oobsize);
- 		}
- 
- 		ret = chip->write_page(mtd, chip, wbuf, page, cached,
-@@ -2401,10 +2408,8 @@ static int nand_do_write_oob(struct mtd_
- 	if (page == chip->pagebuf)
- 		chip->pagebuf = -1;
- 
--	memset(chip->oob_poi, 0xff, mtd->oobsize);
--	nand_fill_oob(chip, ops->oobbuf, ops->ooblen, ops);
-+	nand_fill_oob(mtd, ops->oobbuf, ops->ooblen, ops);
- 	status = chip->ecc.write_oob(mtd, chip, page & chip->pagemask);
--	memset(chip->oob_poi, 0xff, mtd->oobsize);
- 
- 	if (status)
- 		return status;
-
-
+The cleaniest solution would probably be to just extract all the calls 
+that depend on CONFIG_SYSFS out of hugepage_init(), call it 
+hugepage_sysfs_init(), and then return a failure code if it fails to setup 
+then do the error handling there.  hugepage_sysfs_init() would be defined 
+right after the attributes are defined.
