@@ -1,112 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab1KJIar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:30:47 -0500
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:37691 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757458Ab1KJIap (ORCPT
+	id S933702Ab1KJIa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:30:57 -0500
+Received: from locusts.copyleft.no ([178.255.144.241]:60574 "EHLO
+	mail.mailgateway.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757458Ab1KJIax convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:30:45 -0500
-X-Sasl-enc: ppnmW3vKbFlOPBYA210VaEu4EDPcygNqRr/hwI0B7TV4 1320913843
-Subject: Re: [132/262] vfs pathname lookup: Add LOOKUP_AUTOMOUNT flag
-From: Ian Kent <raven@themaw.net>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        David Howells <dhowells@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <mszeredi@suse.cz>
-In-Reply-To: <20111109212713.879189869@clark.kroah.org>
-References: <20111109212713.879189869@clark.kroah.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Nov 2011 16:30:36 +0800
-Message-ID: <1320913836.3206.68.camel@perseus.themaw.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 03:30:53 -0500
+X-Greylist: delayed 1673 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 03:30:53 EST
+MIME-Version: 1.0
+In-Reply-To: <7v4nydurzh.fsf@alter.siamese.dyndns.org>
+References: <20111026202235.GA20928@havoc.gtf.org>
+	<1319969101.5215.20.camel@dabdike>
+	<CA+55aFx1NGWfNJAKDTvZfsHDDKiEtS4t4RydSgHurBeyGPyhXg@mail.gmail.com>
+	<1320049150.8283.19.camel@dabdike>
+	<CA+55aFz3=cbciRfTYodNhdEetXYxTARGTfpP9GL9RZK222XmKQ@mail.gmail.com>
+	<7vy5w1ow90.fsf@alter.siamese.dyndns.org>
+	<CA+55aFwL_s=DcT46dprcYVWEAm_=WkuTV6K9dAn3wc_bDQU8vA@mail.gmail.com>
+	<7vwrbjlj5r.fsf@alter.siamese.dyndns.org>
+	<CA+55aFx_rAA6TJkZn1Zvu6u9UjxnmTVt0HpMnvaE_q9Sx-jzPg@mail.gmail.com>
+	<7vk47jld5s.fsf@alter.siamese.dyndns.org>
+	<CA+55aFz7TeQQH3D4Tpp31cZYZoQKeK37jouo+2Kh61Wa07knfw@mail.gmail.com>
+	<CAJo=hJv5nAKH_ptYSWfMvFQv0Dj+naPXK35wSzKYkfPOYsWkxg@mail.gmail.com>
+	<CA+55aFx0oCd6-sh0psYxho-s=sHAK0RHXJHfLewRuUcdXzxZbg@mail.gmail.com>
+	<CA+55aFwXu=+HdQ5nW11Ts5p-V=KgpxjyagKqB+Xv+qBOEEWXvQ@mail.gmail.com>
+	<7v62j1gitn.fsf@alter.siamese.dyndns.org>
+	<7vvcr1f38j.fsf@alter.siamese.dyndns.org>
+	<CA+55aFyRawm9CoJMiEXDFCX4YTidPOiV4oqSS2d7nNv7Ecw8BQ@mail.gmail.com>
+	<7v4nydurzh.fsf@alter.siamese.dyndns.org>
+Date: Thu, 10 Nov 2011 09:02:53 +0100
+Message-ID: <CALKQrgfZtELcK3H5ZYvmcW8RrtKMVRACFTvw3s5SidFvmFWkGw@mail.gmail.com>
+Subject: Re: [git patches] libata updates, GPG signed (but see admin notes)
+From: Johan Herland <johan@herland.net>
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Shawn Pearce <spearce@spearce.org>, git@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Jeff Garzik <jeff@garzik.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 13:27 -0800, Greg KH wrote:
-> 3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Nov 9, 2011 at 18:26, Junio C Hamano <gitster@pobox.com> wrote:
+>  - "git notes" is represented as a commit that records a tree that holds
+>   the entire mapping from commit to its annotations, and the only way to
+>   transferr it is to send it together with its history as a whole. It
+>   does not have the nice auto-following property that transfers only the
+>   relevant annotations.
 
-I was going to say we need commits
-815d405ceff0d6964683f033e18b9b23a88fba87 and
-b6c8069d3577481390b3f24a8434ad72a3235594 but I see those patches are
-present in stable-queue repo along with
-5c8a0fbba543d9428a486f0d1282bbcf3cf1d95a.
+True. However, consider these mitigating factors:
 
-This last commit is, as Linux points out, open to question, although if
-it was an autofs mount point that status is not really useful to the
-user. OTOH for other fs (that use automounting) the status of the file
-system containing the mount point might be useful but possibly
-misleading. IMHO I'd include this commit as well.
+ - The annotations in question (the "signing" of commits) are all intended to
+   be merged eventually (i.e. there is no reason for a developer to (after the
+   fact) sign a commit that will never end up in the public record). Therefore,
+   most or all of the notes in the notes tree are already relevant, or
+will become
+   relevant in the near future (when the associated commits are merged).
 
-> 
-> ------------------
-> 
-> 
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> Since we've now turned around and made LOOKUP_FOLLOW *not* force an
-> automount, we want to add the ability to force an automount event on
-> lookup even if we don't happen to have one of the other flags that force
-> it implicitly (LOOKUP_OPEN, LOOKUP_DIRECTORY, LOOKUP_PARENT..)
-> 
-> Most cases will never want to use this, since you'd normally want to
-> delay automounting as long as possible, which usually implies
-> LOOKUP_OPEN (when we open a file or directory, we really cannot avoid
-> the automount any more).
-> 
-> But Trond argued sufficiently forcefully that at a minimum bind mounting
-> a file and quotactl will want to force the automount lookup.  Some other
-> cases (like nfs_follow_remote_path()) could use it too, although
-> LOOKUP_DIRECTORY would work there as well.
-> 
-> This commit just adds the flag and logic, no users yet, though.  It also
-> doesn't actually touch the LOOKUP_NO_AUTOMOUNT flag that is related, and
-> was made irrelevant by the same change that made us not follow on
-> LOOKUP_FOLLOW.
-> 
-> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Cc: Ian Kent <raven@themaw.net>
-> Cc: Jeff Layton <jlayton@redhat.com>
-> Cc: Miklos Szeredi <miklos@szeredi.hu>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> ---
->  fs/namei.c            |    2 +-
->  include/linux/namei.h |    1 +
->  2 files changed, 2 insertions(+), 1 deletion(-)
-> 
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -793,7 +793,7 @@ static int follow_automount(struct path
->  	 * of the daemon to instantiate them before they can be used.
->  	 */
->  	if (!(flags & (LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
-> -		     LOOKUP_OPEN | LOOKUP_CREATE)) &&
-> +		     LOOKUP_OPEN | LOOKUP_CREATE | LOOKUP_AUTOMOUNT)) &&
->  	    path->dentry->d_inode)
->  		return -EISDIR;
->  
-> --- a/include/linux/namei.h
-> +++ b/include/linux/namei.h
-> @@ -49,6 +49,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LA
->  #define LOOKUP_FOLLOW		0x0001
->  #define LOOKUP_DIRECTORY	0x0002
->  #define LOOKUP_CONTINUE		0x0004
-> +#define LOOKUP_AUTOMOUNT	0x0008
->  
->  #define LOOKUP_PARENT		0x0010
->  #define LOOKUP_REVAL		0x0020
-> 
-> 
+ - Additionally, you could organize these notes into two (or more) notes trees,
+   one for merged/official annotations, and one for unmerged/pending
+annotations.
+   Then make the relevant tools (e.g. "git merge") transfer notes from one tree
+   to the other, thereby making sure that the "official" record only contains
+   notes that are relevant to the merged history.
+
+ - Finally, there's always "git notes prune" to purge annotations for commits
+   that ended up never being merged.
+
+My point is that although "notes" might end up transferring more annotations
+than strictly necessary, I believe that in practice all the notes
+being transferred
+are already (or will soon become) relevant.
+
+>  + "git notes" maps the commits to its annotations in the right direction;
+>   the object name of an annotated object to its annotation.
+>
+> In the longer term, I think we would need to extend the system in the
+> following way:
+>
+>  - Introduce a mapping machanism that can be locally used to map names of
+>   the objects being annotated to names of other objects (most likely
+>   blobs but there is nothing that fundamentally prevents you from
+>   annotating a commit with a tree). The current "git notes" might be a
+>   perfectly suitable representation of this, or it may turn out to be
+>   lacking (I haven't thought things through), but the important point is
+>   that this "mapping store" is _local_. fsck, repack and prune need to be
+>   told that objects that store the annotation are reachable from the
+>   annotated objects.
+
+IMHO this is precisely what "git notes" does today.
+
+>  - Introduce a protocol extension to transfer this mapping information for
+>   objects being transferred in an efficient way. When "rev-list --objects
+>   have..want" tells us that the receiving end (in either fetch/push
+>   direction) would have an object at the end of the primary transfer
+>   (note that I did not say "an object will be sent in this transfer
+>   transaction"; "have" does not come into the picture), we make sure that
+>   missing annotations attached to the object is also transferred, and new
+>   mapping is registered at the receiving end.
+>
+> The detailed design for the latter needs more thought. The auto-following
+> of tags works even if nothing is being fetched in the primary transfer
+> (i.e. "git fetch" && "git fetch" back to back to update our origin/master
+> with the master at the origin) when a new tag is added to ancient part of
+> the history that leads to the master at the origin, but this is exactly
+> because the sending end advertises all the available tags and the objects
+> they point at so that we can tell what new tags added to an old object is
+> missing from the receiving end. This obviously would not scale well when
+> we have tens of thousands of objects to annotate. Perhaps an entry in the
+> "mapping store" would record:
+>
+>  - The object name of the object being annotated;
+>
+>  - The object name of the annotation;
+>
+>  - The "timestamp", i.e. when the association between the above two was
+>   made--this can be local to the repository and a simple counter would
+>   do.
+>
+> and also maintain the last "timestamp" this repository sent annotations to
+> the remote (one timestamp per remote repository). When we push, we would
+> send annotations pertaining to the object reachable from what we are
+> pushing (not limited by what they already have, as the whole point of this
+> exercise is to allow us to transfer annotations added to an object long
+> after the object was created and sent to the remote) that is newer than
+> that "timestamp". Similarly, when fetching, we would send the "timestamp"
+> this repository last fetched annotations from the other end (which means
+> we would need one such "timestamp" per remote repository) and let the
+> remote side decide the set of new annotations they added since we last
+> synched that are on objects reachable from what we "want".
+>
+> Or something like that.
+
+You would also have to keep track of deleted annotations, to enable the local
+side to delete an annotation corresponding to an already-deleted annotation
+on the remote side.
+
+Pretty soon, you end up having to record something similar to a DAG,
+describing the history of manipulating these annotations. At that point, your
+"timestamp" calculation starts to look very similar to the "have..want"
+calculation already done when transferring "regular" refs. At which point you
+have a system that is very similar to what "git notes" does today...
 
 
+...Johan
+
+-- 
+Johan Herland, <johan@herland.net>
+www.herland.net
