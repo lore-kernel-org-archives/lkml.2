@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592Ab1KJAxA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:53:00 -0500
-Received: from mga03.intel.com ([143.182.124.21]:1731 "EHLO mga03.intel.com"
+	id S933606Ab1KJAxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:53:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38033 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756846Ab1KJAvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:51:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
-   d="scan'208";a="35103416"
-From: "Fenghua Yu" <fenghua.yu@intel.com>
-To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
-        "Ingo Molnar" <mingo@elte.hu>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Tony Luck" <tony.luck@intel.com>,
-        "Arjan van de Ven" <arjan.van.de.ven@intel.com>,
-        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
-        "Len Brown" <len.brown@intel.com>,
-        "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
-        "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 2/7] x86/common.c: Init BSP data during BSP online
-Date: Wed,  9 Nov 2011 16:34:12 -0800
-Message-Id: <1320885257-16647-3-git-send-email-fenghua.yu@intel.com>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
-References: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
+	id S933479Ab1KJAxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 19:53:12 -0500
+Date: Thu, 10 Nov 2011 00:53:07 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: long sleep_on_page delays writing to slow storage
+Message-ID: <20111110005307.GC3083@suse.de>
+References: <20111107045928.GK8927@hexapodia.org>
+ <20111109170027.GB7495@quack.suse.cz>
+ <20111109175201.GB3083@suse.de>
+ <20111109180646.GM5075@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20111109180646.GM5075@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+On Wed, Nov 09, 2011 at 07:06:46PM +0100, Andrea Arcangeli wrote:
+> On Wed, Nov 09, 2011 at 05:52:01PM +0000, Mel Gorman wrote:
+> > -#define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
+> > -	alloc_pages(gfp_mask, order)
+> > +#define alloc_pages_vma(gfp_mask, order, vma, addr, node, drop_mmapsem)	\
+> > +	({ 								\
+> > +		if (drop_mmapsem)					\
+> > +			up_read(&vma->vm_mm->mmap_sem);			\
+> > +		alloc_pages(gfp_mask, order);				\
+> > +	})
+> 
+> I wouldn't change alloc_pages_vma. I think it's better to add and have
+> that called only by khugepaged:
+> 
+> alloc_pages_vma_up_read(gfp_mask, order, vma, addr, node)
+> {
+> 	__alloc_pages_vma(gfp_mask, order, vma, addr, node, true);
+> }
+> 
+> alloc_pages_vma(gfp_mask, order, vma, addr, node)
+> {
+> 	__alloc_pages_vma(gfp_mask, order, vma, addr, node, false);
+> }
+> 
 
-During BSP online, enable x2apic, set_numa_node, add numa mask, and enable
-sep cpu for BSP.
+Yeah it would. I thought that myself after adjusting the
+alloc_pages_vma() function but hadn't gone back to it. The "bodge" was
+only written earlier.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/include/asm/processor.h |    1 +
- arch/x86/kernel/cpu/common.c     |   13 ++++++++++---
- 2 files changed, 11 insertions(+), 3 deletions(-)
+> I wonder if a change like this would be enough?
+> 
+>        sync_migration = !(gfp_mask & __GFP_NO_KSWAPD);
+> 
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index b650435..4057161 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -162,6 +162,7 @@ extern struct pt_regs *idle_regs(struct pt_regs *);
- 
- extern void early_cpu_init(void);
- extern void identify_boot_cpu(void);
-+extern void identify_boot_cpu_online(void);
- extern void identify_secondary_cpu(struct cpuinfo_x86 *);
- extern void print_cpu_info(struct cpuinfo_x86 *);
- extern void init_scattered_cpuid_features(struct cpuinfo_x86 *c);
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index aa003b1..faa3bda 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -916,6 +916,14 @@ void __init identify_boot_cpu(void)
- #endif
- }
- 
-+void __cpuinit identify_boot_cpu_online(void)
-+{
-+	numa_add_cpu(smp_processor_id());
-+#ifdef CONFIG_X86_32
-+	enable_sep_cpu();
-+#endif
-+}
-+
- void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
- {
- 	BUG_ON(c == &boot_cpu_data);
-@@ -1163,7 +1171,7 @@ void __cpuinit cpu_init(void)
- 	oist = &per_cpu(orig_ist, cpu);
- 
- #ifdef CONFIG_NUMA
--	if (cpu != 0 && percpu_read(numa_node) == 0 &&
-+	if (percpu_read(numa_node) == 0 &&
- 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
- 		set_numa_node(early_cpu_to_node(cpu));
- #endif
-@@ -1195,8 +1203,7 @@ void __cpuinit cpu_init(void)
- 	barrier();
- 
- 	x86_configure_nx();
--	if (cpu != 0)
--		enable_x2apic();
-+	enable_x2apic();
- 
- 	/*
- 	 * set up and load the per-CPU TSS
+Sure it does and in fact this is patch 1 of 2 and it reduced all the
+THP related stalls for me. The number of THPs were reduced though
+because khugepaged was no longer using sync compaction hence patch
+2 which altered alloc_pages_vma. This was testing on CONFIG_NUMA so
+testing for PF_KTHREAD would be insufficient as khugepaged would call
+sync compaction with the mmap_sem held causing indirect stalls.
+
+> But even if hidden in a new function, the main downside overall is the
+> fact we'll pass one more var through the stack of fast paths.
+> 
+
+Unfortunate but the alternative is not allowing khugepaged to use sync
+compaction. Are you ok with that? The number of THPs in use was reduced
+but it also was during a somewhat unrealistic stress test so it might
+not matter.
+
+> Johannes I recall you reported this too and Mel suggested the above
+> change, did it help in the end?
+> 
+> Your change in khugepaged context makes perfect sense anyway, just we
+> should be sure it's really needed before adding more variables in fast
+> path I think.
+
+It's not really needed to avoid stalls - just !(gfp_mask &
+__GFP_NO_KSWAPD) is enough for that. It's only needed if we want
+khugepaged to continue using sync compaction without stalling processes
+due to holding mmap_sem.
+
 -- 
-1.6.0.3
-
+Mel Gorman
+SUSE Labs
