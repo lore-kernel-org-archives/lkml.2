@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1KJDGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:06:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27960 "EHLO mx1.redhat.com"
+	id S933517Ab1KJDJR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:09:17 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34429 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab1KJDGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:06:50 -0500
-Date: Thu, 10 Nov 2011 04:06:47 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Shaohua Li <shaohua.li@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 1/5]thp: improve the error code path
-Message-ID: <20111110030646.GT5075@redhat.com>
-References: <1319511521.22361.135.camel@sli10-conroe>
- <20111025114406.GC10182@redhat.com>
- <1319593680.22361.145.camel@sli10-conroe>
- <1320643049.22361.204.camel@sli10-conroe>
- <20111110021853.GQ5075@redhat.com>
- <1320892395.22361.229.camel@sli10-conroe>
- <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com>
+	id S1752546Ab1KJDJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:09:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
+   d="scan'208";a="35142207"
+Subject: Re: [PATCH] PNP ACPI: Use real gsi
+From: Zhang Rui <rui.zhang@intel.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <201111090935.52141.trenn@suse.de>
+References: <1320372728-3235-1-git-send-email-trenn@suse.de>
+	 <1320373233-3725-1-git-send-email-trenn@suse.de>
+	 <201111090935.52141.trenn@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Nov 2011 11:07:33 +0800
+Message-ID: <1320894453.15460.15.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 06:43:58PM -0800, David Rientjes wrote:
-> You're right, but I agree that the #ifdef's just make the function error 
-> handling much too complex.  Would you mind adding sysfs_*_out labels at 
-> the end of the function to handle these errors instead?  And I think we 
-> should be doing khugepaged_slab_init() and mm_slots_hash_init() before 
-> initializing sysfs.
-> 
-> Something like
-> 
-> 	out:
-> 		khugepaged_slab_free();
-> 		mm_slots_hash_free();	<-- after you remove it from #if 0
-> 		return err;
-> 
-> 	#ifdef CONFIG_SYSFS
-> 	sysfs_khugepaged_out:
-> 		sysfs_remove_group(hugepage_kobj, &khugepaged_attr_group);
-> 	sysfs_hugepage_out:
-> 		sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
-> 		...
-> 		goto out;
-> 	#endif
+Hi, Thomas,
 
-Before after won't matter much I guess... If you really want to clean
-the code, I wonder what is exactly the point of those dummy functions
-if we can't call those outside of #ifdefs. I mean a cleanup that adds
-more #ifdefs when there are explicit dummy functions which I assume
-are meant to be used outside of #ifdef CONFIG_SYSFS doesn't sound so
-clean in the first place. I understand you need to refactor the code
-above to call those outside of #ifdefs but hey if you're happy with
-#ifdef I'm happy too :). It just looks fishy to read sysfs.h dummy
-functions and #ifdefs. When I wrote the code I hardly could have
-wondered about the sysfs #ifdefs but at this point it's only cleanups
-I'm seeing so I actually noticed that.
+can you attach the full dmesg output after applying the patch,
+and the full acpidump of this machine please?
+
+thanks,
+rui
+
+On Wed, 2011-11-09 at 16:35 +0800, Thomas Renninger wrote:
+> Hi,
+> 
+> On Friday, November 04, 2011 03:20:33 AM Thomas Renninger wrote:
+> > From: Yinghai Lu <yinghai@kernel.org>
+> > 
+> ...
+> > On an IBM Xseries (x3850) this caused the machine to freeze around when
+> > the init userspace process is tried to get started.
+> > The reason is that the timer interrupt is not set up correctly on this
+> > machine.
+> ...
+> 
+> What is the state/opinion about this one?
+> It fixes a sever bug/regression for me and it would be great to
+> see this one in 3.2.
+> 
+> Thanks,
+> 
+>     Thomas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
