@@ -1,66 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024Ab1KJQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:12:28 -0500
-Received: from mail.asbjorn.biz ([217.195.185.3]:47465 "EHLO mail.asbjorn.biz"
+	id S965055Ab1KJQNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:13:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55491 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757633Ab1KJQM0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:12:26 -0500
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 11:12:26 EST
-From: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] libata: fix compile error when CONFIG_ATA_BMDMA is not defined
-Date: Thu, 10 Nov 2011 16:10:26 +0000
-Message-Id: <1320941426-1100-1-git-send-email-asbjorn@asbjorn.biz>
-X-Mailer: git-send-email 1.7.7.1
+	id S933007Ab1KJQNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 11:13:36 -0500
+Date: Thu, 10 Nov 2011 16:13:31 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111110161331.GG3083@suse.de>
+References: <20111110100616.GD3083@suse.de>
+ <20111110142202.GE3083@suse.de>
+ <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-rc1 and Linus' tree at 5e442a49, fails to compile,
-with CONFIG_SFF defined without CONFIG_ATA_BMDMA.
+On Fri, Nov 11, 2011 at 12:12:01AM +0900, Minchan Kim wrote:
+> Hi Mel,
+> 
+> You should have Cced with me because __GFP_NORETRY is issued by me.
+> 
 
-The error was introduced by:
-  [ c2036033 ] libata: reduce ata_pci_[sff,bmdma]_init_one() size
+I don't understand. __GFP_NORETRY has been around a long time ago
+and has loads of users. Do you have particular concerns about the
+behaviour of __GFP_NORETRY?
 
-Note this patch have only been compile tested.
+> On Thu, Nov 10, 2011 at 11:22 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Thu, Nov 10, 2011 at 10:06:16AM +0000, Mel Gorman wrote:
+> >> than stall. It was suggested that __GFP_NORETRY be used instead of
+> >> __GFP_NO_KSWAPD. This would look less like a special case but would
+> >> still cause compaction to run at least once with sync compaction.
+> >>
+> >
+> > This comment is bogus - __GFP_NORETRY would have caught THP allocations
+> > and would not call sync compaction. The issue was that it would also
+> > have caught any hypothetical high-order GFP_THISNODE allocations that
+> > end up calling compaction here
+> 
+> In fact, the I support patch concept so I would like to give
+> 
+> Acked-by: Minchan Kim <minchan.kim@gmail.com>
+> But it is still doubt about code.
+> 
+> __GFP_NORETRY: The VM implementation must not retry indefinitely
+> 
+> What could people think if they look at above comment?
+> At least, I can imagine two
+> 
+> First, it is related on *latency*.
 
-Signed-off-by: Asbjoern Sloth Toennesen <asbjorn@asbjorn.biz>
+I never read it to mean that. I always read it to mean "it must
+not retry indefinitely". I expected it was still fine to try direct
+reclaim which is not a latency-sensitive operation.
+
+> Second, "I can handle if VM fails allocation"
+> 
+
+Fully agreed.
+
+> I am biased toward latter.
+> Then, __GFP_NO_KSWAPD is okay? It means "let's avoid sync compaction
+> or long latency"?
+
+and do not wake kswapd to swap additional pages.
+
+> It's rather awkward name. Already someone started to use
+> __GFP_NO_KSWAPD as such purpose.
+> See mtd_kmalloc_up_to. He mentioned in comment of function as follows,
+> 
+>  * the system page size. This attempts to make sure it does not adversely
+>  * impact system performance, so when allocating more than one page, we
+>  * ask the memory allocator to avoid re-trying, swapping, writing back
+>  * or performing I/O.
+> 
+
+I was not aware of this user although their reason for using it
+seems fine. We are not breaking their expectations with this patch but
+it is a slippery slope.
+
+> That thing was what I concerned.
+> In future, new users of __GFP_NO_KSWAPD is coming and we can't prevent
+> them under our sight.
+> So I hope we can change the flag name or fix above code and comment
+> out __GFP_NO_KSWAPD
+> 
+
+I can't think of a better name but we can at least improve the comment.
+
+> /*
+>  * __GFP_NO_KSWAPD is very VM internal flag so Please don't use it
+> without allowing mm guys
+>  *
+> #define __GFP_NO_KSWAPD xxxx
+> 
+> >
+> >                /*
+> >                 * High-order allocations do not necessarily loop after
+> >                 * direct reclaim and reclaim/compaction depends on
+> >                 * compaction being called after reclaim so call directly if
+> >                 * necessary
+> >                 */
+> >                page = __alloc_pages_direct_compact(gfp_mask, order,
+> >                                        zonelist, high_zoneidx,
+> >                                        nodemask,
+> >                                        alloc_flags, preferred_zone,
+> >                                        migratetype, &did_some_progress,
+> >                                        sync_migration);
+> >
+> > __GFP_NORETRY is used in a bunch of places and while the most
+> > of them are not high-order, some of them potentially are like in
+> > sound/core/memalloc.c. Using __GFP_NO_KSWAPD as the flag allows
+> > these callers to continue using sync compaction.  It could be argued
+> 
+> Okay. If I was biased first, I have opposed this comment because they
+> might think __GFP_NORETRY is very latency sensitive.
+
+As __GFP_NORETRY uses direct reclaim, I do not think users expect it
+to be latency sensitive. If they were latency sensitive, they would
+mask out __GFP_WAIT.
+
+> So they wanted allocation is very fast without any writeback/retrial.
+> In view point, __GFP_NORETRY isn't bad, I think.
+> 
+> Having said that, I was biased latter, as I said earlier.
+> 
+> > that they would prefer __GFP_NORETRY but the potential side-effects
+> > should be taken should be taken into account and the comment updated
+> 
+> Considering side-effect, your patch is okay.
+> But I can't understand you mentioned "the comment updated if that
+> happens" sentence. :(
+> 
+
+I meant the comment above sync_migration = !(gfp_mask & __GFP_NO_KSWAPD) should
+be updated if it changes to __GFP_NORETRY.
+
+I updated the commentary a bit. Does this help?
+
+==== CUT HERE ====
+mm: Do not stall in synchronous compaction for THP allocations
+
+Changelog since V1
+  o Update changelog with more detail
+  o Add comment on __GFP_NO_KSWAPD
+
+Occasionally during large file copies to slow storage, there are still
+reports of user-visible stalls when THP is enabled. Reports on this
+have been intermittent and not reliable to reproduce locally but;
+
+Andy Isaacson reported a problem copying to VFAT on SD Card
+	https://lkml.org/lkml/2011/11/7/2
+
+	In this case, it was stuck in munmap for betwen 20 and 60
+	seconds in compaction. It is also possible that khugepaged
+	was holding mmap_sem on this process if CONFIG_NUMA was set.
+
+Johannes Weiner reported stalls on USB
+	https://lkml.org/lkml/2011/7/25/378
+
+	In this case, there is no stack trace but it looks like the
+	same problem. The USB stick may have been using NTFS as a
+	filesystem based on other work done related to writing back
+	to USB around the same time.
+
+Internally in SUSE, I received a bug report related to stalls in firefox
+	when using Java and Flash heavily while copying from NFS
+	to VFAT on USB. It has not been confirmed to be the same problem
+	but if it looks like a duck and quacks like a duck.....
+
+In the past, commit [11bc82d6: mm: compaction: Use async migration for
+__GFP_NO_KSWAPD and enforce no writeback] forced that sync compaction
+would never be used for THP allocations. This was reverted in commit
+[c6a140bf: mm/compaction: reverse the change that forbade sync
+migraton with __GFP_NO_KSWAPD] on the grounds that it was uncertain
+it was beneficial.
+
+While user-visible stalls do not happen for me when writing to USB,
+I setup a test running postmark while short-lived processes created
+anonymous mapping. The objective was to exercise the paths that
+allocate transparent huge pages. I then logged when processes were
+stalled for more than 1 second, recorded a stack strace and did some
+analysis to aggregate unique "stall events" which revealed
+
+Time stalled in this event:    47369 ms
+Event count:                      20
+usemem               sleep_on_page          3690 ms
+usemem               sleep_on_page          2148 ms
+usemem               sleep_on_page          1534 ms
+usemem               sleep_on_page          1518 ms
+usemem               sleep_on_page          1225 ms
+usemem               sleep_on_page          2205 ms
+usemem               sleep_on_page          2399 ms
+usemem               sleep_on_page          2398 ms
+usemem               sleep_on_page          3760 ms
+usemem               sleep_on_page          1861 ms
+usemem               sleep_on_page          2948 ms
+usemem               sleep_on_page          1515 ms
+usemem               sleep_on_page          1386 ms
+usemem               sleep_on_page          1882 ms
+usemem               sleep_on_page          1850 ms
+usemem               sleep_on_page          3715 ms
+usemem               sleep_on_page          3716 ms
+usemem               sleep_on_page          4846 ms
+usemem               sleep_on_page          1306 ms
+usemem               sleep_on_page          1467 ms
+[<ffffffff810ef30c>] wait_on_page_bit+0x6c/0x80
+[<ffffffff8113de9f>] unmap_and_move+0x1bf/0x360
+[<ffffffff8113e0e2>] migrate_pages+0xa2/0x1b0
+[<ffffffff81134273>] compact_zone+0x1f3/0x2f0
+[<ffffffff811345d8>] compact_zone_order+0xa8/0xf0
+[<ffffffff811346ff>] try_to_compact_pages+0xdf/0x110
+[<ffffffff810f773a>] __alloc_pages_direct_compact+0xda/0x1a0
+[<ffffffff810f7d5d>] __alloc_pages_slowpath+0x55d/0x7a0
+[<ffffffff810f8151>] __alloc_pages_nodemask+0x1b1/0x1c0
+[<ffffffff811331db>] alloc_pages_vma+0x9b/0x160
+[<ffffffff81142bb0>] do_huge_pmd_anonymous_page+0x160/0x270
+[<ffffffff814410a7>] do_page_fault+0x207/0x4c0
+[<ffffffff8143dde5>] page_fault+0x25/0x30
+
+The stall times are approximate at best but the estimates represent 25%
+of the worst stalls and even if the estimates are off by a factor of
+10, it's severe.
+
+This patch once again prevents sync migration for transparent
+hugepage allocations as it is preferable to fail a THP allocation
+than stall.
+
+It was suggested that __GFP_NORETRY be used instead of __GFP_NO_KSWAPD
+to look less like a special case. This would prevent THP allocation
+using sync compaction but it would have other side-effects. There are
+existing users of __GFP_NORETRY that are doing high-order allocations
+and while they can handle allocation failure, it seems reasonable that
+they continue to use sync compaction unless there is a deliberate
+reason to change that. To help clarify this for the future, this
+patch updates the comment for __GFP_NO_KSWAPD.
+
+If accepted, this is a -stable candidate.
+
+Reported-by: Andy Isaacson <adi@hexapodia.org>
+Reported-and-tested-by: Johannes Weiner <hannes@cmpxchg.org>
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- drivers/ata/libata-sff.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ include/linux/gfp.h |    8 ++++++++
+ mm/page_alloc.c     |    9 ++++++++-
+ 2 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ata/libata-sff.c b/drivers/ata/libata-sff.c
-index 63d5327..82b1237 100644
---- a/drivers/ata/libata-sff.c
-+++ b/drivers/ata/libata-sff.c
-@@ -2533,10 +2533,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
- 	if (rc)
- 		goto out;
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 3a76faf..4470a3c 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -83,7 +83,15 @@ struct vm_area_struct;
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE) /* Page is reclaimable */
+ #define __GFP_NOTRACK	((__force gfp_t)___GFP_NOTRACK)  /* Don't track with kmemcheck */
  
-+	#ifdef CONFIG_ATA_BMDMA
- 	if (bmdma)
- 		/* prepare and activate BMDMA host */
- 		rc = ata_pci_bmdma_prepare_host(pdev, ppi, &host);
- 	else
-+	#endif /* CONFIG_ATA_BMDMA */
- 		/* prepare and activate SFF host */
- 		rc = ata_pci_sff_prepare_host(pdev, ppi, &host);
- 	if (rc)
-@@ -2544,10 +2546,12 @@ static int ata_pci_init_one(struct pci_dev *pdev,
- 	host->private_data = host_priv;
- 	host->flags |= hflags;
++/*
++ * __GFP_NO_KSWAPD indicates that the VM should favour failing the allocation
++ * over excessive disruption of the system. Currently this means
++ * 1. Do not wake kswapd (hence the flag name)
++ * 2. Do not use stall in synchronous compaction for high-order allocations
++ *    as this may cause the caller to stall writing out pages
++ */
+ #define __GFP_NO_KSWAPD	((__force gfp_t)___GFP_NO_KSWAPD)
++
+ #define __GFP_OTHER_NODE ((__force gfp_t)___GFP_OTHER_NODE) /* On behalf of other node */
  
-+	#ifdef CONFIG_ATA_BMDMA
- 	if (bmdma) {
- 		pci_set_master(pdev);
- 		rc = ata_pci_sff_activate_host(host, ata_bmdma_interrupt, sht);
- 	} else
-+	#endif /* CONFIG_ATA_BMDMA */
- 		rc = ata_pci_sff_activate_host(host, ata_sff_interrupt, sht);
- out:
- 	if (rc == 0)
--- 
-1.7.7.1
-
+ /*
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6e8ecb6..a3b5da6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2161,7 +2161,14 @@ rebalance:
+ 					sync_migration);
+ 	if (page)
+ 		goto got_pg;
+-	sync_migration = true;
++
++	/*
++	 * Do not use sync migration if __GFP_NO_KSWAPD is used to indicate
++	 * the system should not be heavily disrupted. In practice, this is
++	 * to avoid THP callers being stalled in writeback during migration
++	 * as it's preferable for the the allocations to fail than to stall
++	 */
++	sync_migration = !(gfp_mask & __GFP_NO_KSWAPD);
+ 
+ 	/* Try direct reclaim and then allocating */
+ 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
