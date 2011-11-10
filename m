@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab1KJTFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:05:55 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49678 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755667Ab1KJTFs (ORCPT
+	id S933323Ab1KJTGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:06:03 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41712 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab1KJTF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:05:48 -0500
+	Thu, 10 Nov 2011 14:05:57 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,45 +23,190 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:10:45 +0530
-Message-Id: <20111110184045.11361.23204.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 11 Nov 2011 00:10:55 +0530
+Message-Id: <20111110184055.11361.73915.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
 References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 16/28]   uprobes: Introduce uprobe_task_arch_info structure.
-x-cbid: 11111019-8256-0000-0000-0000001A70B1
+Subject: [PATCH v6 3.2-rc1 17/28]   x86: arch specific hooks for pre/post singlestep handling.
+x-cbid: 11111019-2000-0000-0000-00000121486D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-uprobe_task_arch_info structure helps save and restore architecture
-specific artifacts at the probehit/singlestep/original instruction
-restore time.
+Hooks for handling pre singlestepping and post singlestepping.
 
 Signed-off-by: Jim Keniston <jkenisto@us.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/uprobes.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/uprobes.h |    2 +
+ arch/x86/kernel/uprobes.c      |  135 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 137 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 0882223..c1378a9 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -31,6 +31,7 @@ struct vm_area_struct;
- #else
- typedef u8 uprobe_opcode_t;
- struct uprobe_arch_info {};
-+struct uprobe_task_arch_info {};	/* arch specific task info */
- #define MAX_UINSN_BYTES 4
- #endif
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index cf794bf..99d7d4b 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -47,6 +47,8 @@ struct uprobe_task_arch_info {};
+ struct uprobe;
+ extern int analyze_insn(struct mm_struct *mm, struct uprobe *uprobe);
+ extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
++extern int pre_xol(struct uprobe *uprobe, struct pt_regs *regs);
++extern int post_xol(struct uprobe *uprobe, struct pt_regs *regs);
+ extern int uprobe_exception_notify(struct notifier_block *self,
+ 				       unsigned long val, void *data);
+ #endif	/* _ASM_UPROBES_H */
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index 2ee5ddc..0792fc8 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -25,6 +25,7 @@
+ #include <linux/sched.h>
+ #include <linux/ptrace.h>
+ #include <linux/uprobes.h>
++#include <linux/uaccess.h>
  
-@@ -84,6 +85,7 @@ struct uprobe_task {
- 	unsigned long vaddr;
+ #include <linux/kdebug.h>
+ #include <asm/insn.h>
+@@ -409,6 +410,140 @@ void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr)
+ }
  
- 	enum uprobe_task_state state;
-+	struct uprobe_task_arch_info tskinfo;
- 
- 	struct uprobe *active_uprobe;
- };
+ /*
++ * pre_xol - prepare to execute out of line.
++ * @uprobe: the probepoint information.
++ * @regs: reflects the saved user state of @tsk.
++ *
++ * If we're emulating a rip-relative instruction, save the contents
++ * of the scratch register and store the target address in that register.
++ *
++ * Returns true if @uprobe->opcode is @bkpt_insn.
++ */
++#ifdef CONFIG_X86_64
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_task_arch_info *tskinfo = &current->utask->tskinfo;
++
++	regs->ip = current->utask->xol_vaddr;
++	if (uprobe->fixups & UPROBES_FIX_RIP_AX) {
++		tskinfo->saved_scratch_register = regs->ax;
++		regs->ax = current->utask->vaddr;
++		regs->ax += uprobe->arch_info.rip_rela_target_address;
++	} else if (uprobe->fixups & UPROBES_FIX_RIP_CX) {
++		tskinfo->saved_scratch_register = regs->cx;
++		regs->cx = current->utask->vaddr;
++		regs->cx += uprobe->arch_info.rip_rela_target_address;
++	}
++	return 0;
++}
++#else
++int pre_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	regs->ip = current->utask->xol_vaddr;
++	return 0;
++}
++#endif
++
++/*
++ * Called by post_xol() to adjust the return address pushed by a call
++ * instruction executed out of line.
++ */
++static int adjust_ret_addr(unsigned long sp, long correction)
++{
++	int rasize, ncopied;
++	long ra = 0;
++
++	if (is_32bit_app(current))
++		rasize = 4;
++	else
++		rasize = 8;
++
++	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	ra += correction;
++	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	return 0;
++}
++
++#ifdef CONFIG_X86_64
++static bool is_riprel_insn(struct uprobe *uprobe)
++{
++	return ((uprobe->fixups &
++			(UPROBES_FIX_RIP_AX | UPROBES_FIX_RIP_CX)) != 0);
++}
++
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
++{
++	if (is_riprel_insn(uprobe)) {
++		struct uprobe_task_arch_info *tskinfo;
++		tskinfo = &current->utask->tskinfo;
++
++		if (uprobe->fixups & UPROBES_FIX_RIP_AX)
++			regs->ax = tskinfo->saved_scratch_register;
++		else
++			regs->cx = tskinfo->saved_scratch_register;
++		/*
++		 * The original instruction includes a displacement, and so
++		 * is 4 bytes longer than what we've just single-stepped.
++		 * Fall through to handle stuff like "jmpq *...(%rip)" and
++		 * "callq *...(%rip)".
++		 */
++		*correction += 4;
++	}
++}
++#else
++static void handle_riprel_post_xol(struct uprobe *uprobe,
++			struct pt_regs *regs, long *correction)
++{
++}
++#endif
++
++/*
++ * Called after single-stepping. To avoid the SMP problems that can
++ * occur when we temporarily put back the original opcode to
++ * single-step, we single-stepped a copy of the instruction.
++ *
++ * This function prepares to resume execution after the single-step.
++ * We have to fix things up as follows:
++ *
++ * Typically, the new ip is relative to the copied instruction.  We need
++ * to make it relative to the original instruction (FIX_IP).  Exceptions
++ * are return instructions and absolute or indirect jump or call instructions.
++ *
++ * If the single-stepped instruction was a call, the return address that
++ * is atop the stack is the address following the copied instruction.  We
++ * need to make it the address following the original instruction (FIX_CALL).
++ *
++ * If the original instruction was a rip-relative instruction such as
++ * "movl %edx,0xnnnn(%rip)", we have instead executed an equivalent
++ * instruction using a scratch register -- e.g., "movl %edx,(%rax)".
++ * We need to restore the contents of the scratch register and adjust
++ * the ip, keeping in mind that the instruction we executed is 4 bytes
++ * shorter than the original instruction (since we squeezed out the offset
++ * field).  (FIX_RIP_AX or FIX_RIP_CX)
++ */
++int post_xol(struct uprobe *uprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++	int result = 0;
++	long correction;
++
++	correction = (long)(utask->vaddr - utask->xol_vaddr);
++	handle_riprel_post_xol(uprobe, regs, &correction);
++	if (uprobe->fixups & UPROBES_FIX_IP)
++		regs->ip += correction;
++	if (uprobe->fixups & UPROBES_FIX_CALL)
++		result = adjust_ret_addr(regs->sp, correction);
++	return result;
++}
++
++/*
+  * Wrapper routine for handling exceptions.
+  */
+ int uprobe_exception_notify(struct notifier_block *self,
 
