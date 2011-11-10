@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756971Ab1KJC3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 21:29:17 -0500
-Received: from lo.gmane.org ([80.91.229.12]:53554 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab1KJC3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 21:29:16 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
+	id S933543Ab1KJCad (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 21:30:33 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51179 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933401Ab1KJCab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 21:30:31 -0500
+Message-ID: <4EBB3742.7060404@google.com>
+Date: Wed, 09 Nov 2011 18:30:26 -0800
 From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>, Ben Segall <bsegall@google.com>
 Subject: Re: [patch 3/3] From: Ben Segall <bsegall@google.com>
-Date: Wed, 09 Nov 2011 18:28:56 -0800
-Message-ID: <j9fct9$heq$1@dough.gmane.org>
 References: <20111108042632.977080206@google.com> <20111108042736.683407863@google.com>
-Mime-Version: 1.0
+In-Reply-To: <20111108042736.683407863@google.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-In-Reply-To: <20111108042736.683407863@google.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,7 +31,6 @@ Thanks,
 
 - Paul
 ---
-
 sched: update task accounting on throttle so that idle_balance() will trigger
 From: Ben Segall <bsegall@google.com>
 
@@ -319,4 +319,3 @@ Index: tip/kernel/sched_fair.c
   }
   #else
   static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-
