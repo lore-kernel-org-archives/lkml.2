@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab1KJVNj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 16:13:39 -0500
-Received: from gate.crashing.org ([63.228.1.57]:46106 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752043Ab1KJVNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 16:13:37 -0500
-Message-ID: <1320959579.21206.24.camel@pasglop>
-Subject: Re: mm: convert vma->vm_flags to 64bit
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: nai.xia@gmail.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, dave@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lethal@linux-sh.org,
-        linux@arm.linux.org.uk
-Date: Fri, 11 Nov 2011 08:12:59 +1100
-In-Reply-To: <4EBC085D.3060107@jp.fujitsu.com>
-References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>
-	 <CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com>
-	 <4EBC085D.3060107@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932371Ab1KJVPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 16:15:46 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60099 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932066Ab1KJVPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 16:15:43 -0500
+Date: Thu, 10 Nov 2011 13:15:04 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Dave Airlie <airlied@redhat.com>,
+        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH] drm: avoid switching to text console if there is no
+ panic timeout
+Message-ID: <20111110211504.GK8333@google.com>
+References: <1318896400-32498-1-git-send-email-msb@chromium.org>
+ <alpine.DEB.2.00.1110171727300.13515@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1111101246560.21036@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1111101246560.21036@chino.kir.corp.google.com>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-10 at 12:22 -0500, KOSAKI Motohiro wrote:
-> On 11/9/2011 11:09 PM, Nai Xia wrote:
-> > Hi all,
+David Rientjes (rientjes@google.com) wrote:
+> On Mon, 17 Oct 2011, David Rientjes wrote:
+> 
+> > On Mon, 17 Oct 2011, Mandeep Singh Baines wrote:
 > > 
-> > Did this patch get merged at last, or on this way being merged, or
-> > just dropped ?
+> > > From: Hugh Dickins <hughd@chromium.org>
+> > > 
+> > > Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
+> > > we're going to reboot immediately, the user will not be able to see the
+> > > messages anyway, and messing with the video mode may display artifacts,
+> > > and certainly get into several layers of complexity (including mutexes and
+> > > memory allocations) which we shall be much safer to avoid.
+> > > 
+> > > Signed-off-by: Hugh Dickins <hughd@google.com>
+> > > [ Edited commit message and modified to short-circuit panic_timeout < 0
+> > >   instead of testing panic_timeout >= 0.  -Mandeep ]
+> > > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> > > Cc: Dave Airlie <airlied@redhat.com>
+> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > > Cc: dri-devel@lists.freedesktop.org
+> > 
+> > Acked-by: David Rientjes <rientjes@google.com>
+> > 
 > 
-> Dropped.
-> Linus said he dislike 64bit enhancement.
+> Dave, where do we stand on this?  I haven't seen it hit Linus' tree and I 
+> don't see it in git://people.freedesktop.org/~airlied/linux.
 
-Do you have a pointer ? (And a rationale)
+The last status I have is Andrew pulling it into mmotm on 10/18/11.
 
-I still want to put some arch flags in there at some point...
-
-Cheers,
-Ben.
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Subject: + drm-avoid-switching-to-text-console-if-there-is-no-panic-timeout.patch added to -mm tree
+From: akpm@linux-foundation.org
+Date: Tue, 18 Oct 2011 15:42:46 -0700
 
 
+The patch titled
+     Subject: drm: avoid switching to text console if there is no panic timeout
+has been added to the -mm tree.  Its filename is
+     drm-avoid-switching-to-text-console-if-there-is-no-panic-timeout.patch
+
+Where is mmotm hosted these days?
+
+Regards,
+Mandeep
