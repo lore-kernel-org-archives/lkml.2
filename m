@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964880Ab1KJP64 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:58:56 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35460 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932801Ab1KJP6y (ORCPT
+	id S935502Ab1KJQDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:03:10 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44396 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932857Ab1KJQDH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:58:54 -0500
-Date: Thu, 10 Nov 2011 15:59:47 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: =?iso-8859-1?B?R+Fib3IgTOlu4XJ0?= <lgb@lgb.hu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: capabilities question(s)
-Message-ID: <20111110155947.GA17085@hallyn.com>
-References: <20111110115144.GD10997@vega.lgb.hu>
+	Thu, 10 Nov 2011 11:03:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111110115144.GD10997@vega.lgb.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20111110153036.GC27258@google.com>
+References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com> <20111110153036.GC27258@google.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 10 Nov 2011 17:02:41 +0100
+Message-ID: <CAPXgP12-CxDBa0cHtM+ejczR4131tnvq3N0WKQ5egt4hb31kPg@mail.gmail.com>
+Subject: Re: [PATCH v2 0/4] ata port runtime power management support
+To: Tejun Heo <tj@kernel.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting G�bor L�n�rt (lgb@lgb.hu):
-> Hi All,
-> 
-> I have the problem that I can't find too much informations about
-> capabilities implemented by the Linux kernel, and its usage. 
-> I even don't have header file sys/capability.h suggested by man
-> page of capget (on ubuntu, if it does count). However it's not the major
-> problem, as I've found example to use syscall() from sys/syscall.h and
-> stuffs in linux/capability.h. Well, ignore it, I've just found out
-> that I need libcap-dev to install. However the problem remains:
-> 
-> What I want to do: I need user to be able to do chroot() once, then I want
-> to drop that capability (to be safe?).  My program (a server) runs as root,
-> but after initialization it changes uid/gid (in a forked process).  However
-> I want to keep chroot capability even after the uid/gid change so I can do a
-> chroot() even as non-root.  It it possible at all? I need this so I feel
+On Thu, Nov 10, 2011 at 16:30, Tejun Heo <tj@kernel.org> wrote:
+> On Thu, Nov 10, 2011 at 02:22:42PM +0800, Lin Ming wrote:
 
-What you want is
+>> v2 changes it to:
+>>
+>>         /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+>>         |-- ata1                                (ata port)
+>>             |-- host0                           (scsi host)
+>>                 |-- target0:0:0                 (scsi target)
+>>                     |-- 0:0:0:0                 (disk)
+>>
+>> So ata port runtime PM will happen as:
 
-	prctl(PR_SET_KEEPCAPS, 1);
+>> This is much cleaner and natural.
+>
+> Yeah, I really like this approach.  Nicely done.  I *think* the
+> hierarchy change should be okay but cc'ing Kay just in case.
 
-That will let you keep the capabilities across the uid change.  Note that
-this will get reset, and your privilege dropped, after a subsequent execve().
-If that doesn't work for you, then you may want to look into running that
-task with different securebits settings (using prctl(PR_SET_SECUREBITS, XYZ)).
-See 'man 7 capabilities' for more information on that.
+Looks good to me. All non-broken users of sysfs should be fine and
+cope with changes like this without any problem.
 
-HTH,
--serge
-
-> more secure not to run things as root, since I need to do many things before
-> I can call chroot(). So I guessed, it's more secure to use non-root user
-> to do these, before I can do chroot().
-> 
-> As far as I can see, I can set capability as root, but after uid/gid change,
-> I lost that capability, and - of course - I cannot set it as a user then.
-> 
-> Or should I use root user anyway, just drop all of the capabilities I don't
-> need just keep uid/gid change and chroot? Anyway, then I have the problem
-> that I am still root for the filesystem permission checks, and it's
-> something I don't want to do, because the things my server do before chroot
-> is not so secure ...
-> 
-> Any ideas are welcome.
-> 
-> Best regards,
-> 
-> G�bor
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Kay
