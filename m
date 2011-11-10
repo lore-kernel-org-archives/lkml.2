@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933955Ab1KJOvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 09:51:52 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:50353
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753979Ab1KJOvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 09:51:50 -0500
-X-SpamScore: -12
-X-BigFish: VPS-12(zz98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LUG9A3-01-IN7-02
-X-M-MSG: 
-Date: Thu, 10 Nov 2011 15:51:10 +0100
-From: Joerg Roedel <Joerg.Roedel@amd.com>
-To: cody <mail.kai.huang@gmail.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>, <iommu@lists.linux-foundation.org>,
-        <linux-omap@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        KyongHo Cho <pullip.cho@samsung.com>, <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
- supported by the hardware
-Message-ID: <20111110145110.GD13213@amd.com>
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
- <1318850846-16066-3-git-send-email-ohad@wizery.com>
- <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
- <CAK=WgbZbfCRJqA-wwHN=iLH6rYyoKjJCaL0zMfY93Tg6Jw2uvA@mail.gmail.com>
- <4EBBC090.4070109@gmail.com>
- <20111110130801.GC13213@amd.com>
- <4EBBE136.4030404@gmail.com>
+	id S934134Ab1KJOxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 09:53:45 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:32919 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932716Ab1KJOxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 09:53:44 -0500
+Date: Thu, 10 Nov 2011 15:52:02 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Venki Pallipadi <venki@google.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf bench sched cpu-matrix benchmark
+Message-ID: <20111110145201.GA29614@elte.hu>
+References: <20111104115620.GA25704@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EBBE136.4030404@gmail.com>
+In-Reply-To: <20111104115620.GA25704@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:35:34PM +0800, cody wrote:
-> Yes I totally agree page-size is not required for unmap operations
-> and should not be added as parameter to map/unmap operations. I am
-> not saying the unmap operation, but the IOTLB flush operation. My
-> point is we also may also need to add similar logic in IOTLB flush
-> code (such as in Intel IOMMU dirver) to grantee that when issuing
-> IOTLB flush command for large page, we will still meet the hardware
-> limitation of flushing large page. Seems for Intel IOMMU the only
-> limitation is the mask value (indicating number of 4k-pages) cannot
-> be smaller than the value to cover large page, and seems current
-> Intel IOMMU driver code has covered this case well. I am not
-> familiar with how AMD IOMMU issues IOTLB flush command, it should be
-> able to handle this large page case too. So at this moment, this
-> patch should not have any issues :)
 
-The map-operation actually takes a size, as it should. The idea is to
-change this function to a map_page interface which takes a page-size
-parameter, but thats another story.
-The IOTLB flushing is not exposed by the IOMMU-API anyway. To whatever
-is necessary to do that, it is the business of the IOMMU driver. So in
-the unmap-path the driver finds out the page-size to unmap and can
-immediatly flush the IOTLB for that page.
+* Kamalesh Babulal <kamalesh@linux.vnet.ibm.com> wrote:
 
+> Hi,
+> 
+> During the discussion of the nohz load balancer fix 
+> (https://lkml.org/lkml/2011/9/27/197), Ingo Molnar suggested
+> to replace the simple while1 loop, used for publishing the 
+> test results with cpu-matrix test. This patch adds cpu-matrix 
+> benchmark under perf bench.
+> 
+> TODO:
+> 	- Provide option to run main thread at real-time priority.
+> 	- Provide option for changing scheduling priority/policy
+> 	  of worker threads.
+> 
+> 
+> perf bench: Add sched cpu-matrix benchmark
+> 
+> perf bench sched cpu-matrix benchmark is a matrix multiplication
+> workload, which can be replaced with the traditional while1 
+> cpu hog.
+> 
+> Example of usage:
+> 
+> % perf bench sched cpu-matrix 
+> # Running sched/cpu-matrix benchmark...
+> 
+> Multiplication of [20] x [20] matrix, using [1] threads
+>  Total time: 0.000170 [sec]
+> 
+> % perf bench sched cpu-matrix -s1k -t3 
+> # Running sched/cpu-matrix benchmark...
+> elapsed time = 0.100066 sec, progress = 27270868
+> elapsed time = 0.100079 sec, progress = 27299841
+> elapsed time = 0.100071 sec, progress = 27253513
+> elapsed time = 0.100073 sec, progress = 27272693
+> elapsed time = 0.100090 sec, progress = 10208415
+> 
+> Multiplication of [1024] x [1024] matrix, using [3] threads
+>  Total time: 0.500495 [sec]
 
-	Joerg
+It would be nice to also print the *size* of the matrix, in MBs or 
+so. 1024x1024 of int, long, float ... or double?
 
--- 
-AMD Operating System Research Center
+Looks pretty useful otherwise. Arnaldo, any objections?
 
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Thanks,
 
+	Ingo
