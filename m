@@ -1,77 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab1KJPLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:11:38 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53172 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab1KJPLh (ORCPT
+	id S934210Ab1KJPMF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:12:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44322 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab1KJPMC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:11:37 -0500
-Message-ID: <4EBBE9A1.8020501@gmail.com>
-Date: Thu, 10 Nov 2011 16:11:29 +0100
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Thu, 10 Nov 2011 10:12:02 -0500
 MIME-Version: 1.0
-To: dri-devel@lists.freedesktop.org
-CC: jbarnes@virtuousgeek.org, harald@redhat.com,
-        Keith Packard <keithp@keithp.com>, linux-kernel@vger.kernel.org
-Subject: Re: Strange effect with i915 backlight controller
-References: <4EB3F860.6010408@gmail.com> <4EB87E6A.3060403@gmail.com>
-In-Reply-To: <4EB87E6A.3060403@gmail.com>
-X-Enigmail-Version: 1.3.2
+In-Reply-To: <20111110142202.GE3083@suse.de>
+References: <20111110100616.GD3083@suse.de>
+	<20111110142202.GE3083@suse.de>
+Date: Fri, 11 Nov 2011 00:12:01 +0900
+Message-ID: <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
+Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP allocations
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2011 01:57 AM, Daniel Mack wrote:
-> Didn't get any response yet, hence copying LKML for a broader audience.
+Hi Mel,
 
-Nobody, really?
+You should have Cced with me because __GFP_NORETRY is issued by me.
 
-This is a rather annoying regression, as touching the brightness keys
-appearantly switches off the whole machine. I'm sure this is trivial to
-fix, I just don't have the insight of this driver and the chipset.
+On Thu, Nov 10, 2011 at 11:22 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Thu, Nov 10, 2011 at 10:06:16AM +0000, Mel Gorman wrote:
+>> than stall. It was suggested that __GFP_NORETRY be used instead of
+>> __GFP_NO_KSWAPD. This would look less like a special case but would
+>> still cause compaction to run at least once with sync compaction.
+>>
+>
+> This comment is bogus - __GFP_NORETRY would have caught THP allocations
+> and would not call sync compaction. The issue was that it would also
+> have caught any hypothetical high-order GFP_THISNODE allocations that
+> end up calling compaction here
 
-Any pointer greatly appreciated, and I can test patches.
+In fact, the I support patch concept so I would like to give
+
+Acked-by: Minchan Kim <minchan.kim@gmail.com>
+But it is still doubt about code.
+
+__GFP_NORETRY: The VM implementation must not retry indefinitely
+
+What could people think if they look at above comment?
+At least, I can imagine two
+
+First, it is related on *latency*.
+Second, "I can handle if VM fails allocation"
+
+I am biased toward latter.
+Then, __GFP_NO_KSWAPD is okay? It means "let's avoid sync compaction
+or long latency"?
+It's rather awkward name. Already someone started to use
+__GFP_NO_KSWAPD as such purpose.
+See mtd_kmalloc_up_to. He mentioned in comment of function as follows,
+
+ * the system page size. This attempts to make sure it does not adversely
+ * impact system performance, so when allocating more than one page, we
+ * ask the memory allocator to avoid re-trying, swapping, writing back
+ * or performing I/O.
+
+That thing was what I concerned.
+In future, new users of __GFP_NO_KSWAPD is coming and we can't prevent
+them under our sight.
+So I hope we can change the flag name or fix above code and comment
+out __GFP_NO_KSWAPD
+
+/*
+ * __GFP_NO_KSWAPD is very VM internal flag so Please don't use it
+without allowing mm guys
+ *
+#define __GFP_NO_KSWAPD xxxx
+
+>
+>                /*
+>                 * High-order allocations do not necessarily loop after
+>                 * direct reclaim and reclaim/compaction depends on
+>                 * compaction being called after reclaim so call directly if
+>                 * necessary
+>                 */
+>                page = __alloc_pages_direct_compact(gfp_mask, order,
+>                                        zonelist, high_zoneidx,
+>                                        nodemask,
+>                                        alloc_flags, preferred_zone,
+>                                        migratetype, &did_some_progress,
+>                                        sync_migration);
+>
+> __GFP_NORETRY is used in a bunch of places and while the most
+> of them are not high-order, some of them potentially are like in
+> sound/core/memalloc.c. Using __GFP_NO_KSWAPD as the flag allows
+> these callers to continue using sync compaction.  It could be argued
+
+Okay. If I was biased first, I have opposed this comment because they
+might think __GFP_NORETRY is very latency sensitive.
+So they wanted allocation is very fast without any writeback/retrial.
+In view point, __GFP_NORETRY isn't bad, I think.
+
+Having said that, I was biased latter, as I said earlier.
+
+> that they would prefer __GFP_NORETRY but the potential side-effects
+> should be taken should be taken into account and the comment updated
+
+Considering side-effect, your patch is okay.
+But I can't understand you mentioned "the comment updated if that
+happens" sentence. :(
+
+> if that happens.
+>
+> --
+> Mel Gorman
+> SUSE Labs
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
 
 
-Thanks,
-Daniel
 
-
-
-> 
-> On 11/04/2011 03:36 PM, Daniel Mack wrote:
->> I'm facing a bug on a Samsung X20 notebook which features an i915
->> chipset (output of 'lspci -v' attached).
->>
->> The effect is that setting the backlight to odd values causes the value
->> to be misinterpreted. Harald Hoyer (cc:) had the same thing on a Netbook
->> (I don't recall which model it was).
->>
->> So this will turn the backlight to full brightness:
->>
->> # cat /sys/class/backlight/intel_backlight/max_brightness
->> 29750
->> # echo 29750 > /sys/class/backlight/intel_backlight/brightness
->>
->> However, writing 29749 will turn the display backlight off, and 29748
->> appears to be the next valid lower value.
->>
->> It seems like the IS_PINEVIEW() branch in
->> drivers/gpu/drm/i915/intel_panel.c:intel_panel_actually_set_backlight()
->> could do the right thing, but this code is written for an entirely
->> different model, right?
->>
->> I can reproduce this on 3.0 and 3.1 vanilla as well as with the current
->> mainline git.
->>
->> Let me know if there is any patch that I can test.
->>
->>
->> Thanks,
->> Daniel
-> 
-
+-- 
+Kind regards,
+Minchan Kim
