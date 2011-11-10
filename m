@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1KJGTU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 01:19:20 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51430 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab1KJGTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 01:19:19 -0500
-MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-Date: Thu, 10 Nov 2011 15:19:18 +0900
-X-Google-Sender-Auth: x0RHha95iXPsyaaWoYwMcoWmnxc
-Message-ID: <CAJ0PZbQxL3urqi06xefcYwvAn=P2FDMR3YW0LVRySmnchQ+UUQ@mail.gmail.com>
-Subject: [PATCH] Devfreq/core: remove compiler error after irq.h update
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: "Hilman, Kevin" <khilman@ti.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757373Ab1KJGXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 01:23:03 -0500
+Received: from mga03.intel.com ([143.182.124.21]:30670 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753977Ab1KJGXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 01:23:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,487,1315206000"; 
+   d="scan'208";a="72745951"
+From: Lin Ming <ming.m.lin@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: [PATCH v2 0/4] ata port runtime power management support
+Date: Thu, 10 Nov 2011 14:22:42 +0800
+Message-Id: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added <linux/module.h> and <linux/stat.h> to avoid a compiler error
-because linux/irq.h no longer includes linux/module.h after Linux 3.2.
+Hi, all
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/devfreq/devfreq.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+These 4 patches add ata port runtime pm support.
 
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 2355543..7b9d4b5 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -15,7 +15,9 @@
- #include <linux/errno.h>
- #include <linux/err.h>
- #include <linux/init.h>
-+#include <linux/module.h>
- #include <linux/slab.h>
-+#include <linux/stat.h>
- #include <linux/opp.h>
- #include <linux/devfreq.h>
- #include <linux/workqueue.h>
--- 
-1.7.4.1
+v1:
+https://lkml.org/lkml/2011/11/2/23
+
+v2 is totally different than v1.
+
+v1 performed ata port runtime pm through scsi layer.
+Added hook to scsi host runtime suspend/resume code.
+
+I realized that this is not the natural way to do ata port runtime pm.
+It does not deal with the races with ata port system suspend/resume.
+
+With v2, ata port is made to be parent device of scsi host.
+
+Currently, the device tree of ata port and scsi host looks as below,
+
+        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+        |-- ata1                                (ata port)
+        |-- host0                               (scsi host)
+           |-- target0:0:0                      (scsi target)
+               |-- 0:0:0:0                      (disk)
+
+v2 changes it to:
+
+        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+        |-- ata1                                (ata port)
+            |-- host0                           (scsi host)
+                |-- target0:0:0                 (scsi target)
+                    |-- 0:0:0:0                 (disk)
+
+So ata port runtime PM will happen as:
+
+disk suspend --> scsi target suspend --> scsi host suspend --> ata port
+suspend.
+
+This is much cleaner and natural.
+
+Lin Ming (4):
+      ata: make ata port as parent device of scsi host
+      scsi: add flag to skip the runtime PM calls on host in EH
+      ata: add ata port system PM callbacks
+      ata: add ata port runtime PM callbacks
+
+ drivers/ata/libata-core.c      |  158 ++++++++++++++++++++++------------------
+ drivers/ata/libata-scsi.c      |    3 +-
+ drivers/ata/libata-transport.c |    5 +
+ drivers/ata/libata.h           |    1 +
+ drivers/scsi/scsi_error.c      |    5 +-
+ include/scsi/scsi_host.h       |    3 +
+ 6 files changed, 102 insertions(+), 73 deletions(-)
+
+Thanks for any comment.
+Lin Min
