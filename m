@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab1KJVtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 16:49:46 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44834 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab1KJVtp (ORCPT
+	id S1754732Ab1KJVub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 16:50:31 -0500
+Received: from cdptpa-bc-oedgelb.mail.rr.com ([75.180.133.33]:64717 "EHLO
+	cdptpa-bc-oedgelb.mail.rr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751869Ab1KJVu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 16:49:45 -0500
-Message-ID: <4EBC46FD.5010109@jp.fujitsu.com>
-Date: Thu, 10 Nov 2011 16:49:49 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 10 Nov 2011 16:50:28 -0500
+Authentication-Results: cdptpa-bc-oedgelb.mail.rr.com smtp.user=rpearson@systemfabricworks.com; auth=pass (LOGIN)
+X-Authority-Analysis: v=2.0 cv=LI3kseq9 c=1 sm=0 a=DCwX0kaxZCiV3mmbfDr8nQ==:17 a=4u2ML38iGB4A:10 a=ozIaqLvjkoIA:10 a=kj9zAlcOel0A:10 a=zokvVckg0wu4hiL5sesA:9 a=CjuIK1q_8ugA:10 a=DCwX0kaxZCiV3mmbfDr8nQ==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.79.195.91
+From: "Bob Pearson" <rpearson@systemfabricworks.com>
+To: "'Joakim Tjernlund'" <joakim.tjernlund@transmode.se>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Frank Zago'" <fzago@systemfabricworks.com>,
+        <linux-kernel@vger.kernel.org>
+References: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se> <20111109161539.b2cdf381.akpm@linux-foundation.org> <049d01cc9f6d$c962f8a0$5c28e9e0$@systemfabricworks.com> <OF379E7B25.DD8B41D5-ONC1257944.002E2296-C1257944.002E8AB3@transmode.se>
+In-Reply-To: <OF379E7B25.DD8B41D5-ONC1257944.002E2296-C1257944.002E8AB3@transmode.se>
+Subject: RE: [PATCH] crc32: Optimize inner loop.
+Date: Thu, 10 Nov 2011 15:50:25 -0600
+Message-ID: <00ae01cc9ff2$c2106c60$46314520$@systemfabricworks.com>
 MIME-Version: 1.0
-To: benh@kernel.crashing.org
-CC: nai.xia@gmail.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, dave@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lethal@linux-sh.org,
-        linux@arm.linux.org.uk
-Subject: Re: mm: convert vma->vm_flags to 64bit
-References: <20110412151116.B50D.A69D9226@jp.fujitsu.com>  <CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com>  <4EBC085D.3060107@jp.fujitsu.com> <1320959579.21206.24.camel@pasglop>
-In-Reply-To: <1320959579.21206.24.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQIYnQyKk9Dyekf38u8yNbxG55wgSwF8soF1AftN5g8BY4DYkpTnzr5Q
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 4:12 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-11-10 at 12:22 -0500, KOSAKI Motohiro wrote:
->> On 11/9/2011 11:09 PM, Nai Xia wrote:
->>> Hi all,
->>>
->>> Did this patch get merged at last, or on this way being merged, or
->>> just dropped ?
->>
->> Dropped.
->> Linus said he dislike 64bit enhancement.
 > 
-> Do you have a pointer ? (And a rationale)
+> crc32c are based on your patches and can't move on until your work
+> is applied.
 > 
-> I still want to put some arch flags in there at some point...
+Ahhhh. I've been heads down for a month on Portals4 over InfiniBand for
+Sandia and
+haven't been paying much attention. Please let me know what I can do to help
+unstick
+things. I want to help.
+>  Jocke
 
-I'm sorry. I had got a machine crash awhile ago and I don't have
-a past mail. If my remember is correctly, Linus said he worry about
-an impact against 32bit x86 and he don't think current vm_flags
-usage is enough efficient.
-
-Maybe we need to ban useless arch specific flags at first.
