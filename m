@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933412Ab1KJH2Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 02:28:25 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:40846 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174Ab1KJH2X (ORCPT
+	id S1755103Ab1KJHaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 02:30:08 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:49125 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab1KJHaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 02:28:23 -0500
-Message-ID: <1320910091.7431.1.camel@phoenix>
-Subject: [PATCH 1/2] devfreq: fix use after free in devfreq_remove_device
+	Thu, 10 Nov 2011 02:30:07 -0500
+Message-ID: <1320910200.7431.3.camel@phoenix>
+Subject: [PATCH 2/2] devfreq: separate error paths from successful path
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Kevin Hilman <khilman@ti.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Mike Turquette <mturquette@ti.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Date: Thu, 10 Nov 2011 15:28:11 +0800
+Date: Thu, 10 Nov 2011 15:30:00 +0800
+In-Reply-To: <1320910091.7431.1.camel@phoenix>
+References: <1320910091.7431.1.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.0- 
 Content-Transfer-Encoding: 7bit
@@ -23,43 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In devfreq_remove_device, calling _remove_devfreq will also free devfreq.
-Don't dereference devfreq->governor->no_central_polling after _remove_devfreq.
+I think this change improves readability.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/devfreq/devfreq.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/devfreq/devfreq.c |   15 +++++++--------
+ 1 files changed, 7 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index d065925..59d24e9 100644
+index 59d24e9..c189b82 100644
 --- a/drivers/devfreq/devfreq.c
 +++ b/drivers/devfreq/devfreq.c
-@@ -418,10 +418,14 @@ out:
-  */
- int devfreq_remove_device(struct devfreq *devfreq)
- {
-+	bool central_polling;
+@@ -347,7 +347,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ 		if (!IS_ERR(devfreq)) {
+ 			dev_err(dev, "%s: Unable to create devfreq for the device. It already has one.\n", __func__);
+ 			err = -EINVAL;
+-			goto out;
++			goto err_out;
+ 		}
+ 	}
+ 
+@@ -356,7 +356,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ 		dev_err(dev, "%s: Unable to create devfreq for the device\n",
+ 			__func__);
+ 		err = -ENOMEM;
+-		goto out;
++		goto err_out;
+ 	}
+ 
+ 	mutex_init(&devfreq->lock);
+@@ -399,17 +399,16 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ 				   devfreq->next_polling);
+ 	}
+ 	mutex_unlock(&devfreq_list_lock);
+-	goto out;
++out:
++	return devfreq;
 +
- 	if (!devfreq)
- 		return -EINVAL;
+ err_init:
+ 	device_unregister(&devfreq->dev);
+ err_dev:
+ 	mutex_unlock(&devfreq->lock);
+ 	kfree(devfreq);
+-out:
+-	if (err)
+-		return ERR_PTR(err);
+-	else
+-		return devfreq;
++err_out:
++	return ERR_PTR(err);
+ }
  
--	if (!devfreq->governor->no_central_polling) {
-+	central_polling = !devfreq->governor->no_central_polling;
-+
-+	if (central_polling) {
- 		mutex_lock(&devfreq_list_lock);
- 		while (wait_remove_device == devfreq) {
- 			mutex_unlock(&devfreq_list_lock);
-@@ -433,7 +437,7 @@ int devfreq_remove_device(struct devfreq *devfreq)
- 	mutex_lock(&devfreq->lock);
- 	_remove_devfreq(devfreq, false); /* it unlocks devfreq->lock */
- 
--	if (!devfreq->governor->no_central_polling)
-+	if (central_polling)
- 		mutex_unlock(&devfreq_list_lock);
- 
- 	return 0;
+ /**
 -- 
 1.7.5.4
 
