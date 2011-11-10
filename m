@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935285Ab1KJP3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:29:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50163 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933707Ab1KJP3F (ORCPT
+	id S935302Ab1KJPaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:30:46 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38131 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711Ab1KJPan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:29:05 -0500
-Message-ID: <1320938930.22195.17.camel@i7.infradead.org>
-Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
- supported by the hardware
-From: David Woodhouse <dwmw2@infradead.org>
-To: Kai Huang <mail.kai.huang@gmail.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, iommu@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        KyongHo Cho <pullip.cho@samsung.com>, kvm@vger.kernel.org
-Date: Thu, 10 Nov 2011 15:28:50 +0000
-In-Reply-To: <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
-	 <1318850846-16066-3-git-send-email-ohad@wizery.com>
-	 <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 10 Nov 2011 10:30:43 -0500
+Date: Thu, 10 Nov 2011 07:30:36 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-pm@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH v2 0/4] ata port runtime power management support
+Message-ID: <20111110153036.GC27258@google.com>
+References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-10 at 14:17 +0800, Kai Huang wrote:
-> And another question: have we considered the IOTLB flush operation? I
-> think we need to implement similar logic when flush the DVMA range.
-> Intel VT-d's manual says software needs to specify the appropriate
-> mask value to flush large pages, but it does not say we need to
-> exactly match the page size as it is mapped. I guess it's not
-> necessary for Intel IOMMU, but other vendor's IOMMU may have such
-> limitation (or some other limitations). In my understanding current
-> implementation does not provide page size information for particular
-> DVMA ranges that has been mapped, and it's not flexible to implement
-> IOTLB flush code (ex, we may need to walk through page table to find
-> out actual page size). Maybe we can also add iommu_ops->flush_iotlb ? 
+Hello,
 
-Which brings me to another question I have been pondering... do we even
-have a consensus on exactly *when* the IOTLB should be flushed?
+(cc'ing Kay for the sysfs tree hierarchy change)
 
-Even just for the Intel IOMMU, we have three different behaviours:
+On Thu, Nov 10, 2011 at 02:22:42PM +0800, Lin Ming wrote:
+> These 4 patches add ata port runtime pm support.
+> 
+> v1:
+> https://lkml.org/lkml/2011/11/2/23
+> 
+> v2 is totally different than v1.
+> 
+> v1 performed ata port runtime pm through scsi layer.
+> Added hook to scsi host runtime suspend/resume code.
+> 
+> I realized that this is not the natural way to do ata port runtime pm.
+> It does not deal with the races with ata port system suspend/resume.
+> 
+> With v2, ata port is made to be parent device of scsi host.
+> 
+> Currently, the device tree of ata port and scsi host looks as below,
+> 
+>         /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+>         |-- ata1                                (ata port)
+>         |-- host0                               (scsi host)
+>            |-- target0:0:0                      (scsi target)
+>                |-- 0:0:0:0                      (disk)
+> 
+> v2 changes it to:
+> 
+>         /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
+>         |-- ata1                                (ata port)
+>             |-- host0                           (scsi host)
+>                 |-- target0:0:0                 (scsi target)
+>                     |-- 0:0:0:0                 (disk)
+> 
+> So ata port runtime PM will happen as:
+> 
+> disk suspend --> scsi target suspend --> scsi host suspend --> ata port
+> suspend.
+> 
+> This is much cleaner and natural.
 
-  - For DMA API users by default, we do 'batched unmap', so a mapping
-    may be active for a period of time after the driver has requested
-    that it be unmapped.
+Yeah, I really like this approach.  Nicely done.  I *think* the
+hierarchy change should be okay but cc'ing Kay just in case.
 
-  - ... unless booted with 'intel_iommu=strict', in which case we do the
-    unmap and IOTLB flush immediately before returning to the driver.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
-  - But the IOMMU API for virtualisation is different. In fact that
-    doesn't seem to flush the IOTLB at all. Which is probably a bug.
-
-What is acceptable, though? That batched unmap is quite important for
-performance, because it means that we don't have to bash on the hardware
-and wait for a flush to complete in the fast path of network driver RX,
-for example.
-
-If we move to a model where we have a separate ->flush_iotlb() call, we
-need to be careful that we still allow necessary optimisations to
-happen.
-
-Since I have the right people on Cc and the iommu list is still down,
-and it's vaguely tangentially related...
-
-I'm looking at fixing performance issues in the Intel IOMMU code, with
-its virtual address space allocation (the rbtree-based one in iova.c
-that nobody else uses, which has a single spinlock that *all* CPUs bash
-on when they need to allocate).
-
-The plan is, vaguely, to allocate large chunks of space to each CPU, and
-then for each CPU to allocate from its own region first, thus ensuring
-that the common case doesn't bounce locks between CPUs. It'll be rare
-for one CPU to have to touch a subregion 'belonging' to another CPU, so
-lock contention should be drastically reduced.
-
-Should I be planning to drop the DMA API support from intel-iommu.c
-completely, and have the new allocator just call into the IOMMU API
-functions instead? Other people have been looking at that, haven't they?
-Is there any code? Or special platform-specific requirements for such a
-generic wrapper that I might not have thought of? Details about when to
-flush the IOTLB are one such thing which might need special handling for
-certain hardware...
+Thanks.
 
 -- 
-dwmw2
-
+tejun
