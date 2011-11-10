@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217Ab1KJRat (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 12:30:49 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59772 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab1KJRar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 12:30:47 -0500
-Message-ID: <4EBC038C.1050700@lwfinger.net>
-Date: Thu, 10 Nov 2011 11:02:04 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: =?UTF-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-CC: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+	id S1752090Ab1KJRds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 12:33:48 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54522 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab1KJRdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 12:33:47 -0500
+Date: Thu, 10 Nov 2011 09:20:30 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-References: <20111029171554.GA16596@nomi.cz> <20111031160342.GB2225@redhat.com> <20111109155411.GA1669@nomi.cz> <20111109165158.GA2254@redhat.com> <20111110091816.GA2247@nomi.cz> <20111110114732.GA2217@redhat.com> <20111110125347.GA29415@nomi.cz> <20111110160703.GA2775@redhat.com> <1320938685.31823.200.camel@wwguy-huron> <20111110164230.GB24533@nomi.cz>
-In-Reply-To: <20111110164230.GB24533@nomi.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+Message-ID: <20111110172029.GB2354@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20111031082634.GA10348@localhost>
+ <20111031095152.GL6160@linux.vnet.ibm.com>
+ <20111031104325.GA25808@localhost>
+ <20111031114142.GA32555@localhost>
+ <20111031123125.GA6162@localhost>
+ <20111031123708.GA6839@localhost>
+ <20111031221416.GQ6160@linux.vnet.ibm.com>
+ <1320942925.13800.28.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320942925.13800.28.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+x-cbid: 11111017-6078-0000-0000-0000043C617E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2011 10:42 AM, Tomáš Janoušek wrote:
-> (Don't be scared by the vboxdrv messages. Those modules don't compile with
-> 3.2-rc1, and the bug happens there as well.)
+On Thu, Nov 10, 2011 at 05:35:24PM +0100, Peter Zijlstra wrote:
+> On Mon, 2011-10-31 at 15:14 -0700, Paul E. McKenney wrote:
+> > Peter, I have been using "idle_cpu(smp_processor_id()))" to verify that
+> > I really am running in the context of the idle task when RCU believes
+> > that the current CPU has gone idle. 
+> 
+> I think this is sorted since, but just to clarify idle_cpu() was meant
+> to test if the cpu was idle, this is something different from actually
+> running the idle thread.
 
-The following patch will fix the 3.2-rc1 build problem.
+Thank you, and yes, looks like the ->pid==0 approach works well.
 
-Index: vboxhost/vboxpci/linux/VBoxPci-linux.c
-===================================================================
---- vboxhost.orig/vboxpci/linux/VBoxPci-linux.c
-+++ vboxhost/vboxpci/linux/VBoxPci-linux.c
-@@ -146,7 +146,11 @@ static int __init VBoxPciLinuxInit(void)
-  #endif
+Should this be encapsulated, for example in an inline function something
+as follows?
 
-  #ifdef VBOX_WITH_IOMMU
-+# if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 0)
-+    if (iommu_present(&pci_bus_type))
-+#else
-      if (iommu_found())
-+#endif
-          printk(KERN_INFO "vboxpci: IOMMU found\n");
-      else
-          printk(KERN_INFO "vboxpci: IOMMU not found (not registered)\n");
-@@ -984,9 +988,15 @@ int  vboxPciOsInitVm(PVBOXRAWPCIDRVVM pT
-      printk(KERN_DEBUG "vboxPciOsInitVm: %p\n", pThis);
-  #endif
-  #ifdef VBOX_WITH_IOMMU
-+# if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 0)
-+    if (iommu_present(&pci_bus_type))
-+    {
-+        pThis->pIommuDomain = iommu_domain_alloc(&pci_bus_type);
-+#else
-      if (iommu_found())
-      {
-          pThis->pIommuDomain = iommu_domain_alloc();
-+#endif
-          if (!pThis->pIommuDomain)
-          {
-              printk(KERN_DEBUG "cannot allocate IOMMU domain\n");
+static inline void cpu_is_running_idle_task(struct task_struct *tsk)
+{
+	return tsk->pid == 0;
+}
 
+I am sure I could come up with a longer name, if you would prefer.  ;-)
+
+I would be happy to create the patch and fix up the other open-coded
+uses of ->pid==0 if this approach looks good to you.
+
+							Thanx, Paul
 
