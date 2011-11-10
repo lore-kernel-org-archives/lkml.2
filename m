@@ -1,200 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab1KJTIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:08:53 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55005 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab1KJTHE (ORCPT
+	id S1756141Ab1KJTK7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:10:59 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:60288 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab1KJTKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:07:04 -0500
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:11:51 +0530
-Message-Id: <20111110184151.11361.95843.sendpatchset@srdronam.in.ibm.com>
-In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 22/28]   perf: rename target_module to target
-x-cbid: 11111009-1396-0000-0000-00000030DC1F
+	Thu, 10 Nov 2011 14:10:53 -0500
+Message-ID: <4EBC219B.5010403@oracle.com>
+Date: Thu, 10 Nov 2011 11:10:19 -0800
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pciehp: wait 1000 ms before Link Training check
+References: <4EB88238.4050409@oracle.com> <4EB8F434.6090003@jp.fujitsu.com> <4EB94A51.6070809@oracle.com> <4EB9A50D.1040302@oracle.com> <4EBB7F9B.8050703@jp.fujitsu.com> <4EBB7FF5.1040109@jp.fujitsu.com>
+In-Reply-To: <4EBB7FF5.1040109@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4EBC21BA.0084,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/09/2011 11:40 PM, Kenji Kaneshige wrote:
 
-This is a precursor patch that modifies names that refer to
-kernel/module to also refer to user space names.
+> We need to wait for 1000 ms after Data Link Layer Link Active (DLLLA)
+> bit reads 1b before sending configuration request. Currently pciehp
+> does this wait after checking Link Training (LT) bit. But we need it
+> before checking LT bit because LT is still set even after DLLLA bit is
+> set on some platforms.
+> 
+> Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
 
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- tools/perf/builtin-probe.c    |   12 ++++++------
- tools/perf/util/probe-event.c |   26 +++++++++++++-------------
- 2 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 710ae3d..93d5171 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -61,7 +61,7 @@ static struct {
- 	struct perf_probe_event events[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--	const char *target_module;
-+	const char *target;
- 	int max_probe_points;
- 	struct strfilter *filter;
- } params;
-@@ -249,7 +249,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
- 		   "directory", "path to kernel source"),
--	OPT_STRING('m', "module", &params.target_module,
-+	OPT_STRING('m', "module", &params.target,
- 		   "modname|path",
- 		   "target module name (for online) or path (for offline)"),
- #endif
-@@ -336,7 +336,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		if (!params.filter)
- 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
- 						       NULL);
--		ret = show_available_funcs(params.target_module,
-+		ret = show_available_funcs(params.target,
- 					   params.filter);
- 		strfilter__delete(params.filter);
- 		if (ret < 0)
-@@ -357,7 +357,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(probe_usage, options);
- 		}
- 
--		ret = show_line_range(&params.line_range, params.target_module);
-+		ret = show_line_range(&params.line_range, params.target);
- 		if (ret < 0)
- 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
- 		return ret;
-@@ -374,7 +374,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 
- 		ret = show_available_vars(params.events, params.nevents,
- 					  params.max_probe_points,
--					  params.target_module,
-+					  params.target,
- 					  params.filter,
- 					  params.show_ext_vars);
- 		strfilter__delete(params.filter);
-@@ -396,7 +396,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	if (params.nevents) {
- 		ret = add_perf_probe_events(params.events, params.nevents,
- 					    params.max_probe_points,
--					    params.target_module,
-+					    params.target,
- 					    params.force_add);
- 		if (ret < 0) {
- 			pr_err("  Error: Failed to add events. (%d)\n", ret);
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index eb25900..d54eefb 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -275,10 +275,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
- /* Try to find perf_probe_event with debuginfo */
- static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
--	struct debuginfo *dinfo = open_debuginfo(module);
-+	struct debuginfo *dinfo = open_debuginfo(target);
- 	int ntevs, ret = 0;
- 
- 	if (!dinfo) {
-@@ -297,9 +297,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
- 
- 	if (ntevs > 0) {	/* Succeeded to find trace events */
- 		pr_debug("find %d probe_trace_events.\n", ntevs);
--		if (module)
-+		if (target)
- 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
--							       module);
-+							       target);
- 		return ret < 0 ? ret : ntevs;
- 	}
- 
-@@ -1798,14 +1798,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
- 
- static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 					  struct probe_trace_event **tevs,
--					  int max_tevs, const char *module)
-+					  int max_tevs, const char *target)
- {
- 	struct symbol *sym;
- 	int ret = 0, i;
- 	struct probe_trace_event *tev;
- 
- 	/* Convert perf_probe_event with debuginfo */
--	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
-+	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
- 	if (ret != 0)
- 		return ret;	/* Found in debuginfo or got an error */
- 
-@@ -1821,8 +1821,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
- 		goto error;
- 	}
- 
--	if (module) {
--		tev->point.module = strdup(module);
-+	if (target) {
-+		tev->point.module = strdup(target);
- 		if (tev->point.module == NULL) {
- 			ret = -ENOMEM;
- 			goto error;
-@@ -1886,7 +1886,7 @@ struct __event_package {
- };
- 
- int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
--			  int max_tevs, const char *module, bool force_add)
-+			  int max_tevs, const char *target, bool force_add)
- {
- 	int i, j, ret;
- 	struct __event_package *pkgs;
-@@ -1909,7 +1909,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
- 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
- 						     &pkgs[i].tevs,
- 						     max_tevs,
--						     module);
-+						     target);
- 		if (ret < 0)
- 			goto end;
- 		pkgs[i].ntevs = ret;
-@@ -2065,7 +2065,7 @@ static int filter_available_functions(struct map *map __unused,
- 	return 1;
- }
- 
--int show_available_funcs(const char *module, struct strfilter *_filter)
-+int show_available_funcs(const char *target, struct strfilter *_filter)
- {
- 	struct map *map;
- 	int ret;
-@@ -2076,9 +2076,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
- 	if (ret < 0)
- 		return ret;
- 
--	map = kernel_get_module_map(module);
-+	map = kernel_get_module_map(target);
- 	if (!map) {
--		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
-+		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
- 		return -EINVAL;
- 	}
- 	available_func_filter = _filter;
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
+Tested-by: Yinghai Lu <yinghai@kernel.org>
