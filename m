@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934117Ab1KJPID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:08:03 -0500
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:24727 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933842Ab1KJPH7 (ORCPT
+	id S935036Ab1KJPJD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:09:03 -0500
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:22373 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933842Ab1KJPJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:07:59 -0500
+	Thu, 10 Nov 2011 10:09:01 -0500
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: PH9wtNUVM1lQ55eVzv1GSmHV0JugMWuvgge_HfJE_7jmXWT
- PQF56a_4TEh51fGVbinmsCBHq9ajY_gi9.t3N9Fwcnuhl9iySrr7e_L6Km.Q
- nV5VN51lARYvrqVvlrkHe5UP_ppckzruR6RqdfJQ0piCBEcYwr9OBNIfGTkl
- .0tW6ys2vYgegwzQwgm_Y2CaslZNOsv.1Jya46OCoJGyhwgl3jp2PuSvBkkn
- Jn.P3CFqsXKX1K620MYvtErlMxYdEINEdOhxPdPQFwvrDu_SFoJMZy62HTIQ
- KJ_47ZRRTtmg4b5MAojBESrVabRpPGEys340ubV95U3x9Sh2JrqXxhZ6_QJ9
- wuutCnt2psVeZKmrqg096vFysqW2CwuNQv_V7VyQEZyjB
+X-YMail-OSG: Io2amzQVM1lX2fA9H6fed_qvzkK.cTYtQ42AXIXnUsVzZpM
+ GdovRij45E3xG.v3ivoUgheN8K2ewqVGFpM8bk0dwTAoNK8Edok3fpL9rYt4
+ SSmGs9W6EvT4scpYgkaJuHqaghj_MCnq1DdAg30eJODkJ3sSNalhE1u8ZglV
+ DyiqHHt9KLCeJHfl9sJsEHFHtCqs84xNbMqB2wcDX3JVdeoYfGPsU1ydjMjE
+ fRoKyqkkEcqsMZk3u2kMKtPkiQHecRvTOK6A_GrHsSkS7WdMlh84Qg4sIF0c
+ _EnqXnzo3Nwy5uspNZOQeYSJ0y62M2foHWtS0I96mSA3zppVviE4A0ccAcGA
+ .VVYrdCAo_C3etjpL_7LvQpKwaHBUdomrgByYBj1b_4AAit_Z8QgB1k6cPEA
+ SHTtpQGkWuHZi9GB1c6tk
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Thu, 10 Nov 2011 09:01:15 -0600 (CST)
+Date: Thu, 10 Nov 2011 09:02:16 -0600 (CST)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: Heiko Carstens <heiko.carstens@de.ibm.com>
@@ -24,10 +25,10 @@ cc: Pekka Enberg <penberg@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] mm,x86,um: move CMPXCHG_LOCAL config option
-In-Reply-To: <1320933860-15588-3-git-send-email-heiko.carstens@de.ibm.com>
-Message-ID: <alpine.DEB.2.00.1111100900400.19196@router.home>
-References: <1320933860-15588-1-git-send-email-heiko.carstens@de.ibm.com> <1320933860-15588-3-git-send-email-heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 3/3] mm,x86,um: move CMPXCHG_DOUBLE config option
+In-Reply-To: <1320933860-15588-4-git-send-email-heiko.carstens@de.ibm.com>
+Message-ID: <alpine.DEB.2.00.1111100901590.19196@router.home>
+References: <1320933860-15588-1-git-send-email-heiko.carstens@de.ibm.com> <1320933860-15588-4-git-send-email-heiko.carstens@de.ibm.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -37,8 +38,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 10 Nov 2011, Heiko Carstens wrote:
 
-> Move CMPXCHG_LOCAL and rename it to HAVE_CMPXCHG_LOCAL so architectures can
+> Move CMPXCHG_DOUBLE and rename it to HAVE_CMPXCHG_DOUBLE so architectures can
 > simply select the option if it is supported.
 
 Acked-by: Christoph Lameter <cl@linux.com>
-
