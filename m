@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965250Ab1KJQmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:42:54 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:52568 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935032Ab1KJQmw (ORCPT
+	id S965294Ab1KJQmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:42:55 -0500
+Received: from gate.crashing.org ([63.228.1.57]:38202 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935588Ab1KJQmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:42:52 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] PM/Memory-hotplug: Avoid task freezing failures
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, lenb@kernel.org, ak@linux.intel.com, tj@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Thu, 10 Nov 2011 22:12:43 +0530
-Message-ID: <20111110163825.4321.56320.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 11:42:53 -0500
+Subject: Re: [RFC PATCH 08/17] powerpc/e500: Remove conditional "lwsync" substitution
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20111110163100.GA11983@schlenkerla.am.freescale.net>
+Date: Thu, 10 Nov 2011 10:42:25 -0600
+Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, Baruch Siach <baruch@tkos.co.il>,
+        Timur Tabi <B04825@freescale.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AC287A9B-0C8B-494E-95CD-A33014AECE22@kernel.crashing.org>
+References: <4E42AB6F.1050900@freescale.com> <1320883635-17194-9-git-send-email-Kyle.D.Moffett@boeing.com> <3937191C-A735-4668-8E80-9FB4B35E2F63@kernel.crashing.org> <20111110163100.GA11983@schlenkerla.am.freescale.net>
+To: Scott Wood <scottwood@freescale.com>
+X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock_system_sleep() function is used in the memory hotplug code at
-several places in order to implement mutual exclusion with hibernation.
-However, this function tries to acquire the 'pm_mutex' lock using
-mutex_lock() and hence blocks in TASK_UNINTERRUPTIBLE state if it doesn't
-get the lock. This would lead to task freezing failures and hence
-hibernation failure as a consequence, even though the hibernation call path
-successfully acquired the lock.
 
-This patch fixes this issue by modifying lock_system_sleep() to use
-mutex_lock_interruptible() instead of mutex_lock(), so that it blocks in the
-TASK_INTERRUPTIBLE state. This would allow the freezer to freeze the blocked
-task. Also, since the freezer could use signals to freeze tasks, it is quite
-likely that mutex_lock_interruptible() returns -EINTR (and fails to acquire
-the lock). Hence we keep retrying in a loop until we acquire the lock. Also,
-we call try_to_freeze() within the loop, so that we don't cause freezing
-failures due to busy looping.
+On Nov 10, 2011, at 10:31 AM, Scott Wood wrote:
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+> On Thu, Nov 10, 2011 at 07:40:04AM -0600, Kumar Gala wrote:
+>> 
+>> On Nov 9, 2011, at 6:07 PM, Kyle Moffett wrote:
+>> 
+>>> As FreeScale e500 systems have different cacheline sizes from e500mc, it
+>>> is basically impossible for the kernel to support both in a single
+>>> system image at present.
+>>> 
+>>> Given that one is SPE-float and the other is classic-float, they are not
+>>> generally userspace-compatible either.
+>>> 
+>>> This patch updates the conditional to depend on whether the system is
+>>> actually targetting an "e500" or "e500mc" core and entirely removes the
+>>> unused sync-to-lwsync-replacement on e500v1/e500v2 systems.
+>>> 
+>>> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+>>> ---
+>>> arch/powerpc/include/asm/synch.h |   16 ++++------------
+>>> 1 files changed, 4 insertions(+), 12 deletions(-)
+>> 
+>> Nak, we can run an e500mc in a mode that is compatible with e500v1/v2.  I see no reason to change the support we have there.
+> 
+> What "mode" do you mean?  DCBZ32?  We don't support using that currently,
+> and I'd imagine the performance implication would be such that you'd
+> never want to do it unless it's the only way to make some piece of legacy
+> software work.
 
- include/linux/suspend.h |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
+Correct, DCBZ32, we've had customers that go down this path.
 
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 57a6924..02a0d09 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -5,6 +5,7 @@
- #include <linux/notifier.h>
- #include <linux/init.h>
- #include <linux/pm.h>
-+#include <linux/freezer.h>
- #include <linux/mm.h>
- #include <asm/errno.h>
- 
-@@ -380,7 +381,22 @@ static inline void unlock_system_sleep(void) {}
- 
- static inline void lock_system_sleep(void)
- {
--	mutex_lock(&pm_mutex);
-+	/*
-+	 * We should not use mutex_lock() here because, in case we fail to
-+	 * acquire the lock, it would put us to sleep in TASK_UNINTERRUPTIBLE
-+	 * state, which would lead to task freezing failures. As a
-+	 * consequence, hibernation would fail (even though it had acquired
-+	 * the 'pm_mutex' lock).
-+	 *
-+	 * Note that mutex_lock_interruptible() returns -EINTR if we happen
-+	 * to get a signal when we are waiting to acquire the lock (and this
-+	 * is very likely here because the freezer could use signals to freeze
-+	 * tasks). Hence we have to keep retrying until we get the lock. But
-+	 * we have to use try_to_freeze() in the loop, so that we don't cause
-+	 * freezing failures due to busy looping.
-+	 */
-+	while (mutex_lock_interruptible(&pm_mutex))
-+		try_to_freeze();
- }
- 
- static inline void unlock_system_sleep(void)
+>> I see no reason to change the support we have there.
+> 
+> No reason to remove complexity that is not needed, and is not planned to
+> be needed?
 
+
+I'd rather wait for at least 2 years for e500mc devices to have further deployment before we'd remove this.
+
+- k
