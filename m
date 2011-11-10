@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934897Ab1KJOhy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 09:37:54 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49359 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934648Ab1KJOhx convert rfc822-to-8bit (ORCPT
+	id S934975Ab1KJOm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 09:42:56 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40157 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934648Ab1KJOmz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 09:37:53 -0500
-Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, robert.richter@amd.com, mingo@elte.hu,
-        ming.m.lin@intel.com, ak@linux.intel.com
-Date: Thu, 10 Nov 2011 15:37:40 +0100
-In-Reply-To: <20111107110149.GA5177@quad>
-References: <20111107110149.GA5177@quad>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 10 Nov 2011 09:42:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111110074408.GE10138@secunet.com>
+References: <1320902290-19050-1-git-send-email-msb@chromium.org>
+	<20111110074408.GE10138@secunet.com>
+Date: Thu, 10 Nov 2011 08:42:54 -0600
+Message-ID: <CABqD9hZh0yNq5FbC73qhmy3Xa-80ZygSxXAuxbcJEmJqi3K7dw@mail.gmail.com>
+Subject: Re: [PATCH] dm: verity target
+From: Will Drewry <wad@chromium.org>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Alasdair G Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        Elly Jones <ellyjones@chromium.org>, Milan Broz <mbroz@redhat.com>,
+        Olof Johansson <olofj@chromium.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.3- 
-Message-ID: <1320935860.13800.25.camel@twins>
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just throwing this out there (hasn't event been compiled etc..).
+On Thu, Nov 10, 2011 at 1:44 AM, Steffen Klassert
+<steffen.klassert@secunet.com> wrote:
+> On Wed, Nov 09, 2011 at 09:18:10PM -0800, Mandeep Singh Baines wrote:
+>>
+>> + * TODO(wad): All hash storage memory is pre-allocated and freed once an
+>> + * entire branch has been verified.
+>> + */
+>> +struct dm_bht {
+>> +     /* Configured values */
+>> +     int depth;  /* Depth of the tree including the root */
+>> +     unsigned int block_count;  /* Number of blocks hashed */
+>> +     unsigned int block_size;  /* Size of a hash block */
+>> +     char hash_alg[CRYPTO_MAX_ALG_NAME];
+>> +     unsigned char salt[DM_BHT_SALT_SIZE];
+>> +
+>> +     /* Computed values */
+>> +     unsigned int node_count;  /* Data size (in hashes) for each entry */
+>> +     unsigned int node_count_shift;  /* first bit set - 1 */
+>> +     /* There is one per CPU so that verified can be simultaneous. */
+>> +     struct hash_desc hash_desc[NR_CPUS];  /* Container for the hash alg */
+>
+> Please don't add a new user for the old hash interface. If the hashes can
+> be done asynchronous you can use ahash, if not use shash. Both interfaces
+> are reentrant, that's probaply what you want to have here. You don't
+> need to have this in a per cpu manner.
 
-The idea is to try the fixed counters first so that we don't
-'accidentally' fill a GP counter with something that could have lived on
-the fixed purpose one and then end up under utilizing the PMU that way.
+I'll check out the two interfaces.  I didn't realize hash_desc was
+deprecated specifically in favor of one of the others.  I'm interested
+in seeing if it is possible to not keep a per-cpu desc though with the
+other apis.  We do this now to avoid contention across multiple kernel
+threads on crypto operations sharing the hash_desc (e.g., by wrapping
+it in a mutex).
 
-It ought to solve the most common PMU programming fail on Intel
-thingies.
-
----
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -558,14 +558,22 @@ int x86_schedule_events(struct cpu_hw_ev
- 			if (c->weight != w)
- 				continue;
- 
--			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_MAX) {
-+			if (x86_pmu.num_counters_fixed) {
-+				j = X86_PMC_IDX_FIXED - 1;
-+				for_each_set_bit_cont(j, c->idxmsk, X86_PMC_IDX_MAX) {
-+					if (!test_bit(k, used_mask))
-+						goto assign;
-+				}
-+			}
-+
-+			for_each_set_bit(j, c->idxmsk, X86_PMC_IDX_FIXED) {
- 				if (!test_bit(j, used_mask))
--					break;
-+					goto assign;
- 			}
- 
--			if (j == X86_PMC_IDX_MAX)
--				break;
-+			break;
- 
-+assign:
- 			__set_bit(j, used_mask);
- 
- 			if (assign)
-Index: linux-2.6/include/linux/bitops.h
-===================================================================
---- linux-2.6.orig/include/linux/bitops.h
-+++ linux-2.6/include/linux/bitops.h
-@@ -26,6 +26,12 @@ extern unsigned long __sw_hweight64(__u6
- 	     (bit) < (size); \
- 	     (bit) = find_next_bit((addr), (size), (bit) + 1))
- 
-+#define for_each_set_bit_cont(bit, addr, size) \
-+	for ((bit) = find_next_bit((addr), (size), (bit) + 1); \
-+	     (bit) < (size); \
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
-+
-+
- static __inline__ int get_bitmask_order(unsigned int count)
- {
- 	int order;
-
+Thanks!
