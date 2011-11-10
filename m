@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab1KJWFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 17:05:48 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:44354 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754395Ab1KJWFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 17:05:47 -0500
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201111102205.pAAM5e4f019587@stout.americas.sgi.com>
-Date: Thu, 10 Nov 2011 16:05:40 -0600
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.2-rc2
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932456Ab1KJWKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 17:10:34 -0500
+Received: from smtp-out2.tiscali.nl ([195.241.79.177]:47499 "EHLO
+	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753923Ab1KJWKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 17:10:33 -0500
+Subject: [PATCH] ARM: mini2440: Fix Kconfig select of LEDS_TRIGGER
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Nov 2011 23:10:14 +0100
+Message-ID: <1320963014.27598.77.camel@x61.thuisdomein>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the following changes for XFS for 3.2-rc2.
-The first two address some security concerns, the last one is
-a bug fix.  Thanks.
+Commit 2e18edf75d ("ARM: mini2440: Fix Kconfig to allow kernel to
+build") added "select LEDS_TRIGGER" to the MACH_MINI2440 entry. That
+Kconfig symbol doesn't exist. What actually should be selected is
+LEDS_TRIGGERS.
 
-					-Alex
+(This shouldn't be a problem with the mini2440 defconfig, since it
+contains "CONFIG_MAC80211_LEDS=y" and MAC80211_LEDS selects
+LEDS_TRIGGERS. But it seems that nothing mini2440 related pulls in
+MAC80211_LEDS.)
 
-The following changes since commit 5e442a493fc59fa536c76db1fff5b49ca36a88c5:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with "yes "" | make ARCH=arm config", using the
+mini2440_defconfig with the CONFIG_MAC80211_LEDS=y line commented out.
 
-  Revert "proc: fix races against execve() of /proc/PID/fd**" (2011-11-09 18:16:00 -0500)
+ arch/arm/mach-s3c2440/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-are available in the git repository at:
-  git://oss.sgi.com/xfs/xfs for-linus
+diff --git a/arch/arm/mach-s3c2440/Kconfig b/arch/arm/mach-s3c2440/Kconfig
+index 914e620..e505701 100644
+--- a/arch/arm/mach-s3c2440/Kconfig
++++ b/arch/arm/mach-s3c2440/Kconfig
+@@ -178,7 +178,7 @@ config MACH_MINI2440
+ 	select EEPROM_AT24
+ 	select NEW_LEDS
+ 	select LEDS_CLASS
+-	select LEDS_TRIGGER
++	select LEDS_TRIGGERS
+ 	select LEDS_TRIGGER_BACKLIGHT
+ 	select S3C_DEV_NAND
+ 	select S3C_DEV_USB_HOST
+-- 
+1.7.4.4
 
-Carlos Maiolino (1):
-      xfs: Fix possible memory corruption in xfs_readlink
 
-Christoph Hellwig (2):
-      xfs: constify xfs_item_ops
-      xfs: fix force shutdown handling in xfs_end_io
 
- fs/xfs/xfs_aops.c         |    2 +-
- fs/xfs/xfs_buf_item.c     |    2 +-
- fs/xfs/xfs_dquot_item.c   |    6 +++---
- fs/xfs/xfs_extfree_item.c |    4 ++--
- fs/xfs/xfs_inode_item.c   |    2 +-
- fs/xfs/xfs_log.c          |    2 +-
- fs/xfs/xfs_log.h          |    2 +-
- fs/xfs/xfs_trans.h        |    6 +++---
- fs/xfs/xfs_vnodeops.c     |   14 ++++++++++----
- 9 files changed, 23 insertions(+), 17 deletions(-)
