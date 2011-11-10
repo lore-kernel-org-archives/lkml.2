@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757610Ab1KJJsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 04:48:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49856 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755406Ab1KJJss (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 04:48:48 -0500
-From: Markus Armbruster <armbru@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<4EBB4A21.20707@codemonkey.ws>
-	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-	<m3pqh0tnoi.fsf@blackfin.pond.sub.org>
-	<CA+1xoqe22z9F3ZyFG_XnV9Y17HtkeSxtf1gbW4+CW1cuNQ=N5g@mail.gmail.com>
-	<m3fwhws6ci.fsf@blackfin.pond.sub.org>
-	<CA+1xoqc7f-2azcjuLB_i_C_CCDt+gPqJe=SB5MmOiM0y6uY_cg@mail.gmail.com>
-Date: Thu, 10 Nov 2011 10:48:07 +0100
-In-Reply-To: <CA+1xoqc7f-2azcjuLB_i_C_CCDt+gPqJe=SB5MmOiM0y6uY_cg@mail.gmail.com>
-	(Sasha Levin's message of "Thu, 10 Nov 2011 11:04:46 +0200")
-Message-ID: <m3ipmspaug.fsf@blackfin.pond.sub.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S934102Ab1KJJtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 04:49:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46385 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932082Ab1KJJtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 04:49:06 -0500
+Date: Thu, 10 Nov 2011 09:49:04 +0000
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, greg@kroah.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: Staging clear up
+Message-ID: <20111110094904.GA29635@opensource.wolfsonmicro.com>
+References: <20111108211656.29defdda@lxorguk.ukuu.org.uk> <20111109121329.GC21630@sirena.org.uk> <1320854413.32205.948.camel@vkoul-udesk3> <20111109164211.GA4016@opensource.wolfsonmicro.com> <1320857261.32205.1051.camel@vkoul-udesk3> <20111109165316.GB4016@opensource.wolfsonmicro.com> <1320858181.32205.1087.camel@vkoul-udesk3> <20111109170819.GD4016@opensource.wolfsonmicro.com> <1320858754.32205.1110.camel@vkoul-udesk3>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320858754.32205.1110.camel@vkoul-udesk3>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <levinsasha928@gmail.com> writes:
+On Wed, Nov 09, 2011 at 10:42:34PM +0530, Vinod Koul wrote:
+> On Wed, 2011-11-09 at 17:08 +0000, Mark Brown wrote:
+> > On Wed, Nov 09, 2011 at 10:33:01PM +0530, Vinod Koul wrote:
+> > 
+> > > Offtopic: I am ready with v2 of compressed API, testing stuff out. If
+> > > you/Dimitris have stuff to add, please drop me a note. I didn't see any
+> > > update after I published the tree
+> > 
+> > I'm pretty sure Dimitris has some stuff.
+> Care to send me?
+> 
+> I will push my updates worst case by week end. Fixed some usual misses
+> found in testing and reworked the avail calculation.
 
-> On Thu, Nov 10, 2011 at 10:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
->> Sasha Levin <levinsasha928@gmail.com> writes:
-[...]
->>> I'm actually not sure why KVM tool got QCOW support in the first
->>> place. You can have anything QCOW provides if you use btrfs (among
->>> several other FSs).
->>
->> Maybe it's just me, but isn't it weird to have a filesystem (QCOW2)
->> sitting in the kernel sources that you can't mount(2)?
->>
->
-> It's not really a filesystem, it's a disk image :)
+Hi Vinod,
 
-Sloppy language on my part, sorry about that.
+Will send some of my updates when I re-work them.  At the moment I was
+working around some of the issues I found.
 
-It's a transport for blocks.  We have a few of those in the kernel
-already: block devices.  Including loop devices and DRBD.  You use a
-filesystem to interpret their contents.  The resulting stack is what
-gets mounted.  Adding another transport for blocks to the kernel that
-cannot be used that way strikes me as weird.
-
-[...]
+Thanks,
+Dimitris
