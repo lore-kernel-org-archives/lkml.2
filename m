@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934674Ab1KJN4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:56:20 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:39545 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932574Ab1KJN4T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:56:19 -0500
+	id S934661Ab1KJN6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:58:55 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51532 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751498Ab1KJN6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 08:58:54 -0500
+Date: Thu, 10 Nov 2011 14:57:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jeff Garzik <jeff@garzik.org>
+Subject: Re: linux-next: Tree for Oct 11 (ata/pata_of_platform.c)
+Message-ID: <20111110135703.GA23609@elte.hu>
+References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
+ <4E94A920.40503@xenotime.net>
+ <4E987829.3080104@xenotime.net>
 MIME-Version: 1.0
-In-Reply-To: <4EBBD503.4020308@codemonkey.ws>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<4EBB4A21.20707@codemonkey.ws>
-	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-	<4EBBD503.4020308@codemonkey.ws>
-Date: Thu, 10 Nov 2011 15:56:17 +0200
-X-Google-Sender-Auth: auJimOMeadjab9gPjodAi0qzFdo
-Message-ID: <CAOJsxLH+Afuk-42aPwd9hcvhpmCD88t4-2N02M5oz8LBNZYETA@mail.gmail.com>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-From: Pekka Enberg <penberg@kernel.org>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E987829.3080104@xenotime.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anthony,
 
-On Thu, Nov 10, 2011 at 3:43 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
-> It's not just the qcow2 implementation or even the block layer.  This pull
-> requests adds a userspace TCP/IP stack to the kernel and yet netdev isn't on
-> the CC and there are no Ack's from anyone from the networking stack.  I'm
-> fairly sure if they knew what was happening here they would object.
+* Randy Dunlap <rdunlap@xenotime.net> wrote:
 
-It's something we consider extremely important because it allows easy
-non-root networking. But you're right, we definitely ought to ping the
-networking folks before the next merge window.
+> On 10/11/2011 01:37 PM, Randy Dunlap wrote:
+> > On 10/11/11 02:11, Stephen Rothwell wrote:
+> >> Hi all,
+> >>
+> >> The linux-next tree is now available from
+> >> git://github.com/sfrothwell/linux-next.git as a temporary measure while
+> >> the kernel.org servers are unavailable.
+> >>
+> >> It may also turn up on git.kernel.org (depending on the mirroring).  The
+> >> patch set is still absent, however.
+> >>
+> >> Changes since 20111007:
+> >>
+> >> Removed tree: ide (at the maintainer's request)
+> > 
+> > 
+> > drivers/ata/pata_of_platform.c:55:13: error: 'NO_IRQ' undeclared (first use in this function)
+> 
+> 
+> [adding Author: Anton]
+> 
+> Build error still present in linux-next of 20111014.
 
-On Thu, Nov 10, 2011 at 3:43 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
->> Would you be interested in spending another 30 seconds to find out some
->> more issue? :-)
->
-> I could, provided you could take the things you want to do differently and
-> submit them as patches to qemu.git instead of creating a new tool.
->
-> There are lots of people on qemu-devel than can provide deep review of this
-> type of code.  That's the advantage of working in qemu.git.
+This build failure regression report was ignored twice and then 
+pushed upstream and is still unfixed a month after the initial 
+report. Upstream now fails to build on like 25% of x86 configs.
 
-I fully understand if you don't want to spend your time reviewing the
-KVM tool code. I'm just saying that if you do spend the next 30
-seconds next time you're bored, I'm all ears and happy to fix any
-issues you point out.
+What's going on with this bug guys?
 
-                        Pekka
+Thanks,
+
+	Ingo
