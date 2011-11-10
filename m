@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab1KJLWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 06:22:50 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51581 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755724Ab1KJLWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 06:22:48 -0500
-Date: Thu, 10 Nov 2011 11:22:46 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
-Cc: Takashi Iwai <tiwai@suse.de>, perex@perex.cz, linux-kernel@vger.kernel.org,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Clark, Joel" <joel.clark@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>, Liam Girdwood <lrg@ti.com>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
-Message-ID: <20111110112245.GA29931@opensource.wolfsonmicro.com>
-References: <70D251FDDC55405882A8447CC455D56E@hacdom.okisemi.com>
- <8486F61FC3B94B908BFE654234DD6C97@hacdom.okisemi.com>
- <4E9BAEF7.1080406@dsn.lapis-semi.com>
- <s5h7h3ysa4l.wl%tiwai@suse.de>
- <4EA5563A.10703@dsn.lapis-semi.com>
- <20111024122015.GA26033@opensource.wolfsonmicro.com>
- <4EB8F079.9080703@dsn.lapis-semi.com>
- <20111108143818.GA5632@opensource.wolfsonmicro.com>
- <4EBB5A66.2020800@dsn.lapis-semi.com>
+	id S934292Ab1KJLcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 06:32:10 -0500
+Received: from ozlabs.org ([203.10.76.45]:38020 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab1KJLcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 06:32:08 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: failed import of the rr quilt series
+In-Reply-To: <20111109101909.585d2406dc46af8890f28e66@canb.auug.org.au>
+References: <20111109101909.585d2406dc46af8890f28e66@canb.auug.org.au>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 10 Nov 2011 21:58:14 +1030
+Message-ID: <87fwhwqks1.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EBB5A66.2020800@dsn.lapis-semi.com>
-X-Cookie: Avoid gunfire in the bathroom tonight.
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 02:00:22PM +0900, Tomoya MORINAGA wrote:
-> (2011/11/08 23:38), Mark Brown wrote:
-> >On Tue, Nov 08, 2011 at 06:03:53PM +0900, Tomoya MORINAGA wrote:
+On Wed, 9 Nov 2011 10:19:09 +1100, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+Non-text part: multipart/signed
+> Hi Rusty,
+> 
+> Tryiong to import the rr quilt series today produced this error:
+> 
+> Importing rr based on v3.1-8907-g43672a0
+> $ git reset --hard 43672a0784707d795556b1f93925da8b8e797d03
+> Checking out files: 100% (37600/37600), done.
+> HEAD is now at 43672a0 Merge git://git.kernel.org/pub/scm/linux/kernel/git/steve/linux-dm
+> $ git am ../quilt/rr/virtio:pci_fix_use_after_free.patch
+> Applying: virtio-pci: fix use after free
+> error: patch failed: drivers/virtio/virtio_pci.c:822
+> error: drivers/virtio/virtio_pci.c: patch does not apply
 
-> >>struct snd_ml7213i2s_pcm {
-> >>	enum snd_soc_control_type control_type;
-> >>	struct snd_ml7213i2s *ml7213i2s;
-> >>	spinlock_t lock;
-> >>	unsigned int irq_pos;
-> >>	unsigned int buf_pos;
-> >>	struct snd_pcm_substream *substream;
-> >>	struct cbdata cbd;              /* i2s callback info */
-> >>	unsigned int channels;
-> >>	unsigned int rw;
-> >>	unsigned int rate;
-> >>	unsigned int ch;
-> >>	unsigned int setup_flag;
-> >>	unsigned int format;
-> >>	unsigned int bclkfs;
-> >>	struct mutex i2c_mutex;
-> >>};
+Fuzz, I didn't notice (since it's a warning, not an error here).
+Verified it, and refreshed.
 
-> >...this looks *really* confused, there's things in here which are a mix
-> >of DMA controller and CODEC driver things.  The CODEC and DMA drivers
-> >shouldn't know anything about each other, let alone be referencing the
-> >same data structure.
-
-> Let me clarify your saying.
-> I couldn't understand what your "DMA controller" mean.
-> Which "snd_ml7213i2s_pcm" structure member do you mean ?
-
-Things like irq_pos and buf_pos for example.
+Thanks,
+Rusty.
