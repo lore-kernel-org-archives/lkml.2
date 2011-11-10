@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab1KJWL6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 17:11:58 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33640 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab1KJWL5 (ORCPT
+	id S1756742Ab1KJWZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 17:25:00 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:8785 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab1KJWY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 17:11:57 -0500
-Message-ID: <4EBC4C27.3070400@gmail.com>
-Date: Fri, 11 Nov 2011 09:11:51 +1100
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Marcus Folkesson <marcus.folkesson@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        m.szyprowski@samsung.com
-Subject: Re: ioremap on system memory
-References: <CAM8FrKJ8OeavZxTBJBONw76UBBzS_mQYMZuS6Chf8+Po6yqDgA@mail.gmail.com>
-In-Reply-To: <CAM8FrKJ8OeavZxTBJBONw76UBBzS_mQYMZuS6Chf8+Po6yqDgA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 17:24:59 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 10 Nov 2011 17:24:58 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 09/16] ARM: LPAE: MMU setup for the 3-level page table
+ format
+In-reply-to: <1320682618-1182-10-git-send-email-catalin.marinas@arm.com>
+Message-id: <alpine.LFD.2.02.1111101707250.3307@xanadu.home>
+References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
+ <1320682618-1182-10-git-send-email-catalin.marinas@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/11 19:06, Marcus Folkesson wrote:
+On Mon, 7 Nov 2011, Catalin Marinas wrote:
 
-> Hi,
-> 
-> I'm working with a custom based platform based on OMAP-L138.
-> A driver we are using is ioremapping system memory. It does this to
-> share data between the GPP and DSP core.
-> This is not allowed in later kernel versions since ARMv6+ does not support this.
-> 
-> Is there any good(and easy) way to get around this or is it so
-> fundamentally wrong that the driver should be written from scratch?
+[...]
+> +	/*
+> +	 * Macro for setting up the TTBRx and TTBCR registers.
+> +	 * - \ttbr1 updated.
+> +	 */
+> +	.macro	v7_ttb_setup, zero, ttbr0, ttbr1, tmp
+> +	mrc	p15, 0, \tmp, c2, c0, 2		@ TTB control register
+> +	orr	\tmp, \tmp, #TTB_EAE
+> +	ALT_SMP(orr	\tmp, \tmp, #TTB_FLAGS_SMP)
+> +	ALT_SMP(orr	\tmp, \tmp, #TTB_FLAGS_SMP << 16)
+> +	ALT_UP(orr	\tmp, \tmp, #TTB_FLAGS_UP)
+> +	ALT_UP(orr	\tmp, \tmp, #TTB_FLAGS_UP << 16)
+
+The ALT_SMP() and ALT_UP() must always be paired and in the right order.  
+The above certainly won't produce what you expect on UP.
+
+> +#if PHYS_OFFSET <= PAGE_OFFSET
+
+Please don't use PHYS_OFFSET like a preprocessor macro anymore.  This is 
+becoming a global variable these days, and already is for the majority 
+of platforms.
+
+> +	 * TTBR0/TTBR1 split (PAGE_OFFSET):
+> +	 *   0x40000000: T0SZ = 2, T1SZ = 0 (not used)
+> +	 *   0x80000000: T0SZ = 0, T1SZ = 1
+> +	 *   0xc0000000: T0SZ = 0, T1SZ = 2
+> +	 *
+> +	 * Only use this feature if PHYS_OFFSET <= PAGE_OFFSET, otherwise
+> +	 * booting secondary CPUs would end up using TTBR1 for the identity
+> +	 * mapping set up in TTBR0.
+> +	 */
+> +	orr	\tmp, \tmp, #(((PAGE_OFFSET >> 30) - 1) << 16) @ TTBCR.T1SZ
+> +#if defined CONFIG_VMSPLIT_2G
+> +	/* PAGE_OFFSET == 0x80000000, T1SZ == 1 */
+> +	add	\ttbr1, \ttbr1, #1 << 4		@ skip two L1 entries
+> +#elif defined CONFIG_VMSPLIT_3G
+> +	/* PAGE_OFFSET == 0xc0000000, T1SZ == 2 */
+> +	add	\ttbr1, \ttbr1, #4096 * (1 + 3)	@ only L2 used, skip pgd+3*pmd
+> +#endif
+> +#endif	/* PHYS_OFFSET <= PAGE_OFFSET */
+
+What about CONFIG_VMSPLIT_1G ?
 
 
-Cc'ed the ARM kernel list and Marek Szyprowski (CMA developer). The CMA
-patches I think do what you want, but I am not sure if they are merged
-yet. The other solution (again, I'm not an expert on this area) is to
-not pass the region of memory you want to manage as part of Linux's
-normal system memory. See how the OMAP framebuffer driver reserves a
-region of SDRAM (arch/arm/plat-omap/fb.c).
-
-Some one else on the ARM list can probably explain in more detail.
-
-~Ryan
-
+Nicolas
