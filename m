@@ -1,126 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab1KJPg4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:36:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757696Ab1KJPgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:36:55 -0500
-Date: Thu, 10 Nov 2011 16:36:51 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 3/5]thp: add tlb_remove_pmd_tlb_entry
-Message-ID: <20111110153651.GZ5075@redhat.com>
-References: <1319511571.22361.139.camel@sli10-conroe>
+	id S964854Ab1KJPhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:37:17 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39481 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757707Ab1KJPhO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 10:37:14 -0500
+Date: Thu, 10 Nov 2011 07:37:07 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-pm@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <JBottomley@parallels.com>,
+        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH v2 0/4] ata port runtime power management support
+Message-ID: <20111110153707.GE27258@google.com>
+References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+ <Pine.LNX.4.44L0.1111101028250.2338-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1319511571.22361.139.camel@sli10-conroe>
+In-Reply-To: <Pine.LNX.4.44L0.1111101028250.2338-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 10:59:31AM +0800, Shaohua Li wrote:
-> Index: linux/arch/x86/include/asm/tlb.h
-> ===================================================================
-> --- linux.orig/arch/x86/include/asm/tlb.h	2011-10-25 09:00:39.000000000 +0800
-> +++ linux/arch/x86/include/asm/tlb.h	2011-10-25 09:02:52.000000000 +0800
-> @@ -4,6 +4,7 @@
->  #define tlb_start_vma(tlb, vma) do { } while (0)
->  #define tlb_end_vma(tlb, vma) do { } while (0)
->  #define __tlb_remove_tlb_entry(tlb, ptep, address) do { } while (0)
-> +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do { } while (0)
->  #define tlb_flush(tlb) flush_tlb_mm((tlb)->mm)
+On Thu, Nov 10, 2011 at 10:30:53AM -0500, Alan Stern wrote:
+> Currently, disks will not be runtime-suspended unless (1) the user 
+> requests it by setting the appropriate power/control attribute, and (2) 
+> the device file is closed (in particular, the disk has no mounted 
+> filesystems or swap partitions).  I don't imagine this combination of 
+> events is very common for disks using libata.
 
-This is superfluous, it's already define below as noop.
+Empty ports are pretty common and pm should be able to put the
+unoccupied ports and the containing pci device into sleep state which
+can save some power.  Would be nice to have some numbers tho.  But
+either way, if this doesn't break anything, I don't see any reason to
+object to it - the hierarchy reorg is more of logical cleanup and
+runtime pm is trivial afterwards.
 
->  
->  #include <asm-generic/tlb.h>
-> Index: linux/include/asm-generic/tlb.h
-> ===================================================================
-> --- linux.orig/include/asm-generic/tlb.h	2011-10-25 09:00:23.000000000 +0800
-> +++ linux/include/asm-generic/tlb.h	2011-10-25 09:18:01.000000000 +0800
-> @@ -139,6 +139,16 @@ static inline void tlb_remove_page(struc
->  		__tlb_remove_tlb_entry(tlb, ptep, address);	\
->  	} while (0)
->  
-> +#ifndef __tlb_remove_pmd_tlb_entry
-> +#define __tlb_remove_pmd_tlb_entry(tlb, pmdp, address) do {} while(0)
-> +#endif
-> +
-> +#define tlb_remove_pmd_tlb_entry(tlb, pmdp, address)		\
-> +	do {							\
-> +		tlb->need_flush = 1;				\
-> +		__tlb_remove_pmd_tlb_entry(tlb, pmdp, address);	\
-> +	} while (0)
+Thanks.
 
-this looks weird, why do we set need_flush = 1 again, considering that
-we're doing tlb_remove_page() just a few lines later (which also sets
-tlb->need_flush = 1).
-
-Ok that other archs may need the __tlb_remove_pmd_tlb_entry to be
-called (and I've no idea why), but the need_flush = 1 seems
-unnecessary.
-
-Why other archs need the __tlb_remove_pmd_tlb_entry to be called?
-
-One way to go would be to change the tlb->need_flush = 1 in
-__tlb_remove_page to a VM_BUG_ON(!tlb->need_flush) and then we keep it
-above and we add the __tlb_remove_pmd_tlb_entry call.
-
-Or is there any place where __tlb_remove_page is called without a
-tlb_remove_*tlb_entry being called before it?
-
-In any case the VM_BUG_ON will verify this.
-
-> Index: linux/include/linux/huge_mm.h
-> ===================================================================
-> --- linux.orig/include/linux/huge_mm.h	2011-10-25 09:07:12.000000000 +0800
-> +++ linux/include/linux/huge_mm.h	2011-10-25 09:07:44.000000000 +0800
-> @@ -18,7 +18,7 @@ extern struct page *follow_trans_huge_pm
->  					  unsigned int flags);
->  extern int zap_huge_pmd(struct mmu_gather *tlb,
->  			struct vm_area_struct *vma,
-> -			pmd_t *pmd);
-> +			pmd_t *pmd, unsigned long addr);
->  extern int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
->  			unsigned long addr, unsigned long end,
->  			unsigned char *vec);
-> Index: linux/mm/huge_memory.c
-> ===================================================================
-> --- linux.orig/mm/huge_memory.c	2011-10-25 09:00:07.000000000 +0800
-> +++ linux/mm/huge_memory.c	2011-10-25 09:06:55.000000000 +0800
-> @@ -1005,7 +1005,7 @@ out:
->  }
->  
->  int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
-> -		 pmd_t *pmd)
-> +		 pmd_t *pmd, unsigned long addr)
->  {
->  	int ret = 0;
->  
-> @@ -1021,6 +1021,7 @@ int zap_huge_pmd(struct mmu_gather *tlb,
->  			pgtable = get_pmd_huge_pte(tlb->mm);
->  			page = pmd_page(*pmd);
->  			pmd_clear(pmd);
-> +			tlb_remove_pmd_tlb_entry(tlb, pmd, addr);
->  			page_remove_rmap(page);
->  			VM_BUG_ON(page_mapcount(page) < 0);
->  			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-> Index: linux/mm/memory.c
-> ===================================================================
-> --- linux.orig/mm/memory.c	2011-10-25 09:07:49.000000000 +0800
-> +++ linux/mm/memory.c	2011-10-25 09:08:29.000000000 +0800
-> @@ -1231,7 +1231,7 @@ static inline unsigned long zap_pmd_rang
->  			if (next-addr != HPAGE_PMD_SIZE) {
->  				VM_BUG_ON(!rwsem_is_locked(&tlb->mm->mmap_sem));
->  				split_huge_page_pmd(vma->vm_mm, pmd);
-> -			} else if (zap_huge_pmd(tlb, vma, pmd))
-> +			} else if (zap_huge_pmd(tlb, vma, pmd, addr))
->  				continue;
->  			/* fall through */
->  		}
-
-Rest looks ok.
+-- 
+tejun
