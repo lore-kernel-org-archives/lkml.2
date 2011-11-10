@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab1KJBu7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 20:50:59 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:64868 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab1KJBu6 (ORCPT
+	id S1756950Ab1KJBwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 20:52:20 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41727 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753312Ab1KJBwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 20:50:58 -0500
-Message-ID: <4EBB2DF3.2050504@oracle.com>
-Date: Thu, 10 Nov 2011 09:50:43 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
+	Wed, 9 Nov 2011 20:52:18 -0500
+Date: Wed, 9 Nov 2011 19:52:12 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Jiri Polach <jiri.polach@seznam.cz>
+Cc: 647095@bugs.debian.org, Ben Hutchings <ben@decadent.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: CPU hyperthreading turned on after soft power-cycle
+Message-ID: <20111110015212.GB2399@elie.gateway.2wire.net>
+References: <20111030110543.5872.61279.reportbug@supermicro.uochb.cas.cz>
+ <1319988329.6759.88.camel@deadeye>
+ <4EAE9D3A.7000108@atlas.cz>
+ <4EB92181.5030500@seznam.cz>
 MIME-Version: 1.0
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: "kurt.hackel@oracle.com" <kurt.hackel@oracle.com>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] RE: [PATCH 1/3] Introducing grant table V2 stucture
-References: <4EBA35D3.3020506@oracle.com>	<1320826490-29362-1-git-send-email-annie.li@oracle.com>	<291EDFCB1E9E224A99088639C4762022B4543AB1BD@LONPMAILBOX01.citrite.net>	<4EBAA566.80909@oracle.com> <291EDFCB1E9E224A99088639C4762022B4543AB213@LONPMAILBOX01.citrite.net>
-In-Reply-To: <291EDFCB1E9E224A99088639C4762022B4543AB213@LONPMAILBOX01.citrite.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4EBB2DFE.0006,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EB92181.5030500@seznam.cz>
+User-Agent: Mutt/1.5.21+46 (b01d63af6fea) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jiri,
 
+Jiri Polach wrote:
 
-On 2011-11-10 0:14, Paul Durrant wrote:
-> Annie,
->
-> On 2011-11-9 19:11, Paul Durrant wrote:
->> I see. v2 function includes mapping and arch_gnttab_map_shared, v1 function only include arch_gnttab_map_sh, right?
->> This will lead to some code duplicated in two functions.
-> My preference would be to have duplicated calls to arch_gnttab_map_shared(). I think it's more illustrative of the difference between v1 and v2 having separate status pages.
-Ok, will do as you suggested, thanks.
+> On Ben's advice I am trying to locate the commit that causes the problem to
+> appear more precisely using 'git bisect'. However, too many of generated
+> revisions are unbootable so I have to use 'bisect skip' frequently.
 
-Thanks
-Annie
+Ok, so I've looked over the log at <http://bugs.debian.org/647095>, and
+this seems totally weird.  Have I described the symptoms correctly below?
+(Warning: I am making some guesses, especially at step 5.  In case of
+doubt, see the bug log just mentioned.)
+
+	1. Disable SMT in the BIOS.
+
+	2. Boot a bad kernel.  /proc/cpuinfo (correctly) shows one entry
+	   per core.
+
+	3. "shutdown -h now".  Enter BIOS.  SMT is still disabled.
+	   Don't save.
+
+	4. Boot any kernel.  /proc/cpuinfo shows two entries per core.
+
+	5. "shutdown -h now".  Boot any kernel.  /proc/cpuinfo still shows
+	   two entries per core.
+
+	6. "shutdown -h now".  Enter BIOS.  SMT is still disabled.  Save.
+	   Now /proc/cpuinfo will (correctly) shows one entry per core.
+
+Reproducible for Jiri with v3.0.4.
+
+Result of bisecting: v2.6.38-rc1 exhibits the problem.  v2.6.37 and
+many of the topic branches merged in the 2.6.38 merge window work ok.
+Some other topic branches do not boot at all.
+
+Jiri: if you have gitk installed, then "git bisect visualize" can help
+get a sense of what's in the middle of the regression range.
+"gitk --bisect --first-parent v2.6.37..v2.6.38-rc1" might be a good way
+to find mainline commits to test before finding a topic branch to delve
+into.
+
+x86 people: do the symptoms seem familiar?  Any hints for tracking it
+down?
+
+Thanks and hope that helps,
+Jonathan
