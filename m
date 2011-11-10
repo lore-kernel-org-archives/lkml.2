@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933660Ab1KJIWA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:22:00 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:61536 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab1KJIV6 convert rfc822-to-8bit (ORCPT
+	id S1757495Ab1KJIWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:22:44 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:48620 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab1KJIWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:21:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <m3pqh0tnoi.fsf@blackfin.pond.sub.org>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<4EBB4A21.20707@codemonkey.ws>
-	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-	<m3pqh0tnoi.fsf@blackfin.pond.sub.org>
-Date: Thu, 10 Nov 2011 10:21:57 +0200
-X-Google-Sender-Auth: xZWTfNdF7pCK-B_Z6bXDg_66FqE
-Message-ID: <CAOJsxLEzk_kXrG23fo-A85zoeKyS4_1pJibG=gvQFcTREsPOjQ@mail.gmail.com>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-From: Pekka Enberg <penberg@kernel.org>
-To: Markus Armbruster <armbru@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Nov 2011 03:22:43 -0500
+X-AuditID: cbfee61b-b7b7fae000005864-d7-4ebb89d1ec19
+From: Chanho Park <chanho61.park@samsung.com>
+To: "'Linus Walleij'" <linus.walleij@linaro.org>
+Cc: "'Stephen Warren'" <swarren@nvidia.com>, Barry.Song@csr.com,
+        Rongjun.Ying@csr.com, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>
+References: <1319780504-23816-1-git-send-email-chanho61.park@samsung.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF173EDAB4A3@HQMAIL01.nvidia.com>
+ <02cf01cc993d$4c484040$e4d8c0c0$%park@samsung.com>
+ <CACRpkdZ80Tj_ttsQTAZAUT4X_UfQi9PDn2Tjc35jT62nBd496A@mail.gmail.com>
+In-reply-to: <CACRpkdZ80Tj_ttsQTAZAUT4X_UfQi9PDn2Tjc35jT62nBd496A@mail.gmail.com>
+Subject: RE: [PATCHv2] drivers: pinctrl: add a pin_base for sparse gpio-ranges
+Date: Thu, 10 Nov 2011 17:22:03 +0900
+Message-id: <00e701cc9f81$d3a6bfe0$7af43fa0$%park@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AcyfgAlyzEVo9oSPQWWLJxgxBxcDrQAAbdAw
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 9:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
->>> 3) The block probing code replicates a well known CVE from three
->>> years ago[1]. Using kvm-tool, a malicious guest could write the
->>> qcow2 signature to the zero sector and use that to attack the host.
->>
->> We don't support QCOW2 snapshots so I don't see how the "arbitrary
->> file" thing can happen.
->
-> You don't need snapshots for the hole.
->
-> Start with a clean read/write raw image.  Probing declares it raw.
-> Guest writes QCOW signature to it, with a backing file of its choice.
->
-> Restart with the same image.  Probing declares it QCOW2.  Guest can read
-> the backing file.  Oops.
->
-> Probing images works when all image types can be probed reliably, and
-> the guest can't mess with the probing.  Requires distinctive signatures
-> the guest can't change.  Raw images spoil it.
+Hi, Linus.
+Our smtp server blocked my email. :)
+I'll submit v3 patch soon. (Maybe tomorrow)
+Thank you.
 
-We don't support that "backing file" thing either. ;-)
+Best Regards,
+Chanho Park
 
-On Thu, Nov 10, 2011 at 9:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
->> It's pretty sad though that we're replicating a known security issue :-/
->
-> Maybe I'm wrong, but I got the impression you've been replicating quite
-> a few of QEMU's early mistakes.
->
-> I hope you can create something better than QEMU, I really, really do.
-> But to successfully build a second system, you need to learn the right
-> lessons from the first system.  Are you sure you do?
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
+> owner@vger.kernel.org] On Behalf Of Linus Walleij
+> Sent: Thursday, November 10, 2011 5:08 PM
+> To: Chanho Park
+> Cc: Stephen Warren; Barry.Song@csr.com; Rongjun.Ying@csr.com; linux-
+> kernel@vger.kernel.org; Kyungmin Park
+> Subject: Re: [PATCHv2] drivers: pinctrl: add a pin_base for sparse
+> gpio-ranges
+> 
+> On Wed, Nov 2, 2011 at 9:56 AM, Chanho Park <chanho61.park@samsung.com>
+> wrote:
+> 
+> >> You'll need to update that documentation now that the final
+> parameter is
+> >> a pin number, not an offset into the range.
+> >
+> > I'll update it. Thx.
+> 
+> Chanho, do you have a v3 ready? I'd really like to apply this patch...
+> 
+> Yours,
+> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-We do but it's a fair question if we're doing it enough. I don't have
-a simple answer to that.
-
-                        Pekka
