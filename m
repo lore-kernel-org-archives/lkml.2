@@ -1,74 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935235Ab1KJP2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:28:31 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:18304 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933707Ab1KJP2a (ORCPT
+	id S935285Ab1KJP3H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:29:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:50163 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933707Ab1KJP3F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:28:30 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6525"; a="136435204"
-Date: Thu, 10 Nov 2011 07:28:25 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: David Brown <davidb@codeaurora.org>, Richard Kuo <rkuo@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-hexagon@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Hexagon: Use resource_size function
-Message-ID: <20111110152825.GA13341@huya.qualcomm.com>
-References: <1320778170.8062.134.camel@localhost.localdomain>
- <20111109010202.GA16505@huya.qualcomm.com>
- <1320914364.20155.10.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1320914364.20155.10.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Nov 2011 10:29:05 -0500
+Message-ID: <1320938930.22195.17.camel@i7.infradead.org>
+Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
+ supported by the hardware
+From: David Woodhouse <dwmw2@infradead.org>
+To: Kai Huang <mail.kai.huang@gmail.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, iommu@lists.linux-foundation.org,
+        linux-omap@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>, kvm@vger.kernel.org
+Date: Thu, 10 Nov 2011 15:28:50 +0000
+In-Reply-To: <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
+	 <1318850846-16066-3-git-send-email-ohad@wizery.com>
+	 <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 09:39:24AM +0100, Thomas Meyer wrote:
-> Am Dienstag, den 08.11.2011, 17:02 -0800 schrieb David Brown:
-> > Some minor nits about the formatting of the patch.
-> > 
-> > On Tue, Nov 08, 2011 at 07:49:30PM +0100, Thomas Meyer wrote:
-> > > From: Thomas Meyer <thomas@m3y3r.de>
-> > 
-> > Shouldn't need a From: line, since it is the same as the email you
-> > sent it from.
-> 
-> So do I need a From: line or not?
-> 
-> Documentation/SubmittingPatches says:
-> 
->         The "from" line must be the very first line in the message body,
->         and has the form:
->         
->                 From: Original Author <author@example.com>
->         
->         The "from" line specifies who will be credited as the author of the
->         patch in the permanent changelog.  If the "from" line is missing,
->         then the "From:" line from the email header will be used to determine
->         the patch author in the changelog.
-> 
-> MUST in the meaning of RFC2119, means it is an absolut requirment. What
-> should I do?
+On Thu, 2011-11-10 at 14:17 +0800, Kai Huang wrote:
+> And another question: have we considered the IOTLB flush operation? I
+> think we need to implement similar logic when flush the DVMA range.
+> Intel VT-d's manual says software needs to specify the appropriate
+> mask value to flush large pages, but it does not say we need to
+> exactly match the page size as it is mapped. I guess it's not
+> necessary for Intel IOMMU, but other vendor's IOMMU may have such
+> limitation (or some other limitations). In my understanding current
+> implementation does not provide page size information for particular
+> DVMA ranges that has been mapped, and it's not flexible to implement
+> IOTLB flush code (ex, we may need to walk through page table to find
+> out actual page size). Maybe we can also add iommu_ops->flush_iotlb ? 
 
-The absolute requirement is that the from line must be the first line
-in the message body.  The "If the 'from' line is missing" even
-suggests that it is optional.  I agree that the wording isn't all that
-great.
+Which brings me to another question I have been pondering... do we even
+have a consensus on exactly *when* the IOTLB should be flushed?
 
-I don't believe it hurts anything to use it, it just looks kind of odd
-to have a From line that is the same as the originating email address.
+Even just for the Intel IOMMU, we have three different behaviours:
 
-You certainly don't need it, given that a vast majority of patches
-posted don't contain a from line.  Git send-email only generates one
-if the author is different from the one sending the message.
+  - For DMA API users by default, we do 'batched unmap', so a mapping
+    may be active for a period of time after the driver has requested
+    that it be unmapped.
 
-David
+  - ... unless booted with 'intel_iommu=strict', in which case we do the
+    unmap and IOTLB flush immediately before returning to the driver.
+
+  - But the IOMMU API for virtualisation is different. In fact that
+    doesn't seem to flush the IOTLB at all. Which is probably a bug.
+
+What is acceptable, though? That batched unmap is quite important for
+performance, because it means that we don't have to bash on the hardware
+and wait for a flush to complete in the fast path of network driver RX,
+for example.
+
+If we move to a model where we have a separate ->flush_iotlb() call, we
+need to be careful that we still allow necessary optimisations to
+happen.
+
+Since I have the right people on Cc and the iommu list is still down,
+and it's vaguely tangentially related...
+
+I'm looking at fixing performance issues in the Intel IOMMU code, with
+its virtual address space allocation (the rbtree-based one in iova.c
+that nobody else uses, which has a single spinlock that *all* CPUs bash
+on when they need to allocate).
+
+The plan is, vaguely, to allocate large chunks of space to each CPU, and
+then for each CPU to allocate from its own region first, thus ensuring
+that the common case doesn't bounce locks between CPUs. It'll be rare
+for one CPU to have to touch a subregion 'belonging' to another CPU, so
+lock contention should be drastically reduced.
+
+Should I be planning to drop the DMA API support from intel-iommu.c
+completely, and have the new allocator just call into the IOMMU API
+functions instead? Other people have been looking at that, haven't they?
+Is there any code? Or special platform-specific requirements for such a
+generic wrapper that I might not have thought of? Details about when to
+flush the IOTLB are one such thing which might need special handling for
+certain hardware...
 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+dwmw2
+
