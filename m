@@ -1,106 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933874Ab1KJI4x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:56:53 -0500
-Received: from h1778886.stratoserver.net ([85.214.133.74]:44061 "EHLO
-	h1778886.stratoserver.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab1KJI4w (ORCPT
+	id S933923Ab1KJI5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:57:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3341 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932301Ab1KJI5i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:56:52 -0500
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH] s3c-adc-battery: Add naive POWER_SUPPLY_PROP_PRESENT implementation
-Date: Thu, 10 Nov 2011 09:56:43 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.39-2-amd64; KDE/4.6.4; x86_64; ; )
-Cc: Vasily Khoruzhick <anarsoul@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+	Thu, 10 Nov 2011 03:57:38 -0500
+From: Markus Armbruster <armbru@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
+	<4EBB4A21.20707@codemonkey.ws>
+	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
+	<m3pqh0tnoi.fsf@blackfin.pond.sub.org>
+	<CA+1xoqe22z9F3ZyFG_XnV9Y17HtkeSxtf1gbW4+CW1cuNQ=N5g@mail.gmail.com>
+Date: Thu, 10 Nov 2011 09:57:01 +0100
+In-Reply-To: <CA+1xoqe22z9F3ZyFG_XnV9Y17HtkeSxtf1gbW4+CW1cuNQ=N5g@mail.gmail.com>
+	(Sasha Levin's message of "Thu, 10 Nov 2011 10:23:23 +0200")
+Message-ID: <m3fwhws6ci.fsf@blackfin.pond.sub.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201111100956.43979.heiko@sntech.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace programs like upower seem to depend on the presence of the
-POWER_SUPPLY_PROP_PRESENT property.
+Sasha Levin <levinsasha928@gmail.com> writes:
 
-The real presence of the battery cannot be sensed and all other
-routines of s3c-adc-battery simply expect it to be present.
+> On Thu, Nov 10, 2011 at 9:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
+[...]
+>> Start with a clean read/write raw image.  Probing declares it raw.
+>> Guest writes QCOW signature to it, with a backing file of its choice.
+>>
+>> Restart with the same image.  Probing declares it QCOW2.  Guest can read
+>> the backing file.  Oops.
+>
+> Thats an excellent scenario why you'd want to have 'Secure KVM' with
+> seccomp filters :)
 
-Therefore we simply return 1, unless the battery struct is not present at all.
+Yup.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
- drivers/power/s3c_adc_battery.c |   18 ++++++++++++++++++
- 1 files changed, 18 insertions(+), 0 deletions(-)
+For what it's worth, sVirt (use SELinux to secure virtualization)
+mitigates the problem.  Doesn't mean we couldn't use "Secure KVM".
 
-diff --git a/drivers/power/s3c_adc_battery.c b/drivers/power/s3c_adc_battery.c
-index d32d0d7..42d1f92 100644
---- a/drivers/power/s3c_adc_battery.c
-+++ b/drivers/power/s3c_adc_battery.c
-@@ -51,6 +51,7 @@ static enum power_supply_property s3c_adc_backup_bat_props[] = {
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 	POWER_SUPPLY_PROP_VOLTAGE_MIN,
- 	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
-+	POWER_SUPPLY_PROP_PRESENT,
- };
- 
- static int s3c_adc_backup_bat_get_property(struct power_supply *psy,
-@@ -60,6 +61,11 @@ static int s3c_adc_backup_bat_get_property(struct power_supply *psy,
- 	struct s3c_adc_bat *bat = container_of(psy, struct s3c_adc_bat, psy);
- 
- 	if (!bat) {
-+		if (psp == POWER_SUPPLY_PROP_PRESENT) {
-+			val->intval = 0;
-+			return 0;
-+		}
-+
- 		dev_err(psy->dev, "%s: no battery infos ?!\n", __func__);
- 		return -EINVAL;
- 	}
-@@ -83,6 +89,9 @@ static int s3c_adc_backup_bat_get_property(struct power_supply *psy,
- 	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
- 		val->intval = bat->pdata->backup_volt_max;
- 		return 0;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = 1;
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -106,6 +115,7 @@ static enum power_supply_property s3c_adc_main_bat_props[] = {
- 	POWER_SUPPLY_PROP_CHARGE_NOW,
- 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
- 	POWER_SUPPLY_PROP_CURRENT_NOW,
-+	POWER_SUPPLY_PROP_PRESENT,
- };
- 
- static int calc_full_volt(int volt_val, int cur_val, int impedance)
-@@ -132,6 +142,11 @@ static int s3c_adc_bat_get_property(struct power_supply *psy,
- 	unsigned int lut_size = bat->pdata->lut_noac_cnt;
- 
- 	if (!bat) {
-+		if (psp == POWER_SUPPLY_PROP_PRESENT) {
-+			val->intval = 0;
-+			return 0;
-+		}
-+
- 		dev_err(psy->dev, "no battery infos ?!\n");
- 		return -EINVAL;
- 	}
-@@ -205,6 +220,9 @@ static int s3c_adc_bat_get_property(struct power_supply *psy,
- 	case POWER_SUPPLY_PROP_CURRENT_NOW:
- 		val->intval = bat->cur_value;
- 		return 0;
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		val->intval = 1;
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
--- 
-1.6.1
+> I'm actually not sure why KVM tool got QCOW support in the first
+> place. You can have anything QCOW provides if you use btrfs (among
+> several other FSs).
 
+Maybe it's just me, but isn't it weird to have a filesystem (QCOW2)
+sitting in the kernel sources that you can't mount(2)?
