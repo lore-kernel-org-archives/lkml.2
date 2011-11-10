@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612Ab1KJID3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:03:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:53696 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab1KJID2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:03:28 -0500
-MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <alpine.DEB.2.00.1111020352210.23788@router.home>
-References: <1319385413-29665-1-git-send-email-gilad@benyossef.com>
-	<1319385413-29665-5-git-send-email-gilad@benyossef.com>
-	<4EAAD351.70805@redhat.com>
-	<CAOtvUMd8Z_jbs__+cVG2+ZkPZLqGkJGym402RMRYGDDjT73bkg@mail.gmail.com>
-	<alpine.DEB.2.00.1111020352210.23788@router.home>
-Date: Thu, 10 Nov 2011 10:03:27 +0200
-Message-ID: <CAOtvUMd7asdth2nhWdO_ZriFSOcM75F0YmgwtGmtXgp1XrMGzg@mail.gmail.com>
-Subject: Re: [PATCH v2 4/6] mm: Only IPI CPUs to drain local pages if they exist
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Christoph Lameter <cl@gentwo.org>
-Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933640Ab1KJIGN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:06:13 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:43212 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab1KJIGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 03:06:09 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: dwmw2@infradead.org, dedekind1@gmail.com, mikedunn@newsguy.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: [PATCH v2 00/16] DocG3 fixes and write support
+Date: Thu, 10 Nov 2011 09:05:26 +0100
+Message-Id: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 2, 2011 at 10:53 AM, Christoph Lameter <cl@gentwo.org> wrote:
-> On Sat, 29 Oct 2011, Gilad Ben-Yossef wrote:
->
->> >> +/* Which CPUs have per cpu pages  */
->> >> +cpumask_var_t cpus_with_pcp;
->> >> +static DEFINE_PER_CPU(unsigned long, total_cpu_pcp_count);
->> >
->> > Does the flushing happen so frequently that it is worth keeping this
->> > state on a per-cpu basis, or would it be better to check each CPU's
->> > pcp info and assemble a cpumask at flush time like done in patch 5?
->> >
->>
->> No, I don't  believe it is frequent at all. I will try to re-work the
->> patch as suggested.
->
-> The draining of the pcp pages is done from the vmstat callback which
-> occurs every second. Only if there is something to clean in the caches
-> will the flush happen.
->
+This patchset is aimed at :
+ - fixing 5 glitches in the driver
+ - add several new functions
 
-Right,  I wasn't accurate with my answer - I meant to say that the code to IPI
-all CPUs asking to flush their pcp pages is infrequent, so doing more
-work in that
-code path is not unthinkable. Thanks for pointing it out.
+The added functions are :
+ - add block erase capability
+ - add write page capability
+ - add powerdown and powerup
+ - add multiple floor support
+ - add ECC support
+ - add docg3 modes support
+ - add protection support (DPS areas)
 
-As Christoph pointed out flushing on each CPU is also done by the  vmstat
-workqueue every second, in addition to the IPI path.
+The ECC part should especially be reviewed by Ivan and Mike,
+as this is their work (patch "add ECC correction code").
 
-Since the changes I need wish to do involve the code that sends the IPI and not
-the flush code itself, I believe it is correct to say it is not a
-frequent activity.
+Since V1, Ivan's and Mike's comments have been taken into
+account, and nandtest/nanddump/nandwrite testing has been
+done, with and without bitflipped data.
 
-Having said that, trying to come up with a way with avoiding waking up each CPU
-once per second to do the vmstat work is also on my todo list, but
-this is another
-patch and another story altogether... :-)
+Moreover, 3 new patches have been added:
+ - fix reading oob+data without correction
+   This was triggered by the bitflipped pages tests, and
+   fixes cases where we want to read corrupted data.
+ - add docg3 modes support
+   This actually fixes the read part, as we now read in
+   "normal" mode by default rather than in "reliable"
+   mode. This is mandatory for nandtest to work, because of
+   the "even/odd pages logical AND".
+ - add protection support
+   This is an evolution to be able to access the whole chip
+   in protected chips, as they are in smartphones.
 
-Thanks!
-Gilad
+Happy review.
+
+--
+Robert
+
+Robert Jarzmik (16):
+  mtd/docg3: fix debug log verbosity
+  mtd/docg3: fix tracing of IO in writeb
+  mtd/docg3: fix protection areas reading
+  mtd/docg3: fix BCH registers
+  mtd/docg3: fix reading oob+data without correction
+  mtd/docg3: add multiple floor support
+  mtd/docg3: add OOB layout to mtdinfo
+  mtd/docg3: add registers for erasing and writing
+  mtd/docg3: add OOB buffer to device structure
+  mtd/docg3: add write functions
+  mtd/docg3: add erase functions
+  mtd/docg3: map erase and write functions
+  mtd/docg3: add ECC correction code
+  mtd/docg3: add suspend and resume
+  mtd/docg3: add fast mode
+  mtd/docg3: add protection areas sysfs access
+
+ drivers/mtd/devices/Kconfig |    9 +
+ drivers/mtd/devices/docg3.c | 1451 ++++++++++++++++++++++++++++++++++++-------
+ drivers/mtd/devices/docg3.h |   64 ++-
+ 3 files changed, 1299 insertions(+), 225 deletions(-)
 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+1.7.5.4
 
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
