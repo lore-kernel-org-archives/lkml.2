@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab1KJSiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 13:38:52 -0500
-Received: from www17.your-server.de ([213.133.104.17]:50484 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab1KJSiu (ORCPT
+	id S932427Ab1KJSmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 13:42:14 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:39713 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab1KJSmL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 13:38:50 -0500
-Message-ID: <1320950323.20155.106.camel@localhost.localdomain>
-Subject: [PATCH] ALSA: usb-audio: Use kmemdup rather than duplicating its
- implementation
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 10 Nov 2011 19:38:43 +0100
+	Thu, 10 Nov 2011 13:42:11 -0500
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Stephane Eranian <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Date: Thu, 10 Nov 2011 19:41:59 +0100
+In-Reply-To: <20111110180308.GD15738@erda.amd.com>
+References: <20111107110149.GA5177@quad>
+	 <20111110180308.GD15738@erda.amd.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 (3.2.1-2.fc16) 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320950519.13800.41.camel@twins>
 Mime-Version: 1.0
-X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use kmemdup rather than duplicating its implementation
+On Thu, 2011-11-10 at 19:03 +0100, Robert Richter wrote:
+> But this algorithm does not work for all cases and does not solve the
+> problem in general. 
 
-The semantic patch that makes this change is available
-in scripts/coccinelle/api/memdup.cocci.
+Yeah, the problem in general is O(n!) no O(n^3) algorithm can compute
+the optimal solution for n>3 or so.
 
-Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
----
+I think the goal is to keep the 'normal' case O(n^2) but try and suck
+less for the corner cases without degenerating into a full blown O(n!).
 
-diff -u -p a/sound/usb/quirks.c b/sound/usb/quirks.c
---- a/sound/usb/quirks.c 2011-11-07 19:38:37.987378553 +0100
-+++ b/sound/usb/quirks.c 2011-11-08 11:06:23.015258350 +0100
-@@ -137,12 +137,12 @@ static int create_fixed_stream_quirk(str
- 		return -ENOMEM;
- 	}
- 	if (fp->nr_rates > 0) {
--		rate_table = kmalloc(sizeof(int) * fp->nr_rates, GFP_KERNEL);
-+		rate_table = kmemdup(fp->rate_table,
-+				     sizeof(int) * fp->nr_rates, GFP_KERNEL);
- 		if (!rate_table) {
- 			kfree(fp);
- 			return -ENOMEM;
- 		}
--		memcpy(rate_table, fp->rate_table, sizeof(int) * fp->nr_rates);
- 		fp->rate_table = rate_table;
- 	}
- 
-@@ -224,10 +224,9 @@ static int create_uaxx_quirk(struct snd_
- 	if (altsd->bNumEndpoints != 1)
- 		return -ENXIO;
- 
--	fp = kmalloc(sizeof(*fp), GFP_KERNEL);
-+	fp = kmemdup(&ua_format, sizeof(*fp), GFP_KERNEL);
- 	if (!fp)
- 		return -ENOMEM;
--	memcpy(fp, &ua_format, sizeof(*fp));
- 
- 	fp->iface = altsd->bInterfaceNumber;
- 	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
-.
-
+So I think we want an amortized O(n^2) with an upper bound well below
+O(n!).
