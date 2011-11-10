@@ -1,127 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757789Ab1KJQuk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:50:40 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:43739
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754343Ab1KJQui (ORCPT
+	id S965342Ab1KJQyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:54:36 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51093 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753791Ab1KJQyd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:50:38 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Message-ID: <4EBC00D2.2030208@freescale.com>
-Date: Thu, 10 Nov 2011 10:50:26 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20110429 Fedora/3.6.17-1.fc13 Firefox/3.6.17
+	Thu, 10 Nov 2011 11:54:33 -0500
 MIME-Version: 1.0
-To: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anatolij Gustschin <agust@denx.de>, Paul Bolle <pebolle@tiscali.nl>,
-        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 02/17] powerpc: Split up PHYS_64BIT config option
- to fix "select" issues
-References: <4E42AB6F.1050900@freescale.com> <1320883635-17194-3-git-send-email-Kyle.D.Moffett@boeing.com> <4EBBD9DF.6080100@freescale.com> <501ACA94-491F-43A7-9DCF-485BEE824DD5@boeing.com>
-In-Reply-To: <501ACA94-491F-43A7-9DCF-485BEE824DD5@boeing.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4EBBD936.40705@teksavvy.com>
+References: <4EA89972.5060101@teksavvy.com>
+	<20111026.194045.2019668159403582571.davem@davemloft.net>
+	<4EA8B283.3010105@teksavvy.com>
+	<20111026.221719.2216112919297458522.davem@davemloft.net>
+	<4EB19BBE.5050602@teksavvy.com>
+	<4EBAB8F5.1010101@teksavvy.com>
+	<4EBBD936.40705@teksavvy.com>
+Date: Thu, 10 Nov 2011 08:54:31 -0800
+Message-ID: <CANEJEGuS1w_rPsjOfY8TqP=TewjRLSdEeR+OmaGB3G4LQZg82Q@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/net/usb/asix: resync from vendor's copy
+From: Grant Grundler <grundler@google.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Michal Marek <mmarek@suse.cz>, Freddy Xin <freddy@asix.com.tw>,
+        "ASIX Allan Email [office]" <allan@asix.com.tw>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moffett, Kyle D wrote:
++ASIX (Freddy Xin and Allan)
 
-> Did you look at the existing code?  It's already that complicated:
-> 
-> config ARCH_PHYS_ADDR_T_64BIT
-> 	def_bool PPC64 || PHYS_64BIT
-
-I never understood why we have PHYS_64BIT and ARCH_PHYS_ADDR_T_64BIT, since they mean the same thing.  
-
-> config ARCH_DMA_ADDR_T_64BIT
-> 	def_bool ARCH_PHYS_ADDR_T_64BIT
-> 
-> config {P1022_DS,P2041_RDB,P3041_DS,P3060_QDS,P4080_DS,P5020_DS}
-> 	select PHYS_64BIT
-
-I posted a patch to remove the P1022_DS version of this.  I'm in favor of removing it from the other boards and letting the defconfig define it, but Kumar nak'd that idea.
-
-> config PTE_64BIT
-> 	bool
-> 	depends on 44x || E500 || PPC_86xx
-> 	default y if PHYS_64BIT
-
-I think this one is about how our TLB registers look, and it's not related to anything else.
-
-> Even worse, PHYS_64BIT is not set on 64-bit processors, but there is
-> a lot of driver code that seems to assume PHYS_64BIT indicates the
-> size of "phys_addr_t".
-
-There's a Kconfig option somewhere that takes care of this.
-
-> The big issue is that the Kconfig docs are very clear that "select"
-> should not be used on user-visible options (AKA: PHYS_64BIT), and yet
-> half the PPC_85xx boards have this tidbit:
-> 	select PHYS_64BIT # The DTS has 36-bit addresses
-
-I'm not sure that Kconfig rule is enforceable.  We use 'select' all the time to make sure that our boards enable the options that need to be enabled.  I'd rather see this:
-
-config X
-	select A
-
-config Y
-	select A
-
-config Z
-	select A
-
-than this:
-
-config A
-	default y if X | Y | Z
-
-The former is more maintainable and does not allow the option of disabling "A" if someone wants "X".
-
-> I'm totally OK with removing that from all those boards, but to preserve
-> the existing behavior (also used by the entire 44x platform) I added the
-> new config symbol PHYS_64BIT_DT_REQUIRED, which is used to control
-> whether or not the "PHYS_64BIT" option is even visible to the user.
-> 
-> I originally called it "PHYS_64BIT_REQUIRED", but since all of the
-> board comments talked about 36-bit DTS addresses, I added the _DT_.
-
-They're really 64-bit DTS addresses.  The 36 bit is just a hardware quirk of our SOCs.  From the kernel's perspective, there's no difference between 36-bit and 64-bit physical address.
-
->> There are only two reasons to create a 32-bit kernel:
+On Thu, Nov 10, 2011 at 6:01 AM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 11-11-09 12:31 PM, Mark Lord wrote:
+>> Second pass (for review) at updating the in-kernel asix usb/network driver
+>> from the v4.1.0 vendor GPL version of the driver, obtained from here:
 >>
->> 1) A small performance improvement on systems with 2GB or less.
->> 2) Some SOC devices only support 32-bit physical addresses, so the
->> easiest way to ensure a compatible address is to prohibit memory above
->> 4GB.
-> 
-> If this is true, then why does PHYS_64BIT have that big ugly list of
-> dependencies right now? 
+>>   http://www.asix.com.tw/download.php?sub=searchresult&PItemID=84&download=driver
+>>
+>> The original vendor copy used a local "axusbnet" middleware (rather than "usbnet").
+>> I've converted it back to using "usbnet", made a ton of cosmetic changes
+>> to get it to pass checkpatch.pl, and removed a small amount of code duplication.
+>>
+>> The tx/rx checksum code has been updated per Ben's comments,
+>> and the duplicated MII_* definitions have been removed.
+>> I've changed the version string to be "4.1.0-kernel",
+>> to reflect the vendor's code version while also distinguishing
+>> this port from the original vendor code.
+>>
+>> It can use more work going forward, but it is important to get it upstream
+>> sooner than later -- the current in-kernel driver fails with many devices,
+>> both old and new.  This updated version works with everything I have available
+>> to test with, and also handles suspend / resume (unlike the in-kernel one).
+>>
+>> Signed-off-by: Mark Lord <mlord@pobox.com>
+> ...
+>
+> Okay, the vendor has told me to cease development on this now.
+> They prefer instead to feed small parts of their mainline driver
+> to Grant Grundler as issues arise, rather than to get the whole
+> thing upstream.
 
-Because Kumar doesn't want to allow 32-bit kernels on our high-end parts.  Like I said, I'm not a fan of that decision.
+Hi Mark,
+I'm very surprise a second time now. It's partly my own fault since
+I'm not following netdev.  Until you contacted me privately 8 days
+ago, I didn't know that you had been working with ASIX on asix.c. That
+was the first surprise.
 
-> I don't know about the other platforms well
-> enough to tell what would break by enabling PHYS_64BIT, but I assume
-> that something in the past caused that dependency list.
+The second surprise is ASIX suggested I'm going to be the conduit for
+all their patches upstream. I never committed to that.  I was very
+clear that I would help them get started by feeding 3 small patches to
+"upstream". I've fulfilled that commitment (3 fixes plus one cleanup).
+  I have one more patch (work in progress:
+https://gerrit.chromium.org/gerrit/11485 ) I'd like to see go in and
+then they have to start "catching their own fish".
 
-It's just an arbitrary decision.  We don't ship 32-bit DTs for the P4080-class parts, and we don't have a U-Boot configuration option for building a 32-bit compatible U-Boot.
+The statement above implies Google has an economic interest in their
+products and AFAIK that's not true. We do not buy their product in
+volume. Getting this working has sort of been my 20% project over the
+past couple of months. It would have been cheaper buy USB ethernet
+dongles from a vendor with working Linux support and *give* them to
+our partners who need them.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Lastly, offlist I have expressed my opinion about 5K line patches to
+you and to ASIX.  I'm not allowed to push such large patches into
+Chromium.org (upstream first!) and I was certain on their own, ASIX
+wouldn't get that upstream in one shot. No one knows them. No one
+trusts them. Asix never mentioned that they had already hired you to
+do it (and I am pretty sure you could have). So I feel a bit blind
+sided (as you probably do to) by how events are unfolding here. ASIX
+may still need help to *continue* upstreaming additional functionality
+(e.g. CSO/TSO) and I will remind ASIX of that in future
+communications.
 
+*sigh*
+
+cheers,
+grant
+
+
+> So be it.
+>
+> Cheers
+>
