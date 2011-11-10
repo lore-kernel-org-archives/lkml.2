@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab1KJMId (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 07:08:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11635 "EHLO mx1.redhat.com"
+	id S934260Ab1KJMIy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 07:08:54 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34243 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab1KJMIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 07:08:32 -0500
-Date: Thu, 10 Nov 2011 13:06:49 +0100
-From: Johannes Weiner <jweiner@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111110120649.GJ3153@redhat.com>
-References: <20111110100616.GD3083@suse.de>
- <20111110105100.23fa78f9@lxorguk.ukuu.org.uk>
+	id S1753112Ab1KJMIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 07:08:52 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Thu, 10 Nov 2011 13:11:31 +0100
+User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+References: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
+In-Reply-To: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110105100.23fa78f9@lxorguk.ukuu.org.uk>
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201111101311.32012.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:51:00AM +0000, Alan Cox wrote:
-> On Thu, 10 Nov 2011 10:06:16 +0000
-> Mel Gorman <mgorman@suse.de> wrote:
+On Thursday, November 10, 2011, Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> > Occasionally during large file copies to slow storage, there are still
-> > reports of user-visible stalls when THP is enabled. Reports on this
-> > have been intermittent and not reliable to reproduce locally but;
+> After merging the pm tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> If you want to cause a massive stall take a cheap 32GB USB flash drive
-> plug it into an 8GB box and rsync a lot of small files to it. 400,000
-> emails in maildir format does the trick and can easily be simulated. The
-> drive drops to about 1-2 IOPS with all the small mucking around and the
-> backlog becomes massive.
+> mm/oom_kill.c: In function 'select_bad_process':
+> mm/oom_kill.c:326:5: error: implicit declaration of function 'thaw_process'
 > 
-> > Internally in SUSE, I received a bug report related to stalls in firefox
-> > 	when using Java and Flash heavily while copying from NFS
-> > 	to VFAT on USB. It has not been confirmed to be the same problem
-> > 	but if it looks like a duck and quacks like a duck.....
+> Caused by commit 944e192db53c ("freezer: rename thaw_process() to
+> __thaw_task() and simplify the implementation").
 > 
-> With the 32GB USB flash rsync I see firefox block for up to 45 minutes
-> although operating entirely on an unrelated filesystem. I suspect it may
-> be a problem that is visible because an fsync is getting jammed up in
-> the mess.
+> I have used the pm tree from next-20111109 for today.
 
-Compaction walks PFN ranges, oblivious to inode dirtying order, and so
-transparent huge page allocations can get stuck repeatedly on pages
-under writeback that are behind whatever the bdi's queue allows to be
-inflight.
+Thanks, I'll drop pm-freezer from my linux-next branch until that issue is
+fixed.
 
-On all hangs I observed while writing to my 16GB USB thumb drive, it
-was tasks getting stuck in migration when allocating a THP.
-
-Can you capture /proc/`pidof firefox`/stack while it hangs to see if
-what you see is, in fact, the same problem?
+Rafael
