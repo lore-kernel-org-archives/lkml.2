@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab1KJBet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 20:34:49 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30592 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756951Ab1KJBer (ORCPT
+	id S1756925Ab1KJBhx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 20:37:53 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18152 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751662Ab1KJBhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 20:34:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6525"; a="133911554"
-Message-ID: <4EBB2A36.9040609@codeaurora.org>
-Date: Wed, 09 Nov 2011 17:34:46 -0800
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111103 Thunderbird/8.0
+	Wed, 9 Nov 2011 20:37:52 -0500
+Message-ID: <4EBB2ADD.1090602@oracle.com>
+Date: Thu, 10 Nov 2011 09:37:33 +0800
+From: ANNIE LI <annie.li@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.23) Gecko/20110920 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Harini Jayaraman <harinij@codeaurora.org>
-CC: grant.likely@secretlab.ca, davidb@codeaurora.org, kheitke@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: QUP based bus driver for Qualcomm MSM chipsets
-References: <y> <1320887221-7165-1-git-send-email-harinij@codeaurora.org>
-In-Reply-To: <1320887221-7165-1-git-send-email-harinij@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        linux-kernel@vger.kernel.org, jeremy@goop.org,
+        Kurt Hackel <Kurt.Hackel@oracle.com>,
+        Paul Durrant <paul.durrant@citrix.com>
+Subject: Re: patches of upstreaming grant table version 2
+References: <4EBA32B7.7020804@oracle.com> <20111109142256.GA8410@phenom.dumpdata.com>
+In-Reply-To: <20111109142256.GA8410@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EBB2AEC.0034,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2011 05:07 PM, Harini Jayaraman wrote:
-> This bus driver supports the QUP SPI hardware controller in the Qualcomm
-> MSM SOCs. The Qualcomm Universal Peripheral Engine (QUP) is a general
-> purpose data path engine with input/output FIFOs and an embedded SPI
-> mini-core. The driver currently supports only FIFO mode.
-> 
-> Signed-off-by: Harini Jayaraman <harinij@codeaurora.org>
-> ---
->  drivers/spi/Kconfig                   |   10 +
->  drivers/spi/Makefile                  |    1 +
->  drivers/spi/msm_spi_qsd.h             |  436 +++++++++++++
->  drivers/spi/spi-qsd.c                 | 1144 +++++++++++++++++++++++++++++++++
->  include/linux/platform_data/msm_spi.h |   19 +
->  5 files changed, 1610 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/spi/msm_spi_qsd.h
->  create mode 100644 drivers/spi/spi-qsd.c
->  create mode 100644 include/linux/platform_data/msm_spi.h
+> Well, .. parts of netchannel2 that are going to be put in the netback
+> and netfront as ways of expanding the driver (add new features).
+>
+> netchannel2 by itself is dead, and we can pick some of its grand ideas
+> from it and put them in netback/netfront.
+Yes, I should not mention netchannel2 here, will update the comments.
 
-A few high-level comments to start.  Let's drop 'qsd' from all the
-names.  We haven't used that naming convention for several years now.
-Better to just call this 'spi-qup.[ch]'.  Also, please update the
-copyright dates.  This driver existed before 2011.  Thanks.
-
-- Bryan
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks
+Annie
