@@ -1,114 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934518Ab1KJNMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:12:36 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57064 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585Ab1KJNMf (ORCPT
+	id S934405Ab1KJNZM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:25:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59788 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755894Ab1KJNZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:12:35 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] vrtc: change its year offset from 1960 to 1972
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Thu, 10 Nov 2011 13:23:39 +0000
-Message-ID: <20111110132202.14819.11350.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
+	Thu, 10 Nov 2011 08:25:10 -0500
+Date: Thu, 10 Nov 2011 13:25:06 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        guenter.roeck@ericsson.com, khali@linux-fr.org,
+        dmitry.torokhov@gmail.com, gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
+        arnd@arndb.de, linus.walleij@linaro.org, lars@metafoo.de,
+        maxime.ripard@free-electrons.com, lm-sensors@lm-sensors.org,
+        thomas.petazzoni@free-electrons.com, zdevai@gmail.com,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: Re: [PATCH 3/5] IIO:CORE add in kernel interface mapping and getting
+ IIO channels.
+Message-ID: <20111110132506.GF3832@opensource.wolfsonmicro.com>
+References: <1320680681-5635-1-git-send-email-jic23@kernel.org>
+ <1320680681-5635-4-git-send-email-jic23@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1320680681-5635-4-git-send-email-jic23@kernel.org>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[This has been sent several times to rtc people with no response over
- months, so it's now going direct. It only affects Intel MID devices]
+On Mon, Nov 07, 2011 at 03:44:39PM +0000, Jonathan Cameron wrote:
+> From: Jonathan Cameron <jic23@cam.ac.uk>
+> 
+> Two elements here:
+> * Map as defined in include/linux/iio/inkern.h
+> * Matching code to actually get the iio_dev and channel
+> that we want from the global list of IIO devices.
 
-From: Feng Tang <feng.tang@intel.com>
+I've not read it thoroughly but this certainly this looks sensible from
+an external interface point of view, I'd expect that issues can be
+worked through incrementally.
 
-Real world year equals the value in vrtc YEAR register plus an offset.
-We used 1960 as the offset to make leap year consistent, but for a
-device's first use, its YEAR register is 0 and the system year will
-be parsed as 1960 which is not a valid UNIX time and will cause many
-applications to fail mysteriously. So we use 1972 instead to fix this
-issue.
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Updated patch which adds a sanity check suggested by Mathias
+> +extern struct list_head iio_map_list;
 
-This isn't a change in behaviour for systems, because 1972 is the one we
-actually use. It's the old version in upstream which is out of sync with
-all devices.
-
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- arch/x86/platform/mrst/vrtc.c |    4 ++--
- drivers/rtc/rtc-mrst.c        |   19 +++++++++++--------
- 2 files changed, 13 insertions(+), 10 deletions(-)
-
-
-diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
-index a8ac6f1..225bd0f 100644
---- a/arch/x86/platform/mrst/vrtc.c
-+++ b/arch/x86/platform/mrst/vrtc.c
-@@ -76,8 +76,8 @@ unsigned long vrtc_get_time(void)
- 
- 	spin_unlock_irqrestore(&rtc_lock, flags);
- 
--	/* vRTC YEAR reg contains the offset to 1960 */
--	year += 1960;
-+	/* vRTC YEAR reg contains the offset to 1972 */
-+	year += 1972;
- 
- 	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
- 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
-diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
-index d335448..bb21f44 100644
---- a/drivers/rtc/rtc-mrst.c
-+++ b/drivers/rtc/rtc-mrst.c
-@@ -76,12 +76,15 @@ static inline unsigned char vrtc_is_updating(void)
- /*
-  * rtc_time's year contains the increment over 1900, but vRTC's YEAR
-  * register can't be programmed to value larger than 0x64, so vRTC
-- * driver chose to use 1960 (1970 is UNIX time start point) as the base,
-+ * driver chose to use 1972 (1970 is UNIX time start point) as the base,
-  * and does the translation at read/write time.
-  *
-- * Why not just use 1970 as the offset? it's because using 1960 will
-+ * Why not just use 1970 as the offset? it's because using 1972 will
-  * make it consistent in leap year setting for both vrtc and low-level
-- * physical rtc devices.
-+ * physical rtc devices. Then why not use 1960 as the offset? If we use
-+ * 1960, for a device's first use, its YEAR register is 0 and the system
-+ * year will be parsed as 1960 which is not a valid UNIX time and will
-+ * cause many applications to fail mysteriously.
-  */
- static int mrst_read_time(struct device *dev, struct rtc_time *time)
- {
-@@ -99,10 +102,10 @@ static int mrst_read_time(struct device *dev, struct rtc_time *time)
- 	time->tm_year = vrtc_cmos_read(RTC_YEAR);
- 	spin_unlock_irqrestore(&rtc_lock, flags);
- 
--	/* Adjust for the 1960/1900 */
--	time->tm_year += 60;
-+	/* Adjust for the 1972/1900 */
-+	time->tm_year += 72;
- 	time->tm_mon--;
--	return RTC_24H;
-+	return rtc_valid_tm(time);
- }
- 
- static int mrst_set_time(struct device *dev, struct rtc_time *time)
-@@ -119,9 +122,9 @@ static int mrst_set_time(struct device *dev, struct rtc_time *time)
- 	min = time->tm_min;
- 	sec = time->tm_sec;
- 
--	if (yrs < 70 || yrs > 138)
-+	if (yrs < 72 || yrs > 138)
- 		return -EINVAL;
--	yrs -= 60;
-+	yrs -= 72;
- 
- 	spin_lock_irqsave(&rtc_lock, flags);
- 
-
+It's surprising that this is part of the external interface of IIO
+rather than something hidden within the implementation.
