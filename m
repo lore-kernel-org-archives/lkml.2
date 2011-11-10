@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934167Ab1KJJef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 04:34:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38440 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934022Ab1KJJeb convert rfc822-to-8bit (ORCPT
+	id S934090Ab1KJJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 04:33:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48061 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933479Ab1KJJdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 04:34:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <4EBB9809.1080603@redhat.com>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
- <4EBB4A21.20707@codemonkey.ws> <alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
- <m3pqh0tnoi.fsf@blackfin.pond.sub.org> <CA+1xoqe22z9F3ZyFG_XnV9Y17HtkeSxtf1gbW4+CW1cuNQ=N5g@mail.gmail.com>
- <m3fwhws6ci.fsf@blackfin.pond.sub.org> <CA+1xoqc7f-2azcjuLB_i_C_CCDt+gPqJe=SB5MmOiM0y6uY_cg@mail.gmail.com>
- <4EBB94D9.30906@redhat.com> <CA+1xoqdf2_j4yg=CacMpsDmtz3y30G9_BAyM=Mjsr3rQdAJ+tg@mail.gmail.com>
- <4EBB9809.1080603@redhat.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Thu, 10 Nov 2011 11:34:09 +0200
-Message-ID: <CA+1xoqdNfX03O6cToOW5wgcbZa7bHvqPPTnMUAH5Ltvs8nMrpg@mail.gmail.com>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-To: Avi Kivity <avi@redhat.com>
-Cc: Markus Armbruster <armbru@redhat.com>, Pekka Enberg <penberg@kernel.org>,
-        Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Nov 2011 04:33:19 -0500
+From: Ohad Ben-Cohen <ohad@wizery.com>
+To: <iommu@lists.linux-foundation.org>
+Cc: <linux-omap@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [PATCH v4-rebased 3/7] iommu/omap: announce supported page sizes
+Date: Thu, 10 Nov 2011 11:32:27 +0200
+Message-Id: <1320917551-11328-4-git-send-email-ohad@wizery.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1320917551-11328-1-git-send-email-ohad@wizery.com>
+References: <1320917551-11328-1-git-send-email-ohad@wizery.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 11:23 AM, Avi Kivity <avi@redhat.com> wrote:
-> On 11/10/2011 11:14 AM, Sasha Levin wrote:
->> > Trying and failing.  sVirt will deny access to all files except those
->> > explicitly allowed by libvirt.
->>
->> It still allows the guest to read more than enough files which it
->> shouldn't be reading.
->>
->> Unless you configure sVirt on a per-guest basis...
->
-> sVirt is per-guest.
+Let the IOMMU core know we support 4KiB, 64KiB, 1MiB and 16MiB page sizes.
 
-It still would mean that the guest can access any file (actually, even
-device, no?) the hypervisor can access.
+This way the IOMMU core can split any arbitrary-sized physically
+contiguous regions (that it needs to map) as needed.
+
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Hiroshi DOYU <hdoyu@nvidia.com>
+---
+ drivers/iommu/omap-iommu.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index ad80b1d..08cf7ec 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -33,6 +33,9 @@
+ 	     (__i < (n)) && (cr = __iotlb_read_cr((obj), __i), true);	\
+ 	     __i++)
+ 
++/* bitmap of the page sizes currently supported */
++#define OMAP_IOMMU_PGSIZES	(SZ_4K | SZ_64K | SZ_1M | SZ_16M)
++
+ /**
+  * struct omap_iommu_domain - omap iommu domain
+  * @pgtable:	the page table
+@@ -1207,6 +1210,7 @@ static struct iommu_ops omap_iommu_ops = {
+ 	.unmap		= omap_iommu_unmap,
+ 	.iova_to_phys	= omap_iommu_iova_to_phys,
+ 	.domain_has_cap	= omap_iommu_domain_has_cap,
++	.pgsize_bitmap	= OMAP_IOMMU_PGSIZES,
+ };
+ 
+ static int __init omap_iommu_init(void)
+-- 
+1.7.5.4
+
