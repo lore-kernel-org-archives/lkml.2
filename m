@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab1KJTFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:05:09 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37863 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab1KJTFE (ORCPT
+	id S1755638Ab1KJTFd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:05:33 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:35199 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102Ab1KJTF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:05:04 -0500
+	Thu, 10 Nov 2011 14:05:28 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,110 +23,56 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:10:01 +0530
-Message-Id: <20111110184001.11361.52020.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 11 Nov 2011 00:10:16 +0530
+Message-Id: <20111110184016.11361.91824.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
 References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 13/28]   x86: define a x86 specific exception notifier.
+Subject: [PATCH v6 3.2-rc1 14/28]   uprobe: register exception notifier
+x-cbid: 11111009-5140-0000-0000-00000033D8F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Uprobes uses notifier mechanism to get in control when an application
-encounters a breakpoint or a singlestep exception.
+Use the notifier mechanism to register uprobes exception notifier.
 
 Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
+ kernel/uprobes.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-Changelog (since v5)
-- No more do a i386 specific enable interrupts. (Its now part of another
-  patchset posted separately)
-
- arch/x86/include/asm/uprobes.h |    4 ++++
- arch/x86/kernel/signal.c       |    6 ++++++
- arch/x86/kernel/uprobes.c      |   29 +++++++++++++++++++++++++++++
- 3 files changed, 39 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 509c023..19a5949 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -23,6 +23,8 @@
-  *	Jim Keniston
-  */
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 2461b20..c4ccb89 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -30,6 +30,7 @@
+ #include <linux/mmu_notifier.h>	/* set_pte_at_notify */
+ #include <linux/swap.h>		/* try_to_free_swap */
+ #include <linux/ptrace.h>	/* user_enable_single_step */
++#include <linux/kdebug.h>	/* notifier mechanism */
+ #include <linux/uprobes.h>
  
-+#include <linux/notifier.h>
-+
- typedef u8 uprobe_opcode_t;
- #define MAX_UINSN_BYTES 16
- #define UPROBES_XOL_SLOT_BYTES	128	/* to keep it cache aligned */
-@@ -40,4 +42,6 @@ struct uprobe_arch_info {};
- struct uprobe;
- extern int analyze_insn(struct mm_struct *mm, struct uprobe *uprobe);
- extern void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr);
-+extern int uprobe_exception_notify(struct notifier_block *self,
-+				       unsigned long val, void *data);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 54ddaeb..4fdf470 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -20,6 +20,7 @@
- #include <linux/personality.h>
- #include <linux/uaccess.h>
- #include <linux/user-return-notifier.h>
-+#include <linux/uprobes.h>
- 
- #include <asm/processor.h>
- #include <asm/ucontext.h>
-@@ -820,6 +821,11 @@ do_notify_resume(struct pt_regs *regs, void *unused, __u32 thread_info_flags)
- 		mce_notify_process();
- #endif /* CONFIG_X86_64 && CONFIG_X86_MCE */
- 
-+	if (thread_info_flags & _TIF_UPROBE) {
-+		clear_thread_flag(TIF_UPROBE);
-+		uprobe_notify_resume(regs);
-+	}
-+
- 	/* deal with pending signal delivery */
- 	if (thread_info_flags & _TIF_SIGPENDING)
- 		do_signal(regs);
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 67b926f..2ee5ddc 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -407,3 +407,32 @@ void set_instruction_pointer(struct pt_regs *regs, unsigned long vaddr)
- {
- 	regs->ip = vaddr;
+ static bulkref_t uprobes_srcu;
+@@ -1235,6 +1236,11 @@ int uprobe_post_notifier(struct pt_regs *regs)
+ 	return 1;
  }
+ 
++struct notifier_block uprobe_exception_nb = {
++	.notifier_call = uprobe_exception_notify,
++	.priority = INT_MAX - 1,	/* notified after kprobes, kgdb */
++};
 +
-+/*
-+ * Wrapper routine for handling exceptions.
-+ */
-+int uprobe_exception_notify(struct notifier_block *self,
-+				       unsigned long val, void *data)
-+{
-+	struct die_args *args = data;
-+	struct pt_regs *regs = args->regs;
-+	int ret = NOTIFY_DONE;
-+
-+	/* We are only interested in userspace traps */
-+	if (regs && !user_mode_vm(regs))
-+		return NOTIFY_DONE;
-+
-+	switch (val) {
-+	case DIE_INT3:
-+		/* Run your handler here */
-+		if (uprobe_bkpt_notifier(regs))
-+			ret = NOTIFY_STOP;
-+		break;
-+	case DIE_DEBUG:
-+		if (uprobe_post_notifier(regs))
-+			ret = NOTIFY_STOP;
-+	default:
-+		break;
-+	}
-+	return ret;
-+}
+ static int __init init_uprobes(void)
+ {
+ 	int i;
+@@ -1244,7 +1250,7 @@ static int __init init_uprobes(void)
+ 		mutex_init(&uprobes_mmap_mutex[i]);
+ 	}
+ 	init_bulkref(&uprobes_srcu);
+-	return 0;
++	return register_die_notifier(&uprobe_exception_nb);
+ }
+ 
+ static void __exit exit_uprobes(void)
+
