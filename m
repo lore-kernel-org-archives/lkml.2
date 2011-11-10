@@ -1,113 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab1KJSuD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 13:50:03 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40352 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932783Ab1KJSt5 (ORCPT
+	id S1754773Ab1KJSuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 13:50:12 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:36087 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab1KJSuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 13:49:57 -0500
-From: David Daney <ddaney.cavm@gmail.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: David Daney <david.daney@cavium.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH Resend 1/2] fs: binfmt_elf: Create Kconfig variable for PIE randomization.
-Date: Thu, 10 Nov 2011 10:49:49 -0800
-Message-Id: <1320950990-10827-1-git-send-email-david.daney@cavium.com>
-X-Mailer: git-send-email 1.7.2.3
+	Thu, 10 Nov 2011 13:50:08 -0500
+Message-ID: <4EBC1CDD.1020608@tilera.com>
+Date: Thu, 10 Nov 2011 13:50:05 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 2/3] tile: remove irqsave pgd_lock locking
+References: <1320853639-18048-1-git-send-email-mhocko@suse.cz> <1320853639-18048-2-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1320853639-18048-2-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randomization of PIE load address is hard coded in binfmt_elf.c for
-X86 and ARM.  Create a new Kconfig variable
-(CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE) for this and use it instead.
-Thus architecture specific policy is pushed out of the generic
-binfmt_elf.c and into the architecture Kconfig files.
+On 11/9/2011 10:47 AM, Michal Hocko wrote:
+> a79e53d8: x86/mm: Fix pgd_lock deadlock dropped irqsave locking to fix a
+> deadlock. pgd_lock is not used from an irq context so we can drop
+> irqsave locking here as well.
+> The original patch was x86 only but the same applies here
+> because pgd_ctor (aka mm_alloc_pgd), pgd_dtor (aka mm_free_pgd),
+> shatter_huge_page (not used anywhere) and vmalloc_sync_all are not used
+> from an interrupt contexts.
 
-X86 and ARM Kconfigs are modified to select the new variable so there
-is no change in behavior.  A follow on patch will select it for MIPS
-too.
+In fact, shatter_huge_page() is used by some code in our internal version 
+of arch/tile/mm/homecache.c that we haven't yet pushed back to the 
+community, and that CAN be called from an interrupt context.  (For example, 
+we may shatter a huge page to dynamically change the "home cache" of a 
+small page when it's allocated from the page allocator, causing us to need 
+to map all the memory under the old huge page with separate small pages 
+that can now each carry separate "home cache" locations for those pages.)
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Signed-off-by: David Daney <david.daney@cavium.com>
-Acked-by: H. Peter Anvin <hpa@zytor.com>
----
+We don't suffer from the x86 deadlock risk, since we handle TLB flushing 
+using our hypervisor API, flush_remote(), which doesn't pay attention to 
+the irq-disabled state on the remote core.
 
-I am resending with no change other than adding HPAs Acked-by.  The
-first attempt to send was not completly successful due to my MTA being
-fubar.  It should be working now.
+So this patch would not be safe for our architecture, but thanks for 
+exploring the possibility.  I'll add some comments explaining this (at the 
+definition of pgd_lock) to avoid confusion in the future.  In fact, 
+reviewing the shatter_huge_page() code, I realize I should hold 
+init_mm.page_table_lock as well as pgtable_lock to guard against another 
+thread updating init_mm in parallel; I think this is only a theoretical 
+issue but I'll add the locking to be consistent.
 
- arch/arm/Kconfig  |    1 +
- arch/x86/Kconfig  |    1 +
- fs/Kconfig.binfmt |    3 +++
- fs/binfmt_elf.c   |    2 +-
- 4 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 44789ef..3830439 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -30,6 +30,7 @@ config ARM
- 	select HAVE_SPARSE_IRQ
- 	select GENERIC_IRQ_SHOW
- 	select CPU_PM if (SUSPEND || CPU_IDLE)
-+	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 	help
- 	  The ARM series is a line of low-power-consumption RISC chip designs
- 	  licensed by ARM Ltd and targeted at embedded applications and
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cb9a104..9c3e447 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -75,6 +75,7 @@ config X86
- 	select HAVE_BPF_JIT if (X86_64 && NET)
- 	select CLKEVT_I8253
- 	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-+	select ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/fs/Kconfig.binfmt b/fs/Kconfig.binfmt
-index 79e2ca7..e95d1b6 100644
---- a/fs/Kconfig.binfmt
-+++ b/fs/Kconfig.binfmt
-@@ -27,6 +27,9 @@ config COMPAT_BINFMT_ELF
- 	bool
- 	depends on COMPAT && BINFMT_ELF
- 
-+config ARCH_BINFMT_ELF_RANDOMIZE_PIE
-+	bool
-+
- config BINFMT_ELF_FDPIC
- 	bool "Kernel support for FDPIC ELF binaries"
- 	default y
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 21ac5ee..bcb884e 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -794,7 +794,7 @@ static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs)
- 			 * default mmap base, as well as whatever program they
- 			 * might try to exec.  This is because the brk will
- 			 * follow the loader, and is not movable.  */
--#if defined(CONFIG_X86) || defined(CONFIG_ARM)
-+#ifdef CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 			/* Memory randomization might have been switched off
- 			 * in runtime via sysctl.
- 			 * If that is the case, retain the original non-zero
 -- 
-1.7.2.3
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
