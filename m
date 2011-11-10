@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932456Ab1KJWKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 17:10:34 -0500
-Received: from smtp-out2.tiscali.nl ([195.241.79.177]:47499 "EHLO
-	smtp-out2.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753923Ab1KJWKd (ORCPT
+	id S932583Ab1KJWL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 17:11:58 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33640 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932498Ab1KJWL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 17:10:33 -0500
-Subject: [PATCH] ARM: mini2440: Fix Kconfig select of LEDS_TRIGGER
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Ben Dooks <ben-linux@fluff.org>, Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Nov 2011 23:10:14 +0100
-Message-ID: <1320963014.27598.77.camel@x61.thuisdomein>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	Thu, 10 Nov 2011 17:11:57 -0500
+Message-ID: <4EBC4C27.3070400@gmail.com>
+Date: Fri, 11 Nov 2011 09:11:51 +1100
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110921 Lightning/1.0b2 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: Marcus Folkesson <marcus.folkesson@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        m.szyprowski@samsung.com
+Subject: Re: ioremap on system memory
+References: <CAM8FrKJ8OeavZxTBJBONw76UBBzS_mQYMZuS6Chf8+Po6yqDgA@mail.gmail.com>
+In-Reply-To: <CAM8FrKJ8OeavZxTBJBONw76UBBzS_mQYMZuS6Chf8+Po6yqDgA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 2e18edf75d ("ARM: mini2440: Fix Kconfig to allow kernel to
-build") added "select LEDS_TRIGGER" to the MACH_MINI2440 entry. That
-Kconfig symbol doesn't exist. What actually should be selected is
-LEDS_TRIGGERS.
+On 10/11/11 19:06, Marcus Folkesson wrote:
 
-(This shouldn't be a problem with the mini2440 defconfig, since it
-contains "CONFIG_MAC80211_LEDS=y" and MAC80211_LEDS selects
-LEDS_TRIGGERS. But it seems that nothing mini2440 related pulls in
-MAC80211_LEDS.)
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Tested with "yes "" | make ARCH=arm config", using the
-mini2440_defconfig with the CONFIG_MAC80211_LEDS=y line commented out.
-
- arch/arm/mach-s3c2440/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-s3c2440/Kconfig b/arch/arm/mach-s3c2440/Kconfig
-index 914e620..e505701 100644
---- a/arch/arm/mach-s3c2440/Kconfig
-+++ b/arch/arm/mach-s3c2440/Kconfig
-@@ -178,7 +178,7 @@ config MACH_MINI2440
- 	select EEPROM_AT24
- 	select NEW_LEDS
- 	select LEDS_CLASS
--	select LEDS_TRIGGER
-+	select LEDS_TRIGGERS
- 	select LEDS_TRIGGER_BACKLIGHT
- 	select S3C_DEV_NAND
- 	select S3C_DEV_USB_HOST
--- 
-1.7.4.4
+> Hi,
+> 
+> I'm working with a custom based platform based on OMAP-L138.
+> A driver we are using is ioremapping system memory. It does this to
+> share data between the GPP and DSP core.
+> This is not allowed in later kernel versions since ARMv6+ does not support this.
+> 
+> Is there any good(and easy) way to get around this or is it so
+> fundamentally wrong that the driver should be written from scratch?
 
 
+Cc'ed the ARM kernel list and Marek Szyprowski (CMA developer). The CMA
+patches I think do what you want, but I am not sure if they are merged
+yet. The other solution (again, I'm not an expert on this area) is to
+not pass the region of memory you want to manage as part of Linux's
+normal system memory. See how the OMAP framebuffer driver reserves a
+region of SDRAM (arch/arm/plat-omap/fb.c).
+
+Some one else on the ARM list can probably explain in more detail.
+
+~Ryan
 
