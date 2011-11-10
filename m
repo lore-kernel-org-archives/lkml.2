@@ -1,116 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626Ab1KJHtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 02:49:31 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33950 "EHLO mx3.mail.elte.hu"
+	id S1757412Ab1KJH57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 02:57:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1623 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757455Ab1KJHt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 02:49:29 -0500
-Date: Thu, 10 Nov 2011 08:47:28 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Theodore Tso <tytso@mit.edu>, Anthony Liguori <anthony@codemonkey.ws>,
-        Pekka Enberg <penberg@kernel.org>, Vince Weaver <vince@deater.net>,
-        Avi Kivity <avi@redhat.com>,
-        "kvm@vger.kernel.org list" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>,
-        qemu-devel Developers <qemu-devel@nongnu.org>,
-        Alexander Graf <agraf@suse.de>, Blue Swirl <blauwirbel@gmail.com>,
+	id S1752570Ab1KJH55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 02:57:57 -0500
+From: Markus Armbruster <armbru@redhat.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [F.A.Q.] the advantages of a shared tool/kernel Git repository,
- tools/perf/ and tools/kvm/
-Message-ID: <20111110074728.GA12768@elte.hu>
-References: <20111106231953.GD4500@thunk.org>
- <alpine.LFD.2.02.1111070838520.1823@tux.localdomain>
- <alpine.DEB.2.02.1111071156230.28615@pianoman.cluster.toy>
- <CAOJsxLEfapPPU8cEfeCMq9_oG6858YzFS_fkWQEo_fxs+xde9A@mail.gmail.com>
- <20111107203255.GF24234@thunk.org>
- <CAOJsxLEKx5M5L_N42pQpo2hcNhseQKhUo6CXAyQHesJRWFASKQ@mail.gmail.com>
- <4EB85969.2010108@codemonkey.ws>
- <12F471C8-2CF3-4CD7-B417-C8CC898669E6@mit.edu>
- <20111108093225.GB32533@elte.hu>
- <CAM_iQpU4CsudDYxD=-tayEMmkKGP-hSPEsptC6sir7XDPJvzUA@mail.gmail.com>
+        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
+	<4EBB4A21.20707@codemonkey.ws>
+	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
+Date: Thu, 10 Nov 2011 08:57:17 +0100
+In-Reply-To: <alpine.LFD.2.02.1111100829560.1791@tux.localdomain> (Pekka
+	Enberg's message of "Thu, 10 Nov 2011 08:46:20 +0200 (EET)")
+Message-ID: <m3pqh0tnoi.fsf@blackfin.pond.sub.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAM_iQpU4CsudDYxD=-tayEMmkKGP-hSPEsptC6sir7XDPJvzUA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Pekka Enberg <penberg@kernel.org> writes:
 
-* Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> Hi Anthony,
+>
+>> On 11/04/2011 03:38 AM, Pekka Enberg wrote:
+>>> Hi Linus,
+>>>
+>>> Please consider pulling the latest KVM tool tree from:
+>>>
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git
+>>> kvmtool/for-linus
+>>>
+>>
+>> [snip]
+>>
+>>> tools/kvm/virtio/net.c | 423 ++++++++
+>>> tools/kvm/virtio/pci.c | 319 ++++++
+>>> tools/kvm/virtio/rng.c | 185 ++++
+>>> 186 files changed, 19071 insertions(+), 179 deletions(-)
+>
+> On Wed, 9 Nov 2011, Anthony Liguori wrote:
+>> So let's assume for a moment that a tool like this should live in
+>> the kernel. What's disturbing about a PULL request like this is the
+>> lack of reviewability of it and the lack of any real review from
+>> people that understand what's going on in this code base.
+>>
+>> There are no Acked-by's by people that really understand what the
+>> code is doing or that have domain expertise in filesystems and
+>> networking.
+>>
+>> There are major functionality short comings in this code base, data
+>> corruptors, and CVEs.  I'm not saying that the kvm-tool developers
+>> are bad developers, but the code is not at the appropriate quality
+>> level for the kernel.  It just looks pretty on the surface to people
+>> that are used to the kernel coding style.
+>>
+>> To highlight a few of the issues:
+[...]
+>> 2) The qcow2 code is a filesystem implemented in userspace.  Image
+>> formats are file systems.  It really should be reviewed by the
+>> filesystem maintainers. There is absolutely no attempt made to
+>> synchronize the metadata during write operations which means that
+>> you do not have crash consistency of the meta data.
+>>
+>> If you experience a power failure or kvm-tool crashs, your image
+>> will get corrupted.  I highly doubt a file system would ever be
+>> merged into Linux that was this naive about data integrity.
+>
+> The QCOW2 is lagging behind because we lost the main developer. It's
+> forced as read-only for the issues you mention. If you think it's a
+> merge blocker, we can drop it completely from the tree until the
+> issues are sorted out.
+>
+> I personally don't see the issue of having it as a read-only filesystem.
+>
+>> 3) The block probing code replicates a well known CVE from three
+>> years ago[1]. Using kvm-tool, a malicious guest could write the
+>> qcow2 signature to the zero sector and use that to attack the host.
+>
+> We don't support QCOW2 snapshots so I don't see how the "arbitrary
+> file" thing can happen.
 
-> On Tue, Nov 8, 2011 at 5:32 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > So i think you should seriously consider moving your projects 
-> > *into* tools/ instead of trying to get other projects to move out 
-> > ...
-> >
-> > You should at least *try* the unified model before criticising it 
-> > - because currently you guys are preaching about sex while having 
-> > sworn a life long celibacy ;-)
-> 
-> Ingo, this is making Linux another BSD... manage everything in a 
-> single tree...
+You don't need snapshots for the hole.
 
-It's not an all-or-nothing prospect. Linux user-space consists of 
-well in excess of 200 MLOC code. The kernel is 15 MLOC.
+Start with a clean read/write raw image.  Probing declares it raw.
+Guest writes QCOW signature to it, with a backing file of its choice.
 
-I think the system-bound utilities that 'obviously' qualify for 
-kernel inclusion are around 1 MLOC in total size, i.e. less than 0.5% 
-of all user-space.
+Restart with the same image.  Probing declares it QCOW2.  Guest can read
+the backing file.  Oops.
 
-> Also, what is your criteria for merging a user-space project into 
-> kernel tree?
+Probing images works when all image types can be probed reliably, and
+the guest can't mess with the probing.  Requires distinctive signatures
+the guest can't change.  Raw images spoil it.
 
-Well, my criteria go roughly along these lines:
+> It's pretty sad though that we're replicating a known security issue :-/
 
- 1) The developers use that model and are productive that way and 
-    produce a tool that has a significant upside.
+Maybe I'm wrong, but I got the impression you've been replicating quite
+a few of QEMU's early mistakes.
 
- 2) There's significant Linux-specific interactions between the 
-    user-space project and the kernel.
+I hope you can create something better than QEMU, I really, really do.
+But to successfully build a second system, you need to learn the right
+lessons from the first system.  Are you sure you do?
 
- 3) The code is clean, well designed and follows the various
-    principles laid out in Documentation/CodingStyle and
-    Documentation/ManagementStyle so that it can be merged into a
-    prominent spot in the kernel tree and the project is ready to
-    live with the (non-trivial!) consequences of all that:
-
-        - the project does -stable kernel backports of serious bugs
-
-        - the project follows a strict "no regressions" policy
-
-        - the project follows the kernel release cycle of 'Winter', 
-          'Spring', 'Summer' and 'Autumn' releases and follows the 
-          merge window requirements and implements the post-rc1
-          stabilization cycle.
-
-These are not easy requirements and i can well imagine that many 
-projects, even if they qualified on all other counts, would prefer to 
-stay out of tree than be subject to such strict release engineering 
-constraints.
-
-Also, the requirements can be made stricter with time, based on 
-positive and negative experiences. Projects can 'die' and move out of 
-the kernel as well if the kernel repo did not work out for them. As 
-long as it's all done gradually and on a case by case basis Linux can 
-only benefit from this.
-
-Thanks,
-
-	Ingo
+>> [1] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2008-2004
+[...]
