@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1KJTIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:08:16 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54067 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753009Ab1KJTIH (ORCPT
+	id S1756104Ab1KJTIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:08:53 -0500
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55005 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab1KJTHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:08:07 -0500
+	Thu, 10 Nov 2011 14:07:04 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,103 +23,178 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:13:07 +0530
-Message-Id: <20111110184307.11361.8163.sendpatchset@srdronam.in.ibm.com>
+Date: Fri, 11 Nov 2011 00:11:51 +0530
+Message-Id: <20111110184151.11361.95843.sendpatchset@srdronam.in.ibm.com>
 In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
 References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 28/28]   uprobes: introduce UTASK_SSTEP_TRAPPED logic
+Subject: [PATCH v6 3.2-rc1 22/28]   perf: rename target_module to target
+x-cbid: 11111009-1396-0000-0000-00000030DC1F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add UTASK_SSTEP_TRAPPED state/code to handle the case when
-xol insn itself triggers the signal.
+This is a precursor patch that modifies names that refer to
+kernel/module to also refer to user space names.
 
-In this case we should restart the original insn even if the task is
-already SIGKILL'ed (say, the coredump should report the correct ip).
-This is even more important if the task has a handler for SIGSEGV/etc,
-The _same_ instruction should be repeated again after return from the
-signal handler, and SSTEP can never finish in this case.
-
-Change uprobe_deny_signal() to set UTASK_SSTEP_TRAPPED and TIF_UPROBE. It
-also sets TIF_NOTIFY_RESUME.
-
-When uprobe_notify_resume() sees UTASK_SSTEP_TRAPPED it does abort_xol()
-instead of post_xol().
-
-Original-patch-from: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- include/linux/uprobes.h |    2 ++
- kernel/uprobes.c        |   18 +++++++++++++++---
- 2 files changed, 17 insertions(+), 3 deletions(-)
+ tools/perf/builtin-probe.c    |   12 ++++++------
+ tools/perf/util/probe-event.c |   26 +++++++++++++-------------
+ 2 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 8d12c06..cd522b8 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -76,6 +76,7 @@ enum uprobe_task_state {
- 	UTASK_BP_HIT,
- 	UTASK_SSTEP,
- 	UTASK_SSTEP_ACK,
-+	UTASK_SSTEP_TRAPPED,
- };
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 710ae3d..93d5171 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -61,7 +61,7 @@ static struct {
+ 	struct perf_probe_event events[MAX_PROBES];
+ 	struct strlist *dellist;
+ 	struct line_range line_range;
+-	const char *target_module;
++	const char *target;
+ 	int max_probe_points;
+ 	struct strfilter *filter;
+ } params;
+@@ -249,7 +249,7 @@ static const struct option options[] = {
+ 		   "file", "vmlinux pathname"),
+ 	OPT_STRING('s', "source", &symbol_conf.source_prefix,
+ 		   "directory", "path to kernel source"),
+-	OPT_STRING('m', "module", &params.target_module,
++	OPT_STRING('m', "module", &params.target,
+ 		   "modname|path",
+ 		   "target module name (for online) or path (for offline)"),
+ #endif
+@@ -336,7 +336,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 		if (!params.filter)
+ 			params.filter = strfilter__new(DEFAULT_FUNC_FILTER,
+ 						       NULL);
+-		ret = show_available_funcs(params.target_module,
++		ret = show_available_funcs(params.target,
+ 					   params.filter);
+ 		strfilter__delete(params.filter);
+ 		if (ret < 0)
+@@ -357,7 +357,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 			usage_with_options(probe_usage, options);
+ 		}
  
- /*
-@@ -130,6 +131,7 @@ extern int uprobe_post_notifier(struct pt_regs *regs);
- extern int uprobe_bkpt_notifier(struct pt_regs *regs);
- extern void uprobe_notify_resume(struct pt_regs *regs);
- extern bool uprobe_deny_signal(void);
-+extern void __weak abort_xol(struct pt_regs *regs, struct uprobe_task *utask);
- #else /* CONFIG_UPROBES is not defined */
- static inline int register_uprobe(struct inode *inode, loff_t offset,
- 				struct uprobe_consumer *consumer)
-diff --git a/kernel/uprobes.c b/kernel/uprobes.c
-index c7de542..a45089c 100644
---- a/kernel/uprobes.c
-+++ b/kernel/uprobes.c
-@@ -1329,11 +1329,22 @@ bool uprobe_deny_signal(void)
- 		spin_lock_irq(&tsk->sighand->siglock);
- 		clear_tsk_thread_flag(tsk, TIF_SIGPENDING);
- 		spin_unlock_irq(&tsk->sighand->siglock);
-+
-+		if (__fatal_signal_pending(tsk) || xol_was_trapped(tsk)) {
-+			utask->state = UTASK_SSTEP_TRAPPED;
-+			set_tsk_thread_flag(tsk, TIF_UPROBE);
-+			set_tsk_thread_flag(tsk, TIF_NOTIFY_RESUME);
-+		}
+-		ret = show_line_range(&params.line_range, params.target_module);
++		ret = show_line_range(&params.line_range, params.target);
+ 		if (ret < 0)
+ 			pr_err("  Error: Failed to show lines. (%d)\n", ret);
+ 		return ret;
+@@ -374,7 +374,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 
+ 		ret = show_available_vars(params.events, params.nevents,
+ 					  params.max_probe_points,
+-					  params.target_module,
++					  params.target,
+ 					  params.filter,
+ 					  params.show_ext_vars);
+ 		strfilter__delete(params.filter);
+@@ -396,7 +396,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
+ 	if (params.nevents) {
+ 		ret = add_perf_probe_events(params.events, params.nevents,
+ 					    params.max_probe_points,
+-					    params.target_module,
++					    params.target,
+ 					    params.force_add);
+ 		if (ret < 0) {
+ 			pr_err("  Error: Failed to add events. (%d)\n", ret);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index eb25900..d54eefb 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -275,10 +275,10 @@ static int add_module_to_probe_trace_events(struct probe_trace_event *tevs,
+ /* Try to find perf_probe_event with debuginfo */
+ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+-					  int max_tevs, const char *module)
++					  int max_tevs, const char *target)
+ {
+ 	bool need_dwarf = perf_probe_event_need_dwarf(pev);
+-	struct debuginfo *dinfo = open_debuginfo(module);
++	struct debuginfo *dinfo = open_debuginfo(target);
+ 	int ntevs, ret = 0;
+ 
+ 	if (!dinfo) {
+@@ -297,9 +297,9 @@ static int try_to_find_probe_trace_events(struct perf_probe_event *pev,
+ 
+ 	if (ntevs > 0) {	/* Succeeded to find trace events */
+ 		pr_debug("find %d probe_trace_events.\n", ntevs);
+-		if (module)
++		if (target)
+ 			ret = add_module_to_probe_trace_events(*tevs, ntevs,
+-							       module);
++							       target);
+ 		return ret < 0 ? ret : ntevs;
  	}
  
- 	return true;
+@@ -1798,14 +1798,14 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 
+ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 					  struct probe_trace_event **tevs,
+-					  int max_tevs, const char *module)
++					  int max_tevs, const char *target)
+ {
+ 	struct symbol *sym;
+ 	int ret = 0, i;
+ 	struct probe_trace_event *tev;
+ 
+ 	/* Convert perf_probe_event with debuginfo */
+-	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, module);
++	ret = try_to_find_probe_trace_events(pev, tevs, max_tevs, target);
+ 	if (ret != 0)
+ 		return ret;	/* Found in debuginfo or got an error */
+ 
+@@ -1821,8 +1821,8 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
+ 		goto error;
+ 	}
+ 
+-	if (module) {
+-		tev->point.module = strdup(module);
++	if (target) {
++		tev->point.module = strdup(target);
+ 		if (tev->point.module == NULL) {
+ 			ret = -ENOMEM;
+ 			goto error;
+@@ -1886,7 +1886,7 @@ struct __event_package {
+ };
+ 
+ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+-			  int max_tevs, const char *module, bool force_add)
++			  int max_tevs, const char *target, bool force_add)
+ {
+ 	int i, j, ret;
+ 	struct __event_package *pkgs;
+@@ -1909,7 +1909,7 @@ int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
+ 		ret  = convert_to_probe_trace_events(pkgs[i].pev,
+ 						     &pkgs[i].tevs,
+ 						     max_tevs,
+-						     module);
++						     target);
+ 		if (ret < 0)
+ 			goto end;
+ 		pkgs[i].ntevs = ret;
+@@ -2065,7 +2065,7 @@ static int filter_available_functions(struct map *map __unused,
+ 	return 1;
  }
  
-+void __weak abort_xol(struct pt_regs *regs, struct uprobe_task *utask)
-+{
-+	set_instruction_pointer(regs, utask->vaddr);
-+}
-+
- /*
-  * uprobe_notify_resume gets called in task context just before returning
-  * to userspace.
-@@ -1386,6 +1397,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 		u = utask->active_uprobe;
- 		if (utask->state == UTASK_SSTEP_ACK)
- 			post_xol(u, regs);
-+		else if (utask->state == UTASK_SSTEP_TRAPPED)
-+			abort_xol(regs, utask);
- 		else
- 			WARN_ON_ONCE(1);
+-int show_available_funcs(const char *module, struct strfilter *_filter)
++int show_available_funcs(const char *target, struct strfilter *_filter)
+ {
+ 	struct map *map;
+ 	int ret;
+@@ -2076,9 +2076,9 @@ int show_available_funcs(const char *module, struct strfilter *_filter)
+ 	if (ret < 0)
+ 		return ret;
  
-@@ -1409,9 +1422,8 @@ void uprobe_notify_resume(struct pt_regs *regs)
- 	if (u) {
- 		put_uprobe(u);
- 		set_instruction_pointer(regs, probept);
--	} else {
--		/*TODO Return SIGTRAP signal */
--	}
-+	} else
-+		send_sig(SIGTRAP, current, 0);
- }
- 
- /*
+-	map = kernel_get_module_map(module);
++	map = kernel_get_module_map(target);
+ 	if (!map) {
+-		pr_err("Failed to find %s map.\n", (module) ? : "kernel");
++		pr_err("Failed to find %s map.\n", (target) ? : "kernel");
+ 		return -EINVAL;
+ 	}
+ 	available_func_filter = _filter;
+
