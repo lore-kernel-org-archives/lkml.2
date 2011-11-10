@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756664Ab1KJV1C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 16:27:02 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34666 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab1KJV07 (ORCPT
+	id S1756691Ab1KJV3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 16:29:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47806 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab1KJV3R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 16:26:59 -0500
-Message-ID: <4EBC41A0.4070008@pobox.com>
-Date: Thu, 10 Nov 2011 16:26:56 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Thu, 10 Nov 2011 16:29:17 -0500
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus <torvalds@linux-foundation.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: linux-next: Tree for Nov 1 (ata/libata-sff.c)
-References: <20111101205323.c12f2f940f23febba8ab8989@canb.auug.org.au> <4EB0854D.5090002@xenotime.net>
-In-Reply-To: <4EB0854D.5090002@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111110211504.GK8333@google.com>
+References: <1318896400-32498-1-git-send-email-msb@chromium.org>
+	<alpine.DEB.2.00.1110171727300.13515@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1111101246560.21036@chino.kir.corp.google.com>
+	<20111110211504.GK8333@google.com>
+Date: Thu, 10 Nov 2011 21:29:16 +0000
+Message-ID: <CAPM=9twZ=3JKKAwdzj3x00Ktq7NZKyhKdQDpqtZApRyxf_g9EQ@mail.gmail.com>
+Subject: Re: [PATCH] drm: avoid switching to text console if there is no panic timeout
+From: Dave Airlie <airlied@gmail.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Dave Airlie <airlied@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 07:48 PM, Randy Dunlap wrote:
-> On 11/01/2011 02:53 AM, Stephen Rothwell wrote:
->> Hi all,
->
->
-> When ATA_SFF is enabled but ATA_BMDMA is not enabled:
->
->
-> drivers/ata/libata-sff.c: In function 'ata_pci_init_one':
-> drivers/ata/libata-sff.c:2538:3: error: implicit declaration of function 'ata_pci_bmdma_prepare_host'
-> drivers/ata/libata-sff.c:2549:40: error: 'ata_bmdma_interrupt' undeclared (first use in this function)
+On Thu, Nov 10, 2011 at 9:15 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+> David Rientjes (rientjes@google.com) wrote:
+>> On Mon, 17 Oct 2011, David Rientjes wrote:
+>>
+>> > On Mon, 17 Oct 2011, Mandeep Singh Baines wrote:
+>> >
+>> > > From: Hugh Dickins <hughd@chromium.org>
+>> > >
+>> > > Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
+>> > > we're going to reboot immediately, the user will not be able to see the
+>> > > messages anyway, and messing with the video mode may display artifacts,
+>> > > and certainly get into several layers of complexity (including mutexes and
+>> > > memory allocations) which we shall be much safer to avoid.
+>> > >
+>> > > Signed-off-by: Hugh Dickins <hughd@google.com>
+>> > > [ Edited commit message and modified to short-circuit panic_timeout < 0
+>> > >   instead of testing panic_timeout >= 0.  -Mandeep ]
+>> > > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+>> > > Cc: Dave Airlie <airlied@redhat.com>
+>> > > Cc: Andrew Morton <akpm@linux-foundation.org>
+>> > > Cc: dri-devel@lists.freedesktop.org
+>> >
+>> > Acked-by: David Rientjes <rientjes@google.com>
+>> >
+>>
+>> Dave, where do we stand on this?  I haven't seen it hit Linus' tree and I
+>> don't see it in git://people.freedesktop.org/~airlied/linux.
 
-Absjoern's patch seen, thanks.
+I've just pulled it into my local drm-next, thanks for reminding me.
 
-
-
+Dave.
