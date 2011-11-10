@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933537Ab1KJAKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:10:31 -0500
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:43581
+	id S933549Ab1KJAKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:10:51 -0500
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:43561
 	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S933497Ab1KJAJE (ORCPT
+	by vger.kernel.org with ESMTP id S933486Ab1KJAJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:09:04 -0500
+	Wed, 9 Nov 2011 19:09:00 -0500
 From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>,
@@ -16,11 +16,10 @@ Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Kyle Moffett <Kyle.D.Moffett@boeing.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Bolle <pebolle@tiscali.nl>,
-        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
-Subject: [RFC PATCH 13/17] powerpc/e500: Add a new CONFIG_FSL_E5500 option for the e5500
-Date: Wed,  9 Nov 2011 19:07:11 -0500
-Message-Id: <1320883635-17194-14-git-send-email-Kyle.D.Moffett@boeing.com>
+        Paul Mackerras <paulus@samba.org>
+Subject: [RFC PATCH 11/17] powerpc/e500: Use the correct assembler flags for e500mc and e5500
+Date: Wed,  9 Nov 2011 19:07:09 -0500
+Message-Id: <1320883635-17194-12-git-send-email-Kyle.D.Moffett@boeing.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <4E42AB6F.1050900@freescale.com>
 References: <4E42AB6F.1050900@freescale.com>
@@ -28,48 +27,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As part of splitting CONFIG_E500 into separate options for e500v1/v2 and
-e500mc/e5500, some code only needs to be built when e5500 support is
-required.
+The "-me500" assembler option is intended only for use on e500v1 or
+e500v2 systems.  On modern binutils it will refuse to assemble standard
+floating point opcodes, and it will translate "lwsync" into "sync".
 
-This adds a new internal-use config option for both 32-bit and 64-bit
-builds that enables only the e5500 support code.
+This fixes the e500mc/e5500 kernel build on recent binutils.
+
+For e500mc/e5500 with standard PowerPC floating point, the assembler
+options "-me500mc" or "-me500mc64" should be used, although they are not
+strictly necessary depending on which opcodes are in use.
 
 Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 ---
- arch/powerpc/platforms/85xx/Kconfig    |    2 +-
- arch/powerpc/platforms/Kconfig.cputype |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ arch/powerpc/Makefile |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
-index 248f87c..72488d4 100644
---- a/arch/powerpc/platforms/85xx/Kconfig
-+++ b/arch/powerpc/platforms/85xx/Kconfig
-@@ -231,8 +231,8 @@ endif # PPC32
- config P5020_DS
- 	bool "Freescale P5020 DS"
- 	depends on FSL_E500MC || PPC_BOOK3E_64
-+	select FSL_E5500
- 	select DEFAULT_UIMAGE
--	select E500
- 	select PHYS_64BIT_DT_REQUIRED
- 	select SWIOTLB
- 	select ARCH_REQUIRE_GPIOLIB
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index fd37bb2..cff45e3 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -144,6 +144,10 @@ config 8xx
- config PPC_85xx
- 	bool
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index c17bc29..bd443ee2 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -133,7 +133,8 @@ endif
+ cpu-as-$(CONFIG_4xx)		+= -Wa,-m405
+ cpu-as-$(CONFIG_6xx)		+= -Wa,-maltivec
+ cpu-as-$(CONFIG_POWER4)		+= -Wa,-maltivec
+-cpu-as-$(CONFIG_E500)		+= -Wa,-me500
++cpu-as-$(CONFIG_FSL_E500_V1_V2)	+= -Wa,-me500
++cpu-as-$(CONFIG_FSL_E500MC)	+= -Wa,-me500mc
+ cpu-as-$(CONFIG_FSL_E200)	+= -Wa,-me200
  
-+config FSL_E5500
-+	bool
-+	select E500
-+
- config E500
- 	select FSL_EMB_PERFMON
- 	select PPC_FSL_BOOK3E
+ KBUILD_AFLAGS += $(cpu-as-y)
 -- 
 1.7.2.5
 
