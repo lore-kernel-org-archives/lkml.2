@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933913Ab1KJIHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 03:07:05 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:45692 "EHLO smtp6-g21.free.fr"
+	id S933888Ab1KJIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 03:10:28 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:45209 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933895Ab1KJIG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 03:06:59 -0500
+	id S933802Ab1KJIGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 03:06:46 -0500
 From: Robert Jarzmik <robert.jarzmik@free.fr>
 To: dwmw2@infradead.org, dedekind1@gmail.com, mikedunn@newsguy.com
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: [PATCH v2 13/16] mtd/docg3: add ECC correction code
-Date: Thu, 10 Nov 2011 09:05:39 +0100
-Message-Id: <1320912342-30147-14-git-send-email-robert.jarzmik@free.fr>
+Subject: [PATCH v2 10/16] mtd/docg3: add write functions
+Date: Thu, 10 Nov 2011 09:05:36 +0100
+Message-Id: <1320912342-30147-11-git-send-email-robert.jarzmik@free.fr>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
 References: <1320912342-30147-1-git-send-email-robert.jarzmik@free.fr>
@@ -20,298 +20,659 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Credit for discovering the BCH algorith parameters, and bit
-reversing algorithm is to be give to Mike Dunn and Ivan
-Djelic.
-
-The BCH correction code relied upon the BCH library, where
-all data and ECC is bit-reversed. The BCH library works
-correctly when each input byte is bit-reversed, and
-accordingly ECC output is also bit-reversed.
+Add write capability to the docg3 driver. The writes are
+possible on a single page (512 bytes + 16 bytes), even if
+that page is split on 2 physical pages on 2 blocks (each on
+one plane).
 
 Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
 
 ---
-Since V1: integrate reviews from Ivan Djelic and Mike Dunn.
----
- drivers/mtd/devices/Kconfig |    9 +++
- drivers/mtd/devices/docg3.c |  116 ++++++++++++++++++++++++++++++++++--------
- drivers/mtd/devices/docg3.h |   11 ++++-
- 3 files changed, 113 insertions(+), 23 deletions(-)
+Since V1: fixed noecc write versus autoecc write,
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 6d91a1f..b016e2b 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -251,6 +251,8 @@ config MTD_DOC2001PLUS
- 
- config MTD_DOCG3
- 	tristate "M-Systems Disk-On-Chip G3"
-+	select BCH
-+	select BCH_CONST_PARAMS
- 	---help---
- 	  This provides an MTD device driver for the M-Systems DiskOnChip
- 	  G3 devices.
-@@ -259,6 +261,13 @@ config MTD_DOCG3
- 	  M-Systems and now Sandisk. The support is very experimental,
- 	  and doesn't give access to any write operations.
- 
-+if MTD_DOCG3
-+config BCH_CONST_M
-+	default 14
-+config BCH_CONST_T
-+	default 4
-+endif
-+
- config MTD_DOCPROBE
- 	tristate
- 	select MTD_DOCECC
+          reshuffled the code to have doc_write be a wrapper
+          to doc_write_oob(),
+          add oob (raw, auto, place) placement
+---
+ drivers/mtd/devices/docg3.c |  553 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 541 insertions(+), 12 deletions(-)
+
 diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
-index 1f949ea..26cc179 100644
+index 27c4fea..fd4d47b 100644
 --- a/drivers/mtd/devices/docg3.c
 +++ b/drivers/mtd/devices/docg3.c
-@@ -29,6 +29,9 @@
- #include <linux/delay.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/partitions.h>
-+#include <linux/bitmap.h>
-+#include <linux/bitrev.h>
-+#include <linux/bch.h>
- 
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
-@@ -42,7 +45,6 @@
-  * As no specification is available from M-Systems/Sandisk, this drivers lacks
-  * several functions available on the chip, as :
-  *  - IPL write
-- *  - ECC fixing (lack of BCH algorith understanding)
-  *  - powerdown / powerup
-  *
-  * The bus data width (8bits versus 16bits) is not handled (if_cfg flag), and
-@@ -51,8 +53,7 @@
-  * DocG3 relies on 2 ECC algorithms, which are handled in hardware :
-  *  - a 1 byte Hamming code stored in the OOB for each page
-  *  - a 7 bytes BCH code stored in the OOB for each page
-- * The BCH part is only used for check purpose, no correction is available as
-- * some information is missing. What is known is that :
-+ * The BCH ECC is :
-  *  - BCH is in GF(2^14)
-  *  - BCH is over data of 520 bytes (512 page + 7 page_info bytes
-  *                                   + 1 hamming byte)
-@@ -75,6 +76,11 @@ static struct nand_ecclayout docg3_oobinfo = {
- 	.oobavail = 8,
- };
- 
-+/**
-+ * struct docg3_bch - BCH engine
-+ */
-+static struct bch_control *docg3_bch;
-+
- static inline u8 doc_readb(struct docg3 *docg3, u16 reg)
- {
- 	u8 val = readb(docg3->base + reg);
-@@ -582,6 +588,54 @@ static void doc_hamming_ecc_init(struct docg3 *docg3, int nb_bytes)
+@@ -254,6 +254,40 @@ static void doc_read_data_area(struct docg3 *docg3, void *buf, int len,
  }
  
  /**
-+ * doc_correct_data - Fix if need be read data from flash
++ * doc_write_data_area - Write data into data area
 + * @docg3: the device
-+ * @buf: the buffer of read data (512 + 7 + 1 bytes)
-+ * @hwecc: the hardware calculated ECC.
-+ *         It's in fact recv_ecc ^ calc_ecc, where recv_ecc was read from OOB
-+ *         area data, and calc_ecc the ECC calculated by the hardware generator.
++ * @buf: the buffer to get input bytes from
++ * @len: the length to write
 + *
-+ * Checks if the received data matches the ECC, and if an error is detected,
-+ * tries to fix the bit flips (at most 4) in the buffer buf.  As the docg3
-+ * understands the (data, ecc, syndroms) in an inverted order in comparison to
-+ * the BCH library, the function reverses the order of bits (ie. bit7 and bit0,
-+ * bit6 and bit 1, ...) for all ECC data.
-+ *
-+ * The hardware ecc unit produces oob_ecc ^ calc_ecc.  The kernel's bch
-+ * algorithm is used to decode this.  However the hw operates on page
-+ * data in a bit order that is the reverse of that of the bch alg,
-+ * requiring that the bits be reversed on the result.  Thanks to Ivan
-+ * Djelic for his analysis.
-+ *
-+ * Returns number of fixed bits (0, 1, 2, 3, 4) or -EBADMSG if too many bit
-+ * errors were detected and cannot be fixed.
++ * Writes bytes into flash data. Handles the single byte / even bytes writes.
 + */
-+static int doc_ecc_bch_fix_data(struct docg3 *docg3, void *buf, u8 *hwecc)
++static void doc_write_data_area(struct docg3 *docg3, const void *buf, int len)
 +{
-+	u8 ecc[DOC_ECC_BCH_SIZE];
-+	int errorpos[DOC_ECC_BCH_T], i, numerrs;
++	int i, cdr, len4;
++	u16 *src16;
++	u8 *src8;
 +
-+	for (i = 0; i < DOC_ECC_BCH_SIZE; i++)
-+		ecc[i] = bitrev8(hwecc[i]);
-+	numerrs = decode_bch(docg3_bch, NULL, DOC_ECC_BCH_COVERED_BYTES,
-+			     NULL, ecc, NULL, errorpos);
-+	BUG_ON(numerrs == -EINVAL);
-+	if (numerrs < 0)
-+		goto out;
++	doc_dbg("doc_write_data_area(buf=%p, len=%d)\n", buf, len);
++	cdr = len & 0x3;
++	len4 = len - cdr;
 +
-+	for (i = 0; i < numerrs; i++)
-+		errorpos[i] = (errorpos[i] & ~7) | (7 - (errorpos[i] & 7));
-+	for (i = 0; i < numerrs; i++)
-+		if (errorpos[i] < DOC_ECC_BCH_COVERED_BYTES*8)
-+			/* error is located in data, correct it */
-+			change_bit(errorpos[i], buf);
-+out:
-+	doc_dbg("doc_ecc_bch_fix_data: flipped %d bits\n", numerrs);
-+	return numerrs;
++	doc_writew(docg3, DOC_IOSPACE_DATA, DOC_READADDRESS);
++	src16 = (u16 *)buf;
++	for (i = 0; i < len4; i += 2) {
++		doc_writew(docg3, *src16, DOC_IOSPACE_DATA);
++		src16++;
++	}
++
++	src8 = (u8 *)src16;
++	for (i = 0; i < cdr; i++) {
++		doc_writew(docg3, DOC_IOSPACE_DATA | DOC_READADDR_ONE_BYTE,
++			   DOC_READADDRESS);
++		doc_writeb(docg3, *src8, DOC_IOSPACE_DATA);
++		src8++;
++	}
 +}
 +
++/**
+  * doc_set_data_mode - Sets the flash to reliable data mode
+  * @docg3: the device
+  *
+@@ -343,6 +377,37 @@ static int doc_set_extra_page_mode(struct docg3 *docg3)
+ }
+ 
+ /**
++ * doc_setup_addr_sector - Setup blocks/page/ofs address for one plane
++ * @docg3: the device
++ * @sector: the sector
++ */
++static void doc_setup_addr_sector(struct docg3 *docg3, int sector)
++{
++	doc_delay(docg3, 1);
++	doc_flash_address(docg3, sector & 0xff);
++	doc_flash_address(docg3, (sector >> 8) & 0xff);
++	doc_flash_address(docg3, (sector >> 16) & 0xff);
++	doc_delay(docg3, 1);
++}
++
++/**
++ * doc_setup_writeaddr_sector - Setup blocks/page/ofs address for one plane
++ * @docg3: the device
++ * @sector: the sector
++ * @ofs: the offset in the page, between 0 and (512 + 16 + 512)
++ */
++static void doc_setup_writeaddr_sector(struct docg3 *docg3, int sector, int ofs)
++{
++	ofs = ofs >> 2;
++	doc_delay(docg3, 1);
++	doc_flash_address(docg3, ofs & 0xff);
++	doc_flash_address(docg3, sector & 0xff);
++	doc_flash_address(docg3, (sector >> 8) & 0xff);
++	doc_flash_address(docg3, (sector >> 16) & 0xff);
++	doc_delay(docg3, 1);
++}
++
++/**
+  * doc_seek - Set both flash planes to the specified block, page for reading
+  * @docg3: the device
+  * @block0: the first plane block index
+@@ -378,27 +443,73 @@ static int doc_read_seek(struct docg3 *docg3, int block0, int block1, int page,
+ 	if (ret)
+ 		goto out;
+ 
+-	sector = (block0 << DOC_ADDR_BLOCK_SHIFT) + (page & DOC_ADDR_PAGE_MASK);
+ 	doc_flash_sequence(docg3, DOC_SEQ_READ);
++	sector = (block0 << DOC_ADDR_BLOCK_SHIFT) + (page & DOC_ADDR_PAGE_MASK);
+ 	doc_flash_command(docg3, DOC_CMD_PROG_BLOCK_ADDR);
+-	doc_delay(docg3, 1);
+-	doc_flash_address(docg3, sector & 0xff);
+-	doc_flash_address(docg3, (sector >> 8) & 0xff);
+-	doc_flash_address(docg3, (sector >> 16) & 0xff);
+-	doc_delay(docg3, 1);
++	doc_setup_addr_sector(docg3, sector);
+ 
+ 	sector = (block1 << DOC_ADDR_BLOCK_SHIFT) + (page & DOC_ADDR_PAGE_MASK);
+ 	doc_flash_command(docg3, DOC_CMD_PROG_BLOCK_ADDR);
++	doc_setup_addr_sector(docg3, sector);
+ 	doc_delay(docg3, 1);
+-	doc_flash_address(docg3, sector & 0xff);
+-	doc_flash_address(docg3, (sector >> 8) & 0xff);
+-	doc_flash_address(docg3, (sector >> 16) & 0xff);
++
++out:
++	return ret;
++}
++
++/**
++ * doc_write_seek - Set both flash planes to the specified block, page for writing
++ * @docg3: the device
++ * @block0: the first plane block index
++ * @block1: the second plane block index
++ * @page: the page index within the block
++ * @ofs: offset in page to write
++ *
++ * Programs the flash even and odd planes to the specific block and page.
++ * Alternatively, programs the flash to the wear area of the specified page.
++ */
++static int doc_write_seek(struct docg3 *docg3, int block0, int block1, int page,
++			 int ofs)
++{
++	int ret = 0, sector;
++
++	doc_dbg("doc_write_seek(blocks=(%d,%d), page=%d, ofs=%d)\n",
++		block0, block1, page, ofs);
++
++	doc_set_reliable_mode(docg3);
++
++	if (ofs < 2 * DOC_LAYOUT_PAGE_SIZE) {
++		doc_flash_sequence(docg3, DOC_SEQ_SET_PLANE1);
++		doc_flash_command(docg3, DOC_CMD_READ_PLANE1);
++		doc_delay(docg3, 2);
++	} else {
++		doc_flash_sequence(docg3, DOC_SEQ_SET_PLANE2);
++		doc_flash_command(docg3, DOC_CMD_READ_PLANE2);
++		doc_delay(docg3, 2);
++	}
++
++	doc_flash_sequence(docg3, DOC_SEQ_PAGE_SETUP);
++	doc_flash_command(docg3, DOC_CMD_PROG_CYCLE1);
++
++	sector = (block0 << DOC_ADDR_BLOCK_SHIFT) + (page & DOC_ADDR_PAGE_MASK);
++	doc_setup_writeaddr_sector(docg3, sector, ofs);
++
++	doc_flash_command(docg3, DOC_CMD_PROG_CYCLE3);
+ 	doc_delay(docg3, 2);
++	ret = doc_wait_ready(docg3);
++	if (ret)
++		goto out;
++
++	doc_flash_command(docg3, DOC_CMD_PROG_CYCLE1);
++	sector = (block1 << DOC_ADDR_BLOCK_SHIFT) + (page & DOC_ADDR_PAGE_MASK);
++	doc_setup_writeaddr_sector(docg3, sector, ofs);
++	doc_delay(docg3, 1);
+ 
+ out:
+ 	return ret;
+ }
+ 
++
+ /**
+  * doc_read_page_ecc_init - Initialize hardware ECC engine
+  * @docg3: the device
+@@ -421,6 +532,58 @@ static int doc_read_page_ecc_init(struct docg3 *docg3, int len)
+ }
+ 
+ /**
++ * doc_write_page_ecc_init - Initialize hardware BCH ECC engine
++ * @docg3: the device
++ * @len: the number of bytes covered by the ECC (BCH covered)
++ *
++ * The function does initialize the hardware ECC engine to compute the Hamming
++ * ECC (on 1 byte) and the BCH Syndroms (on 7 bytes).
++ *
++ * Return 0 if succeeded, -EIO on error
++ */
++static int doc_write_page_ecc_init(struct docg3 *docg3, int len)
++{
++	doc_writew(docg3, !DOC_ECCCONF0_READ_MODE
++		   | DOC_ECCCONF0_BCH_ENABLE | DOC_ECCCONF0_HAMMING_ENABLE
++		   | (len & DOC_ECCCONF0_DATA_BYTES_MASK),
++		   DOC_ECCCONF0);
++	doc_delay(docg3, 4);
++	doc_register_readb(docg3, DOC_FLASHCONTROL);
++	return doc_wait_ready(docg3);
++}
++
++/**
++ * doc_ecc_disable - Disable Hamming and BCH ECC hardware calculator
++ * @docg3: the device
++ *
++ * Disables the hardware ECC generator and checker, for unchecked reads (as when
++ * reading OOB only or write status byte).
++ */
++static void doc_ecc_disable(struct docg3 *docg3)
++{
++	doc_writew(docg3, DOC_ECCCONF0_READ_MODE, DOC_ECCCONF0);
++	doc_delay(docg3, 4);
++}
++
++/**
++ * doc_hamming_ecc_init - Initialize hardware Hamming ECC engine
++ * @docg3: the device
++ * @nb_bytes: the number of bytes covered by the ECC (Hamming covered)
++ *
++ * This function programs the ECC hardware to compute the hamming code on the
++ * last provided N bytes to the hardware generator.
++ */
++static void doc_hamming_ecc_init(struct docg3 *docg3, int nb_bytes)
++{
++	u8 ecc_conf1;
++
++	ecc_conf1 = doc_register_readb(docg3, DOC_ECCCONF1);
++	ecc_conf1 &= ~DOC_ECCCONF1_HAMMING_BITS_MASK;
++	ecc_conf1 |= (nb_bytes & DOC_ECCCONF1_HAMMING_BITS_MASK);
++	doc_writeb(docg3, ecc_conf1, DOC_ECCCONF1);
++}
 +
 +/**
   * doc_read_page_prepare - Prepares reading data from a flash page
   * @docg3: the device
   * @block0: the first plane block index on flash memory
-@@ -762,7 +816,7 @@ static int doc_read_oob(struct mtd_info *mtd, loff_t from,
- 	u8 *oobbuf = ops->oobbuf;
- 	u8 *buf = ops->datbuf;
- 	size_t len, ooblen, nbdata, nboob;
--	u8 calc_ecc[DOC_ECC_BCH_SIZE], eccconf1;
-+	u8 hwecc[DOC_ECC_BCH_SIZE], eccconf1;
- 
- 	if (buf)
- 		len = ops->len;
-@@ -797,7 +851,7 @@ static int doc_read_oob(struct mtd_info *mtd, loff_t from,
- 		ret = doc_read_page_prepare(docg3, block0, block1, page, ofs);
- 		if (ret < 0)
- 			goto err;
--		ret = doc_read_page_ecc_init(docg3, DOC_ECC_BCH_COVERED_BYTES);
-+		ret = doc_read_page_ecc_init(docg3, DOC_ECC_BCH_TOTAL_BYTES);
- 		if (ret < 0)
- 			goto err_in_read;
- 		ret = doc_read_page_getbytes(docg3, nbdata, buf, 1);
-@@ -811,7 +865,7 @@ static int doc_read_oob(struct mtd_info *mtd, loff_t from,
- 		doc_read_page_getbytes(docg3, DOC_LAYOUT_OOB_SIZE - nboob,
- 				       NULL, 0);
- 
--		doc_get_hw_bch_syndroms(docg3, calc_ecc);
-+		doc_get_hw_bch_syndroms(docg3, hwecc);
- 		eccconf1 = doc_register_readb(docg3, DOC_ECCCONF1);
- 
- 		if (nboob >= DOC_LAYOUT_OOB_SIZE) {
-@@ -825,18 +879,28 @@ static int doc_read_oob(struct mtd_info *mtd, loff_t from,
- 			doc_dbg("OOB - UNUSED: %02x\n", oobbuf[15]);
- 		}
- 		doc_dbg("ECC checks: ECCConf1=%x\n", eccconf1);
--		doc_dbg("ECC CALC_ECC: %02x:%02x:%02x:%02x:%02x:%02x:%02x\n",
--			calc_ecc[0], calc_ecc[1], calc_ecc[2],
--			calc_ecc[3], calc_ecc[4], calc_ecc[5],
--			calc_ecc[6]);
--
--		ret = -EBADMSG;
--		if (block0 >= DOC_LAYOUT_BLOCK_FIRST_DATA) {
--			if ((eccconf1 & DOC_ECCCONF1_BCH_SYNDROM_ERR) &&
--			    (eccconf1 & DOC_ECCCONF1_PAGE_IS_WRITTEN))
--				goto err_in_read;
--			if (is_prot_seq_error(docg3))
--				goto err_in_read;
-+		doc_dbg("ECC HW_ECC: %02x:%02x:%02x:%02x:%02x:%02x:%02x\n",
-+			hwecc[0], hwecc[1], hwecc[2], hwecc[3], hwecc[4],
-+			hwecc[5], hwecc[6]);
-+
-+		ret = -EIO;
-+		if (is_prot_seq_error(docg3))
-+			goto err_in_read;
-+		ret = 0;
-+		if ((block0 >= DOC_LAYOUT_BLOCK_FIRST_DATA) &&
-+		    (eccconf1 & DOC_ECCCONF1_BCH_SYNDROM_ERR) &&
-+		    (eccconf1 & DOC_ECCCONF1_PAGE_IS_WRITTEN) &&
-+		    (ops->mode != MTD_OPS_RAW) &&
-+		    (nbdata == DOC_LAYOUT_PAGE_SIZE)) {
-+			ret = doc_ecc_bch_fix_data(docg3, buf, hwecc);
-+			if (ret < 0) {
-+				mtd->ecc_stats.failed++;
-+				ret = -EBADMSG;
-+			}
-+			if (ret > 0) {
-+				mtd->ecc_stats.corrected += ret;
-+				ret = -EUCLEAN;
-+			}
- 		}
- 
- 		doc_read_page_finish(docg3);
-@@ -849,7 +913,7 @@ static int doc_read_oob(struct mtd_info *mtd, loff_t from,
- 		from += DOC_LAYOUT_PAGE_SIZE;
- 	}
- 
--	return 0;
-+	return ret;
- err_in_read:
- 	doc_read_page_finish(docg3);
- err:
-@@ -1158,7 +1222,7 @@ static int doc_write_page(struct docg3 *docg3, loff_t to, const u_char *buf,
- 	if (ret)
- 		goto err;
- 
--	doc_write_page_ecc_init(docg3, DOC_ECC_BCH_COVERED_BYTES);
-+	doc_write_page_ecc_init(docg3, DOC_ECC_BCH_TOTAL_BYTES);
- 	doc_delay(docg3, 2);
- 	doc_write_page_putbytes(docg3, DOC_LAYOUT_PAGE_SIZE, buf);
- 
-@@ -1721,7 +1785,11 @@ static int __init docg3_probe(struct platform_device *pdev)
- 	docg3_floors = kzalloc(sizeof(*docg3_floors) * DOC_MAX_NBFLOORS,
- 			       GFP_KERNEL);
- 	if (!docg3_floors)
--		goto nomem;
-+		goto nomem1;
-+	docg3_bch = init_bch(DOC_ECC_BCH_M, DOC_ECC_BCH_T,
-+			     DOC_ECC_BCH_PRIMPOLY);
-+	if (!docg3_bch)
-+		goto nomem2;
- 
- 	ret = 0;
- 	for (floor = 0; floor < DOC_MAX_NBFLOORS; floor++) {
-@@ -1751,10 +1819,13 @@ notfound:
- 	ret = -ENODEV;
- 	dev_info(dev, "No supported DiskOnChip found\n");
- err_probe:
-+	free_bch(docg3_bch);
- 	for (floor = 0; floor < DOC_MAX_NBFLOORS; floor++)
- 		if (docg3_floors[floor])
- 			doc_release_device(docg3_floors[floor]);
--nomem:
-+nomem2:
-+	kfree(docg3_floors);
-+nomem1:
- 	iounmap(base);
- noress:
- 	return ret;
-@@ -1779,6 +1850,7 @@ static int __exit docg3_release(struct platform_device *pdev)
- 			doc_release_device(docg3_floors[floor]);
- 
- 	kfree(docg3_floors);
-+	free_bch(docg3_bch);
- 	iounmap(base);
- 	return 0;
+@@ -506,11 +669,25 @@ static int doc_read_page_getbytes(struct docg3 *docg3, int len, u_char *buf,
  }
-diff --git a/drivers/mtd/devices/docg3.h b/drivers/mtd/devices/docg3.h
-index 397e461..33db727 100644
---- a/drivers/mtd/devices/docg3.h
-+++ b/drivers/mtd/devices/docg3.h
-@@ -51,10 +51,19 @@
- #define DOC_LAYOUT_WEAR_OFFSET		(DOC_LAYOUT_PAGE_OOB_SIZE * 2)
- #define DOC_LAYOUT_BLOCK_SIZE					\
- 	(DOC_LAYOUT_PAGES_PER_BLOCK * DOC_LAYOUT_PAGE_SIZE)
-+
-+/*
-+ * ECC related constants
-+ */
-+#define DOC_ECC_BCH_M			14
-+#define DOC_ECC_BCH_T			4
-+#define DOC_ECC_BCH_PRIMPOLY		0x4443
- #define DOC_ECC_BCH_SIZE		7
- #define DOC_ECC_BCH_COVERED_BYTES				\
- 	(DOC_LAYOUT_PAGE_SIZE + DOC_LAYOUT_OOB_PAGEINFO_SZ +	\
--	 DOC_LAYOUT_OOB_HAMMING_SZ + DOC_LAYOUT_OOB_BCH_SZ)
-+	 DOC_LAYOUT_OOB_HAMMING_SZ)
-+#define DOC_ECC_BCH_TOTAL_BYTES					\
-+	(DOC_ECC_BCH_COVERED_BYTES + DOC_LAYOUT_OOB_BCH_SZ)
  
+ /**
++ * doc_write_page_putbytes - Writes bytes into a prepared page
++ * @docg3: the device
++ * @len: the number of bytes to be written
++ * @buf: the buffer of input bytes
++ *
++ */
++static void doc_write_page_putbytes(struct docg3 *docg3, int len,
++				    const u_char *buf)
++{
++	doc_write_data_area(docg3, buf, len);
++	doc_delay(docg3, 2);
++}
++
++/**
+  * doc_get_hw_bch_syndroms - Get hardware calculated BCH syndroms
+  * @docg3: the device
+  * @syns:  the array of 7 integers where the syndroms will be stored
+  */
+-static void doc_get_hw_bch_syndroms(struct docg3 *docg3, int *syns)
++static void doc_get_hw_bch_syndroms(struct docg3 *docg3, u8 *syns)
+ {
+ 	int i;
+ 
+@@ -519,6 +696,16 @@ static void doc_get_hw_bch_syndroms(struct docg3 *docg3, int *syns)
+ }
+ 
+ /**
++ * doc_page_finish - Ends reading/writing of a flash page
++ * @docg3: the device
++ */
++static void doc_page_finish(struct docg3 *docg3)
++{
++	doc_writeb(docg3, 0, DOC_DATAEND);
++	doc_delay(docg3, 2);
++}
++
++/**
+  * doc_read_page_finish - Ends reading of a flash page
+  * @docg3: the device
+  *
+@@ -528,8 +715,7 @@ static void doc_get_hw_bch_syndroms(struct docg3 *docg3, int *syns)
+  */
+ static void doc_read_page_finish(struct docg3 *docg3)
+ {
+-	doc_writeb(docg3, 0, DOC_DATAEND);
+-	doc_delay(docg3, 2);
++	doc_page_finish(docg3);
+ 	doc_set_device_id(docg3, 0);
+ }
+ 
+@@ -791,6 +977,348 @@ static int doc_get_erase_count(struct docg3 *docg3, loff_t from)
+ 	return max(plane1_erase_count, plane2_erase_count);
+ }
+ 
++/**
++ * doc_get_op_status - get erase/write operation status
++ * @docg3: the device
++ *
++ * Queries the status from the chip, and returns it
++ *
++ * Returns the status (bits DOC_PLANES_STATUS_*)
++ */
++static int doc_get_op_status(struct docg3 *docg3)
++{
++	u8 status;
++
++	doc_flash_sequence(docg3, DOC_SEQ_PLANES_STATUS);
++	doc_flash_command(docg3, DOC_CMD_PLANES_STATUS);
++	doc_delay(docg3, 5);
++
++	doc_ecc_disable(docg3);
++	doc_read_data_area(docg3, &status, 1, 1);
++	return status;
++}
++
++/**
++ * doc_write_erase_wait_status - wait for write or erase completion
++ * @docg3: the device
++ *
++ * Wait for the chip to be ready again after erase or write operation, and check
++ * erase/write status.
++ *
++ * Returns 0 if erase successfull, -EIO if erase/write issue, -ETIMEOUT if
++ * timeout
++ */
++static int doc_write_erase_wait_status(struct docg3 *docg3)
++{
++	int status, ret = 0;
++
++	if (!doc_is_ready(docg3))
++		usleep_range(3000, 3000);
++	if (!doc_is_ready(docg3)) {
++		doc_dbg("Timeout reached and the chip is still not ready\n");
++		ret = -EAGAIN;
++		goto out;
++	}
++
++	status = doc_get_op_status(docg3);
++	if (status & DOC_PLANES_STATUS_FAIL) {
++		doc_dbg("Erase/Write failed on (a) plane(s), status = %x\n",
++			status);
++		ret = -EIO;
++	}
++
++out:
++	doc_page_finish(docg3);
++	return ret;
++}
++
++/**
++ * doc_write_page - Write a single page to the chip
++ * @docg3: the device
++ * @to: the offset from first block and first page, in bytes, aligned on page
++ *      size
++ * @buf: buffer to get bytes from
++ * @oob: buffer to get out of band bytes from (can be NULL if no OOB should be
++ *       written)
++ * @autoecc: if 0, all 16 bytes from OOB are taken, regardless of HW Hamming or
++ *           BCH computations. If 1, only bytes 0-7 and byte 15 are taken,
++ *           remaining ones are filled with hardware Hamming and BCH
++ *           computations. Its value is not meaningfull is oob == NULL.
++ *
++ * Write one full page (ie. 1 page split on two planes), of 512 bytes, with the
++ * OOB data. The OOB ECC is automatically computed by the hardware Hamming and
++ * BCH generator if autoecc is not null.
++ *
++ * Returns 0 if write successful, -EIO if write error, -EAGAIN if timeout
++ */
++static int doc_write_page(struct docg3 *docg3, loff_t to, const u_char *buf,
++			  const u_char *oob, int autoecc)
++{
++	int block0, block1, page, ret, ofs = 0;
++	u8 syn[DOC_ECC_BCH_SIZE], hamming;
++
++	doc_dbg("doc_write_page(to=%lld)\n", to);
++	calc_block_sector(to, &block0, &block1, &page, &ofs);
++
++	doc_set_device_id(docg3, docg3->device_id);
++	ret = doc_reset_seq(docg3);
++	if (ret)
++		goto err;
++
++	/* Program the flash address block and page */
++	ret = doc_write_seek(docg3, block0, block1, page, ofs);
++	if (ret)
++		goto err;
++
++	doc_write_page_ecc_init(docg3, DOC_ECC_BCH_COVERED_BYTES);
++	doc_delay(docg3, 2);
++	doc_write_page_putbytes(docg3, DOC_LAYOUT_PAGE_SIZE, buf);
++
++	if (oob && autoecc) {
++		doc_write_page_putbytes(docg3, DOC_LAYOUT_OOB_PAGEINFO_SZ, oob);
++		doc_delay(docg3, 2);
++		oob += DOC_LAYOUT_OOB_UNUSED_OFS;
++
++		hamming = doc_register_readb(docg3, DOC_HAMMINGPARITY);
++		doc_delay(docg3, 2);
++		doc_write_page_putbytes(docg3, DOC_LAYOUT_OOB_HAMMING_SZ,
++					&hamming);
++		doc_delay(docg3, 2);
++
++		doc_get_hw_bch_syndroms(docg3, syn);
++		doc_write_page_putbytes(docg3, DOC_LAYOUT_OOB_BCH_SZ, syn);
++		doc_delay(docg3, 2);
++
++		doc_write_page_putbytes(docg3, DOC_LAYOUT_OOB_UNUSED_SZ, oob);
++	}
++	if (oob && !autoecc)
++		doc_write_page_putbytes(docg3, DOC_LAYOUT_OOB_SIZE, oob);
++
++	doc_delay(docg3, 2);
++	doc_page_finish(docg3);
++	doc_delay(docg3, 2);
++	doc_flash_command(docg3, DOC_CMD_PROG_CYCLE2);
++	doc_delay(docg3, 2);
++
++	/*
++	 * The wait status will perform another doc_page_finish() call, but that
++	 * seems to please the docg3, so leave it.
++	 */
++	ret = doc_write_erase_wait_status(docg3);
++	return ret;
++err:
++	doc_read_page_finish(docg3);
++	return ret;
++}
++
++/**
++ * doc_guess_autoecc - Guess autoecc mode from mbd_oob_ops
++ * @ops: the oob operations
++ *
++ * Returns 0 or 1 if success, -EINVAL if invalid oob mode
++ */
++static int doc_guess_autoecc(struct mtd_oob_ops *ops)
++{
++	int autoecc;
++
++	switch (ops->mode) {
++	case MTD_OPS_PLACE_OOB:
++	case MTD_OPS_AUTO_OOB:
++		autoecc = 1;
++		break;
++	case MTD_OPS_RAW:
++		autoecc = 0;
++		break;
++	default:
++		autoecc = -EINVAL;
++	}
++	return autoecc;
++}
++
++/**
++ * doc_fill_autooob - Fill a 16 bytes OOB from 8 non-ECC bytes
++ * @dst: the target 16 bytes OOB buffer
++ * @oobsrc: the source 8 bytes non-ECC OOB buffer
++ *
++ */
++static void doc_fill_autooob(u8 *dst, u8 *oobsrc)
++{
++	memcpy(dst, oobsrc, DOC_LAYOUT_OOB_PAGEINFO_SZ);
++	dst[DOC_LAYOUT_OOB_UNUSED_OFS] = oobsrc[DOC_LAYOUT_OOB_PAGEINFO_SZ];
++}
++
++/**
++ * doc_backup_oob - Backup OOB into docg3 structure
++ * @docg3: the device
++ * @to: the page offset in the chip
++ * @ops: the OOB size and buffer
++ *
++ * As the docg3 should write a page with its OOB in one pass, and some userland
++ * applications do write_oob() to setup the OOB and then write(), store the OOB
++ * into a temporary storage. This is very dangerous, as 2 concurrent
++ * applications could store an OOB, and then write their pages (which will
++ * result into one having its OOB corrupted).
++ *
++ * The only reliable way would be for userland to call doc_write_oob() with both
++ * the page data _and_ the OOB area.
++ *
++ * Returns 0 if success, -EINVAL if ops content invalid
++ */
++static int doc_backup_oob(struct docg3 *docg3, loff_t to,
++			  struct mtd_oob_ops *ops)
++{
++	int ooblen = ops->ooblen, autoecc;
++
++	if (ooblen != DOC_LAYOUT_OOB_SIZE)
++		return -EINVAL;
++	autoecc = doc_guess_autoecc(ops);
++	if (autoecc < 0)
++		return autoecc;
++
++	docg3->oob_write_ofs = to;
++	docg3->oob_autoecc = autoecc;
++	if (ops->mode == MTD_OPS_AUTO_OOB) {
++		doc_fill_autooob(docg3->oob_write_buf, ops->oobbuf);
++		ops->oobretlen = 8;
++	} else {
++		memcpy(docg3->oob_write_buf, ops->oobbuf, DOC_LAYOUT_OOB_SIZE);
++		ops->oobretlen = DOC_LAYOUT_OOB_SIZE;
++	}
++	return 0;
++}
++
++/**
++ * doc_write_oob - Write out of band bytes to flash
++ * @mtd: the device
++ * @ofs: the offset from first block and first page, in bytes, aligned on page
++ *       size
++ * @ops: the mtd oob structure
++ *
++ * Either write OOB data into a temporary buffer, for the subsequent write
++ * page. The provided OOB should be 16 bytes long. If a data buffer is provided
++ * as well, issue the page write.
++ * Or provide data without OOB, and then a all zeroed OOB will be used (ECC will
++ * still be filled in if asked for).
++ *
++ * Returns 0 is successfull, EINVAL if length is not 14 bytes
++ */
++static int doc_write_oob(struct mtd_info *mtd, loff_t ofs,
++			 struct mtd_oob_ops *ops)
++{
++	struct docg3 *docg3 = mtd->priv;
++	int block0, block1, page, ret, pofs = 0, autoecc, oobdelta;
++	u8 *oobbuf = ops->oobbuf;
++	u8 *buf = ops->datbuf;
++	size_t len, ooblen;
++	u8 oob[DOC_LAYOUT_OOB_SIZE];
++
++	if (buf)
++		len = ops->len;
++	else
++		len = 0;
++	if (oobbuf)
++		ooblen = ops->ooblen;
++	else
++		ooblen = 0;
++
++	if (oobbuf && ops->mode == MTD_OPS_PLACE_OOB)
++		oobbuf += ops->ooboffs;
++
++	doc_dbg("doc_write_oob(from=%lld, mode=%d, data=(%p:%zu), oob=(%p:%zu))\n",
++		ofs, ops->mode, buf, len, oobbuf, ooblen);
++	switch (ops->mode) {
++	case MTD_OPS_PLACE_OOB:
++	case MTD_OPS_RAW:
++		oobdelta = mtd->oobsize;
++		break;
++	case MTD_OPS_AUTO_OOB:
++		oobdelta = mtd->ecclayout->oobavail;
++		break;
++	default:
++		oobdelta = 0;
++	}
++	if ((len % DOC_LAYOUT_PAGE_SIZE) || (ooblen % oobdelta) ||
++	    (ofs % DOC_LAYOUT_PAGE_SIZE))
++		return -EINVAL;
++	if (len && ooblen &&
++	    (len / DOC_LAYOUT_PAGE_SIZE) != (ooblen / oobdelta))
++		return -EINVAL;
++
++	ret = -EINVAL;
++	calc_block_sector(ofs + len, &block0, &block1, &page, &pofs);
++	if (block1 > docg3->max_block)
++		goto err;
++
++	ops->oobretlen = 0;
++	ops->retlen = 0;
++	ret = 0;
++	if (len == 0 && ooblen == 0)
++		return -EINVAL;
++	if (len == 0 && ooblen > 0)
++		return doc_backup_oob(docg3, ofs, ops);
++
++	autoecc = doc_guess_autoecc(ops);
++	if (autoecc < 0)
++		return autoecc;
++
++	while (!ret && len > 0) {
++		memset(oob, 0, sizeof(oob));
++		if (ofs == docg3->oob_write_ofs)
++			memcpy(oob, docg3->oob_write_buf, DOC_LAYOUT_OOB_SIZE);
++		else if (ooblen > 0 && ops->mode == MTD_OPS_AUTO_OOB)
++			doc_fill_autooob(oob, oobbuf);
++		else if (ooblen > 0)
++			memcpy(oob, oobbuf, DOC_LAYOUT_OOB_SIZE);
++		ret = doc_write_page(docg3, ofs, buf, oob, autoecc);
++
++		ofs += DOC_LAYOUT_PAGE_SIZE;
++		len -= DOC_LAYOUT_PAGE_SIZE;
++		buf += DOC_LAYOUT_PAGE_SIZE;
++		if (ooblen) {
++			oobbuf += oobdelta;
++			ooblen -= oobdelta;
++			ops->oobretlen += oobdelta;
++		}
++		ops->retlen += DOC_LAYOUT_PAGE_SIZE;
++	}
++err:
++	doc_set_device_id(docg3, 0);
++	return ret;
++}
++
++/**
++ * doc_write - Write a buffer to the chip
++ * @mtd: the device
++ * @to: the offset from first block and first page, in bytes, aligned on page
++ *      size
++ * @len: the number of bytes to write (must be a full page size, ie. 512)
++ * @retlen: the number of bytes actually written (0 or 512)
++ * @buf: the buffer to get bytes from
++ *
++ * Writes data to the chip.
++ *
++ * Returns 0 if write successful, -EIO if write error
++ */
++static int doc_write(struct mtd_info *mtd, loff_t to, size_t len,
++		     size_t *retlen, const u_char *buf)
++{
++	struct docg3 *docg3 = mtd->priv;
++	int ret;
++	struct mtd_oob_ops ops;
++
++	doc_dbg("doc_write(to=%lld, len=%zu)\n", to, len);
++	ops.datbuf = (char *)buf;
++	ops.len = len;
++	ops.mode = MTD_OPS_PLACE_OOB;
++	ops.oobbuf = NULL;
++	ops.ooblen = 0;
++	ops.ooboffs = 0;
++
++	ret = doc_write_oob(mtd, to, &ops);
++	*retlen = ops.retlen;
++	return ret;
++}
++
  /*
-  * Blocks distribution
+  * Debug sysfs entries
+  */
+@@ -1052,6 +1580,7 @@ static struct mtd_info *doc_probe_device(void __iomem *base, int floor,
+ 
+ 	doc_set_driver_info(chip_id, mtd);
+ 
++	doc_hamming_ecc_init(docg3, DOC_LAYOUT_OOB_PAGEINFO_SZ);
+ 	doc_reload_bbt(docg3);
+ 	return mtd;
+ 
 -- 
 1.7.5.4
 
