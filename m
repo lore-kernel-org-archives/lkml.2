@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965294Ab1KJQmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:42:55 -0500
-Received: from gate.crashing.org ([63.228.1.57]:38202 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935588Ab1KJQmx convert rfc822-to-8bit (ORCPT
+	id S935769Ab1KJQrr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:47:47 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:38780
+	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932644Ab1KJQrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:42:53 -0500
-Subject: Re: [RFC PATCH 08/17] powerpc/e500: Remove conditional "lwsync" substitution
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20111110163100.GA11983@schlenkerla.am.freescale.net>
-Date: Thu, 10 Nov 2011 10:42:25 -0600
-Cc: Kyle Moffett <Kyle.D.Moffett@boeing.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, Baruch Siach <baruch@tkos.co.il>,
-        Timur Tabi <B04825@freescale.com>,
+	Thu, 10 Nov 2011 11:47:46 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275bhz2dh2a8h668h839h944h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 10 Nov 2011 10:47:41 -0600
+From: Scott Wood <scottwood@freescale.com>
+To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Baruch Siach <baruch@tkos.co.il>, Timur Tabi <B04825@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AC287A9B-0C8B-494E-95CD-A33014AECE22@kernel.crashing.org>
-References: <4E42AB6F.1050900@freescale.com> <1320883635-17194-9-git-send-email-Kyle.D.Moffett@boeing.com> <3937191C-A735-4668-8E80-9FB4B35E2F63@kernel.crashing.org> <20111110163100.GA11983@schlenkerla.am.freescale.net>
-To: Scott Wood <scottwood@freescale.com>
-X-Mailer: Apple Mail (2.1251.1)
+        Paul Mackerras <paulus@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Shaohui Xie <b21989@freescale.com>
+Subject: Re: [RFC PATCH 16/17] powerpc/e500: Make
+ __setup_cpu_{e200,e500,e500mc,e5500} optional
+Message-ID: <20111110164741.GC11983@schlenkerla.am.freescale.net>
+References: <4E42AB6F.1050900@freescale.com>
+ <1320883635-17194-17-git-send-email-Kyle.D.Moffett@boeing.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1320883635-17194-17-git-send-email-Kyle.D.Moffett@boeing.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Nov 10, 2011, at 10:31 AM, Scott Wood wrote:
-
-> On Thu, Nov 10, 2011 at 07:40:04AM -0600, Kumar Gala wrote:
->> 
->> On Nov 9, 2011, at 6:07 PM, Kyle Moffett wrote:
->> 
->>> As FreeScale e500 systems have different cacheline sizes from e500mc, it
->>> is basically impossible for the kernel to support both in a single
->>> system image at present.
->>> 
->>> Given that one is SPE-float and the other is classic-float, they are not
->>> generally userspace-compatible either.
->>> 
->>> This patch updates the conditional to depend on whether the system is
->>> actually targetting an "e500" or "e500mc" core and entirely removes the
->>> unused sync-to-lwsync-replacement on e500v1/e500v2 systems.
->>> 
->>> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
->>> ---
->>> arch/powerpc/include/asm/synch.h |   16 ++++------------
->>> 1 files changed, 4 insertions(+), 12 deletions(-)
->> 
->> Nak, we can run an e500mc in a mode that is compatible with e500v1/v2.  I see no reason to change the support we have there.
+On Wed, Nov 09, 2011 at 07:07:14PM -0500, Kyle Moffett wrote:
+> Only build the setup functions when the corresponding entries are
+> included in the CPU table.
 > 
-> What "mode" do you mean?  DCBZ32?  We don't support using that currently,
-> and I'd imagine the performance implication would be such that you'd
-> never want to do it unless it's the only way to make some piece of legacy
-> software work.
-
-Correct, DCBZ32, we've had customers that go down this path.
-
->> I see no reason to change the support we have there.
+> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
+> ---
+>  arch/powerpc/kernel/cpu_setup_fsl_booke.S |   14 +++++++++++++-
+>  1 files changed, 13 insertions(+), 1 deletions(-)
 > 
-> No reason to remove complexity that is not needed, and is not planned to
-> be needed?
+> diff --git a/arch/powerpc/kernel/cpu_setup_fsl_booke.S b/arch/powerpc/kernel/cpu_setup_fsl_booke.S
+> index 8053db0..77721b2 100644
+> --- a/arch/powerpc/kernel/cpu_setup_fsl_booke.S
+> +++ b/arch/powerpc/kernel/cpu_setup_fsl_booke.S
+> @@ -17,6 +17,8 @@
+>  #include <asm/cputable.h>
+>  #include <asm/ppc_asm.h>
+>  
+> +#if defined(CONFIG_FSL_E500_V1_V2) || defined(CONFIG_FSL_E500MC) \
+> +		|| defined(CONFIG_FSL_E5500)
 
+This seems like the kind of thing that CONFIG_E500 should be retained
+for.
 
-I'd rather wait for at least 2 years for e500mc devices to have further deployment before we'd remove this.
+-Scott
 
-- k
