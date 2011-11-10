@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933517Ab1KJDJR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 22:09:17 -0500
-Received: from mga14.intel.com ([143.182.124.37]:34429 "EHLO mga14.intel.com"
+	id S1755095Ab1KJDTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 22:19:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41535 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab1KJDJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 22:09:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
-   d="scan'208";a="35142207"
-Subject: Re: [PATCH] PNP ACPI: Use real gsi
-From: Zhang Rui <rui.zhang@intel.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        H Peter Anvin <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <201111090935.52141.trenn@suse.de>
-References: <1320372728-3235-1-git-send-email-trenn@suse.de>
-	 <1320373233-3725-1-git-send-email-trenn@suse.de>
-	 <201111090935.52141.trenn@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Nov 2011 11:07:33 +0800
-Message-ID: <1320894453.15460.15.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752546Ab1KJDTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 22:19:37 -0500
+Date: Wed, 9 Nov 2011 19:15:24 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [000/262] 3.0.9-stable review
+Message-ID: <20111110031524.GA22180@suse.de>
+References: <20111109212847.GA20838@kroah.com>
+ <20111110005406.GA22026@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111110005406.GA22026@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas,
+On Thu, Nov 10, 2011 at 02:54:07AM +0200, Kirill A. Shutemov wrote:
+> On Wed, Nov 09, 2011 at 01:28:47PM -0800, Greg KH wrote:
+> > This is the start of the stable review cycle for the 3.0.9 release.
+> 
+> Could you include these two:
+> 
+> a94cc4e sfi: table irq 0xFF means 'no interrupt'
 
-can you attach the full dmesg output after applying the patch,
-and the full acpidump of this machine please?
+Why was this not marked for stable?
+
+> 153b19a x86, mrst: use a temporary variable for SFI irq
+
+Odd, I wonder how I missed this one.
+
+Anyway, I'll queue these up for the next 3.0 release after this one if
+you don't mind.
 
 thanks,
-rui
 
-On Wed, 2011-11-09 at 16:35 +0800, Thomas Renninger wrote:
-> Hi,
-> 
-> On Friday, November 04, 2011 03:20:33 AM Thomas Renninger wrote:
-> > From: Yinghai Lu <yinghai@kernel.org>
-> > 
-> ...
-> > On an IBM Xseries (x3850) this caused the machine to freeze around when
-> > the init userspace process is tried to get started.
-> > The reason is that the timer interrupt is not set up correctly on this
-> > machine.
-> ...
-> 
-> What is the state/opinion about this one?
-> It fixes a sever bug/regression for me and it would be great to
-> see this one in 3.2.
-> 
-> Thanks,
-> 
->     Thomas
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+greg k-h
