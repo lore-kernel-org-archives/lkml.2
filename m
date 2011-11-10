@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935885Ab1KJRDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 12:03:44 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:9512
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935384Ab1KJRDm (ORCPT
+	id S935909Ab1KJREn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 12:04:43 -0500
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:58488 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933053Ab1KJREl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 12:03:42 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371K1432N98dKzz1202hzzz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-Date: Thu, 10 Nov 2011 11:03:35 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: Kyle Moffett <Kyle.D.Moffett@boeing.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, Baruch Siach <baruch@tkos.co.il>,
-        Timur Tabi <B04825@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Subject: Re: [RFC PATCH 08/17] powerpc/e500: Remove conditional "lwsync"
- substitution
-Message-ID: <20111110170334.GF11983@schlenkerla.am.freescale.net>
-References: <4E42AB6F.1050900@freescale.com>
- <1320883635-17194-9-git-send-email-Kyle.D.Moffett@boeing.com>
- <3937191C-A735-4668-8E80-9FB4B35E2F63@kernel.crashing.org>
- <20111110163100.GA11983@schlenkerla.am.freescale.net>
- <AC287A9B-0C8B-494E-95CD-A33014AECE22@kernel.crashing.org>
+	Thu, 10 Nov 2011 12:04:41 -0500
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4EBC0418.2040005@cam.ac.uk>
+Date: Thu, 10 Nov 2011 17:04:24 +0000
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20111001 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AC287A9B-0C8B-494E-95CD-A33014AECE22@kernel.crashing.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, guenter.roeck@ericsson.com,
+        khali@linux-fr.org, dmitry.torokhov@gmail.com, gregkh@suse.de,
+        alan@lxorguk.ukuu.org.uk, arnd@arndb.de, linus.walleij@linaro.org,
+        lars@metafoo.de, maxime.ripard@free-electrons.com,
+        lm-sensors@lm-sensors.org, thomas.petazzoni@free-electrons.com,
+        zdevai@gmail.com
+Subject: Re: [PATCH 3/5] IIO:CORE add in kernel interface mapping and getting
+ IIO channels.
+References: <1320680681-5635-1-git-send-email-jic23@kernel.org> <1320680681-5635-4-git-send-email-jic23@kernel.org> <20111110132506.GF3832@opensource.wolfsonmicro.com>
+In-Reply-To: <20111110132506.GF3832@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.3.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:42:25AM -0600, Kumar Gala wrote:
+On 11/10/2011 01:25 PM, Mark Brown wrote:
+> On Mon, Nov 07, 2011 at 03:44:39PM +0000, Jonathan Cameron wrote:
+>> From: Jonathan Cameron <jic23@cam.ac.uk>
+>>
+>> Two elements here:
+>> * Map as defined in include/linux/iio/inkern.h
+>> * Matching code to actually get the iio_dev and channel
+>> that we want from the global list of IIO devices.
 > 
-> On Nov 10, 2011, at 10:31 AM, Scott Wood wrote:
+> I've not read it thoroughly but this certainly this looks sensible from
+> an external interface point of view, I'd expect that issues can be
+> worked through incrementally.
 > 
-> > On Thu, Nov 10, 2011 at 07:40:04AM -0600, Kumar Gala wrote:
-> >> Nak, we can run an e500mc in a mode that is compatible with e500v1/v2.  I see no reason to change the support we have there.
-> > 
-> > What "mode" do you mean?  DCBZ32?  We don't support using that currently,
-> > and I'd imagine the performance implication would be such that you'd
-> > never want to do it unless it's the only way to make some piece of legacy
-> > software work.
+> Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks.
 > 
-> Correct, DCBZ32, we've had customers that go down this path.
+>> +extern struct list_head iio_map_list;
+> 
+> It's surprising that this is part of the external interface of IIO
+> rather than something hidden within the implementation.
+You are quite correct. I was being lazy and had that one element that
+didn't fit in any headers.  I'lll add a trivial inkern-core.h to handle
+that one bit.
 
-For running legacy software, or for multiplatform Linux kernels?
-
-And if you're willing to toss performance away for this goal, why do you
-need lwsync? :-)
-
-DCBZ32 is not a "mode that is compatible with v1/v2", BTW.  It only
-affects cache block size (for dcbz/dcba only), not SPE versus FP, not
-changes in power management, not changes in machine check handling, etc.
-
-Using DCBZ32 for the kernel would also complicate switching the kernel to
-dcbzl, to support enabling DCBZ32 for certain userspace apps (a more
-likely use case) without making it systemwide.
-
--Scott
 
