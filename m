@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab1KJVvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 16:51:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40726 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab1KJVvn (ORCPT
+	id S932386Ab1KJVxz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 16:53:55 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:50410 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab1KJVxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 16:51:43 -0500
-Date: Thu, 10 Nov 2011 13:51:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: David Rientjes <rientjes@google.com>, Dave Airlie <airlied@redhat.com>,
-        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Hugh Dickins <hughd@chromium.org>, Hugh Dickins <hughd@google.com>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] drm: avoid switching to text console if there is no
- panic timeout
-Message-Id: <20111110135141.5fc6ea36.akpm@linux-foundation.org>
-In-Reply-To: <20111110211504.GK8333@google.com>
-References: <1318896400-32498-1-git-send-email-msb@chromium.org>
-	<alpine.DEB.2.00.1110171727300.13515@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1111101246560.21036@chino.kir.corp.google.com>
-	<20111110211504.GK8333@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 16:53:54 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; CHARSET=US-ASCII
+Date: Thu, 10 Nov 2011 16:53:53 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 07/16] ARM: LPAE: Introduce the 3-level page table
+ format definitions
+In-reply-to: <1320682618-1182-8-git-send-email-catalin.marinas@arm.com>
+Message-id: <alpine.LFD.2.02.1111101638550.3307@xanadu.home>
+References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
+ <1320682618-1182-8-git-send-email-catalin.marinas@arm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Nov 2011 13:15:04 -0800
-Mandeep Singh Baines <msb@chromium.org> wrote:
+On Mon, 7 Nov 2011, Catalin Marinas wrote:
 
-> David Rientjes (rientjes@google.com) wrote:
-> > On Mon, 17 Oct 2011, David Rientjes wrote:
-> > 
-> > > On Mon, 17 Oct 2011, Mandeep Singh Baines wrote:
-> > > 
-> > > > From: Hugh Dickins <hughd@chromium.org>
-> > > > 
-> > > > Add a check for panic_timeout in the drm_fb_helper_panic() notifier: if
-> > > > we're going to reboot immediately, the user will not be able to see the
-> > > > messages anyway, and messing with the video mode may display artifacts,
-> > > > and certainly get into several layers of complexity (including mutexes and
-> > > > memory allocations) which we shall be much safer to avoid.
-> > > > 
-> > > > Signed-off-by: Hugh Dickins <hughd@google.com>
-> > > > [ Edited commit message and modified to short-circuit panic_timeout < 0
-> > > >   instead of testing panic_timeout >= 0.  -Mandeep ]
-> > > > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> > > > Cc: Dave Airlie <airlied@redhat.com>
-> > > > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > > > Cc: dri-devel@lists.freedesktop.org
-> > > 
-> > > Acked-by: David Rientjes <rientjes@google.com>
-> > > 
-> > 
-> > Dave, where do we stand on this?  I haven't seen it hit Linus' tree and I 
-> > don't see it in git://people.freedesktop.org/~airlied/linux.
-> 
-> The last status I have is Andrew pulling it into mmotm on 10/18/11.
-> 
-> Subject: + drm-avoid-switching-to-text-console-if-there-is-no-panic-timeout.patch added to -mm tree
-> From: akpm@linux-foundation.org
-> Date: Tue, 18 Oct 2011 15:42:46 -0700
-> 
-> 
-> The patch titled
->      Subject: drm: avoid switching to text console if there is no panic timeout
-> has been added to the -mm tree.  Its filename is
->      drm-avoid-switching-to-text-console-if-there-is-no-panic-timeout.patch
+> This patch introduces the pgtable-3level*.h files with definitions
+> specific to the LPAE page table format (3 levels of page tables).
+[...]
+> diff --git a/arch/arm/include/asm/pgtable-3level-hwdef.h b/arch/arm/include/asm/pgtable-3level-hwdef.h
+> new file mode 100644
+> index 0000000..7c238a3
+> --- /dev/null
+> +++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
+[...]
+> +#ifdef __ASSEMBLY__
+> +/* avoid 'shift count out of range' warning */
+> +#define PMD_SECT_XN		(0)
+> +#else
+> +#define PMD_SECT_XN		((pmdval_t)1 << 54)
+> +#endif
 
-I need to do another round of sending patches to maintainers.
+Please don't do that.  Having a symbol that changes value depending on 
+the type of code is evil.  If PMD_SECT_XN is actually used in assembly 
+code then you have to deal with it, not blindly redefine it as zero.
+In my compilation test I didn't see any such warning anyway.
 
-It's a depressing exercise because the great majority of patches are
-simply ignored.  Last time I even added "please don't ignore" to the
-email Subject: on the more important ones.  Sigh.
+> diff --git a/arch/arm/include/asm/pgtable-3level-types.h b/arch/arm/include/asm/pgtable-3level-types.h
+> new file mode 100644
+> index 0000000..921aa30
+> --- /dev/null
+> +++ b/arch/arm/include/asm/pgtable-3level-types.h
+> @@ -0,0 +1,70 @@
+[...]
+> +typedef u64 pteval_t;
+> +typedef u64 pmdval_t;
+> +typedef u64 pgdval_t;
+> +
+> +#undef STRICT_MM_TYPECHECKS
+> +
+> +#ifdef STRICT_MM_TYPECHECKS
+> +
+> +/*
+> + * These are used to make use of C type-checking..
+> + */
+> +typedef struct { pteval_t pte; } pte_t;
+> +typedef struct { pmdval_t pmd; } pmd_t;
+> +typedef struct { pgdval_t pgd; } pgd_t;
+> +typedef struct { pteval_t pgprot; } pgprot_t;
+> +
+> +#define pte_val(x)      ((x).pte)
+> +#define pmd_val(x)      ((x).pmd)
+> +#define pgd_val(x)	((x).pgd)
+> +#define pgprot_val(x)   ((x).pgprot)
+> +
+> +#define __pte(x)        ((pte_t) { (x) } )
+> +#define __pmd(x)        ((pmd_t) { (x) } )
+> +#define __pgd(x)	((pgd_t) { (x) } )
+> +#define __pgprot(x)     ((pgprot_t) { (x) } )
+> +
+> +#else	/* !STRICT_MM_TYPECHECKS */
+> +
+> +typedef pteval_t pte_t;
+> +typedef pmdval_t pmd_t;
+> +typedef pgdval_t pgd_t;
+> +typedef pteval_t pgprot_t;
+> +
+> +#define pte_val(x)	(x)
+> +#define pmd_val(x)	(x)
+> +#define pgd_val(x)	(x)
+> +#define pgprot_val(x)	(x)
+> +
+> +#define __pte(x)	(x)
+> +#define __pmd(x)	(x)
+> +#define __pgd(x)	(x)
+> +#define __pgprot(x)	(x)
+> +
+> +#endif	/* STRICT_MM_TYPECHECKS */
 
-> Where is mmotm hosted these days?
+Isn't the vast majority of this file actually common with the content of 
+pgtable-2level-types.h?  Except for the basic types and pgd handling, 
+this looks pretty similar.
 
-On my disk, until kernel.org ftp access returns.
 
-But I regularly email tarballs to Stephen, so it's all in linux-next. 
-The mmotm tree is largely unneeded now - use linux-next to get at -mm
-patches.
-
+Nicolas
