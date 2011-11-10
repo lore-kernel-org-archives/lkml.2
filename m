@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757765Ab1KJQeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:34:21 -0500
-Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:63015 "EHLO
-	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964902Ab1KJQeT convert rfc822-to-8bit (ORCPT
+	id S965202Ab1KJQfq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:35:46 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51467 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935222Ab1KJQfp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:34:19 -0500
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+	Thu, 10 Nov 2011 11:35:45 -0500
+Subject: Re: linux-next 20111025: warnings in
+ rcu_idle_exit_common()/rcu_idle_enter_common()
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Wu Fengguang <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>, Timur Tabi <B04825@freescale.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>
-Date: Thu, 10 Nov 2011 10:33:21 -0600
-Subject: Re: [RFC PATCH 04/17] powerpc: Allow multiple machine-check handlers
-Thread-Topic: [RFC PATCH 04/17] powerpc: Allow multiple machine-check
- handlers
-Thread-Index: AcyfxnZIbhJP8x9LQEmkh2AURCBkHw==
-Message-ID: <2806AFF9-4F67-4846-95F6-D4093EA351A5@boeing.com>
-References: <4E42AB6F.1050900@freescale.com>
- <1320883635-17194-5-git-send-email-Kyle.D.Moffett@boeing.com>
- <C3C78EA9-9E3D-46AC-94D0-537348DCFC64@kernel.crashing.org>
-In-Reply-To: <C3C78EA9-9E3D-46AC-94D0-537348DCFC64@kernel.crashing.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+        Ingo Molnar <mingo@elte.hu>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 10 Nov 2011 17:35:24 +0100
+In-Reply-To: <20111031221416.GQ6160@linux.vnet.ibm.com>
+References: <20111031082634.GA10348@localhost>
+	 <20111031095152.GL6160@linux.vnet.ibm.com>
+	 <20111031104325.GA25808@localhost> <20111031114142.GA32555@localhost>
+	 <20111031123125.GA6162@localhost> <20111031123708.GA6839@localhost>
+	 <20111031221416.GQ6160@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Mailer: Evolution 3.0.3- 
+Message-ID: <1320942925.13800.28.camel@twins>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 10, 2011, at 08:37, Kumar Gala wrote:
-> On Nov 9, 2011, at 6:07 PM, Kyle Moffett wrote:
->> 
->> +#if defined(CONFIG_FSL_E500MC) || defined(CONFIG_FSL_E5500)
->> +#ifdef CONFIG_FSL_E500_V1_V2
-> 
-> doesn't exist yet, so patch is wrong sequence order.
+On Mon, 2011-10-31 at 15:14 -0700, Paul E. McKenney wrote:
+> Peter, I have been using "idle_cpu(smp_processor_id()))" to verify that
+> I really am running in the context of the idle task when RCU believes
+> that the current CPU has gone idle. 
 
-Oops, d'oh.
+I think this is sorted since, but just to clarify idle_cpu() was meant
+to test if the cpu was idle, this is something different from actually
+running the idle thread.
 
-You are completely correct, thanks for noticing!
 
-I'll fix this for my next submission.
-
-Cheers,
-Kyle Moffett
