@@ -1,32 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab1KJV3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 16:29:30 -0500
-Received: from fep21.mx.upcmail.net ([62.179.121.41]:57120 "EHLO
-	fep21.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984Ab1KJV32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 16:29:28 -0500
-X-SourceIP: 116.203.166.148
-X-Authenticated-Sender: g.hooimeijer@upcmail.nl
-Reply-To: <saeeed_ahmed52@qatar.io>
-From: "S. Ahmed" <saeeed_ahmed52@qatar.io>
-Subject: 
-Date: Thu, 10 Nov 2011 22:19:15 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20111110212006.GSIU1724.viefep12-int.chello.at@edge04.upcmail.net>
-X-Cloudmark-Analysis: v=1.1 cv=7AjrSHUygkxmgKj9+ZdWPzZoKYzIcpgZMIt1Yxqn8hE= c=1 sm=0 a=Dyoqhi_TatcA:10 a=8EU9Q7FnrCoA:10 a=T-ReAXeoMssA:10 a=Cfj4BQAnxiAA:10 a=vxtn3GpGcfsKbEmzIZ8A:9 a=Ft8UYL4EG9YA:10 a=lCJ-Iw8yx9ZBXsQu:21 a=-nT30fj0gvOav0cb:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-To: unlisted-recipients:; (no To-header on input)
+	id S1752690Ab1KJVix (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 16:38:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805Ab1KJVit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 16:38:49 -0500
+From: Matthew Garrett <mjg@redhat.com>
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] pci: Rework ASPM disable code
+Date: Thu, 10 Nov 2011 16:38:33 -0500
+Message-Id: <1320961113-5050-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 209.6.41.104
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My name is Saeed Ahmed. Sick and dying in the hospital in Dubai. I want to disburse the remain of my wealth to charity organisations in India and any country of your choice and this will benefit your effort as well. Please reply urgently with your name, age, occupation, country and phone number.
+Right now we forcibly clear ASPM state on all devices if the BIOS indicates
+that the feature isn't supported. Based on the Microsoft presentation
+"PCI Express In Depth for Windows Vista and Beyond", I'm starting to think
+that this may be an error. The implication is that unless the platform
+grants full control via _OSC, Windows will not touch any PCIe features -
+including ASPM. In that case clearing ASPM state would be an error unless
+the platform has granted us that control.
+
+This patch reworks the ASPM disabling code such that the actual clearing
+of state is triggered by a successful handoff of PCIe control to the OS.
+The general ASPM code undergoes some changes in order to ensure that the
+ability to clear the bits isn't overridden by ASPM having already been
+disabled. Further, this theoretically now allows for situations where
+only a subset of PCIe roots hand over control, leaving the others in the
+BIOS state.
+
+It's difficult to know for sure that this is the right thing to do -
+there's zero public documentation on the interaction between all of these
+components. But enough vendors enable ASPM on platforms and then set this
+bit that it seems likely that they're expecting the OS to leave them alone.
+
+Measured to save around 5W on an idle Thinkpad X220.
+
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/acpi/pci_root.c  |    7 +++++
+ drivers/pci/pci-acpi.c   |    1 -
+ drivers/pci/pcie/aspm.c  |   58 +++++++++++++++++++++++++++++----------------
+ include/linux/pci-aspm.h |    4 +-
+ 4 files changed, 46 insertions(+), 24 deletions(-)
+
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index 2672c79..7aff631 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -596,6 +596,13 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
+ 		if (ACPI_SUCCESS(status)) {
+ 			dev_info(root->bus->bridge,
+ 				"ACPI _OSC control (0x%02x) granted\n", flags);
++			if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
++				/*
++				 * We have ASPM control, but the FADT indicates
++				 * that it's unsupported. Clear it.
++				 */
++				pcie_clear_aspm(root->bus);
++			}
+ 		} else {
+ 			dev_info(root->bus->bridge,
+ 				"ACPI _OSC request failed (%s), "
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 4ecb640..c8e7585 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -395,7 +395,6 @@ static int __init acpi_pci_init(void)
+ 
+ 	if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
+ 		printk(KERN_INFO"ACPI FADT declares the system doesn't support PCIe ASPM, so disable it\n");
+-		pcie_clear_aspm();
+ 		pcie_no_aspm();
+ 	}
+ 
+diff --git a/drivers/pci/pcie/aspm.c b/drivers/pci/pcie/aspm.c
+index cbfbab1..1cfbf22 100644
+--- a/drivers/pci/pcie/aspm.c
++++ b/drivers/pci/pcie/aspm.c
+@@ -68,7 +68,7 @@ struct pcie_link_state {
+ 	struct aspm_latency acceptable[8];
+ };
+ 
+-static int aspm_disabled, aspm_force, aspm_clear_state;
++static int aspm_disabled, aspm_force;
+ static bool aspm_support_enabled = true;
+ static DEFINE_MUTEX(aspm_lock);
+ static LIST_HEAD(link_list);
+@@ -500,9 +500,6 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
+ 	int pos;
+ 	u32 reg32;
+ 
+-	if (aspm_clear_state)
+-		return -EINVAL;
+-
+ 	/*
+ 	 * Some functions in a slot might not all be PCIe functions,
+ 	 * very strange. Disable ASPM for the whole slot
+@@ -574,9 +571,6 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	    pdev->pcie_type != PCI_EXP_TYPE_DOWNSTREAM)
+ 		return;
+ 
+-	if (aspm_disabled && !aspm_clear_state)
+-		return;
+-
+ 	/* VIA has a strange chipset, root port is under a bridge */
+ 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT &&
+ 	    pdev->bus->self)
+@@ -608,7 +602,7 @@ void pcie_aspm_init_link_state(struct pci_dev *pdev)
+ 	 * the BIOS's expectation, we'll do so once pci_enable_device() is
+ 	 * called.
+ 	 */
+-	if (aspm_policy != POLICY_POWERSAVE || aspm_clear_state) {
++	if (aspm_policy != POLICY_POWERSAVE) {
+ 		pcie_config_aspm_path(link);
+ 		pcie_set_clkpm(link, policy_to_clkpm_state(link));
+ 	}
+@@ -649,8 +643,7 @@ void pcie_aspm_exit_link_state(struct pci_dev *pdev)
+ 	struct pci_dev *parent = pdev->bus->self;
+ 	struct pcie_link_state *link, *root, *parent_link;
+ 
+-	if ((aspm_disabled && !aspm_clear_state) || !pci_is_pcie(pdev) ||
+-	    !parent || !parent->link_state)
++	if (!pci_is_pcie(pdev) || !parent || !parent->link_state)
+ 		return;
+ 	if ((parent->pcie_type != PCI_EXP_TYPE_ROOT_PORT) &&
+ 	    (parent->pcie_type != PCI_EXP_TYPE_DOWNSTREAM))
+@@ -734,13 +727,18 @@ void pcie_aspm_powersave_config_link(struct pci_dev *pdev)
+  * pci_disable_link_state - disable pci device's link state, so the link will
+  * never enter specific states
+  */
+-static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem)
++static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem,
++				     bool force)
+ {
+ 	struct pci_dev *parent = pdev->bus->self;
+ 	struct pcie_link_state *link;
+ 
+-	if (aspm_disabled || !pci_is_pcie(pdev))
++	if (aspm_disabled && !force)
++		return;
++
++	if (!pci_is_pcie(pdev))
+ 		return;
++
+ 	if (pdev->pcie_type == PCI_EXP_TYPE_ROOT_PORT ||
+ 	    pdev->pcie_type == PCI_EXP_TYPE_DOWNSTREAM)
+ 		parent = pdev;
+@@ -768,16 +766,31 @@ static void __pci_disable_link_state(struct pci_dev *pdev, int state, bool sem)
+ 
+ void pci_disable_link_state_locked(struct pci_dev *pdev, int state)
+ {
+-	__pci_disable_link_state(pdev, state, false);
++	__pci_disable_link_state(pdev, state, false, false);
+ }
+ EXPORT_SYMBOL(pci_disable_link_state_locked);
+ 
+ void pci_disable_link_state(struct pci_dev *pdev, int state)
+ {
+-	__pci_disable_link_state(pdev, state, true);
++	__pci_disable_link_state(pdev, state, true, false);
+ }
+ EXPORT_SYMBOL(pci_disable_link_state);
+ 
++void pcie_clear_aspm(struct pci_bus *bus)
++{
++	struct pci_dev *child;
++
++	/*
++	 * Clear any ASPM setup that the firmware has carried out on this bus
++	 */
++	list_for_each_entry(child, &bus->devices, bus_list) {
++		__pci_disable_link_state(child, PCIE_LINK_STATE_L0S |
++					 PCIE_LINK_STATE_L1 |
++					 PCIE_LINK_STATE_CLKPM,
++					 false, true);
++	}
++}
++
+ static int pcie_aspm_set_policy(const char *val, struct kernel_param *kp)
+ {
+ 	int i;
+@@ -935,6 +948,7 @@ void pcie_aspm_remove_sysfs_dev_files(struct pci_dev *pdev)
+ static int __init pcie_aspm_disable(char *str)
+ {
+ 	if (!strcmp(str, "off")) {
++		aspm_policy = POLICY_DEFAULT;
+ 		aspm_disabled = 1;
+ 		aspm_support_enabled = false;
+ 		printk(KERN_INFO "PCIe ASPM is disabled\n");
+@@ -947,16 +961,18 @@ static int __init pcie_aspm_disable(char *str)
+ 
+ __setup("pcie_aspm=", pcie_aspm_disable);
+ 
+-void pcie_clear_aspm(void)
+-{
+-	if (!aspm_force)
+-		aspm_clear_state = 1;
+-}
+-
+ void pcie_no_aspm(void)
+ {
+-	if (!aspm_force)
++	/*
++	 * Disabling ASPM is intended to prevent the kernel from modifying
++	 * existing hardware state, not to clear existing state. To that end:
++	 * (a) set policy to POLICY_DEFAULT in order to avoid changing state
++	 * (b) prevent userspace from changing policy
++	 */
++	if (!aspm_force) {
++		aspm_policy = POLICY_DEFAULT;
+ 		aspm_disabled = 1;
++	}
+ }
+ 
+ /**
+diff --git a/include/linux/pci-aspm.h b/include/linux/pci-aspm.h
+index 7cea7b6..c832014 100644
+--- a/include/linux/pci-aspm.h
++++ b/include/linux/pci-aspm.h
+@@ -29,7 +29,7 @@ extern void pcie_aspm_pm_state_change(struct pci_dev *pdev);
+ extern void pcie_aspm_powersave_config_link(struct pci_dev *pdev);
+ extern void pci_disable_link_state(struct pci_dev *pdev, int state);
+ extern void pci_disable_link_state_locked(struct pci_dev *pdev, int state);
+-extern void pcie_clear_aspm(void);
++extern void pcie_clear_aspm(struct pci_bus *bus);
+ extern void pcie_no_aspm(void);
+ #else
+ static inline void pcie_aspm_init_link_state(struct pci_dev *pdev)
+@@ -47,7 +47,7 @@ static inline void pcie_aspm_powersave_config_link(struct pci_dev *pdev)
+ static inline void pci_disable_link_state(struct pci_dev *pdev, int state)
+ {
+ }
+-static inline void pcie_clear_aspm(void)
++static inline void pcie_clear_aspm(struct pci_bus *bus)
+ {
+ }
+ static inline void pcie_no_aspm(void)
+-- 
+1.7.7.1
 
