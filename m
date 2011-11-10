@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934472Ab1KJM6a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 07:58:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51349 "EHLO mx1.redhat.com"
+	id S934382Ab1KJM6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 07:58:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934398Ab1KJM6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 07:58:17 -0500
+	id S1757651Ab1KJM6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 07:58:09 -0500
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, avi@redhat.com, mtosatti@redhat.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl, acme@ghostprotocols.net
-Subject: [PATCHv3 03/10] KVM: Add generic RDPMC support
-Date: Thu, 10 Nov 2011 14:57:23 +0200
-Message-Id: <1320929850-10480-4-git-send-email-gleb@redhat.com>
+Subject: [PATCHv3 05/10] KVM: VMX: Intercept RDPMC
+Date: Thu, 10 Nov 2011 14:57:25 +0200
+Message-Id: <1320929850-10480-6-git-send-email-gleb@redhat.com>
 In-Reply-To: <1320929850-10480-1-git-send-email-gleb@redhat.com>
 References: <1320929850-10480-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,53 +21,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Avi Kivity <avi@redhat.com>
 
-Add a helper function that emulates the RDPMC instruction operation.
+Intercept RDPMC and forward it to the PMU emulation code.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/x86.c              |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/kvm/vmx.c |   15 ++++++++++++++-
+ 1 files changed, 14 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 5807a49..422824c 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -756,6 +756,7 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6e28d58..a6535ba 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1956,6 +1956,7 @@ static __init void nested_vmx_setup_ctls_msrs(void)
+ #endif
+ 		CPU_BASED_MOV_DR_EXITING | CPU_BASED_UNCOND_IO_EXITING |
+ 		CPU_BASED_USE_IO_BITMAPS | CPU_BASED_MONITOR_EXITING |
++		CPU_BASED_RDPMC_EXITING |
+ 		CPU_BASED_ACTIVATE_SECONDARY_CONTROLS;
+ 	/*
+ 	 * We can allow some features even when not supported by the
+@@ -2414,7 +2415,8 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
+ 	      CPU_BASED_USE_TSC_OFFSETING |
+ 	      CPU_BASED_MWAIT_EXITING |
+ 	      CPU_BASED_MONITOR_EXITING |
+-	      CPU_BASED_INVLPG_EXITING;
++	      CPU_BASED_INVLPG_EXITING |
++	      CPU_BASED_RDPMC_EXITING;
  
- unsigned long kvm_get_rflags(struct kvm_vcpu *vcpu);
- void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags);
-+bool kvm_rdpmc(struct kvm_vcpu *vcpu);
- 
- void kvm_queue_exception(struct kvm_vcpu *vcpu, unsigned nr);
- void kvm_queue_exception_e(struct kvm_vcpu *vcpu, unsigned nr, u32 error_code);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 52a8666..b88426c 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -815,6 +815,21 @@ int kvm_get_dr(struct kvm_vcpu *vcpu, int dr, unsigned long *val)
+ 	if (yield_on_hlt)
+ 		min |= CPU_BASED_HLT_EXITING;
+@@ -4615,6 +4617,16 @@ static int handle_invlpg(struct kvm_vcpu *vcpu)
+ 	return 1;
  }
- EXPORT_SYMBOL_GPL(kvm_get_dr);
  
-+bool kvm_rdpmc(struct kvm_vcpu *vcpu)
++static int handle_rdpmc(struct kvm_vcpu *vcpu)
 +{
-+	u32 ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
-+	u64 data;
 +	int err;
 +
-+	err = kvm_pmu_read_pmc(vcpu, ecx, &data);
-+	if (err)
-+		return err;
-+	kvm_register_write(vcpu, VCPU_REGS_RAX, (u32)data);
-+	kvm_register_write(vcpu, VCPU_REGS_RDX, data >> 32);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(kvm_rdpmc);
++	err = kvm_rdpmc(vcpu);
++	kvm_complete_insn_gp(vcpu, err);
 +
- /*
-  * List of msr numbers which we expose to userspace through KVM_GET_MSRS
-  * and KVM_SET_MSRS, and KVM_GET_MSR_INDEX_LIST.
++	return 1;
++}
++
+ static int handle_wbinvd(struct kvm_vcpu *vcpu)
+ {
+ 	skip_emulated_instruction(vcpu);
+@@ -5565,6 +5577,7 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_HLT]                     = handle_halt,
+ 	[EXIT_REASON_INVD]		      = handle_invd,
+ 	[EXIT_REASON_INVLPG]		      = handle_invlpg,
++	[EXIT_REASON_RDPMC]                   = handle_rdpmc,
+ 	[EXIT_REASON_VMCALL]                  = handle_vmcall,
+ 	[EXIT_REASON_VMCLEAR]	              = handle_vmclear,
+ 	[EXIT_REASON_VMLAUNCH]                = handle_vmlaunch,
 -- 
 1.7.7.1
 
