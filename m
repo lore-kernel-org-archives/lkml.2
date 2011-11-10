@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757429Ab1KJGYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 01:24:06 -0500
-Received: from mga03.intel.com ([143.182.124.21]:30670 "EHLO mga03.intel.com"
+	id S1757418Ab1KJGfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 01:35:36 -0500
+Received: from shutemov.name ([188.40.19.243]:37755 "EHLO shutemov.name"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754196Ab1KJGXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 01:23:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,487,1315206000"; 
-   d="scan'208";a="72745967"
-From: Lin Ming <ming.m.lin@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-pm@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>, Tejun Heo <tj@kernel.org>,
-        Huang Ying <ying.huang@intel.com>, Zhang Rui <rui.zhang@intel.com>
-Subject: [PATCH v2 1/4] ata: make ata port as parent device of scsi host
-Date: Thu, 10 Nov 2011 14:22:43 +0800
-Message-Id: <1320906166-15459-2-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
-References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
+	id S1754642Ab1KJGff convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 01:35:35 -0500
+Date: Thu, 10 Nov 2011 08:35:34 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [000/262] 3.0.9-stable review
+Message-ID: <20111110063534.GA22143@shutemov.name>
+References: <20111109212847.GA20838@kroah.com>
+ <20111110005406.GA22026@shutemov.name>
+ <20111110031524.GA22180@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20111110031524.GA22180@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the device tree of ata port and scsi host looks as below,
-
-        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
-        |-- ata1                                (ata port)
-        |-- host0                               (scsi host)
-           |-- target0:0:0                      (scsi target)
-               |-- 0:0:0:0                      (disk)
-
-This patch makes ata port as parent device of scsi host, then it becomes
-
-        /sys/devices/pci0000:00/0000:00:1f.2    (ahci controller)
-        |-- ata1                                (ata port)
-            |-- host0                           (scsi host)
-                |-- target0:0:0                 (scsi target)
-                    |-- 0:0:0:0                 (disk)
-
-With this change, the ata port runtime PM is easier.
-For example, the ata port runtime suspend will happen as,
-
-disk suspend --> scsi target suspend --> scsi host suspend --> ata port
-suspend.
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- drivers/ata/libata-scsi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 72a9770..4c2a524 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3394,7 +3394,7 @@ int ata_scsi_add_hosts(struct ata_host *host, struct scsi_host_template *sht)
- 		 */
- 		shost->max_host_blocked = 1;
+On Wed, Nov 09, 2011 at 07:15:24PM -0800, Greg KH wrote:
+> On Thu, Nov 10, 2011 at 02:54:07AM +0200, Kirill A. Shutemov wrote:
+> > On Wed, Nov 09, 2011 at 01:28:47PM -0800, Greg KH wrote:
+> > > This is the start of the stable review cycle for the 3.0.9 release.
+> > 
+> > Could you include these two:
+> > 
+> > a94cc4e sfi: table irq 0xFF means 'no interrupt'
+> 
+> Why was this not marked for stable?
  
--		rc = scsi_add_host(ap->scsi_host, ap->host->dev);
-+		rc = scsi_add_host(ap->scsi_host, &ap->tdev);
- 		if (rc)
- 			goto err_add;
- 	}
--- 
-1.7.2.5
+Hm.. I don't know. But the patch was queued for 3.0.5.
 
+http://lkml.org/lkml/2011/9/29/357
+
+> > 153b19a x86, mrst: use a temporary variable for SFI irq
+> 
+> Odd, I wonder how I missed this one.
+
+There's dependency on the first patch, but you've forgot our first
+conversation, I guess.
+
+> Anyway, I'll queue these up for the next 3.0 release after this one if
+> you don't mind.
+
+Ok, thank you.
+
+-- 
+ Kirill A. Shutemov
