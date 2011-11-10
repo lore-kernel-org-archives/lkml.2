@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab1KJHcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 02:32:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59904 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab1KJHcV (ORCPT
+	id S1757438Ab1KJHhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 02:37:13 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36253
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752972Ab1KJHhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 02:32:21 -0500
+	Thu, 10 Nov 2011 02:37:11 -0500
+Date: Thu, 10 Nov 2011 02:37:07 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Mitsuo Hayasaka <mitsuo.hayasaka.hu@hitachi.com>
+Cc: Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@infradead.org>,
+        yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, xfs-masters@oss.sgi.com
+Subject: Re: [PATCH] [BUGFIX] xfs: use doalloc flag in xfs_qm_dqattach_one()
+Message-ID: <20111110073707.GA5500@infradead.org>
+References: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.63.171]
-In-Reply-To: <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
- <1318850846-16066-3-git-send-email-ohad@wizery.com> <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Thu, 10 Nov 2011 09:31:57 +0200
-Message-ID: <CAK=WgbZbfCRJqA-wwHN=iLH6rYyoKjJCaL0zMfY93Tg6Jw2uvA@mail.gmail.com>
-Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
- supported by the hardware
-To: Kai Huang <mail.kai.huang@gmail.com>
-Cc: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Joerg Roedel <Joerg.Roedel@amd.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        KyongHo Cho <pullip.cho@samsung.com>, kvm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111110013310.3408.41745.stgit@ltc219.sdl.hitachi.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 8:17 AM, Kai Huang <mail.kai.huang@gmail.com> wrote:
-> Seems the unmap function don't take phys as parameter, does this mean
-> domain->ops->unmap will walk through the page table to find out the
-> actual page size?
+On Thu, Nov 10, 2011 at 10:33:10AM +0900, Mitsuo Hayasaka wrote:
+> The doalloc arg in xfs_qm_dqattach_one() is a flag that indicates
+> whether a new area to handle quota information will be allocated
+> if needed. Originally, it was passed to xfs_qm_dqget(), but has
+> been removed by the following commit (probably by mistake):
+> 
+> 	commit 8e9b6e7fa4544ea8a0e030c8987b918509c8ff47
+> 	Author: Christoph Hellwig <hch@lst.de>
+> 	Date:   Sun Feb 8 21:51:42 2009 +0100
+> 
+> 	xfs: remove the unused XFS_QMOPT_DQLOCK flag
+> 
+> As the result, xfs_qm_dqget() called from xfs_qm_dqattach_one()
+> never allocates the new area even if it is needed.
+> 
+> This patch gives the doalloc arg to xfs_qm_dqget() in
+> xfs_qm_dqattach_one() to fix this problem.
 
-The short answer is yes, and furthermore, we also consider to remove
-the size param from domain->ops->unmap entirely at some point.
+Thanks a lot, this is a good fix.  Do you have a good testcase
+showing the effect?
 
-We had a long discussion about it, please see:
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-https://lkml.org/lkml/2011/10/10/234
