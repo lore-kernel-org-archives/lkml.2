@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935444Ab1KJPdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:33:10 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37887 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933902Ab1KJPdF convert rfc822-to-8bit (ORCPT
+	id S964811Ab1KJPf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:35:27 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60456 "EHLO
+	earthlight.etchedpixels.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751465Ab1KJPfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:33:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <m3vcqsghkv.fsf@blackfin.pond.sub.org>
-References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain>
-	<4EBB4A21.20707@codemonkey.ws>
-	<alpine.LFD.2.02.1111100829560.1791@tux.localdomain>
-	<4EBBD503.4020308@codemonkey.ws>
-	<CAOJsxLH+Afuk-42aPwd9hcvhpmCD88t4-2N02M5oz8LBNZYETA@mail.gmail.com>
-	<m3vcqsghkv.fsf@blackfin.pond.sub.org>
-Date: Thu, 10 Nov 2011 15:33:04 +0000
-Message-ID: <CAJSP0QWRBE6VLskVb0rYaVO3bEB6=8=F6GsNBjQAvn68X2aD2Q@mail.gmail.com>
-Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Markus Armbruster <armbru@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Anthony Liguori <anthony@codemonkey.ws>,
+	Thu, 10 Nov 2011 10:35:24 -0500
+Date: Thu, 10 Nov 2011 15:35:50 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Jeff Garzik <jgarzik@redhat.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Andrew Morton <akpm@linux-foundation.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ata: Fix build error in pata_of_platform (NO_IRQ usage)
+Message-ID: <20111110153550.6274179d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20111110151852.GA7465@oksana.dev.rtsoft.ru>
+References: <20111011201127.455df266dcbffb1d621f8576@canb.auug.org.au>
+	<4E94A920.40503@xenotime.net>
+	<4E987829.3080104@xenotime.net>
+	<20111110135703.GA23609@elte.hu>
+	<20111110151852.GA7465@oksana.dev.rtsoft.ru>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 2:47 PM, Markus Armbruster <armbru@redhat.com> wrote:
-> Pekka Enberg <penberg@kernel.org> writes:
->
->> Hi Anthony,
->>
->> On Thu, Nov 10, 2011 at 3:43 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
->>> It's not just the qcow2 implementation or even the block layer.  This pull
->>> requests adds a userspace TCP/IP stack to the kernel and yet netdev isn't on
->>> the CC and there are no Ack's from anyone from the networking stack.  I'm
->>> fairly sure if they knew what was happening here they would object.
->>
->> It's something we consider extremely important because it allows easy
->> non-root networking. But you're right, we definitely ought to ping the
->> networking folks before the next merge window.
->
-> The problem is real.  The solution "duplicate in user space" sucks.  If
-> you engaging with the kernel networking folks leads to one that doesn't
-> suck, we should bathe you in free beer.
+> The proper fix (stop OF code from returning NO_IRQ values) is pending.
 
-Look at disks, the problem is addressed by the udisks daemon on dbus.
-Anything can try talking to it.  If you have permissions or can get
-the user to authenticate then you can manipulate LVM volumes, mount
-file systems, etc.  We could do something similar for tap networking.
+Please just apply the proper fix.
 
-The Ubuntu folks seem to want VDE instead to solve the same problem.
-Create a VDE switch with a single tap device on startup.  Then let all
-VMs talk to the VDE without privileges.
+> - The NO_IRQ disease spreads despite our willingness, even within
+>   the new OF code.
 
-I don't think going through VDE is nice or performant, would be better
-to have add virtual network functionality over dbus just like udisks
-did for disks.
+Then it can stop right here, because if the arch people don't fix their
+code to use zero their ATA port won't work.
 
-Stefan
+> +/* For archs that don't support NO_IRQ (such as x86), provide a dummy value */
+> +#ifndef NO_IRQ
+> +#define NO_IRQ 0
+> +#endif
+
+NAK - just test against zero. They've been complained at about this for
+over two years. Enough is enough.
+
+Alan
