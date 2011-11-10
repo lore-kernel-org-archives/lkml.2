@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab1KJCex (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 21:34:53 -0500
-Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:35529 "EHLO
-	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab1KJCew convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 21:34:52 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=sOeZmqKXo9QeAvPHcA4bYEQFU2ce9l+aXDqfA8Y5Yr0= c=1 sm=1
- a=PW_x9uKfeDYA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=1_6DCXOYjmeQm4JwpuIA:9
- a=501s4kXVwdMZ1av6LnEA:7 a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 15/28] ext4: Calculate and verify block bitmap checksum
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20111110005656.GX12447@tux1.beaverton.ibm.com>
-Date: Wed, 9 Nov 2011 19:34:49 -0700
-Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <EA5A731D-14B2-43B9-9F6E-89B10AB21558@dilger.ca>
-References: <20111008075343.20506.23155.stgit@elm3c44.beaverton.ibm.com> <20111008075522.20506.22239.stgit@elm3c44.beaverton.ibm.com> <AE869D1A-2A06-4849-8752-74924B0C05BD@dilger.ca> <20111013071631.GQ12447@tux1.beaverton.ibm.com> <20111107200008.GW12447@tux1.beaverton.ibm.com> <EEB33371-CE71-4283-A5B1-E09083F08DCB@dilger.ca> <20111110005656.GX12447@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
+	id S1757002Ab1KJChA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 21:37:00 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23410 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754025Ab1KJCg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 21:36:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
+   d="scan'208";a="83227815"
+Subject: Re: [patch 5/5]thp: split huge page if head page is isolated
+From: Shaohua Li <shaohua.li@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "aarcange@redhat.com" <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        mel <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20111110022306.GA8082@barrios-laptop.redhat.com>
+References: <20111029000624.GA1261@barrios-laptop.redhat.com>
+	 <1320024088.22361.176.camel@sli10-conroe>
+	 <20111031082317.GA21440@barrios-laptop.redhat.com>
+	 <1320051813.22361.182.camel@sli10-conroe>
+	 <1320203876.22361.192.camel@sli10-conroe>
+	 <20111108085952.GA15142@barrios-laptop.redhat.com>
+	 <1320816475.22361.216.camel@sli10-conroe>
+	 <20111109062807.GA15525@barrios-laptop.redhat.com>
+	 <1320822509.22361.217.camel@sli10-conroe>
+	 <1320890830.22361.226.camel@sli10-conroe>
+	 <20111110022306.GA8082@barrios-laptop.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Nov 2011 10:46:07 +0800
+Message-ID: <1320893167.22361.237.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-11-09, at 5:57 PM, Darrick J. Wong wrote:
-> On Mon, Nov 07, 2011 at 02:44:02PM -0700, Andreas Dilger wrote:
->> On 2011-11-07, at 1:00 PM, Darrick J. Wong wrote:
->>> On Thu, Oct 13, 2011 at 12:16:31AM -0700, Darrick J. Wong wrote:
->>>> On Wed, Oct 12, 2011 at 06:00:40PM -0600, Andreas Dilger wrote:
->>>>> I've been thinking a while that we should add per-group error flags
->>>>> for the block and inode bitmaps.  That way, if we detect errors with
->>>>> either one, we can set the flag in the group descriptor and avoid
->>>>> using it for any allocations in the future.  Otherwise, we try to
->>>>> read the bitmap in repeatedly.
->>>> 
->>>> I think there's some code in ext4 somewhere that does that.  I also
->>>> wonder if the possibility that we're seeing a transient corruption
->>>> error is worth rechecking the block until it fails?  (I suspect not,
->>>> but I decided to throw that out there anyway.)
->>> 
->>> There's a bit of code in ext4_init_block_bitmap that makes a block group
->>> unwritable if the bg checksum fails to verify:
->>> 
->>> /* If checksum is bad mark all blocks used to prevent allocation
->>>  * essentially implementing a per-group read-only flag. */
->>> if (!ext4_group_desc_csum_verify(sbi, block_group, gdp)) {
->>> 	ext4_error(sb, "Checksum bad for group %u",
->>> 			block_group);
->>> 	ext4_free_blks_set(sb, gdp, 0);
->>> 	ext4_free_inodes_set(sb, gdp, 0);
->>> 	ext4_itable_unused_set(sb, gdp, 0);
->>> 	memset(bh->b_data, 0xff, sb->s_blocksize);
->>> 	ext4_block_bitmap_csum_set(sb, block_group, gdp, bh,
->>> 				   EXT4_BLOCKS_PER_GROUP(sb) /
->>> 				   8);
->>> 	return 0;
->>> }
->>> 
->>> Do people think that doing this in the event of a block/inode bitmap
->>> checksum failure is a good idea?
->> 
->> For me, yes.  The sanity checks we do on the block bitmaps are only very
->> basic (e.g. bits for bitmaps themselves are set, for inode table).  Blocking
->> any allocation from a single group with a bad checksum is not harmful in the
->> long term, and can avoid an explosion of corruption if blocks would otherwise
->> be allocated multiple times.
+On Thu, 2011-11-10 at 10:23 +0800, Minchan Kim wrote:
+> So long contents.
+> Let's remove it.
 > 
-> On second thought, let's see what happens with groups that fail checksums ...
-> it seems that ext4_check_descriptors() fails the mount in the event of a group
-> descriptor failing checksum.  Both ext4_read_inode_bitmap() and
-> ext4_read_block_bitmap() return NULL if the respective bitmap fails checksum.
-> It looks like most of ext4's block {de,}allocate functions will fail on NULL
-> bitmap pointer, so it shouldn't be possible to allocate (or deallocate) from a
-> broken group.
+> On Thu, Nov 10, 2011 at 10:07:10AM +0800, Shaohua Li wrote:
 > 
+> <snip>
+> 
+> > > > Coudn't we make both sides good?
+> > > > 
+> > > > Here is my quick patch.
+> > > > How about this?
+> > > > It doesn't split THPs in page_list but still reclaims non-THPs so
+> > > > I think it doesn't changed old behavior a lot.
+> > > I like this idea, will do some test soon.
+> > hmm, this doesn't work as expected. The putback_lru_page() messes lru.
+> > This isn't a problem if the page will be written since
+> > rotate_reclaimable_page() will fix the order. I got worse data than my
+> > v2 patch, eg, more thp_fallbacks, mess lru order, more pages are
+> > scanned. We could add something like putback_lru_page_tail, but I'm not
+> 
+> Hmm, It's not LRU mess problem. but it's just guessing and you might be right
+> because you have a workload and can test it.
+> 
+> My guessing is that cull_mlocked reset synchronus page reclaim.
+> Could you test this patch, again?
+no, I traced it, and lru mess. putback_lru_page() adds the page to lru
+head instead of tail.
 
-> There is one small deficiency: we need an explicit flag that marks the group
-> dead.  That way if either bitmap fails checksum, the other _bitmap_read()
-> function will know to just return NULL, and the group becomes totally frozen to
-> allocation activity.
+> And, if the problem cause by LRU mess, I think it is valuable with adding putback_lru_page_tail
+> because thp added lru_add_page_tail, too.
+I want to put all remaining pages back to lru tail if a huge page is
+split, because enough pages are reclaimed. So this needs adding
+something like putback_lru_pages_tail(), not complicated, but a lot of
+code. And if there are parallel reclaimer, we still have lru mess. My
+test already shows it. Still worthy?
 
-These could be stored in the group flags, bg_flags, like the UNINIT bits.
-Since the group descriptors are pinned in memory there is no need to
-re-read the group (and fail) again.  If it is written to disk, then e2fsck
-can clear it.
-
-> I think ext4_new_inode() need to be taught to continue scanning groups if it
-> encounters a "dead" group?  I'm not sure yet if the same thing needs to be
-> applied to the block allocation code.
-
-It would be nice, for the case of bitmap checksum errors at least that the
-allocator just chose the next block group and continued on running, though
-it should also mark the superblock error flag.
-
-If things are so bad that the device is completely unreadable, all of the block
-groups would quickly be marked in error and the filesystem is now aborted like
-it would have been previously.
-
-> I'm actually wondering how it is that a group could pass checksum verification
-> at mount time but fail it later, which is what that code snippet seems designed
-> to catch.  Maybe something related to online resize?   Either way, I'm now
-> wondering if we really need something like that for the simple case of bitmaps
-> failing checksum.  I think we're already covered, but maybe I missed something?
-
-Hmm, I guess the only way that this might be hit is via memory corruption?
-I never really thought about it.  I guess it isn't harmful to check, and in
-case of an in-memory corruption, it does call ext4_error() and typically
-marks the filesystem read-only.
-
-For inode and block bitmaps, however, I've seen corruption in a lot of cases.
-Sometimes the simple checks catch this, but having a proper checksum would be
-a lot more reassuring.
-
-Cheers, Andreas
-
-
-
-
+Thanks,
+Shaohua
 
