@@ -1,79 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757356Ab1KJGFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 01:05:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64939 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757280Ab1KJGFS (ORCPT
+	id S1757334Ab1KJGI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 01:08:29 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62775 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab1KJGI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 01:05:18 -0500
-Date: Thu, 10 Nov 2011 14:04:08 +0800
-From: wangyanqing <udknight@gmail.com>
-To: gregkh@suse.de
-Cc: wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH]usb: serial: pl2303: rm id
-Message-ID: <20111110060408.GA25028@udknight.homenetwork>
-Mail-Followup-To: wangyanqing <Udknight@gmail.com>, gregkh@suse.de,
-	wd@denx.de, stable@kernel.org, linux-kernel@vger.kernel.org
+	Thu, 10 Nov 2011 01:08:28 -0500
+Date: Wed, 9 Nov 2011 22:08:25 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/5]thp: improve the error code path
+In-Reply-To: <1320904609.22361.239.camel@sli10-conroe>
+Message-ID: <alpine.DEB.2.00.1111092205400.2384@chino.kir.corp.google.com>
+References: <1319511521.22361.135.camel@sli10-conroe> <20111025114406.GC10182@redhat.com> <1319593680.22361.145.camel@sli10-conroe> <1320643049.22361.204.camel@sli10-conroe> <20111110021853.GQ5075@redhat.com> <1320892395.22361.229.camel@sli10-conroe>
+ <alpine.DEB.2.00.1111091828500.32414@chino.kir.corp.google.com> <20111110030646.GT5075@redhat.com> <alpine.DEB.2.00.1111092039110.27280@chino.kir.corp.google.com> <1320904609.22361.239.camel@sli10-conroe>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get report from customer that his usb-serial
-converter doesn't work well,it sometimes work,
-but sometimes it doesn't.
+On Thu, 10 Nov 2011, Shaohua Li wrote:
 
-The usb-serial converter's id:
-vendor_id product_id
-0x4348    0x5523
+> Index: linux/mm/huge_memory.c
+> ===================================================================
+> --- linux.orig/mm/huge_memory.c	2011-11-07 13:52:48.000000000 +0800
+> +++ linux/mm/huge_memory.c	2011-11-10 13:52:08.000000000 +0800
+> @@ -487,41 +487,68 @@ static struct attribute_group khugepaged
+>  	.attrs = khugepaged_attr,
+>  	.name = "khugepaged",
+>  };
+> -#endif /* CONFIG_SYSFS */
+>  
+> -static int __init hugepage_init(void)
+> +static struct kobject *hugepage_kobj;
+> +static int __init hugepage_init_sysfs(void)
+>  {
+>  	int err;
+> -#ifdef CONFIG_SYSFS
+> -	static struct kobject *hugepage_kobj;
+> -#endif
+>  
+> -	err = -EINVAL;
+> -	if (!has_transparent_hugepage()) {
+> -		transparent_hugepage_flags = 0;
+> -		goto out;
+> -	}
+> -
+> -#ifdef CONFIG_SYSFS
+> -	err = -ENOMEM;
+>  	hugepage_kobj = kobject_create_and_add("transparent_hugepage", mm_kobj);
+>  	if (unlikely(!hugepage_kobj)) {
+>  		printk(KERN_ERR "hugepage: failed kobject create\n");
+> -		goto out;
+> +		return -ENOMEM;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &hugepage_attr_group);
+>  	if (err) {
+>  		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> -		goto out;
+> +		goto delete_obj;
+>  	}
+>  
+>  	err = sysfs_create_group(hugepage_kobj, &khugepaged_attr_group);
+>  	if (err) {
+>  		printk(KERN_ERR "hugepage: failed register hugeage group\n");
+> -		goto out;
+> +		goto remove_hp_group;
+>  	}
+> -#endif
+> +
+> +	return 0;
+> +
+> +remove_hp_group:
+> +	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
+> +delete_obj:
+> +	kobject_put(hugepage_kobj);
+> +	return err;
+> +}
+> +
+> +static void __init hugepage_exit_sysfs(void)
+> +{
+> +	sysfs_remove_group(hugepage_kobj, &khugepaged_attr_group);
+> +	sysfs_remove_group(hugepage_kobj, &hugepage_attr_group);
+> +	kobject_put(hugepage_kobj);
+> +}
 
-Then I search the usb-serial codes, and there are
-two drivers announce support this device, pl2303
-and ch341, commit 026dfaf1 cause it. Through many
-times to test, ch341 works well with this device,
-and pl2303 doesn't work quite often(it just work quite little).
+As mentioned previously, if khugepaged_slab_init() and 
+mm_slots_hash_init() is done first before sysfs is initialized, then you 
+shouldn't need hugepage_exit_sysfs() at all; all its error handling should 
+be localized to hugepage_init().
 
-ch341 works well with this device, so we doesn't
-need pl2303 to support.I try to revert 026dfaf1 first,
-but it failed. So I prepare this patch by hand to revert it.
-
-Signed-off-by: Wang YanQing <Udknight@gmail.com>
----
- drivers/usb/serial/pl2303.c |    1 -
- drivers/usb/serial/pl2303.h |    4 ----
- 2 files changed, 0 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
-index 9083d1e..fc2d66f 100644
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -91,7 +91,6 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(SONY_VENDOR_ID, SONY_QN3USB_PRODUCT_ID) },
- 	{ USB_DEVICE(SANWA_VENDOR_ID, SANWA_PRODUCT_ID) },
- 	{ USB_DEVICE(ADLINK_VENDOR_ID, ADLINK_ND6530_PRODUCT_ID) },
--	{ USB_DEVICE(WINCHIPHEAD_VENDOR_ID, WINCHIPHEAD_USBSER_PRODUCT_ID) },
- 	{ USB_DEVICE(SMART_VENDOR_ID, SMART_PRODUCT_ID) },
- 	{ }					/* Terminating entry */
- };
-diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
-index 3d10d7f..c38b8c0 100644
---- a/drivers/usb/serial/pl2303.h
-+++ b/drivers/usb/serial/pl2303.h
-@@ -145,10 +145,6 @@
- #define ADLINK_VENDOR_ID		0x0b63
- #define ADLINK_ND6530_PRODUCT_ID	0x6530
- 
--/* WinChipHead USB->RS 232 adapter */
--#define WINCHIPHEAD_VENDOR_ID		0x4348
--#define WINCHIPHEAD_USBSER_PRODUCT_ID	0x5523
--
- /* SMART USB Serial Adapter */
- #define SMART_VENDOR_ID	0x0b8c
- #define SMART_PRODUCT_ID	0x2303
--- 
-1.7.3.4
-
+> +#else
+> +static inline int hugepage_init_sysfs(void)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void hugepage_exit_sysfs(void)
+> +{
+> +}
+> +#endif /* CONFIG_SYSFS */
+> +
+> +static int __init hugepage_init(void)
+> +{
+> +	int err;
+> +
+> +	if (!has_transparent_hugepage()) {
+> +		transparent_hugepage_flags = 0;
+> +		return -EINVAL;
+> +	}
+> +
+> +	err = hugepage_init_sysfs();
+> +	if (err)
+> +		return err;
+>  
+>  	err = khugepaged_slab_init();
+>  	if (err)
+> @@ -545,7 +572,9 @@ static int __init hugepage_init(void)
+>  
+>  	set_recommended_min_free_kbytes();
+>  
+> +	return 0;
+>  out:
+> +	hugepage_exit_sysfs();
+>  	return err;
+>  }
+>  module_init(hugepage_init)
