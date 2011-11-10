@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab1KJAPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:15:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34062 "EHLO
+	id S933344Ab1KJAWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:22:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44623 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754977Ab1KJAPl (ORCPT
+	with ESMTP id S1756614Ab1KJAWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:15:41 -0500
-Date: Wed, 9 Nov 2011 16:15:39 -0800
+	Wed, 9 Nov 2011 19:22:15 -0500
+Date: Wed, 9 Nov 2011 16:22:14 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Cc: <linux-kernel@vger.kernel.org>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        Frank Zago <fzago@systemfabricworks.com>
-Subject: Re: [PATCH] crc32: Optimize inner loop.
-Message-Id: <20111109161539.b2cdf381.akpm@linux-foundation.org>
-In-Reply-To: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se>
-References: <1320312505-30612-1-git-send-email-Joakim.Tjernlund@transmode.se>
+To: Ying Han <yinghan@google.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: [PATCH] memcg: doc the pagefault count
+Message-Id: <20111109162214.5f787d23.akpm@linux-foundation.org>
+In-Reply-To: <CALWz4iyRARGMZWQB6topgLxuPcub9ZDAjZ0dw8O1a97Ax8iwJg@mail.gmail.com>
+References: <1320398121-17336-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	<20111109144456.df8e4ccc.akpm@linux-foundation.org>
+	<CALWz4iyRARGMZWQB6topgLxuPcub9ZDAjZ0dw8O1a97Ax8iwJg@mail.gmail.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,74 +26,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Nov 2011 10:28:25 +0100
-Joakim Tjernlund <Joakim.Tjernlund@transmode.se> wrote:
+On Wed, 9 Nov 2011 16:05:36 -0800
+Ying Han <yinghan@google.com> wrote:
 
-> taking a pointer reference to each row in the crc table matrix,
-> one can reduce the inner loop with a few insn's
+> On Wed, Nov 9, 2011 at 2:44 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > On Fri, 4 Nov 2011 17:15:21 +0800
+> > Wanlong Gao <gaowanlong@cn.fujitsu.com> wrote:
+> >
+> > > Pagefault count has added to memcg stats since commit 456f998e,
+> > > but forgot to doc it.
+> > >
+> > > Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > > ---
+> > >  Documentation/cgroups/memory.txt |    7 +++++++
+> > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> > > index cc0ebc5..081f4f44 100644
+> > > --- a/Documentation/cgroups/memory.txt
+> > > +++ b/Documentation/cgroups/memory.txt
+> > > @@ -389,6 +389,13 @@ mapped_file      - # of bytes of mapped file (includes tmpfs/shmem)
+> > >  pgpgin               - # of pages paged in (equivalent to # of charging events).
+> > >  pgpgout              - # of pages paged out (equivalent to # of uncharging events).
+> > >  swap         - # of bytes of swap usage
+> > > +
+> > > +pgfault              - # of page-faults
+> > > +pgmajfault   - # of major page-faults
+> > > +             These two are different from "pgpgin"/"pgpgout" stat which
+> > > +             count number of pages charged/discharged to the cgroup and
+> > > +             have no meaning of reading/writing page to disk.
+> > > +
+> > >  inactive_anon        - # of bytes of anonymous memory and swap cache memory on
+> >
+> > OK, but the documentation was already rather poor.
+> >
+> > For a start, what do pgpgin and pgpgout actually count?  How about
+> >
+> > pgpgin: the number of pages read from disk as a result of pagefault
+> > activity within this memcg (swapin and mapped-file pagein).  Does not
+> > include other causes of disk I/O such as read().
+> >
+> > pgpgout: the number of pages written to disk as a result of swap and
+> > mapped-file activity within this memcg.  Does not include other causes
+> > of disk I/O such as write().
+> >
+> > (I'm really not sure if this is correct!)
 > 
-> Signed-off-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
+>  Andrew,
+> I am afraid those two stats in memcg world have different perspective
+> than the ones in vmstat.
 
-As we have other developers who have previously shown an interest in
-the crc32 code it is a good idea to cc them on future patches to get a
-bit more review and perhaps testing input.
+Wow.  Ouch.
 
-This patch seems fairly harmless.  Some runtime testing results would
-have been appropriate.
+> They are only incremented/decremented during
+> charge/uncharge, which is regardless of having IO involved. The
+> existing documentation isn't that clear i agree. How about:
+> 
+>  pgpgin         - # of 4k page charging events to the memory cgroup
+>  pgpgout       - # of 4k page uncharging events to the memory cgroup
 
-Also, something like "reduce a few insns" is extremely easy to
-substantiate, so why not do it?  With my compiler, the patch reduces
-the crc32.o text by 22 bytes.
+Did we tell readers what a "charging event" is?
 
->  As the slice by 8 CRC32 optimizations seems stalled, I figured
->  I send in this generic one.
+What do these numbers represent if the machine is using 16k pages?
 
-I meant to ask about that.  The discussion was fairly long and complex
-and I'm now unsure whether the patch I have is a still up-to-date,
-whether it is a good one, whether it has additional testing results,
-etc.
-
-So probably the best thing to do now is for me to drop it.  Please
-resend when convenient.  Be sure to cc all previous reviewers and also
-update the changelog to cover any important issues which were
-brought up in the review.  This is to show what the issues were, how
-they were addressed, etc.
-
-Thanks.
-
-> index 4855995..b06d1e7 100644
-> --- a/lib/crc32.c
-> +++ b/lib/crc32.c
-> @@ -51,20 +51,21 @@ static inline u32
->  crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
->  {
->  # ifdef __LITTLE_ENDIAN
-> -#  define DO_CRC(x) crc = tab[0][(crc ^ (x)) & 255] ^ (crc >> 8)
-> -#  define DO_CRC4 crc = tab[3][(crc) & 255] ^ \
-> -		tab[2][(crc >> 8) & 255] ^ \
-> -		tab[1][(crc >> 16) & 255] ^ \
-> -		tab[0][(crc >> 24) & 255]
-> +#  define DO_CRC(x) crc = t0[(crc ^ (x)) & 255] ^ (crc >> 8)
-> +#  define DO_CRC4 crc = t3[(crc) & 255] ^ \
-> +		t2[(crc >> 8) & 255] ^ \
-> +		t1[(crc >> 16) & 255] ^ \
-> +		t0[(crc >> 24) & 255]
->  # else
-> -#  define DO_CRC(x) crc = tab[0][((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
-> -#  define DO_CRC4 crc = tab[0][(crc) & 255] ^ \
-> -		tab[1][(crc >> 8) & 255] ^ \
-> -		tab[2][(crc >> 16) & 255] ^ \
-> -		tab[3][(crc >> 24) & 255]
-> +#  define DO_CRC(x) crc = t0[((crc >> 24) ^ (x)) & 255] ^ (crc << 8)
-> +#  define DO_CRC4 crc = t0[(crc) & 255] ^ \
-> +		t1[(crc >> 8) & 255] ^  \
-> +		t2[(crc >> 16) & 255] ^	\
-> +		t3[(crc >> 24) & 255]
->  # endif
->  	const u32 *b;
->  	size_t    rem_len;
-> +	const u32 *t0=tab[0], *t1=tab[1], *t2=tab[2], *t3=tab[3];
->  
->  	/* Align it */
->  	if (unlikely((long)buf & 3 && len)) {
+And what do pgfault/pgmajfault mean within memcg?  I now fear to ask -
+given the pgpgin/pgpgout situation, these are probably related to my
+shampoo viscosity or something :(
 
