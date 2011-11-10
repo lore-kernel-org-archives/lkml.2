@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260Ab1KJMIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 07:08:54 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34243 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753112Ab1KJMIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 07:08:52 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Thu, 10 Nov 2011 13:11:31 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-References: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
-In-Reply-To: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
+	id S1757626Ab1KJMRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 07:17:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53468 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753184Ab1KJMRO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 07:17:14 -0500
+Message-ID: <4EBBC090.4070109@gmail.com>
+Date: Thu, 10 Nov 2011 20:16:16 +0800
+From: cody <mail.kai.huang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.16) Gecko/20110704 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: iommu@lists.linux-foundation.org, linux-omap@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Joerg Roedel <Joerg.Roedel@amd.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-arm-kernel@lists.infradead.org,
+        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Hiroshi Doyu <hdoyu@nvidia.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        KyongHo Cho <pullip.cho@samsung.com>, kvm@vger.kernel.org
+Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as supported
+ by the hardware
+References: <1318850846-16066-1-git-send-email-ohad@wizery.com> <1318850846-16066-3-git-send-email-ohad@wizery.com> <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com> <CAK=WgbZbfCRJqA-wwHN=iLH6rYyoKjJCaL0zMfY93Tg6Jw2uvA@mail.gmail.com>
+In-Reply-To: <CAK=WgbZbfCRJqA-wwHN=iLH6rYyoKjJCaL0zMfY93Tg6Jw2uvA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111101311.32012.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 10, 2011, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> mm/oom_kill.c: In function 'select_bad_process':
-> mm/oom_kill.c:326:5: error: implicit declaration of function 'thaw_process'
-> 
-> Caused by commit 944e192db53c ("freezer: rename thaw_process() to
-> __thaw_task() and simplify the implementation").
-> 
-> I have used the pm tree from next-20111109 for today.
+On 11/10/2011 03:31 PM, Ohad Ben-Cohen wrote:
+> On Thu, Nov 10, 2011 at 8:17 AM, Kai Huang<mail.kai.huang@gmail.com>  wrote:
+>    
+>> Seems the unmap function don't take phys as parameter, does this mean
+>> domain->ops->unmap will walk through the page table to find out the
+>> actual page size?
+>>      
+> The short answer is yes, and furthermore, we also consider to remove
+> the size param from domain->ops->unmap entirely at some point.
+>
+> We had a long discussion about it, please see:
+>
+> https://lkml.org/lkml/2011/10/10/234
+>    
+Yes I've seen your discussion, I followed this thread from beginning:)
 
-Thanks, I'll drop pm-freezer from my linux-next branch until that issue is
-fixed.
+How about the IOTLB flush? As I said I think we need to consider that 
+IOMMU (even does not exist now) may have some limitation on IOTLB flush, 
+and hiding page size from IOTLB flush code may hurt performance, or even 
+worse, trigger undefined behaviors.
 
-Rafael
+-cody
