@@ -1,115 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933941Ab1KJJHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 04:07:40 -0500
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:54092 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933598Ab1KJJHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 04:07:34 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <jaxboe@fusionio.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>, <stable@kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] backing-dev: ensure wakeup_timer is deleted
-Date: Thu, 10 Nov 2011 10:07:05 +0100
-Message-ID: <1320916025-20264-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S933954Ab1KJJKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 04:10:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24921 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932184Ab1KJJKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 04:10:32 -0500
+Message-ID: <4EBB94D9.30906@redhat.com>
+Date: Thu, 10 Nov 2011 11:09:45 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sasha Levin <levinsasha928@gmail.com>
+CC: Markus Armbruster <armbru@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Anthony Liguori <anthony@codemonkey.ws>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [RFC/GIT PULL] Linux KVM tool for v3.2
+References: <alpine.LFD.2.02.1111041037290.16959@tux.localdomain> <4EBB4A21.20707@codemonkey.ws> <alpine.LFD.2.02.1111100829560.1791@tux.localdomain> <m3pqh0tnoi.fsf@blackfin.pond.sub.org> <CA+1xoqe22z9F3ZyFG_XnV9Y17HtkeSxtf1gbW4+CW1cuNQ=N5g@mail.gmail.com> <m3fwhws6ci.fsf@blackfin.pond.sub.org> <CA+1xoqc7f-2azcjuLB_i_C_CCDt+gPqJe=SB5MmOiM0y6uY_cg@mail.gmail.com>
+In-Reply-To: <CA+1xoqc7f-2azcjuLB_i_C_CCDt+gPqJe=SB5MmOiM0y6uY_cg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+On 11/10/2011 11:04 AM, Sasha Levin wrote:
+> On Thu, Nov 10, 2011 at 10:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
+> > Sasha Levin <levinsasha928@gmail.com> writes:
+> >
+> >> On Thu, Nov 10, 2011 at 9:57 AM, Markus Armbruster <armbru@redhat.com> wrote:
+> > [...]
+> >>> Start with a clean read/write raw image.  Probing declares it raw.
+> >>> Guest writes QCOW signature to it, with a backing file of its choice.
+> >>>
+> >>> Restart with the same image.  Probing declares it QCOW2.  Guest can read
+> >>> the backing file.  Oops.
+> >>
+> >> Thats an excellent scenario why you'd want to have 'Secure KVM' with
+> >> seccomp filters :)
+> >
+> > Yup.
+> >
+> > For what it's worth, sVirt (use SELinux to secure virtualization)
+> > mitigates the problem.  Doesn't mean we couldn't use "Secure KVM".
+>
+> How does it do it do that? You have a hypervisor trying to read
+> arbitrary files on the host FS, no?
 
-bdi_prune_sb() in bdi_unregister() attempts to removes the bdi links
-from all super_blocks and then del_timer_sync() the writeback timer.
+Trying and failing.  sVirt will deny access to all files except those
+explicitly allowed by libvirt.
 
-However, this can race with __mark_inode_dirty(), leading to
-bdi_wakeup_thread_delayed() rearming the writeback timer on the bdi
-we're unregistering, after we've called del_timer_sync().
-
-This can end up with the bdi being freed with an active timer inside it,
-as in the case of the following dump after the removal of an SD card.
-
-Fix this by redoing the del_timer_sync() in bdi_destory().
-
- ------------[ cut here ]------------
- WARNING: at /home/rabin/kernel/arm/lib/debugobjects.c:262 debug_print_object+0x9c/0xc8()
- ODEBUG: free active (active state 0) object type: timer_list hint: wakeup_timer_fn+0x0/0x180
- Modules linked in:
- Backtrace:
- [<c00109dc>] (dump_backtrace+0x0/0x110) from [<c0236e4c>] (dump_stack+0x18/0x1c)
-  r6:c02bc638 r5:00000106 r4:c79f5d18 r3:00000000
- [<c0236e34>] (dump_stack+0x0/0x1c) from [<c0025e6c>] (warn_slowpath_common+0x54/0x6c)
- [<c0025e18>] (warn_slowpath_common+0x0/0x6c) from [<c0025f28>] (warn_slowpath_fmt+0x38/0x40)
-  r8:20000013 r7:c780c6f0 r6:c031613c r5:c780c6f0 r4:c02b1b29
- r3:00000009
- [<c0025ef0>] (warn_slowpath_fmt+0x0/0x40) from [<c015eb4c>] (debug_print_object+0x9c/0xc8)
-  r3:c02b1b29 r2:c02bc662
- [<c015eab0>] (debug_print_object+0x0/0xc8) from [<c015f574>] (debug_check_no_obj_freed+0xac/0x1dc)
-  r6:c7964000 r5:00000001 r4:c7964000
- [<c015f4c8>] (debug_check_no_obj_freed+0x0/0x1dc) from [<c00a9e38>] (kmem_cache_free+0x88/0x1f8)
- [<c00a9db0>] (kmem_cache_free+0x0/0x1f8) from [<c014286c>] (blk_release_queue+0x70/0x78)
- [<c01427fc>] (blk_release_queue+0x0/0x78) from [<c015290c>] (kobject_release+0x70/0x84)
-  r5:c79641f0 r4:c796420c
- [<c015289c>] (kobject_release+0x0/0x84) from [<c0153ce4>] (kref_put+0x68/0x80)
-  r7:00000083 r6:c74083d0 r5:c015289c r4:c796420c
- [<c0153c7c>] (kref_put+0x0/0x80) from [<c01527d0>] (kobject_put+0x48/0x5c)
-  r5:c79643b4 r4:c79641f0
- [<c0152788>] (kobject_put+0x0/0x5c) from [<c013ddd8>] (blk_cleanup_queue+0x68/0x74)
-  r4:c7964000
- [<c013dd70>] (blk_cleanup_queue+0x0/0x74) from [<c01a6370>] (mmc_blk_put+0x78/0xe8)
-  r5:00000000 r4:c794c400
- [<c01a62f8>] (mmc_blk_put+0x0/0xe8) from [<c01a64b4>] (mmc_blk_release+0x24/0x38)
-  r5:c794c400 r4:c0322824
- [<c01a6490>] (mmc_blk_release+0x0/0x38) from [<c00de11c>] (__blkdev_put+0xe8/0x170)
-  r5:c78d5e00 r4:c74083c0
- [<c00de034>] (__blkdev_put+0x0/0x170) from [<c00de2c0>] (blkdev_put+0x11c/0x12c)
-  r8:c79f5f70 r7:00000001 r6:c74083d0 r5:00000083 r4:c74083c0
- r3:00000000
- [<c00de1a4>] (blkdev_put+0x0/0x12c) from [<c00b0724>] (kill_block_super+0x60/0x6c)
-  r7:c7942300 r6:c79f4000 r5:00000083 r4:c74083c0
- [<c00b06c4>] (kill_block_super+0x0/0x6c) from [<c00b0a94>] (deactivate_locked_super+0x44/0x70)
-  r6:c79f4000 r5:c031af64 r4:c794dc00 r3:c00b06c4
- [<c00b0a50>] (deactivate_locked_super+0x0/0x70) from [<c00b1358>] (deactivate_super+0x6c/0x70)
-  r5:c794dc00 r4:c794dc00
- [<c00b12ec>] (deactivate_super+0x0/0x70) from [<c00c88b0>] (mntput_no_expire+0x188/0x194)
-  r5:c794dc00 r4:c7942300
- [<c00c8728>] (mntput_no_expire+0x0/0x194) from [<c00c95e0>] (sys_umount+0x2e4/0x310)
-  r6:c7942300 r5:00000000 r4:00000000 r3:00000000
- [<c00c92fc>] (sys_umount+0x0/0x310) from [<c000d940>] (ret_fast_syscall+0x0/0x30)
- ---[ end trace e5c83c92ada51c76 ]---
-
-Cc: stable@kernel.org
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- mm/backing-dev.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index a086064..71034f4 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -724,6 +724,14 @@ void bdi_destroy(struct backing_dev_info *bdi)
- 
- 	bdi_unregister(bdi);
- 
-+	/*
-+	 * If bdi_unregister() had already been called earlier, the
-+	 * wakeup_timer could still be armed because bdi_prune_sb()
-+	 * can race with the bdi_wakeup_thread_delayed() calls from
-+	 * __mark_inode_dirty().
-+	 */
-+	del_timer_sync(&bdi->wb.wakeup_timer);
-+
- 	for (i = 0; i < NR_BDI_STAT_ITEMS; i++)
- 		percpu_counter_destroy(&bdi->bdi_stat[i]);
- 
 -- 
-1.7.3.2
+error compiling committee.c: too many arguments to function
 
