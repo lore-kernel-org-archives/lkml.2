@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934465Ab1KJNMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:12:15 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57061 "EHLO
+	id S934518Ab1KJNMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:12:36 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57064 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932585Ab1KJNMO (ORCPT
+	with ESMTP id S932585Ab1KJNMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:12:14 -0500
+	Thu, 10 Nov 2011 08:12:35 -0500
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 2/2] serial, mfd: don't hardcode the console
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Thu, 10 Nov 2011 13:18:09 +0000
-Message-ID: <20111110131807.13023.54577.stgit@bob.linux.org.uk>
-In-Reply-To: <20111110131752.13023.60767.stgit@bob.linux.org.uk>
-References: <20111110131752.13023.60767.stgit@bob.linux.org.uk>
+Subject: [PATCH] vrtc: change its year offset from 1960 to 1972
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Thu, 10 Nov 2011 13:23:39 +0000
+Message-ID: <20111110132202.14819.11350.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,139 +20,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+[This has been sent several times to rtc people with no response over
+ months, so it's now going direct. It only affects Intel MID devices]
 
-Add support to specify which HSU port to use as an early console. This can
-be selected by passing "earlyprintk=hsu<n>" on the kernel command line. By
-default port 0 is still used.
+From: Feng Tang <feng.tang@intel.com>
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Real world year equals the value in vrtc YEAR register plus an offset.
+We used 1960 as the offset to make leap year consistent, but for a
+device's first use, its YEAR register is 0 and the system year will
+be parsed as 1960 which is not a valid UNIX time and will cause many
+applications to fail mysteriously. So we use 1972 instead to fix this
+issue.
+
+Updated patch which adds a sanity check suggested by Mathias
+
+This isn't a change in behaviour for systems, because 1972 is the one we
+actually use. It's the old version in upstream which is out of sync with
+all devices.
+
+Signed-off-by: Feng Tang <feng.tang@intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- arch/x86/include/asm/mrst.h                |    2 +-
- arch/x86/kernel/early_printk.c             |    2 +-
- arch/x86/platform/mrst/early_printk_mrst.c |   16 ++++++++++++----
- drivers/tty/serial/mfd.c                   |   18 +++++++-----------
- 4 files changed, 21 insertions(+), 17 deletions(-)
+ arch/x86/platform/mrst/vrtc.c |    4 ++--
+ drivers/rtc/rtc-mrst.c        |   19 +++++++++++--------
+ 2 files changed, 13 insertions(+), 10 deletions(-)
 
 
-diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
-index 719f00b..4707760 100644
---- a/arch/x86/include/asm/mrst.h
-+++ b/arch/x86/include/asm/mrst.h
-@@ -51,7 +51,7 @@ extern struct console early_mrst_console;
- extern void mrst_early_console_init(void);
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+index a8ac6f1..225bd0f 100644
+--- a/arch/x86/platform/mrst/vrtc.c
++++ b/arch/x86/platform/mrst/vrtc.c
+@@ -76,8 +76,8 @@ unsigned long vrtc_get_time(void)
  
- extern struct console early_hsu_console;
--extern void hsu_early_console_init(void);
-+extern void hsu_early_console_init(const char *);
+ 	spin_unlock_irqrestore(&rtc_lock, flags);
  
- extern void intel_scu_devices_create(void);
- extern void intel_scu_devices_destroy(void);
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index cd28a35..9d42a52 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -247,7 +247,7 @@ static int __init setup_early_printk(char *buf)
- 		}
+-	/* vRTC YEAR reg contains the offset to 1960 */
+-	year += 1960;
++	/* vRTC YEAR reg contains the offset to 1972 */
++	year += 1972;
  
- 		if (!strncmp(buf, "hsu", 3)) {
--			hsu_early_console_init();
-+			hsu_early_console_init(buf + 3);
- 			early_console_register(&early_hsu_console, keep);
- 		}
- #endif
-diff --git a/arch/x86/platform/mrst/early_printk_mrst.c b/arch/x86/platform/mrst/early_printk_mrst.c
-index 25bfdbb..3c6e328 100644
---- a/arch/x86/platform/mrst/early_printk_mrst.c
-+++ b/arch/x86/platform/mrst/early_printk_mrst.c
-@@ -245,16 +245,24 @@ struct console early_mrst_console = {
-  * Following is the early console based on Medfield HSU (High
-  * Speed UART) device.
+ 	printk(KERN_INFO "vRTC: sec: %d min: %d hour: %d day: %d "
+ 		"mon: %d year: %d\n", sec, min, hour, mday, mon, year);
+diff --git a/drivers/rtc/rtc-mrst.c b/drivers/rtc/rtc-mrst.c
+index d335448..bb21f44 100644
+--- a/drivers/rtc/rtc-mrst.c
++++ b/drivers/rtc/rtc-mrst.c
+@@ -76,12 +76,15 @@ static inline unsigned char vrtc_is_updating(void)
+ /*
+  * rtc_time's year contains the increment over 1900, but vRTC's YEAR
+  * register can't be programmed to value larger than 0x64, so vRTC
+- * driver chose to use 1960 (1970 is UNIX time start point) as the base,
++ * driver chose to use 1972 (1970 is UNIX time start point) as the base,
+  * and does the translation at read/write time.
+  *
+- * Why not just use 1970 as the offset? it's because using 1960 will
++ * Why not just use 1970 as the offset? it's because using 1972 will
+  * make it consistent in leap year setting for both vrtc and low-level
+- * physical rtc devices.
++ * physical rtc devices. Then why not use 1960 as the offset? If we use
++ * 1960, for a device's first use, its YEAR register is 0 and the system
++ * year will be parsed as 1960 which is not a valid UNIX time and will
++ * cause many applications to fail mysteriously.
   */
--#define HSU_PORT2_PADDR		0xffa28180
-+#define HSU_PORT_BASE		0xffa28080
- 
- static void __iomem *phsu;
- 
--void hsu_early_console_init(void)
-+void hsu_early_console_init(const char *s)
+ static int mrst_read_time(struct device *dev, struct rtc_time *time)
  {
-+	unsigned long paddr, port = 0;
- 	u8 lcr;
+@@ -99,10 +102,10 @@ static int mrst_read_time(struct device *dev, struct rtc_time *time)
+ 	time->tm_year = vrtc_cmos_read(RTC_YEAR);
+ 	spin_unlock_irqrestore(&rtc_lock, flags);
  
--	phsu = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE,
--							HSU_PORT2_PADDR);
-+	/*
-+	 * Select the early HSU console port if specified by user in the
-+	 * kernel command line.
-+	 */
-+	if (*s && !kstrtoul(s, 10, &port))
-+		port = clamp_val(port, 0, 2);
-+
-+	paddr = HSU_PORT_BASE + port * 0x80;
-+	phsu = (void *)set_fixmap_offset_nocache(FIX_EARLYCON_MEM_BASE, paddr);
- 
- 	/* Disable FIFO */
- 	writeb(0x0, phsu + UART_FCR);
-diff --git a/drivers/tty/serial/mfd.c b/drivers/tty/serial/mfd.c
-index e272d39..a9234ba 100644
---- a/drivers/tty/serial/mfd.c
-+++ b/drivers/tty/serial/mfd.c
-@@ -1154,7 +1154,6 @@ serial_hsu_console_setup(struct console *co, char *options)
- 	int bits = 8;
- 	int parity = 'n';
- 	int flow = 'n';
--	int ret;
- 
- 	if (co->index == -1 || co->index >= serial_hsu_reg.nr)
- 		co->index = 0;
-@@ -1165,9 +1164,7 @@ serial_hsu_console_setup(struct console *co, char *options)
- 	if (options)
- 		uart_parse_options(options, &baud, &parity, &bits, &flow);
- 
--	ret = uart_set_options(&up->port, co, baud, parity, bits, flow);
--
--	return ret;
-+	return uart_set_options(&up->port, co, baud, parity, bits, flow);
+-	/* Adjust for the 1960/1900 */
+-	time->tm_year += 60;
++	/* Adjust for the 1972/1900 */
++	time->tm_year += 72;
+ 	time->tm_mon--;
+-	return RTC_24H;
++	return rtc_valid_tm(time);
  }
  
- static struct console serial_hsu_console = {
-@@ -1176,9 +1173,13 @@ static struct console serial_hsu_console = {
- 	.device		= uart_console_device,
- 	.setup		= serial_hsu_console_setup,
- 	.flags		= CON_PRINTBUFFER,
--	.index		= 2,
-+	.index		= -1,
- 	.data		= &serial_hsu_reg,
- };
-+
-+#define SERIAL_HSU_CONSOLE	(&serial_hsu_console)
-+#else
-+#define SERIAL_HSU_CONSOLE	NULL
- #endif
+ static int mrst_set_time(struct device *dev, struct rtc_time *time)
+@@ -119,9 +122,9 @@ static int mrst_set_time(struct device *dev, struct rtc_time *time)
+ 	min = time->tm_min;
+ 	sec = time->tm_sec;
  
- struct uart_ops serial_hsu_pops = {
-@@ -1208,6 +1209,7 @@ static struct uart_driver serial_hsu_reg = {
- 	.major		= TTY_MAJOR,
- 	.minor		= 128,
- 	.nr		= 3,
-+	.cons		= SERIAL_HSU_CONSOLE,
- };
+-	if (yrs < 70 || yrs > 138)
++	if (yrs < 72 || yrs > 138)
+ 		return -EINVAL;
+-	yrs -= 60;
++	yrs -= 72;
  
- #ifdef CONFIG_PM
-@@ -1342,12 +1344,6 @@ static int serial_hsu_probe(struct pci_dev *pdev,
- 		}
- 		uart_add_one_port(&serial_hsu_reg, &uport->port);
- 
--#ifdef CONFIG_SERIAL_MFD_HSU_CONSOLE
--		if (index == 2) {
--			register_console(&serial_hsu_console);
--			uport->port.cons = &serial_hsu_console;
--		}
--#endif
- 		pci_set_drvdata(pdev, uport);
- 	}
+ 	spin_lock_irqsave(&rtc_lock, flags);
  
 
