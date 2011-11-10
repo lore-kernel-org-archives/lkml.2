@@ -1,123 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab1KJXrj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 18:47:39 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50836 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab1KJXrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 18:47:37 -0500
-Date: Thu, 10 Nov 2011 15:47:17 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, cl@gentwo.org
-Subject: Re: 3.2-rc1: INFO: possible recursive locking detected
-Message-ID: <20111110234717.GI2354@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20111109090556.GA5949@zhy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111109090556.GA5949@zhy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 11111023-5806-0000-0000-000003864D30
+	id S1757665Ab1KJXvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 18:51:12 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:55640 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab1KJXvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 18:51:11 -0500
+Date: Fri, 11 Nov 2011 06:47:17 +0800
+From: shencanquan@huawei.com
+Subject: [PATCH] acpi: Fix CPU hot removal problem
+X-Originating-IP: [10.166.29.43]
+To: lenb@kernel.org
+Cc: bhelgaas@google.com, xiaowei.yang@huawei.com, hanweidong@huawei.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Shen canquan <shencanquan@huawei.com>
+Message-id: <1320965237-8628-1-git-send-email-shencanquan@huawei.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.0.4
+Content-type: text/plain
+Content-transfer-encoding: 7BIT
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 09, 2011 at 05:05:57PM +0800, Yong Zhang wrote:
-> Hi,
-> 
-> Just get below waring when doing:
-> for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
-> 
-> And kernel config is attached.
+From: Shen canquan <shencanquan@huawei.com>
 
-This appears to me to be the same false positive from the slab allocator
-that has been seen before.  Christoph, any progress on this?
+We run linux as a guest in Xen environment. When we used the xen tools (xm
+vcpu-set <n>) to hot add and remove vcpu to and from the guest, we
+encountered the failure on vcpu removal. We found the reason is that it
+did't go to really remove cpu in the cpu removal code path.
 
-							Thanx, Paul
+This patch adds acpi_bus_hot_remove_device in acpi_process_hotplug_notify to
+fix this issue. With this patch, it works fine for us.
 
-> Thanks,
-> Yong
-> 
-> ---
-> [  350.148020] =============================================
-> [  350.148020] [ INFO: possible recursive locking detected ]
-> [  350.148020] 3.2.0-rc1-10791-g76a4b59-dirty #2
-> [  350.148020] ---------------------------------------------
-> [  350.148020] perf/9439 is trying to acquire lock:
-> [  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff8113847f>] get_partial_node+0x5f/0x360
-> [  350.148020] 
-> [  350.148020] but task is already holding lock:
-> [  350.148020]  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
-> [  350.148020] 
-> [  350.148020] other info that might help us debug this:
-> [  350.148020]  Possible unsafe locking scenario:
-> [  350.148020] 
-> [  350.148020]        CPU0
-> [  350.148020]        ----
-> [  350.148020]   lock(&(&n->list_lock)->rlock);
-> [  350.148020]   lock(&(&n->list_lock)->rlock);
-> [  350.148020] 
-> [  350.148020]  *** DEADLOCK ***
-> [  350.148020] 
-> [  350.148020]  May be due to missing lock nesting notation
-> [  350.148020] 
-> [  350.148020] 2 locks held by perf/9439:
-> [  350.148020]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff810552ee>] release_task+0x9e/0x500
-> [  350.148020]  #1:  (&(&n->list_lock)->rlock){-.-...}, at: [<ffffffff811380c9>] unfreeze_partials+0x199/0x3c0
-> [  350.148020] 
-> [  350.148020] stack backtrace:
-> [  350.148020] Pid: 9439, comm: perf Not tainted 3.2.0-rc1-10791-g76a4b59-dirty #2
-> [  350.148020] Call Trace:
-> [  350.148020]  [<ffffffff815e7278>] ? _raw_spin_unlock_irqrestore+0x38/0x80
-> [  350.148020]  [<ffffffff810932ff>] validate_chain+0xddf/0x1250
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff81080c2f>] ? local_clock+0x4f/0x60
-> [  350.148020]  [<ffffffff8108e939>] ? trace_hardirqs_off_caller+0x29/0x130
-> [  350.148020]  [<ffffffff81093b3f>] __lock_acquire+0x3cf/0xc00
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff81094a3d>] lock_acquire+0x9d/0x1d0
-> [  350.148020]  [<ffffffff8113847f>] ? get_partial_node+0x5f/0x360
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff81080c2f>] ? local_clock+0x4f/0x60
-> [  350.148020]  [<ffffffff815e6570>] _raw_spin_lock+0x40/0x80
-> [  350.148020]  [<ffffffff8113847f>] ? get_partial_node+0x5f/0x360
-> [  350.148020]  [<ffffffff8113847f>] get_partial_node+0x5f/0x360
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff8113a836>] ? T.1029+0x36/0x3f0
-> [  350.148020]  [<ffffffff813741ba>] ? __debug_object_init+0x3ba/0x3d0
-> [  350.148020]  [<ffffffff8113a9b7>] T.1029+0x1b7/0x3f0
-> [  350.148020]  [<ffffffff813741ba>] ? __debug_object_init+0x3ba/0x3d0
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff813741ba>] ? __debug_object_init+0x3ba/0x3d0
-> [  350.148020]  [<ffffffff8113ace6>] kmem_cache_alloc+0xf6/0x200
-> [  350.148020]  [<ffffffff813741ba>] __debug_object_init+0x3ba/0x3d0
-> [  350.148020]  [<ffffffff815e7278>] ? _raw_spin_unlock_irqrestore+0x38/0x80
-> [  350.148020]  [<ffffffff8137421f>] debug_object_init+0x1f/0x30
-> [  350.148020]  [<ffffffff81075f94>] rcuhead_fixup_activate+0x34/0xe0
-> [  350.148020]  [<ffffffff813732a3>] debug_object_fixup+0x13/0x20
-> [  350.148020]  [<ffffffff8137394c>] debug_object_activate+0xbc/0x160
-> [  350.148020]  [<ffffffff81137c20>] ? deactivate_slab+0x7c0/0x7c0
-> [  350.148020]  [<ffffffff810c8f52>] __call_rcu+0x42/0x1d0
-> [  350.148020]  [<ffffffff810c90f5>] call_rcu+0x15/0x20
-> [  350.148020]  [<ffffffff81137454>] discard_slab+0x44/0x50
-> [  350.148020]  [<ffffffff8113822f>] unfreeze_partials+0x2ff/0x3c0
-> [  350.148020]  [<ffffffff8100a9b9>] ? native_sched_clock+0x29/0x80
-> [  350.148020]  [<ffffffff811383d9>] ? put_cpu_partial+0x99/0xe0
-> [  350.148020]  [<ffffffff811383e1>] put_cpu_partial+0xa1/0xe0
-> [  350.148020]  [<ffffffff81139d22>] __slab_free+0x102/0x470
-> [  350.148020]  [<ffffffff8104ef17>] ? __cleanup_sighand+0x27/0x30
-> [  350.148020]  [<ffffffff8113a7f0>] kmem_cache_free+0x220/0x230
-> [  350.148020]  [<ffffffff8104ef17>] __cleanup_sighand+0x27/0x30
-> [  350.148020]  [<ffffffff8105548b>] release_task+0x23b/0x500
-> [  350.148020]  [<ffffffff8105526d>] ? release_task+0x1d/0x500
-> [  350.148020]  [<ffffffff81056043>] wait_consider_task+0x8f3/0xc40
-> [  350.148020]  [<ffffffff810564b1>] do_wait+0x121/0x340
-> [  350.148020]  [<ffffffff81056773>] sys_wait4+0xa3/0x100
-> [  350.148020]  [<ffffffff810544e0>] ? wait_noreap_copyout+0x150/0x150
-> [  350.148020]  [<ffffffff815e7dab>] system_call_fastpath+0x16/0x1b
-> 
+Signed-off-by: Canquan Shen <shencanquan@huawei.com>
+---
+ drivers/acpi/processor_driver.c |   13 +------------
+ drivers/acpi/scan.c             |    4 ++--
+ include/acpi/acpi_bus.h         |    1 +
+ 3 files changed, 4 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index a4e0f1b..8429688 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -665,18 +665,7 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
+ 	case ACPI_NOTIFY_EJECT_REQUEST:
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
+-
+-		if (acpi_bus_get_device(handle, &device)) {
+-			printk(KERN_ERR PREFIX
+-				    "Device don't exist, dropping EJECT\n");
+-			break;
+-		}
+-		pr = acpi_driver_data(device);
+-		if (!pr) {
+-			printk(KERN_ERR PREFIX
+-				    "Driver data is NULL, dropping EJECT\n");
+-			return;
+-		}
++		acpi_bus_hot_remove_device(handle);
+ 		break;
+ 	default:
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 449c556..6dfb4a7 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -83,7 +83,7 @@ acpi_device_modalias_show(struct device *dev, struct device_attribute *attr, cha
+ }
+ static DEVICE_ATTR(modalias, 0444, acpi_device_modalias_show, NULL);
+ 
+-static void acpi_bus_hot_remove_device(void *context)
++void acpi_bus_hot_remove_device(void *context)
+ {
+ 	struct acpi_device *device;
+ 	acpi_handle handle = context;
+@@ -129,7 +129,7 @@ static void acpi_bus_hot_remove_device(void *context)
+ 	 * TBD: _EJD support.
+ 	 */
+ 	status = acpi_evaluate_object(handle, "_EJ0", &arg_list, NULL);
+-	if (ACPI_FAILURE(status))
++	if (ACPI_FAILURE(status) && (status != AE_NOT_FOUND))
+ 		printk(KERN_WARNING PREFIX
+ 				"Eject device failed\n");
+ 
+diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
+index 6cd5b64..756e8d1 100644
+--- a/include/acpi/acpi_bus.h
++++ b/include/acpi/acpi_bus.h
+@@ -342,6 +342,7 @@ int acpi_match_device_ids(struct acpi_device *device,
+ 			  const struct acpi_device_id *ids);
+ int acpi_create_dir(struct acpi_device *);
+ void acpi_remove_dir(struct acpi_device *);
++void acpi_bus_hot_remove_device(void *context);
+ 
+ /*
+  * Bind physical devices with ACPI devices
+-- 
+1.7.6.msysgit.0
 
