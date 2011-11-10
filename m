@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757741Ab1KJQFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:05:55 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:52802 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab1KJQFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:05:53 -0500
-Message-ID: <4EBBF646.8010705@oracle.com>
-Date: Thu, 10 Nov 2011 08:05:26 -0800
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110920 SUSE/3.1.15 Thunderbird/3.1.15
+	id S935399Ab1KJQGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:06:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935224Ab1KJQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 11:06:15 -0500
+Date: Thu, 10 Nov 2011 17:07:04 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: iwlagn: memory corruption with WPA enterprise
+Message-ID: <20111110160703.GA2775@redhat.com>
+References: <20111029171554.GA16596@nomi.cz>
+ <20111031160342.GB2225@redhat.com>
+ <20111109155411.GA1669@nomi.cz>
+ <20111109165158.GA2254@redhat.com>
+ <20111110091816.GA2247@nomi.cz>
+ <20111110114732.GA2217@redhat.com>
+ <20111110125347.GA29415@nomi.cz>
 MIME-Version: 1.0
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-CC: Kashyap Desai <kashyap.desai@lsi.com>, Eric Moore <eric.moore@lsi.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mpt2sas: Fix null reference in recovery_delete_devices
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090204.4EBBF65E.0042,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111110125347.GA29415@nomi.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 10, 2011 at 01:53:47PM +0100, Tomáš Janoušek wrote:
+> > If "dmesg | grep corrupt" will show "Setting corrupt debug order to 1"
+> > patches are in use. Anyway I need to test the patches locally, to see
+> > if they work as expected, perhaps exception is generated but call-trace
+> > is not printed.
+> 
+> It does say that, yes.
 
-Got panic:
-[  752.590700] BUG: unable to handle kernel NULL pointer dereference at 00000000000000f6
-[  752.598542] IP: [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
-[  752.605595] PGD 175d43067 PUD 175d44067 PMD 0 
-[  752.610081] Oops: 0002 [#1] SMP 
-[  752.613342] CPU 0 
-[  752.615175] Modules linked in:
-[  752.618428] 
-[  752.619921] Pid: 9187, comm: sas2flash Not tainted 3.2.0-rc1-tip-yh-01580-g878f195-dirty #1288 Oracle Corporation Sun Blade
-[  752.632632] RIP: 0010:[<ffffffff8160b5f3>]  [<ffffffff8160b5f3>] mpt2sas_scsih_reset_handler+0x168/0x183
+I tested patches. They generate call-trace and make kernel panic when I
+wrote at random address from user address space. However to make kernel
+panic, we should keep as much as possible free memory, otherwise bad code
+corrupt not-protected data. In other words, when you run memory intensive
+application, corruption may happen on valid data.  So to catch the bug,
+you should just use network, and perhaps stress up cpu i.e: by this bash
+command:
 
-it turns out it is introduced in
+while true; do : ; done 
 
-_scsih_error_recovery_delete_devices() forget to alloc the event before using.
+Please also configure CONFIG_DEBUG_SET_MODULE_RONX=y, it protect modules
+text/read-only memory against corruption.
 
-It is introduced by:
+> > Is this happen only with "Intel Corporation Centrino Advanced-N 6205" or
+> > with some other adapters?
+> 
+> I don't have any other iwlwifi adapters, so I wouldn't know. The people in
+> that Ubuntu bugreport have exactly that card as well, but in another notebook.
+> And they claim it works in newer Ubuntu, but I am running latest kernels with
+> latest uCode, so I'm out of ideas what else could be wrong.
 
-| commit 921cd8024b908f8f49f772c8d3a02381b4db2ed2
-| Author: nagalakshmi.nandigama@lsi.com <nagalakshmi.nandigama@lsi.com>
-| Date:   Wed Oct 19 15:36:26 2011 +0530
-|
-|    [SCSI] mpt2sas: New feature - Fast Load Support
+That's good hint for Intel folks. Would be ideal if any developer could
+reproduce that. I do not have this exact adapter model.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > > Perhaps it would be cheaper to just get another card in that case.
+> > > :-)
+> >
+> > That will left issue unresolved :-(
+> 
+> Yeah, but considering how few people report this, I'm starting to feel that it
+> might in fact be a hardware issue.
 
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    3 +++
- 1 file changed, 3 insertions(+)
+It's possible, but I don think so. In my practice, majority of corruption
+problems was caused by software. All true hardware corruptions I meet, was on
+development boards, many months before they went into production.
 
-Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -2802,6 +2802,9 @@ _scsih_error_recovery_delete_devices(str
- 
- 	if (ioc->is_driver_loading)
- 		return;
-+	fw_event = kzalloc(sizeof(struct fw_event_work), GFP_ATOMIC);
-+	if (!fw_event)
-+		return;
- 	fw_event->event = MPT2SAS_REMOVE_UNRESPONDING_DEVICES;
- 	fw_event->ioc = ioc;
- 	_scsih_fw_event_add(ioc, fw_event);
+> (We've got a lot of Lenovos here, mostly T520 and T420s, most of them running
+> Fedora, and nobody has reported memory corruption problems.
+
+Are there any others with 6205? If not that would confirm issue is
+related with that model.
+
+> Perhaps I should try to connect to this WPA Enterprise using Windows and see
+> if anything goes wrong. However, I have no clue as to what shall I do to
+> reproduce the issue in Windows.)
+
+You may first try some older kernel as Wey suggested, i.e. 2.6.38.
+
+Thanks
+Stanislaw
