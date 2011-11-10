@@ -1,108 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934552Ab1KJNiM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 08:38:12 -0500
-Received: from gate.crashing.org ([63.228.1.57]:55743 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab1KJNiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 08:38:10 -0500
-Subject: Re: [RFC PATCH 04/17] powerpc: Allow multiple machine-check handlers
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1320883635-17194-5-git-send-email-Kyle.D.Moffett@boeing.com>
-Date: Thu, 10 Nov 2011 07:37:36 -0600
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Baruch Siach <baruch@tkos.co.il>, Timur Tabi <B04825@freescale.com>,
-        Scott Wood <scottwood@freescale.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>
+	id S1757685Ab1KJNjg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 08:39:36 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41603 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab1KJNjf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 08:39:35 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH] bma023: Add SFI translation for this device
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Date: Thu, 10 Nov 2011 13:50:38 +0000
+Message-ID: <20111110135036.17701.72980.stgit@bob.linux.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <C3C78EA9-9E3D-46AC-94D0-537348DCFC64@kernel.crashing.org>
-References: <4E42AB6F.1050900@freescale.com> <1320883635-17194-5-git-send-email-Kyle.D.Moffett@boeing.com>
-To: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-X-Mailer: Apple Mail (2.1251.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: William Douglas <william.douglas@intel.com>
 
-On Nov 9, 2011, at 6:07 PM, Kyle Moffett wrote:
+This needed the sfi IRQ 0xFF fix to go in first. It simply plumbs in the
+bma023 driver with the firmware naming of it.
 
-> Certain processor types are co-supportable, and their machine-check
-> handlers will be referenced if the entries in cputable.c are actually
-> generated, so allow more than one machine-check handler to be built in.
-> 
-> This fixes a bug where configuring FreeScale E5500 support (P5020DS)
-> into the kernel would break machine-check handling on PPC64 A2 systems
-> by using a bogus machine_check_generic() handler that does nothing.
-> 
-> Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
-> ---
-> arch/powerpc/kernel/traps.c |   18 ++++++++----------
-> 1 files changed, 8 insertions(+), 10 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-> index 4e59082..e3113341 100644
-> --- a/arch/powerpc/kernel/traps.c
-> +++ b/arch/powerpc/kernel/traps.c
-> @@ -418,7 +418,8 @@ int machine_check_47x(struct pt_regs *regs)
-> 
-> 	return 0;
-> }
-> -#elif defined(CONFIG_E500)
-> +#endif
-> +#if defined(CONFIG_FSL_E500MC) || defined(CONFIG_FSL_E5500)
-> int machine_check_e500mc(struct pt_regs *regs)
-> {
-> 	unsigned long mcsr = mfspr(SPRN_MCSR);
-> @@ -517,7 +518,8 @@ silent_out:
-> 	mtspr(SPRN_MCSR, mcsr);
-> 	return mfspr(SPRN_MCSR) == 0 && recoverable;
-> }
-> -
-> +#endif
-> +#ifdef CONFIG_FSL_E500_V1_V2
+Signed-off-by: William Douglas <william.douglas@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-doesn't exist yet, so patch is wrong sequence order.
+ arch/x86/platform/mrst/mrst.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> int machine_check_e500(struct pt_regs *regs)
-> {
-> 	unsigned long reason = get_mc_reason(regs);
-> @@ -557,12 +559,8 @@ int machine_check_e500(struct pt_regs *regs)
-> 
-> 	return 0;
-> }
-> -
-> -int machine_check_generic(struct pt_regs *regs)
-> -{
-> -	return 0;
-> -}
-> -#elif defined(CONFIG_E200)
-> +#endif
-> +#ifdef CONFIG_E200
-> int machine_check_e200(struct pt_regs *regs)
-> {
-> 	unsigned long reason = get_mc_reason(regs);
-> @@ -587,7 +585,8 @@ int machine_check_e200(struct pt_regs *regs)
-> 
-> 	return 0;
-> }
-> -#else
-> +#endif
-> +
-> int machine_check_generic(struct pt_regs *regs)
-> {
-> 	unsigned long reason = get_mc_reason(regs);
-> @@ -623,7 +622,6 @@ int machine_check_generic(struct pt_regs *regs)
-> 	}
-> 	return 0;
-> }
-> -#endif /* everything else */
-> 
-> void machine_check_exception(struct pt_regs *regs)
-> {
-> -- 
-> 1.7.2.5
+
+diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
+index 144984b..ff2ee7e 100644
+--- a/arch/x86/platform/mrst/mrst.c
++++ b/arch/x86/platform/mrst/mrst.c
+@@ -647,6 +647,7 @@ static void *msic_ocd_platform_data(void *info)
+ }
+ 
+ static const struct devs_id __initconst device_ids[] = {
++	{"bma023", SFI_DEV_TYPE_I2C, 1, &no_platform_data},
+ 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
+ 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
+ 	{"i2c_max7315", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
 
