@@ -1,178 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab1KJKBK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 05:01:10 -0500
-Received: from mga14.intel.com ([143.182.124.37]:17622 "EHLO mga14.intel.com"
+	id S1755526Ab1KJKGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 05:06:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59959 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752476Ab1KJKBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 05:01:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.69,488,1315206000"; 
-   d="scan'208";a="35263833"
-Subject: Re: [PATCH] dmaengine/ste_dma40: support pm in dma40
-From: Vinod Koul <vinod.koul@intel.com>
-To: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        rabin.vincent@stericsson.com
-In-Reply-To: <1320813384-13651-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
-References: <1320813384-13651-1-git-send-email-narayanan.gopalakrishnan@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Nov 2011 15:26:36 +0530
-Message-ID: <1320918996.32205.1214.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1750783Ab1KJKGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 05:06:21 -0500
+Date: Thu, 10 Nov 2011 10:06:16 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] mm: Do not stall in synchronous compaction for THP
+ allocations
+Message-ID: <20111110100616.GD3083@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-11-09 at 10:06 +0530, Narayanan G wrote:
-> This patch adds power management support to the dma40
-> driver. The DMA registers are backed up and restored,
-> during suspend/resume. Also flags to track the dma usage
-> have been introduced to facilitate this. Patch also includes
-> few other minor changes, related to formatting, grammar.
-> 
-> Signed-off-by: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
->  drivers/dma/ste_dma40.c    |  412 +++++++++++++++++++++++++++++++++++++++-----
->  drivers/dma/ste_dma40_ll.h |   11 ++
->  2 files changed, 378 insertions(+), 45 deletions(-)
-> 
->  struct d40_base {
->  	spinlock_t			 interrupt_lock;
-> @@ -282,6 +343,14 @@ struct d40_base {
->  	dma_addr_t			  phy_lcpa;
->  	resource_size_t			  lcpa_size;
->  	struct kmem_cache		 *desc_slab;
-> +	int				  usage;
-> +	spinlock_t			  usage_lock;
-> +	u32				  reg_val_backup
-> +					  [ARRAY_SIZE(d40_backup_regs)];
-> +	u32				  reg_val_backup_v3
-> +					  [ARRAY_SIZE(d40_backup_regs_v3)];
-> +	u32				 *reg_val_backup_chan;
-> +	bool				  initialized;
->  };
-This is terribly hard to read :(
+Occasionally during large file copies to slow storage, there are still
+reports of user-visible stalls when THP is enabled. Reports on this
+have been intermittent and not reliable to reproduce locally but;
 
->  
-> +static void d40_power_off(struct d40_base *base, int phy_num)
-> +{
-> +	u32 gcc;
-> +	int i;
-> +	int j;
-> +	int p;
-> +
-> +	/*
-> +	 * Disable the rest of the code because of GCC register HW bugs on v1
-> +	 * which are not worth working around.  Revisit later.
-> +	 */
-> +	return;
-unconditional return? Then what is the point in having dead code below?
+Andy Isaacson reported a problem copying to VFAT on SD Card
+	https://lkml.org/lkml/2011/11/7/2
 
-> +
-> +	/*
-> +	 * Power off event group related to physical channel, if
-> +	 * the other physical channels that belong to the same
-> +	 * event group are not in use
-> +	 */
-> +
-> +	for (j = 0; j < base->num_phy_chans; j += D40_GROUP_SIZE) {
-> +
-> +		for (i = 0; i < 2; i++) {
-> +			p = (((phy_num & (base->num_phy_chans - 1)) + i)
-> +			     & (D40_GROUP_SIZE - 1)) + j;
-> +			if (p == phy_num)
-> +				continue;
-> +			/*
-> +			 * If another physical channel in the same group is
-> +			 * allocated, just return.
-> +			 */
-> +			if (base->phy_res[p].allocated_dst == D40_ALLOC_PHY ||
-> +			    base->phy_res[p].allocated_src == D40_ALLOC_PHY) {
-> +				return;
-> +			}
-> +		}
-> +	}
-> +
-> +	/* The GCC register is protected via the usage_lock */
-> +	gcc = readl(base->virtbase + D40_DREG_GCC);
-> +
-> +	gcc &= ~D40_DREG_GCC_EVTGRP_ENA(D40_PHYS_TO_GROUP(phy_num),
-> +					D40_DREG_GCC_SRC);
-> +	gcc &= ~D40_DREG_GCC_EVTGRP_ENA(D40_PHYS_TO_GROUP(phy_num),
-> +					D40_DREG_GCC_DST);
-> +
-> +	writel(gcc, base->virtbase + D40_DREG_GCC);
-> +}
-> +
-> +static void d40_power_on(struct d40_base *base, int phy_num)
-> +{
-> +	u32 gcc;
-> +
-> +	/*
-> +	 * Disable the rest of the code because of GCC register HW bugs on v1
-> +	 * which are not worth working around.  Revisit later.
-> +	 */
-> +	return;
-again...
+	In this case, it was stuck in munmap for betwen 20 and 60
+	seconds in compaction. It is also possible that khugepaged
+	was holding mmap_sem on this process if CONFIG_NUMA was set.
 
-> +
-> +	/* The GCC register is protected via the usage_lock */
-> +	gcc = readl(base->virtbase + D40_DREG_GCC);
-> +
-> +	gcc |= D40_DREG_GCC_EVTGRP_ENA(D40_PHYS_TO_GROUP(phy_num),
-> +				       D40_DREG_GCC_SRC);
-> +	gcc |= D40_DREG_GCC_EVTGRP_ENA(D40_PHYS_TO_GROUP(phy_num),
-> +				       D40_DREG_GCC_DST);
-> +
-> +	writel(gcc, base->virtbase + D40_DREG_GCC);
-> +}
-> +
-> +static void d40_usage_inc(struct d40_chan *d40c)
-> +{
-> +	unsigned long flags;
-> +
-> +	spin_lock_irqsave(&d40c->base->usage_lock, flags);
-> +
-> +	d40c->base->usage++;
-> +
-> +	if (d40c->base->usage == 1)
-> +		pm_runtime_get_sync(d40c->base->dev);
-i am not sure why you are doing your own counting when runtime_pm
-already does that. Just make sure you call pm_runtime_get/put and every
-inc/dec path.
+Johannes Weiner reported stalls on USB
+	https://lkml.org/lkml/2011/7/25/378
 
-> @@ -2741,9 +3050,9 @@ failure:
->  static void __init d40_hw_init(struct d40_base *base)
->  {
->  
-> -	static const struct d40_reg_val dma_init_reg[] = {
-> +	static struct d40_reg_val dma_init_reg[] = {
->  		/* Clock every part of the DMA block from start */
-> -		{ .reg = D40_DREG_GCC,    .val = 0x0000ff01},
-> +		{ .reg = D40_DREG_GCC,    .val = D40_DREG_GCC_ENABLE_ALL},
->  
->  		/* Interrupts on all logical channels */
->  		{ .reg = D40_DREG_LCMIS0, .val = 0xFFFFFFFF},
-> @@ -2853,8 +3162,8 @@ static int __init d40_lcla_allocate(struct d40_base *base)
->  		base->lcla_pool.base = (void *)page_list[i];
->  	} else {
->  		/*
-> -		 * After many attempts and no succees with finding the correct
-> -		 * alignment, try with allocating a big buffer.
-> +		 * After many attempts, no succees with finding the correct
-succeed?
-> +		 * alignment try with allocating a big buffer.
->  		 */
->  		dev_warn(base->dev,
->  			 "[%s] Failed to get %d pages @ 18 bit align.\n",
+	In this case, there is no stack trace but it looks like the
+	same problem. The USB stick may have been using NTFS as a
+	filesystem based on other work done related to writing back
+	to USB around the same time.
 
+Internally in SUSE, I received a bug report related to stalls in firefox
+	when using Java and Flash heavily while copying from NFS
+	to VFAT on USB. It has not been confirmed to be the same problem
+	but if it looks like a duck and quacks like a duck.....
 
+In the past, commit [11bc82d6: mm: compaction: Use async migration for
+__GFP_NO_KSWAPD and enforce no writeback] forced that sync compaction
+would never be used for THP allocations. This was reverted in commit
+[c6a140bf: mm/compaction: reverse the change that forbade sync
+migraton with __GFP_NO_KSWAPD] on the grounds that it was uncertain
+it was beneficial.
 
+While user-visible stalls do not happen for me when writing to USB,
+I setup a test running postmark while short-lived processes created
+anonymous mapping. The objective was to exercise the paths that
+allocate transparent huge pages. I then logged when processes were
+stalled for more than 1 second, recorded a stack strace and did some
+analysis to aggregate unique "stall events" which revealed
 
--- 
-~Vinod
+Time stalled in this event:    47369 ms
+Event count:                      20
+usemem               sleep_on_page          3690 ms
+usemem               sleep_on_page          2148 ms
+usemem               sleep_on_page          1534 ms
+usemem               sleep_on_page          1518 ms
+usemem               sleep_on_page          1225 ms
+usemem               sleep_on_page          2205 ms
+usemem               sleep_on_page          2399 ms
+usemem               sleep_on_page          2398 ms
+usemem               sleep_on_page          3760 ms
+usemem               sleep_on_page          1861 ms
+usemem               sleep_on_page          2948 ms
+usemem               sleep_on_page          1515 ms
+usemem               sleep_on_page          1386 ms
+usemem               sleep_on_page          1882 ms
+usemem               sleep_on_page          1850 ms
+usemem               sleep_on_page          3715 ms
+usemem               sleep_on_page          3716 ms
+usemem               sleep_on_page          4846 ms
+usemem               sleep_on_page          1306 ms
+usemem               sleep_on_page          1467 ms
+[<ffffffff810ef30c>] wait_on_page_bit+0x6c/0x80
+[<ffffffff8113de9f>] unmap_and_move+0x1bf/0x360
+[<ffffffff8113e0e2>] migrate_pages+0xa2/0x1b0
+[<ffffffff81134273>] compact_zone+0x1f3/0x2f0
+[<ffffffff811345d8>] compact_zone_order+0xa8/0xf0
+[<ffffffff811346ff>] try_to_compact_pages+0xdf/0x110
+[<ffffffff810f773a>] __alloc_pages_direct_compact+0xda/0x1a0
+[<ffffffff810f7d5d>] __alloc_pages_slowpath+0x55d/0x7a0
+[<ffffffff810f8151>] __alloc_pages_nodemask+0x1b1/0x1c0
+[<ffffffff811331db>] alloc_pages_vma+0x9b/0x160
+[<ffffffff81142bb0>] do_huge_pmd_anonymous_page+0x160/0x270
+[<ffffffff814410a7>] do_page_fault+0x207/0x4c0
+[<ffffffff8143dde5>] page_fault+0x25/0x30
 
+The stall times are approximate at best but the estimates represent 25%
+of the worst stalls and even if the estimates are off by a factor of
+10, it's severe.
+
+This patch once again prevents sync migration for transparent
+hugepage allocations as it is preferable to fail a THP allocation
+than stall. It was suggested that __GFP_NORETRY be used instead of
+__GFP_NO_KSWAPD. This would look less like a special case but would
+still cause compaction to run at least once with sync compaction.
+
+If accepted, this is a -stable candidate.
+
+Reported-by: Andy Isaacson <adi@hexapodia.org>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 963c5de..cddc2d0 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2213,7 +2213,13 @@ rebalance:
+ 					sync_migration);
+ 	if (page)
+ 		goto got_pg;
+-	sync_migration = true;
++
++	/*
++	 * Do not use sync migration for transparent hugepage allocations as
++	 * it could stall writing back pages which is far worse than simply
++	 * failing to promote a page.
++	 */
++	sync_migration = !(gfp_mask & __GFP_NO_KSWAPD);
+ 
+ 	/* Try direct reclaim and then allocating */
+ 	page = __alloc_pages_direct_reclaim(gfp_mask, order,
