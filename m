@@ -1,154 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab1KJRvw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 12:51:52 -0500
-Received: from mail-am1.bigfish.com ([213.199.180.138]:32292 "EHLO
-	AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751457Ab1KJRvt (ORCPT
+	id S1752986Ab1KJSDi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 13:03:38 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:1952
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751708Ab1KJSDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 12:51:49 -0500
-X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 12:51:48 EST
-X-SpamScore: -18
-X-BigFish: VPS-18(zz1432N98dKzz1202hzz15d4Rz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LUGFNK-01-10Q-02
+	Thu, 10 Nov 2011 13:03:36 -0500
+X-SpamScore: -11
+X-BigFish: VPS-11(zz146fK1432N98dKzz1202hzz8275dhz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LUGI5O-02-S49-02
 X-M-MSG: 
-Date: Thu, 10 Nov 2011 18:09:18 +0100
-From: Joerg Roedel <Joerg.Roedel@amd.com>
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Kai Huang <mail.kai.huang@gmail.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        <iommu@lists.linux-foundation.org>, <linux-omap@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        David Brown <davidb@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, Hiroshi Doyu <hdoyu@nvidia.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        KyongHo Cho <pullip.cho@samsung.com>, <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 2/7] iommu/core: split mapping to page sizes as
- supported by the hardware
-Message-ID: <20111110170918.GE13213@amd.com>
-References: <1318850846-16066-1-git-send-email-ohad@wizery.com>
- <1318850846-16066-3-git-send-email-ohad@wizery.com>
- <CANqQZNH1YRSgYRVxceicQ3szD=t7zeJjhJKEQ30PeKsxtj5V+A@mail.gmail.com>
- <1320938930.22195.17.camel@i7.infradead.org>
+Date: Thu, 10 Nov 2011 19:03:08 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+Message-ID: <20111110180308.GD15738@erda.amd.com>
+References: <20111107110149.GA5177@quad>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1320938930.22195.17.camel@i7.infradead.org>
+In-Reply-To: <20111107110149.GA5177@quad>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 03:28:50PM +0000, David Woodhouse wrote:
-
-> Which brings me to another question I have been pondering... do we even
-> have a consensus on exactly *when* the IOTLB should be flushed?
-
-Well, sort of, there is still the outstanding idea of the
-iommu_commit() interface for the IOMMU-API.
-
-> Even just for the Intel IOMMU, we have three different behaviours:
+On 07.11.11 06:01:49, Stephane Eranian wrote:
 > 
->   - For DMA API users by default, we do 'batched unmap', so a mapping
->     may be active for a period of time after the driver has requested
->     that it be unmapped.
-
-The requirement for the DMA-API is, that the IOTLB must be consistent
-with existing mappings, and only with the parts that are really mapped.
-The unmapped parts are not important.
-
-This allows nice optimizations like your 'batched unmap' on the Intel
-IOMMU driver side. The AMD IOMMU driver uses a round-robin bitmap
-allocator for the IO addresses which makes it very easy to flush certain
-IOTLB ranges only before they are reused.
-
->   - ... unless booted with 'intel_iommu=strict', in which case we do the
->     unmap and IOTLB flush immediately before returning to the driver.
-
-There is something similar on the AMD IOMMU side. There it is called
-unmap_flush.
-
->   - But the IOMMU API for virtualisation is different. In fact that
->     doesn't seem to flush the IOTLB at all. Which is probably a bug.
-
-Well, *current* requirement is, that the IOTLB is in sync with the
-page-table at every time. This is true for the iommu_map and especially
-for the iommu_unmap function. It means basically that the unmapped area
-needs to be flushed out of the IOTLBs before iommu_unmap returns.
-
-Some time ago I proposed the iommu_commit() interface which changes
-these requirements. With this interface the requirement is that after a
-couple of map/unmap operations the IOMMU-API user has to call
-iommu_commit() to make these changes visible to the hardware (so mostly
-sync the IOTLBs). As discussed at that time this would make sense for
-the Intel and AMD IOMMU drivers.
-
-> What is acceptable, though? That batched unmap is quite important for
-> performance, because it means that we don't have to bash on the hardware
-> and wait for a flush to complete in the fast path of network driver RX,
-> for example.
-
-Have you considered a round-robin bitmap-allocator? It allows quite nice
-flushing behavior.
-
-> If we move to a model where we have a separate ->flush_iotlb() call, we
-> need to be careful that we still allow necessary optimisations to
-> happen.
-
-With iommu_commit() this should be possible, still.
-
-> I'm looking at fixing performance issues in the Intel IOMMU code, with
-> its virtual address space allocation (the rbtree-based one in iova.c
-> that nobody else uses, which has a single spinlock that *all* CPUs bash
-> on when they need to allocate).
+> Major rewrite of the x86 event scheduling routine.
+> The routine is shared between AMD and Intel.
 > 
-> The plan is, vaguely, to allocate large chunks of space to each CPU, and
-> then for each CPU to allocate from its own region first, thus ensuring
-> that the common case doesn't bounce locks between CPUs. It'll be rare
-> for one CPU to have to touch a subregion 'belonging' to another CPU, so
-> lock contention should be drastically reduced.
+> The existing code had an issue with certain combinations
+> of constraints. As Robert Richter @ AMD demonstrated on
+> AMD Bulldozer:
+> 
+> e0 [3,0]
+> e1 [2:0]
+> e2 [2:0]
+> e3 [2:0]
+> 
+> With this list of events, the existing scheduling algorithm
+> would never schedule e3. That's because it would always choose
+> counter 0 for e0:
+>   e0 -> 0
+>   e1 -> 1
+>   e2 -> 2
+>   e3 -> X
+> 
+> Robert Richter proposed a fix to the algorithm which was based
+> on tagging constraints that overlap. He was using rollbacks to
+> simulate recursion.
+> 
+> We propose an alternate solution which is simpler, faster. This
+> is a small modification to the existing algorithm. It adds some
+> smart in how a counter is chosen for a given event. The first
 
-Thats an interesting issue. It exists on the AMD IOMMU side too, the
-bitmap-allocator runs in a per-domain spinlock which can get high
-contention. I am not sure how per-cpu chunks of the address space scale
-to large numbers of cpus, though, given that some devices only have a
-small address range that they can address.
+Posting a link to my patch set for reference:
 
-I have been thinking about some lockless algorithms for the
-bitmap-allocator. But the ideas are not finalized yet, so I still don't
-know if they will work out at all :)
-The basic idea builds around the fact, that most allocations using the
-DMA-API fit into one page. So probably we can split the address-space
-into a region for one-page allocations which can be accessed without
-locks and another region for larger allocations which still need locks.
+ https://lkml.org/lkml/2011/9/10/51
 
-> Should I be planning to drop the DMA API support from intel-iommu.c
-> completely, and have the new allocator just call into the IOMMU API
-> functions instead? Other people have been looking at that, haven't they?
+What are the reasons to your alternate solution? Is it recursion, code
+complexity, or a use case it does not fit in? I see recursion as the
+main concern with my patch set, but its impact is known and limited.
+Anyway, a algorithm without recursion would be generally better.
 
-Yes, Marek Szyprowski from the ARM side is looking into this already,
-but his patches are very ARM specific and not suitable for x86 yet.
+> available counter is not systemtically selected. Instead, the
+> algorithm checks how the constraints between the events overlap.
+> For each counter, it assigns a weight which is the number of events
+> which it can count for the event set. For each event, the algorithm
+> assigns the counter with the smallest weight first.
 
-> Is there any code? Or special platform-specific requirements for such a
-> generic wrapper that I might not have thought of? Details about when to
-> flush the IOTLB are one such thing which might need special handling for
-> certain hardware...
+But this algorithm does not work for all cases and does not solve the
+problem in general. Your idea to have weights for counters might be
+the right approach.
 
-The plan is to have a single DMA-API implementation for all IOMMU
-drivers (X86 and ARM) which just uses the IOMMU-API. But to make this
-performing reasonalbly well a few changes to the IOMMU-API are required.
-I already have some ideas which we can discuss if you want.
+E.g. the algorithm fails with (all weights are the same):
 
+    c0 c1 c2
+ e0 x     x
+ e1    x  x
+ e2 x  x
 
-	Joerg
+... leading to:
+
+ e0 -> c0
+ e1 -> C1
+ e3 -> X
+
+You basically have to recalculate the weights after you had assigned a
+counter.
+
+But even if we do this, I am still not sure if that would cover all
+cases.
+
+> 
+> In the example above, the new algoritm assigns:
+>   e0 -> 3
+>   e1 -> 0
+>   e2 -> 1
+>   e3 -> 2
+> 
+> Because:
+>   counter 0, weight = 4
+>   counter 1, weight = 3
+>   counter 2, weight = 3
+>   counter 3, weight = 1
+> 
+> We maximize PMU usage and ensure all events are measured.
+> 
+> The patch also restructures the code to separate scheduling of
+> constrained vs. unconstrained events. An unconstrained event is
+> one that can be programmed into any of the generic counters. For
+> those, we now use the simplest algorihtm possible: use next free
+> counter. There is now a fast path which is beneficial on
+> processors such as AMD64 Fam10h.
+
+I don't see the need for a differentiation between constraint and
+unconstraint events. If loops are optimized in the constraint path
+there is not much overhead anymore. This could be done by specifying
+min and max limits for ranges. Special cases (unconstraint events,
+fixed counter, etc.) make the code more complex. I don't think a good
+algorithm will need this.
+
+> @@ -553,42 +530,179 @@ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+>  	if (x86_pmu.num_counters_fixed)
+>  		wmax++;
+>  
+> -	for (w = 1, num = n; num && w <= wmax; w++) {
+> -		/* for each event */
+> -		for (i = 0; num && i < n; i++) {
+> -			c = constraints[i];
+> -			hwc = &cpuc->event_list[i]->hw;
+> +	/*
+> +	 * assign from most constrained to least constrained
+> +	 */
+> +	for (w = 1, num = num_c; num && w <= wmax; w++) {
+> +		/* for each constrained event */
+> +		for (i = 0, e = c_events; i < num_c; i++, e++) {
+> +
+> +			map_idx = (*e)->hw.map_idx;
+> +			c = constraints[map_idx];
+>  
+>  			if (c->weight != w)
+>  				continue;
+>  
+> +			min_wcnt = INT_MAX;
+
+Should be X86_PMC_IDX_MAX.
+
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 1e9ebe5..2605244 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -564,6 +564,7 @@ struct hw_perf_event {
+>  			int		idx;
+>  			int		last_cpu;
+>  			struct hw_perf_event_extra extra_reg;
+> +			int		map_idx;
+
+This is not the right place. It is for all architectures but actually
+locally only used. A local array in x86_schedule_events() would work
+too.
+
+-Robert
+
+>  		};
+>  		struct { /* software */
+>  			struct hrtimer	hrtimer;
+> 
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
