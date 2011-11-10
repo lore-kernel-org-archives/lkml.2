@@ -1,321 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543Ab1KJCad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 21:30:33 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51179 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933401Ab1KJCab (ORCPT
+	id S933565Ab1KJCbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 21:31:16 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34143 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab1KJCbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 21:30:31 -0500
-Message-ID: <4EBB3742.7060404@google.com>
-Date: Wed, 09 Nov 2011 18:30:26 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Ben Segall <bsegall@google.com>
-Subject: Re: [patch 3/3] From: Ben Segall <bsegall@google.com>
-References: <20111108042632.977080206@google.com> <20111108042736.683407863@google.com>
-In-Reply-To: <20111108042736.683407863@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 9 Nov 2011 21:31:15 -0500
+Date: Thu, 10 Nov 2011 13:31:06 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: linux-next: build failure after merge of the pm tree
+Message-Id: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__10_Nov_2011_13_31_06_+1100_gQs2wxnThmbr=CRy"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I mangled the subject/from headers on this one, fixed should be below.
+--Signature=_Thu__10_Nov_2011_13_31_06_+1100_gQs2wxnThmbr=CRy
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
+Hi Rafael,
 
-- Paul
----
-sched: update task accounting on throttle so that idle_balance() will trigger
-From: Ben Segall <bsegall@google.com>
+After merging the pm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Since throttling occurs in the put_prev_task() path we do not get to observe
-this delta against nr_running when making the decision to idle_balance().
+mm/oom_kill.c: In function 'select_bad_process':
+mm/oom_kill.c:326:5: error: implicit declaration of function 'thaw_process'
 
-Fix this by first enumerating cfs_rq throttle states so that we can distinguish
-throttling cfs_rqs.  Then remove tasks that will be throttled in put_prev_task
-from rq->nr_running/cfs_rq->h_nr_running when in account_cfs_rq_runtime,
-rather than delaying until put_prev_task.
+Caused by commit 944e192db53c ("freezer: rename thaw_process() to
+__thaw_task() and simplify the implementation").
 
-This allows schedule() to call idle_balance when we go idle due to throttling.
+I have used the pm tree from next-20111109 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Using Kamalesh's nested-cgroup test case[1] we see the following improvement on
-a 16 core system:
-baseline: Average CPU Idle percentage 13.9667%
-   +patch: Average CPU Idle percentage 3.53333%
-[1]: https://lkml.org/lkml/2011/9/15/261
+--Signature=_Thu__10_Nov_2011_13_31_06_+1100_gQs2wxnThmbr=CRy
+Content-Type: application/pgp-signature
 
-Signed-off-by: Ben Segall <bsegall@google.com>
-Signed-off-by: Paul Turner <pjt@google.com>
----
-  kernel/sched.c      |   24 ++++++++----
-  kernel/sched_fair.c |  101 ++++++++++++++++++++++++++++++++++++----------------
-  2 files changed, 87 insertions(+), 38 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -269,6 +269,13 @@ struct cfs_bandwidth {
-  #endif
-  };
+iQIcBAEBCAAGBQJOuzdqAAoJEECxmPOUX5FELm8P/3M67GPKCTr+2YlmY0HilldS
+ifLfrra4cAJQcV8FF7GU0oad7tgGMKpcJUVWgkingQzgLDGkXBwBncjVfhz1fNas
+7O/u4Zd6zAUM+GsK77X/txAlw6WJJwQQDW3xmcjFX+XH5ZRow3/q5+BSZyu9eXbH
+/FAYWP4Yj89OEeM6x0TrIA3nOnzlTdvtFN17SR0tNg2n04kRPqW8m4S8W0QFR2in
+xaAIKTGHDJKvvUsiEMzdtQaj54eXt0yAEzRitGSAjc6FAjPCAE5xBVR3bOcncfmf
+oAKsK9cr87Ulcfh+fKMY1zogOMxq0WBDwVzinDeNJ1cYzAQ40BIZKERxvaVfpseb
+A/Tr2Ou7UIudckdTZqffYI3wy9D37JPbxEwxeMMMmrmAuPOGgcyelHI2qIIlVuyg
+iyX+0GmREQjTXctNte3sp0o8q3xAQ+Ihp7BGPGeQbbtp6paso8lZ/rT96c4bxcTn
+LTvoSGI1HMbNCkNghf88O002J/BsiozcyYyVFqWk/WoPc/qOxsGC3On4/tPvLJXu
+DBFKGlpuFzmFVeK50J5rc6qxZ2wGvy3CjARsr0jCsLQ8j6jrID6FBGVX3ADePtP9
+ecMCZ8k5/OBCkAlQpXwH8qPFvhQ/g/JHFG06w8So4Jps5cmao7QkNkbpb0j4gGAo
+vZ2MUDYVAsaSir6Vbxdz
+=LIRJ
+-----END PGP SIGNATURE-----
 
-+enum runtime_state {
-+	RUNTIME_UNLIMITED,
-+	RUNTIME_AVAILABLE,
-+	RUNTIME_THROTTLING,
-+	RUNTIME_THROTTLED
-+};
-+
-  /* task group related information */
-  struct task_group {
-  	struct cgroup_subsys_state css;
-@@ -402,12 +409,12 @@ struct cfs_rq {
-  	unsigned long load_contribution;
-  #endif
-  #ifdef CONFIG_CFS_BANDWIDTH
--	int runtime_enabled;
-+	enum runtime_state runtime_state;
-  	u64 runtime_expires;
-  	s64 runtime_remaining;
-
-  	u64 throttled_timestamp;
--	int throttled, throttle_count;
-+	int throttle_count;
-  	struct list_head throttled_list;
-  #endif
-  #endif
-@@ -470,7 +477,7 @@ static void init_cfs_bandwidth(struct cf
-
-  static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-  {
--	cfs_rq->runtime_enabled = 0;
-+	cfs_rq->runtime_state = RUNTIME_UNLIMITED;
-  	INIT_LIST_HEAD(&cfs_rq->throttled_list);
-  }
-
-@@ -6368,7 +6375,7 @@ static void unthrottle_offline_cfs_rqs(s
-  	for_each_leaf_cfs_rq(rq, cfs_rq) {
-  		struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-
--		if (!cfs_rq->runtime_enabled)
-+		if (!cfs_rq_runtime_enabled(cfs_rq))
-  			continue;
-
-  		/*
-@@ -9263,11 +9270,14 @@ static int tg_set_cfs_bandwidth(struct t
-  		struct rq *rq = rq_of(cfs_rq);
-
-  		raw_spin_lock_irq(&rq->lock);
--		cfs_rq->runtime_enabled = runtime_enabled;
--		cfs_rq->runtime_remaining = 0;
--
-  		if (cfs_rq_throttled(cfs_rq))
-  			unthrottle_cfs_rq(cfs_rq);
-+
-+		if (runtime_enabled)
-+			cfs_rq->runtime_state = RUNTIME_AVAILABLE;
-+		else
-+			cfs_rq->runtime_state = RUNTIME_UNLIMITED;
-+		cfs_rq->runtime_remaining = 0;
-  		raw_spin_unlock_irq(&rq->lock);
-  	}
-  out_unlock:
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -1387,6 +1387,27 @@ static void expire_cfs_rq_runtime(struct
-  	}
-  }
-
-+static void account_nr_throttling(struct cfs_rq *cfs_rq, long nr_throttling)
-+{
-+	struct sched_entity *se;
-+
-+	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-+
-+	for_each_sched_entity(se) {
-+		struct cfs_rq *qcfs_rq = cfs_rq_of(se);
-+		if (!se->on_rq)
-+			break;
-+
-+		qcfs_rq->h_nr_running -= nr_throttling;
-+
-+		if (qcfs_rq->runtime_state == RUNTIME_THROTTLING)
-+			break;
-+	}
-+
-+	if (!se)
-+		rq_of(cfs_rq)->nr_running -= nr_throttling;
-+}
-+
-  static void __account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-  				     unsigned long delta_exec)
-  {
-@@ -1401,14 +1422,33 @@ static void __account_cfs_rq_runtime(str
-  	 * if we're unable to extend our runtime we resched so that the active
-  	 * hierarchy can be throttled
-  	 */
--	if (!assign_cfs_rq_runtime(cfs_rq) && likely(cfs_rq->curr))
--		resched_task(rq_of(cfs_rq)->curr);
-+	if (assign_cfs_rq_runtime(cfs_rq))
-+		return;
-+
-+	if (unlikely(!cfs_rq->curr) || throttled_hierarchy(cfs_rq) ||
-+	   cfs_rq->runtime_state == RUNTIME_THROTTLING)
-+		return;
-+
-+	resched_task(rq_of(cfs_rq)->curr);
-+
-+	/*
-+	* Remove us from nr_running/h_nr_running so
-+	* that idle_balance gets called if necessary
-+	*/
-+	account_nr_throttling(cfs_rq, cfs_rq->h_nr_running);
-+	cfs_rq->runtime_state = RUNTIME_THROTTLING;
-+}
-+
-+static inline int cfs_rq_runtime_enabled(struct cfs_rq *cfs_rq)
-+{
-+	return cfs_bandwidth_used() &&
-+		cfs_rq->runtime_state != RUNTIME_UNLIMITED;
-  }
-
-  static __always_inline void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-  						   unsigned long delta_exec)
-  {
--	if (!cfs_bandwidth_used() || !cfs_rq->runtime_enabled)
-+	if (!cfs_rq_runtime_enabled(cfs_rq))
-  		return;
-
-  	__account_cfs_rq_runtime(cfs_rq, delta_exec);
-@@ -1416,7 +1456,9 @@ static __always_inline void account_cfs_
-
-  static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
-  {
--	return cfs_bandwidth_used() && cfs_rq->throttled;
-+	return cfs_bandwidth_used() &&
-+		(cfs_rq->runtime_state == RUNTIME_THROTTLED ||
-+		 cfs_rq->runtime_state == RUNTIME_THROTTLING);
-  }
-
-  /* check whether cfs_rq, or any parent, is throttled */
-@@ -1483,7 +1525,6 @@ static void throttle_cfs_rq(struct cfs_r
-  	struct rq *rq = rq_of(cfs_rq);
-  	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-  	struct sched_entity *se;
--	long task_delta, dequeue = 1;
-
-  	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-
-@@ -1492,25 +1533,19 @@ static void throttle_cfs_rq(struct cfs_r
-  	walk_tg_tree_from(cfs_rq->tg, tg_throttle_down, tg_nop, (void *)rq);
-  	rcu_read_unlock();
-
--	task_delta = cfs_rq->h_nr_running;
-  	for_each_sched_entity(se) {
-  		struct cfs_rq *qcfs_rq = cfs_rq_of(se);
-  		/* throttled entity or throttle-on-deactivate */
-  		if (!se->on_rq)
-  			break;
-
--		if (dequeue)
--			dequeue_entity(qcfs_rq, se, DEQUEUE_SLEEP);
--		qcfs_rq->h_nr_running -= task_delta;
-+		dequeue_entity(qcfs_rq, se, DEQUEUE_SLEEP);
-
-  		if (qcfs_rq->load.weight)
--			dequeue = 0;
-+			break;
-  	}
-
--	if (!se)
--		rq->nr_running -= task_delta;
--
--	cfs_rq->throttled = 1;
-+	cfs_rq->runtime_state = RUNTIME_THROTTLED;
-  	cfs_rq->throttled_timestamp = rq->clock;
-  	raw_spin_lock(&cfs_b->lock);
-  	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
-@@ -1525,9 +1560,15 @@ static void unthrottle_cfs_rq(struct cfs
-  	int enqueue = 1;
-  	long task_delta;
-
-+	if (cfs_rq->runtime_state == RUNTIME_THROTTLING) {
-+		/* do only the partial unthrottle */
-+		account_nr_throttling(cfs_rq, -cfs_rq->h_nr_running);
-+		return;
-+	}
-+
-  	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-
--	cfs_rq->throttled = 0;
-+	cfs_rq->runtime_state = RUNTIME_AVAILABLE;
-  	raw_spin_lock(&cfs_b->lock);
-  	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_timestamp;
-  	list_del_rcu(&cfs_rq->throttled_list);
-@@ -1743,10 +1784,7 @@ static void __return_cfs_rq_runtime(stru
-
-  static __always_inline void return_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-  {
--	if (!cfs_bandwidth_used())
--		return;
--
--	if (!cfs_rq->runtime_enabled || cfs_rq->nr_running)
-+	if (!cfs_rq_runtime_enabled(cfs_rq) || cfs_rq->nr_running)
-  		return;
-
-  	__return_cfs_rq_runtime(cfs_rq);
-@@ -1791,15 +1829,12 @@ static void do_sched_cfs_slack_timer(str
-   */
-  static void check_enqueue_throttle(struct cfs_rq *cfs_rq)
-  {
--	if (!cfs_bandwidth_used())
--		return;
--
-  	/* an active group must be handled by the update_curr()->put() path */
--	if (!cfs_rq->runtime_enabled || cfs_rq->curr)
-+	if (!cfs_rq_runtime_enabled(cfs_rq) || cfs_rq->curr)
-  		return;
-
-  	/* ensure the group is not already throttled */
--	if (cfs_rq_throttled(cfs_rq))
-+	if (cfs_rq->runtime_state == RUNTIME_THROTTLED)
-  		return;
-
-  	/* update runtime allocation */
-@@ -1814,17 +1849,21 @@ static void check_cfs_rq_runtime(struct
-  	if (!cfs_bandwidth_used())
-  		return;
-
--	if (likely(!cfs_rq->runtime_enabled || cfs_rq->runtime_remaining > 0))
-+	if (likely(cfs_rq->runtime_state != RUNTIME_THROTTLING))
-  		return;
-
-  	/*
--	 * it's possible for a throttled entity to be forced into a running
--	 * state (e.g. set_curr_task), in this case we're finished.
-+	* it is possible for additional bandwidth to arrive between
-+	* when we call resched_task for being out of runtime and we
-+	* call put_prev_task, in which case reaccount the now running
-+	* tasks
-  	 */
--	if (cfs_rq_throttled(cfs_rq))
--		return;
--
--	throttle_cfs_rq(cfs_rq);
-+	if (unlikely(cfs_rq->runtime_remaining > 0)) {
-+		account_nr_throttling(cfs_rq, -cfs_rq->h_nr_running);
-+		cfs_rq->runtime_state = RUNTIME_AVAILABLE;
-+	} else {
-+		throttle_cfs_rq(cfs_rq);
-+	}
-  }
-  #else
-  static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+--Signature=_Thu__10_Nov_2011_13_31_06_+1100_gQs2wxnThmbr=CRy--
