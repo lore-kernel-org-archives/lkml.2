@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab1KJTDK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 14:03:10 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:46890 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab1KJTDG (ORCPT
+	id S933179Ab1KJTDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 14:03:17 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37730 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab1KJTDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 14:03:06 -0500
+	Thu, 10 Nov 2011 14:03:09 -0500
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
@@ -23,182 +23,460 @@ Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@linux.vnet.ibm.com>,
         Stephen Wilson <wilsons@start.ca>
-Date: Fri, 11 Nov 2011 00:07:25 +0530
-Message-Id: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
-Subject: [PATCH v6 3.2-rc1 0/28]   Uprobes patchset with perf probe support
-x-cbid: 11111019-2674-0000-0000-000001269F1A
+Date: Fri, 11 Nov 2011 00:07:56 +0530
+Message-Id: <20111110183756.11361.63109.sendpatchset@srdronam.in.ibm.com>
+In-Reply-To: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
+References: <20111110183725.11361.57827.sendpatchset@srdronam.in.ibm.com>
+Subject: [PATCH v6 3.2-rc1 3/28]   Uprobes: register/unregister probes.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patchset implements Uprobes which enables you to dynamically probe
-any routine in a user space application and collect information
-non-disruptively.
+A probe is specified by a file:offset. Probe specifications are maintained
+in a rb tree. A uprobe can be shared by many consumers.  While registering
+a probe, a breakpoint is inserted for the first consumer, On subsequent
+probes, the consumer gets appended to the existing list of consumers. While
+unregistering a probe, breakpoint is removed if and only if the consumer
+happens to be the only remaining consumer for the probe.  All other
+unregisterations, the consumer is removed from the list of consumers.
 
-This patchset resolves most of the comments on the previous posting
-(https://lkml.org/lkml/2011/9/20/123) patchset applies on top of
-commit 1ea6b8f48918
+Given a inode, we get a list of mm's that have mapped the inode. Do the
+actual registration if mm maps the page where a probe needs to be
+inserted/removed.
 
-This patchset depends on bulkref patch from Paul McKenney
-https://lkml.org/lkml/2011/11/2/365 and enable interrupts before
-calling do_notify_resume on i686 patch
-https://lkml.org/lkml/2011/10/25/265.
+We use a temporary list to walk thro the vmas that map the inode.
+- The number of maps that map the inode, is not known before we walk
+  the rmap and keeps changing.
+- extending vm_area_struct wasnt recommended.
+- There can be more than one maps of the inode in the same mm.
 
-uprobes git is hosted at git://github.com/srikard/linux.git
-with branch inode_uprobes_v32rc1. 
-(The previous patchset posted to lkml has been rebased to 3.2-rc1 is also
-available at branch inode_uprobes_v32rc1_prev. This is to help the
-reviewers of the previous patchset to quickly identify the changes.)
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
 
-Uprobes Patches
-This patchset implements inode based uprobes which are specified as
-<file>:<offset> where offset is the offset from start of the map.
+Changelog: (Since v5)
+1. Use i_size_read(inode) instead of inode->i_size.
+2. Ensure uprobe->consumers is NULL, before __unregister_uprobe() is
+   called.
+3. remove restriction while unregistering.
+4. Earlier code leaked inode references under some conditions while
+   registering/unregistering.
+5. continue the vma-rmap walk even if the intermediate vma doesnt
+   meet the requirements.
+6. validate the vma found by find_vma before inserting/removing the
+   breakpoint
+7. call del_consumer under mutex_lock.
 
-When a uprobe is registered, Uprobes makes a copy of the probed
-instruction, replaces the first byte(s) of the probed instruction with a
-breakpoint instruction. (Uprobes uses background page replacement
-mechanism and ensures that the breakpoint affects only that process.)
+ arch/Kconfig            |    9 +
+ include/linux/uprobes.h |   16 ++
+ kernel/Makefile         |    1 
+ kernel/uprobes.c        |  323 +++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 349 insertions(+), 0 deletions(-)
 
-When a CPU hits the breakpoint instruction, Uprobes gets notified of
-trap and finds the associated uprobe. It then executes the associated
-handler. Uprobes single-steps its copy of the probed instruction and
-resumes execution of the probed process at the instruction following the
-probepoint. Instruction copies to be single-stepped are stored in a
-per-mm "execution out of line (XOL) area". Currently XOL area is
-allocated as one page vma.
-
-For previous postings: please refer: https://lkml.org/lkml/2011/6/7/232
-https://lkml.org/lkml/2011/4/1/176 http://lkml.org/lkml/2011/3/14/171/
-http://lkml.org/lkml/2010/12/16/65 http://lkml.org/lkml/2010/8/25/165
-http://lkml.org/lkml/2010/7/27/121 http://lkml.org/lkml/2010/7/12/67
-http://lkml.org/lkml/2010/7/8/239 http://lkml.org/lkml/2010/6/29/299
-http://lkml.org/lkml/2010/6/14/41 http://lkml.org/lkml/2010/3/20/107 and
-http://lkml.org/lkml/2010/5/18/307
-
-This patchset is a rework based on suggestions from discussions on lkml
-in September, March and January 2010 (http://lkml.org/lkml/2010/1/11/92,
-http://lkml.org/lkml/2010/1/27/19, http://lkml.org/lkml/2010/3/20/107
-and http://lkml.org/lkml/2010/3/31/199 ). This implementation of uprobes
-doesnt depend on utrace.
-
-Advantages of uprobes over conventional debugging include:
-
-1. Non-disruptive.
-Unlike current ptrace based mechanisms, uprobes tracing wouldnt
-involve signals, stopping threads and context switching between the
-tracer and tracee.
-
-2. Much better handling of multithreaded programs because of XOL.
-Current ptrace based mechanisms use single stepping inline, i.e they
-copy back the original instruction on hitting a breakpoint.  In such
-mechanisms tracers have to stop all the threads on a breakpoint hit or
-tracers will not be able to handle all hits to the location of
-interest. Uprobes uses execution out of line, where the instruction to
-be traced is analysed at the time of breakpoint insertion and a copy
-of instruction is stored at a different location.  On breakpoint hit,
-uprobes jumps to that copied location and singlesteps the same
-instruction and does the necessary fixups post singlestepping.
-
-3. Multiple tracers for an application.
-Multiple uprobes based tracer could work in unison to trace an
-application. There could one tracer that could be interested in
-generic events for a particular set of process. While there could be
-another tracer that is just interested in one specific event of a
-particular process thats part of the previous set of process.
-
-4. Corelating events from kernels and userspace.
-Uprobes could be used with other tools like kprobes, tracepoints or as
-part of higher level tools like perf to give a consolidated set of
-events from kernel and userspace.  In future we could look at a single
-backtrace showing application, library and kernel calls.
-
-Changes from last patchset:
-- Rebased to Linus's 3.2-rc1 (1ea6b8f48)
-- hash locks instead of i_mutex. (suggested by Christoph)
-- uprobes_mmap_mutex is also a hash mutex lock.
-- Resolved comments from Stefan, Peter and Oleg.
-- Overhauled signal handling based on Oleg's patches.
-
-Here is the list of TODO Items.
-
-- Prefiltering (i.e filtering at the time of probe insertion)
-- Return probes.
-- Support for other architectures.
-- Uprobes booster.
-- replace macro W with bits in inat table.
-
-Please refer "[PATCH 3.2-rc1 21/28] tracing: tracing: Uprobe
-tracer documentation" on how to use uprobe_tracer.
-
-Please refer "[PATCH 3.2-rc1 23/28] perf: Documentation for perf
-uprobes" on how to use uprobe_tracer.
-
-Please do provide your valuable comments.
-
-Thanks in advance.
-Srikar
-
-Srikar Dronamraju (28)
- 0: Uprobes patchset with perf probe support
- 1: uprobes: Auxillary routines to insert, find, delete uprobes
- 2: Uprobes: Allow multiple consumers for an uprobe.
- 3: Uprobes: register/unregister probes.
- 4: uprobes: Define hooks for mmap/munmap.
- 5: Uprobes: copy of the original instruction.
- 6: Uprobes: define fixups.
- 7: Uprobes: uprobes arch info
- 8: x86: analyze instruction and determine fixups.
- 9: Uprobes: Background page replacement.
-10: x86: Set instruction pointer.
-11: x86: Introduce TIF_UPROBE FLAG.
-12: Uprobes: Handle breakpoint and Singlestep
-13: x86: define a x86 specific exception notifier.
-14: uprobe: register exception notifier
-15: x86: Define x86_64 specific uprobe_task_arch_info structure
-16: uprobes: Introduce uprobe_task_arch_info structure.
-17: x86: arch specific hooks for pre/post singlestep handling.
-18: uprobes: slot allocation.
-19: tracing: modify is_delete, is_return from ints to bool.
-20: tracing: Extract out common code for kprobes/uprobes traceevents.
-21: tracing: uprobes trace_event interface
-22: perf: rename target_module to target
-23: perf: perf interface for uprobes
-24: perf: show possible probes in a given executable file or library.
-25: uprobes: call post_xol() unconditionally
-26: uprobes: introduce uprobe_deny_signal()
-27: uprobes: x86: introduce xol_was_trapped()
-28: uprobes: introduce UTASK_SSTEP_TRAPPED logic
-
-
- Documentation/trace/uprobetracer.txt    |   93 ++
- arch/Kconfig                            |    3 +
- arch/x86/Kconfig                        |    5 +-
- arch/x86/include/asm/thread_info.h      |    2 +
- arch/x86/include/asm/uprobes.h          |   58 ++
- arch/x86/kernel/Makefile                |    1 +
- arch/x86/kernel/signal.c                |    6 +
- arch/x86/kernel/uprobes.c               |  594 ++++++++++++
- include/linux/mm_types.h                |    5 +
- include/linux/sched.h                   |    4 +
- include/linux/uprobes.h                 |  170 ++++
- kernel/Makefile                         |    1 +
- kernel/fork.c                           |   15 +
- kernel/signal.c                         |    3 +
- kernel/trace/Kconfig                    |   20 +
- kernel/trace/Makefile                   |    2 +
- kernel/trace/trace.h                    |    5 +
- kernel/trace/trace_kprobe.c             |  899 +------------------
- kernel/trace/trace_probe.c              |  785 ++++++++++++++++
- kernel/trace/trace_probe.h              |  161 ++++
- kernel/trace/trace_uprobe.c             |  768 ++++++++++++++++
- kernel/uprobes.c                        | 1489 +++++++++++++++++++++++++++++++
- mm/mmap.c                               |   33 +-
- tools/perf/Documentation/perf-probe.txt |   14 +
- tools/perf/builtin-probe.c              |   49 +-
- tools/perf/util/probe-event.c           |  411 +++++++--
- tools/perf/util/probe-event.h           |   12 +-
- tools/perf/util/symbol.c                |    8 +
- tools/perf/util/symbol.h                |    1 +
- 29 files changed, 4636 insertions(+), 981 deletions(-)
-
+diff --git a/arch/Kconfig b/arch/Kconfig
+index 4b0669c..dedd489 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -61,6 +61,15 @@ config OPTPROBES
+ 	depends on KPROBES && HAVE_OPTPROBES
+ 	depends on !PREEMPT
+ 
++config UPROBES
++	bool "User-space probes (EXPERIMENTAL)"
++	help
++	  Uprobes enables kernel subsystems to establish probepoints
++	  in user applications and execute handler functions when
++	  the probepoints are hit.
++
++	  If in doubt, say "N".
++
+ config HAVE_EFFICIENT_UNALIGNED_ACCESS
+ 	bool
+ 	help
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index bf31f7c..6d5a3fe 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -45,4 +45,20 @@ struct uprobe {
+ 	loff_t			offset;
+ };
+ 
++#ifdef CONFIG_UPROBES
++extern int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer);
++extern void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer);
++#else /* CONFIG_UPROBES is not defined */
++static inline int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++	return -ENOSYS;
++}
++static inline void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++}
++#endif /* CONFIG_UPROBES */
+ #endif	/* _LINUX_UPROBES_H */
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e898c5b..9fb670d 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -109,6 +109,7 @@ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
+ obj-$(CONFIG_CRASH_DUMP) += crash_dump.o
+ obj-$(CONFIG_JUMP_LABEL) += jump_label.o
++obj-$(CONFIG_UPROBES) += uprobes.o
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/uprobes.c b/kernel/uprobes.c
+index 2c92b9a..70ab372 100644
+--- a/kernel/uprobes.c
++++ b/kernel/uprobes.c
+@@ -24,11 +24,52 @@
+ #include <linux/kernel.h>
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
++#include <linux/sched.h>
+ #include <linux/uprobes.h>
+ 
+ static struct rb_root uprobes_tree = RB_ROOT;
+ static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+ 
++#define UPROBES_HASH_SZ	13
++/* serialize (un)register */
++static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
++#define uprobes_hash(v)	(&uprobes_mutex[((unsigned long)(v)) %\
++						UPROBES_HASH_SZ])
++
++/*
++ * Maintain a temporary per vma info that can be used to search if a vma
++ * has already been handled. This structure is introduced since extending
++ * vm_area_struct wasnt recommended.
++ */
++struct vma_info {
++	struct list_head probe_list;
++	struct mm_struct *mm;
++	loff_t vaddr;
++};
++
++/*
++ * valid_vma: Verify if the specified vma is an executable vma
++ * Relax restrictions while unregistering: vm_flags might have
++ * changed after breakpoint was inserted.
++ *	- is_reg: indicates if we are in register context.
++ *	- Return 1 if the specified virtual address is in an
++ *	  executable vma.
++ */
++static bool valid_vma(struct vm_area_struct *vma, bool is_reg)
++{
++	if (!vma->vm_file)
++		return false;
++
++	if (!is_reg)
++		return true;
++
++	if ((vma->vm_flags & (VM_READ|VM_WRITE|VM_EXEC|VM_SHARED)) ==
++						(VM_READ|VM_EXEC))
++		return true;
++
++	return false;
++}
++
+ static int match_uprobe(struct uprobe *l, struct uprobe *r)
+ {
+ 	if (l->inode < r->inode)
+@@ -197,6 +238,18 @@ static bool del_consumer(struct uprobe *uprobe,
+ 	return ret;
+ }
+ 
++static int install_breakpoint(struct mm_struct *mm)
++{
++	/* Placeholder: Yet to be implemented */
++	return 0;
++}
++
++static void remove_breakpoint(struct mm_struct *mm)
++{
++	/* Placeholder: Yet to be implemented */
++	return;
++}
++
+ static void delete_uprobe(struct uprobe *uprobe)
+ {
+ 	unsigned long flags;
+@@ -207,3 +260,273 @@ static void delete_uprobe(struct uprobe *uprobe)
+ 	iput(uprobe->inode);
+ 	put_uprobe(uprobe);
+ }
++
++static struct vma_info *__find_next_vma_info(struct list_head *head,
++			loff_t offset, struct address_space *mapping,
++			struct vma_info *vi, bool is_register)
++{
++	struct prio_tree_iter iter;
++	struct vm_area_struct *vma;
++	struct vma_info *tmpvi;
++	loff_t vaddr;
++	unsigned long pgoff = offset >> PAGE_SHIFT;
++	int existing_vma;
++
++	vma_prio_tree_foreach(vma, &iter, &mapping->i_mmap, pgoff, pgoff) {
++		if (!valid_vma(vma, is_register))
++			continue;
++
++		existing_vma = 0;
++		vaddr = vma->vm_start + offset;
++		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++		list_for_each_entry(tmpvi, head, probe_list) {
++			if (tmpvi->mm == vma->vm_mm && tmpvi->vaddr == vaddr) {
++				existing_vma = 1;
++				break;
++			}
++		}
++
++		/*
++		 * Another vma needs a probe to be installed. However skip
++		 * installing the probe if the vma is about to be unlinked.
++		 */
++		if (!existing_vma &&
++				atomic_inc_not_zero(&vma->vm_mm->mm_users)) {
++			vi->mm = vma->vm_mm;
++			vi->vaddr = vaddr;
++			list_add(&vi->probe_list, head);
++			return vi;
++		}
++	}
++	return NULL;
++}
++
++/*
++ * Iterate in the rmap prio tree  and find a vma where a probe has not
++ * yet been inserted.
++ */
++static struct vma_info *find_next_vma_info(struct list_head *head,
++			loff_t offset, struct address_space *mapping,
++			bool is_register)
++{
++	struct vma_info *vi, *retvi;
++	vi = kzalloc(sizeof(struct vma_info), GFP_KERNEL);
++	if (!vi)
++		return ERR_PTR(-ENOMEM);
++
++	mutex_lock(&mapping->i_mmap_mutex);
++	retvi = __find_next_vma_info(head, offset, mapping, vi, is_register);
++	mutex_unlock(&mapping->i_mmap_mutex);
++
++	if (!retvi)
++		kfree(vi);
++	return retvi;
++}
++
++static int __register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe *uprobe)
++{
++	struct list_head try_list;
++	struct vm_area_struct *vma;
++	struct address_space *mapping;
++	struct vma_info *vi, *tmpvi;
++	struct mm_struct *mm;
++	loff_t vaddr;
++	int ret = 0;
++
++	mapping = inode->i_mapping;
++	INIT_LIST_HEAD(&try_list);
++	while ((vi = find_next_vma_info(&try_list, offset,
++						mapping, true)) != NULL) {
++		if (IS_ERR(vi)) {
++			ret = -ENOMEM;
++			break;
++		}
++		mm = vi->mm;
++		down_read(&mm->mmap_sem);
++		vma = find_vma(mm, (unsigned long)vi->vaddr);
++		if (!vma || !valid_vma(vma, true)) {
++			list_del(&vi->probe_list);
++			kfree(vi);
++			up_read(&mm->mmap_sem);
++			mmput(mm);
++			continue;
++		}
++		vaddr = vma->vm_start + offset;
++		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++		if (vma->vm_file->f_mapping->host != inode ||
++						vaddr != vi->vaddr) {
++			list_del(&vi->probe_list);
++			kfree(vi);
++			up_read(&mm->mmap_sem);
++			mmput(mm);
++			continue;
++		}
++		ret = install_breakpoint(mm);
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++		if (ret && ret == -EEXIST)
++			ret = 0;
++		if (!ret)
++			break;
++	}
++	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
++		list_del(&vi->probe_list);
++		kfree(vi);
++	}
++	return ret;
++}
++
++static void __unregister_uprobe(struct inode *inode, loff_t offset,
++						struct uprobe *uprobe)
++{
++	struct list_head try_list;
++	struct address_space *mapping;
++	struct vma_info *vi, *tmpvi;
++	struct vm_area_struct *vma;
++	struct mm_struct *mm;
++	loff_t vaddr;
++
++	mapping = inode->i_mapping;
++	INIT_LIST_HEAD(&try_list);
++	while ((vi = find_next_vma_info(&try_list, offset,
++						mapping, false)) != NULL) {
++		if (IS_ERR(vi))
++			break;
++		mm = vi->mm;
++		down_read(&mm->mmap_sem);
++		vma = find_vma(mm, (unsigned long)vi->vaddr);
++		if (!vma || !valid_vma(vma, false)) {
++			list_del(&vi->probe_list);
++			kfree(vi);
++			up_read(&mm->mmap_sem);
++			mmput(mm);
++			continue;
++		}
++		vaddr = vma->vm_start + offset;
++		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
++		if (vma->vm_file->f_mapping->host != inode ||
++						vaddr != vi->vaddr) {
++			list_del(&vi->probe_list);
++			kfree(vi);
++			up_read(&mm->mmap_sem);
++			mmput(mm);
++			continue;
++		}
++		remove_breakpoint(mm);
++		up_read(&mm->mmap_sem);
++		mmput(mm);
++	}
++
++	list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
++		list_del(&vi->probe_list);
++		kfree(vi);
++	}
++	delete_uprobe(uprobe);
++}
++
++/*
++ * register_uprobe - register a probe
++ * @inode: the file in which the probe has to be placed.
++ * @offset: offset from the start of the file.
++ * @consumer: information on howto handle the probe..
++ *
++ * Apart from the access refcount, register_uprobe() takes a creation
++ * refcount (thro alloc_uprobe) if and only if this @uprobe is getting
++ * inserted into the rbtree (i.e first consumer for a @inode:@offset
++ * tuple).  Creation refcount stops unregister_uprobe from freeing the
++ * @uprobe even before the register operation is complete. Creation
++ * refcount is released when the last @consumer for the @uprobe
++ * unregisters.
++ *
++ * Return errno if it cannot successully install probes
++ * else return 0 (success)
++ */
++int register_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++	struct uprobe *uprobe;
++	int ret = -EINVAL;
++
++	if (!consumer || consumer->next)
++		return ret;
++
++	inode = igrab(inode);
++	if (!inode)
++		return ret;
++
++	if (offset > i_size_read(inode))
++		goto reg_out;
++
++	ret = 0;
++	mutex_lock(uprobes_hash(inode));
++	uprobe = alloc_uprobe(inode, offset);
++	if (uprobe && !add_consumer(uprobe, consumer)) {
++		ret = __register_uprobe(inode, offset, uprobe);
++		if (ret) {
++			uprobe->consumers = NULL;
++			__unregister_uprobe(inode, offset, uprobe);
++		}
++	}
++
++	mutex_unlock(uprobes_hash(inode));
++	put_uprobe(uprobe);
++
++reg_out:
++	iput(inode);
++	return ret;
++}
++
++/*
++ * unregister_uprobe - unregister a already registered probe.
++ * @inode: the file in which the probe has to be removed.
++ * @offset: offset from the start of the file.
++ * @consumer: identify which probe if multiple probes are colocated.
++ */
++void unregister_uprobe(struct inode *inode, loff_t offset,
++				struct uprobe_consumer *consumer)
++{
++	struct uprobe *uprobe = NULL;
++
++	inode = igrab(inode);
++	if (!inode || !consumer)
++		goto unreg_out;
++
++	uprobe = find_uprobe(inode, offset);
++	if (!uprobe)
++		goto unreg_out;
++
++	mutex_lock(uprobes_hash(inode));
++	if (!del_consumer(uprobe, consumer)) {
++		mutex_unlock(uprobes_hash(inode));
++		goto unreg_out;
++	}
++
++	if (!uprobe->consumers)
++		__unregister_uprobe(inode, offset, uprobe);
++
++	mutex_unlock(uprobes_hash(inode));
++
++unreg_out:
++	if (uprobe)
++		put_uprobe(uprobe);
++	if (inode)
++		iput(inode);
++}
++
++static int __init init_uprobes(void)
++{
++	int i;
++
++	for (i = 0; i < UPROBES_HASH_SZ; i++)
++		mutex_init(&uprobes_mutex[i]);
++
++	return 0;
++}
++
++static void __exit exit_uprobes(void)
++{
++}
++
++module_init(init_uprobes);
++module_exit(exit_uprobes);
