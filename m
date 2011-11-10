@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935399Ab1KJQGR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:06:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50706 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935224Ab1KJQGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:06:15 -0500
-Date: Thu, 10 Nov 2011 17:07:04 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: =?utf-8?B?VG9tw6HFoSBKYW5vdcWhZWs=?= <tomi@nomi.cz>
-Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        linux-wireless@vger.kernel.org
-Subject: Re: iwlagn: memory corruption with WPA enterprise
-Message-ID: <20111110160703.GA2775@redhat.com>
-References: <20111029171554.GA16596@nomi.cz>
- <20111031160342.GB2225@redhat.com>
- <20111109155411.GA1669@nomi.cz>
- <20111109165158.GA2254@redhat.com>
- <20111110091816.GA2247@nomi.cz>
- <20111110114732.GA2217@redhat.com>
- <20111110125347.GA29415@nomi.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111110125347.GA29415@nomi.cz>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S935555Ab1KJQGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:06:24 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40120 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934881Ab1KJQGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 11:06:21 -0500
+Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Steffen Maier <maier@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org
+In-Reply-To: <4EBBF307.4070000@linux.vnet.ibm.com>
+References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
+	 <1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
+	 <4EBBF307.4070000@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 10 Nov 2011 10:06:18 -0600
+Message-ID: <1320941178.11745.11.camel@dabdike.int.hansenpartnership.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 01:53:47PM +0100, Tomáš Janoušek wrote:
-> > If "dmesg | grep corrupt" will show "Setting corrupt debug order to 1"
-> > patches are in use. Anyway I need to test the patches locally, to see
-> > if they work as expected, perhaps exception is generated but call-trace
-> > is not printed.
+On Thu, 2011-11-10 at 16:51 +0100, Steffen Maier wrote:
+> On 11/07/2011 03:51 PM, James Bottomley wrote:
+> > On Mon, 2011-11-07 at 17:24 +1100, Stephen Rothwell wrote:
 > 
-> It does say that, yes.
-
-I tested patches. They generate call-trace and make kernel panic when I
-wrote at random address from user address space. However to make kernel
-panic, we should keep as much as possible free memory, otherwise bad code
-corrupt not-protected data. In other words, when you run memory intensive
-application, corruption may happen on valid data.  So to catch the bug,
-you should just use network, and perhaps stress up cpu i.e: by this bash
-command:
-
-while true; do : ; done 
-
-Please also configure CONFIG_DEBUG_SET_MODULE_RONX=y, it protect modules
-text/read-only memory against corruption.
-
-> > Is this happen only with "Intel Corporation Centrino Advanced-N 6205" or
-> > with some other adapters?
+> >> WARNING: at drivers/scsi/scsi_lib.c:1704
 > 
-> I don't have any other iwlwifi adapters, so I wouldn't know. The people in
-> that Ubuntu bugreport have exactly that card as well, but in another notebook.
-> And they claim it works in newer Ubuntu, but I am running latest kernels with
-> latest uCode, so I'm out of ideas what else could be wrong.
-
-That's good hint for Intel folks. Would be ideal if any developer could
-reproduce that. I do not have this exact adapter model.
-
-> > > Perhaps it would be cheaper to just get another card in that case.
-> > > :-)
+> >> I get lots more of these.  The obvious commit to point the finger at
+> >> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
+> >> commands") but the root cause may be something different.
 > >
-> > That will left issue unresolved :-(
+> > Actually, I don't think it's anything to do with this: it's Anton's
+> > fault
+> >
+> > commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
+> > Author: Anton Blanchard<anton@samba.org>
+> > Date:   Thu Nov 3 08:56:22 2011 +1100
+> >
+> >      [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
+> >
+> > Doesn't completely do the teardown.  The true fix is to do a proper
+> > teardown instead of hand rolling it.  Does this fix it for you?
+> >
+> > James
+> >
+> > ---
+> > diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
+> > index 72273a0..b3c6d95 100644
+> > --- a/drivers/scsi/scsi_scan.c
+> > +++ b/drivers/scsi/scsi_scan.c
+> > @@ -319,11 +319,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
+> >   	return sdev;
+> >
+> >   out_device_destroy:
+> > -	scsi_device_set_state(sdev, SDEV_DEL);
+> > -	transport_destroy_device(&sdev->sdev_gendev);
+> > -	put_device(&sdev->sdev_dev);
+> > -	scsi_free_queue(sdev->request_queue);
+> > -	put_device(&sdev->sdev_gendev);
+> > +	__scsi_remove_device(sdev);
+> >   out:
+> >   	if (display_failure_msg)
+> >   		printk(ALLOC_FAILURE_MSG, __func__);
 > 
-> Yeah, but considering how few people report this, I'm starting to feel that it
-> might in fact be a hardware issue.
+> James, is it OK that __scsi_remove_device() now also calls 
+> sdev->host->hostt->slave_destroy(sdev) which wasn't there before?
+> 
+> I cannot prove it yet, but with this patch and some asorted others on 
+> top of 3.1 our zfcp LLD gets called with an sdev argument that was freed 
+> before or at least before dereferencing (found with DEBUG_PAGEALLOC).
 
-It's possible, but I don think so. In my practice, majority of corruption
-problems was caused by software. All true hardware corruptions I meet, was on
-development boards, many months before they went into production.
+You can argue it either way, but we're supposed to pair slave_destroy
+with slave_alloc and we already called the latter.
 
-> (We've got a lot of Lenovos here, mostly T520 and T420s, most of them running
-> Fedora, and nobody has reported memory corruption problems.
+zfcp just unconditionally assumes that if destroy is called, the
+allocation returned success.  This fixes it, doesn't it?
 
-Are there any others with 6205? If not that would confirm issue is
-related with that model.
+James
 
-> Perhaps I should try to connect to this WPA Enterprise using Windows and see
-> if anything goes wrong. However, I have no clue as to what shall I do to
-> reproduce the issue in Windows.)
+---
 
-You may first try some older kernel as Wey suggested, i.e. 2.6.38.
+diff --git a/drivers/s390/scsi/zfcp_scsi.c b/drivers/s390/scsi/zfcp_scsi.c
+index 11f07f8..4008ec0 100644
+--- a/drivers/s390/scsi/zfcp_scsi.c
++++ b/drivers/s390/scsi/zfcp_scsi.c
+@@ -55,8 +55,10 @@ static void zfcp_scsi_slave_destroy(struct scsi_device *sdev)
+ {
+ 	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
+ 
+-	zfcp_erp_lun_shutdown_wait(sdev, "scssd_1");
+-	put_device(&zfcp_sdev->port->dev);
++	if (zfcp_sdev->port) {
++		zfcp_erp_lun_shutdown_wait(sdev, "scssd_1");
++		put_device(&zfcp_sdev->port->dev);
++	}
+ }
+ 
+ static int zfcp_scsi_slave_configure(struct scsi_device *sdp)
 
-Thanks
-Stanislaw
+
