@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab1KJAIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:08:13 -0500
-Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:43421
+	id S1756888Ab1KJAIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:08:18 -0500
+Received: from 26.241.167.70.in-addr.border.exmeritus.com ([70.167.241.26]:43436
 	"EHLO border.exmeritus.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751893Ab1KJAIL (ORCPT
+	by vger.kernel.org with ESMTP id S1751893Ab1KJAIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:08:11 -0500
+	Wed, 9 Nov 2011 19:08:15 -0500
 From: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 To: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>,
@@ -16,12 +16,14 @@ Cc: linux-kernel@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
         Kyle Moffett <Kyle.D.Moffett@boeing.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Paul Bolle <pebolle@tiscali.nl>,
-        Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
-        Milton Miller <miltonm@bga.com>, Timur Tabi <timur@freescale.com>
-Subject: [RFC PATCH 01/17] powerpc/mpic: Fix bogus CONFIG_BOOKE conditional
-Date: Wed,  9 Nov 2011 19:06:59 -0500
-Message-Id: <1320883635-17194-2-git-send-email-Kyle.D.Moffett@boeing.com>
+        Paul Mackerras <paulus@samba.org>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Anatolij Gustschin <agust@denx.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+Subject: [RFC PATCH 02/17] powerpc: Split up PHYS_64BIT config option to fix "select" issues
+Date: Wed,  9 Nov 2011 19:07:00 -0500
+Message-Id: <1320883635-17194-3-git-send-email-Kyle.D.Moffett@boeing.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <4E42AB6F.1050900@freescale.com>
 References: <4E42AB6F.1050900@freescale.com>
@@ -29,124 +31,211 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code inside the conditional is only used by 85xx CoreNet fabric
-platforms, so add a new config define and use it where necessary.
+The "CONFIG_PHYS_64BIT" option violates the Kconfig best-practices in
+various colorful ways.  It has explicit dependencies, but it is also
+"select"ed by various CPUs and platforms.  It is not set on 64-bit
+systems, but it is used by a number of pieces of powerpc code to enable
+or disable 64-bit physical address support.
+
+To resolve these issues, the option has now been split into 3:
+
+  CONFIG_PHYS_64BIT_SUPPORTED:
+    This hidden option should be selected by any CPU type which supports
+    64-bit physical addresses.  This will enable the PHYS_64BIT option
+    to be selected.  It is (obviously) always set on PPC64.
+
+  CONFIG_PHYS_64BIT_DT_REQUIRED:
+    This hidden option should be selected by any board or platform which
+    has >32-bit physical devices present in hardware.  If this is set
+    then the CONFIG_PHYS_64BIT option will be forcibly enabled and
+    hidden from the user.  It is (obviously) always set on PPC64.
+
+  CONFIG_PHYS_64BIT:
+    This option is user-controllable, where allowed by CPU and platform
+    settings, and should never be pointed at with a "select" statement.
+    Due to the values of the above two options, this is never visible on
+    PPC64.
 
 Signed-off-by: Kyle Moffett <Kyle.D.Moffett@boeing.com>
 ---
- arch/powerpc/platforms/85xx/Kconfig    |    5 +++++
- arch/powerpc/platforms/85xx/Makefile   |   11 ++++++-----
- arch/powerpc/platforms/Kconfig.cputype |    3 +++
- arch/powerpc/sysdev/mpic.c             |    6 ++----
- 4 files changed, 16 insertions(+), 9 deletions(-)
+ arch/powerpc/Kconfig                   |    4 ++--
+ arch/powerpc/platforms/82xx/Kconfig    |    2 +-
+ arch/powerpc/platforms/83xx/Kconfig    |    2 +-
+ arch/powerpc/platforms/85xx/Kconfig    |   12 ++++++------
+ arch/powerpc/platforms/86xx/Kconfig    |    1 +
+ arch/powerpc/platforms/Kconfig.cputype |   25 ++++++++++++++++++-------
+ 6 files changed, 29 insertions(+), 17 deletions(-)
 
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index b177caa..27e31c5 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -18,10 +18,10 @@ config WORD_SIZE
+ 	default 32 if !PPC64
+ 
+ config ARCH_PHYS_ADDR_T_64BIT
+-       def_bool PPC64 || PHYS_64BIT
++	def_bool PHYS_64BIT
+ 
+ config ARCH_DMA_ADDR_T_64BIT
+-	def_bool ARCH_PHYS_ADDR_T_64BIT
++	def_bool PHYS_64BIT
+ 
+ config MMU
+ 	bool
+diff --git a/arch/powerpc/platforms/82xx/Kconfig b/arch/powerpc/platforms/82xx/Kconfig
+index 7c7df40..849d403 100644
+--- a/arch/powerpc/platforms/82xx/Kconfig
++++ b/arch/powerpc/platforms/82xx/Kconfig
+@@ -1,6 +1,6 @@
+ menuconfig PPC_82xx
+ 	bool "82xx-based boards (PQ II)"
+-	depends on 6xx
++	depends on 6xx && !PHYS_64BIT
+ 
+ if PPC_82xx
+ 
+diff --git a/arch/powerpc/platforms/83xx/Kconfig b/arch/powerpc/platforms/83xx/Kconfig
+index 670a033..1ed8877 100644
+--- a/arch/powerpc/platforms/83xx/Kconfig
++++ b/arch/powerpc/platforms/83xx/Kconfig
+@@ -1,6 +1,6 @@
+ menuconfig PPC_83xx
+ 	bool "83xx-based boards"
+-	depends on 6xx
++	depends on 6xx && !PHYS_64BIT
+ 	select PPC_UDBG_16550
+ 	select PPC_PCI_CHOICE
+ 	select FSL_PCI if PCI
 diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
-index 45023e2..9088381 100644
+index 9088381..37f9de7 100644
 --- a/arch/powerpc/platforms/85xx/Kconfig
 +++ b/arch/powerpc/platforms/85xx/Kconfig
-@@ -181,6 +181,7 @@ config P2041_RDB
- 	select GPIO_MPC8XXX
- 	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
-+	select FSL_CORENET
+@@ -80,7 +80,7 @@ config P1010_RDB
+ config P1022_DS
+ 	bool "Freescale P1022 DS"
+ 	select DEFAULT_UIMAGE
+-	select PHYS_64BIT	# The DTS has 36-bit addresses
++	select PHYS_64BIT_DT_REQUIRED # The DTS has 36-bit addresses
+ 	select SWIOTLB
  	help
- 	  This option enables support for the P2041 RDB board
- 
-@@ -194,6 +195,7 @@ config P3041_DS
+ 	  This option enables support for the Freescale P1022DS reference board.
+@@ -175,7 +175,7 @@ config P2041_RDB
+ 	bool "Freescale P2041 RDB"
+ 	select DEFAULT_UIMAGE
+ 	select PPC_E500MC
+-	select PHYS_64BIT
++	select PHYS_64BIT_DT_REQUIRED
+ 	select SWIOTLB
+ 	select ARCH_REQUIRE_GPIOLIB
  	select GPIO_MPC8XXX
- 	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
-+	select FSL_CORENET
- 	help
- 	  This option enables support for the P3041 DS board
- 
-@@ -206,6 +208,7 @@ config P3060_QDS
+@@ -189,7 +189,7 @@ config P3041_DS
+ 	bool "Freescale P3041 DS"
+ 	select DEFAULT_UIMAGE
+ 	select PPC_E500MC
+-	select PHYS_64BIT
++	select PHYS_64BIT_DT_REQUIRED
+ 	select SWIOTLB
+ 	select ARCH_REQUIRE_GPIOLIB
+ 	select GPIO_MPC8XXX
+@@ -203,7 +203,7 @@ config P3060_QDS
+ 	bool "Freescale P3060 QDS"
+ 	select DEFAULT_UIMAGE
+ 	select PPC_E500MC
+-	select PHYS_64BIT
++	select PHYS_64BIT_DT_REQUIRED
+ 	select SWIOTLB
  	select MPC8xxx_GPIO
  	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
-+	select FSL_CORENET
- 	help
- 	  This option enables support for the P3060 QDS board
- 
-@@ -219,6 +222,7 @@ config P4080_DS
+@@ -216,7 +216,7 @@ config P4080_DS
+ 	bool "Freescale P4080 DS"
+ 	select DEFAULT_UIMAGE
+ 	select PPC_E500MC
+-	select PHYS_64BIT
++	select PHYS_64BIT_DT_REQUIRED
+ 	select SWIOTLB
+ 	select ARCH_REQUIRE_GPIOLIB
  	select GPIO_MPC8XXX
- 	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
-+	select FSL_CORENET
- 	help
- 	  This option enables support for the P4080 DS board
- 
-@@ -235,6 +239,7 @@ config P5020_DS
+@@ -233,7 +233,7 @@ config P5020_DS
+ 	select DEFAULT_UIMAGE
+ 	select E500
+ 	select PPC_E500MC
+-	select PHYS_64BIT
++	select PHYS_64BIT_DT_REQUIRED
+ 	select SWIOTLB
+ 	select ARCH_REQUIRE_GPIOLIB
  	select GPIO_MPC8XXX
- 	select HAS_RAPIDIO
- 	select PPC_EPAPR_HV_PIC
-+	select FSL_CORENET
+diff --git a/arch/powerpc/platforms/86xx/Kconfig b/arch/powerpc/platforms/86xx/Kconfig
+index 8d6599d..576eb43 100644
+--- a/arch/powerpc/platforms/86xx/Kconfig
++++ b/arch/powerpc/platforms/86xx/Kconfig
+@@ -5,6 +5,7 @@ menuconfig PPC_86xx
+ 	select FSL_SOC
+ 	select ALTIVEC
+ 	select ARCH_WANT_OPTIONAL_GPIOLIB
++	select PHYS_64BIT_SUPPORTED
  	help
- 	  This option enables support for the P5020 DS board
+ 	  The Freescale E600 SoCs have 74xx cores.
  
-diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
-index bc5acb9..c6d1334 100644
---- a/arch/powerpc/platforms/85xx/Makefile
-+++ b/arch/powerpc/platforms/85xx/Makefile
-@@ -13,11 +13,12 @@ obj-$(CONFIG_MPC85xx_RDB) += mpc85xx_rdb.o
- obj-$(CONFIG_P1010_RDB)   += p1010rdb.o
- obj-$(CONFIG_P1022_DS)    += p1022_ds.o
- obj-$(CONFIG_P1023_RDS)   += p1023_rds.o
--obj-$(CONFIG_P2041_RDB)   += p2041_rdb.o corenet_ds.o
--obj-$(CONFIG_P3041_DS)    += p3041_ds.o corenet_ds.o
--obj-$(CONFIG_P3060_QDS)   += p3060_qds.o corenet_ds.o
--obj-$(CONFIG_P4080_DS)    += p4080_ds.o corenet_ds.o
--obj-$(CONFIG_P5020_DS)    += p5020_ds.o corenet_ds.o
-+obj-$(CONFIG_P2041_RDB)   += p2041_rdb.o
-+obj-$(CONFIG_P3041_DS)    += p3041_ds.o
-+obj-$(CONFIG_P3060_QDS)   += p3060_qds.o
-+obj-$(CONFIG_P4080_DS)    += p4080_ds.o
-+obj-$(CONFIG_P5020_DS)    += p5020_ds.o
-+obj-$(CONFIG_FSL_CORENET) += corenet_ds.o
- obj-$(CONFIG_STX_GP3)	  += stx_gp3.o
- obj-$(CONFIG_TQM85xx)	  += tqm85xx.o
- obj-$(CONFIG_SBC8560)     += sbc8560.o
 diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index fbecae0..9210e94 100644
+index 9210e94..0ab01b0 100644
 --- a/arch/powerpc/platforms/Kconfig.cputype
 +++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -177,6 +177,9 @@ config FSL_BOOKE
- 	select SYS_SUPPORTS_HUGETLBFS if PHYS_64BIT
- 	default y
+@@ -26,6 +26,7 @@ config PPC_BOOK3S_32
  
-+config FSL_CORENET
-+	bool
+ config PPC_85xx
+ 	bool "Freescale 85xx"
++	select PHYS_64BIT_SUPPORTED
+ 	select E500
+ 
+ config PPC_8xx
+@@ -47,7 +48,8 @@ config 44x
+ 	select PPC_UDBG_16550
+ 	select 4xx_SOC
+ 	select PPC_PCI_CHOICE
+-	select PHYS_64BIT
++	select PHYS_64BIT_SUPPORTED
++	select PHYS_64BIT_DT_REQUIRED
+ 
+ config E200
+ 	bool "Freescale e200"
+@@ -187,14 +189,20 @@ config PPC_FSL_BOOK3E
+ 	select PPC_SMP_MUXED_IPI
+ 	default y if FSL_BOOKE
+ 
+-config PTE_64BIT
+-	bool
+-	depends on 44x || E500 || PPC_86xx
+-	default y if PHYS_64BIT
++## Only some 32-bit CPUs support 64-bit physical addresses
++config PHYS_64BIT_SUPPORTED
++	def_bool PPC64
 +
- # this is for common code between PPC32 & PPC64 FSL BOOKE
- config PPC_FSL_BOOK3E
- 	bool
-diff --git a/arch/powerpc/sysdev/mpic.c b/arch/powerpc/sysdev/mpic.c
-index 0842c6f..1a3d84a 100644
---- a/arch/powerpc/sysdev/mpic.c
-+++ b/arch/powerpc/sysdev/mpic.c
-@@ -1642,9 +1642,9 @@ unsigned int mpic_get_irq(void)
- 	return mpic_get_one_irq(mpic);
- }
++## Some 32-bit system device trees have >32-bit physical addresses, and so
++## the kernel won't boot unless those are supported.
++config PHYS_64BIT_DT_REQUIRED
++	def_bool PPC64
  
-+#ifdef CONFIG_FSL_CORENET
- unsigned int mpic_get_coreint_irq(void)
- {
--#ifdef CONFIG_BOOKE
- 	struct mpic *mpic = mpic_primary;
- 	u32 src;
++## DO NOT "select" this user-visible symbol, select the two above instead!
+ config PHYS_64BIT
+-	bool 'Large physical address support' if E500 || PPC_86xx
+-	depends on (44x || E500 || PPC_86xx) && !PPC_83xx && !PPC_82xx
++	def_bool PHYS_64BIT_DT_REQUIRED
++	prompt 'Large physical address support' if !PHYS_64BIT_DT_REQUIRED
++	depends on PHYS_64BIT_SUPPORTED
+ 	---help---
+ 	  This option enables kernel support for larger than 32-bit physical
+ 	  addresses.  This feature may not be available on all cores.
+@@ -205,6 +213,9 @@ config PHYS_64BIT
  
-@@ -1664,10 +1664,8 @@ unsigned int mpic_get_coreint_irq(void)
- 	}
+ 	  If in doubt, say N here.
  
- 	return irq_linear_revmap(mpic->irqhost, src);
--#else
--	return NO_IRQ;
--#endif
- }
-+#endif
- 
- unsigned int mpic_get_mcirq(void)
- {
++config PTE_64BIT
++	def_bool PHYS_64BIT
++
+ config ALTIVEC
+ 	bool "AltiVec Support"
+ 	depends on 6xx || POWER4
 -- 
 1.7.2.5
 
