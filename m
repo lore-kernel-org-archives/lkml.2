@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757750Ab1KJPvj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 10:51:39 -0500
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:59477 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab1KJPvh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 10:51:37 -0500
-Message-ID: <4EBBF307.4070000@linux.vnet.ibm.com>
-Date: Thu, 10 Nov 2011 16:51:35 +0100
-From: Steffen Maier <maier@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110921 Thunderbird/3.1.15
+	id S935257Ab1KJPwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 10:52:16 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44543 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753561Ab1KJPwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 10:52:14 -0500
+X-Greylist: delayed 6800 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Nov 2011 10:52:14 EST
+Date: Thu, 10 Nov 2011 16:50:19 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Luis Henriques <henrix@camandro.org>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the crypto-current tree
+Message-ID: <20111110155019.GA7068@elte.hu>
+References: <20111101115851.2e37ac680db78bdba0661691@canb.auug.org.au>
+ <20111102200900.GA3454@hades>
+ <20111102233936.GA10058@gondor.apana.org.au>
+ <20111103055824.GC22141@secunet.com>
+ <20111103061628.GA12678@gondor.apana.org.au>
+ <20111103101554.GA17569@onza.mythic-beasts.com>
+ <20111103114214.GA14681@gondor.apana.org.au>
+ <20111103115933.GA12708@onza.mythic-beasts.com>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org
-Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
-References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au> <1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
-In-Reply-To: <1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111103115933.GA12708@onza.mythic-beasts.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/2011 03:51 PM, James Bottomley wrote:
-> On Mon, 2011-11-07 at 17:24 +1100, Stephen Rothwell wrote:
 
->> WARNING: at drivers/scsi/scsi_lib.c:1704
+* Luis Henriques <henrix@camandro.org> wrote:
 
->> I get lots more of these.  The obvious commit to point the finger at
->> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
->> commands") but the root cause may be something different.
->
-> Actually, I don't think it's anything to do with this: it's Anton's
-> fault
->
-> commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
-> Author: Anton Blanchard<anton@samba.org>
-> Date:   Thu Nov 3 08:56:22 2011 +1100
->
->      [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
->
-> Doesn't completely do the teardown.  The true fix is to do a proper
-> teardown instead of hand rolling it.  Does this fix it for you?
->
-> James
->
-> ---
-> diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> index 72273a0..b3c6d95 100644
-> --- a/drivers/scsi/scsi_scan.c
-> +++ b/drivers/scsi/scsi_scan.c
-> @@ -319,11 +319,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
->   	return sdev;
->
->   out_device_destroy:
-> -	scsi_device_set_state(sdev, SDEV_DEL);
-> -	transport_destroy_device(&sdev->sdev_gendev);
-> -	put_device(&sdev->sdev_dev);
-> -	scsi_free_queue(sdev->request_queue);
-> -	put_device(&sdev->sdev_gendev);
-> +	__scsi_remove_device(sdev);
->   out:
->   	if (display_failure_msg)
->   		printk(ALLOC_FAILURE_MSG, __func__);
+> On Thu, Nov 03, 2011 at 10:42:14PM +1100, Herbert Xu wrote:
+> > On Thu, Nov 03, 2011 at 10:15:54AM +0000, Luis Henriques wrote:
+> > >
+> > > No, this did not solved the problem; build still fails.  The problem is
+> > > that, in lib/nlattr.c, we have:
+> > 
+> > Ugh, for the time being I guess we'll have to wrap these within
+> > CONFIG_NET, as I'd rather not have CONFIG_CRYPTO depend on CONFIG_NET.
+> > 
+> > Please let me know whether this patch fixes the problem.
+> 
+> Yep, it compiles and boots.  Thanks for the patch.
 
-James, is it OK that __scsi_remove_device() now also calls 
-sdev->host->hostt->slave_destroy(sdev) which wasn't there before?
+v3.2-rc1 has been released with this (commonly triggering) build bug 
+included. Herbert, is the fix on the way to upstream?
 
-I cannot prove it yet, but with this patch and some asorted others on 
-top of 3.1 our zfcp LLD gets called with an sdev argument that was freed 
-before or at least before dereferencing (found with DEBUG_PAGEALLOC).
+Thanks,
 
-Steffen
-
-Linux on System z Development
-
-IBM Deutschland Research & Development GmbH
-Vorsitzender des Aufsichtsrats: Martin Jetter
-Geschäftsführung: Dirk Wittkopp
-Sitz der Gesellschaft: Böblingen
-Registergericht: Amtsgericht Stuttgart, HRB 243294
-
+	Ingo
