@@ -1,108 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935555Ab1KJQGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 11:06:24 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:40120 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934881Ab1KJQGV (ORCPT
+	id S964907Ab1KJQHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 11:07:33 -0500
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:14376 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934881Ab1KJQHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 11:06:21 -0500
-Subject: Re: WARNING: at drivers/scsi/scsi_lib.c:1704
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Steffen Maier <maier@linux.vnet.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bart Van Assche <bvanassche@acm.org>, linux-scsi@vger.kernel.org
-In-Reply-To: <4EBBF307.4070000@linux.vnet.ibm.com>
-References: <20111107172408.834c6ffcecfe35f7452c7e60@canb.auug.org.au>
-	 <1320677484.1215.10.camel@dabdike.int.hansenpartnership.com>
-	 <4EBBF307.4070000@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 10 Nov 2011 10:06:18 -0600
-Message-ID: <1320941178.11745.11.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Nov 2011 11:07:31 -0500
+From: <oskar.andero@sonyericsson.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <jic23@cam.ac.uk>, <aghayal@codeaurora.org>,
+        Courtney Cavin <courtney.cavin@sonyericsson.com>,
+        Oskar Andero <oskar.andero@sonyericsson.com>
+Subject: [PATCH] input: add driver support for Sharp gp2ap002a00f proximity sensor
+Date: Thu, 10 Nov 2011 17:07:53 +0100
+Message-ID: <1320941273-21228-1-git-send-email-oskar.andero@sonyericsson.com>
+X-Mailer: git-send-email 1.7.7
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-10 at 16:51 +0100, Steffen Maier wrote:
-> On 11/07/2011 03:51 PM, James Bottomley wrote:
-> > On Mon, 2011-11-07 at 17:24 +1100, Stephen Rothwell wrote:
-> 
-> >> WARNING: at drivers/scsi/scsi_lib.c:1704
-> 
-> >> I get lots more of these.  The obvious commit to point the finger at
-> >> is 3308511c93e6 ("[SCSI] Make scsi_free_queue() kill pending SCSI
-> >> commands") but the root cause may be something different.
-> >
-> > Actually, I don't think it's anything to do with this: it's Anton's
-> > fault
-> >
-> > commit f7c9c6bb14f3104608a3a83cadea10a6943d2804
-> > Author: Anton Blanchard<anton@samba.org>
-> > Date:   Thu Nov 3 08:56:22 2011 +1100
-> >
-> >      [SCSI] Fix block queue and elevator memory leak in scsi_alloc_sdev
-> >
-> > Doesn't completely do the teardown.  The true fix is to do a proper
-> > teardown instead of hand rolling it.  Does this fix it for you?
-> >
-> > James
-> >
-> > ---
-> > diff --git a/drivers/scsi/scsi_scan.c b/drivers/scsi/scsi_scan.c
-> > index 72273a0..b3c6d95 100644
-> > --- a/drivers/scsi/scsi_scan.c
-> > +++ b/drivers/scsi/scsi_scan.c
-> > @@ -319,11 +319,7 @@ static struct scsi_device *scsi_alloc_sdev(struct scsi_target *starget,
-> >   	return sdev;
-> >
-> >   out_device_destroy:
-> > -	scsi_device_set_state(sdev, SDEV_DEL);
-> > -	transport_destroy_device(&sdev->sdev_gendev);
-> > -	put_device(&sdev->sdev_dev);
-> > -	scsi_free_queue(sdev->request_queue);
-> > -	put_device(&sdev->sdev_gendev);
-> > +	__scsi_remove_device(sdev);
-> >   out:
-> >   	if (display_failure_msg)
-> >   		printk(ALLOC_FAILURE_MSG, __func__);
-> 
-> James, is it OK that __scsi_remove_device() now also calls 
-> sdev->host->hostt->slave_destroy(sdev) which wasn't there before?
-> 
-> I cannot prove it yet, but with this patch and some asorted others on 
-> top of 3.1 our zfcp LLD gets called with an sdev argument that was freed 
-> before or at least before dereferencing (found with DEBUG_PAGEALLOC).
+From: Courtney Cavin <courtney.cavin@sonyericsson.com>
 
-You can argue it either way, but we're supposed to pair slave_destroy
-with slave_alloc and we already called the latter.
-
-zfcp just unconditionally assumes that if destroy is called, the
-allocation returned success.  This fixes it, doesn't it?
-
-James
-
+Signed-off-by: Courtney Cavin <courtney.cavin@sonyericsson.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonyericsson.com>
 ---
+ drivers/input/misc/Kconfig        |   11 ++
+ drivers/input/misc/Makefile       |    1 +
+ drivers/input/misc/gp2ap002a00f.c |  265 +++++++++++++++++++++++++++++++++++++
+ include/linux/gp2ap002a00f.h      |   13 ++
+ 4 files changed, 290 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/gp2ap002a00f.c
+ create mode 100644 include/linux/gp2ap002a00f.h
 
-diff --git a/drivers/s390/scsi/zfcp_scsi.c b/drivers/s390/scsi/zfcp_scsi.c
-index 11f07f8..4008ec0 100644
---- a/drivers/s390/scsi/zfcp_scsi.c
-+++ b/drivers/s390/scsi/zfcp_scsi.c
-@@ -55,8 +55,10 @@ static void zfcp_scsi_slave_destroy(struct scsi_device *sdev)
- {
- 	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 22d875f..dee96a0 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -544,4 +544,15 @@ config INPUT_XEN_KBDDEV_FRONTEND
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called xen-kbdfront.
  
--	zfcp_erp_lun_shutdown_wait(sdev, "scssd_1");
--	put_device(&zfcp_sdev->port->dev);
-+	if (zfcp_sdev->port) {
-+		zfcp_erp_lun_shutdown_wait(sdev, "scssd_1");
-+		put_device(&zfcp_sdev->port->dev);
++config INPUT_GP2A
++	tristate "Sharp GP2AP002A00F I2C Proximity/Opto sensor driver"
++	depends on I2C
++	default n
++	help
++	  Say Y here if you have a Sharp GP2AP002A00F proximity/als combo-chip
++	  hooked to an I2C bus.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called gp2ap002a00f.
++
+ endif
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index a244fc6..1681993 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -22,6 +22,7 @@ obj-$(CONFIG_INPUT_CMA3000)		+= cma3000_d0x.o
+ obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x_i2c.o
+ obj-$(CONFIG_INPUT_COBALT_BTNS)		+= cobalt_btns.o
+ obj-$(CONFIG_INPUT_DM355EVM)		+= dm355evm_keys.o
++obj-$(CONFIG_INPUT_GP2A)		+= gp2ap002a00f.o
+ obj-$(CONFIG_HP_SDC_RTC)		+= hp_sdc_rtc.o
+ obj-$(CONFIG_INPUT_IXP4XX_BEEPER)	+= ixp4xx-beeper.o
+ obj-$(CONFIG_INPUT_KEYSPAN_REMOTE)	+= keyspan_remote.o
+diff --git a/drivers/input/misc/gp2ap002a00f.c b/drivers/input/misc/gp2ap002a00f.c
+new file mode 100644
+index 0000000..b1af83a
+--- /dev/null
++++ b/drivers/input/misc/gp2ap002a00f.c
+@@ -0,0 +1,265 @@
++/*
++ * Copyright (C) 2009,2010 Sony Ericsson Mobile Communications Inc.
++ *
++ * Author: Courtney Cavin <courtney.cavin@sonyericsson.com>
++ * Prepared for up-stream by: Oskar Andero <oskar.andero@sonyericsson.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2, as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/slab.h>
++#include <linux/input.h>
++#include <linux/module.h>
++#include <linux/workqueue.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/gp2ap002a00f.h>
++
++struct gp2a_data {
++	struct input_dev *device;
++	struct gp2a_platform_data *pdata;
++	struct i2c_client *i2c_client;
++};
++
++enum gp2a_addr {
++	GP2A_ADDR_PROX	= 0x0,
++	GP2A_ADDR_GAIN	= 0x1,
++	GP2A_ADDR_HYS	= 0x2,
++	GP2A_ADDR_CYCLE	= 0x3,
++	GP2A_ADDR_OPMOD	= 0x4,
++	GP2A_ADDR_CON	= 0x6
++};
++
++enum gp2a_controls {
++	GP2A_CTRL_SSD	= 0x01
++};
++
++#define NUM_TRIES 5
++static int gp2a_write_byte(struct gp2a_data *dt, u8 reg, u8 val)
++{
++	int error;
++	int n;
++	struct device *dev = &dt->i2c_client->dev;
++
++	for (n = 0; n < NUM_TRIES; n++) {
++		error = i2c_smbus_write_byte_data(dt->i2c_client, reg, val);
++		if (error < 0)
++			dev_err(dev, "i2c_smbus write failed, %d\n", error);
++		else
++			return 0;
++		msleep(10);
 +	}
- }
- 
- static int zfcp_scsi_slave_configure(struct scsi_device *sdp)
-
++	return error;
++}
++
++static int gp2a_initialize(struct gp2a_data *dt)
++{
++	int error;
++
++	error = gp2a_write_byte(dt, GP2A_ADDR_GAIN, 0x08);
++	if (error < 0)
++		return error;
++
++	error = gp2a_write_byte(dt, GP2A_ADDR_HYS, 0xc2);
++	if (error < 0)
++		return error;
++
++	error = gp2a_write_byte(dt, GP2A_ADDR_CYCLE, 0x04);
++	if (error < 0)
++		return error;
++
++	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, 0x00);
++
++	return error;
++}
++
++static int gp2a_report(struct gp2a_data *dt)
++{
++	int vo = gpio_get_value(dt->pdata->gpio);
++
++	input_report_abs(dt->device, ABS_DISTANCE, vo ? 255 : 0);
++	input_sync(dt->device);
++
++	return 0;
++}
++
++static irqreturn_t gp2a_irq(int irq, void *dev_id)
++{
++	struct device *dev = dev_id;
++	struct gp2a_data *dt = dev_get_drvdata(dev);
++
++	gp2a_report(dt);
++
++	return IRQ_HANDLED;
++}
++
++static int gp2a_device_open(struct input_dev *dev)
++{
++	struct gp2a_data *dt = input_get_drvdata(dev);
++	int error;
++
++	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, GP2A_CTRL_SSD);
++	if (error < 0) {
++		dev_err(&dev->dev, "Unable to activate, err %d\n", error);
++		return error;
++	}
++
++	enable_irq(gpio_to_irq(dt->i2c_client->irq));
++
++	if (dt->pdata->wake)
++		enable_irq_wake(gpio_to_irq(dt->i2c_client->irq));
++
++	gp2a_report(dt);
++
++	return 0;
++}
++
++static void gp2a_device_close(struct input_dev *dev)
++{
++	struct gp2a_data *dt = input_get_drvdata(dev);
++	int error;
++
++	if (dt->pdata->wake)
++		disable_irq_wake(gpio_to_irq(dt->i2c_client->irq));
++
++	disable_irq(gpio_to_irq(dt->i2c_client->irq));
++	error = gp2a_write_byte(dt, GP2A_ADDR_OPMOD, 0);
++	if (error < 0)
++		dev_err(&dev->dev, "Unable to deactivate, err %d\n", error);
++}
++
++static int gp2a_probe(struct i2c_client *client,
++		      const struct i2c_device_id *id);
++static int gp2a_remove(struct i2c_client *client);
++
++static const struct i2c_device_id gp2a_i2c_id[] = {
++	{GP2A_I2C_NAME, 0},
++	{}
++};
++
++static struct i2c_driver gp2a_i2c_driver = {
++	.driver = {
++		.name	= GP2A_I2C_NAME,
++		.owner	= THIS_MODULE
++	},
++	.probe		= gp2a_probe,
++	.remove		= __devexit_p(gp2a_remove),
++	.id_table	= gp2a_i2c_id
++};
++
++static int gp2a_probe(struct i2c_client *client, const struct i2c_device_id *id)
++{
++	struct gp2a_platform_data *pdata;
++	struct gp2a_data *dt;
++	int error;
++
++	pdata = client->dev.platform_data;
++	if (!pdata)
++		return -EINVAL;
++
++	if (pdata->gpio_setup) {
++		error = pdata->gpio_setup();
++		if (error < 0)
++			return error;
++	}
++
++	error = gpio_direction_input(pdata->gpio);
++	if (error < 0)
++		goto err_gpio_shutdown;
++
++	dt = kzalloc(sizeof(struct gp2a_data), GFP_KERNEL);
++	if (!dt) {
++		error = -ENOMEM;
++		goto err_gpio_shutdown;
++	}
++
++	client->driver = &gp2a_i2c_driver;
++	dt->pdata = pdata;
++	dt->i2c_client = client;
++	i2c_set_clientdata(client, dt);
++
++	error = gp2a_initialize(dt);
++	if (error < 0)
++		goto err_free_dt;
++
++	dt->device = input_allocate_device();
++	if (!dt->device) {
++		error = -ENOMEM;
++		goto err_free_dt;
++	}
++
++	input_set_drvdata(dt->device, dt);
++
++	dt->device->open = gp2a_device_open;
++	dt->device->close = gp2a_device_close;
++	dt->device->name = GP2A_I2C_NAME;
++	dt->device->id.bustype = BUS_I2C;
++	set_bit(EV_ABS, dt->device->evbit);
++	set_bit(ABS_DISTANCE, dt->device->absbit);
++
++	input_set_abs_params(dt->device, ABS_DISTANCE, 0, 255, 0, 0);
++
++	error = input_register_device(dt->device);
++	if (error) {
++		dev_err(&dt->device->dev, "device registration failed\n");
++		input_free_device(dt->device);
++		goto err_free_dt;
++	}
++
++	error = request_threaded_irq(gpio_to_irq(dt->i2c_client->irq), NULL,
++			gp2a_irq, IRQF_TRIGGER_RISING |
++			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++			GP2A_I2C_NAME, &dt->i2c_client->dev);
++	if (error) {
++		dev_err(&dt->device->dev, "irq request failed\n");
++		goto err_unreg_input;
++	}
++	disable_irq(gpio_to_irq(dt->i2c_client->irq));
++
++	return 0;
++
++err_unreg_input:
++	input_unregister_device(dt->device);
++err_free_dt:
++	kfree(dt);
++err_gpio_shutdown:
++	if (pdata->gpio_shutdown)
++		pdata->gpio_shutdown();
++	return error;
++}
++
++static int gp2a_remove(struct i2c_client *client)
++{
++	struct gp2a_data *dt = i2c_get_clientdata(client);
++
++	device_init_wakeup(&client->dev, 0);
++	if (dt->pdata->gpio_shutdown)
++		dt->pdata->gpio_shutdown();
++	free_irq(gpio_to_irq(dt->i2c_client->irq), &dt->i2c_client->dev);
++	input_unregister_device(dt->device);
++	kfree(dt);
++
++	return 0;
++}
++
++static int __init gp2a_init(void)
++{
++	return i2c_add_driver(&gp2a_i2c_driver);
++}
++
++static void __exit gp2a_exit(void)
++{
++	i2c_del_driver(&gp2a_i2c_driver);
++}
++
++module_init(gp2a_init);
++module_exit(gp2a_exit);
++
++MODULE_AUTHOR("Courtney Cavin <courtney.cavin@sonyericsson.com>");
++MODULE_DESCRIPTION("Sharp GP2AP002A00F I2C Proximity/Opto sensor driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/gp2ap002a00f.h b/include/linux/gp2ap002a00f.h
+new file mode 100644
+index 0000000..74e2610
+--- /dev/null
++++ b/include/linux/gp2ap002a00f.h
+@@ -0,0 +1,13 @@
++#ifndef _GP2AP002A00F_H_
++#define _GP2AP002A00F_H_
++
++#define GP2A_I2C_NAME   "gp2ap002a00f"
++
++struct gp2a_platform_data {
++	int gpio;
++	int wake;
++	int (*gpio_setup)(void);
++	int (*gpio_shutdown)(void);
++};
++
++#endif
+-- 
+1.7.7
 
