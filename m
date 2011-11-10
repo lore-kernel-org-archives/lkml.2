@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756764Ab1KJWmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 17:42:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59535 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1KJWmS (ORCPT
+	id S1756781Ab1KJWoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 17:44:16 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3071 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab1KJWoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 17:42:18 -0500
-Date: Thu, 10 Nov 2011 22:42:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 02/16] ARM: pgtable: Fix compiler warning in
-	ioremap.c introduced by nopud
-Message-ID: <20111110224208.GT12913@n2100.arm.linux.org.uk>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com> <1320682618-1182-3-git-send-email-catalin.marinas@arm.com>
+	Thu, 10 Nov 2011 17:44:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6526"; a="134217090"
+Date: Thu, 10 Nov 2011 16:44:12 -0600
+From: Richard Kuo <rkuo@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Subject: Upcoming key signing events?
+Message-ID: <20111110224412.GC459@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1320682618-1182-3-git-send-email-catalin.marinas@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 07, 2011 at 04:16:44PM +0000, Catalin Marinas wrote:
-> With the arch/arm code conversion to pgtable-nopud.h, the section and
-> supersection (un|re)map code triggers compiler warnings on UP systems.
-> This is caused by pmd_offset() being given a pgd_t argument rather than
-> a pud_t one. This patch makes the necessary conversion with the
-> assumption that the pud is folded into the pgd. The page table setting
-> code only loops over the pmd which is enough with the classic page
-> tables. This code is not compiled when LPAE is enabled.
+Are there going to be any key signing events in the near future?
 
-This should come before the nopud include, so that we don't introduce the
-warnings in the first place.  The result should compile to the same code
-with just this patch applied.
+Or are there any devs in Texas that would like to get together and
+sign keys?
+
+
+
+Thanks,
+Richard Kuo
+
+
+
+-- 
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
