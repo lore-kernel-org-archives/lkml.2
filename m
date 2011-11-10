@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab1KJAvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Nov 2011 19:51:32 -0500
+	id S933592Ab1KJAxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Nov 2011 19:53:00 -0500
 Received: from mga03.intel.com ([143.182.124.21]:1731 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756624Ab1KJAvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Nov 2011 19:51:31 -0500
+	id S1756846Ab1KJAvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Nov 2011 19:51:32 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.69,486,1315206000"; 
-   d="scan'208";a="35103407"
+   d="scan'208";a="35103416"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
         "Ingo Molnar" <mingo@elte.hu>,
@@ -24,48 +24,77 @@ To: "Thomas Gleixner" <tglx@linutronix.de>, "H Peter Anvin" <hpa@zytor.com>,
 Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>,
         "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v3 0/7] x86: BSP or CPU0 online/offline
-Date: Wed,  9 Nov 2011 16:34:10 -0800
-Message-Id: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v3 2/7] x86/common.c: Init BSP data during BSP online
+Date: Wed,  9 Nov 2011 16:34:12 -0800
+Message-Id: <1320885257-16647-3-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
+References: <1320885257-16647-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-BSP or CPU0 has been the last obstacle to CPU hotplug on x86. This patch set
-implements BSP online and offline and removes this obstacle to CPU hotplug.
+During BSP online, enable x2apic, set_numa_node, add numa mask, and enable
+sep cpu for BSP.
 
-RAS needs the feature. If socket0 needs to be hotplugged for any reason (any
-thread on socket0 is bad, shared cache issue, uncore issue, etc), CPU0 is
-required to be offline or hot replaced to keep the system run.
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/include/asm/processor.h |    1 +
+ arch/x86/kernel/cpu/common.c     |   13 ++++++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-v3: Register a pm notifier to check if CPU0 is online before hibernate/suspend.
-Small wording changes in document and print info.
-
-v2: Add locking changes between cpu hotplug and hibernate/suspend. Change PIC
-irq bound to CPU0 detection.
-
-Fenghua Yu (7):
-  x86/topology.c: Support functions for BSP online/offline
-  x86/common.c: Init BSP data during BSP online
-  x86/mtrr/main.c: Ask the first online CPU to save mtrr
-  x86/smpboot.c: Don't offline BSP if any irq can not be migrated out
-    of it
-  Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0
-    online/offline feature
-  x86/i387.c: Thread xstate is initialized only on BSP once
-  x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
-
- Documentation/cpu-hotplug.txt       |   19 +++++++++++++++
- Documentation/kernel-parameters.txt |   13 ++++++++++
- arch/x86/include/asm/processor.h    |    1 +
- arch/x86/kernel/cpu/common.c        |   13 ++++++++--
- arch/x86/kernel/cpu/mtrr/main.c     |    9 +++++-
- arch/x86/kernel/i387.c              |    9 ++++++-
- arch/x86/kernel/smpboot.c           |   43 ++++++++++++++++++++++++++++-----
- arch/x86/kernel/topology.c          |   24 +++++++++++++-----
- arch/x86/power/cpu.c                |   44 +++++++++++++++++++++++++++++++++++
- 9 files changed, 155 insertions(+), 20 deletions(-)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index b650435..4057161 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -162,6 +162,7 @@ extern struct pt_regs *idle_regs(struct pt_regs *);
+ 
+ extern void early_cpu_init(void);
+ extern void identify_boot_cpu(void);
++extern void identify_boot_cpu_online(void);
+ extern void identify_secondary_cpu(struct cpuinfo_x86 *);
+ extern void print_cpu_info(struct cpuinfo_x86 *);
+ extern void init_scattered_cpuid_features(struct cpuinfo_x86 *c);
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index aa003b1..faa3bda 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -916,6 +916,14 @@ void __init identify_boot_cpu(void)
+ #endif
+ }
+ 
++void __cpuinit identify_boot_cpu_online(void)
++{
++	numa_add_cpu(smp_processor_id());
++#ifdef CONFIG_X86_32
++	enable_sep_cpu();
++#endif
++}
++
+ void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+ {
+ 	BUG_ON(c == &boot_cpu_data);
+@@ -1163,7 +1171,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && percpu_read(numa_node) == 0 &&
++	if (percpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+@@ -1195,8 +1203,7 @@ void __cpuinit cpu_init(void)
+ 	barrier();
+ 
+ 	x86_configure_nx();
+-	if (cpu != 0)
+-		enable_x2apic();
++	enable_x2apic();
+ 
+ 	/*
+ 	 * set up and load the per-CPU TSS
+-- 
+1.6.0.3
 
