@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758068Ab1KKQvq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 11:51:46 -0500
-Received: from mxout1.idt.com ([157.165.5.25]:51463 "EHLO mxout1.idt.com"
+	id S1758074Ab1KKQwm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 11:52:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:3554 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1KKQvp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 11:51:45 -0500
-x-mimeole: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1756737Ab1KKQwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 11:52:41 -0500
+Date: Fri, 11 Nov 2011 17:48:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Glauber Costa <glommer@parallels.com>, Nathan Lynch <ntl@pobox.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serue@us.ibm.com>, Daniel Lezcano <dlezcano@fr.ibm.com>
+Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
+	pids
+Message-ID: <20111111164800.GA27245@redhat.com>
+References: <4EBC0696.9030103@parallels.com> <4EBC06DB.3090202@parallels.com> <20111110184654.GA1006@redhat.com> <20111110185603.GA1757@redhat.com> <4EBCF4E7.4090002@parallels.com> <20111111152532.GA22640@redhat.com> <4EBD461E.1000106@parallels.com> <CAOS58YOW5KpP3OJDd5PqsMUg6PicnLW6jH_5Hb7WGPsnCYXGBw@mail.gmail.com> <4EBD4A7E.7060102@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] fsl-rio: fix compile error
-Date: Fri, 11 Nov 2011 08:49:45 -0800
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55202490DDA@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <1321019308-7785-1-git-send-email-Gang.Liu@freescale.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] fsl-rio: fix compile error
-Thread-Index: AcygeLVarahD4eCCSnGEFlm8mc+YcAAGLG4w
-References: <1321019308-7785-1-git-send-email-Gang.Liu@freescale.com>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Liu Gang <Gang.Liu@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <paul.gortmaker@windriver.com>, <r58472@freescale.com>,
-        <B11780@freescale.com>, <r61911@freescale.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EBD4A7E.7060102@parallels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 8:48 AM Liu Gang <Gang.Liu@freescale.com> wrote:
+On 11/11, Pavel Emelyanov wrote:
+>
+> First of all - let's imagine that we just want to clone a set of tasks. Then
+> each of them will have to fork its kids, then report first of them that he's
+> OK to fork and wait for it to report back, that forking is done. Then do the
+> same for the rest of them. This is not impossible, but painful.
 
-> Sent: Friday, November 11, 2011 8:48 AM
-> To: linuxppc-dev@lists.ozlabs.org; Bounine, Alexandre
-> Cc: akpm@linux-foundation.org; linux-kernel@vger.kernel.org;
-> paul.gortmaker@windriver.com; r58472@freescale.com;
-> B11780@freescale.com; r61911@freescale.com; Liu Gang
-> Subject: [PATCH] fsl-rio: fix compile error
-> 
-> The "#include <linux/module.h>" was replaced by "#include
-> <linux/export.h>"
-> in the patch "powerpc: various straight conversions from module.h -->
-> export.h".
-> This will cause the following compile problem:
-> arch/powerpc/sysdev/fsl_rio.c: In function 'fsl_rio_mcheck_exception':
-> arch/powerpc/sysdev/fsl_rio.c:296: error: implicit declaration of
-> function 'search_exception_tables'.
-> 
-> The file fsl_rio.c needs the declaration of function
-> "search_exception_tables"
-> in the header file "linux/module.h".
-> 
-> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-> ---
->  arch/powerpc/sysdev/fsl_rio.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/fsl_rio.c
-> b/arch/powerpc/sysdev/fsl_rio.c
-> index de170fd..22ffccd 100644
-> --- a/arch/powerpc/sysdev/fsl_rio.c
-> +++ b/arch/powerpc/sysdev/fsl_rio.c
-> @@ -23,7 +23,7 @@
->   */
-> 
->  #include <linux/init.h>
-> -#include <linux/export.h>
-> +#include <linux/module.h>
->  #include <linux/types.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/interrupt.h>
-> --
-> 1.7.3.1
-> 
+Why we should wait/report? They can do this in parallel, only
+"set_last_pid + fork" needs the synchronization or "check + retry".
 
+> Next - let's consider we have some tasks sharing various resources, e.g. mm-s
+> or fd-tables. This means, that these tasks should be cloned in the carefully
+> calculated sequence with CLONE_XXX flags set. In this case the described above
+> scheme with fork() serialization simply won't work and we'll have to invent
+> some fancy messaging with "now X fork with Y pid" and "X done with forking,
+> please go on" messages.
 
-Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Can't understand...
+
+Oleg.
 
