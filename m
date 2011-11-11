@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263Ab1KKNBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 08:01:23 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44805 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab1KKNBW (ORCPT
+	id S1757420Ab1KKNBe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 08:01:34 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:54386 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757331Ab1KKNBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 08:01:22 -0500
+	Fri, 11 Nov 2011 08:01:33 -0500
+Message-ID: <4EBD1CC5.3030008@oracle.com>
+Date: Fri, 11 Nov 2011 18:31:57 +0530
+From: Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110414 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Date: Fri, 11 Nov 2011 21:01:20 +0800
-Message-ID: <CAJd=RBC5Q48r0sYeqF9bucaBJPv3LR4UTAannUZ8KXxoXY_Qcw@mail.gmail.com>
-Subject: [PATCH] hugetlb: release pages in the error path of hugetlb_cow()
-From: Hillf Danton <dhillf@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <jweiner@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: Resolving inconsistency with Intel processor manual
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4EBD1C75.00BA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fail to prepare anon_vma, {new, old}_page should be released, or they will
-escape the track and/or control of memory management.
+Following is from Notes of section 11.5.3 of Intel processor manual
+available at http://www.intel.com/Assets/PDF/manual/325384.pdf:
+For the Pentium 4 and Intel Xeon processors, after the sequence of
+steps given above has been executed, the cache lines containing the
+code between the end of the WBINVD instruction and before the
+MTRRS have actually been disabled may be retained in the cache
+hierarchy. Here, to remove code from the cache completely, a second
+WBINVD instruction must be executed after the MTRRs have been
+disabled.
 
-Thanks
+This patch provides resolution for that.
+Ideally, I will like to make changes only for Pentium 4 and Xeon processors.
+But, I am not finding easier way to do it.
+And, extra wbinvd() instruction does not hurt much for other processors.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
 ---
+  arch/x86/kernel/cpu/mtrr/generic.c |    1 +
+  1 files changed, 1 insertions(+), 0 deletions(-)
 
---- a/mm/hugetlb.c	Fri Nov 11 20:36:32 2011
-+++ b/mm/hugetlb.c	Fri Nov 11 20:43:06 2011
-@@ -2422,6 +2422,8 @@ retry_avoidcopy:
- 	 * anon_vma prepared.
- 	 */
- 	if (unlikely(anon_vma_prepare(vma))) {
-+		page_cache_release(new_page);
-+		page_cache_release(old_page);
- 		/* Caller expects lock to be held */
- 		spin_lock(&mm->page_table_lock);
- 		return VM_FAULT_OOM;
+diff --git a/arch/x86/kernel/cpu/mtrr/generic.c 
+b/arch/x86/kernel/cpu/mtrr/generic.c
+index a71efcdb..4cd9919 100644
+--- a/arch/x86/kernel/cpu/mtrr/generic.c
++++ b/arch/x86/kernel/cpu/mtrr/generic.c
+@@ -693,6 +693,7 @@ static void prepare_set(void) 
+__acquires(set_atomicity_lock)
+
+         /* Disable MTRRs, and set the default type to uncached */
+         mtrr_wrmsr(MSR_MTRRdefType, deftype_lo & ~0xcff, deftype_hi);
++       wbinvd();
+  }
+
+  static void post_set(void) __releases(set_atomicity_lock)
+-- 
+1.7.5.1
+
