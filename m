@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab1KKWrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 17:47:49 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59867 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab1KKWrr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 17:47:47 -0500
+	id S1754097Ab1KKWuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 17:50:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752848Ab1KKWuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 17:50:06 -0500
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] intel-iommu: Default to non-coherent for domains unattached
+ to iommus
+To: dwmw2@infradead.org
+Cc: iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chrisw@sous-sol.org, ddutile@redhat.com,
+        alex.williamson@redhat.com
+Date: Fri, 11 Nov 2011 15:49:56 -0700
+Message-ID: <20111111224849.9756.13368.stgit@bling.home>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20111111171446.GA13144@emperor.us.dell.com>
-References: <1321030375-8221-1-git-send-email-linkinjeon@gmail.com>
-	<20111111171446.GA13144@emperor.us.dell.com>
-Date: Sat, 12 Nov 2011 07:47:46 +0900
-Message-ID: <CAKYAXd_MpvGEqk-WWBV_n0V_DBEco1SnJUpVhWAb3=e+CWhh-Q@mail.gmail.com>
-Subject: Re: [PATCH] efi: add option for MSR partition.
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Matt Domsch <Matt_Domsch@dell.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eugeneteo@kernel.sg" <eugeneteo@kernel.sg>,
-        "davej@codemonkey.org.uk" <davej@codemonkey.org.uk>,
-        "Warns@pre-sense.de" <Warns@pre-sense.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/11/12 Matt Domsch <Matt_Domsch@dell.com>:
-> On Fri, Nov 11, 2011 at 10:52:55AM -0600, Namjae Jeon wrote:
->> After formatting GUID table on MS windows, MSR(Windows Reserved
->> Partition) is not visible on MS windows. But this partition is
->> visible in linux. User don't want to see the stranged partitin. So I
->> try to add option that user can select MSR partition to be visible
->> or not in linux.
->
-> Hello Namjae.  Thank you for your patch, however, I do not agree with
-> your reasoning.  I understand Windows wishes to hide this partition
-> from its users.  That is entirely their choice.  Linux, on the other
-> hand, has not hidden this partition from users since it GPT was first
-> created over a decade ago.  Your patch changes user-visible
-> behavior.  Furthermore, disk partitioning tools such as GNU Parted,
-> which parse GPT, will be highly confused when the partition table on
-> disk has indices 1..N, but /proc/partitions now reports indices
-> 1..(N-1), where the first partition was skipped, and now the whole
-> list is "off by one".
->
-> As such, I cannot recommend your patch be applied.
-Hi Matt.
-Thanks for your opinion. I got your point.
->
-> Thanks,
-> Matt
->
->
-> --
-> Matt Domsch
-> Technology Strategist
-> Dell | Office of the CTO
->
+domain_update_iommu_coherency() currently default to setting domains
+as coherent when the domain is not attached to any iommus.  This
+allows for a window in domain_context_mapping_one() where such a
+domain can update context entries non-coherenty, and only after
+update the domain capability to clear iommu_coherency.
+
+This can be seen using KVM device assignment on VT-d systems that
+do not support coherency in the ecap register.  When a device is
+added to a guest, a domain is created (iommu_coherency = 0), the
+device is attached, and ranges are mapped.  If we then hot unplug
+the device, the coherency is updated and set to the default (1)
+since no iommus are attached to the domain.  A subsequenct attach
+of a device makes use of the same dmar domain (now marked coherent)
+updates context entries with cohrency enabled, and only disables
+coherency as the last step in the process.
+
+To fix this, switch domain_update_iommu_coherency() to use the
+safer, non-coherent default for domains not attached to iommus.
+
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Tested-by: Donald Dutile <ddutile@redhat.com>
+Acked-by: Donald Dutile <ddutile@redhat.com>
+---
+
+ drivers/iommu/intel-iommu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index c0c7820..6b9d8c1 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -560,7 +560,9 @@ static void domain_update_iommu_coherency(struct dmar_domain *domain)
+ {
+ 	int i;
+ 
+-	domain->iommu_coherency = 1;
++	i = find_first_bit(&domain->iommu_bmp, g_num_of_iommus);
++
++	domain->iommu_coherency = i < g_num_of_iommus ? 1 : 0;
+ 
+ 	for_each_set_bit(i, &domain->iommu_bmp, g_num_of_iommus) {
+ 		if (!ecap_coherent(g_iommus[i]->ecap)) {
+
