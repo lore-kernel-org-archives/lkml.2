@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab1KKVsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 16:48:00 -0500
-Received: from mail-pz0-f42.google.com ([209.85.210.42]:40207 "EHLO
-	mail-pz0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab1KKVr7 (ORCPT
+	id S1753852Ab1KKVxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 16:53:49 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19233 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752089Ab1KKVxs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 16:47:59 -0500
-Message-ID: <4EBD980B.7040300@google.com>
-Date: Fri, 11 Nov 2011 13:47:55 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 11 Nov 2011 16:53:48 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 11 Nov 2011 13:53:36 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Russell King <linux@arm.linux.org.uk>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Fri, 11 Nov 2011 13:53:35 -0800
+Subject: RE: [PATCH v4 04/10] arm/tegra: prepare early init for multiple
+ tegra variants
+Thread-Topic: [PATCH v4 04/10] arm/tegra: prepare early init for multiple
+ tegra variants
+Thread-Index: AcygZDPoq/XAvvl9QNuHPBS3Tup/bgAV+n0A
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17408058B9@HQMAIL01.nvidia.com>
+References: <1321010541-31337-1-git-send-email-pdeschrijver@nvidia.com>
+ <1321010541-31337-5-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1321010541-31337-5-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.linux.openvz.devel
-To: Andrew Vagin <avagin@openvz.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH] sched: don't call task_group() many times in set_task_rq()
-References: <1321020240-3874331-1-git-send-email-avagin@openvz.org>
-In-Reply-To: <1321020240-3874331-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For future note, please keep lists that don't allow cross-posting out of CC:
+Peter De Schrijver wrote at Friday, November 11, 2011 4:22 AM:
+> This patch splits the early init code in a common and a tegra20 specific part.
+> L2 cache initialization is generalized and discovers the cache associativity
+> at runtime. Also use arm_pm_restart instead of arm_arch_reset and reset the
+> the system using the PMC reset feature rather then the CAR system reset.
 
-"You are not allowed to post to this mailing list, and your message has
-been automatically rejected.  If you think that your messages are
-being rejected in error, contact the mailing list owner at
-devel-owner@openvz.org."
+> diff --git a/arch/arm/mach-tegra/board.h b/arch/arm/mach-tegra/board.h
+> -void tegra_assert_system_reset(char mode, const char *cmd);
 
-Thanks,
+Given you explicitly removed that from the header...
 
-- Paul
+> +++ b/arch/arm/mach-tegra/clock.c
+>  void tegra_assert_system_reset(char mode, const char *cmd)
+
+Maybe you want to make it static in the .c file too?
+
+-- 
+nvpublic
+
