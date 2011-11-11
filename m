@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758066Ab1KKQt4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 11:49:56 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:7804 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab1KKQtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 11:49:55 -0500
-Message-ID: <4EBD522E.2000203@parallels.com>
-Date: Fri, 11 Nov 2011 20:49:50 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758047Ab1KKQvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 11:51:07 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:45804 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752116Ab1KKQvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 11:51:05 -0500
+Date: Fri, 11 Nov 2011 11:51:01 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: =?iso-8859-1?B?Suly9G1l?= Pinot <ngc891@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Evolution of kernel size
+Message-ID: <20111111165101.GA11227@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	=?iso-8859-1?B?Suly9G1l?= Pinot <ngc891@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20111110143333.GA29457@comet.deepsky.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Glauber Costa <glommer@parallels.com>, Nathan Lynch <ntl@pobox.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Serge Hallyn <serue@us.ibm.com>, Daniel Lezcano <dlezcano@fr.ibm.com>
-Subject: Re: [PATCH 3/3] pids: Make it possible to clone tasks with given
- pids
-References: <4EBC0696.9030103@parallels.com> <4EBC06DB.3090202@parallels.com> <20111110184654.GA1006@redhat.com> <20111110185603.GA1757@redhat.com> <4EBCF4E7.4090002@parallels.com> <20111111152532.GA22640@redhat.com> <4EBD461E.1000106@parallels.com> <CAOS58YOW5KpP3OJDd5PqsMUg6PicnLW6jH_5Hb7WGPsnCYXGBw@mail.gmail.com> <CAOS58YOS77+WZt19qu_72DPgEPdwTdkD88J6RNR4a3x0h-2Qkw@mail.gmail.com> <4EBD4ACB.2070001@parallels.com> <20111111162200.GA24737@google.com>
-In-Reply-To: <20111111162200.GA24737@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111110143333.GA29457@comet.deepsky.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2011 08:22 PM, Tejun Heo wrote:
-> On Fri, Nov 11, 2011 at 08:18:19PM +0400, Pavel Emelyanov wrote:
->>> To add a bit, it's also one of the more *serialized* path. Doing it in
->>> parallel might actually hurt, 
->>
->> Can you elaborate on this, please?
+On Thu, Nov 10, 2011 at 11:33:33PM +0900, Jérôme Pinot wrote:
+> Hi,
 > 
-> It goes through a lot of locks - tasklist_lock, mmlist_lock, other
-> subsys locks depending on CLONE_* options.  If you try to do that on
-> multiple CPUs in parallel, depending on the level of concurrency,
-> contention and extra cacheline bounces may dominate the overhead.
+> I took some time to make a graph of the evolution of the size of the
+> linux kernel tar.bz2 since version 1.0 till 3.1 (297 releases).
+> It doesn't count the stable branches (2.6.x.y).
 
-O_O Here are the times of forks on my box (4cores X 2threads, Xeon, RHEL6)
+The question really is what are you trying to show with the graph, and
+what do you plan to use the graph for?  If it is estimating the size
+of disk space that you'll need at some point in the future, that's
+fine.  If it's for entertainment value, that's fine too.
 
-1 cpu 500k forks                                         - 37s
-2 cpus on different cores 500k forks on each in parallel - 39s
-4 cpus on different cores 500k forks on each in parallel - 41s
+But if it's to try to make some claims about (for example) kernel
+complexity, you'd do better to measure the size of various specific
+subsystems, such as mm, core kernel, a specific file system, etc.  And
+even then, the statistics can be misleading since sometimes
+refactoring to reduce complexity or removing unneeded abstraction
+layers can end up reducing the size of the subsystem, but leave it in
+a more maintainable state.
 
-8 cpus 500k forks on each in parallel                    - 1m5s
-
-So the fork() scaling seems quite good to me.
-
-> Thanks.
-> 
-
+						- Ted
