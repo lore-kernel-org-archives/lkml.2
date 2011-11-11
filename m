@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab1KKPbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 10:31:51 -0500
-Received: from 8bytes.org ([88.198.83.132]:43771 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751284Ab1KKPbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 10:31:50 -0500
-Date: Fri, 11 Nov 2011 16:31:48 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86 amd_gart_64: Verify we can perform the
-	remapping requested
-Message-ID: <20111111153148.GC11779@8bytes.org>
-References: <m1lisj48q1.fsf@fess.ebiederm.org> <m1fwir48og.fsf@fess.ebiederm.org> <20111024100735.GL1512@8bytes.org>
+	id S1757952Ab1KKPcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 10:32:11 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:59311 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757841Ab1KKPcJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 10:32:09 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111024100735.GL1512@8bytes.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: Disabling TCP slow start after idle
+Date: Fri, 11 Nov 2011 15:30:23 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AEBA@saturn3.aculab.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Disabling TCP slow start after idle
+Thread-Index: AcyghtQ7BHv2le6LRuugzCPIPltbUQ==
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "linuxppc-dev" <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 11 Nov 2011 15:30:24.0260 (UTC) FILETIME=[D4C45440:01CCA086]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 24, 2011 at 12:07:36PM +0200, Joerg Roedel wrote:
-> On Mon, Oct 17, 2011 at 02:20:15PM -0700, Eric W. Biederman wrote:
-> > 
-> > Recently I had a driver try with a peculiar 2G dma memory limit.
-> > The driver failed in weird and strange ways because the GART remapping
-> > apperture had been allocated above 2G where the driver cound not reach,
-> > and no error was reported when the mappings were setup.
-> > 
-> > Implement gart_dma_supported to test for this problem case and to return
-> > and error if we can not support the remapping.
-> 
-> You do basically the same as for swiotlb, so it must be good :)
+We have some connections that suffer very badly from the TCP
+'slow start' algorithm. These are connections that will
+always be local - they may be MAC-Switch-MAC using RGMII
+crossover, they might also be connected via an external
+switch. In either case the RTT is most likely to be almost
+zero, certainly below 1ms.
 
-Okay, thinking more about this, I am not so sure anymore it is a really
-good idea to fix it this way. It basically signals the driver that DMA
-is not possible with the device if the aperture does not fit into
-the dma_mask. But DMA within the ZONE_DMA might still work, no?
+The traffic is single packets (carrying another protocol)
+so we have Nagle disabled and the send and receive sides
+run separately. So the traffic is neither bulk, nor
+command/response.
 
-So I think the right way to fix it is to return a dma-mapping error if
-and only if the address needs to be remapped by the aperture (of swiotlb or
-gart).
+This means that there is very rarely any unacked data,
+so almost every packet is sent using 'slow start'.
 
-This still allows the driver to use GFP_DMA allocations.
+If the external switch drops a packet (they do!) then
+slow start stops more packets being sent, and nothing
+progresses for about 1.5 seconds by which time there
+is a significant amount of traffic queued and, in some
+cases, data has to be discarded.
 
+Similar issues happen if the receiving system decides
+to defer the ack until a timer tick (instead of
+sending one after every second packet). In this case
+only 4 packets are sent. (We fixed this one be sending
+a software ACK every 4 packets.)
 
-	Joerg
+Quite cleary the 'slow start' algorithm just doesn't
+work in these cases.
+
+I found this https://lkml.org/lkml/2010/4/9/427
+discussion about a socket option to disable slow start.
+But it seems that some people are completely against the idea.
+I'd have thought that the global option would be more of a
+problem - since that will affect ftp connections to remote
+hosts where slow start is alomost certainly benefitial.
+
+I'd have thought it would be sensible to allow one (or more)
+of the following (either as a sysctl, socket option, or
+code change):
+1) Disable slow start for the local subnet.
+2) Disable slow start for connections with very low RTT.
+3) Disable slow start for a minimum period with no traffic
+   (after the last packet is acked).
+
+I'm not sure of the resolution used by the Linux RTT
+calculations. I know NetBSD had a recent set of patches
+to fix calculation errors with low RTT because the code
+had been written when all RTT were much longer.
+
+	David
+
+(Copied to linuxppc-dev because I'm subscribed to it.)
+
 
