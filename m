@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab1KKOnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 09:43:20 -0500
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:28985 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751602Ab1KKOnR (ORCPT
+	id S1755562Ab1KKOot (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 09:44:49 -0500
+Received: from mail-am1.bigfish.com ([213.199.180.138]:54730 "EHLO
+	AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752789Ab1KKOor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 09:43:17 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: O_2xtfcVM1li.UvtE7_mD17hDG8XE.SrC6r7u5YI9cyJ4bK
- z_L5_FiGMHrFeUpwhRAS8xX3_pg2_SdP1lE6vy.gHoizoHPeWGGSgy0jSNxH
- fcSXHZLqxxlK0hFvmSF4Qp6pX_UifAlHcwiv_93GMb2A2A4ipxKkevi5jwxZ
- _BstJx4gjheT0P0PHHqMjm4naUzvwugCaSI9tFzTAKuFAgSWIHaO_ML9ayub
- 7_vmMth9qmbhseLXrB.ZurGbYPIqYqALY0NQle_E15f3a322AkVDQpYf7BoN
- q6ZWWYp4lvbCuCNQ.Y0fNM4SZunHKkdnCRK1NXiODoQtWOKoaLjslSMsPbK6
- Sy7iLgeV_i9tqrFPgg.bxi8NeIfO.IioE602ovrgmedHxic1yh8ZIGf22jp2
- 4zxQ6YYvUyAHERIVHwIrL8Q--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 11 Nov 2011 08:43:13 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Yong Zhang <yong.zhang0@gmail.com>, linux-kernel@vger.kernel.org,
-        Pekka Enberg <penberg@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, cl@gentwo.org
-Subject: Re: 3.2-rc1: INFO: possible recursive locking detected
-In-Reply-To: <20111110234717.GI2354@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1111110841470.3006@router.home>
-References: <20111109090556.GA5949@zhy> <20111110234717.GI2354@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 11 Nov 2011 09:44:47 -0500
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Nov 2011 09:44:47 EST
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dKzz1202hzzz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LUI2XC-01-6Z7-02
+X-M-MSG: 
+Date: Fri, 11 Nov 2011 15:29:35 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: Re: [PATCH] perf_events: fix and improve x86 event scheduling
+Message-ID: <20111111142935.GI15738@erda.amd.com>
+References: <20111107110149.GA5177@quad>
+ <20111110180308.GD15738@erda.amd.com>
+ <1320951167.13800.50.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1320951167.13800.50.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Nov 2011, Paul E. McKenney wrote:
+On 10.11.11 19:52:47, Peter Zijlstra wrote:
+> IIRC, Robert's proposal limits the rewind stack to 1, which, if my mind
+> didn't completely stop working, should end up being something like
+> O(n^3). Now I don't know if Robert's thing is perfect for AMD F15 or if
+> there's still some odd fail cases, but since he's from AMD I suspect its
+> good enough in practice.
 
-> On Wed, Nov 09, 2011 at 05:05:57PM +0800, Yong Zhang wrote:
-> > Hi,
-> >
-> > Just get below waring when doing:
-> > for i in `seq 1 10`; do ./perf bench -f simple sched messaging -g 40; done
-> >
-> > And kernel config is attached.
->
-> This appears to me to be the same false positive from the slab allocator
-> that has been seen before.  Christoph, any progress on this?
+Yes, patches are ok for AMD F15.
 
-No this is another issue because it is not SLAB but SLUB. Must be a bug
-introduced by the recent merges of the per cpu partial list support.
+> In fact, I almost merged his code, my only complaint was a lack of
+> comments and having had to spend several hours to fully understand the
+> thing a few months ago, I felt it really could use some since I didn't
+> want to have to spend that amount of effort every time I'd have to look
+> at the thing.
+
+Will repost an updated version.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
