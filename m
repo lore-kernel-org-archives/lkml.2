@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab1KKC0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 21:26:01 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59329 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756746Ab1KKCZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 21:25:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="73849432"
-Subject: Re: [PATCH v2 0/4] ata port runtime power management support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jeff Garzik <jgarzik@pobox.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <JBottomley@parallels.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>, Kay Sievers <kay.sievers@vrfy.org>
-In-Reply-To: <20111110153132.GD27258@google.com>
-References: <1320906166-15459-1-git-send-email-ming.m.lin@intel.com>
-	 <20111110153036.GC27258@google.com>  <20111110153132.GD27258@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Nov 2011 10:25:56 +0800
-Message-ID: <1320978356.32515.11.camel@minggr>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756819Ab1KKCbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 21:31:15 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60953 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab1KKCbO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Nov 2011 21:31:14 -0500
+Date: Thu, 10 Nov 2011 18:31:05 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+cc: linux-mm@kvack.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, minchan.kim@gmail.com
+Subject: Re: [PATCH v2] mm: add free_hot_cold_page_list helper
+In-Reply-To: <20111101074502.32668.93131.stgit@zurg>
+Message-ID: <alpine.LSU.2.00.1111101810420.1239@sister.anvils>
+References: <20110729075837.12274.58405.stgit@localhost6> <20111101074502.32668.93131.stgit@zurg>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-11-10 at 23:31 +0800, Tejun Heo wrote:
-> Ooh, by the way, can you please write more about how you tested it?
+On Tue, 1 Nov 2011, Konstantin Khlebnikov wrote:
 
-I have 2 disks installed.
-sda installs the OS. I use sdb to test ata port runtime PM.
+> This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
+> It frees pages directly from the list without temporary page-vector.
+> It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
 
-# set "auto" to enable disk runtime PM
-# echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata3/host2/target2:0:0/2:0:0:0/power/control
+Sorry for not speaking up sooner, but I do like this patch very much
+(and I'm content with your trace compatibility choice - whatever).
 
-mount sdb1 causes ata port resume
+Not so much in itself, but because it then allows a further patch
+(mainly to mm/vmscan.c) to remove two levels of pagevec, reducing
+its deepest stack by around 240 bytes.
 
-umount sdb1 causes ata port suspend
+I have that patch, but keep putting off sending it in, because I want
+to show a reclaim stack overflow that it prevents, but the new avoidance
+of writeback in direct reclaim makes that harder to demonstrate.  Damn!
 
-> 
-> Thanks.
-> 
+One question on your patch: where you have release_pages() doing
+> +		list_add_tail(&page->lru, &pages_to_free);
 
+That seems reasonable, but given that __pagevec_free() proceeds by
+	while (--i >= 0) {
+, starting from the far end of the pagevec (the most recently added
+struct page, the most likely to be hot), wouldn't you reproduce
+existing behaviour more accurately by a simple list_add()?
 
+Or have I got that back to front?  If so, a comment on the
+list_add_tail() would help me to remember why - thanks.
+
+Hugh
