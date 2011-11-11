@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757236Ab1KKPCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 10:02:13 -0500
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:33870 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752723Ab1KKPCM (ORCPT
+	id S1757843Ab1KKPCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 10:02:41 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:34343 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756676Ab1KKPCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 10:02:12 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OAKoUdEVM1lu6LcbxjDIsqPPXBe9NDug7KL0bVAmCsJuivy
- bNp6Ef7aMo7VCW6U8RSlhFeGMgkjnSL00XDo3is4saKwFA6ovnyMaYyg4msb
- SU1z5dAoYvQi80Zj.2MRZqRYB98w5fF0ppXNTq9lHNBGhq_MsQMQBeBUOs9z
- BQMB6MeLhREjN1sqvUn5QmdyeVkqAXpXno9dUKncjUjkNdxaaisQNhfxAY_Y
- FTk81ChNAm4jXJu0_m2.mKBY8c2GDcKKMF5tD6lEORW2iALwFQbPqg4UPznu
- 9Mnv_g7NYj1iNiGXLdU.Gx2NBh0EY.q51ZKCkCE3Ne8o6yuOYxw7oUoGd_Bg
- 1ImfULFwYkcVEqmEqrlynx6ZuOdArHmGLHxKhJpg3U_RvGw--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Fri, 11 Nov 2011 09:02:08 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Shaohua Li <shaohua.li@intel.com>
-cc: Julie Sullivan <kernelmail.jms@gmail.com>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: INFO: possible recursive locking detected: get_partial_node()
- on 3.2-rc1
-In-Reply-To: <1320980671.22361.252.camel@sli10-conroe>
-Message-ID: <alpine.DEB.2.00.1111110857330.3557@router.home>
-References: <20111109090556.GA5949@zhy>  <201111102335.06046.kernelmail.jms@gmail.com> <1320980671.22361.252.camel@sli10-conroe>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Nov 2011 10:02:39 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH] ext4: remove unneeded variable.
+Date: Sat, 12 Nov 2011 00:02:24 +0900
+Message-Id: <1321023744-16249-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Nov 2011, Shaohua Li wrote:
+ret2 is not needed in ext4_flush_completed_IO().
 
-> Looks this could be a real dead lock. we hold a lock to free a object,
-> but the free need allocate a new object. if the new object and the freed
-> object are from the same slab, there is a deadlock.
+Signed-off-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/ext4/fsync.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-unfreeze partials is never called when going through get_partial_node()
-so there is no deadlock AFAICT.
-
-> discard_slab() doesn't need hold the lock if the slab is already removed
-> from partial list. how about below patch, only compile tested.
-
-In general I think it is good to move the call to discard_slab() out from
-under the list_lock in unfreeze_partials(). Could you fold
-discard_page_list into unfreeze_partials()? __flush_cpu_slab still calls
-discard_page_list with disabled interrupts even after your patch.
-
-
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 00a2cb7..40397ac 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -81,7 +81,6 @@ int ext4_flush_completed_IO(struct inode *inode)
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+ 	unsigned long flags;
+ 	int ret = 0;
+-	int ret2 = 0;
+ 
+ 	dump_completed_IO(inode);
+ 	spin_lock_irqsave(&ei->i_completed_io_lock, flags);
+@@ -105,12 +104,10 @@ int ext4_flush_completed_IO(struct inode *inode)
+ 		 */
+ 		spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+ 		ret = ext4_end_io_nolock(io);
+-		if (ret < 0)
+-			ret2 = ret;
+ 		spin_lock_irqsave(&ei->i_completed_io_lock, flags);
+ 	}
+ 	spin_unlock_irqrestore(&ei->i_completed_io_lock, flags);
+-	return (ret2 < 0) ? ret2 : 0;
++	return (ret < 0) ? ret : 0;
+ }
+ 
+ /*
+-- 
+1.7.4.4
 
