@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948Ab1KKPsh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 10:48:37 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63269 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab1KKPsg (ORCPT
+	id S1757970Ab1KKPsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 10:48:45 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:52815 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab1KKPsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 10:48:36 -0500
-Message-ID: <4EBD43BB.8090903@windriver.com>
-Date: Fri, 11 Nov 2011 10:48:11 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+	Fri, 11 Nov 2011 10:48:43 -0500
 MIME-Version: 1.0
-To: Liu Gang <Gang.Liu@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <Alexandre.Bounine@idt.com>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>, <B11780@freescale.com>, <r61911@freescale.com>
-Subject: Re: [PATCH] fsl-rio: fix compile error
-References: <1321019308-7785-1-git-send-email-Gang.Liu@freescale.com>
-In-Reply-To: <1321019308-7785-1-git-send-email-Gang.Liu@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+In-Reply-To: <1321004878-17534-1-git-send-email-chanho61.park@samsung.com>
+References: <1321004878-17534-1-git-send-email-chanho61.park@samsung.com>
+Date: Fri, 11 Nov 2011 16:48:42 +0100
+Message-ID: <CACRpkda3dE_g9q1Q_rhh8WXxkktYz-qL4dXBK0p8h2W_cBtP1Q@mail.gmail.com>
+Subject: Re: [PATCHv3] pinctrl: add a pin_base for sparse gpio-ranges
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chanho Park <chanho61.park@samsung.com>
+Cc: swarren@nvidia.com, Baohua.Song@csr.com, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-11-11 08:48 AM, Liu Gang wrote:
-> The "#include <linux/module.h>" was replaced by "#include <linux/export.h>"
-> in the patch "powerpc: various straight conversions from module.h --> export.h".
-> This will cause the following compile problem:
-> arch/powerpc/sysdev/fsl_rio.c: In function 'fsl_rio_mcheck_exception':
-> arch/powerpc/sysdev/fsl_rio.c:296: error: implicit declaration of function 'search_exception_tables'.
-> 
-> The file fsl_rio.c needs the declaration of function "search_exception_tables"
-> in the header file "linux/module.h".
+On Fri, Nov 11, 2011 at 10:47 AM, Chanho Park <chanho61.park@samsung.com> wrote:
 
-Thanks -- not sure why this never showed up in my builds of all the
-powerpc configs, _or_ the linux-next builds.  Maybe srio isn't enabled
-in any of them? 
+> This patch enables mapping a base offset of gpio ranges with
+> a pin offset even if does'nt matched. A base of pinctrl_gpio_range
+> means a base offset of gpio. However, we cannot convert gpio to pin
+> number for sparse gpio ranges just only using a gpio base offset.
+> We can convert a gpio to real pin number(even if not matched) using
+> a new pin_base which means a base pin offset of requested gpio range.
+> Now, the pin control subsystem passes the pin base offset to the
+> pinmux driver.
 
-In any case it looks fine to me.  Having the search_exception_tables
-live in module.h seems odd, but that is an independent issue for later.
+Thanks, patch applied, however review my discussion with Stephen
+about the usefulness of the GPIO-specific instructions altogether...
 
-I can queue this unless someone else has already done so.
-
-Paul.
-
-> 
-> Signed-off-by: Liu Gang <Gang.Liu@freescale.com>
-> ---
->  arch/powerpc/sysdev/fsl_rio.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/powerpc/sysdev/fsl_rio.c b/arch/powerpc/sysdev/fsl_rio.c
-> index de170fd..22ffccd 100644
-> --- a/arch/powerpc/sysdev/fsl_rio.c
-> +++ b/arch/powerpc/sysdev/fsl_rio.c
-> @@ -23,7 +23,7 @@
->   */
->  
->  #include <linux/init.h>
-> -#include <linux/export.h>
-> +#include <linux/module.h>
->  #include <linux/types.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/interrupt.h>
+Yours,
+Linus Walleij
