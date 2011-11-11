@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757902Ab1KKOVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 09:21:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757069Ab1KKOVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 09:21:31 -0500
-Date: Fri, 11 Nov 2011 15:21:00 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Jan Kara <jack@suse.cz>,
-        Andy Isaacson <adi@hexapodia.org>,
-        Johannes Weiner <jweiner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: Do not stall in synchronous compaction for THP
- allocations
-Message-ID: <20111111142100.GB3512@redhat.com>
-References: <20111110100616.GD3083@suse.de>
- <20111110142202.GE3083@suse.de>
- <CAEwNFnCRCxrru5rBk7FpypqeL8nD=SY5W3-TaA7Ap5o4CgDSbg@mail.gmail.com>
- <20111110161331.GG3083@suse.de>
- <20111110151211.523fa185.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1111101536330.2194@chino.kir.corp.google.com>
- <20111111101414.GJ3083@suse.de>
- <alpine.DEB.2.00.1111110224500.7419@chino.kir.corp.google.com>
+	id S1757920Ab1KKOY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 09:24:29 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:45820
+	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752851Ab1KKOY2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 09:24:28 -0500
+X-SpamScore: -21
+X-BigFish: VPS-21(zzc89bh936eK1432N98dKzz1202hzz15d4Rz32i668h839h93fh)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,13,
+X-WSS-ID: 0LUI2OG-01-6OJ-02
+X-M-MSG: 
+Date: Fri, 11 Nov 2011 15:24:16 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: David Woodhouse <dwmw2@infradead.org>
+CC: David Airlie <airlied@linux.ie>, <linux-kernel@vger.kernel.org>,
+        <iommu@lists.linux-foundation.org>, <intel-gfx@lists.freedesktop.org>
+Subject: Re: [PATCH] iommu/intel: Fix build failure with intel-gtt and
+ !intel-iommu
+Message-ID: <20111111142416.GK13213@amd.com>
+References: <20111111134832.GI13213@amd.com>
+ <1321019553.2027.47.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1111110224500.7419@chino.kir.corp.google.com>
+In-Reply-To: <1321019553.2027.47.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 11, 2011 at 02:39:10AM -0800, David Rientjes wrote:
-> The history of this boolean is somewhat disturbing: it's introduced in 
-> 77f1fe6b back on January 13 to be true after the first attempt at 
-> compaction, then changed to be !(gfp_mask & __GFP_NO_KSWAPD) in 11bc82d6 
-> on March 22, then changed to be true again in c6a140bf on May 24, then 
-> proposed to be changed right back to !(gfp_mask & __GFP_NO_KSWAPD) in this 
-> patch again.  When are we going to understand that the admin needs to tell 
-> the kernel when we'd really like to try to allocate a transparent hugepage 
-> and when it's ok to fail?
+On Fri, Nov 11, 2011 at 01:52:33PM +0000, David Woodhouse wrote:
+> On Fri, 2011-11-11 at 14:48 +0100, Joerg Roedel wrote:
+> > +#define intel_iommu_gfx_mapped 1 
+> 
+> That ought to be zero; if the IOMMU code isn't present, it's
+> *definitely* not mapped through the IOMMU :)
+> 
+> But I'm fairly sure this was already noticed and a patch is on its way
+> upstream already.
+> 
+> It's my fault — my original testing patches to expose this information
+> from the IOMMU code did put it into a header file, but when I sent it
+> upstream I missed that part of the patch, thus leading to the horrid
+> 'extern int intel_iommu_gfx_mapped;' in intel-gtt.c that your patch
+> removes.
 
-Sorry for the confusion but it was reverted by mistake. Mel fixed a
-compaction bug that caused stalls of several minutes to
-people. compaction was overflowing into the next zone by mistake
-without adjusting its tracking parameters. So it wasn't clear anymore
-if sync compaction was really a problem or not. So I reverted it to be
-sure. And well now we're sure :). Without USB or pathologically slow
-I/O apparently it's not a noticeable issue.
+No problem, it was easy to fix :) I'll keep that patch in my out-of-tree
+branch until it is fixed upstream.
 
-So having sync compaction off by default sounds good to me.
 
-We can still add a tunable to force sync compaction in case anybody
-needs.
+	Joerg
 
-Another topic is if slub and stuff also wants sync compaction off by
-default when they allocate with large order so triggering compaction.
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
