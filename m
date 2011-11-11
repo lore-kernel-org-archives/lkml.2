@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1KKPcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 10:32:11 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:59311 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1757841Ab1KKPcJ convert rfc822-to-8bit (ORCPT
+	id S1757961Ab1KKPmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 10:42:08 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60478 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab1KKPmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 10:32:09 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 11 Nov 2011 10:42:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: Disabling TCP slow start after idle
-Date: Fri, 11 Nov 2011 15:30:23 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AEBA@saturn3.aculab.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Disabling TCP slow start after idle
-Thread-Index: AcyghtQ7BHv2le6LRuugzCPIPltbUQ==
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "linuxppc-dev" <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 11 Nov 2011 15:30:24.0260 (UTC) FILETIME=[D4C45440:01CCA086]
+In-Reply-To: <1320680681-5635-4-git-send-email-jic23@kernel.org>
+References: <1320680681-5635-1-git-send-email-jic23@kernel.org>
+	<1320680681-5635-4-git-send-email-jic23@kernel.org>
+Date: Fri, 11 Nov 2011 16:42:04 +0100
+Message-ID: <CACRpkdbKPL6=t-YGSNZdb2aGXERvk6zPkb40ytOMbYXLQ7H2Vg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] IIO:CORE add in kernel interface mapping and getting
+ IIO channels.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        guenter.roeck@ericsson.com, khali@linux-fr.org,
+        dmitry.torokhov@gmail.com, broonie@opensource.wolfsonmicro.com,
+        gregkh@suse.de, alan@lxorguk.ukuu.org.uk, arnd@arndb.de,
+        lars@metafoo.de, maxime.ripard@free-electrons.com,
+        lm-sensors@lm-sensors.org, thomas.petazzoni@free-electrons.com,
+        zdevai@gmail.com, Jonathan Cameron <jic23@cam.ac.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have some connections that suffer very badly from the TCP
-'slow start' algorithm. These are connections that will
-always be local - they may be MAC-Switch-MAC using RGMII
-crossover, they might also be connected via an external
-switch. In either case the RTT is most likely to be almost
-zero, certainly below 1ms.
+On Mon, Nov 7, 2011 at 4:44 PM, Jonathan Cameron <jic23@kernel.org> wrote:
 
-The traffic is single packets (carrying another protocol)
-so we have Nagle disabled and the send and receive sides
-run separately. So the traffic is neither bulk, nor
-command/response.
+> From: Jonathan Cameron <jic23@cam.ac.uk>
+>
+> Two elements here:
+> * Map as defined in include/linux/iio/inkern.h
+> * Matching code to actually get the iio_dev and channel
+> that we want from the global list of IIO devices.
+>
+> Signed-off-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-This means that there is very rarely any unacked data,
-so almost every packet is sent using 'slow start'.
+Overall this is what we want:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-If the external switch drops a packet (they do!) then
-slow start stops more packets being sent, and nothing
-progresses for about 1.5 seconds by which time there
-is a significant amount of traffic queued and, in some
-cases, data has to be discarded.
-
-Similar issues happen if the receiving system decides
-to defer the ack until a timer tick (instead of
-sending one after every second packet). In this case
-only 4 packets are sent. (We fixed this one be sending
-a software ACK every 4 packets.)
-
-Quite cleary the 'slow start' algorithm just doesn't
-work in these cases.
-
-I found this https://lkml.org/lkml/2010/4/9/427
-discussion about a socket option to disable slow start.
-But it seems that some people are completely against the idea.
-I'd have thought that the global option would be more of a
-problem - since that will affect ftp connections to remote
-hosts where slow start is alomost certainly benefitial.
-
-I'd have thought it would be sensible to allow one (or more)
-of the following (either as a sysctl, socket option, or
-code change):
-1) Disable slow start for the local subnet.
-2) Disable slow start for connections with very low RTT.
-3) Disable slow start for a minimum period with no traffic
-   (after the last packet is acked).
-
-I'm not sure of the resolution used by the Linux RTT
-calculations. I know NetBSD had a recent set of patches
-to fix calculation errors with low RTT because the code
-had been written when all RTT were much longer.
-
-	David
-
-(Copied to linuxppc-dev because I'm subscribed to it.)
-
-
+Thanks,
+Linus Walleij
