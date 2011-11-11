@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab1KKMZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 07:25:20 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35865 "EHLO ogre.sisk.pl"
+	id S1755696Ab1KKM1p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 07:27:45 -0500
+Received: from hera.cwi.nl ([192.16.191.8]:50231 "EHLO hera.cwi.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751879Ab1KKMZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 07:25:19 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Fri, 11 Nov 2011 13:27:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.1.0-rc10+; KDE/4.6.0; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
-In-Reply-To: <20111110133106.12e519d17f6a28adfee3b883@canb.auug.org.au>
+	id S1751879Ab1KKM1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 07:27:44 -0500
+Message-ID: <4EBD14B4.5000201@cwi.nl>
+Date: Fri, 11 Nov 2011 12:27:32 +0000
+From: "Wouter M. Koolen" <W.M.Koolen-Wijkstra@cwi.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20111010 Icedove/3.1.15
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: len.brown@intel.com, pavel@ucw.cz, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] NULL deref in swapin_readahead
+References: <4EBD0767.8040901@cwi.nl> <201111111307.02203.rjw@sisk.pl>
+In-Reply-To: <201111111307.02203.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201111111327.58960.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 10, 2011, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> After merging the pm tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> mm/oom_kill.c: In function 'select_bad_process':
-> mm/oom_kill.c:326:5: error: implicit declaration of function 'thaw_process'
-> 
-> Caused by commit 944e192db53c ("freezer: rename thaw_process() to
-> __thaw_task() and simplify the implementation").
-> 
-> I have used the pm tree from next-20111109 for today.
 
-The appended patch fixes the build problem for me.  I've added it to my
-linux-next branch already.
+On 11/11/2011 12:07 PM, Rafael J. Wysocki wrote:
+> Well, the trace doesn't indicate how the problem is related to the
+> suspend/resume code paths.
+>
+> Is this a regression for you?
+>
+> Thanks,
+> Rafael
+Hi Rafael,
 
-Tejun, please let me know if that's OK.
+This problem manifests itself when resuming from RAM, but only very 
+infrequently. This is the third occurrence since I started using this 
+machine three months ago. I suspend it to RAM at least twice a day. The 
+previous two occurrences were on 3.0. So not a clear regression in that 
+sense. (Note this is from memory, I didn't record those other two oopses)
 
-Rafael
+However, since it happens immediately upon resume, I suspected it was 
+related. Would you have any tips for stress testing resumes? If I can 
+increase the reproducibility then I could try to bisect it.
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Freezer: Fix fallout of thaw_process() -> __thaw_task() rename
+Or do you think it better, judging from the back trace, to forward this 
+to some other subsystem maintainer? Please do then, I obviously don't 
+know how to read backtraces.
 
-The changset that renamed thaw_process() to __thaw_task() forgot to
-modify oom_kill.c in accordance with that change and introduced
-a build problem.  Fix it.
+Thanks,
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- mm/oom_kill.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Wouter
 
-Index: linux/mm/oom_kill.c
-===================================================================
---- linux.orig/mm/oom_kill.c
-+++ linux/mm/oom_kill.c
-@@ -323,7 +323,7 @@ static struct task_struct *select_bad_pr
- 		 */
- 		if (test_tsk_thread_flag(p, TIF_MEMDIE)) {
- 			if (unlikely(frozen(p)))
--				thaw_process(p);
-+				__thaw_task(p);
- 			return ERR_PTR(-1UL);
- 		}
- 		if (!p->mm)
+
