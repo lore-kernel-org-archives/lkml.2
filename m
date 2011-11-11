@@ -1,110 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab1KKCJl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Nov 2011 21:09:41 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47922 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1KKCJk (ORCPT
+	id S1754375Ab1KKCMC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Nov 2011 21:12:02 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60630 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab1KKCMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Nov 2011 21:09:40 -0500
-Date: Thu, 10 Nov 2011 18:09:22 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, nai.xia@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, hughd@google.com, dave@linux.vnet.ibm.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lethal@linux-sh.org,
-        linux@arm.linux.org.uk
-Subject: Re: mm: convert vma->vm_flags to 64bit
-In-Reply-To: <1320959579.21206.24.camel@pasglop>
-Message-ID: <alpine.LSU.2.00.1111101723500.1239@sister.anvils>
-References: <20110412151116.B50D.A69D9226@jp.fujitsu.com> <CAPQyPG7RrpV8DBV_Qcgr2at_r25_ngjy_84J2FqzRPGfA3PGDA@mail.gmail.com> <4EBC085D.3060107@jp.fujitsu.com> <1320959579.21206.24.camel@pasglop>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 10 Nov 2011 21:12:00 -0500
+Date: Fri, 11 Nov 2011 13:11:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: linux-next: manual merge of the input tree with the s5p tree
+Message-Id: <20111111131147.3f7ab8c9f14a7d87cc83b5ac@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__11_Nov_2011_13_11_47_+1100__4zMnpzn28wz4kWm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Nov 2011, Benjamin Herrenschmidt wrote:
-> On Thu, 2011-11-10 at 12:22 -0500, KOSAKI Motohiro wrote:
-> > On 11/9/2011 11:09 PM, Nai Xia wrote:
-> > > Hi all,
-> > > 
-> > > Did this patch get merged at last, or on this way being merged, or
-> > > just dropped ?
-> > 
-> > Dropped.
-> > Linus said he dislike 64bit enhancement.
-> 
-> Do you have a pointer ? (And a rationale)
-> 
-> I still want to put some arch flags in there at some point...
+--Signature=_Fri__11_Nov_2011_13_11_47_+1100__4zMnpzn28wz4kWm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It was in this mail below, when Andrew sent Linus the patch, and Linus
-opposed my "argument" in support: that wasn't on lkml or linux-mm,
-but I don't see that its privacy needs protecting.
+Hi Dmitry,
 
-KOSAKI-san then sent instead a patch to correct some ints to longs,
-which Linus did put in: but changing them to a new "vm_flags_t".
+Today's linux-next merge of the input tree got a conflict in
+drivers/input/keyboard/samsung-keypad.c between commit 532f74540134
+("input: samsung-keypad: Add device tree support") from the s5p tree and
+commit 400bf2995be6 ("Input: samsung-keypad - switch to using
+SIMPLE_DEV_PM_OPS") from the input tree.
 
-He was, I think, hoping that one of us would change all the other uses
-of unsigned long vm_flags to vm_flags_t; but in fact none of us has
-stepped up yet - yeah, we're still sulking that we didn't get our
-shiny new 64-bit vm_flags ;)
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I think Linus is not opposed to PowerPC and others defining a 64-bit
-vm_flags_t if you need it, but wants not to bloat the x86_32 vma.
+diff --cc drivers/input/keyboard/samsung-keypad.c
+index 8a0060c,1a2b755..0000000
+--- a/drivers/input/keyboard/samsung-keypad.c
++++ b/drivers/input/keyboard/samsung-keypad.c
+@@@ -21,10 -21,8 +21,10 @@@
+  #include <linux/module.h>
+  #include <linux/platform_device.h>
+  #include <linux/slab.h>
+ +#include <linux/of.h>
+ +#include <linux/of_gpio.h>
+  #include <linux/sched.h>
+- #include <plat/keypad.h>
++ #include <linux/input/samsung-keypad.h>
+ =20
+  #define SAMSUNG_KEYIFCON			0x00
+  #define SAMSUNG_KEYIFSTSCLR			0x04
+@@@ -578,24 -440,11 +578,22 @@@ static int samsung_keypad_resume(struc
+ =20
+  	return 0;
+  }
+-=20
+- static const struct dev_pm_ops samsung_keypad_pm_ops =3D {
+- 	.suspend	=3D samsung_keypad_suspend,
+- 	.resume		=3D samsung_keypad_resume,
+- };
+  #endif
+ =20
+ +#ifdef CONFIG_OF
+ +static const struct of_device_id samsung_keypad_dt_match[] =3D {
+ +	{ .compatible =3D "samsung,s3c6410-keypad" },
+ +	{ .compatible =3D "samsung,s5pv210-keypad" },
+ +	{},
+ +};
+ +MODULE_DEVICE_TABLE(of, samsung_keypad_dt_match);
+ +#else
+ +#define samsung_keypad_dt_match NULL
+ +#endif
+ +
++ static SIMPLE_DEV_PM_OPS(samsung_keypad_pm_ops,
++ 			 samsung_keypad_suspend, samsung_keypad_resume);
++=20
+  static struct platform_device_id samsung_keypad_driver_ids[] =3D {
+  	{
+  		.name		=3D "samsung-keypad",
+@@@ -614,10 -463,7 +612,8 @@@ static struct platform_driver samsung_k
+  	.driver		=3D {
+  		.name	=3D "samsung-keypad",
+  		.owner	=3D THIS_MODULE,
+ +		.of_match_table =3D samsung_keypad_dt_match,
+- #ifdef CONFIG_PM
+  		.pm	=3D &samsung_keypad_pm_ops,
+- #endif
+  	},
+  	.id_table	=3D samsung_keypad_driver_ids,
+  };
 
-I'm still wary of the contortions we go to in constraining flags,
-and feel that the 32-bit case holds back the 64-bit, which would
-not itself be bloated at all.
+--Signature=_Fri__11_Nov_2011_13_11_47_+1100__4zMnpzn28wz4kWm
+Content-Type: application/pgp-signature
 
-The subject is likely to come up again, more pressingly, with page flags.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Hugh
+iQIcBAEBCAAGBQJOvIRjAAoJEECxmPOUX5FE6cwP/j7IpBR0T7qRyyHwwm77TCoH
+7WMdOSC8EInlhZ5dodzMMPYAwzGMtYa++S8ATEAildAWCbN0WACIuiehjyboHu+l
+Whq2PS6jtM9PyoCwBPtYzu/dUFeuy032WX6oIfvCyxqrL9ac6GXhDooL43V/tC2X
+qnfOFvu6QTMkGnPy/OqFAtaSV+sK9rU/m0I5SDYgHFGlvNMnu7Lc7jzzMUwct1ST
+Ks3hrbv94q9QxfR+dU12NSX+cRtXSelfWtJrbNd8Uhobw2H/gORnuo1JH9ZXgLGc
+Bz4S3fo+ybvyr2ljKtZwE7glO6jLbMs130nQoXVoHz00b1cA+dvIYSBNQYLbHO2x
+jOMouF5oleBsVOjIGtR6IsV3VL63F2YgiH2MJQV6ZyHAMW9QldH8bpBy/YLNnKwY
+q+anrLH/4JgJQfC8PQPuQaZ83oUknmRohhpWo7abBkEpamXAQFxLHcHQZAE+TEmW
+pktgzMKu0UGk2xFhwZyE1P8D58d52ZA0sxBVytmznwUHU//EzUugcko+dKvaU3dd
+ISfdRSqDohTJLd9Xm16ukNAQUQb1lTsJQA9WMUyUPuWnsACeGJHXd7oYYF6Id1dR
+jNyrzFhBkOXYKhYb5ModDxrY5JOd8BYIhpC/8jjeX6J5DgVuCIO/BKF4mnvTyuZ9
+LX7SwhGeBKOM2K1Ic1ej
+=38Al
+-----END PGP SIGNATURE-----
 
-> From torvalds@linux-foundation.org Wed May 25 10:43:32 2011
-> Date: Wed, 25 May 2011 10:42:37 -0700
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> To: Hugh Dickins <hughd@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, Ben Herrenschmidt <benh@kernel.crashing.org>, dave@linux.vnet.ibm.com, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Subject: Re: [patch 023/141] mm: convert vma->vm_flags to 64 bit
-> 
-> On Wed, May 25, 2011 at 10:09 AM, Hugh Dickins <hughd@google.com> wrote:
-> >
-> > If they don't absolutely want it today, they'll still be needing it
-> > tomorrow...ish.
-> 
-> I think that's a very bogus argument.
-> 
-> I think having push-back for extending flags is a good idea. Some of
-> the vm_flags we have now are almost certainly just total crap, brought
-> on by people who said "let's just add a flag for this".
-> 
-> So if we don't have a situation where "we absolutely *have* to do
-> this, and we've tried everything else", then I don't think we should
-> encourage more of the same.
-> 
-> For example, do we care about VM_RESERVED vs VM_IO, for example? There
-> are some subtle (but quite frankly, probably pointless and entirely
-> historical) differences in how mlock() acts on them, for example.
-> 
-> Or what about the read-ahead flags? They don't seem sensible for
-> non-file-backed mappings, and if it's file-backed, we have "vm_file"
-> which actually has the whole read-ahead state in it. Do we really need
-> two bits for that? Does anybody really want to map the same "struct
-> file" (note: same particular "open()" call, not same file on disk)
-> multiple times and have different read-ahead for them?
-> 
-> IOW, I really don't see why more than 32 bits would be needed in the
-> first place, and I think people have been too eager to add bits to
-> begin with. And if we really *do* need more bits, I think we have some
-> options for that too, although I seriously think anybody who wants
-> more bits should ask themselves whether they are actually going to be
-> used, or are just some crazy feature that no sane person should care
-> about.
-> 
->                        Linus
+--Signature=_Fri__11_Nov_2011_13_11_47_+1100__4zMnpzn28wz4kWm--
