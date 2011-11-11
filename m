@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab1KKLRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 06:17:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57424 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044Ab1KKLRb (ORCPT
+	id S1753912Ab1KKLUF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 06:20:05 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59267 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab1KKLUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 06:17:31 -0500
-Date: Fri, 11 Nov 2011 11:17:12 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 09/16] ARM: LPAE: MMU setup for the 3-level page
- table format
-Message-ID: <20111111111712.GD23243@arm.com>
-References: <1320682618-1182-1-git-send-email-catalin.marinas@arm.com>
- <1320682618-1182-10-git-send-email-catalin.marinas@arm.com>
- <alpine.LFD.2.02.1111101707250.3307@xanadu.home>
- <20111110223842.GS12913@n2100.arm.linux.org.uk>
+	Fri, 11 Nov 2011 06:20:03 -0500
+Message-ID: <4EBD04DE.2010201@openvz.org>
+Date: Fri, 11 Nov 2011 15:19:58 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111010 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111110223842.GS12913@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>
+Subject: Re: [PATCH v2] mm: add free_hot_cold_page_list helper
+References: <20110729075837.12274.58405.stgit@localhost6>	<20111101074502.32668.93131.stgit@zurg> <20111110154259.261f1534.akpm@linux-foundation.org>
+In-Reply-To: <20111110154259.261f1534.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 10, 2011 at 10:38:42PM +0000, Russell King - ARM Linux wrote:
-> There's also the question about whether the kernel is ready to deal with
-> split page tables.  I don't believe it is, because there are situations
-> where we walk the current page table for kernel addresses.
-> 
-> So, I think trying to reduce the L1 page table size and set the hardware
-> in this way may cause instability at the present time.
+Andrew Morton wrote:
+> On Tue, 01 Nov 2011 11:45:02 +0300
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> This patch adds helper free_hot_cold_page_list() to free list of 0-order pages.
+>> It frees pages directly from the list without temporary page-vector.
+>> It also calls trace_mm_pagevec_free() to simulate pagevec_free() behaviour.
+>>
+>> bloat-o-meter:
+>>
+>> add/remove: 1/1 grow/shrink: 1/3 up/down: 267/-295 (-28)
+>> function                                     old     new   delta
+>> free_hot_cold_page_list                        -     264    +264
+>> get_page_from_freelist                      2129    2132      +3
+>> __pagevec_free                               243     239      -4
+>> split_free_page                              380     373      -7
+>> release_pages                                606     510     -96
+>> free_page_list                               188       -    -188
+>
+> Here's what you changed:
+>
+> --- a/mm/page_alloc.c~mm-add-free_hot_cold_page_list-helper-v2
+> +++ a/mm/page_alloc.c
+> @@ -1210,6 +1210,9 @@ out:
+>   	local_irq_restore(flags);
+>   }
+>
+> +/*
+> + * Free a list of 0-order pages
+> + */
+>   void free_hot_cold_page_list(struct list_head *list, int cold)
+>   {
+>   	struct page *page, *next;
+> @@ -1218,8 +1221,6 @@ void free_hot_cold_page_list(struct list
+>   		trace_mm_pagevec_free(page, cold);
+>   		free_hot_cold_page(page, cold);
+>   	}
+> -
+> -	INIT_LIST_HEAD(list);
+>   }
+>
+>   /*
+> _
+>
+> However I can't find any sign that you addressed Minchin's original
+> review comment regarding free_hot_cold_page_list():
+>
+> : I understand you want to minimize changes without breaking current ABI
+> : with trace tools.
+> : But apparently, It's not a pagvec_free. It just hurts readability.
+> : As I take a look at the code, mm_pagevec_free isn't related to pagevec
+> : but I guess it can represent 0-order pages free because 0-order pages
+> : are freed only by pagevec until now.
+> : So, how about renaming it with mm_page_free or mm_page_free_zero_order?
+> : If you do, you need to do s/MM_PAGEVEC_FREE/MM_FREE_FREE/g in
+> : trace-pagealloc-postprocess.pl.
+>
 
-The init_mm.pgd still has the same size and that's the master copy that
-keeps kernel addresses. Level 1 entries in user pgd still point to the
-init_mm pmd entries as copied from init_mm.pgd. Address below
-PAGE_OFFSET are accessible via TTBR0 as before.
+Now I try to handle this, but this events logic little bit messy:
+kernel always emit mm_page_free_direct event even if we free it in batch.
+We really need two events for page-free? Maybe we can just remove pagevec-free and
+rename page_free_direct into page_free?
 
-The only thing the patch does is making sure that TTBR1 is used for
-kernel translations beyond PAGE_OFFSET and the real advantage comes when
-the kernel space is 1GB allowing the hardware to skip one translation
-table.
-
-Please note that the code does not make any assumption that there are
-separate page tables for the kernel, pgd_alloc() actually makes sure
-that the pgd entries for PAGE_OFFSET are the same across all mm's.
-
--- 
-Catalin
+BTW, pagevec_free now absolutely unused, I'll remove it in separate patch.
