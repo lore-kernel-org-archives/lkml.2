@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab1KKQHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 11:07:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab1KKQFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 11:05:35 -0500
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, netdev@vger.kernel.org,
-        jcliburn@gmail.com, chris.snook@gmail.com
-Subject: [PATCH 2/6] net/ethernet/atl1e: Disable ASPM
-Date: Fri, 11 Nov 2011 11:05:07 -0500
-Message-Id: <1321027511-31229-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1321027511-31229-1-git-send-email-mjg@redhat.com>
-References: <1321027511-31229-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.41.104
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S932785Ab1KKQH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 11:07:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36691 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab1KKQHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Nov 2011 11:07:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17408050C7@HQMAIL01.nvidia.com>
+References: <1319221553-15128-1-git-send-email-swarren@nvidia.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF17408050C7@HQMAIL01.nvidia.com>
+Date: Fri, 11 Nov 2011 17:07:22 +0100
+Message-ID: <CACRpkdZDpkRJ0BAcMq3UgPrReZBnboxphZ1wXpqv80=6=r5bYQ@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: Add explicit gpio_disable_free pinmux_op
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rongjun Ying <Rongjun.Ying@csr.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.atheros.cz/atheros-inf-file.php?inf=209&chipset=45&system=6
-indicates that ASPM is disabled on all L1E hardware. Duplicate for sanity.
+On Wed, Nov 9, 2011 at 5:28 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
-Cc: netdev@vger.kernel.org
-Cc: jcliburn@gmail.com
-Cc: chris.snook@gmail.com
----
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+> Does this patch look good?
 
-diff --git a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-index 95483bc..fc74dd1 100644
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -2264,6 +2264,9 @@ static int __devinit atl1e_probe(struct pci_dev *pdev,
- 
- 	int err = 0;
- 
-+	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
-+			       PCIE_LINK_STATE_CLKPM);
-+
- 	err = pci_enable_device(pdev);
- 	if (err) {
- 		dev_err(&pdev->dev, "cannot enable PCI device\n");
--- 
-1.7.7.1
+Yep it's applied.
 
+Linus
