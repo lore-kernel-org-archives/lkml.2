@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753721Ab1KKVeM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Nov 2011 16:34:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46272 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1KKVeK (ORCPT
+	id S1754230Ab1KKVfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Nov 2011 16:35:22 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55089 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753089Ab1KKVfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Nov 2011 16:34:10 -0500
-Message-ID: <4EBD94CE.4050206@google.com>
-Date: Fri, 11 Nov 2011 13:34:06 -0800
-From: Paul Turner <pjt@google.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+	Fri, 11 Nov 2011 16:35:20 -0500
+Message-ID: <4EBD9500.8070204@gmail.com>
+Date: Fri, 11 Nov 2011 18:34:56 -0300
+From: "Tomas M." <tmezzadra@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111108 Thunderbird/8.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel
-To: Glauber Costa <glommer@parallels.com>
-CC: linux-kernel@vger.kernel.org, paul@paulmenage.org, lizf@cn.fujitsu.com,
-        daniel.lezcano@free.fr, a.p.zijlstra@chello.nl,
-        jbottomley@parallels.com, fweisbec@gmail.com
-Subject: Re: [PATCH v2 01/14] trivial: initialize root cgroup's sibling list
-References: <1320182360-20043-1-git-send-email-glommer@parallels.com> <1320182360-20043-2-git-send-email-glommer@parallels.com>
-In-Reply-To: <1320182360-20043-2-git-send-email-glommer@parallels.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        deepthi@linux.vnet.ibm.com, g.trinabh@gmail.com, j-pihet@ti.com,
+        khilman@ti.com, arjan@linux.intel.com, len.brown@intel.com,
+        Arjan van de Ven <arjan@infradead.org>, Len Brown <lenb@kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [bisected][bug] commit e978aa7d7d57d04eb5f88 breaks suspend on
+ laptop.
+References: <4EBD46DF.6060507@gmail.com> <4EBD89A8.7070503@gmail.com> <201111112226.25265.rjw@sisk.pl>
+In-Reply-To: <201111112226.25265.rjw@sisk.pl>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/2011 02:19 PM, Glauber Costa wrote:
-> Even though there are no siblings, the list should be
-> initialized not to contain bogus values.
->
-> Signed-off-by: Glauber Costa<glommer@parallels.com>
-> Acked-by: Paul Menage<paul@paulmenage.org>
+yes, that helps.
 
-Signed-off-by: Paul Turner <pjt@google.com>
-
-> ---
->   kernel/sched.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
+On 11/11/2011 06:26 PM, Rafael J. Wysocki wrote:
+> On Friday, November 11, 2011, Tomas M. wrote:
+>> Follow up.
+>>
+>>
+>> reverted this and the following 3 commits from this patch set and the
+>> problem is gone.
+>>
+>> 46bcfad7a819bd17ac4e831b04405152d59784ab
+>> 4202735e8ab6ecfb0381631a0d0b58fefe0bd4e2
+>> b25edc42bfb9602f0503474b2c94701d5536ce60
+>> e978aa7d7d57d04eb5f88a7507c4fb98577def77
+>>
+>> they all seem to be related.
+> Does it help (without reverting the commits) if you put idle=poll into the
+> kernel command line?
 >
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index d87c6e5..e327665 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -8234,6 +8234,7 @@ void __init sched_init(void)
->   #ifdef CONFIG_CGROUP_SCHED
->   	list_add(&root_task_group.list,&task_groups);
->   	INIT_LIST_HEAD(&root_task_group.children);
-> +	INIT_LIST_HEAD(&root_task_group.siblings);
->   	autogroup_init(&init_task);
->   #endif /* CONFIG_CGROUP_SCHED */
+> Rafael
 >
-
+>
+>> On 11/11/2011 01:01 PM, Tomas M. wrote:
+>>> bisected to e978aa7d7d57d04eb5f88a7507c4fb98577def77
+>>>
+>>> cannot revert the commit cleanly to further test
+>>>
+>>> attaching pm-suspend log.  /proc/cpuinfo and lspci -vvnn just in case.
+>>> If more info is needed, please let me know.
+>>>
+>>> thanks!
+>>> ----
+>>> when trying to suspend... the system locks right before suspending.
+>>> sysrq keys  will not work at this point
+>>>
+>>>
+>>> please include me in the CC since im not subscribed to the list.
+>>>
+>>> i CCed everyone mentioned in the commit. if you were CCed by mystake,
+>>> sorry.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
